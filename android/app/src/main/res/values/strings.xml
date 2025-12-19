@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">Simple Notes</string>
+    <string name="no_notes_yet">Noch keine Notizen.\nTippe + um eine zu erstellen.</string>
+    <string name="add_note">Notiz hinzufügen</string>
+    <string name="sync">Synchronisieren</string>
+    <string name="settings">Einstellungen</string>
+    <string name="edit_note">Notiz bearbeiten</string>
+    <string name="new_note">Neue Notiz</string>
+    <string name="title">Titel</string>
+    <string name="content">Inhalt</string>
+    <string name="save">Speichern</string>
+    <string name="delete">Löschen</string>
+    <string name="server_settings">Server-Einstellungen</string>
+    <string name="server_url">Server URL</string>
+    <string name="username">Benutzername</string>
+    <string name="password">Passwort</string>
+    <string name="wifi_settings">WLAN-Einstellungen</string>
+    <string name="home_ssid">Heim-WLAN SSID</string>
+    <string name="auto_sync">Auto-Sync aktiviert</string>
+    <string name="test_connection">Verbindung testen</string>
+    <string name="sync_now">Jetzt synchronisieren</string>
+    <string name="sync_status">Sync-Status</string>
 </resources>
