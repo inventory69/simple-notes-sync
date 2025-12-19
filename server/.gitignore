@@ -1,0 +1,9 @@
+# Environment
+.env
+
+# Data
+notes-data/
+logs/
+
+# Docker
+docker-compose.override.yml

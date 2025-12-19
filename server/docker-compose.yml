@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  webdav:
+    image: bytemark/webdav
+    container_name: simple-notes-webdav
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      AUTH_TYPE: Basic
+      USERNAME: ${WEBDAV_USERNAME}
+      PASSWORD: ${WEBDAV_PASSWORD}
+    volumes:
+      - ./notes-data:/var/lib/dav/data
+      - ./logs:/var/log/apache2
+    networks:
+      - notes-network
+
+networks:
+  notes-network:
+    driver: bridge

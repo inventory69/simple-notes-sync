@@ -1,0 +1,39 @@
+# Server
+server/.env
+server/notes-data/
+server/logs/
+
+# Android
+android/.gradle/
+android/.idea/
+android/local.properties
+android/build/
+android/*/build/
+android/.DS_Store
+android/captures/
+android/*.apk
+android/*.ap_
+android/*.aab
+
+# Gradle
+.gradle
+build/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temp
+*.tmp
+*.swp
+*~
