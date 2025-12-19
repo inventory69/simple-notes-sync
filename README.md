@@ -50,13 +50,20 @@ cd android
 
 ## 📖 Dokumentation
 
-Vollständige Dokumentation: [project-docs/simple-notes-sync](https://github.com/inventory69/project-docs/tree/main/simple-notes-sync)
+### In diesem Repository:
 
-- [README.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/README.md) - Projekt-Übersicht
-- [IMPLEMENTATION_PLAN.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/IMPLEMENTATION_PLAN.md) - Sprint-Plan
-- [SERVER_SETUP.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/SERVER_SETUP.md) - Server-Setup
-- [ANDROID_GUIDE.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/ANDROID_GUIDE.md) - Android-Entwicklung
-- [NOTIFICATIONS.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/NOTIFICATIONS.md) - Notification-System
+- **[QUICKSTART.md](QUICKSTART.md)** - Schnellstart-Anleitung
+- **[server/README.md](server/README.md)** - Server-Verwaltung
+
+### Vollständige Dokumentation (project-docs):
+
+- [README.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/README.md) - Projekt-Übersicht & Architektur
+- [IMPLEMENTATION_PLAN.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/IMPLEMENTATION_PLAN.md) - Detaillierter Sprint-Plan
+- [SERVER_SETUP.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/SERVER_SETUP.md) - Server-Setup Details
+- [ANDROID_GUIDE.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/ANDROID_GUIDE.md) - 📱 Kompletter Android-Code
+- [NOTIFICATIONS.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/NOTIFICATIONS.md) - Notification-System Details
+- [WINDOWS_SETUP.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/WINDOWS_SETUP.md) - 🪟 Windows + Android Studio Setup
+- [CODE_REFERENCE.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/CODE_REFERENCE.md) - Schnelle Code-Referenz
 
 ## ⚙️ Server Konfiguration
 
