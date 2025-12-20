@@ -5,12 +5,13 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.textfield.TextInputEditText
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.showToast
-import com.google.android.material.textfield.TextInputEditText
 
 class NoteEditorActivity : AppCompatActivity() {
     
@@ -31,6 +32,8 @@ class NoteEditorActivity : AppCompatActivity() {
         storage = NotesStorage(this)
         
         // Setup toolbar
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
             setHomeAsUpIndicator(android.R.drawable.ic_menu_close_clear_cancel)
