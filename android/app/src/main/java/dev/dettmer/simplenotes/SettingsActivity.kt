@@ -42,6 +42,7 @@ class SettingsActivity : AppCompatActivity() {
     
     companion object {
         private const val REQUEST_LOCATION_PERMISSION = 1002
+        private const val REQUEST_BACKGROUND_LOCATION_PERMISSION = 1003
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -182,26 +183,6 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
     
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        
-        when (requestCode) {
-            REQUEST_LOCATION_PERMISSION -> {
-                if (grantResults.isNotEmpty() && 
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission granted, try again
-                    detectCurrentSSID()
-                } else {
-                    showToast("Standort-Berechtigung benötigt um WLAN-Name zu erkennen")
-                }
-            }
-        }
-    }
-    
     private fun onAutoSyncToggled(enabled: Boolean) {
         prefs.edit().putBoolean(Constants.KEY_AUTO_SYNC, enabled).apply()
         
@@ -209,6 +190,8 @@ class SettingsActivity : AppCompatActivity() {
             showToast("Auto-Sync aktiviert")
             // Check battery optimization when enabling
             checkBatteryOptimization()
+            // Check background location permission (needed for SSID on Android 12+)
+            checkBackgroundLocationPermission()
         } else {
             showToast("Auto-Sync deaktiviert")
         }
@@ -253,6 +236,102 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(intent)
             } catch (e2: Exception) {
                 showToast("Bitte Akku-Optimierung manuell deaktivieren")
+            }
+        }
+    }
+    
+    private fun checkBackgroundLocationPermission() {
+        // Background location permission only needed on Android 10+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return
+        }
+        
+        // First check if we have foreground location
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Request foreground location first
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_LOCATION_PERMISSION
+            )
+            return
+        }
+        
+        // Now check background location (Android 10+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                showBackgroundLocationDialog()
+            }
+        }
+    }
+    
+    private fun showBackgroundLocationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Hintergrund-Standort")
+            .setMessage(
+                "Damit die App dein WLAN-Netzwerk erkennen kann, " +
+                "wird Zugriff auf den Standort im Hintergrund benötigt.\n\n" +
+                "Dies ist eine Android-Einschränkung ab Version 10.\n\n" +
+                "Bitte wähle im nächsten Dialog 'Immer zulassen'."
+            )
+            .setPositiveButton("Fortfahren") { _, _ ->
+                requestBackgroundLocationPermission()
+            }
+            .setNegativeButton("Später") { dialog, _ ->
+                dialog.dismiss()
+                showToast("Auto-Sync funktioniert ohne diese Berechtigung nicht")
+            }
+            .setCancelable(false)
+            .show()
+    }
+    
+    private fun requestBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                REQUEST_BACKGROUND_LOCATION_PERMISSION
+            )
+        }
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        when (requestCode) {
+            REQUEST_LOCATION_PERMISSION -> {
+                if (grantResults.isNotEmpty() && 
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Foreground location granted, now request background
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        checkBackgroundLocationPermission()
+                    } else {
+                        // For detectCurrentSSID
+                        detectCurrentSSID()
+                    }
+                } else {
+                    showToast("Standort-Berechtigung benötigt um WLAN-Name zu erkennen")
+                }
+            }
+            REQUEST_BACKGROUND_LOCATION_PERMISSION -> {
+                if (grantResults.isNotEmpty() && 
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    showToast("✅ Hintergrund-Standort erlaubt - Auto-Sync sollte jetzt funktionieren!")
+                } else {
+                    showToast("⚠️ Ohne Hintergrund-Standort kann WLAN nicht erkannt werden")
+                }
             }
         }
     }

@@ -66,11 +66,17 @@ class NetworkMonitor(private val context: Context) {
         
         val request = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
         
         try {
             connectivityManager.registerNetworkCallback(request, networkCallback)
             Log.d(TAG, "✅ NetworkCallback registered successfully")
+            
+            // *** FIX #3: Check if already connected to WiFi ***
+            Log.d(TAG, "🔍 Performing initial WiFi check...")
+            checkAndTriggerSync()
+            
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to register NetworkCallback: ${e.message}", e)
         }
@@ -133,6 +139,13 @@ class NetworkMonitor(private val context: Context) {
         }
         
         Log.d(TAG, "Current SSID: '$currentSSID', Home SSID: '$homeSSID'")
+        
+        // *** FIX #4: Better error handling for missing SSID ***
+        if (currentSSID.isEmpty() || currentSSID == "<unknown ssid>") {
+            Log.w(TAG, "⚠️ Cannot get SSID - likely missing ACCESS_BACKGROUND_LOCATION permission!")
+            Log.w(TAG, "⚠️ On Android 12+, apps need 'Allow all the time' location permission")
+            return false
+        }
         
         val isHome = currentSSID == homeSSID
         Log.d(TAG, "Is home WiFi: $isHome")
