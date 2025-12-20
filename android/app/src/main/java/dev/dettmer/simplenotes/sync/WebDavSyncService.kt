@@ -28,6 +28,52 @@ class WebDavSyncService(private val context: Context) {
         return prefs.getString(Constants.KEY_SERVER_URL, null)
     }
     
+    suspend fun testConnection(): SyncResult = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val sardine = getSardine() ?: return@withContext SyncResult(
+                isSuccess = false,
+                errorMessage = "Server-Zugangsdaten nicht konfiguriert"
+            )
+            
+            val serverUrl = getServerUrl() ?: return@withContext SyncResult(
+                isSuccess = false,
+                errorMessage = "Server-URL nicht konfiguriert"
+            )
+            
+            // Only test if directory exists or can be created
+            val exists = sardine.exists(serverUrl)
+            if (!exists) {
+                sardine.createDirectory(serverUrl)
+            }
+            
+            SyncResult(
+                isSuccess = true,
+                syncedCount = 0,
+                errorMessage = null
+            )
+            
+        } catch (e: Exception) {
+            SyncResult(
+                isSuccess = false,
+                errorMessage = when (e) {
+                    is java.net.UnknownHostException -> "Server nicht erreichbar"
+                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout"
+                    is javax.net.ssl.SSLException -> "SSL-Fehler"
+                    is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
+                        when (e.statusCode) {
+                            401 -> "Authentifizierung fehlgeschlagen"
+                            403 -> "Zugriff verweigert"
+                            404 -> "Server-Pfad nicht gefunden"
+                            500 -> "Server-Fehler"
+                            else -> "HTTP-Fehler: ${e.statusCode}"
+                        }
+                    }
+                    else -> e.message ?: "Unbekannter Fehler"
+                }
+            )
+        }
+    }
+    
     suspend fun syncNotes(): SyncResult = withContext(Dispatchers.IO) {
         return@withContext try {
             val sardine = getSardine() ?: return@withContext SyncResult(

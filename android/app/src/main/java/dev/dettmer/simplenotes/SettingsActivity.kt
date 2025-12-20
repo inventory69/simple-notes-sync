@@ -97,10 +97,10 @@ class SettingsActivity : AppCompatActivity() {
             try {
                 showToast("Teste Verbindung...")
                 val syncService = WebDavSyncService(this@SettingsActivity)
-                val result = syncService.syncNotes()
+                val result = syncService.testConnection()
                 
                 if (result.isSuccess) {
-                    showToast("Verbindung erfolgreich! ${result.syncedCount} Notizen synchronisiert")
+                    showToast("Verbindung erfolgreich!")
                 } else {
                     showToast("Verbindung fehlgeschlagen: ${result.errorMessage}")
                 }
