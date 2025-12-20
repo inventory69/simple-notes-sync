@@ -1,12 +1,17 @@
 package dev.dettmer.simplenotes
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -27,6 +32,10 @@ class SettingsActivity : AppCompatActivity() {
     
     private val prefs by lazy {
         getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
+    }
+    
+    companion object {
+        private const val REQUEST_LOCATION_PERMISSION = 1002
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -133,6 +142,24 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun detectCurrentSSID() {
+        // Check if we have location permission (needed for SSID on Android 10+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // Request permission
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    REQUEST_LOCATION_PERMISSION
+                )
+                return
+            }
+        }
+        
+        // Permission granted, get SSID
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         val ssid = wifiInfo.ssid.replace("\"", "")
@@ -142,6 +169,26 @@ class SettingsActivity : AppCompatActivity() {
             showToast("SSID erkannt: $ssid")
         } else {
             showToast("Nicht mit WLAN verbunden")
+        }
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        when (requestCode) {
+            REQUEST_LOCATION_PERMISSION -> {
+                if (grantResults.isNotEmpty() && 
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission granted, try again
+                    detectCurrentSSID()
+                } else {
+                    showToast("Standort-Berechtigung benötigt um WLAN-Name zu erkennen")
+                }
+            }
         }
     }
     
