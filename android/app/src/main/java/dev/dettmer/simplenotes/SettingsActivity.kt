@@ -1,13 +1,19 @@
 package dev.dettmer.simplenotes
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
@@ -87,6 +93,10 @@ class SettingsActivity : AppCompatActivity() {
         
         buttonDetectSSID.setOnClickListener {
             detectCurrentSSID()
+        }
+        
+        switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
+            onAutoSyncToggled(isChecked)
         }
     }
     
@@ -188,6 +198,61 @@ class SettingsActivity : AppCompatActivity() {
                 } else {
                     showToast("Standort-Berechtigung benötigt um WLAN-Name zu erkennen")
                 }
+            }
+        }
+    }
+    
+    private fun onAutoSyncToggled(enabled: Boolean) {
+        prefs.edit().putBoolean(Constants.KEY_AUTO_SYNC, enabled).apply()
+        
+        if (enabled) {
+            showToast("Auto-Sync aktiviert")
+            // Check battery optimization when enabling
+            checkBatteryOptimization()
+        } else {
+            showToast("Auto-Sync deaktiviert")
+        }
+    }
+    
+    private fun checkBatteryOptimization() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val packageName = packageName
+        
+        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            showBatteryOptimizationDialog()
+        }
+    }
+    
+    private fun showBatteryOptimizationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Hintergrund-Synchronisation")
+            .setMessage(
+                "Damit die App im Hintergrund synchronisieren kann, " +
+                "muss die Akku-Optimierung deaktiviert werden.\n\n" +
+                "Bitte wähle 'Nicht optimieren' für Simple Notes."
+            )
+            .setPositiveButton("Einstellungen öffnen") { _, _ ->
+                openBatteryOptimizationSettings()
+            }
+            .setNegativeButton("Später") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
+    }
+    
+    private fun openBatteryOptimizationSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:$packageName")
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback: Open general battery settings
+            try {
+                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                startActivity(intent)
+            } catch (e2: Exception) {
+                showToast("Bitte Akku-Optimierung manuell deaktivieren")
             }
         }
     }

@@ -17,6 +17,11 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.showToast
 import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import dev.dettmer.simplenotes.sync.WebDavSyncService
 
 class MainActivity : AppCompatActivity() {
     
@@ -35,9 +40,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        
-        // Notification Channel erstellen
-        NotificationHelper.createNotificationChannel(this)
         
         // Permission für Notifications (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -106,6 +108,31 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, SettingsActivity::class.java))
     }
     
+    private fun triggerManualSync() {
+        lifecycleScope.launch {
+            try {
+                showToast("Starte Synchronisation...")
+                
+                // Start sync
+                val syncService = WebDavSyncService(this@MainActivity)
+                val result = withContext(Dispatchers.IO) {
+                    syncService.syncNotes()
+                }
+                
+                // Show result
+                if (result.isSuccess) {
+                    showToast("Sync erfolgreich: ${result.syncedCount} Notizen")
+                    loadNotes() // Reload notes
+                } else {
+                    showToast("Sync Fehler: ${result.errorMessage}")
+                }
+                
+            } catch (e: Exception) {
+                showToast("Sync Fehler: ${e.message}")
+            }
+        }
+    }
+    
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
@@ -118,8 +145,7 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.action_sync -> {
-                // Manual sync trigger could be added here
-                showToast("Sync wird in den Einstellungen gestartet")
+                triggerManualSync()
                 true
             }
             else -> super.onOptionsItemSelected(item)

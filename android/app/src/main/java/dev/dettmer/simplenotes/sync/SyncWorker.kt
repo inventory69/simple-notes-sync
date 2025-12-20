@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -12,54 +13,46 @@ class SyncWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
     
+    companion object {
+        private const val TAG = "SyncWorker"
+    }
+    
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        // Progress Notification zeigen
-        val notificationId = NotificationHelper.showSyncProgressNotification(applicationContext)
+        Log.d(TAG, "🔄 SyncWorker started")
         
         return@withContext try {
+            // Show notification that sync is starting
+            NotificationHelper.showSyncInProgress(applicationContext)
+            Log.d(TAG, "📢 Notification shown: Sync in progress")
+            
+            // Start sync
             val syncService = WebDavSyncService(applicationContext)
-            val syncResult = syncService.syncNotes()
+            Log.d(TAG, "🚀 Starting sync...")
             
-            // Progress Notification entfernen
-            NotificationHelper.dismissNotification(applicationContext, notificationId)
+            val result = syncService.syncNotes()
             
-            when {
-                syncResult.hasConflicts -> {
-                    // Konflikt-Notification
-                    NotificationHelper.showConflictNotification(
-                        applicationContext,
-                        syncResult.conflictCount
-                    )
-                    Result.success()
-                }
-                syncResult.isSuccess -> {
-                    // Erfolgs-Notification
-                    NotificationHelper.showSyncSuccessNotification(
-                        applicationContext,
-                        syncResult.syncedCount
-                    )
-                    Result.success()
-                }
-                else -> {
-                    // Fehler-Notification
-                    NotificationHelper.showSyncFailureNotification(
-                        applicationContext,
-                        syncResult.errorMessage ?: "Unbekannter Fehler"
-                    )
-                    Result.retry()
-                }
+            if (result.isSuccess) {
+                Log.d(TAG, "✅ Sync successful: ${result.syncedCount} notes")
+                NotificationHelper.showSyncSuccess(
+                    applicationContext,
+                    result.syncedCount
+                )
+                Result.success()
+            } else {
+                Log.e(TAG, "❌ Sync failed: ${result.errorMessage}")
+                NotificationHelper.showSyncError(
+                    applicationContext,
+                    result.errorMessage ?: "Unbekannter Fehler"
+                )
+                Result.failure()
             }
-            
         } catch (e: Exception) {
-            // Fehler-Notification
-            NotificationHelper.dismissNotification(applicationContext, notificationId)
-            NotificationHelper.showSyncFailureNotification(
+            Log.e(TAG, "💥 Sync exception: ${e.message}", e)
+            NotificationHelper.showSyncError(
                 applicationContext,
-                e.message ?: "Sync fehlgeschlagen"
+                e.message ?: "Unknown error"
             )
-            
-            // Retry mit Backoff
-            Result.retry()
+            Result.failure()
         }
     }
 }

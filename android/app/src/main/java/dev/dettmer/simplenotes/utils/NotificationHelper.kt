@@ -16,6 +16,7 @@ object NotificationHelper {
     private const val CHANNEL_NAME = "Notizen Synchronisierung"
     private const val CHANNEL_DESCRIPTION = "Benachrichtigungen über Sync-Status"
     private const val NOTIFICATION_ID = 1001
+    private const val SYNC_NOTIFICATION_ID = 2
     
     /**
      * Erstellt Notification Channel (Android 8.0+)
@@ -188,5 +189,56 @@ object NotificationHelper {
         } else {
             true
         }
+    }
+    
+    /**
+     * Zeigt Notification dass Sync startet
+     */
+    fun showSyncInProgress(context: Context) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setContentTitle("Synchronisierung läuft")
+            .setContentText("Notizen werden synchronisiert...")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .build()
+        
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+            as NotificationManager
+        manager.notify(SYNC_NOTIFICATION_ID, notification)
+    }
+    
+    /**
+     * Zeigt Erfolgs-Notification
+     */
+    fun showSyncSuccess(context: Context, count: Int) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setContentTitle("Sync erfolgreich")
+            .setContentText("$count Notizen synchronisiert")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .build()
+        
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+            as NotificationManager
+        manager.notify(SYNC_NOTIFICATION_ID, notification)
+    }
+    
+    /**
+     * Zeigt Fehler-Notification
+     */
+    fun showSyncError(context: Context, message: String) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle("Sync Fehler")
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+            as NotificationManager
+        manager.notify(SYNC_NOTIFICATION_ID, notification)
     }
 }
