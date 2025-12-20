@@ -9,7 +9,6 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
 
 class WebDavSyncService(private val context: Context) {
     
@@ -99,7 +98,7 @@ class WebDavSyncService(private val context: Context) {
                     val noteUrl = "$serverUrl/${note.id}.json"
                     val jsonBytes = note.toJson().toByteArray()
                     
-                    sardine.put(noteUrl, ByteArrayInputStream(jsonBytes), "application/json")
+                    sardine.put(noteUrl, jsonBytes, "application/json")
                     
                     // Update sync status
                     val updatedNote = note.copy(syncStatus = SyncStatus.SYNCED)
