@@ -1,0 +1,5 @@
+• Konfigurierbares Sync-Interval (15/30/60 Minuten)
+• Transparente Batterie-Verbrauchsanzeige (gemessen: 0.4%/Tag bei 30min)
+• Doze Mode Optimierungen für zuverlässigere Background-Syncs
+• About-Section mit App-Informationen und GitHub-Links
+• Diverse Bugfixes und Performance-Verbesserungen

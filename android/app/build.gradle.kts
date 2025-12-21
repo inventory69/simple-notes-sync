@@ -5,6 +5,9 @@ plugins {
 
 import java.util.Properties
 import java.io.FileInputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 android {
     namespace = "dev.dettmer.simplenotes"
@@ -14,10 +17,13 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2  // 🔥 F-Droid Release v1.1.0
+        versionName = "1.1.0"  // 🔥 Configurable Sync Interval + About Section
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // 🔥 NEU: Build Date für About Screen
+        buildConfigField("String", "BUILD_DATE", "\"${getBuildDate()}\"")
     }
     
     // Enable multiple APKs per ABI for smaller downloads
@@ -122,4 +128,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+// 🔥 NEU: Helper function für Build Date
+fun getBuildDate(): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    return dateFormat.format(Date())
 }

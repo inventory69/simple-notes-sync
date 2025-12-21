@@ -163,12 +163,12 @@ class MainActivity : AppCompatActivity() {
                     
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
-                    showToast("❌ Sync-Fehler: ${result.errorMessage}")
+                    // Kein Toast - App ist im Hintergrund
                 }
                 
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 Auto-sync exception ($source): ${e.message}")
-                showToast("❌ Sync-Fehler: ${e.message}")
+                // Kein Toast - App ist im Hintergrund
             }
         }
     }

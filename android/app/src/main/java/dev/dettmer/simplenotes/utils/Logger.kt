@@ -113,10 +113,8 @@ object Logger {
     }
     
     fun i(tag: String, message: String) {
-        // Logcat nur in DEBUG builds
-        if (BuildConfig.DEBUG) {
-            Log.i(tag, message)
-        }
+        // INFO logs IMMER zeigen (auch in Release) - wichtige Events
+        Log.i(tag, message)
         // File-Logging IMMER (wenn enabled)
         writeToFile("INFO", tag, message)
     }

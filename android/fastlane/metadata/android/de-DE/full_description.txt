@@ -5,6 +5,8 @@ HAUPTFUNKTIONEN:
 • Einfache Notizen erstellen und bearbeiten
 • WebDAV-Synchronisation mit eigenem Server
 • Automatische Synchronisation im Heim-WLAN
+• Konfigurierbares Sync-Interval (15/30/60 Minuten)
+• Transparente Batterie-Verbrauchsanzeige
 • Material Design 3 mit Dynamic Colors (Android 12+)
 • Swipe-to-Delete mit Bestätigungsdialog
 • Server-Backup & Wiederherstellung
@@ -18,7 +20,9 @@ Deine Daten bleiben bei dir! Die App kommuniziert nur mit deinem eigenen WebDAV-
 SYNCHRONISATION:
 
 • Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
-• Automatische Sync alle 30 Minuten im Heim-WLAN
+• Konfigurierbares Interval: 15, 30 oder 60 Minuten
+• Gemessener Akkuverbrauch: nur ~0.4% pro Tag (bei 30min)
+• Doze Mode optimiert für zuverlässige Background-Syncs
 • Manuelle Synchronisation jederzeit möglich
 • Konfliktfreie Zusammenführung durch Timestamps
 
@@ -30,4 +34,4 @@ MATERIAL DESIGN 3:
 • Intuitive Gesten (Swipe-to-Delete)
 
 Open Source unter MIT-Lizenz
-Quellcode: https://github.com/DettmerLabs/simple-notes-sync
+Quellcode: https://github.com/inventory69/simple-notes-sync

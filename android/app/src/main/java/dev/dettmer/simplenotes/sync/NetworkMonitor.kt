@@ -147,15 +147,24 @@ class NetworkMonitor(private val context: Context) {
     
     /**
      * Startet WorkManager periodic sync
+     * 🔥 Interval aus SharedPrefs konfigurierbar (15/30/60 min)
      */
     private fun startPeriodicSync() {
+        // 🔥 Interval aus SharedPrefs lesen
+        val intervalMinutes = prefs.getLong(
+            Constants.PREF_SYNC_INTERVAL_MINUTES,
+            Constants.DEFAULT_SYNC_INTERVAL_MINUTES
+        )
+        
+        Logger.d(TAG, "📅 Configuring periodic sync: ${intervalMinutes}min interval")
+        
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.UNMETERED)  // WiFi only
             .build()
         
         val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-            30, TimeUnit.MINUTES,
-            10, TimeUnit.MINUTES
+            intervalMinutes, TimeUnit.MINUTES,  // 🔥 Dynamisch!
+            5, TimeUnit.MINUTES  // Flex interval
         )
             .setConstraints(constraints)
             .addTag(Constants.SYNC_WORK_TAG)
@@ -163,11 +172,11 @@ class NetworkMonitor(private val context: Context) {
         
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             AUTO_SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingPeriodicWorkPolicy.UPDATE,  // 🔥 Update bei Interval-Änderung
             syncRequest
         )
         
-        Logger.d(TAG, "✅ Periodic sync scheduled (every 30min)")
+        Logger.d(TAG, "✅ Periodic sync scheduled (every ${intervalMinutes}min)")
     }
     
     /**
@@ -227,6 +236,21 @@ class NetworkMonitor(private val context: Context) {
         } catch (e: Exception) {
             Logger.e(TAG, "❌ Error initializing WiFi state", e)
             lastConnectedNetworkId = null
+        }
+    }
+    
+    /**
+     * Prüft ob WiFi aktuell verbunden ist
+     * @return true wenn WiFi verbunden, false sonst (Cellular, offline, etc.)
+     */
+    fun isWiFiConnected(): Boolean {
+        return try {
+            val activeNetwork = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        } catch (e: Exception) {
+            Logger.e(TAG, "Error checking WiFi status", e)
+            false
         }
     }
     

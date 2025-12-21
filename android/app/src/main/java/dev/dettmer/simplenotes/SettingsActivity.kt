@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +19,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -35,24 +37,36 @@ import dev.dettmer.simplenotes.utils.showToast
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "SettingsActivity"
+        private const val GITHUB_REPO_URL = "https://github.com/inventory69/simple-notes-sync"
+        private const val GITHUB_PROFILE_URL = "https://github.com/inventory69"
+        private const val LICENSE_URL = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
     }
     
     private lateinit var editTextServerUrl: EditText
     private lateinit var editTextUsername: EditText
     private lateinit var editTextPassword: EditText
     private lateinit var switchAutoSync: SwitchCompat
-    private lateinit var switchFileLogging: SwitchMaterial
     private lateinit var buttonTestConnection: Button
     private lateinit var buttonSyncNow: Button
     private lateinit var buttonRestoreFromServer: Button
-    private lateinit var buttonShareLogs: Button
     private lateinit var textViewServerStatus: TextView
     private lateinit var chipAutoSaveStatus: Chip
+    
+    // Sync Interval UI
+    private lateinit var radioGroupSyncInterval: RadioGroup
+    
+    // About Section UI
+    private lateinit var textViewAppVersion: TextView
+    private lateinit var cardGitHubRepo: MaterialCardView
+    private lateinit var cardDeveloperProfile: MaterialCardView
+    private lateinit var cardLicense: MaterialCardView
     
     private var autoSaveIndicatorJob: Job? = null
     
@@ -79,6 +93,8 @@ class SettingsActivity : AppCompatActivity() {
         findViews()
         loadSettings()
         setupListeners()
+        setupSyncIntervalPicker()
+        setupAboutSection()
     }
     
     private fun findViews() {
@@ -86,13 +102,20 @@ class SettingsActivity : AppCompatActivity() {
         editTextUsername = findViewById(R.id.editTextUsername)
         editTextPassword = findViewById(R.id.editTextPassword)
         switchAutoSync = findViewById(R.id.switchAutoSync)
-        switchFileLogging = findViewById(R.id.switchFileLogging)
         buttonTestConnection = findViewById(R.id.buttonTestConnection)
         buttonSyncNow = findViewById(R.id.buttonSyncNow)
         buttonRestoreFromServer = findViewById(R.id.buttonRestoreFromServer)
-        buttonShareLogs = findViewById(R.id.buttonShareLogs)
         textViewServerStatus = findViewById(R.id.textViewServerStatus)
         chipAutoSaveStatus = findViewById(R.id.chipAutoSaveStatus)
+        
+        // Sync Interval UI
+        radioGroupSyncInterval = findViewById(R.id.radioGroupSyncInterval)
+        
+        // About Section UI
+        textViewAppVersion = findViewById(R.id.textViewAppVersion)
+        cardGitHubRepo = findViewById(R.id.cardGitHubRepo)
+        cardDeveloperProfile = findViewById(R.id.cardDeveloperProfile)
+        cardLicense = findViewById(R.id.cardLicense)
     }
     
     private fun loadSettings() {
@@ -100,12 +123,6 @@ class SettingsActivity : AppCompatActivity() {
         editTextUsername.setText(prefs.getString(Constants.KEY_USERNAME, ""))
         editTextPassword.setText(prefs.getString(Constants.KEY_PASSWORD, ""))
         switchAutoSync.isChecked = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
-        switchFileLogging.isChecked = prefs.getBoolean("file_logging_enabled", false)
-        
-        // File Logging aktivieren wenn Switch on
-        if (switchFileLogging.isChecked) {
-            Logger.enableFileLogging(this)
-        }
         
         // Server Status prüfen
         checkServerStatus()
@@ -127,22 +144,6 @@ class SettingsActivity : AppCompatActivity() {
             showRestoreConfirmation()
         }
         
-        switchFileLogging.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("file_logging_enabled", isChecked).apply()
-            
-            if (isChecked) {
-                Logger.enableFileLogging(this)
-                showToast("📝 File Logging aktiviert")
-            } else {
-                Logger.disableFileLogging()
-                showToast("📝 File Logging deaktiviert")
-            }
-        }
-        
-        buttonShareLogs.setOnClickListener {
-            shareLogs()
-        }
-        
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             onAutoSyncToggled(isChecked)
             showAutoSaveIndicator()
@@ -162,6 +163,97 @@ class SettingsActivity : AppCompatActivity() {
         
         editTextPassword.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) showAutoSaveIndicator()
+        }
+    }
+    
+    /**
+     * Setup sync interval picker with radio buttons
+     */
+    private fun setupSyncIntervalPicker() {
+        // Load current interval from preferences
+        val currentInterval = prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
+        
+        // Set checked radio button based on current interval
+        val checkedId = when (currentInterval) {
+            15L -> R.id.radioInterval15
+            30L -> R.id.radioInterval30
+            60L -> R.id.radioInterval60
+            else -> R.id.radioInterval30 // Default
+        }
+        radioGroupSyncInterval.check(checkedId)
+        
+        // Listen for interval changes
+        radioGroupSyncInterval.setOnCheckedChangeListener { _, checkedId ->
+            val newInterval = when (checkedId) {
+                R.id.radioInterval15 -> 15L
+                R.id.radioInterval60 -> 60L
+                else -> 30L // R.id.radioInterval30 or fallback
+            }
+            
+            // Save new interval to preferences
+            prefs.edit().putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, newInterval).apply()
+            
+            // Restart periodic sync with new interval (only if auto-sync is enabled)
+            if (prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)) {
+                val networkMonitor = NetworkMonitor(this)
+                networkMonitor.startMonitoring()
+                
+                val intervalText = when (newInterval) {
+                    15L -> "15 Minuten"
+                    30L -> "30 Minuten"
+                    60L -> "60 Minuten"
+                    else -> "$newInterval Minuten"
+                }
+                showToast("⏱️ Sync-Intervall auf $intervalText geändert")
+                Logger.i(TAG, "Sync interval changed to $newInterval minutes, restarted periodic sync")
+            } else {
+                showToast("⏱️ Sync-Intervall gespeichert (Auto-Sync ist deaktiviert)")
+            }
+        }
+    }
+    
+    /**
+     * Setup about section with version info and clickable cards
+     */
+    private fun setupAboutSection() {
+        // Display app version with build date
+        try {
+            val versionName = BuildConfig.VERSION_NAME
+            val versionCode = BuildConfig.VERSION_CODE
+            val buildDate = BuildConfig.BUILD_DATE
+            
+            textViewAppVersion.text = "Version $versionName ($versionCode)\nErstellt am: $buildDate"
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to load version info", e)
+            textViewAppVersion.text = "Version nicht verfügbar"
+        }
+        
+        // GitHub Repository Card
+        cardGitHubRepo.setOnClickListener {
+            openUrl(GITHUB_REPO_URL)
+        }
+        
+        // Developer Profile Card
+        cardDeveloperProfile.setOnClickListener {
+            openUrl(GITHUB_PROFILE_URL)
+        }
+        
+        // License Card
+        cardLicense.setOnClickListener {
+            openUrl(LICENSE_URL)
+        }
+    }
+    
+    /**
+     * Opens URL in browser
+     */
+    private fun openUrl(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to open URL: $url", e)
+            showToast("❌ Fehler beim Öffnen des Links")
         }
     }
     
@@ -394,46 +486,6 @@ class SettingsActivity : AppCompatActivity() {
                 showToast(getString(R.string.restore_error, e.message))
                 checkServerStatus()
             }
-        }
-    }
-    
-    /**
-     * Teilt Log-Datei via Share-Intent
-     */
-    private fun shareLogs() {
-        try {
-            val logFile = Logger.getLogFile()
-            
-            if (logFile == null || !logFile.exists()) {
-                showToast("❌ Keine Logs verfügbar")
-                return
-            }
-            
-            if (logFile.length() == 0L) {
-                showToast("❌ Log-Datei ist leer")
-                return
-            }
-            
-            // FileProvider URI für Sharing
-            val uri = FileProvider.getUriForFile(
-                this,
-                "${packageName}.fileprovider",
-                logFile
-            )
-            
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "SimpleNotes Debug Logs")
-                putExtra(Intent.EXTRA_TEXT, "Debug Logs von SimpleNotes (letzte 500 Einträge)")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            
-            startActivity(Intent.createChooser(shareIntent, "Logs teilen"))
-            
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to share logs", e)
-            showToast("❌ Fehler beim Teilen: ${e.message}")
         }
     }
     
