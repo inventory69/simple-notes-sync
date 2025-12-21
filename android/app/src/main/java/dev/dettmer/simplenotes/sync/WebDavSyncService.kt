@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.models.Note
@@ -10,6 +12,14 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import java.net.Inet4Address
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.NetworkInterface
+import java.net.Proxy
+import java.net.Socket
+import javax.net.SocketFactory
 
 class WebDavSyncService(private val context: Context) {
     
@@ -17,17 +27,151 @@ class WebDavSyncService(private val context: Context) {
         private const val TAG = "WebDavSyncService"
     }
     
-    private val storage = NotesStorage(context)
+    private val storage: NotesStorage
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    
+    init {
+        android.util.Log.d(TAG, "═══════════════════════════════════════")
+        android.util.Log.d(TAG, "🏗️ WebDavSyncService INIT")
+        android.util.Log.d(TAG, "Context: ${context.javaClass.simpleName}")
+        android.util.Log.d(TAG, "Thread: ${Thread.currentThread().name}")
+        
+        try {
+            android.util.Log.d(TAG, "    Creating NotesStorage...")
+            storage = NotesStorage(context)
+            android.util.Log.d(TAG, "    ✅ NotesStorage created successfully")
+            android.util.Log.d(TAG, "    Notes dir: ${storage.getNotesDir()}")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "💥 CRASH in NotesStorage creation!", e)
+            android.util.Log.e(TAG, "Exception: ${e.javaClass.name}: ${e.message}")
+            e.printStackTrace()
+            throw e
+        }
+        
+        android.util.Log.d(TAG, "    SharedPreferences: $prefs")
+        android.util.Log.d(TAG, "✅ WebDavSyncService INIT complete")
+        android.util.Log.d(TAG, "═══════════════════════════════════════")
+    }
+    
+    /**
+     * Findet WiFi Interface IP-Adresse (um VPN zu umgehen)
+     */
+    private fun getWiFiInetAddress(): InetAddress? {
+        try {
+            android.util.Log.d(TAG, "🔍 getWiFiInetAddress() called")
+            
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork
+            android.util.Log.d(TAG, "    Active network: $network")
+            
+            if (network == null) {
+                android.util.Log.d(TAG, "❌ No active network")
+                return null
+            }
+            
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            android.util.Log.d(TAG, "    Network capabilities: $capabilities")
+            
+            if (capabilities == null) {
+                android.util.Log.d(TAG, "❌ No network capabilities")
+                return null
+            }
+            
+            // Nur wenn WiFi aktiv
+            if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                android.util.Log.d(TAG, "⚠️ Not on WiFi, using default routing")
+                return null
+            }
+            
+            android.util.Log.d(TAG, "✅ Network is WiFi, searching for interface...")
+            
+            // Finde WiFi Interface
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                
+                android.util.Log.d(TAG, "    Checking interface: ${iface.name}, isUp=${iface.isUp}")
+                
+                // WiFi Interfaces: wlan0, wlan1, etc.
+                if (!iface.name.startsWith("wlan")) continue
+                if (!iface.isUp) continue
+                
+                val addresses = iface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    
+                    android.util.Log.d(TAG, "        Address: ${addr.hostAddress}, IPv4=${addr is Inet4Address}, loopback=${addr.isLoopbackAddress}, linkLocal=${addr.isLinkLocalAddress}")
+                    
+                    // Nur IPv4, nicht loopback, nicht link-local
+                    if (addr is Inet4Address && !addr.isLoopbackAddress && !addr.isLinkLocalAddress) {
+                        android.util.Log.d(TAG, "✅ Found WiFi IP: ${addr.hostAddress} on ${iface.name}")
+                        return addr
+                    }
+                }
+            }
+            
+            android.util.Log.w(TAG, "⚠️ No WiFi interface found, using default routing")
+            return null
+            
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "❌ Failed to get WiFi interface", e)
+            return null
+        }
+    }
+    
+    /**
+     * Custom SocketFactory die an WiFi-IP bindet (VPN Fix)
+     */
+    private inner class WiFiSocketFactory(private val wifiAddress: InetAddress) : SocketFactory() {
+        override fun createSocket(): Socket {
+            val socket = Socket()
+            socket.bind(InetSocketAddress(wifiAddress, 0))
+            android.util.Log.d(TAG, "🔌 Socket bound to WiFi IP: ${wifiAddress.hostAddress}")
+            return socket
+        }
+        
+        override fun createSocket(host: String, port: Int): Socket {
+            val socket = createSocket()
+            socket.connect(InetSocketAddress(host, port))
+            return socket
+        }
+        
+        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket {
+            return createSocket(host, port)
+        }
+        
+        override fun createSocket(host: InetAddress, port: Int): Socket {
+            val socket = createSocket()
+            socket.connect(InetSocketAddress(host, port))
+            return socket
+        }
+        
+        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket {
+            return createSocket(address, port)
+        }
+    }
     
     private fun getSardine(): Sardine? {
         val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
         val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
         
-        // Einfach standard OkHttpSardine - funktioniert im manuellen Sync!
-        android.util.Log.d(TAG, "🔧 Creating OkHttpSardine")
+        android.util.Log.d(TAG, "🔧 Creating OkHttpSardine with WiFi binding")
+        android.util.Log.d(TAG, "    Context: ${context.javaClass.simpleName}")
         
-        return OkHttpSardine().apply {
+        // Versuche WiFi-IP zu finden
+        val wifiAddress = getWiFiInetAddress()
+        
+        val okHttpClient = if (wifiAddress != null) {
+            android.util.Log.d(TAG, "✅ Using WiFi-bound socket factory")
+            OkHttpClient.Builder()
+                .socketFactory(WiFiSocketFactory(wifiAddress))
+                .build()
+        } else {
+            android.util.Log.d(TAG, "⚠️ Using default OkHttpClient (no WiFi binding)")
+            OkHttpClient.Builder().build()
+        }
+        
+        return OkHttpSardine(okHttpClient).apply {
             setCredentials(username, password)
         }
     }
@@ -83,11 +227,22 @@ class WebDavSyncService(private val context: Context) {
     }
     
     suspend fun syncNotes(): SyncResult = withContext(Dispatchers.IO) {
-        android.util.Log.d(TAG, "🔄 syncNotes() called")
+        android.util.Log.d(TAG, "═══════════════════════════════════════")
+        android.util.Log.d(TAG, "🔄 syncNotes() ENTRY")
         android.util.Log.d(TAG, "Context: ${context.javaClass.simpleName}")
+        android.util.Log.d(TAG, "Thread: ${Thread.currentThread().name}")
         
         return@withContext try {
-            val sardine = getSardine()
+            android.util.Log.d(TAG, "📍 Step 1: Getting Sardine client")
+            
+            val sardine = try {
+                getSardine()
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "💥 CRASH in getSardine()!", e)
+                e.printStackTrace()
+                throw e
+            }
+            
             if (sardine == null) {
                 android.util.Log.e(TAG, "❌ Sardine is null - credentials missing")
                 return@withContext SyncResult(
@@ -95,7 +250,9 @@ class WebDavSyncService(private val context: Context) {
                     errorMessage = "Server-Zugangsdaten nicht konfiguriert"
                 )
             }
+            android.util.Log.d(TAG, "    ✅ Sardine client created")
             
+            android.util.Log.d(TAG, "📍 Step 2: Getting server URL")
             val serverUrl = getServerUrl()
             if (serverUrl == null) {
                 android.util.Log.e(TAG, "❌ Server URL is null")
@@ -111,30 +268,61 @@ class WebDavSyncService(private val context: Context) {
             var syncedCount = 0
             var conflictCount = 0
             
+            android.util.Log.d(TAG, "📍 Step 3: Checking server directory")
             // Ensure server directory exists
-            android.util.Log.d(TAG, "🔍 Checking if server directory exists...")
-            if (!sardine.exists(serverUrl)) {
-                android.util.Log.d(TAG, "📁 Creating server directory...")
-                sardine.createDirectory(serverUrl)
+            try {
+                android.util.Log.d(TAG, "🔍 Checking if server directory exists...")
+                if (!sardine.exists(serverUrl)) {
+                    android.util.Log.d(TAG, "📁 Creating server directory...")
+                    sardine.createDirectory(serverUrl)
+                }
+                android.util.Log.d(TAG, "    ✅ Server directory ready")
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "💥 CRASH checking/creating server directory!", e)
+                e.printStackTrace()
+                throw e
             }
             
+            android.util.Log.d(TAG, "📍 Step 4: Uploading local notes")
             // Upload local notes
-            android.util.Log.d(TAG, "⬆️ Uploading local notes...")
-            val uploadedCount = uploadLocalNotes(sardine, serverUrl)
-            syncedCount += uploadedCount
-            android.util.Log.d(TAG, "✅ Uploaded: $uploadedCount notes")
+            try {
+                android.util.Log.d(TAG, "⬆️ Uploading local notes...")
+                val uploadedCount = uploadLocalNotes(sardine, serverUrl)
+                syncedCount += uploadedCount
+                android.util.Log.d(TAG, "✅ Uploaded: $uploadedCount notes")
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "💥 CRASH in uploadLocalNotes()!", e)
+                e.printStackTrace()
+                throw e
+            }
             
+            android.util.Log.d(TAG, "📍 Step 5: Downloading remote notes")
             // Download remote notes
-            android.util.Log.d(TAG, "⬇️ Downloading remote notes...")
-            val downloadResult = downloadRemoteNotes(sardine, serverUrl)
-            syncedCount += downloadResult.downloadedCount
-            conflictCount += downloadResult.conflictCount
-            android.util.Log.d(TAG, "✅ Downloaded: ${downloadResult.downloadedCount} notes, Conflicts: ${downloadResult.conflictCount}")
+            try {
+                android.util.Log.d(TAG, "⬇️ Downloading remote notes...")
+                val downloadResult = downloadRemoteNotes(sardine, serverUrl)
+                syncedCount += downloadResult.downloadedCount
+                conflictCount += downloadResult.conflictCount
+                android.util.Log.d(TAG, "✅ Downloaded: ${downloadResult.downloadedCount} notes, Conflicts: ${downloadResult.conflictCount}")
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "💥 CRASH in downloadRemoteNotes()!", e)
+                e.printStackTrace()
+                throw e
+            }
             
+            android.util.Log.d(TAG, "📍 Step 6: Saving sync timestamp")
             // Update last sync timestamp
-            saveLastSyncTimestamp()
+            try {
+                saveLastSyncTimestamp()
+                android.util.Log.d(TAG, "    ✅ Timestamp saved")
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "💥 CRASH saving timestamp!", e)
+                e.printStackTrace()
+                // Non-fatal, continue
+            }
             
             android.util.Log.d(TAG, "🎉 Sync completed successfully - Total synced: $syncedCount")
+            android.util.Log.d(TAG, "═══════════════════════════════════════")
             
             SyncResult(
                 isSuccess = true,
@@ -143,8 +331,13 @@ class WebDavSyncService(private val context: Context) {
             )
             
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "💥 Sync exception: ${e.message}", e)
+            android.util.Log.e(TAG, "═══════════════════════════════════════")
+            android.util.Log.e(TAG, "💥💥💥 FATAL EXCEPTION in syncNotes() 💥💥💥")
             android.util.Log.e(TAG, "Exception type: ${e.javaClass.name}")
+            android.util.Log.e(TAG, "Exception message: ${e.message}")
+            android.util.Log.e(TAG, "Stack trace:")
+            e.printStackTrace()
+            android.util.Log.e(TAG, "═══════════════════════════════════════")
             
             SyncResult(
                 isSuccess = false,

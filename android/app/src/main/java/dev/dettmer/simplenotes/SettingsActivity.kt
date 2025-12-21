@@ -51,7 +51,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var buttonSyncNow: Button
     private lateinit var buttonRestoreFromServer: Button
     private lateinit var buttonShareLogs: Button
-    private lateinit var buttonTestWifiConnect: Button
     private lateinit var textViewServerStatus: TextView
     private lateinit var chipAutoSaveStatus: Chip
     
@@ -92,7 +91,6 @@ class SettingsActivity : AppCompatActivity() {
         buttonSyncNow = findViewById(R.id.buttonSyncNow)
         buttonRestoreFromServer = findViewById(R.id.buttonRestoreFromServer)
         buttonShareLogs = findViewById(R.id.buttonShareLogs)
-        buttonTestWifiConnect = findViewById(R.id.buttonTestWifiConnect)
         textViewServerStatus = findViewById(R.id.textViewServerStatus)
         chipAutoSaveStatus = findViewById(R.id.chipAutoSaveStatus)
     }
@@ -143,10 +141,6 @@ class SettingsActivity : AppCompatActivity() {
         
         buttonShareLogs.setOnClickListener {
             shareLogs()
-        }
-        
-        buttonTestWifiConnect.setOnClickListener {
-            testWifiConnectBroadcast()
         }
         
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
@@ -401,19 +395,6 @@ class SettingsActivity : AppCompatActivity() {
                 checkServerStatus()
             }
         }
-    }
-    
-    /**
-     * Testet WiFi-Connect Broadcast manuell
-     */
-    private fun testWifiConnectBroadcast() {
-        Logger.d(TAG, "🧪🧪🧪 TEST: Manually triggering WiFi-Connect broadcast")
-        
-        val intent = Intent(NetworkMonitor.ACTION_WIFI_CONNECTED)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-        
-        Logger.d(TAG, "✅ Test broadcast sent")
-        showToast("🧪 Test-Broadcast gesendet - check Logs!")
     }
     
     /**

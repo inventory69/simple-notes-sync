@@ -24,7 +24,6 @@ import com.google.android.material.card.MaterialCardView
 import dev.dettmer.simplenotes.adapters.NotesAdapter
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncWorker
-import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.showToast
 import dev.dettmer.simplenotes.utils.Constants
@@ -76,19 +75,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    /**
-     * BroadcastReceiver für WiFi-Connect Auto-Sync
-     */
-    private val wifiConnectedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            Logger.d(TAG, "📶📶📶 WiFi-Connect broadcast RECEIVED in MainActivity!")
-            Logger.d(TAG, "    Intent action: ${intent?.action}")
-            Logger.d(TAG, "    Expected: ${NetworkMonitor.ACTION_WIFI_CONNECTED}")
-            Logger.d(TAG, "    Triggering direct sync...")
-            triggerAutoSync("wifi-connect")
-        }
-    }
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen (Android 12+)
         installSplashScreen()
@@ -129,13 +115,7 @@ class MainActivity : AppCompatActivity() {
             IntentFilter(SyncWorker.ACTION_SYNC_COMPLETED)
         )
         
-        // Register BroadcastReceiver für WiFi-Connect
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            wifiConnectedReceiver,
-            IntentFilter(NetworkMonitor.ACTION_WIFI_CONNECTED)
-        )
-        
-        Logger.d(TAG, "📡 BroadcastReceivers registered (sync-completed + wifi-connected)")
+        Logger.d(TAG, "📡 BroadcastReceiver registered (sync-completed)")
         
         // Reload notes
         loadNotes()
@@ -145,11 +125,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * Automatischer Sync (onResume & WiFi-Connect)
-     * - onResume: Nur Success-Toast (kein "Auto-Sync..." Toast)
-     * - wifi-connect: Notification (wie Periodic Sync)
+     * Automatischer Sync (onResume)
+     * - Nutzt WiFi-gebundenen Socket (VPN Fix!)
+     * - Nur Success-Toast (kein "Auto-Sync..." Toast)
      * 
-     * @param source "onResume" oder "wifi-connect"
+     * NOTE: WiFi-Connect Sync nutzt WorkManager (auch wenn App geschlossen!)
      */
     private fun triggerAutoSync(source: String = "unknown") {
         // Throttling: Max 1 Sync pro Minute
@@ -174,20 +154,8 @@ class MainActivity : AppCompatActivity() {
                 if (result.isSuccess && result.syncedCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
                     
-                    when (source) {
-                        "onResume" -> {
-                            // Nur Success-Toast
-                            showToast("✅ Gesynct: ${result.syncedCount} Notizen")
-                        }
-                        "wifi-connect" -> {
-                            // Notification (wie Periodic Sync)
-                            NotificationHelper.showSyncSuccess(
-                                this@MainActivity,
-                                result.syncedCount
-                            )
-                        }
-                    }
-                    
+                    // onResume: Nur Success-Toast
+                    showToast("✅ Gesynct: ${result.syncedCount} Notizen")
                     loadNotes()
                     
                 } else if (result.isSuccess) {
@@ -195,18 +163,7 @@ class MainActivity : AppCompatActivity() {
                     
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
-                    
-                    when (source) {
-                        "onResume" -> {
-                            showToast("❌ Sync-Fehler: ${result.errorMessage}")
-                        }
-                        "wifi-connect" -> {
-                            NotificationHelper.showSyncError(
-                                this@MainActivity,
-                                result.errorMessage ?: "Unbekannter Fehler"
-                            )
-                        }
-                    }
+                    showToast("❌ Sync-Fehler: ${result.errorMessage}")
                 }
                 
             } catch (e: Exception) {
@@ -236,10 +193,9 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         
-        // Unregister BroadcastReceivers
+        // Unregister BroadcastReceiver
         LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(wifiConnectedReceiver)
-        Logger.d(TAG, "📡 BroadcastReceivers unregistered")
+        Logger.d(TAG, "📡 BroadcastReceiver unregistered")
     }
     
     private fun findViews() {

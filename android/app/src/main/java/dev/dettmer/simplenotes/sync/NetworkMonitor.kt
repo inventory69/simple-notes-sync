@@ -1,12 +1,10 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.*
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -14,15 +12,14 @@ import java.util.concurrent.TimeUnit
 
 /**
  * NetworkMonitor: Verwaltet Auto-Sync
- * - Periodic WorkManager für Auto-Sync alle 30min (funktioniert zuverlässig)
- * - NetworkCallback für WiFi-Connect Detection → Broadcast an MainActivity (direkter Sync!)
+ * - Periodic WorkManager für Auto-Sync alle 30min
+ * - NetworkCallback für WiFi-Connect Detection → WorkManager OneTime Sync
  */
 class NetworkMonitor(private val context: Context) {
     
     companion object {
         private const val TAG = "NetworkMonitor"
         private const val AUTO_SYNC_WORK_NAME = "auto_sync_periodic"
-        const val ACTION_WIFI_CONNECTED = "dev.dettmer.simplenotes.WIFI_CONNECTED"
     }
     
     private val prefs by lazy {
@@ -33,9 +30,13 @@ class NetworkMonitor(private val context: Context) {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
     
+    // 🔥 Track last connected network ID to detect network changes (SSID wechsel, WiFi an/aus)
+    // null = kein Netzwerk, sonst Network.toString() als eindeutiger Identifier
+    private var lastConnectedNetworkId: String? = null
+    
     /**
-     * NetworkCallback: Erkennt WiFi-Verbindung und sendet Broadcast an MainActivity
-     * (KEIN WorkManager - der nutzt VPN IP statt WiFi!)
+     * NetworkCallback: Erkennt WiFi-Verbindung und triggert WorkManager
+     * WorkManager funktioniert auch wenn App geschlossen ist!
      */
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -50,37 +51,77 @@ class NetworkMonitor(private val context: Context) {
             Logger.d(TAG, "    Is WiFi: $isWifi")
             
             if (isWifi) {
-                Logger.d(TAG, "📶 WiFi connected detected!")
+                val currentNetworkId = network.toString()
+                Logger.d(TAG, "📶 WiFi network connected: $currentNetworkId")
                 
-                // Auto-Sync check
-                val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
-                Logger.d(TAG, "    Auto-Sync enabled: $autoSyncEnabled")
+                // 🔥 Trigger bei:
+                // 1. WiFi aus -> WiFi an (lastConnectedNetworkId == null)
+                // 2. SSID-Wechsel (lastConnectedNetworkId != currentNetworkId)
+                // NICHT triggern bei: App-Restart mit gleichem WiFi
                 
-                if (autoSyncEnabled) {
-                    Logger.d(TAG, "    ✅ Triggering broadcast...")
-                    broadcastWifiConnected()
+                if (lastConnectedNetworkId != currentNetworkId) {
+                    if (lastConnectedNetworkId == null) {
+                        Logger.d(TAG, "    🎯 WiFi state changed: OFF -> ON (network: $currentNetworkId)")
+                    } else {
+                        Logger.d(TAG, "    🎯 WiFi network changed: $lastConnectedNetworkId -> $currentNetworkId")
+                    }
+                    
+                    lastConnectedNetworkId = currentNetworkId
+                    
+                    // Auto-Sync check
+                    val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+                    Logger.d(TAG, "    Auto-Sync enabled: $autoSyncEnabled")
+                    
+                    if (autoSyncEnabled) {
+                        Logger.d(TAG, "    ✅ Triggering WorkManager...")
+                        triggerWifiConnectSync()
+                    } else {
+                        Logger.d(TAG, "    ❌ Auto-sync disabled - not triggering")
+                    }
                 } else {
-                    Logger.d(TAG, "    ❌ Auto-sync disabled - not broadcasting")
+                    Logger.d(TAG, "    ⚠️ Same WiFi network as before - ignoring (no network change)")
                 }
             } else {
                 Logger.d(TAG, "    ⚠️ Not WiFi - ignoring")
             }
         }
+        
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            
+            val lostNetworkId = network.toString()
+            Logger.d(TAG, "🔴 NetworkCallback.onLost() - Network disconnected: $lostNetworkId")
+            
+            if (lastConnectedNetworkId == lostNetworkId) {
+                Logger.d(TAG, "    Last WiFi network lost - resetting state")
+                lastConnectedNetworkId = null
+            }
+        }
     }
     
     /**
-     * Sendet Broadcast an MainActivity für direkten Sync
-     * (Direkter Sync nutzt richtiges WiFi-Interface, WorkManager nutzt VPN!)
+     * Triggert WiFi-Connect Sync via WorkManager
+     * WorkManager wacht App auf (funktioniert auch wenn App geschlossen!)
      */
-    private fun broadcastWifiConnected() {
-        Logger.d(TAG, "📡📡📡 Broadcasting WiFi-Connect to MainActivity")
-        Logger.d(TAG, "    Action: $ACTION_WIFI_CONNECTED")
-        Logger.d(TAG, "    Package: ${context.packageName}")
+    private fun triggerWifiConnectSync() {
+        Logger.d(TAG, "📡 Scheduling WiFi-Connect sync via WorkManager")
         
-        val intent = Intent(ACTION_WIFI_CONNECTED)
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+        // 🔥 WICHTIG: NetworkType.UNMETERED constraint!
+        // Ohne Constraint könnte WorkManager den Job auf Cellular ausführen
+        // (z.B. wenn WiFi disconnected bevor Job startet)
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED)  // WiFi only!
+            .build()
         
-        Logger.d(TAG, "✅✅✅ WiFi-Connect broadcast SENT via LocalBroadcastManager")
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setConstraints(constraints)  // 🔥 Constraints hinzugefügt
+            .addTag(Constants.SYNC_WORK_TAG)
+            .addTag("wifi-connect")
+            .build()
+        
+        WorkManager.getInstance(context).enqueue(syncRequest)
+        Logger.d(TAG, "✅ WiFi-Connect sync scheduled (WIFI ONLY, WorkManager will wake app if needed)")
     }
     
     /**
@@ -147,8 +188,45 @@ class NetworkMonitor(private val context: Context) {
             Logger.d(TAG, "✅✅✅ WiFi NetworkCallback registered successfully")
             Logger.d(TAG, "    Callback will trigger on WiFi connect/disconnect")
             
+            // 🔥 FIX: Initialisiere wasWifiConnected State beim Start
+            // onAvailable() wird nur bei NEUEN Verbindungen getriggert!
+            initializeWifiState()
+            
         } catch (e: Exception) {
             Logger.e(TAG, "❌❌❌ Failed to register NetworkCallback", e)
+        }
+    }
+    
+    /**
+     * Initialisiert lastConnectedNetworkId beim App-Start
+     * Wichtig damit wir echte Netzwerk-Wechsel von App-Restarts unterscheiden können
+     */
+    private fun initializeWifiState() {
+        try {
+            Logger.d(TAG, "🔍 Initializing WiFi state...")
+            
+            val activeNetwork = connectivityManager.activeNetwork
+            if (activeNetwork == null) {
+                Logger.d(TAG, "    ❌ No active network - lastConnectedNetworkId = null")
+                lastConnectedNetworkId = null
+                return
+            }
+            
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+            val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            
+            if (isWifi) {
+                lastConnectedNetworkId = activeNetwork.toString()
+                Logger.d(TAG, "    ✅ Initial WiFi network: $lastConnectedNetworkId")
+                Logger.d(TAG, "    📡 WiFi already connected at startup - onAvailable() will only trigger on network change")
+            } else {
+                lastConnectedNetworkId = null
+                Logger.d(TAG, "    ⚠️ Not on WiFi at startup")
+            }
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "❌ Error initializing WiFi state", e)
+            lastConnectedNetworkId = null
         }
     }
     

@@ -361,16 +361,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="📤 Logs teilen"
-                        android:layout_marginBottom="8dp"
                         style="@style/Widget.Material3.Button.TonalButton" />
-
-                    <!-- Test WiFi-Connect Button -->
-                    <Button
-                        android:id="@+id/buttonTestWifiConnect"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="🧪 Test WiFi-Connect Broadcast"
-                        style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 </LinearLayout>
 
