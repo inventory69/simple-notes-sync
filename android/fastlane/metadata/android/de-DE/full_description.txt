@@ -1,0 +1,33 @@
+Simple Notes Sync ist eine minimalistische Notizen-App mit WebDAV-Synchronisation.
+
+HAUPTFUNKTIONEN:
+
+• Einfache Notizen erstellen und bearbeiten
+• WebDAV-Synchronisation mit eigenem Server
+• Automatische Synchronisation im Heim-WLAN
+• Material Design 3 mit Dynamic Colors (Android 12+)
+• Swipe-to-Delete mit Bestätigungsdialog
+• Server-Backup & Wiederherstellung
+• Komplett offline nutzbar
+• Keine Werbung, keine Tracker
+
+DATENSCHUTZ:
+
+Deine Daten bleiben bei dir! Die App kommuniziert nur mit deinem eigenen WebDAV-Server. Keine Cloud-Dienste, keine Tracking-Bibliotheken, keine Analysetools.
+
+SYNCHRONISATION:
+
+• Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
+• Automatische Sync alle 30 Minuten im Heim-WLAN
+• Manuelle Synchronisation jederzeit möglich
+• Konfliktfreie Zusammenführung durch Timestamps
+
+MATERIAL DESIGN 3:
+
+• Moderne Benutzeroberfläche
+• Dynamic Colors (Material You) auf Android 12+
+• Dark Mode Support
+• Intuitive Gesten (Swipe-to-Delete)
+
+Open Source unter MIT-Lizenz
+Quellcode: https://github.com/DettmerLabs/simple-notes-sync

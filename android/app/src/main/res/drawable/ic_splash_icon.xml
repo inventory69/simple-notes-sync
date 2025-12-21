@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple Note Icon for Splash Screen -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M32,24h44c4.4,0 8,3.6 8,8v44c0,4.4 -3.6,8 -8,8H32c-4.4,0 -8,-3.6 -8,-8V32c0,-4.4 3.6,-8 8,-8zM40,40v6h28v-6H40zM40,52v6h28v-6H40zM40,64v6h20v-6H40z"/>
+</vector>

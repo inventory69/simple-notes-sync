@@ -253,4 +253,95 @@ class WebDavSyncService(private val context: Context) {
     fun getLastSyncTimestamp(): Long {
         return prefs.getLong(Constants.KEY_LAST_SYNC, 0)
     }
+    
+    /**
+     * Restore all notes from server - overwrites local storage
+     * @return RestoreResult with count of restored notes
+     */
+    suspend fun restoreFromServer(): RestoreResult = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val sardine = getSardine() ?: return@withContext RestoreResult(
+                isSuccess = false,
+                errorMessage = "Server-Zugangsdaten nicht konfiguriert",
+                restoredCount = 0
+            )
+            
+            val serverUrl = getServerUrl() ?: return@withContext RestoreResult(
+                isSuccess = false,
+                errorMessage = "Server-URL nicht konfiguriert",
+                restoredCount = 0
+            )
+            
+            Logger.d(TAG, "🔄 Starting restore from server...")
+            
+            // List all files on server
+            val resources = sardine.list(serverUrl)
+            val jsonFiles = resources.filter { 
+                !it.isDirectory && it.name.endsWith(".json")
+            }
+            
+            Logger.d(TAG, "📂 Found ${jsonFiles.size} files on server")
+            
+            val restoredNotes = mutableListOf<Note>()
+            
+            // Download and parse each file
+            for (resource in jsonFiles) {
+                try {
+                    val fileUrl = serverUrl.trimEnd('/') + "/" + resource.name
+                    val content = sardine.get(fileUrl).bufferedReader().use { it.readText() }
+                    
+                    val note = Note.fromJson(content)
+                    if (note != null) {
+                        restoredNotes.add(note)
+                        Logger.d(TAG, "✅ Downloaded: ${note.title}")
+                    } else {
+                        Logger.e(TAG, "❌ Failed to parse ${resource.name}: Note.fromJson returned null")
+                    }
+                } catch (e: Exception) {
+                    Logger.e(TAG, "❌ Failed to download ${resource.name}", e)
+                    // Continue with other files
+                }
+            }
+            
+            if (restoredNotes.isEmpty()) {
+                return@withContext RestoreResult(
+                    isSuccess = false,
+                    errorMessage = "Keine Notizen auf Server gefunden",
+                    restoredCount = 0
+                )
+            }
+            
+            // Clear local storage
+            Logger.d(TAG, "🗑️ Clearing local storage...")
+            storage.deleteAllNotes()
+            
+            // Save all restored notes
+            Logger.d(TAG, "💾 Saving ${restoredNotes.size} notes...")
+            restoredNotes.forEach { note ->
+                storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
+            }
+            
+            Logger.d(TAG, "✅ Restore completed: ${restoredNotes.size} notes")
+            
+            RestoreResult(
+                isSuccess = true,
+                errorMessage = null,
+                restoredCount = restoredNotes.size
+            )
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "❌ Restore failed", e)
+            RestoreResult(
+                isSuccess = false,
+                errorMessage = e.message ?: "Unbekannter Fehler",
+                restoredCount = 0
+            )
+        }
+    }
 }
+
+data class RestoreResult(
+    val isSuccess: Boolean,
+    val errorMessage: String?,
+    val restoredCount: Int
+)

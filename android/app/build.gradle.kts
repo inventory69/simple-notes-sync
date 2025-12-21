@@ -29,6 +29,21 @@ android {
             isUniversalApk = true  // Also generate universal APK
         }
     }
+    
+    // Product Flavors for F-Droid and standard builds
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("fdroid") {
+            dimension = "distribution"
+            // F-Droid builds have no proprietary dependencies
+            // All dependencies in this project are already FOSS-compatible
+        }
+        
+        create("standard") {
+            dimension = "distribution"
+            // Standard builds can include Play Services in the future if needed
+        }
+    }
 
     // Signing configuration for release builds
     signingConfigs {
@@ -85,6 +100,9 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+
+    // Splash Screen API (Android 12+)
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Unsere Dependencies (DIREKT mit Versionen - viel einfacher!)
     implementation("com.github.thegrizzlylabs:sardine-android:0.8") {
