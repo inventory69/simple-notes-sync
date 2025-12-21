@@ -8,9 +8,7 @@ import java.io.FileInputStream
 
 android {
     namespace = "dev.dettmer.simplenotes"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.dettmer.simplenotes"
@@ -20,15 +18,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
-        // Enable multiple APKs per ABI for smaller downloads
-        splits {
-            abi {
-                isEnable = true
-                reset()
-                include("armeabi-v7a", "arm64-v8a")
-                isUniversalApk = true  // Also generate universal APK
-            }
+    }
+    
+    // Enable multiple APKs per ABI for smaller downloads
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a")
+            isUniversalApk = true  // Also generate universal APK
         }
     }
 
