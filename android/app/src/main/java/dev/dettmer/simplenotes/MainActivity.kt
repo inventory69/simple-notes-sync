@@ -13,39 +13,52 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.color.DynamicColors
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.card.MaterialCardView
 import dev.dettmer.simplenotes.adapters.NotesAdapter
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.showToast
+import dev.dettmer.simplenotes.utils.Constants
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : AppCompatActivity() {
     
     private lateinit var recyclerViewNotes: RecyclerView
-    private lateinit var textViewEmpty: TextView
+    private lateinit var emptyStateCard: MaterialCardView
     private lateinit var fabAddNote: FloatingActionButton
     private lateinit var toolbar: MaterialToolbar
     
     private lateinit var adapter: NotesAdapter
     private val storage by lazy { NotesStorage(this) }
     
+    private val prefs by lazy {
+        getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    }
+    
     companion object {
         private const val TAG = "MainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
+        private const val REQUEST_SETTINGS = 1002
+        private const val MIN_AUTO_SYNC_INTERVAL_MS = 60_000L // 1 Minute
+        private const val PREF_LAST_AUTO_SYNC_TIME = "last_auto_sync_timestamp"
     }
     
     /**
-     * BroadcastReceiver für Background-Sync Completion
+     * BroadcastReceiver für Background-Sync Completion (Periodic Sync)
      */
     private val syncCompletedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -63,8 +76,20 @@ class MainActivity : AppCompatActivity() {
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install Splash Screen (Android 12+)
+        installSplashScreen()
+        
         super.onCreate(savedInstanceState)
+        
+        // Apply Dynamic Colors for Android 12+ (Material You)
+        DynamicColors.applyToActivityIfAvailable(this)
+        
         setContentView(R.layout.activity_main)
+        
+        // File Logging aktivieren wenn eingestellt
+        if (prefs.getBoolean("file_logging_enabled", false)) {
+            Logger.enableFileLogging(this)
+        }
         
         // Permission für Notifications (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -82,14 +107,87 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         
+        Logger.d(TAG, "📱 MainActivity.onResume() - Registering receivers")
+        
         // Register BroadcastReceiver für Background-Sync
         LocalBroadcastManager.getInstance(this).registerReceiver(
             syncCompletedReceiver,
             IntentFilter(SyncWorker.ACTION_SYNC_COMPLETED)
         )
-        Logger.d(TAG, "📡 BroadcastReceiver registered")
         
+        Logger.d(TAG, "📡 BroadcastReceiver registered (sync-completed)")
+        
+        // Reload notes
         loadNotes()
+        
+        // Trigger Auto-Sync beim App-Wechsel in Vordergrund (Toast)
+        triggerAutoSync("onResume")
+    }
+    
+    /**
+     * Automatischer Sync (onResume)
+     * - Nutzt WiFi-gebundenen Socket (VPN Fix!)
+     * - Nur Success-Toast (kein "Auto-Sync..." Toast)
+     * 
+     * NOTE: WiFi-Connect Sync nutzt WorkManager (auch wenn App geschlossen!)
+     */
+    private fun triggerAutoSync(source: String = "unknown") {
+        // Throttling: Max 1 Sync pro Minute
+        if (!canTriggerAutoSync()) {
+            return
+        }
+        
+        Logger.d(TAG, "🔄 Auto-sync triggered ($source)")
+        
+        // Update last sync timestamp
+        prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()
+        
+        // GLEICHER Sync-Code wie manueller Sync (funktioniert!)
+        lifecycleScope.launch {
+            try {
+                val syncService = WebDavSyncService(this@MainActivity)
+                val result = withContext(Dispatchers.IO) {
+                    syncService.syncNotes()
+                }
+                
+                // Feedback abhängig von Source
+                if (result.isSuccess && result.syncedCount > 0) {
+                    Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
+                    
+                    // onResume: Nur Success-Toast
+                    showToast("✅ Gesynct: ${result.syncedCount} Notizen")
+                    loadNotes()
+                    
+                } else if (result.isSuccess) {
+                    Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
+                    
+                } else {
+                    Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
+                    // Kein Toast - App ist im Hintergrund
+                }
+                
+            } catch (e: Exception) {
+                Logger.e(TAG, "💥 Auto-sync exception ($source): ${e.message}")
+                // Kein Toast - App ist im Hintergrund
+            }
+        }
+    }
+    
+    /**
+     * Prüft ob Auto-Sync getriggert werden darf (Throttling)
+     */
+    private fun canTriggerAutoSync(): Boolean {
+        val lastSyncTime = prefs.getLong(PREF_LAST_AUTO_SYNC_TIME, 0)
+        val now = System.currentTimeMillis()
+        val timeSinceLastSync = now - lastSyncTime
+        
+        if (timeSinceLastSync < MIN_AUTO_SYNC_INTERVAL_MS) {
+            val remainingSeconds = (MIN_AUTO_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
+            Logger.d(TAG, "⏳ Auto-sync throttled - wait ${remainingSeconds}s")
+            return false
+        }
+        
+        return true
     }
     
     override fun onPause() {
@@ -102,7 +200,7 @@ class MainActivity : AppCompatActivity() {
     
     private fun findViews() {
         recyclerViewNotes = findViewById(R.id.recyclerViewNotes)
-        textViewEmpty = findViewById(R.id.textViewEmpty)
+        emptyStateCard = findViewById(R.id.emptyStateCard)
         fabAddNote = findViewById(R.id.fabAddNote)
         toolbar = findViewById(R.id.toolbar)
     }
@@ -117,6 +215,57 @@ class MainActivity : AppCompatActivity() {
         }
         recyclerViewNotes.adapter = adapter
         recyclerViewNotes.layoutManager = LinearLayoutManager(this)
+        
+        // Setup Swipe-to-Delete
+        setupSwipeToDelete()
+    }
+    
+    private fun setupSwipeToDelete() {
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            0, // No drag
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT // Swipe left or right
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+            
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val note = adapter.currentList[position]
+                val notesCopy = adapter.currentList.toMutableList()
+                
+                // Remove from list immediately for visual feedback
+                notesCopy.removeAt(position)
+                adapter.submitList(notesCopy)
+                
+                // Show Snackbar with UNDO
+                Snackbar.make(
+                    recyclerViewNotes,
+                    "Notiz gelöscht",
+                    Snackbar.LENGTH_LONG
+                ).setAction("RÜCKGÄNGIG") {
+                    // UNDO: Restore note in list
+                    loadNotes()
+                }.addCallback(object : Snackbar.Callback() {
+                    override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                        if (event != DISMISS_EVENT_ACTION) {
+                            // Snackbar dismissed without UNDO → Actually delete the note
+                            storage.deleteNote(note.id)
+                            loadNotes()
+                        }
+                    }
+                }).show()
+            }
+            
+            override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
+                // Require 80% swipe to trigger
+                return 0.8f
+            }
+        })
+        
+        itemTouchHelper.attachToRecyclerView(recyclerViewNotes)
     }
     
     private fun setupFab() {
@@ -129,8 +278,8 @@ class MainActivity : AppCompatActivity() {
         val notes = storage.loadAllNotes()
         adapter.submitList(notes)
         
-        // Empty state
-        textViewEmpty.visibility = if (notes.isEmpty()) {
+        // Material 3 Empty State Card
+        emptyStateCard.visibility = if (notes.isEmpty()) {
             android.view.View.VISIBLE
         } else {
             android.view.View.GONE
@@ -146,7 +295,9 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun openSettings() {
-        startActivity(Intent(this, SettingsActivity::class.java))
+        val intent = Intent(this, SettingsActivity::class.java)
+        @Suppress("DEPRECATION")
+        startActivityForResult(intent, REQUEST_SETTINGS)
     }
     
     private fun triggerManualSync() {
@@ -202,6 +353,16 @@ class MainActivity : AppCompatActivity() {
                     REQUEST_NOTIFICATION_PERMISSION
                 )
             }
+        }
+    }
+    
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == REQUEST_SETTINGS && resultCode == RESULT_OK) {
+            // Restore was successful, reload notes
+            loadNotes()
         }
     }
     

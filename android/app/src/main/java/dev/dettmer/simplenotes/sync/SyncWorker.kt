@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import kotlinx.coroutines.Dispatchers
@@ -21,25 +22,72 @@ class SyncWorker(
     }
     
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        Logger.d(TAG, "🔄 SyncWorker started")
-        Logger.d(TAG, "Context: ${applicationContext.javaClass.simpleName}")
-        Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
+        if (BuildConfig.DEBUG) {
+            Logger.d(TAG, "═══════════════════════════════════════")
+            Logger.d(TAG, "🔄 SyncWorker.doWork() ENTRY")
+            Logger.d(TAG, "Context: ${applicationContext.javaClass.simpleName}")
+            Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
+            Logger.d(TAG, "RunAttempt: $runAttemptCount")
+        }
         
         return@withContext try {
-            // Start sync (kein "in progress" notification mehr)
-            val syncService = WebDavSyncService(applicationContext)
-            Logger.d(TAG, "🚀 Starting sync...")
-            Logger.d(TAG, "📊 Attempt: ${runAttemptCount}")
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 1: Before WebDavSyncService creation")
+            }
             
-            val result = syncService.syncNotes()
+            // Try-catch um Service-Creation
+            val syncService = try {
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "    Creating WebDavSyncService with applicationContext...")
+                }
+                WebDavSyncService(applicationContext).also {
+                    if (BuildConfig.DEBUG) {
+                        Logger.d(TAG, "    ✅ WebDavSyncService created successfully")
+                    }
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "💥 CRASH in WebDavSyncService constructor!", e)
+                Logger.e(TAG, "Exception: ${e.javaClass.name}: ${e.message}")
+                throw e
+            }
             
-            Logger.d(TAG, "📦 Sync result: success=${result.isSuccess}, count=${result.syncedCount}, error=${result.errorMessage}")
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 2: Before syncNotes() call")
+                Logger.d(TAG, "    SyncService: $syncService")
+            }
+            
+            // Try-catch um syncNotes
+            val result = try {
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "    Calling syncService.syncNotes()...")
+                }
+                syncService.syncNotes().also {
+                    if (BuildConfig.DEBUG) {
+                        Logger.d(TAG, "    ✅ syncNotes() returned")
+                    }
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "💥 CRASH in syncNotes()!", e)
+                Logger.e(TAG, "Exception: ${e.javaClass.name}: ${e.message}")
+                throw e
+            }
+            
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 3: Processing result")
+                Logger.d(TAG, "📦 Sync result: success=${result.isSuccess}, count=${result.syncedCount}, error=${result.errorMessage}")
+            }
             
             if (result.isSuccess) {
-                Logger.d(TAG, "✅ Sync successful: ${result.syncedCount} notes")
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "📍 Step 4: Success path")
+                }
+                Logger.i(TAG, "✅ Sync successful: ${result.syncedCount} notes")
                 
                 // Nur Notification zeigen wenn tatsächlich etwas gesynct wurde
                 if (result.syncedCount > 0) {
+                    if (BuildConfig.DEBUG) {
+                        Logger.d(TAG, "    Showing success notification...")
+                    }
                     NotificationHelper.showSyncSuccess(
                         applicationContext,
                         result.syncedCount
@@ -49,10 +97,20 @@ class SyncWorker(
                 }
                 
                 // **UI REFRESH**: Broadcast für MainActivity
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "    Broadcasting sync completed...")
+                }
                 broadcastSyncCompleted(true, result.syncedCount)
                 
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
                 Result.success()
             } else {
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "📍 Step 4: Failure path")
+                }
                 Logger.e(TAG, "❌ Sync failed: ${result.errorMessage}")
                 NotificationHelper.showSyncError(
                     applicationContext,
@@ -62,19 +120,39 @@ class SyncWorker(
                 // Broadcast auch bei Fehler (damit UI refresht)
                 broadcastSyncCompleted(false, 0)
                 
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "❌ SyncWorker.doWork() FAILURE")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
                 Result.failure()
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "💥 Sync exception: ${e.message}", e)
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "═══════════════════════════════════════")
+            }
+            Logger.e(TAG, "💥💥💥 FATAL EXCEPTION in doWork() 💥💥💥")
             Logger.e(TAG, "Exception type: ${e.javaClass.name}")
+            Logger.e(TAG, "Exception message: ${e.message}")
             Logger.e(TAG, "Stack trace:", e)
-            NotificationHelper.showSyncError(
-                applicationContext,
-                e.message ?: "Unknown error"
-            )
             
-            broadcastSyncCompleted(false, 0)
+            try {
+                NotificationHelper.showSyncError(
+                    applicationContext,
+                    e.message ?: "Unknown error"
+                )
+            } catch (notifError: Exception) {
+                Logger.e(TAG, "Failed to show error notification", notifError)
+            }
             
+            try {
+                broadcastSyncCompleted(false, 0)
+            } catch (broadcastError: Exception) {
+                Logger.e(TAG, "Failed to broadcast", broadcastError)
+            }
+            
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "═══════════════════════════════════════")
+            }
             Result.failure()
         }
     }

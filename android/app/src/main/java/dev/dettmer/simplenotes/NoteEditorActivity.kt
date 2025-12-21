@@ -6,6 +6,7 @@ import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.color.DynamicColors
 import com.google.android.material.textfield.TextInputEditText
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -27,6 +28,10 @@ class NoteEditorActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Apply Dynamic Colors for Android 12+ (Material You)
+        DynamicColors.applyToActivityIfAvailable(this)
+        
         setContentView(R.layout.activity_editor)
         
         storage = NotesStorage(this)
@@ -89,7 +94,7 @@ class NoteEditorActivity : AppCompatActivity() {
         val content = editTextContent.text?.toString()?.trim() ?: ""
         
         if (title.isEmpty() && content.isEmpty()) {
-            showToast("Titel oder Inhalt darf nicht leer sein")
+            showToast("Notiz ist leer")
             return
         }
         

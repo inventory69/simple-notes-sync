@@ -5,31 +5,46 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="?attr/colorSurface"
     android:fitsSystemWindows="true">
 
+    <!-- Material 3 Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
+        android:elevation="0dp"
         app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel"
-        app:title="@string/edit_note" />
+        app:title="@string/edit_note"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
+    <!-- Material 3 Outlined TextInputLayout with 16dp corners -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:hint="@string/title"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusBottomEnd="16dp"
+        app:endIconMode="clear_text"
+        app:counterEnabled="true"
+        app:counterMaxLength="100">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editTextTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
-            android:maxLines="2" />
+            android:maxLines="2"
+            android:maxLength="100"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Material 3 Outlined TextInputLayout for Content -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -38,7 +53,14 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:hint="@string/content"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusBottomEnd="16dp"
+        app:endIconMode="clear_text"
+        app:counterEnabled="true"
+        app:counterMaxLength="10000">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editTextContent"
@@ -46,7 +68,9 @@
             android:layout_height="match_parent"
             android:gravity="top|start"
             android:inputType="textMultiLine"
-            android:scrollbars="vertical" />
+            android:scrollbars="vertical"
+            android:maxLength="10000"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

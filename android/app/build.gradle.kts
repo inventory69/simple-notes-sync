@@ -5,6 +5,9 @@ plugins {
 
 import java.util.Properties
 import java.io.FileInputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 android {
     namespace = "dev.dettmer.simplenotes"
@@ -14,10 +17,13 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2  // 🔥 F-Droid Release v1.1.0
+        versionName = "1.1.0"  // 🔥 Configurable Sync Interval + About Section
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // 🔥 NEU: Build Date für About Screen
+        buildConfigField("String", "BUILD_DATE", "\"${getBuildDate()}\"")
     }
     
     // Enable multiple APKs per ABI for smaller downloads
@@ -27,6 +33,21 @@ android {
             reset()
             include("armeabi-v7a", "arm64-v8a")
             isUniversalApk = true  // Also generate universal APK
+        }
+    }
+    
+    // Product Flavors for F-Droid and standard builds
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("fdroid") {
+            dimension = "distribution"
+            // F-Droid builds have no proprietary dependencies
+            // All dependencies in this project are already FOSS-compatible
+        }
+        
+        create("standard") {
+            dimension = "distribution"
+            // Standard builds can include Play Services in the future if needed
         }
     }
 
@@ -86,6 +107,9 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
+    // Splash Screen API (Android 12+)
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     // Unsere Dependencies (DIREKT mit Versionen - viel einfacher!)
     implementation("com.github.thegrizzlylabs:sardine-android:0.8") {
         exclude(group = "xpp3", module = "xpp3")
@@ -104,4 +128,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+// 🔥 NEU: Helper function für Build Date
+fun getBuildDate(): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    return dateFormat.format(Date())
 }

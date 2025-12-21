@@ -102,24 +102,24 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION_TAG }}
-          name: "📝 Simple Notes Sync v${{ env.VERSION_NAME }} (Production)"
+          name: "📝 Simple Notes Sync v${{ env.VERSION_NAME }} (Produktions-Release)"
           files: apk-output/*.apk
           draft: false
           prerelease: false
           generate_release_notes: false
           body: |
-            # 📝 Production Release: Simple Notes Sync v${{ env.VERSION_NAME }}
+            # 📝 Produktions-Release: Simple Notes Sync v${{ env.VERSION_NAME }}
             
-            ## Build Information
+            ## Build-Informationen
             
             - **Version:** ${{ env.VERSION_NAME }}+${{ env.BUILD_NUMBER }}
-            - **Build Date:** ${{ env.COMMIT_DATE }}
+            - **Build-Datum:** ${{ env.COMMIT_DATE }}
             - **Commit:** ${{ env.SHORT_SHA }}
-            - **Environment:** 🟢 **PRODUCTION**
+            - **Umgebung:** 🟢 **PRODUKTION**
             
             ---
             
-            ## 📋 Changes
+            ## 📋 Änderungen
             
             ${{ env.COMMIT_MSG }}
             
@@ -127,69 +127,69 @@ jobs:
             
             ## 📦 Download & Installation
             
-            ### Which APK should I download?
+            ### Welche APK soll ich herunterladen?
             
-            | Your Device | Download This APK | Size | Compatibility |
-            |-------------|------------------|------|---------------|
-            | 🤷 Not sure? | `simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk` | ~5 MB | Works on all devices |
-            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk` | ~3 MB | Faster, smaller |
-            | Older devices | `simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk` | ~3 MB | Older ARM chips |
+            | Dein Gerät | Lade diese APK herunter | Größe | Kompatibilität |
+            |------------|------------------------|-------|----------------|
+            | 🤷 Nicht sicher? | `simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk` | ~5 MB | Funktioniert auf allen Geräten |
+            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk` | ~3 MB | Schneller, kleiner |
+            | Ältere Geräte | `simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk` | ~3 MB | Ältere ARM-Chips |
             
-            ### Installation Steps
-            1. Download the appropriate APK from the assets below
-            2. Enable "Install from unknown sources" in Android settings
-            3. Open the downloaded APK file
-            4. Follow the installation prompts
-            5. Configure WebDAV settings in the app
-            
-            ---
-            
-            ## ⚙️ Features
-            
-            - ✅ Automatic WebDAV sync every 30 minutes (~0.4% battery/day)
-            - ✅ Smart gateway detection (home network auto-detection)
-            - ✅ Material Design 3 UI
-            - ✅ Privacy-focused (no tracking, no analytics)
-            - ✅ Offline-first architecture
+            ### Installationsschritte
+            1. Lade die passende APK aus den Assets unten herunter
+            2. Aktiviere "Installation aus unbekannten Quellen" in den Android-Einstellungen
+            3. Öffne die heruntergeladene APK-Datei
+            4. Folge den Installationsanweisungen
+            5. Konfiguriere die WebDAV-Einstellungen in der App
             
             ---
             
-            ## 🔄 Updating from Previous Version
+            ## ⚙️ Funktionen
             
-            Simply install this APK over the existing installation - all data and settings will be preserved.
+            - ✅ Automatische WebDAV-Synchronisation alle 30 Minuten (~0,4% Akku/Tag)
+            - ✅ Intelligente Gateway-Erkennung (automatische Heimnetzwerk-Erkennung)
+            - ✅ Material Design 3 Oberfläche
+            - ✅ Datenschutzorientiert (kein Tracking, keine Analysen)
+            - ✅ Offline-First Architektur
+            
+            ---
+            
+            ## 🔄 Update von vorheriger Version
+            
+            Installiere diese APK einfach über die bestehende Installation - alle Daten und Einstellungen bleiben erhalten.
             
             ---
             
             ## 📱 Obtanium - Auto-Update App
             
-            Get automatic updates with [Obtanium](https://github.com/ImranR98/Obtanium/releases/latest).
+            Erhalte automatische Updates mit [Obtanium](https://github.com/ImranR98/Obtanium/releases/latest).
             
-            **Setup:**
-            1. Install Obtanium from the link above
-            2. Add app with this URL: `https://github.com/dettmersLiq/simple-notes-sync`
-            3. Enable auto-updates
+            **Einrichtung:**
+            1. Installiere Obtanium über den Link oben
+            2. Füge die App mit dieser URL hinzu: `https://github.com/dettmersLiq/simple-notes-sync`
+            3. Aktiviere Auto-Updates
             
             ---
             
             ## 🆘 Support
             
-            For issues or questions, please open an issue on GitHub.
+            Bei Problemen oder Fragen öffne bitte ein Issue auf GitHub.
             
             ---
             
-            ## 🔒 Privacy & Security
+            ## 🔒 Datenschutz & Sicherheit
             
-            - All data synced via your own WebDAV server
-            - No third-party analytics or tracking
-            - No internet permissions except for WebDAV sync
-            - All sync operations encrypted (HTTPS)
-            - Open source - audit the code yourself
+            - Alle Daten werden über deinen eigenen WebDAV-Server synchronisiert
+            - Keine Drittanbieter-Analysen oder Tracking
+            - Keine Internet-Berechtigungen außer für WebDAV-Sync
+            - Alle Synchronisationsvorgänge verschlüsselt (HTTPS)
+            - Open Source - prüfe den Code selbst
             
             ---
             
-            ## 🛠️ Built With
+            ## 🛠️ Erstellt mit
             
-            - **Language:** Kotlin
+            - **Sprache:** Kotlin
             - **UI:** Material Design 3
             - **Sync:** WorkManager + WebDAV
             - **Target SDK:** Android 16 (API 36)

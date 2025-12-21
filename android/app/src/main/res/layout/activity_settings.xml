@@ -5,19 +5,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="?attr/colorSurface">
 
+    <!-- Material 3 Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
+        android:elevation="0dp"
         app:title="@string/settings"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
         app:navigationIcon="?attr/homeAsUpIndicator" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -25,145 +30,554 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Server Settings -->
-            <TextView
-                android:layout_width="match_parent"
+            <!-- Auto-Save Status Indicator -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAutoSaveStatus"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/server_settings"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="16dp" />
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone"
+                android:textSize="12sp"
+                app:chipIconEnabled="false" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/server_url"
-                android:layout_marginBottom="8dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTextServerUrl"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textUri" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/username"
-                android:layout_marginBottom="8dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTextUsername"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/password"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                app:endIconMode="password_toggle">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTextPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPassword" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- WiFi Settings -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/wifi_settings"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Server Status -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Server-Status:"
-                    android:textStyle="bold"
-                    android:textSize="14sp" />
-                    
-                <TextView
-                    android:id="@+id/textViewServerStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Prüfe..."
-                    android:textSize="14sp"
-                    android:textColor="@android:color/darker_gray" />
-                    
-            </LinearLayout>
-
-            <!-- Info Box -->
-            <TextView
+            <!-- Material 3 Card: Server Configuration -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:padding="12dp"
-                android:background="@drawable/info_background"
-                android:text="ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert nur im selben Netzwerk\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%/Tag)"
-                android:textSize="14sp"
-                android:lineSpacingMultiplier="1.2"
-                android:textColor="@android:color/black" />
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
-
-                <TextView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/auto_sync"
-                    android:textSize="16sp"
-                    android:layout_gravity="center_vertical" />
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchAutoSync"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/server_settings"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="16dp" />
 
-            </LinearLayout>
+                    <!-- Server URL with Icon -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/server_url"
+                        android:layout_marginBottom="12dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:startIconDrawable="@android:drawable/ic_menu_compass"
+                        app:endIconMode="clear_text"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
 
-            <!-- Actions -->
-            <Button
-                android:id="@+id/buttonTestConnection"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextServerUrl"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textUri"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Username with Icon -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/username"
+                        android:layout_marginBottom="12dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                        app:endIconMode="clear_text"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextUsername"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Password with Icon -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/password"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        app:startIconDrawable="@android:drawable/ic_lock_lock"
+                        app:endIconMode="password_toggle"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Server Status Chip -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/server_status_label"
+                            android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                        <TextView
+                            android:id="@+id/textViewServerStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/server_status_checking"
+                            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+                            android:textColor="?attr/colorOutline" />
+
+                    </LinearLayout>
+
+                    <!-- Action Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="end">
+
+                        <Button
+                            android:id="@+id/buttonTestConnection"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/test_connection"
+                            android:layout_marginEnd="8dp"
+                            style="@style/Widget.Material3.Button.OutlinedButton" />
+
+                        <Button
+                            android:id="@+id/buttonSyncNow"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/sync_now"
+                            style="@style/Widget.Material3.Button" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Material 3 Card: Auto-Sync Settings -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/test_connection"
-                android:layout_marginTop="8dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
 
-            <Button
-                android:id="@+id/buttonSyncNow"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/sync_settings"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Info Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:text="@string/auto_sync_info"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:lineSpacingMultiplier="1.3" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Auto-Sync Switch with MaterialSwitch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/auto_sync"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switchAutoSync"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Material 3 Card: Backup & Restore -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/sync_now"
-                android:layout_marginTop="8dp" />
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/backup_restore_title"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Warning Info Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardBackgroundColor="?attr/colorErrorContainer"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:text="@string/backup_restore_warning"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOnErrorContainer"
+                            android:lineSpacingMultiplier="1.3" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Restore Button -->
+                    <Button
+                        android:id="@+id/buttonRestoreFromServer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/restore_from_server"
+                        style="@style/Widget.Material3.Button.TonalButton" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Material 3 Card: Sync Interval Configuration -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sync-Intervall"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Info Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:text="Legt fest, wie oft die App im Hintergrund synchronisiert. Kürzere Intervalle bedeuten aktuellere Daten, verbrauchen aber etwas mehr Akku.\n\n⏱️ Hinweis: Wenn dein Smartphone im Standby ist, kann Android die Synchronisation verzögern (bis zu 60 Min.), um Akku zu sparen. Das ist normal und betrifft alle Hintergrund-Apps."
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:lineSpacingMultiplier="1.3" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Sync Interval Radio Group -->
+                    <RadioGroup
+                        android:id="@+id/radioGroupSyncInterval"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <!-- 15 Minutes Option -->
+                        <RadioButton
+                            android:id="@+id/radioInterval15"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="⚡ Alle 15 Minuten"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:paddingVertical="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Schnellste Synchronisation • ~0.8% Akku/Tag (~23 mAh)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOutline"
+                            android:paddingStart="48dp"
+                            android:paddingBottom="12dp" />
+
+                        <!-- 30 Minutes Option (Recommended) -->
+                        <RadioButton
+                            android:id="@+id/radioInterval30"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="✓ Alle 30 Minuten (Empfohlen)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:paddingVertical="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Ausgewogenes Verhältnis • ~0.4% Akku/Tag (~12 mAh)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOutline"
+                            android:paddingStart="48dp"
+                            android:paddingBottom="12dp" />
+
+                        <!-- 60 Minutes Option -->
+                        <RadioButton
+                            android:id="@+id/radioInterval60"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="🔋 Alle 60 Minuten"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:paddingVertical="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Maximale Akkulaufzeit • ~0.2% Akku/Tag (~6 mAh geschätzt)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOutline"
+                            android:paddingStart="48dp" />
+
+                    </RadioGroup>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Material 3 Card: About Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Über diese App"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- App Info Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="📱 App-Version"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                                android:textColor="?attr/colorPrimary"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:id="@+id/textViewAppVersion"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Version wird geladen..."
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- GitHub Repository Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardGitHubRepo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="🌐 GitHub Repository"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                                android:textColor="?attr/colorPrimary"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Quellcode, Issues &amp; Dokumentation"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Developer Profile Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardDeveloperProfile"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="👤 Entwickler"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                                android:textColor="?attr/colorPrimary"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="GitHub Profil: @inventory69"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- License Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardLicense"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="⚖️ Lizenz"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                                android:textColor="?attr/colorPrimary"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="MIT License - Open Source"
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 

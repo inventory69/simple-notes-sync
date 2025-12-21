@@ -1,9 +1,11 @@
 package dev.dettmer.simplenotes
 
 import android.app.Application
+import android.content.Context
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import dev.dettmer.simplenotes.utils.Constants
 
 class SimpleNotesApplication : Application() {
     
@@ -15,6 +17,13 @@ class SimpleNotesApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        
+        // File-Logging ZUERST aktivieren (damit alle Logs geschrieben werden!)
+        val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        if (prefs.getBoolean("file_logging_enabled", false)) {
+            Logger.enableFileLogging(this)
+            Logger.d(TAG, "📝 File logging enabled at Application startup")
+        }
         
         Logger.d(TAG, "🚀 Application onCreate()")
         

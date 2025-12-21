@@ -10,6 +10,10 @@ object Constants {
     const val KEY_AUTO_SYNC = "auto_sync_enabled"
     const val KEY_LAST_SYNC = "last_sync_timestamp"
     
+    // 🔥 NEU: Sync Interval Configuration
+    const val PREF_SYNC_INTERVAL_MINUTES = "sync_interval_minutes"
+    const val DEFAULT_SYNC_INTERVAL_MINUTES = 30L
+    
     // WorkManager
     const val SYNC_WORK_TAG = "notes_sync"
     const val SYNC_DELAY_SECONDS = 5L
