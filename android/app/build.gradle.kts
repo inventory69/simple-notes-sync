@@ -89,7 +89,9 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     // Unsere Dependencies (DIREKT mit Versionen - viel einfacher!)
-    implementation("com.github.thegrizzlylabs:sardine-android:0.8")
+    implementation("com.github.thegrizzlylabs:sardine-android:0.8") {
+        exclude(group = "xpp3", module = "xpp3")
+    }
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("com.google.code.gson:gson:2.10.1")
