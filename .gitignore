@@ -15,6 +15,11 @@ android/*.apk
 android/*.ap_
 android/*.aab
 
+# Signing files (NEVER commit these!)
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+
 # Gradle
 .gradle
 build/

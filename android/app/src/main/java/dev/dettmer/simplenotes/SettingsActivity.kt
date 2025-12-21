@@ -1,48 +1,46 @@
 package dev.dettmer.simplenotes
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.showToast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 class SettingsActivity : AppCompatActivity() {
+    
+    companion object {
+        private const val TAG = "SettingsActivity"
+    }
     
     private lateinit var editTextServerUrl: EditText
     private lateinit var editTextUsername: EditText
     private lateinit var editTextPassword: EditText
-    private lateinit var editTextHomeSSID: EditText
     private lateinit var switchAutoSync: SwitchCompat
     private lateinit var buttonTestConnection: Button
     private lateinit var buttonSyncNow: Button
-    private lateinit var buttonDetectSSID: Button
+    private lateinit var textViewServerStatus: TextView
     
     private val prefs by lazy {
         getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
-    }
-    
-    companion object {
-        private const val REQUEST_LOCATION_PERMISSION = 1002
-        private const val REQUEST_BACKGROUND_LOCATION_PERMISSION = 1003
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,19 +64,20 @@ class SettingsActivity : AppCompatActivity() {
         editTextServerUrl = findViewById(R.id.editTextServerUrl)
         editTextUsername = findViewById(R.id.editTextUsername)
         editTextPassword = findViewById(R.id.editTextPassword)
-        editTextHomeSSID = findViewById(R.id.editTextHomeSSID)
         switchAutoSync = findViewById(R.id.switchAutoSync)
         buttonTestConnection = findViewById(R.id.buttonTestConnection)
         buttonSyncNow = findViewById(R.id.buttonSyncNow)
-        buttonDetectSSID = findViewById(R.id.buttonDetectSSID)
+        textViewServerStatus = findViewById(R.id.textViewServerStatus)
     }
     
     private fun loadSettings() {
         editTextServerUrl.setText(prefs.getString(Constants.KEY_SERVER_URL, ""))
         editTextUsername.setText(prefs.getString(Constants.KEY_USERNAME, ""))
         editTextPassword.setText(prefs.getString(Constants.KEY_PASSWORD, ""))
-        editTextHomeSSID.setText(prefs.getString(Constants.KEY_HOME_SSID, ""))
         switchAutoSync.isChecked = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+        
+        // Server Status prüfen
+        checkServerStatus()
     }
     
     private fun setupListeners() {
@@ -92,12 +91,15 @@ class SettingsActivity : AppCompatActivity() {
             syncNow()
         }
         
-        buttonDetectSSID.setOnClickListener {
-            detectCurrentSSID()
-        }
-        
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             onAutoSyncToggled(isChecked)
+        }
+        
+        // Server Status Check bei Settings-Änderung
+        editTextServerUrl.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                checkServerStatus()
+            }
         }
     }
     
@@ -106,7 +108,6 @@ class SettingsActivity : AppCompatActivity() {
             putString(Constants.KEY_SERVER_URL, editTextServerUrl.text.toString().trim())
             putString(Constants.KEY_USERNAME, editTextUsername.text.toString().trim())
             putString(Constants.KEY_PASSWORD, editTextPassword.text.toString().trim())
-            putString(Constants.KEY_HOME_SSID, editTextHomeSSID.text.toString().trim())
             putBoolean(Constants.KEY_AUTO_SYNC, switchAutoSync.isChecked)
             apply()
         }
@@ -152,34 +153,41 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
     
-    private fun detectCurrentSSID() {
-        // Check if we have location permission (needed for SSID on Android 10+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                // Request permission
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    REQUEST_LOCATION_PERMISSION
-                )
-                return
-            }
+    private fun checkServerStatus() {
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        
+        if (serverUrl.isNullOrEmpty()) {
+            textViewServerStatus.text = "❌ Nicht konfiguriert"
+            textViewServerStatus.setTextColor(getColor(android.R.color.holo_red_dark))
+            return
         }
         
-        // Permission granted, get SSID
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        val ssid = wifiInfo.ssid.replace("\"", "")
+        textViewServerStatus.text = "🔍 Prüfe..."
+        textViewServerStatus.setTextColor(getColor(android.R.color.darker_gray))
         
-        if (ssid.isNotEmpty() && ssid != "<unknown ssid>") {
-            editTextHomeSSID.setText(ssid)
-            showToast("SSID erkannt: $ssid")
-        } else {
-            showToast("Nicht mit WLAN verbunden")
+        lifecycleScope.launch {
+            val isReachable = withContext(Dispatchers.IO) {
+                try {
+                    val url = URL(serverUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.connectTimeout = 3000
+                    connection.readTimeout = 3000
+                    val code = connection.responseCode
+                    connection.disconnect()
+                    code in 200..299 || code == 401  // 401 = Server da, Auth fehlt
+                } catch (e: Exception) {
+                    Log.e(TAG, "Server check failed: ${e.message}")
+                    false
+                }
+            }
+            
+            if (isReachable) {
+                textViewServerStatus.text = "✅ Erreichbar"
+                textViewServerStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+            } else {
+                textViewServerStatus.text = "❌ Nicht erreichbar"
+                textViewServerStatus.setTextColor(getColor(android.R.color.holo_red_dark))
+            }
         }
     }
     
@@ -188,12 +196,11 @@ class SettingsActivity : AppCompatActivity() {
         
         if (enabled) {
             showToast("Auto-Sync aktiviert")
-            // Check battery optimization when enabling
             checkBatteryOptimization()
-            // Check background location permission (needed for SSID on Android 12+)
-            checkBackgroundLocationPermission()
+            restartNetworkMonitor()
         } else {
             showToast("Auto-Sync deaktiviert")
+            restartNetworkMonitor()
         }
     }
     
@@ -240,99 +247,16 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
     
-    private fun checkBackgroundLocationPermission() {
-        // Background location permission only needed on Android 10+
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            return
-        }
-        
-        // First check if we have foreground location
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // Request foreground location first
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_LOCATION_PERMISSION
-            )
-            return
-        }
-        
-        // Now check background location (Android 10+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                showBackgroundLocationDialog()
-            }
-        }
-    }
-    
-    private fun showBackgroundLocationDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Hintergrund-Standort")
-            .setMessage(
-                "Damit die App dein WLAN-Netzwerk erkennen kann, " +
-                "wird Zugriff auf den Standort im Hintergrund benötigt.\n\n" +
-                "Dies ist eine Android-Einschränkung ab Version 10.\n\n" +
-                "Bitte wähle im nächsten Dialog 'Immer zulassen'."
-            )
-            .setPositiveButton("Fortfahren") { _, _ ->
-                requestBackgroundLocationPermission()
-            }
-            .setNegativeButton("Später") { dialog, _ ->
-                dialog.dismiss()
-                showToast("Auto-Sync funktioniert ohne diese Berechtigung nicht")
-            }
-            .setCancelable(false)
-            .show()
-    }
-    
-    private fun requestBackgroundLocationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
-                REQUEST_BACKGROUND_LOCATION_PERMISSION
-            )
-        }
-    }
-    
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        
-        when (requestCode) {
-            REQUEST_LOCATION_PERMISSION -> {
-                if (grantResults.isNotEmpty() && 
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Foreground location granted, now request background
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        checkBackgroundLocationPermission()
-                    } else {
-                        // For detectCurrentSSID
-                        detectCurrentSSID()
-                    }
-                } else {
-                    showToast("Standort-Berechtigung benötigt um WLAN-Name zu erkennen")
-                }
-            }
-            REQUEST_BACKGROUND_LOCATION_PERMISSION -> {
-                if (grantResults.isNotEmpty() && 
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    showToast("✅ Hintergrund-Standort erlaubt - Auto-Sync sollte jetzt funktionieren!")
-                } else {
-                    showToast("⚠️ Ohne Hintergrund-Standort kann WLAN nicht erkannt werden")
-                }
-            }
+    private fun restartNetworkMonitor() {
+        try {
+            val app = application as SimpleNotesApplication
+            Log.d(TAG, "🔄 Restarting NetworkMonitor with new settings")
+            app.networkMonitor.stopMonitoring()
+            app.networkMonitor.startMonitoring()
+            Log.d(TAG, "✅ NetworkMonitor restarted successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to restart NetworkMonitor", e)
+            showToast("Fehler beim Neustart des NetworkMonitors")
         }
     }
     

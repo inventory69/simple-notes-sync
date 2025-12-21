@@ -1,160 +1,86 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
-import android.os.Build
-import android.util.Log
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.OutOfQuotaPolicy
-import androidx.work.WorkManager
+import androidx.work.*
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.Logger
 import java.util.concurrent.TimeUnit
 
+/**
+ * NetworkMonitor: Verwaltet WorkManager-basiertes Auto-Sync
+ * WICHTIG: Kein NetworkCallback mehr - WorkManager macht das für uns!
+ */
 class NetworkMonitor(private val context: Context) {
     
     companion object {
         private const val TAG = "NetworkMonitor"
+        private const val AUTO_SYNC_WORK_NAME = "auto_sync_periodic"
     }
     
-    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) 
-        as ConnectivityManager
-    
-    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-        
-        override fun onAvailable(network: Network) {
-            super.onAvailable(network)
-            
-            Log.d(TAG, "📶 Network available: $network")
-            
-            val capabilities = connectivityManager.getNetworkCapabilities(network)
-            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-                Log.d(TAG, "✅ WiFi detected")
-                checkAndTriggerSync()
-            } else {
-                Log.d(TAG, "❌ Not WiFi: ${capabilities?.toString()}")
-            }
-        }
-        
-        override fun onCapabilitiesChanged(
-            network: Network, 
-            capabilities: NetworkCapabilities
-        ) {
-            super.onCapabilitiesChanged(network, capabilities)
-            
-            Log.d(TAG, "🔄 Capabilities changed: $network")
-            
-            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                Log.d(TAG, "✅ WiFi capabilities")
-                checkAndTriggerSync()
-            }
-        }
-        
-        override fun onLost(network: Network) {
-            super.onLost(network)
-            Log.d(TAG, "❌ Network lost: $network")
-        }
+    private val prefs by lazy {
+        context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
     
+    /**
+     * Startet WorkManager mit Network Constraints
+     * WorkManager kümmert sich automatisch um WiFi-Erkennung!
+     */
     fun startMonitoring() {
-        Log.d(TAG, "🚀 Starting NetworkMonitor")
-        Log.d(TAG, "Context type: ${context.javaClass.simpleName}")
-        
-        val request = NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-        
-        try {
-            connectivityManager.registerNetworkCallback(request, networkCallback)
-            Log.d(TAG, "✅ NetworkCallback registered successfully")
-            
-            // *** FIX #3: Check if already connected to WiFi ***
-            Log.d(TAG, "🔍 Performing initial WiFi check...")
-            checkAndTriggerSync()
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to register NetworkCallback: ${e.message}", e)
-        }
-    }
-    
-    fun stopMonitoring() {
-        Log.d(TAG, "🛑 Stopping NetworkMonitor")
-        try {
-            connectivityManager.unregisterNetworkCallback(networkCallback)
-            Log.d(TAG, "✅ NetworkCallback unregistered")
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ NetworkCallback already unregistered: ${e.message}")
-        }
-    }
-    
-    private fun checkAndTriggerSync() {
-        Log.d(TAG, "🔍 Checking auto-sync conditions...")
-        
-        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
         
-        Log.d(TAG, "Auto-sync enabled: $autoSyncEnabled")
-        
         if (!autoSyncEnabled) {
-            Log.d(TAG, "❌ Auto-sync disabled, skipping")
+            Logger.d(TAG, "Auto-sync disabled - stopping periodic work")
+            stopMonitoring()
             return
         }
         
-        val homeSSID = prefs.getString(Constants.KEY_HOME_SSID, null)
-        Log.d(TAG, "Home SSID configured: $homeSSID")
+        Logger.d(TAG, "🚀 Starting WorkManager-based auto-sync")
         
-        if (isConnectedToHomeWifi()) {
-            Log.d(TAG, "✅ Connected to home WiFi, scheduling sync!")
-            scheduleSyncWork()
-        } else {
-            Log.d(TAG, "❌ Not connected to home WiFi")
-        }
+        // Constraints: Nur wenn WiFi connected
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED)  // WiFi only
+            .build()
+        
+        // Periodic Work Request - prüft alle 30 Minuten (Battery optimized)
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+            30, TimeUnit.MINUTES,  // Optimiert: 30 Min statt 15 Min
+            10, TimeUnit.MINUTES   // Flex interval
+        )
+            .setConstraints(constraints)
+            .addTag(Constants.SYNC_WORK_TAG)
+            .build()
+        
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            AUTO_SYNC_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,  // UPDATE statt KEEP für immediate trigger
+            syncRequest
+        )
+        
+        Logger.d(TAG, "✅ Periodic auto-sync scheduled (every 30min when on WiFi)")
+        
+        // Trigger sofortigen Sync wenn WiFi bereits connected
+        triggerImmediateSync()
     }
     
-    private fun isConnectedToHomeWifi(): Boolean {
-        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val homeSSID = prefs.getString(Constants.KEY_HOME_SSID, null) ?: return false
-        
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) 
-            as WifiManager
-        
-        val currentSSID = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+: Use WifiInfo from NetworkCapabilities
-            val network = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val wifiInfo = capabilities.transportInfo as? WifiInfo
-                wifiInfo?.ssid?.replace("\"", "") ?: ""
-            } else {
-                wifiManager.connectionInfo.ssid.replace("\"", "")
-            }
-        } else {
-            wifiManager.connectionInfo.ssid.replace("\"", "")
-        }
-        
-        Log.d(TAG, "Current SSID: '$currentSSID', Home SSID: '$homeSSID'")
-        
-        // *** FIX #4: Better error handling for missing SSID ***
-        if (currentSSID.isEmpty() || currentSSID == "<unknown ssid>") {
-            Log.w(TAG, "⚠️ Cannot get SSID - likely missing ACCESS_BACKGROUND_LOCATION permission!")
-            Log.w(TAG, "⚠️ On Android 12+, apps need 'Allow all the time' location permission")
-            return false
-        }
-        
-        val isHome = currentSSID == homeSSID
-        Log.d(TAG, "Is home WiFi: $isHome")
-        
-        return isHome
+    /**
+     * Stoppt WorkManager Auto-Sync
+     */
+    fun stopMonitoring() {
+        Logger.d(TAG, "🛑 Stopping auto-sync")
+        WorkManager.getInstance(context).cancelUniqueWork(AUTO_SYNC_WORK_NAME)
     }
     
-    private fun scheduleSyncWork() {
-        Log.d(TAG, "📅 Scheduling sync work...")
+    /**
+     * Trigger sofortigen Sync (z.B. nach Settings-Änderung)
+     */
+    private fun triggerImmediateSync() {
+        if (!isConnectedToHomeWifi()) {
+            Logger.d(TAG, "Not on home WiFi - skipping immediate sync")
+            return
+        }
+        
+        Logger.d(TAG, "� Triggering immediate sync...")
         
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -162,7 +88,72 @@ class NetworkMonitor(private val context: Context) {
             .build()
         
         WorkManager.getInstance(context).enqueue(syncRequest)
+    }
+    
+    /**
+     * Prüft ob connected zu Home WiFi via Gateway IP Check
+     */
+    private fun isConnectedToHomeWifi(): Boolean {
+        val gatewayIP = getGatewayIP() ?: return false
         
-        Log.d(TAG, "✅ Sync work scheduled with WorkManager")
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty()) return false
+        
+        val serverIP = extractIPFromUrl(serverUrl)
+        if (serverIP == null) return false
+        
+        val sameNetwork = isSameNetwork(gatewayIP, serverIP)
+        Logger.d(TAG, "Gateway: $gatewayIP, Server: $serverIP → Same network: $sameNetwork")
+        
+        return sameNetwork
+    }
+    
+    private fun getGatewayIP(): String? {
+        return try {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) 
+                as WifiManager
+            val dhcpInfo = wifiManager.dhcpInfo
+            val gateway = dhcpInfo.gateway
+            
+            val ip = String.format(
+                "%d.%d.%d.%d",
+                gateway and 0xFF,
+                (gateway shr 8) and 0xFF,
+                (gateway shr 16) and 0xFF,
+                (gateway shr 24) and 0xFF
+            )
+            ip
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to get gateway IP: ${e.message}")
+            null
+        }
+    }
+    
+    private fun extractIPFromUrl(url: String): String? {
+        return try {
+            val urlObj = java.net.URL(url)
+            val host = urlObj.host
+            
+            if (host.matches(Regex("\\d+\\.\\d+\\.\\d+\\.\\d+"))) {
+                host
+            } else {
+                val addr = java.net.InetAddress.getByName(host)
+                addr.hostAddress
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to extract IP: ${e.message}")
+            null
+        }
+    }
+    
+    private fun isSameNetwork(ip1: String, ip2: String): Boolean {
+        val parts1 = ip1.split(".")
+        val parts2 = ip2.split(".")
+        
+        if (parts1.size != 4 || parts2.size != 4) return false
+        
+        return parts1[0] == parts2[0] && 
+               parts1[1] == parts2[1] && 
+               parts1[2] == parts2[2]
     }
 }

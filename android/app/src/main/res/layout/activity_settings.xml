@@ -90,37 +90,43 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp" />
 
+            <!-- Server Status -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
-
-                <com.google.android.material.textfield.TextInputLayout
+                android:gravity="center_vertical">
+                
+                <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/home_ssid"
-                    android:layout_marginEnd="8dp"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editTextHomeSSID"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <Button
-                    android:id="@+id/buttonDetectSSID"
+                    android:text="Server-Status:"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+                    
+                <TextView
+                    android:id="@+id/textViewServerStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="Detect"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
-
+                    android:text="Prüfe..."
+                    android:textSize="14sp"
+                    android:textColor="@android:color/darker_gray" />
+                    
             </LinearLayout>
+
+            <!-- Info Box -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:padding="12dp"
+                android:background="@drawable/info_background"
+                android:text="ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert nur im selben Netzwerk\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%/Tag)"
+                android:textSize="14sp"
+                android:lineSpacingMultiplier="1.2"
+                android:textColor="@android:color/black" />
 
             <LinearLayout
                 android:layout_width="match_parent"

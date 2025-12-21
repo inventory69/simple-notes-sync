@@ -1,19 +1,25 @@
 package dev.dettmer.simplenotes
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import dev.dettmer.simplenotes.utils.Logger
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dev.dettmer.simplenotes.adapters.NotesAdapter
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.showToast
 import android.widget.TextView
@@ -34,7 +40,26 @@ class MainActivity : AppCompatActivity() {
     private val storage by lazy { NotesStorage(this) }
     
     companion object {
+        private const val TAG = "MainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
+    }
+    
+    /**
+     * BroadcastReceiver für Background-Sync Completion
+     */
+    private val syncCompletedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val success = intent?.getBooleanExtra("success", false) ?: false
+            val count = intent?.getIntExtra("count", 0) ?: 0
+            
+            Logger.d(TAG, "📡 Sync completed broadcast received: success=$success, count=$count")
+            
+            // UI refresh
+            if (success && count > 0) {
+                loadNotes()
+                Logger.d(TAG, "🔄 Notes reloaded after background sync")
+            }
+        }
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,7 +81,23 @@ class MainActivity : AppCompatActivity() {
     
     override fun onResume() {
         super.onResume()
+        
+        // Register BroadcastReceiver für Background-Sync
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            syncCompletedReceiver,
+            IntentFilter(SyncWorker.ACTION_SYNC_COMPLETED)
+        )
+        Logger.d(TAG, "📡 BroadcastReceiver registered")
+        
         loadNotes()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        
+        // Unregister BroadcastReceiver
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
+        Logger.d(TAG, "📡 BroadcastReceiver unregistered")
     }
     
     private fun findViews() {

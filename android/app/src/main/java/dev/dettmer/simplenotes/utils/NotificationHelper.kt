@@ -212,12 +212,25 @@ object NotificationHelper {
      * Zeigt Erfolgs-Notification
      */
     fun showSyncSuccess(context: Context, count: Int) {
+        // PendingIntent für App-Öffnung
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle("Sync erfolgreich")
             .setContentText("$count Notizen synchronisiert")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(pendingIntent)  // Click öffnet App
+            .setAutoCancel(true)  // Dismiss beim Click
             .build()
         
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
@@ -229,12 +242,25 @@ object NotificationHelper {
      * Zeigt Fehler-Notification
      */
     fun showSyncError(context: Context, message: String) {
+        // PendingIntent für App-Öffnung
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle("Sync Fehler")
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_ERROR)
+            .setContentIntent(pendingIntent)  // Click öffnet App
+            .setAutoCancel(true)  // Dismiss beim Click
             .build()
         
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 

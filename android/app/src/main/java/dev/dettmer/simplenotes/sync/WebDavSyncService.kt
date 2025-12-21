@@ -7,10 +7,15 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class WebDavSyncService(private val context: Context) {
+    
+    companion object {
+        private const val TAG = "WebDavSyncService"
+    }
     
     private val storage = NotesStorage(context)
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -18,6 +23,9 @@ class WebDavSyncService(private val context: Context) {
     private fun getSardine(): Sardine? {
         val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
         val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
+        
+        // Einfach standard OkHttpSardine - funktioniert im manuellen Sync!
+        android.util.Log.d(TAG, "🔧 Creating OkHttpSardine")
         
         return OkHttpSardine().apply {
             setCredentials(username, password)
@@ -75,36 +83,58 @@ class WebDavSyncService(private val context: Context) {
     }
     
     suspend fun syncNotes(): SyncResult = withContext(Dispatchers.IO) {
+        android.util.Log.d(TAG, "🔄 syncNotes() called")
+        android.util.Log.d(TAG, "Context: ${context.javaClass.simpleName}")
+        
         return@withContext try {
-            val sardine = getSardine() ?: return@withContext SyncResult(
-                isSuccess = false,
-                errorMessage = "Server-Zugangsdaten nicht konfiguriert"
-            )
+            val sardine = getSardine()
+            if (sardine == null) {
+                android.util.Log.e(TAG, "❌ Sardine is null - credentials missing")
+                return@withContext SyncResult(
+                    isSuccess = false,
+                    errorMessage = "Server-Zugangsdaten nicht konfiguriert"
+                )
+            }
             
-            val serverUrl = getServerUrl() ?: return@withContext SyncResult(
-                isSuccess = false,
-                errorMessage = "Server-URL nicht konfiguriert"
-            )
+            val serverUrl = getServerUrl()
+            if (serverUrl == null) {
+                android.util.Log.e(TAG, "❌ Server URL is null")
+                return@withContext SyncResult(
+                    isSuccess = false,
+                    errorMessage = "Server-URL nicht konfiguriert"
+                )
+            }
+            
+            android.util.Log.d(TAG, "📡 Server URL: $serverUrl")
+            android.util.Log.d(TAG, "🔐 Credentials configured: ${prefs.getString(Constants.KEY_USERNAME, null) != null}")
             
             var syncedCount = 0
             var conflictCount = 0
             
             // Ensure server directory exists
+            android.util.Log.d(TAG, "🔍 Checking if server directory exists...")
             if (!sardine.exists(serverUrl)) {
+                android.util.Log.d(TAG, "📁 Creating server directory...")
                 sardine.createDirectory(serverUrl)
             }
             
             // Upload local notes
+            android.util.Log.d(TAG, "⬆️ Uploading local notes...")
             val uploadedCount = uploadLocalNotes(sardine, serverUrl)
             syncedCount += uploadedCount
+            android.util.Log.d(TAG, "✅ Uploaded: $uploadedCount notes")
             
             // Download remote notes
+            android.util.Log.d(TAG, "⬇️ Downloading remote notes...")
             val downloadResult = downloadRemoteNotes(sardine, serverUrl)
             syncedCount += downloadResult.downloadedCount
             conflictCount += downloadResult.conflictCount
+            android.util.Log.d(TAG, "✅ Downloaded: ${downloadResult.downloadedCount} notes, Conflicts: ${downloadResult.conflictCount}")
             
             // Update last sync timestamp
             saveLastSyncTimestamp()
+            
+            android.util.Log.d(TAG, "🎉 Sync completed successfully - Total synced: $syncedCount")
             
             SyncResult(
                 isSuccess = true,
@@ -113,11 +143,14 @@ class WebDavSyncService(private val context: Context) {
             )
             
         } catch (e: Exception) {
+            android.util.Log.e(TAG, "💥 Sync exception: ${e.message}", e)
+            android.util.Log.e(TAG, "Exception type: ${e.javaClass.name}")
+            
             SyncResult(
                 isSuccess = false,
                 errorMessage = when (e) {
-                    is java.net.UnknownHostException -> "Server nicht erreichbar"
-                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout"
+                    is java.net.UnknownHostException -> "Server nicht erreichbar: ${e.message}"
+                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout: ${e.message}"
                     is javax.net.ssl.SSLException -> "SSL-Fehler"
                     is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
                         when (e.statusCode) {

@@ -1,7 +1,7 @@
 package dev.dettmer.simplenotes
 
 import android.app.Application
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.utils.NotificationHelper
 
@@ -11,31 +11,34 @@ class SimpleNotesApplication : Application() {
         private const val TAG = "SimpleNotesApp"
     }
     
-    private lateinit var networkMonitor: NetworkMonitor
+    lateinit var networkMonitor: NetworkMonitor  // Public access für SettingsActivity
     
     override fun onCreate() {
         super.onCreate()
         
-        Log.d(TAG, "🚀 Application onCreate()")
+        Logger.d(TAG, "🚀 Application onCreate()")
         
         // Initialize notification channel
         NotificationHelper.createNotificationChannel(this)
-        Log.d(TAG, "✅ Notification channel created")
+        Logger.d(TAG, "✅ Notification channel created")
         
-        // Initialize and start NetworkMonitor at application level
-        // CRITICAL: Use applicationContext, not 'this'!
+        // Initialize NetworkMonitor (WorkManager-based)
+        // VORTEIL: WorkManager läuft auch ohne aktive App!
         networkMonitor = NetworkMonitor(applicationContext)
+        
+        // Start WorkManager periodic sync
+        // Dies läuft im Hintergrund auch wenn App geschlossen ist
         networkMonitor.startMonitoring()
         
-        Log.d(TAG, "✅ NetworkMonitor initialized and started")
+        Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
     }
     
     override fun onTerminate() {
         super.onTerminate()
         
-        Log.d(TAG, "🛑 Application onTerminate()")
+        Logger.d(TAG, "🛑 Application onTerminate()")
         
-        // Clean up NetworkMonitor when app is terminated
-        networkMonitor.stopMonitoring()
+        // WorkManager läuft weiter auch nach onTerminate!
+        // Nur bei deaktiviertem Auto-Sync stoppen wir es
     }
 }

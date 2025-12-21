@@ -1,0 +1,198 @@
+name: Build Android Production APK
+
+on:
+  push:
+    branches: [ main ]  # Trigger on push to main branch
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write  # Required for creating releases
+
+jobs:
+  build:
+    name: Build Production APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Generate Production version number
+        run: |
+          # Generate semantic version: YYYY.MM.DD
+          VERSION_NAME="$(date +'%Y.%m.%d')"
+          
+          # Use GitHub run number as build number for production
+          BUILD_NUMBER="${{ github.run_number }}"
+          
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "VERSION_TAG=v$VERSION_NAME-prod.$BUILD_NUMBER" >> $GITHUB_ENV
+          
+          echo "🚀 Generated PRODUCTION version: $VERSION_NAME+$BUILD_NUMBER"
+      
+      - name: Update build.gradle.kts with Production version
+        run: |
+          # Update versionCode and versionName in build.gradle.kts
+          sed -i "s/versionCode = [0-9]*/versionCode = ${{ env.BUILD_NUMBER }}/" android/app/build.gradle.kts
+          sed -i "s/versionName = \".*\"/versionName = \"${{ env.VERSION_NAME }}\"/" android/app/build.gradle.kts
+          
+          echo "✅ Updated build.gradle.kts:"
+          grep -E "versionCode|versionName" android/app/build.gradle.kts
+      
+      - name: Setup Android signing
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/simple-notes-release.jks
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=simple-notes-release.jks" >> android/key.properties
+          echo "✅ Signing configuration created"
+      
+      - name: Build Production APK (Release)
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon --stacktrace
+      
+      - name: Copy APK variants to root with version names
+        run: |
+          mkdir -p apk-output
+          
+          # Universal APK
+          cp android/app/build/outputs/apk/release/app-universal-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk
+          
+          # ARM64 APK
+          cp android/app/build/outputs/apk/release/app-arm64-v8a-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk
+          
+          # ARMv7 APK
+          cp android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk
+          
+          echo "✅ APK files prepared:"
+          ls -lh apk-output/
+      
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-notes-sync-apks-v${{ env.VERSION_NAME }}
+          path: apk-output/*.apk
+          retention-days: 90  # Keep production builds longer
+      
+      - name: Get commit info
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "COMMIT_DATE=$(git log -1 --format=%cd --date=iso-strict)" >> $GITHUB_ENV
+          
+          # Get full commit message preserving newlines and emojis (UTF-8)
+          {
+            echo 'COMMIT_MSG<<EOF'
+            git -c core.quotepath=false log -1 --pretty=%B
+            echo 'EOF'
+          } >> $GITHUB_ENV
+      
+      - name: Create Production Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION_TAG }}
+          name: "📝 Simple Notes Sync v${{ env.VERSION_NAME }} (Production)"
+          files: apk-output/*.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          body: |
+            # 📝 Production Release: Simple Notes Sync v${{ env.VERSION_NAME }}
+            
+            ## Build Information
+            
+            - **Version:** ${{ env.VERSION_NAME }}+${{ env.BUILD_NUMBER }}
+            - **Build Date:** ${{ env.COMMIT_DATE }}
+            - **Commit:** ${{ env.SHORT_SHA }}
+            - **Environment:** 🟢 **PRODUCTION**
+            
+            ---
+            
+            ## 📋 Changes
+            
+            ${{ env.COMMIT_MSG }}
+            
+            ---
+            
+            ## 📦 Download & Installation
+            
+            ### Which APK should I download?
+            
+            | Your Device | Download This APK | Size | Compatibility |
+            |-------------|------------------|------|---------------|
+            | 🤷 Not sure? | `simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk` | ~5 MB | Works on all devices |
+            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk` | ~3 MB | Faster, smaller |
+            | Older devices | `simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk` | ~3 MB | Older ARM chips |
+            
+            ### Installation Steps
+            1. Download the appropriate APK from the assets below
+            2. Enable "Install from unknown sources" in Android settings
+            3. Open the downloaded APK file
+            4. Follow the installation prompts
+            5. Configure WebDAV settings in the app
+            
+            ---
+            
+            ## ⚙️ Features
+            
+            - ✅ Automatic WebDAV sync every 30 minutes (~0.4% battery/day)
+            - ✅ Smart gateway detection (home network auto-detection)
+            - ✅ Material Design 3 UI
+            - ✅ Privacy-focused (no tracking, no analytics)
+            - ✅ Offline-first architecture
+            
+            ---
+            
+            ## 🔄 Updating from Previous Version
+            
+            Simply install this APK over the existing installation - all data and settings will be preserved.
+            
+            ---
+            
+            ## 📱 Obtanium - Auto-Update App
+            
+            Get automatic updates with [Obtanium](https://github.com/ImranR98/Obtanium/releases/latest).
+            
+            **Setup:**
+            1. Install Obtanium from the link above
+            2. Add app with this URL: `https://github.com/dettmersLiq/simple-notes-sync`
+            3. Enable auto-updates
+            
+            ---
+            
+            ## 🆘 Support
+            
+            For issues or questions, please open an issue on GitHub.
+            
+            ---
+            
+            ## 🔒 Privacy & Security
+            
+            - All data synced via your own WebDAV server
+            - No third-party analytics or tracking
+            - No internet permissions except for WebDAV sync
+            - All sync operations encrypted (HTTPS)
+            - Open source - audit the code yourself
+            
+            ---
+            
+            ## 🛠️ Built With
+            
+            - **Language:** Kotlin
+            - **UI:** Material Design 3
+            - **Sync:** WorkManager + WebDAV
+            - **Target SDK:** Android 16 (API 36)
+            - **Min SDK:** Android 8.0 (API 26)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
