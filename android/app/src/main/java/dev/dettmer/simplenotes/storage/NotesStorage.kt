@@ -37,5 +37,16 @@ class NotesStorage(private val context: Context) {
         return file.delete()
     }
     
+    fun deleteAllNotes(): Boolean {
+        return try {
+            notesDir.listFiles()
+                ?.filter { it.extension == "json" }
+                ?.forEach { it.delete() }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
     fun getNotesDir(): File = notesDir
 }

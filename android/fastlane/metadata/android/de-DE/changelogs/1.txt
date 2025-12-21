@@ -1,0 +1,8 @@
+• Material Design 3 mit Dynamic Colors
+• Swipe-to-Delete mit Bestätigungsdialog
+• Server Backup & Restore Funktion
+• Verbesserte Empty State Ansicht
+• Deutsche Lokalisierung
+• Splash Screen Support (Android 12+)
+• Performance-Verbesserungen
+• Bug-Fixes
