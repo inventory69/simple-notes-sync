@@ -25,25 +25,22 @@ jobs:
       
       - name: Generate Production version number
         run: |
-          # Generate semantic version: YYYY.MM.DD
-          VERSION_NAME="$(date +'%Y.%m.%d')"
+          # Extract version from build.gradle.kts
+          VERSION_NAME=$(grep "versionName = " android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
+          VERSION_CODE=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           
-          # Use GitHub run number as build number for production
-          BUILD_NUMBER="${{ github.run_number }}"
+          # Use extracted version for F-Droid compatibility
+          BUILD_NUMBER="$VERSION_CODE"
           
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
-          echo "VERSION_TAG=v$VERSION_NAME-prod.$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "VERSION_TAG=v$VERSION_NAME" >> $GITHUB_ENV
           
-          echo "🚀 Generated PRODUCTION version: $VERSION_NAME+$BUILD_NUMBER"
+          echo "🚀 Building version: $VERSION_NAME (code: $BUILD_NUMBER)"
       
-      - name: Update build.gradle.kts with Production version
+      - name: Verify build.gradle.kts version
         run: |
-          # Update versionCode and versionName in build.gradle.kts
-          sed -i "s/versionCode = [0-9]*/versionCode = ${{ env.BUILD_NUMBER }}/" android/app/build.gradle.kts
-          sed -i "s/versionName = \".*\"/versionName = \"${{ env.VERSION_NAME }}\"/" android/app/build.gradle.kts
-          
-          echo "✅ Updated build.gradle.kts:"
+          echo "✅ Using version from build.gradle.kts:"
           grep -E "versionCode|versionName" android/app/build.gradle.kts
       
       - name: Setup Android signing
@@ -58,22 +55,22 @@ jobs:
       - name: Build Production APK (Release)
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleStandardRelease --no-daemon --stacktrace
       
       - name: Copy APK variants to root with version names
         run: |
           mkdir -p apk-output
           
           # Universal APK
-          cp android/app/build/outputs/apk/release/app-universal-release.apk \
+          cp android/app/build/outputs/apk/standard/release/app-standard-universal-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk
           
           # ARM64 APK
-          cp android/app/build/outputs/apk/release/app-arm64-v8a-release.apk \
+          cp android/app/build/outputs/apk/standard/release/app-standard-arm64-v8a-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk
           
           # ARMv7 APK
-          cp android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk \
+          cp android/app/build/outputs/apk/standard/release/app-standard-armeabi-v7a-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk
           
           echo "✅ APK files prepared:"
