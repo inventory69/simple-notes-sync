@@ -2,11 +2,11 @@ name: Build Android Production APK
 
 on:
   push:
-    branches: [ main ]  # Trigger on push to main branch
-  workflow_dispatch:  # Allow manual trigger
+    branches: [ main ]  # Nur bei Push/Merge auf main triggern
+  workflow_dispatch:  # Ermöglicht manuellen Trigger
 
 permissions:
-  contents: write  # Required for creating releases
+  contents: write  # Für Release-Erstellung erforderlich
 
 jobs:
   build:
@@ -14,81 +14,95 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: Code auschecken
         uses: actions/checkout@v4
       
-      - name: Setup Java
+      - name: Java einrichten
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
       
-      - name: Generate Production version number
+      - name: Semantic Versionsnummer aus build.gradle.kts extrahieren
         run: |
-          # Extract version from build.gradle.kts
+          # Version aus build.gradle.kts für F-Droid Kompatibilität
           VERSION_NAME=$(grep "versionName = " android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
           VERSION_CODE=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           
-          # Use extracted version for F-Droid compatibility
+          # Semantische Versionierung (nicht datums-basiert)
           BUILD_NUMBER="$VERSION_CODE"
           
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "VERSION_TAG=v$VERSION_NAME" >> $GITHUB_ENV
           
-          echo "🚀 Building version: $VERSION_NAME (code: $BUILD_NUMBER)"
+          echo "🚀 Baue Version: $VERSION_NAME (Code: $BUILD_NUMBER)"
       
-      - name: Verify build.gradle.kts version
+      - name: Version aus build.gradle.kts verifizieren
         run: |
-          echo "✅ Using version from build.gradle.kts:"
+          echo "✅ Verwende Version aus build.gradle.kts:"
           grep -E "versionCode|versionName" android/app/build.gradle.kts
       
-      - name: Setup Android signing
+      - name: Android Signing konfigurieren
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/simple-notes-release.jks
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=simple-notes-release.jks" >> android/key.properties
-          echo "✅ Signing configuration created"
+          echo "✅ Signing-Konfiguration erstellt"
       
-      - name: Build Production APK (Release)
+      - name: Produktions-APK bauen (Standard + F-Droid Flavors)
         run: |
           cd android
-          ./gradlew assembleStandardRelease --no-daemon --stacktrace
+          ./gradlew assembleStandardRelease assembleFdroidRelease --no-daemon --stacktrace
       
-      - name: Copy APK variants to root with version names
+      - name: APK-Varianten mit Versionsnamen kopieren
         run: |
           mkdir -p apk-output
           
-          # Universal APK
+          # === Standard Flavor (mit Google Services) ===
+          # Universal APK (funktioniert auf allen Geräten)
           cp android/app/build/outputs/apk/standard/release/app-standard-universal-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk
+          
+          # ARM64 APK (moderne Geräte 2018+)
+          cp android/app/build/outputs/apk/standard/release/app-standard-arm64-v8a-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-arm64-v8a.apk
+          
+          # ARMv7 APK (ältere Geräte)
+          cp android/app/build/outputs/apk/standard/release/app-standard-armeabi-v7a-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-armeabi-v7a.apk
+          
+          # === F-Droid Flavor (ohne Google Services) ===
+          # Universal APK
+          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-universal-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-universal.apk
           
           # ARM64 APK
-          cp android/app/build/outputs/apk/standard/release/app-standard-arm64-v8a-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk
+          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-arm64-v8a-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-arm64-v8a.apk
           
           # ARMv7 APK
-          cp android/app/build/outputs/apk/standard/release/app-standard-armeabi-v7a-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk
+          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-armeabi-v7a-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-armeabi-v7a.apk
           
-          echo "✅ APK files prepared:"
+          echo "✅ APK-Dateien vorbereitet (Standard + F-Droid):"
           ls -lh apk-output/
       
-      - name: Upload APK artifacts
+      - name: APK-Artefakte hochladen
         uses: actions/upload-artifact@v4
         with:
           name: simple-notes-sync-apks-v${{ env.VERSION_NAME }}
           path: apk-output/*.apk
-          retention-days: 90  # Keep production builds longer
+          retention-days: 90  # Produktions-Builds länger aufbewahren
       
-      - name: Get commit info
+      - name: Commit-Informationen auslesen
         run: |
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "COMMIT_DATE=$(git log -1 --format=%cd --date=iso-strict)" >> $GITHUB_ENV
           
-          # Get full commit message preserving newlines and emojis (UTF-8)
+          # Vollständige Commit-Nachricht mit Zeilenumbrüchen und Emojis (UTF-8)
           {
             echo 'COMMIT_MSG<<EOF'
             git -c core.quotepath=false log -1 --pretty=%B
@@ -126,11 +140,21 @@ jobs:
             
             ### Welche APK soll ich herunterladen?
             
-            | Dein Gerät | Lade diese APK herunter | Größe | Kompatibilität |
-            |------------|------------------------|-------|----------------|
-            | 🤷 Nicht sicher? | `simple-notes-sync-v${{ env.VERSION_NAME }}-universal.apk` | ~5 MB | Funktioniert auf allen Geräten |
-            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-arm64-v8a.apk` | ~3 MB | Schneller, kleiner |
-            | Ältere Geräte | `simple-notes-sync-v${{ env.VERSION_NAME }}-armeabi-v7a.apk` | ~3 MB | Ältere ARM-Chips |
+            **Flavor-Wahl (beide identisch, nur für verschiedene Stores):**
+            - **Standard**: Für direkten Download / Obtainium / GitHub Releases
+            - **F-Droid**: Für F-Droid Store (identisch, nur andere Kennzeichnung)
+            
+            💡 **Hinweis:** Beide Flavors sind 100% FOSS - keine Google Services, kein Tracking!
+            
+            **Architektur-Wahl:**
+            
+            | Dein Gerät | Standard Flavor | F-Droid Flavor | Größe | Hinweis |
+            |------------|----------------|----------------|-------|---------|
+            | 🤷 Nicht sicher? | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk` | `...-fdroid-universal.apk` | ~5 MB | Funktioniert überall |
+            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-arm64-v8a.apk` | `...-fdroid-arm64-v8a.apk` | ~3 MB | Schneller, kleiner |
+            | Ältere Geräte | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-armeabi-v7a.apk` | `...-fdroid-armeabi-v7a.apk` | ~3 MB | ARM-Chips vor 2018 |
+            
+            💡 **Empfehlung:** Nimm die **Standard Universal** APK!
             
             ### Installationsschritte
             1. Lade die passende APK aus den Assets unten herunter
@@ -176,10 +200,10 @@ jobs:
             
             ## 🔒 Datenschutz & Sicherheit
             
-            - Alle Daten werden über deinen eigenen WebDAV-Server synchronisiert
+            - Alle Daten werden über deinen eigenen WebDAV-Server synchronisiert (self-hosted)
             - Keine Drittanbieter-Analysen oder Tracking
             - Keine Internet-Berechtigungen außer für WebDAV-Sync
-            - Alle Synchronisationsvorgänge verschlüsselt (HTTPS)
+            - Unterstützt HTTP (lokal) und HTTPS (extern) - du entscheidest
             - Open Source - prüfe den Code selbst
             
             ---
