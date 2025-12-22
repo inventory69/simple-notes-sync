@@ -65,15 +65,15 @@ docker compose up -d
 
 ---
 
-## � Neue Features in v1.1.0
+## 🎉 Neue Features in v1.1.0
 
 ### Konfigurierbare Sync-Intervalle
 - ⏱️ Wählbare Intervalle: 15/30/60 Minuten
 - 📊 Transparente Akkuverbrauchs-Anzeige
-- � Sofortige Anwendung ohne App-Neustart
+- ⚡ Sofortige Anwendung ohne App-Neustart
 
 ### Über-Sektion
-- � App-Version & Build-Datum
+- 📱 App-Version & Build-Datum
 - 🌐 Links zu GitHub Repo & Entwickler
 - ⚖️ Lizenz-Information
 
