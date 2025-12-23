@@ -1,61 +1,152 @@
----
-name: Bug Report / Fehlerbericht
-about: Melde einen Fehler in der App / Report a bug in the app
-title: '[BUG] '
-labels: bug
-assignees: ''
+name: 🐛 Bug Report / Fehlerbericht
+description: Melde einen Fehler in der App / Report a bug in the app
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für deinen Bug Report! / Thanks for reporting a bug!
+        
+        Bitte fülle alle relevanten Felder aus. / Please fill out all relevant fields.
 
----
+  - type: textarea
+    id: description
+    attributes:
+      label: 🐛 Beschreibung / Description
+      description: Beschreibe den Fehler kurz und präzise / Describe the bug briefly and precisely
+      placeholder: "z.B. Auto-Sync funktioniert nicht mehr nach App-Update / e.g. Auto-sync stopped working after app update"
+    validations:
+      required: true
 
-## 🐛 Beschreibung / Description
+  - type: dropdown
+    id: android-version
+    attributes:
+      label: 📱 Android Version
+      description: Welche Android Version verwendest du? / Which Android version are you using?
+      options:
+        - Android 14
+        - Android 13
+        - Android 12
+        - Android 11
+        - Android 10
+        - Android 9
+        - Android 8.1
+        - Android 8.0
+        - Andere / Other
+    validations:
+      required: true
 
-<!-- Kurze Beschreibung des Problems / Brief description of the problem -->
+  - type: input
+    id: app-version
+    attributes:
+      label: 📲 App Version
+      description: Welche Version der App verwendest du? (Einstellungen → Über) / Which app version? (Settings → About)
+      placeholder: "z.B. / e.g. v1.1.0"
+    validations:
+      required: true
 
----
+  - type: input
+    id: device
+    attributes:
+      label: 📱 Gerät / Device
+      description: Welches Gerät verwendest du? / Which device are you using?
+      placeholder: "z.B. Samsung Galaxy S21, Google Pixel 7, etc."
+    validations:
+      required: false
 
-## 📱 Systeminfo / System Info
+  - type: textarea
+    id: steps
+    attributes:
+      label: 🔄 Schritte zum Reproduzieren / Steps to Reproduce
+      description: Wie kann der Fehler reproduziert werden? / How can the bug be reproduced?
+      placeholder: |
+        1. Öffne die App / Open the app
+        2. Gehe zu Einstellungen / Go to settings
+        3. Klicke auf ... / Click on ...
+        4. Fehler tritt auf / Bug occurs
+    validations:
+      required: true
 
-- **Android Version:** (z.B. / e.g. Android 13)
-- **App Version:** (z.B. / e.g. v1.1.0)
-- **Gerät / Device:** (z.B. / e.g. Samsung Galaxy S21)
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Erwartetes Verhalten / Expected Behavior
+      description: Was sollte passieren? / What should happen?
+      placeholder: "z.B. Notizen sollten alle 30 Min synchronisiert werden / e.g. Notes should sync every 30 min"
+    validations:
+      required: true
 
----
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Tatsächliches Verhalten / Actual Behavior
+      description: Was passiert stattdessen? / What happens instead?
+      placeholder: "z.B. Sync funktioniert nicht, keine Notification / e.g. Sync doesn't work, no notification"
+    validations:
+      required: true
 
-## 🔄 Schritte zum Reproduzieren / Steps to Reproduce
+  - type: dropdown
+    id: sync-enabled
+    attributes:
+      label: � Auto-Sync aktiviert? / Auto-Sync enabled?
+      options:
+        - "Ja / Yes"
+        - "Nein / No"
+    validations:
+      required: false
 
-1. 
-2. 
-3. 
+  - type: dropdown
+    id: battery-optimization
+    attributes:
+      label: 🔋 Akku-Optimierung deaktiviert? / Battery optimization disabled?
+      description: Einstellungen → Apps → Simple Notes → Akku → Nicht optimieren / Settings → Apps → Simple Notes → Battery → Don't optimize
+      options:
+        - "Ja, deaktiviert / Yes, disabled"
+        - "Nein, noch optimiert / No, still optimized"
+        - "Weiß nicht / Don't know"
+    validations:
+      required: false
 
----
+  - type: textarea
+    id: server-config
+    attributes:
+      label: 🌐 Server-Konfiguration / Server Configuration
+      description: Falls relevant / If relevant (KEINE Passwörter! / NO passwords!)
+      placeholder: |
+        - Server läuft lokal / Server runs locally
+        - Docker auf Raspberry Pi / Docker on Raspberry Pi
+        - Gleiche WiFi / Same WiFi
+        - Server-IP: 192.168.x.x (erste 3 Zahlen reichen / first 3 numbers sufficient)
+    validations:
+      required: false
 
-## ✅ Erwartetes Verhalten / Expected Behavior
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📋 Logs / Screenshots
+      description: |
+        Falls vorhanden: Screenshots oder LogCat Output / If available: Screenshots or LogCat output
+        
+        LogCat Filter: `adb logcat -s SyncWorker NetworkMonitor WebDavSyncService`
+      placeholder: "Füge hier Logs oder Screenshots ein / Paste logs or screenshots here"
+    validations:
+      required: false
 
-<!-- Was sollte passieren? / What should happen? -->
+  - type: textarea
+    id: additional
+    attributes:
+      label: 🔧 Zusätzliche Informationen / Additional Context
+      description: Gibt es noch etwas, das wir wissen sollten? / Is there anything else we should know?
+    validations:
+      required: false
 
----
-
-## ❌ Tatsächliches Verhalten / Actual Behavior
-
-<!-- Was passiert stattdessen? / What happens instead? -->
-
----
-
-## 📸 Screenshots / Logs
-
-<!-- Falls vorhanden / If available -->
-
-<details>
-<summary>LogCat (optional)</summary>
-
-```
-Füge hier LogCat Output ein / Paste LogCat output here
-```
-
-</details>
-
----
-
-## 🔧 Zusätzliche Informationen / Additional Context
-
-<!-- Z.B. Server-Konfiguration, Netzwerk-Setup, etc. / E.g. server config, network setup, etc. -->
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      options:
+        - label: Ich habe die [Troubleshooting-Sektion](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting) gelesen / I have read the troubleshooting section
+          required: false
+        - label: Ich habe "Verbindung testen" in den Einstellungen probiert / I have tried "Test connection" in settings
+          required: false
