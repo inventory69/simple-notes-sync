@@ -1,0 +1,34 @@
+---
+name: Question / Frage
+about: Stelle eine Frage zur Nutzung / Ask a question about usage
+title: '[QUESTION] '
+labels: question
+assignees: ''
+
+---
+
+## ❓ Frage / Question
+
+<!-- Deine Frage hier / Your question here -->
+
+---
+
+## 🔍 Was hast du bereits versucht? / What have you already tried?
+
+<!-- Hast du die Dokumentation gelesen? / Have you read the documentation? -->
+
+- [ ] [Quick Start Guide](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md) gelesen / read
+- [ ] [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting) durchgearbeitet / checked
+- [ ] [DOCS.md](https://github.com/inventory69/simple-notes-sync/blob/main/DOCS.md) gelesen / read
+
+---
+
+## 📱 Kontext / Context
+
+<!-- Z.B. Server-Setup, Android Version, etc. / E.g. server setup, Android version, etc. -->
+
+---
+
+## 🔧 Zusätzliche Informationen / Additional Information
+
+<!-- Screenshots, Config-Dateien (ohne Passwörter!), etc. / Screenshots, config files (without passwords!), etc. -->

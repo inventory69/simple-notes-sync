@@ -1,0 +1,53 @@
+---
+name: Feature Request / Feature-Wunsch
+about: Schlage eine neue Funktion vor / Suggest a new feature
+title: '[FEATURE] '
+labels: enhancement
+assignees: ''
+
+---
+
+## 💡 Feature-Beschreibung / Feature Description
+
+<!-- Was möchtest du hinzugefügt haben? / What would you like to be added? -->
+
+---
+
+## 🎯 Problem / Motivation
+
+<!-- Welches Problem würde dieses Feature lösen? / What problem would this feature solve? -->
+
+---
+
+## 📝 Vorgeschlagene Lösung / Proposed Solution
+
+<!-- Wie könnte das Feature funktionieren? / How could the feature work? -->
+
+---
+
+## 🔄 Alternativen / Alternatives
+
+<!-- Hast du andere Lösungsansätze in Betracht gezogen? / Have you considered other solutions? -->
+
+---
+
+## 📱 Plattform / Platform
+
+- [ ] Android App
+- [ ] WebDAV Server
+- [ ] Dokumentation / Documentation
+- [ ] Andere / Other: ___________
+
+---
+
+## 🌟 Priorität (aus deiner Sicht) / Priority (from your perspective)
+
+- [ ] Nice to have
+- [ ] Wichtig / Important
+- [ ] Kritisch / Critical
+
+---
+
+## 🔧 Zusätzliche Informationen / Additional Context
+
+<!-- Screenshots, Mockups, Links, etc. -->
