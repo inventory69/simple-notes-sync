@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Dokumentation / Documentation
+    url: https://github.com/inventory69/simple-notes-sync/blob/main/README.md
+    about: Schau zuerst in die Dokumentation / Check documentation first
+  - name: 🚀 Quick Start Guide
+    url: https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md
+    about: Schritt-für-Schritt Anleitung / Step-by-step guide
+  - name: 🐛 Troubleshooting
+    url: https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting
+    about: Häufige Probleme und Lösungen / Common issues and solutions

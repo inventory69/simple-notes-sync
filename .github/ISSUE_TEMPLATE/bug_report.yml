@@ -1,0 +1,61 @@
+---
+name: Bug Report / Fehlerbericht
+about: Melde einen Fehler in der App / Report a bug in the app
+title: '[BUG] '
+labels: bug
+assignees: ''
+
+---
+
+## 🐛 Beschreibung / Description
+
+<!-- Kurze Beschreibung des Problems / Brief description of the problem -->
+
+---
+
+## 📱 Systeminfo / System Info
+
+- **Android Version:** (z.B. / e.g. Android 13)
+- **App Version:** (z.B. / e.g. v1.1.0)
+- **Gerät / Device:** (z.B. / e.g. Samsung Galaxy S21)
+
+---
+
+## 🔄 Schritte zum Reproduzieren / Steps to Reproduce
+
+1. 
+2. 
+3. 
+
+---
+
+## ✅ Erwartetes Verhalten / Expected Behavior
+
+<!-- Was sollte passieren? / What should happen? -->
+
+---
+
+## ❌ Tatsächliches Verhalten / Actual Behavior
+
+<!-- Was passiert stattdessen? / What happens instead? -->
+
+---
+
+## 📸 Screenshots / Logs
+
+<!-- Falls vorhanden / If available -->
+
+<details>
+<summary>LogCat (optional)</summary>
+
+```
+Füge hier LogCat Output ein / Paste LogCat output here
+```
+
+</details>
+
+---
+
+## 🔧 Zusätzliche Informationen / Additional Context
+
+<!-- Z.B. Server-Konfiguration, Netzwerk-Setup, etc. / E.g. server config, network setup, etc. -->
