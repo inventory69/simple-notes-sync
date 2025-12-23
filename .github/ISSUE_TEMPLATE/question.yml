@@ -1,34 +1,76 @@
----
-name: Question / Frage
-about: Stelle eine Frage zur Nutzung / Ask a question about usage
-title: '[QUESTION] '
-labels: question
-assignees: ''
+name: ❓ Question / Frage
+description: Stelle eine Frage zur Nutzung / Ask a question about usage
+title: "[QUESTION] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hast du eine Frage? Wir helfen gerne! / Have a question? We're happy to help!
 
----
+  - type: textarea
+    id: question
+    attributes:
+      label: ❓ Frage / Question
+      description: Was möchtest du wissen? / What would you like to know?
+      placeholder: "z.B. Wie kann ich die Sync-URL für einen externen Server konfigurieren? / e.g. How can I configure the sync URL for an external server?"
+    validations:
+      required: true
 
-## ❓ Frage / Question
+  - type: checkboxes
+    id: documentation-checked
+    attributes:
+      label: 📚 Dokumentation gelesen / Documentation checked
+      description: Hast du bereits in der Dokumentation nachgeschaut? / Have you already checked the documentation?
+      options:
+        - label: Ich habe die [README](https://github.com/inventory69/simple-notes-sync/blob/main/README.md) gelesen / I have read the README
+          required: false
+        - label: Ich habe den [Quick Start Guide](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md) gelesen / I have read the Quick Start Guide
+          required: false
+        - label: Ich habe das [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting) durchgearbeitet / I have checked the troubleshooting section
+          required: false
 
-<!-- Deine Frage hier / Your question here -->
+  - type: textarea
+    id: tried
+    attributes:
+      label: 🔍 Was hast du bereits versucht? / What have you already tried?
+      description: Hilf uns, dir besser zu helfen / Help us help you better
+      placeholder: "z.B. Ich habe versucht die Server-URL anzupassen, aber... / e.g. I tried adjusting the server URL, but..."
+    validations:
+      required: false
 
----
+  - type: dropdown
+    id: topic
+    attributes:
+      label: � Thema / Topic
+      description: Um was geht es? / What is this about?
+      options:
+        - Server Setup / Server-Einrichtung
+        - App-Konfiguration / App configuration
+        - Sync-Probleme / Sync issues
+        - Netzwerk / Network
+        - Android-Einstellungen / Android settings
+        - Andere / Other
+    validations:
+      required: false
 
-## 🔍 Was hast du bereits versucht? / What have you already tried?
+  - type: textarea
+    id: context
+    attributes:
+      label: � Kontext / Context
+      description: Zusätzliche Informationen die hilfreich sein könnten / Additional information that might be helpful
+      placeholder: |
+        - Android Version: Android 13
+        - App Version: v1.1.0
+        - Server: Raspberry Pi mit Docker / Raspberry Pi with Docker
+        - Netzwerk: Lokales WiFi / Local WiFi
+    validations:
+      required: false
 
-<!-- Hast du die Dokumentation gelesen? / Have you read the documentation? -->
-
-- [ ] [Quick Start Guide](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md) gelesen / read
-- [ ] [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting) durchgearbeitet / checked
-- [ ] [DOCS.md](https://github.com/inventory69/simple-notes-sync/blob/main/DOCS.md) gelesen / read
-
----
-
-## 📱 Kontext / Context
-
-<!-- Z.B. Server-Setup, Android Version, etc. / E.g. server setup, Android version, etc. -->
-
----
-
-## 🔧 Zusätzliche Informationen / Additional Information
-
-<!-- Screenshots, Config-Dateien (ohne Passwörter!), etc. / Screenshots, config files (without passwords!), etc. -->
+  - type: textarea
+    id: additional
+    attributes:
+      label: 🔧 Screenshots / Config
+      description: Falls hilfreich (KEINE Passwörter!) / If helpful (NO passwords!)
+    validations:
+      required: false
