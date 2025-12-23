@@ -65,6 +65,12 @@ cd android
 
 ---
 
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)

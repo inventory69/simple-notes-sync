@@ -65,6 +65,12 @@ cd android
 
 ---
 
+## 🤝 Contributing
+
+Beiträge sind willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Details.
+
+---
+
 ## 📄 Lizenz
 
 MIT License - siehe [LICENSE](LICENSE)
