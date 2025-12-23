@@ -1,130 +1,65 @@
 # Simple Notes Sync 📝
 
-> **Minimalistische Android Notiz-App mit automatischer WLAN-Synchronisierung**
+> Minimalistische Offline-Notizen mit Auto-Sync zu deinem eigenen Server
 
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://www.android.com/)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9%2B-blue.svg)](https://kotlinlang.org/)
 [![Material Design 3](https://img.shields.io/badge/Material-Design%203-green.svg)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Schlanke Offline-Notizen ohne Schnickschnack - deine Daten bleiben bei dir. Automatische Synchronisierung zu deinem eigenen WebDAV-Server, kein Google, kein Microsoft, keine Cloud.
-
-## ✨ Features
-
-- 📝 **Offline-First** - Notizen lokal gespeichert, immer verfügbar
-- 🔄 **Auto-Sync** - Konfigurierbare Intervalle (15/30/60 Min.) mit ~0.2-0.8% Akku/Tag
-- 🏠 **Self-Hosted** - Deine Daten auf deinem Server (WebDAV)
-- 🎨 **Material Design 3** - Modern & Dynamic Theming
-- 🔋 **Akkuschonend** - Optimiert für Hintergrund-Synchronisierung
-- 🔐 **Privacy-First** - Kein Tracking, keine Analytics, keine Cloud
-- 🚫 **Keine Berechtigungen** - Nur Internet für WebDAV Sync
-
-## 📥 Quick Download
-
-**Android APK:** [📱 Neueste Version herunterladen](https://github.com/inventory69/simple-notes-sync/releases/latest)
-
-💡 **Tipp:** Nutze [Obtainium](https://github.com/ImranR98/Obtainium) für automatische Updates!
+**📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Dokumentation](DOCS.md)** · **🚀 [Quick Start](QUICKSTART.md)**
 
 ---
 
-## 🚀 Schnellstart
+## Features
 
-### 1️⃣ WebDAV Server starten
+- 📝 Offline-First - Notizen immer verfügbar
+- 🔄 Auto-Sync - Konfigurierbare Intervalle (15/30/60 Min)
+- 🏠 Self-Hosted - WebDAV auf deinem Server
+- 🔐 Privacy-First - Keine Cloud, kein Tracking
+- 🔋 Akkuschonend - ~0.2-0.8% pro Tag
 
-```fish
+---
+
+## 🚀 Quick Start
+
+### 1. Server Setup
+
+```bash
 cd server
 cp .env.example .env
-# Passwort in .env anpassen
+# Passwort in .env setzen
 docker compose up -d
 ```
 
-### 2️⃣ App installieren & konfigurieren
+➡️ **Details:** [Server Setup Guide](server/README.md)
 
-1. APK herunterladen und installieren
-2. App öffnen → **Einstellungen** (⚙️)
-3. Server konfigurieren:
-   - URL: `http://192.168.0.XXX:8080/notes`
-   - Benutzername: `noteuser`
-   - Passwort: (aus `.env`)
-4. **Auto-Sync aktivieren**
-5. **Sync-Intervall wählen** (15/30/60 Min.)
+### 2. App Installation
 
-**Fertig!** Notizen werden automatisch synchronisiert 🎉
+1. [APK herunterladen](https://github.com/inventory69/simple-notes-sync/releases/latest)
+2. Installieren & öffnen
+3. ⚙️ Einstellungen → Server konfigurieren
+4. Auto-Sync aktivieren
+
+➡️ **Details:** [Vollständige Anleitung](QUICKSTART.md)
 
 ---
 
-## ⚙️ Sync-Intervalle
+## 📚 Dokumentation
 
-| Intervall | Akku/Tag | Anwendungsfall |
-|-----------|----------|----------------|
-| **15 Min** | ~0.8% (~23 mAh) | ⚡ Maximale Aktualität |
-| **30 Min** | ~0.4% (~12 mAh) | ✓ Empfohlen - Ausgewogen |
-| **60 Min** | ~0.2% (~6 mAh) | 🔋 Maximale Akkulaufzeit |
-
-💡 **Hinweis:** Android Doze Mode kann Sync im Standby auf ~60 Min. verzögern (betrifft alle Apps).
+- **[Quick Start Guide](QUICKSTART.md)** - Schritt-für-Schritt Anleitung für Endbenutzer
+- **[Server Setup](server/README.md)** - WebDAV Server konfigurieren
+- **[Vollständige Docs](DOCS.md)** - Features, Troubleshooting, Build-Anleitung
 
 ---
 
-## 🎉 Neue Features in v1.1.0
+## 🛠️ Entwicklung
 
-### Konfigurierbare Sync-Intervalle
-- ⏱️ Wählbare Intervalle: 15/30/60 Minuten
-- 📊 Transparente Akkuverbrauchs-Anzeige
-- ⚡ Sofortige Anwendung ohne App-Neustart
-
-### Über-Sektion
-- 📱 App-Version & Build-Datum
-- 🌐 Links zu GitHub Repo & Entwickler
-- ⚖️ Lizenz-Information
-
-### Verbesserungen
-- 🎯 Benutzerfreundliche Doze-Mode Erklärung
-- 🔕 Keine störenden Sync-Fehler Toasts im Hintergrund
-- 📝 Erweiterte Debug-Logs für Troubleshooting
-
----
-
-## 🛠️ Selbst bauen
-
-```fish
+```bash
 cd android
 ./gradlew assembleStandardRelease
-# APK: android/app/build/outputs/apk/standard/release/
 ```
 
----
-
-## 🐛 Troubleshooting
-
-### Auto-Sync funktioniert nicht
-
-1. **Akku-Optimierung deaktivieren**
-   - Einstellungen → Apps → Simple Notes → Akku → Nicht optimieren
-2. **WLAN-Verbindung prüfen**
-   - Funktioniert nur im selben Netzwerk wie Server
-3. **Server-Status checken**
-   - Settings → "Verbindung testen"
-
-### Server nicht erreichbar
-
-```fish
-# Status prüfen
-docker compose ps
-
-# Logs ansehen
-docker compose logs -f
-
-# IP-Adresse finden
-ip addr show | grep "inet " | grep -v 127.0.0.1
-```
-
-Mehr Details: [📖 Dokumentation](DOCS.md)
-
----
-
-## 🤝 Contributing
-
-Contributions sind willkommen! Bitte öffne ein Issue oder Pull Request.
+➡️ **Details:** [Build-Anleitung in DOCS.md](DOCS.md)
 
 ---
 
@@ -132,6 +67,4 @@ Contributions sind willkommen! Bitte öffne ein Issue oder Pull Request.
 
 MIT License - siehe [LICENSE](LICENSE)
 
----
-
-**Version:** 1.1.0 · **Status:** ✅ Produktiv · **Gebaut mit:** Kotlin + Material Design 3
+**v1.1.0** · Gebaut mit Kotlin + Material Design 3
