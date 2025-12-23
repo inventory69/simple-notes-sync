@@ -1,5 +1,9 @@
 # WebDAV Server - Simple Notes Sync
 
+**🌍 Sprachen:** **Deutsch** · [English](README.en.md)
+
+---
+
 ## Quick Start
 
 ```bash
