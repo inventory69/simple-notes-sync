@@ -1,208 +1,267 @@
-# 🚀 Quick Start Guide
+# Quick Start Guide - Simple Notes Sync 📝
 
-## ✅ Server ist bereits gestartet!
-
-Der WebDAV-Server läuft bereits auf:
-- **Lokal:** `http://localhost:8080/`
-- **Im Netzwerk:** `http://192.168.0.188:8080/`
-
-### Credentials
-- **Username:** `noteuser`
-- **Password:** `SimpleNotes2025!`
-
-## 📱 Nächste Schritte: Android App erstellen
-
-### Option 1: Mit Android Studio (Empfohlen)
-
-1. **Android Studio öffnen**
-   ```
-   File → New → New Project
-   ```
-
-2. **Template wählen:**
-   - Empty Views Activity
-
-3. **Projekt konfigurieren:**
-   ```
-   Name: Simple Notes
-   Package: com.example.simplenotes
-   Save location: /home/liq/gitProjects/simple-notes-sync/android/
-   Language: Kotlin
-   Minimum SDK: API 24 (Android 7.0)
-   Build configuration: Kotlin DSL
-   ```
-
-4. **Dependencies hinzufügen:**
-   
-   Öffne `app/build.gradle.kts` und füge hinzu:
-   ```kotlin
-   dependencies {
-       // ... existing dependencies
-       
-       // WebDAV
-       implementation("com.github.thegrizzlylabs:sardine-android:0.8")
-       
-       // Coroutines
-       implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-       
-       // JSON
-       implementation("com.google.code.gson:gson:2.10.1")
-       
-       // WorkManager
-       implementation("androidx.work:work-runtime-ktx:2.9.0")
-   }
-   ```
-   
-   Und in `settings.gradle.kts`:
-   ```kotlin
-   dependencyResolutionManagement {
-       repositories {
-           google()
-           mavenCentral()
-           maven { url = uri("https://jitpack.io") }  // Für Sardine
-       }
-   }
-   ```
-
-5. **Code implementieren:**
-   
-   Alle Code-Beispiele findest du in:
-   - [ANDROID_GUIDE.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/ANDROID_GUIDE.md)
-   
-   Kopiere der Reihe nach:
-   - `models/Note.kt`
-   - `models/SyncStatus.kt`
-   - `storage/NotesStorage.kt`
-   - `utils/DeviceIdGenerator.kt`
-   - `utils/NotificationHelper.kt`
-   - `utils/Extensions.kt`
-   - `utils/Constants.kt`
-   - UI Layouts aus dem Guide
-   - Activities (MainActivity, NoteEditorActivity, SettingsActivity)
-   - `sync/WebDavSyncService.kt`
-   - `sync/WifiSyncReceiver.kt`
-   - `sync/SyncWorker.kt`
-   - `adapters/NotesAdapter.kt`
-
-6. **AndroidManifest.xml anpassen:**
-   ```xml
-   <uses-permission android:name="android.permission.INTERNET" />
-   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-   
-   <application
-       ...
-       android:usesCleartextTraffic="true">
-   ```
-
-7. **Build & Run:**
-   ```
-   Build → Make Project
-   Run → Run 'app'
-   ```
-
-8. **In der App konfigurieren:**
-   - Einstellungen öffnen
-   - Server URL: `http://192.168.0.188:8080/`
-   - Username: `noteuser`
-   - Password: `SimpleNotes2025!`
-   - Heim-WLAN SSID: `DeinWLANName`
-   - "Verbindung testen" → sollte erfolgreich sein ✓
-
-### Option 2: Schritt-für-Schritt Implementation
-
-Folge dem [IMPLEMENTATION_PLAN.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/IMPLEMENTATION_PLAN.md) mit 6 Sprints:
-
-1. **Sprint 1:** Server & Foundation (bereits done ✓)
-2. **Sprint 2:** Basic UI (4-6h)
-3. **Sprint 3:** Settings & WebDAV (6h)
-4. **Sprint 4:** Auto-Sync (6h)
-5. **Sprint 5:** Conflicts & Errors (6h)
-6. **Sprint 6:** Polish & Testing (6h)
-
-## 🧪 Server testen
-
-Der Server läuft bereits. Teste ihn:
-
-```bash
-# Einfacher Test
-curl -u noteuser:SimpleNotes2025! http://localhost:8080/
-
-# Test-Notiz hochladen
-echo '{"id":"test-123","title":"Test","content":"Hello World","createdAt":1703001234567,"updatedAt":1703001234567,"deviceId":"test","syncStatus":"SYNCED"}' > test.json
-
-curl -u noteuser:SimpleNotes2025! \
-  -T test.json \
-  http://localhost:8080/test.json
-
-# Test-Notiz abrufen
-curl -u noteuser:SimpleNotes2025! http://localhost:8080/test.json
-
-# Löschen
-curl -u noteuser:SimpleNotes2025! \
-  -X DELETE \
-  http://localhost:8080/test.json
-```
-
-## 📊 Server Management
-
-```bash
-cd /home/liq/gitProjects/simple-notes-sync/server
-
-# Status
-docker-compose ps
-
-# Logs
-docker-compose logs -f
-
-# Stoppen
-docker-compose down
-
-# Neu starten
-docker-compose up -d
-
-# Daten ansehen
-ls -la notes-data/
-```
-
-## 🔧 Troubleshooting
-
-### Server nicht erreichbar von Android
-
-1. **Firewall prüfen:**
-   ```bash
-   sudo ufw status
-   sudo ufw allow 8080
-   ```
-
-2. **Ping-Test:**
-   ```bash
-   ping 192.168.0.188
-   ```
-
-3. **Port-Test:**
-   ```bash
-   telnet 192.168.0.188 8080
-   ```
-
-### Permission Denied in Android
-
-- Android 13+: POST_NOTIFICATIONS Permission akzeptieren
-- Internet Permission in Manifest vorhanden?
-- `usesCleartextTraffic="true"` gesetzt?
-
-## 📚 Weitere Hilfe
-
-- **Vollständige Doku:** [project-docs/simple-notes-sync](https://github.com/inventory69/project-docs/tree/main/simple-notes-sync)
-- **Android Code:** [ANDROID_GUIDE.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/ANDROID_GUIDE.md)
-- **Server Setup:** [SERVER_SETUP.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/SERVER_SETUP.md)
-- **Notifications:** [NOTIFICATIONS.md](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/NOTIFICATIONS.md)
+> Schritt-für-Schritt Anleitung zur Installation und Einrichtung
 
 ---
 
-**Server Status:** ✅ Running on `http://192.168.0.188:8080/`
-**Next:** Android App in Android Studio erstellen
-**Estimated Time:** 18-24 Stunden für vollständige App
+## Voraussetzungen
 
-Viel Erfolg! 🚀
+- ✅ Android 8.0+ Smartphone/Tablet
+- ✅ WLAN-Verbindung
+- ✅ Eigener Server mit Docker (optional - für Self-Hosting)
+
+---
+
+## Option 1: Mit eigenem Server (Self-Hosted) 🏠
+
+### Schritt 1: WebDAV Server einrichten
+
+Auf deinem Server (z.B. Raspberry Pi, NAS, VPS):
+
+```bash
+# Repository klonen
+git clone https://github.com/inventory69/simple-notes-sync.git
+cd simple-notes-sync/server
+
+# Umgebungsvariablen konfigurieren
+cp .env.example .env
+nano .env
+```
+
+**In `.env` anpassen:**
+```env
+WEBDAV_PASSWORD=dein-sicheres-passwort-hier
+```
+
+**Server starten:**
+```bash
+docker compose up -d
+```
+
+**IP-Adresse finden:**
+```bash
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+➡️ **Notiere dir:** `http://DEINE-SERVER-IP:8080/`
+
+---
+
+### Schritt 2: App installieren
+
+1. **APK herunterladen:** [Neueste Version](https://github.com/inventory69/simple-notes-sync/releases/latest)
+   - Wähle: `simple-notes-sync-vX.X.X-standard-universal.apk`
+   
+2. **Installation erlauben:**
+   - Android: Einstellungen → Sicherheit → "Unbekannte Quellen" für deinen Browser aktivieren
+   
+3. **APK öffnen und installieren**
+
+---
+
+### Schritt 3: App konfigurieren
+
+1. **App öffnen**
+
+2. **Einstellungen öffnen** (⚙️ Icon oben rechts)
+
+3. **Server-Einstellungen konfigurieren:**
+   
+   | Feld | Wert |
+   |------|------|
+   | **WebDAV Server URL** | `http://DEINE-SERVER-IP:8080/` |
+   | **Benutzername** | `noteuser` |
+   | **Passwort** | (dein Passwort aus `.env`) |
+   | **Gateway SSID** | Name deines WLAN-Netzwerks |
+
+4. **"Verbindung testen"** drücken
+   - ✅ Erfolg? → Weiter zu Schritt 4
+   - ❌ Fehler? → Siehe [Troubleshooting](#troubleshooting)
+
+5. **Auto-Sync aktivieren** (Toggle Switch)
+
+6. **Sync-Intervall wählen:**
+   - **15 Min** - Maximale Aktualität (~0.8% Akku/Tag)
+   - **30 Min** - Empfohlen (~0.4% Akku/Tag) ⭐
+   - **60 Min** - Maximale Akkulaufzeit (~0.2% Akku/Tag)
+
+---
+
+### Schritt 4: Erste Notiz erstellen
+
+1. Zurück zur Hauptansicht (← Pfeil)
+
+2. **"Notiz hinzufügen"** (+ Icon)
+
+3. Titel und Text eingeben
+
+4. **Speichern** (💾 Icon)
+
+5. **Warten auf Auto-Sync** (oder manuell: ⚙️ → "Jetzt synchronisieren")
+
+🎉 **Fertig!** Deine Notizen werden automatisch synchronisiert!
+
+---
+
+## Option 2: Nur lokale Notizen (kein Server) 📱
+
+Du kannst Simple Notes auch **ohne Server** nutzen:
+
+1. **App installieren** (siehe Schritt 2 oben)
+
+2. **Ohne Server-Konfiguration verwenden:**
+   - Notizen werden nur lokal gespeichert
+   - Kein Auto-Sync
+   - Perfekt für reine Offline-Nutzung
+
+---
+
+## 🔋 Akku-Optimierung deaktivieren
+
+Für zuverlässigen Auto-Sync:
+
+1. **Einstellungen** → **Apps** → **Simple Notes Sync**
+
+2. **Akku** → **Akkuverbrauch**
+
+3. Wähle: **"Nicht optimieren"** oder **"Unbeschränkt"**
+
+💡 **Hinweis:** Android Doze Mode kann trotzdem Sync im Standby verzögern (~60 Min). Das ist normal und betrifft alle Apps.
+
+---
+
+## 📊 Sync-Intervalle im Detail
+
+| Intervall | Syncs/Tag | Akku/Tag | Akku/Sync | Anwendungsfall |
+|-----------|-----------|----------|-----------|----------------|
+| **15 Min** | ~96 | ~0.8% (~23 mAh) | ~0.008% | ⚡ Maximal aktuell (mehrere Geräte) |
+| **30 Min** | ~48 | ~0.4% (~12 mAh) | ~0.008% | ✓ **Empfohlen** - ausgewogen |
+| **60 Min** | ~24 | ~0.2% (~6 mAh) | ~0.008% | 🔋 Maximale Akkulaufzeit |
+
+---
+
+## 🐛 Troubleshooting
+
+### Verbindungstest schlägt fehl
+
+**Problem:** "Verbindung fehlgeschlagen" beim Test
+
+**Lösungen:**
+
+1. **Server läuft?**
+   ```bash
+   docker compose ps
+   # Sollte "Up" zeigen
+   ```
+
+2. **Gleiche WLAN?**
+   - Smartphone und Server müssen im selben Netzwerk sein
+   - Prüfe SSID in App-Einstellungen
+
+3. **IP-Adresse korrekt?**
+   ```bash
+   ip addr show | grep "inet "
+   # Prüfe ob IP in URL stimmt
+   ```
+
+4. **Firewall?**
+   ```bash
+   # Port 8080 öffnen (falls Firewall aktiv)
+   sudo ufw allow 8080/tcp
+   ```
+
+5. **Server-Logs prüfen:**
+   ```bash
+   docker compose logs -f
+   ```
+
+---
+
+### Auto-Sync funktioniert nicht
+
+**Problem:** Notizen werden nicht automatisch synchronisiert
+
+**Lösungen:**
+
+1. **Auto-Sync aktiviert?**
+   - ⚙️ Einstellungen → Toggle "Auto-Sync" muss **AN** sein
+
+2. **Akku-Optimierung deaktiviert?**
+   - Siehe [Akku-Optimierung](#-akku-optimierung-deaktivieren)
+
+3. **Im richtigen WLAN?**
+   - Sync funktioniert nur wenn SSID = Gateway SSID
+   - Prüfe aktuelle SSID in Android-Einstellungen
+
+4. **Manuell testen:**
+   - ⚙️ Einstellungen → "Jetzt synchronisieren"
+   - Funktioniert das? → Auto-Sync sollte auch funktionieren
+
+---
+
+### Notizen werden nicht angezeigt
+
+**Problem:** Nach Installation sind keine Notizen da, obwohl welche auf dem Server liegen
+
+**Lösung:**
+
+1. **Einmalig manuell synchronisieren:**
+   - ⚙️ Einstellungen → "Jetzt synchronisieren"
+
+2. **Server-Daten prüfen:**
+   ```bash
+   docker compose exec webdav ls -la /data/
+   # Sollte .json Dateien zeigen
+   ```
+
+---
+
+### Fehler beim Sync
+
+**Problem:** Fehlermeldung beim Synchronisieren
+
+**Lösungen:**
+
+1. **"401 Unauthorized"** → Passwort falsch
+   - Prüfe Passwort in App-Einstellungen
+   - Vergleiche mit `.env` auf Server
+
+2. **"404 Not Found"** → URL falsch
+   - Sollte enden mit `/` (z.B. `http://192.168.1.100:8080/`)
+
+3. **"Network error"** → Keine Verbindung
+   - Siehe [Verbindungstest schlägt fehl](#verbindungstest-schlägt-fehl)
+
+---
+
+## 📱 Updates
+
+### Automatisch mit Obtainium (empfohlen)
+
+1. **[Obtainium installieren](https://github.com/ImranR98/Obtanium/releases/latest)**
+
+2. **App hinzufügen:**
+   - URL: `https://github.com/inventory69/simple-notes-sync`
+   - Auto-Update aktivieren
+
+3. **Fertig!** Obtainium benachrichtigt dich bei neuen Versionen
+
+### Manuell
+
+1. Neue APK von [Releases](https://github.com/inventory69/simple-notes-sync/releases/latest) herunterladen
+
+2. Installieren (überschreibt alte Version)
+
+3. Alle Daten bleiben erhalten!
+
+---
+
+## 🆘 Weitere Hilfe
+
+- **GitHub Issues:** [Problem melden](https://github.com/inventory69/simple-notes-sync/issues)
+- **Vollständige Docs:** [DOCS.md](DOCS.md)
+- **Server Setup Details:** [server/README.md](server/README.md)
+
+---
+
+**Version:** 1.1.0 · **Erstellt:** Dezember 2025
