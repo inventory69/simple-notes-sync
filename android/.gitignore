@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Signing configuration (contains sensitive keys)
+key.properties
+*.jks
+*.keystore

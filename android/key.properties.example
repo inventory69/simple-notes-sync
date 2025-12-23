@@ -1,0 +1,21 @@
+# Android Signing Configuration
+# 
+# ANLEITUNG FÜR LOKALE BUILDS:
+# 1. Kopiere diese Datei nach "key.properties" (ohne .example)
+# 2. Fülle die Werte mit deinen echten Keystore-Daten aus
+# 3. Die key.properties Datei ist in .gitignore und wird NICHT committet
+#
+# WICHTIG: Diese Datei darf NIEMALS ins Git-Repository gelangen!
+# Sie enthält sensible Signing-Keys für die App-Veröffentlichung.
+
+# Pfad zum Keystore (relativ zum android/app Ordner)
+storeFile=simple-notes-release.jks
+
+# Keystore Password
+storePassword=DEIN_KEYSTORE_PASSWORD
+
+# Key Alias (meist "key0" oder ein selbst gewählter Name)
+keyAlias=DEIN_KEY_ALIAS
+
+# Key Password
+keyPassword=DEIN_KEY_PASSWORD
