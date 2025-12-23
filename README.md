@@ -8,6 +8,8 @@
 
 **📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Dokumentation](DOCS.md)** · **🚀 [Quick Start](QUICKSTART.md)**
 
+**🌍 Sprachen:** **Deutsch** · [English](README.en.md)
+
 ---
 
 ## Features

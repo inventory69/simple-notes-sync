@@ -6,7 +6,7 @@ on:
   workflow_dispatch:  # Ermöglicht manuellen Trigger
 
 permissions:
-  contents: write  # Für Release-Erstellung erforderlich
+  contents: write  # Fuer Release-Erstellung erforderlich
 
 jobs:
   build:
@@ -25,7 +25,7 @@ jobs:
       
       - name: Semantic Versionsnummer aus build.gradle.kts extrahieren
         run: |
-          # Version aus build.gradle.kts für F-Droid Kompatibilität
+          # Version aus build.gradle.kts fuer F-Droid Kompatibilität
           VERSION_NAME=$(grep "versionName = " android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
           VERSION_CODE=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           
@@ -62,7 +62,7 @@ jobs:
           mkdir -p apk-output
           
           # === Standard Flavor (mit Google Services) ===
-          # Universal APK (funktioniert auf allen Geräten)
+          # Universal APK (funktioniert auf allen Geraeten)
           cp android/app/build/outputs/apk/standard/release/app-standard-universal-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk
           
@@ -113,107 +113,41 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION_TAG }}
-          name: "📝 Simple Notes Sync v${{ env.VERSION_NAME }} (Produktions-Release)"
+          name: "📝 Simple Notes Sync v${{ env.VERSION_NAME }}"
           files: apk-output/*.apk
           draft: false
           prerelease: false
           generate_release_notes: false
           body: |
-            # 📝 Produktions-Release: Simple Notes Sync v${{ env.VERSION_NAME }}
+            ## 📦 Downloads
             
-            ## Build-Informationen
+            | Variante | Datei | Info |
+            |----------|-------|------|
+            | **🏆 Empfohlen** | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk` | Funktioniert auf allen Android-Geraeten |
+            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-arm64-v8a.apk` | Kleinere Dateigröße fuer 64-bit Geräte |
+            | Aelter (<2018) | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-armeabi-v7a.apk` | Fuer 32-bit ARM Geräte |
+            | F-Droid Universal | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-universal.apk` | Fuer F-Droid Store |
+            | F-Droid ARM64 | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-arm64-v8a.apk` | F-Droid 64-bit |
+            | F-Droid ARMv7 | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-armeabi-v7a.apk` | F-Droid 32-bit |
             
-            - **Version:** ${{ env.VERSION_NAME }}+${{ env.BUILD_NUMBER }}
-            - **Build-Datum:** ${{ env.COMMIT_DATE }}
-            - **Commit:** ${{ env.SHORT_SHA }}
-            - **Umgebung:** 🟢 **PRODUKTION**
+            💡 **Nicht sicher?** → Nimm die **Universal** APK!
             
             ---
             
-            ## 📋 Änderungen
+            ## 📋 Aenderungen
             
             ${{ env.COMMIT_MSG }}
             
             ---
             
-            ## 📦 Download & Installation
+            ## 📊 Build-Info
             
-            ### Welche APK soll ich herunterladen?
-            
-            **Flavor-Wahl (beide identisch, nur für verschiedene Stores):**
-            - **Standard**: Für direkten Download / Obtainium / GitHub Releases
-            - **F-Droid**: Für F-Droid Store (identisch, nur andere Kennzeichnung)
-            
-            💡 **Hinweis:** Beide Flavors sind 100% FOSS - keine Google Services, kein Tracking!
-            
-            **Architektur-Wahl:**
-            
-            | Dein Gerät | Standard Flavor | F-Droid Flavor | Größe | Hinweis |
-            |------------|----------------|----------------|-------|---------|
-            | 🤷 Nicht sicher? | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk` | `...-fdroid-universal.apk` | ~5 MB | Funktioniert überall |
-            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-arm64-v8a.apk` | `...-fdroid-arm64-v8a.apk` | ~3 MB | Schneller, kleiner |
-            | Ältere Geräte | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-armeabi-v7a.apk` | `...-fdroid-armeabi-v7a.apk` | ~3 MB | ARM-Chips vor 2018 |
-            
-            💡 **Empfehlung:** Nimm die **Standard Universal** APK!
-            
-            ### Installationsschritte
-            1. Lade die passende APK aus den Assets unten herunter
-            2. Aktiviere "Installation aus unbekannten Quellen" in den Android-Einstellungen
-            3. Öffne die heruntergeladene APK-Datei
-            4. Folge den Installationsanweisungen
-            5. Konfiguriere die WebDAV-Einstellungen in der App
+            - **Version:** ${{ env.VERSION_NAME }} (Code: ${{ env.BUILD_NUMBER }})
+            - **Datum:** ${{ env.COMMIT_DATE }}
+            - **Commit:** ${{ env.SHORT_SHA }}
             
             ---
             
-            ## ⚙️ Funktionen
-            
-            - ✅ Automatische WebDAV-Synchronisation alle 30 Minuten (~0,4% Akku/Tag)
-            - ✅ Intelligente Gateway-Erkennung (automatische Heimnetzwerk-Erkennung)
-            - ✅ Material Design 3 Oberfläche
-            - ✅ Datenschutzorientiert (kein Tracking, keine Analysen)
-            - ✅ Offline-First Architektur
-            
-            ---
-            
-            ## 🔄 Update von vorheriger Version
-            
-            Installiere diese APK einfach über die bestehende Installation - alle Daten und Einstellungen bleiben erhalten.
-            
-            ---
-            
-            ## 📱 Obtanium - Auto-Update App
-            
-            Erhalte automatische Updates mit [Obtanium](https://github.com/ImranR98/Obtanium/releases/latest).
-            
-            **Einrichtung:**
-            1. Installiere Obtanium über den Link oben
-            2. Füge die App mit dieser URL hinzu: `https://github.com/inentory69/simple-notes-sync`
-            3. Aktiviere Auto-Updates
-            
-            ---
-            
-            ## 🆘 Support
-            
-            Bei Problemen oder Fragen öffne bitte ein Issue auf GitHub.
-            
-            ---
-            
-            ## 🔒 Datenschutz & Sicherheit
-            
-            - Alle Daten werden über deinen eigenen WebDAV-Server synchronisiert (self-hosted)
-            - Keine Drittanbieter-Analysen oder Tracking
-            - Keine Internet-Berechtigungen außer für WebDAV-Sync
-            - Unterstützt HTTP (lokal) und HTTPS (extern) - du entscheidest
-            - Open Source - prüfe den Code selbst
-            
-            ---
-            
-            ## 🛠️ Erstellt mit
-            
-            - **Sprache:** Kotlin
-            - **UI:** Material Design 3
-            - **Sync:** WorkManager + WebDAV
-            - **Target SDK:** Android 16 (API 36)
-            - **Min SDK:** Android 8.0 (API 26)
+            **[� Dokumentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Issue melden](https://github.com/inventory69/simple-notes-sync/issues)**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,6 +2,8 @@
 
 > Schritt-für-Schritt Anleitung zur Installation und Einrichtung
 
+**🌍 Sprachen:** **Deutsch** · [English](QUICKSTART.en.md)
+
 ---
 
 ## Voraussetzungen
