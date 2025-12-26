@@ -12,6 +12,16 @@
 
 ---
 
+## 📱 Screenshots
+
+<p align="center">
+  <img src="android/fastlane/metadata/android/de-DE/images/phoneScreenshots/1.jpg" width="250" alt="Notizliste">
+  <img src="android/fastlane/metadata/android/de-DE/images/phoneScreenshots/2.jpg" width="250" alt="Notiz bearbeiten">
+  <img src="android/fastlane/metadata/android/de-DE/images/phoneScreenshots/3.jpg" width="250" alt="Einstellungen">
+</p>
+
+---
+
 ## Features
 
 - 📝 Offline-First - Notizen immer verfügbar
@@ -75,4 +85,4 @@ Beiträge sind willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Details
 
 MIT License - siehe [LICENSE](LICENSE)
 
-**v1.1.0** · Gebaut mit Kotlin + Material Design 3
+**v1.1.1** · Gebaut mit Kotlin + Material Design 3
