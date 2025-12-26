@@ -1,0 +1,36 @@
+Categories:
+  - Writing
+License: MIT
+AuthorName: Liq Dettmer
+AuthorEmail: liq@dettmer.dev
+AuthorWebSite: https://dettmer.dev
+SourceCode: https://github.com/inventory69/simple-notes-sync
+IssueTracker: https://github.com/inventory69/simple-notes-sync/issues
+Changelog: https://github.com/inventory69/simple-notes-sync/releases
+
+AutoName: Simple Notes Sync
+
+RepoType: git
+Repo: https://github.com/inventory69/simple-notes-sync.git
+
+Builds:
+  - versionName: 1.1.1
+    versionCode: 3
+    commit: v1.1.1
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-java-alternatives -a
+    gradle:
+      - fdroid
+    srclibs:
+      - reproducible-apk-tools@v0.2.8
+    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
+    scandelete:
+      - android/gradle/wrapper
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.1.1
+CurrentVersionCode: 3
