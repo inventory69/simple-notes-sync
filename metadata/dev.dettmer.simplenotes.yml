@@ -13,6 +13,11 @@ AutoName: Simple Notes Sync
 RepoType: git
 Repo: https://github.com/inventory69/simple-notes-sync.git
 
+AntiFeatures:
+  NonFreeNet:
+    en-US: Allows unencrypted HTTP connections to self-hosted WebDAV servers (optional, local network usage)
+    de-DE: Erlaubt unverschlüsselte HTTP-Verbindungen zu selbst gehosteten WebDAV-Servern (optional, lokale Netzwerk-Nutzung)
+
 Builds:
   - versionName: 1.1.1
     versionCode: 3
