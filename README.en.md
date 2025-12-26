@@ -12,6 +12,16 @@
 
 ---
 
+## 📱 Screenshots
+
+<p align="center">
+  <img src="android/fastlane/metadata/android/de-DE/images/phoneScreenshots/1.jpg" width="250" alt="Notes list">
+  <img src="android/fastlane/metadata/android/de-DE/images/phoneScreenshots/2.jpg" width="250" alt="Edit note">
+  <img src="android/fastlane/metadata/android/de-DE/images/phoneScreenshots/3.jpg" width="250" alt="Settings">
+</p>
+
+---
+
 ## Features
 
 - 📝 Offline-First - Notes always available
@@ -75,4 +85,4 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 MIT License - see [LICENSE](LICENSE)
 
-**v1.1.0** · Built with Kotlin + Material Design 3
+**v1.1.1** · Built with Kotlin + Material Design 3
