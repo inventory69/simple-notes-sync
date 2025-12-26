@@ -24,11 +24,31 @@
 
 ## Features
 
-- 📝 Offline-First - Notes always available
-- 🔄 Auto-Sync - Configurable intervals (15/30/60 min)
-- 🏠 Self-Hosted - WebDAV on your server
-- 🔐 Privacy-First - No cloud, no tracking
-- 🔋 Battery-friendly - ~0.2-0.8% per day
+### 📝 Notes
+- Create and edit simple text notes
+- Automatic save
+- Swipe-to-delete with confirmation
+
+### 🔄 Synchronization
+- Auto-sync (15/30/60 min intervals)
+- WiFi-based - Sync on home WiFi connection
+- Server check (2s timeout) - No errors in foreign networks
+- Conflict-free merging via timestamps
+
+### 🏠 Self-Hosted & Privacy
+- WebDAV server (Nextcloud, ownCloud, etc.)
+- Your data stays with you - No tracking, no analytics
+- 100% Open Source (MIT license)
+
+### 🔋 Performance
+- Battery-friendly (~0.2-0.8% per day)
+- Doze Mode optimized
+- Offline-first - All features work without internet
+
+### 🎨 Material Design 3
+- Dynamic Colors (Material You)
+- Dark Mode
+- Modern, intuitive UI
 
 ---
 

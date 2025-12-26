@@ -24,11 +24,31 @@
 
 ## Features
 
-- 📝 Offline-First - Notizen immer verfügbar
-- 🔄 Auto-Sync - Konfigurierbare Intervalle (15/30/60 Min)
-- 🏠 Self-Hosted - WebDAV auf deinem Server
-- 🔐 Privacy-First - Keine Cloud, kein Tracking
-- 🔋 Akkuschonend - ~0.2-0.8% pro Tag
+### 📝 Notizen
+- Einfache Textnotizen erstellen und bearbeiten
+- Automatisches Speichern
+- Swipe-to-Delete mit Bestätigung
+
+### 🔄 Synchronisation
+- Auto-Sync (15/30/60 Min Intervalle)
+- WiFi-basiert - Sync bei Heim-WLAN-Verbindung
+- Server-Check (2s Timeout) - Keine Fehler in fremden Netzwerken
+- Konfliktfreies Merging via Timestamps
+
+### 🏠 Self-Hosted & Privacy
+- WebDAV-Server (Nextcloud, ownCloud, etc.)
+- Deine Daten bei dir - Kein Tracking, keine Analytics
+- 100% Open Source (MIT Lizenz)
+
+### 🔋 Performance
+- Akkuschonend (~0.2-0.8% pro Tag)
+- Doze Mode optimiert
+- Offline-First - Alle Features ohne Internet
+
+### 🎨 Material Design 3
+- Dynamic Colors (Material You)
+- Dark Mode
+- Moderne, intuitive UI
 
 ---
 
