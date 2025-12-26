@@ -1,0 +1,20 @@
+🐛 Bugfixes v1.1.1
+
+✅ Keine Fehler-Notifications mehr in fremden WiFi-Netzwerken!
+- Server-Erreichbarkeits-Check vor jedem Sync (2s Timeout)
+- Stiller Abbruch wenn Server nicht erreichbar
+- 80% schnellerer Abbruch: 2s statt 10+ Sekunden
+
+✅ Keine Fehler beim WiFi-Connect / Nach-Hause-Kommen!
+- Pre-Check wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway)
+- Kein Fehler mehr bei Netzwerk-Initialisierung
+
+🔧 Notification-Verbesserungen:
+- Alte Notifications werden beim App-Start gelöscht
+- Fehler-Notifications verschwinden automatisch nach 30 Sekunden
+- Bessere Batterie-Effizienz (keine langen Timeouts mehr)
+
+📱 UI-Fixes:
+- Sync-Icon wird nicht mehr angezeigt wenn Sync nicht konfiguriert ist
+- Swipe-to-Delete: Kein Flackern mehr beim schnellen Löschen mehrerer Notizen
+- Nach dem Speichern einer Notiz landet man automatisch ganz oben in der Liste

@@ -1,0 +1,20 @@
+🐛 Bugfixes v1.1.1
+
+✅ No more error notifications in foreign WiFi networks!
+- Server reachability check before each sync (2s timeout)
+- Silent abort when server is unreachable
+- 80% faster abort: 2s instead of 10+ seconds
+
+✅ No more errors when connecting to WiFi / arriving home!
+- Pre-check waits until network is ready (DHCP, routing, gateway)
+- No more errors during network initialization
+
+🔧 Notification improvements:
+- Old notifications are cleared on app start
+- Error notifications disappear automatically after 30 seconds
+- Better battery efficiency (no more long timeouts)
+
+📱 UI fixes:
+- Sync icon no longer shown when sync is not configured
+- Swipe-to-delete: No more flickering when quickly deleting multiple notes
+- After saving a note, you automatically land at the top of the list

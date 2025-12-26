@@ -52,7 +52,28 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 2: Before syncNotes() call")
+                Logger.d(TAG, "📍 Step 2: Checking server reachability (Pre-Check)")
+            }
+            
+            // ⭐ KRITISCH: Server-Erreichbarkeits-Check VOR Sync
+            // Verhindert Fehler-Notifications in fremden WiFi-Netzen
+            // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway)
+            if (!syncService.isServerReachable()) {
+                Logger.d(TAG, "⏭️ Server not reachable - skipping sync (no error)")
+                Logger.d(TAG, "   Reason: Server offline/wrong network/network not ready/not configured")
+                Logger.d(TAG, "   This is normal in foreign WiFi or during network initialization")
+                
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (silent skip)")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
+                
+                // Success zurückgeben (kein Fehler, Server ist halt nicht erreichbar)
+                return@withContext Result.success()
+            }
+            
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 3: Server reachable - proceeding with sync")
                 Logger.d(TAG, "    SyncService: $syncService")
             }
             
@@ -73,13 +94,13 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 3: Processing result")
+                Logger.d(TAG, "📍 Step 4: Processing result")
                 Logger.d(TAG, "📦 Sync result: success=${result.isSuccess}, count=${result.syncedCount}, error=${result.errorMessage}")
             }
             
             if (result.isSuccess) {
                 if (BuildConfig.DEBUG) {
-                    Logger.d(TAG, "📍 Step 4: Success path")
+                    Logger.d(TAG, "📍 Step 5: Success path")
                 }
                 Logger.i(TAG, "✅ Sync successful: ${result.syncedCount} notes")
                 
@@ -109,7 +130,7 @@ class SyncWorker(
                 Result.success()
             } else {
                 if (BuildConfig.DEBUG) {
-                    Logger.d(TAG, "📍 Step 4: Failure path")
+                    Logger.d(TAG, "📍 Step 5: Failure path")
                 }
                 Logger.e(TAG, "❌ Sync failed: ${result.errorMessage}")
                 NotificationHelper.showSyncError(

@@ -118,7 +118,61 @@ fun isInHomeNetwork(): Boolean {
 
 ---
 
-## 🔋 Battery Optimization
+## � Sync Trigger Overview
+
+The app uses **4 different sync triggers** with different use cases:
+
+| Trigger | File | Function | When? | Pre-Check? |
+|---------|------|----------|-------|------------|
+| **1. Manual Sync** | `MainActivity.kt` | `triggerManualSync()` | User clicks sync button in menu | ✅ Yes |
+| **2. Auto-Sync (onResume)** | `MainActivity.kt` | `triggerAutoSync()` | App opened/resumed | ✅ Yes |
+| **3. Background Sync (Periodic)** | `SyncWorker.kt` | `doWork()` | Every 15/30/60 minutes (configurable) | ✅ Yes |
+| **4. WiFi-Connect Sync** | `NetworkMonitor.kt` → `SyncWorker.kt` | `triggerWifiConnectSync()` | WiFi enabled/SSID changed | ✅ Yes |
+
+### Server Reachability Check (Pre-Check)
+
+**All 4 sync triggers** use a **pre-check** before the actual sync:
+
+```kotlin
+// WebDavSyncService.kt - isServerReachable()
+suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
+    return@withContext try {
+        Socket().use { socket ->
+            socket.connect(InetSocketAddress(host, port), 2000)  // 2s Timeout
+        }
+        true
+    } catch (e: Exception) {
+        Logger.d(TAG, "Server not reachable: ${e.message}")
+        false
+    }
+}
+```
+
+**Why Socket Check instead of HTTP Request?**
+- ⚡ **Faster:** Socket connect is instant, HTTP request takes longer
+- 🔋 **Battery Efficient:** No HTTP overhead (headers, TLS handshake, etc.)
+- 🎯 **More Precise:** Only checks network reachability, not server logic
+- 🛡️ **Prevents Errors:** Detects foreign WiFi networks before sync error occurs
+
+**When does the check fail?**
+- ❌ Server offline/unreachable
+- ❌ Wrong WiFi network (e.g. public café WiFi)
+- ❌ Network not ready yet (DHCP/routing delay after WiFi connect)
+- ❌ VPN blocks server access
+- ❌ No WebDAV server URL configured
+
+### Sync Behavior by Trigger Type
+
+| Trigger | When server not reachable | On successful sync | Throttling |
+|---------|--------------------------|-------------------|------------|
+| Manual Sync | Toast: "Server not reachable" | Toast: "✅ Synced: X notes" | None |
+| Auto-Sync (onResume) | Silent abort (no toast) | Toast: "✅ Synced: X notes" | Max. 1x/min |
+| Background Sync | Silent abort (no toast) | Silent (LocalBroadcast only) | 15/30/60 min |
+| WiFi-Connect Sync | Silent abort (no toast) | Silent (LocalBroadcast only) | SSID-based |
+
+---
+
+## �🔋 Battery Optimization
 
 ### Usage Analysis
 
@@ -466,9 +520,10 @@ androidx.localbroadcastmanager:localbroadcastmanager:1.1.0
 ## 📖 Further Documentation
 
 - [Project Docs](https://github.com/inventory69/project-docs/tree/main/simple-notes-sync)
+- [Sync Architecture](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/SYNC_ARCHITECTURE.md) - **Detailed Sync Trigger Documentation**
 - [Android Guide](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/ANDROID_GUIDE.md)
 - [Bugfix Documentation](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/BUGFIX_SYNC_SPAM_AND_NOTIFICATIONS.md)
 
 ---
 
-**Last updated:** December 21, 2025
+**Last updated:** December 25, 2025

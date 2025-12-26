@@ -6,12 +6,15 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dev.dettmer.simplenotes.MainActivity
 
 object NotificationHelper {
     
+    private const val TAG = "NotificationHelper"
     private const val CHANNEL_ID = "notes_sync_channel"
     private const val CHANNEL_NAME = "Notizen Synchronisierung"
     private const val CHANNEL_DESCRIPTION = "Benachrichtigungen über Sync-Status"
@@ -36,6 +39,17 @@ object NotificationHelper {
                 as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
+    }
+    
+    /**
+     * Löscht alle Sync-Notifications
+     * Sollte beim App-Start aufgerufen werden um alte Notifications zu entfernen
+     */
+    fun clearSyncNotifications(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+            as NotificationManager
+        manager.cancel(SYNC_NOTIFICATION_ID)
+        Logger.d(TAG, "🗑️ Cleared old sync notifications")
     }
     
     /**
@@ -240,6 +254,7 @@ object NotificationHelper {
     
     /**
      * Zeigt Fehler-Notification
+     * Auto-Cancel nach 30 Sekunden
      */
     fun showSyncError(context: Context, message: String) {
         // PendingIntent für App-Öffnung
@@ -266,5 +281,11 @@ object NotificationHelper {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
             as NotificationManager
         manager.notify(SYNC_NOTIFICATION_ID, notification)
+        
+        // ⭐ NEU: Auto-Cancel nach 30 Sekunden
+        Handler(Looper.getMainLooper()).postDelayed({
+            manager.cancel(SYNC_NOTIFICATION_ID)
+            Logger.d(TAG, "🗑️ Auto-cancelled error notification after 30s timeout")
+        }, 30_000)
     }
 }

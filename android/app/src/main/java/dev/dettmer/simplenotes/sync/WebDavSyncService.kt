@@ -20,6 +20,7 @@ import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.Proxy
 import java.net.Socket
+import java.net.URL
 import javax.net.SocketFactory
 
 class WebDavSyncService(private val context: Context) {
@@ -186,6 +187,40 @@ class WebDavSyncService(private val context: Context) {
     
     private fun getServerUrl(): String? {
         return prefs.getString(Constants.KEY_SERVER_URL, null)
+    }
+    
+    /**
+     * Prüft ob WebDAV-Server erreichbar ist (ohne Sync zu starten)
+     * Verwendet Socket-Check für schnelle Erreichbarkeitsprüfung
+     * 
+     * @return true wenn Server erreichbar ist, false sonst
+     */
+    suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val serverUrl = getServerUrl()
+            if (serverUrl == null) {
+                Logger.d(TAG, "❌ Server URL not configured")
+                return@withContext false
+            }
+            
+            val url = URL(serverUrl)
+            val host = url.host
+            val port = if (url.port > 0) url.port else url.defaultPort
+            
+            Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
+            
+            // Socket-Check mit 2s Timeout
+            // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
+            val socket = Socket()
+            socket.connect(InetSocketAddress(host, port), 2000)
+            socket.close()
+            
+            Logger.d(TAG, "✅ Server is reachable")
+            true
+        } catch (e: Exception) {
+            Logger.d(TAG, "❌ Server not reachable: ${e.message}")
+            false
+        }
     }
     
     suspend fun testConnection(): SyncResult = withContext(Dispatchers.IO) {
