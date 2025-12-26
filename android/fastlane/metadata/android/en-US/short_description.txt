@@ -1,0 +1,1 @@
+Simple note-taking app with WebDAV synchronization

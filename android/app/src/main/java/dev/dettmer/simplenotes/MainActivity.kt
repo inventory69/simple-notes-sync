@@ -45,6 +45,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: NotesAdapter
     private val storage by lazy { NotesStorage(this) }
     
+    // Track pending deletions to prevent flicker when notes reload
+    private val pendingDeletions = mutableSetOf<String>()
+    
     private val prefs by lazy {
         getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -91,6 +94,9 @@ class MainActivity : AppCompatActivity() {
             Logger.enableFileLogging(this)
         }
         
+        // Alte Sync-Notifications beim App-Start löschen
+        NotificationHelper.clearSyncNotifications(this)
+        
         // Permission für Notifications (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestNotificationPermission()
@@ -117,7 +123,7 @@ class MainActivity : AppCompatActivity() {
         
         Logger.d(TAG, "📡 BroadcastReceiver registered (sync-completed)")
         
-        // Reload notes
+        // Reload notes (scroll to top wird in loadNotes() gemacht)
         loadNotes()
         
         // Trigger Auto-Sync beim App-Wechsel in Vordergrund (Toast)
@@ -142,10 +148,21 @@ class MainActivity : AppCompatActivity() {
         // Update last sync timestamp
         prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()
         
-        // GLEICHER Sync-Code wie manueller Sync (funktioniert!)
         lifecycleScope.launch {
             try {
                 val syncService = WebDavSyncService(this@MainActivity)
+                
+                // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
+                val isReachable = withContext(Dispatchers.IO) {
+                    syncService.isServerReachable()
+                }
+                
+                if (!isReachable) {
+                    Logger.d(TAG, "⏭️ Auto-sync ($source): Server not reachable - skipping silently")
+                    return@launch
+                }
+                
+                // Server ist erreichbar → Sync durchführen
                 val result = withContext(Dispatchers.IO) {
                     syncService.syncNotes()
                 }
@@ -236,6 +253,9 @@ class MainActivity : AppCompatActivity() {
                 val note = adapter.currentList[position]
                 val notesCopy = adapter.currentList.toMutableList()
                 
+                // Track pending deletion to prevent flicker
+                pendingDeletions.add(note.id)
+                
                 // Remove from list immediately for visual feedback
                 notesCopy.removeAt(position)
                 adapter.submitList(notesCopy)
@@ -246,13 +266,15 @@ class MainActivity : AppCompatActivity() {
                     "Notiz gelöscht",
                     Snackbar.LENGTH_LONG
                 ).setAction("RÜCKGÄNGIG") {
-                    // UNDO: Restore note in list
+                    // UNDO: Remove from pending deletions and restore
+                    pendingDeletions.remove(note.id)
                     loadNotes()
                 }.addCallback(object : Snackbar.Callback() {
                     override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
                         if (event != DISMISS_EVENT_ACTION) {
                             // Snackbar dismissed without UNDO → Actually delete the note
                             storage.deleteNote(note.id)
+                            pendingDeletions.remove(note.id)
                             loadNotes()
                         }
                     }
@@ -276,10 +298,21 @@ class MainActivity : AppCompatActivity() {
     
     private fun loadNotes() {
         val notes = storage.loadAllNotes()
-        adapter.submitList(notes)
+        
+        // Filter out notes that are pending deletion (prevent flicker)
+        val filteredNotes = notes.filter { it.id !in pendingDeletions }
+        
+        // Submit list with callback to scroll to top after list is updated
+        adapter.submitList(filteredNotes) {
+            // Scroll to top after list update is complete
+            // Wichtig: Nach dem Erstellen/Bearbeiten einer Notiz
+            if (filteredNotes.isNotEmpty()) {
+                recyclerViewNotes.scrollToPosition(0)
+            }
+        }
         
         // Material 3 Empty State Card
-        emptyStateCard.visibility = if (notes.isEmpty()) {
+        emptyStateCard.visibility = if (filteredNotes.isEmpty()) {
             android.view.View.VISIBLE
         } else {
             android.view.View.GONE
@@ -305,8 +338,21 @@ class MainActivity : AppCompatActivity() {
             try {
                 showToast("Starte Synchronisation...")
                 
-                // Start sync
+                // Create sync service
                 val syncService = WebDavSyncService(this@MainActivity)
+                
+                // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
+                val isReachable = withContext(Dispatchers.IO) {
+                    syncService.isServerReachable()
+                }
+                
+                if (!isReachable) {
+                    Logger.d(TAG, "⏭️ Manual Sync: Server not reachable - aborting")
+                    showToast("Server nicht erreichbar")
+                    return@launch
+                }
+                
+                // Server ist erreichbar → Sync durchführen
                 val result = withContext(Dispatchers.IO) {
                     syncService.syncNotes()
                 }

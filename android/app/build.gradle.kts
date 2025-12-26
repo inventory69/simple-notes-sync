@@ -17,8 +17,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2  // 🔥 F-Droid Release v1.1.0
-        versionName = "1.1.0"  // 🔥 Configurable Sync Interval + About Section
+        versionCode = 3  // 🔥 Bugfix: Spurious Sync Error Notifications + Sync Icon Bug
+        versionName = "1.1.1"  // 🔥 Bugfix: Server-Erreichbarkeits-Check + Notification-Improvements
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         

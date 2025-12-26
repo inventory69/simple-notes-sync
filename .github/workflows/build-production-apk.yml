@@ -101,13 +101,30 @@ jobs:
         run: |
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "COMMIT_DATE=$(git log -1 --format=%cd --date=iso-strict)" >> $GITHUB_ENV
+      
+      - name: F-Droid Changelogs lesen
+        run: |
+          # Lese deutsche Changelog (Hauptsprache)
+          if [ -f "android/fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
+            {
+              echo 'CHANGELOG_DE<<EOF'
+              cat "android/fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt"
+              echo 'EOF'
+            } >> $GITHUB_ENV
+          else
+            echo "CHANGELOG_DE=Keine deutschen Release Notes verfügbar." >> $GITHUB_ENV
+          fi
           
-          # Vollständige Commit-Nachricht mit Zeilenumbrüchen und Emojis (UTF-8)
-          {
-            echo 'COMMIT_MSG<<EOF'
-            git -c core.quotepath=false log -1 --pretty=%B
-            echo 'EOF'
-          } >> $GITHUB_ENV
+          # Lese englische Changelog (optional)
+          if [ -f "android/fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
+            {
+              echo 'CHANGELOG_EN<<EOF'
+              cat "android/fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt"
+              echo 'EOF'
+            } >> $GITHUB_ENV
+          else
+            echo "CHANGELOG_EN=" >> $GITHUB_ENV
+          fi
       
       - name: Create Production Release
         uses: softprops/action-gh-release@v1
@@ -134,9 +151,16 @@ jobs:
             
             ---
             
-            ## 📋 Aenderungen
+            ## 📋 Changelog / Release Notes
             
-            ${{ env.COMMIT_MSG }}
+            ${{ env.CHANGELOG_EN }}
+            
+            <details>
+            <summary>�🇪 Deutsche Version (zum Aufklappen)</summary>
+            
+            ${{ env.CHANGELOG_DE }}
+            
+            </details>
             
             ---
             
@@ -148,6 +172,6 @@ jobs:
             
             ---
             
-            **[� Dokumentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Issue melden](https://github.com/inventory69/simple-notes-sync/issues)**
+            **[📖 Dokumentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Issue melden](https://github.com/inventory69/simple-notes-sync/issues)**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

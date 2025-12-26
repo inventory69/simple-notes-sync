@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.adapters
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.toReadableTime
 import dev.dettmer.simplenotes.utils.truncate
 
@@ -39,14 +41,25 @@ class NotesAdapter(
             textViewContent.text = note.content.truncate(100)
             textViewTimestamp.text = note.updatedAt.toReadableTime()
             
-            // Sync status icon
-            val syncIcon = when (note.syncStatus) {
-                SyncStatus.SYNCED -> android.R.drawable.ic_menu_upload
-                SyncStatus.PENDING -> android.R.drawable.ic_popup_sync
-                SyncStatus.CONFLICT -> android.R.drawable.ic_dialog_alert
-                SyncStatus.LOCAL_ONLY -> android.R.drawable.ic_menu_save
+            // Sync Icon nur zeigen wenn Sync konfiguriert ist
+            val prefs = itemView.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+            val isSyncConfigured = !serverUrl.isNullOrEmpty()
+            
+            if (isSyncConfigured) {
+                // Sync status icon
+                val syncIcon = when (note.syncStatus) {
+                    SyncStatus.SYNCED -> android.R.drawable.ic_menu_upload
+                    SyncStatus.PENDING -> android.R.drawable.ic_popup_sync
+                    SyncStatus.CONFLICT -> android.R.drawable.ic_dialog_alert
+                    SyncStatus.LOCAL_ONLY -> android.R.drawable.ic_menu_save
+                }
+                imageViewSyncStatus.setImageResource(syncIcon)
+                imageViewSyncStatus.visibility = View.VISIBLE
+            } else {
+                // Sync nicht konfiguriert → Icon verstecken
+                imageViewSyncStatus.visibility = View.GONE
             }
-            imageViewSyncStatus.setImageResource(syncIcon)
             
             itemView.setOnClickListener {
                 onNoteClick(note)
