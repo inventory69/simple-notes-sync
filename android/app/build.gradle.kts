@@ -26,6 +26,12 @@ android {
         buildConfigField("String", "BUILD_DATE", "\"${getBuildDate()}\"")
     }
     
+    // Disable Google dependency metadata for F-Droid/IzzyOnDroid compatibility
+    dependenciesInfo {
+        includeInApk = false  // Removes DEPENDENCY_INFO_BLOCK from APK
+        includeInBundle = false  // Also disable for AAB (Google Play)
+    }
+    
     // Enable multiple APKs per ABI for smaller downloads
     splits {
         abi {
