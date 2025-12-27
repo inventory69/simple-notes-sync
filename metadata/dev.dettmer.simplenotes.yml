@@ -15,8 +15,20 @@ Repo: https://github.com/inventory69/simple-notes-sync.git
 
 AntiFeatures:
   NonFreeNet:
-    en-US: Allows unencrypted HTTP connections to self-hosted WebDAV servers (optional, local network usage)
-    de-DE: Erlaubt unverschlüsselte HTTP-Verbindungen zu selbst gehosteten WebDAV-Servern (optional, lokale Netzwerk-Nutzung)
+    en-US: |-
+      Allows unencrypted HTTP connections to self-hosted WebDAV servers on local networks.
+      Starting with v1.1.2, HTTP connections will be restricted to:
+      - Private IP ranges (RFC 1918: 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+      - Localhost (127.0.0.1, ::1)
+      - .local domains (mDNS)
+      HTTPS is recommended and supported for all connections.
+    de-DE: |-
+      Erlaubt unverschlüsselte HTTP-Verbindungen zu selbst gehosteten WebDAV-Servern in lokalen Netzwerken.
+      Ab Version 1.1.2 werden HTTP-Verbindungen eingeschränkt auf:
+      - Private IP-Bereiche (RFC 1918: 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+      - Localhost (127.0.0.1, ::1)
+      - .local-Domains (mDNS)
+      HTTPS wird empfohlen und für alle Verbindungen unterstützt.
 
 Builds:
   - versionName: 1.1.1
