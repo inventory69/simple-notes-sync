@@ -30,17 +30,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Auto-Save Status Indicator -->
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAutoSaveStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone"
-                android:textSize="12sp"
-                app:chipIconEnabled="false" />
-
             <!-- Material 3 Card: Server Configuration -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -63,15 +52,65 @@
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_marginBottom="16dp" />
 
-                    <!-- Server URL with Icon -->
-                    <com.google.android.material.textfield.TextInputLayout
+                    <!-- Protocol Selection -->
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/server_url"
+                        android:text="Verbindungstyp"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                        android:layout_marginBottom="8dp" />
+
+                    <RadioGroup
+                        android:id="@+id/protocolRadioGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/radioHttp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="🏠 Intern (HTTP)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:checked="false" />
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/radioHttps"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="🌐 Extern (HTTPS)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:checked="true" />
+
+                    </RadioGroup>
+
+                    <!-- Helper Text for Protocol Selection -->
+                    <TextView
+                        android:id="@+id/protocolHintText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="HTTP nur für lokale Netzwerke (z.B. 192.168.x.x, 10.x.x.x)"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginBottom="16dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp" />
+
+                    <!-- Server URL with Icon -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/textInputLayoutServerUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Server-Adresse"
                         android:layout_marginBottom="12dp"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         app:startIconDrawable="@android:drawable/ic_menu_compass"
                         app:endIconMode="clear_text"
+                        app:helperText="z.B. http://192.168.0.188:8080/webdav"
+                        app:helperTextEnabled="true"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -185,7 +224,7 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Material 3 Card: Auto-Sync Settings -->
+            <!-- Material 3 Card: Synchronisation Settings (Auto-Sync + Interval) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -230,6 +269,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
 
@@ -247,87 +287,22 @@
 
                     </LinearLayout>
 
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Material 3 Card: Backup & Restore -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.CardView.Elevated"
-                app:cardCornerRadius="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <!-- Section Header -->
-                    <TextView
+                    <!-- Divider -->
+                    <View
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/backup_restore_title"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_marginBottom="12dp" />
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="16dp"
+                        android:background="?attr/colorOutlineVariant" />
 
-                    <!-- Warning Info Card -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        app:cardBackgroundColor="?attr/colorErrorContainer"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:padding="16dp"
-                            android:text="@string/backup_restore_warning"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="?attr/colorOnErrorContainer"
-                            android:lineSpacingMultiplier="1.3" />
-
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Restore Button -->
-                    <Button
-                        android:id="@+id/buttonRestoreFromServer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/restore_from_server"
-                        style="@style/Widget.Material3.Button.TonalButton" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Material 3 Card: Sync Interval Configuration -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.CardView.Elevated"
-                app:cardCornerRadius="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <!-- Section Header -->
+                    <!-- Sync Interval Section -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Sync-Intervall"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                         android:layout_marginBottom="12dp" />
 
-                    <!-- Info Card -->
+                    <!-- Interval Info Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -407,6 +382,60 @@
                             android:paddingStart="48dp" />
 
                     </RadioGroup>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Material 3 Card: Backup & Restore -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/backup_restore_title"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Warning Info Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardBackgroundColor="?attr/colorErrorContainer"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:text="@string/backup_restore_warning"
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOnErrorContainer"
+                            android:lineSpacingMultiplier="1.3" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Restore Button -->
+                    <Button
+                        android:id="@+id/buttonRestoreFromServer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/restore_from_server"
+                        style="@style/Widget.Material3.Button.TonalButton" />
 
                 </LinearLayout>
 

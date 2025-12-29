@@ -24,14 +24,22 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- RecyclerView mit größerem Padding für Material 3 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewNotes"
+    <!-- SwipeRefreshLayout für Pull-to-Refresh (v1.1.2) -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:padding="16dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- RecyclerView mit größerem Padding für Material 3 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewNotes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="16dp" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Material 3 Empty State Card -->
     <com.google.android.material.card.MaterialCardView

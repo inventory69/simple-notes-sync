@@ -41,7 +41,8 @@ class NoteEditorActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
-            setHomeAsUpIndicator(android.R.drawable.ic_menu_close_clear_cancel)
+            // 🔥 v1.1.2: Use default back arrow (Material Design) instead of X icon
+            // Icon is set in XML: app:navigationIcon="?attr/homeAsUpIndicator"
         }
         
         // Find views

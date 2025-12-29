@@ -17,8 +17,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3  // 🔥 Bugfix: Spurious Sync Error Notifications + Sync Icon Bug
-        versionName = "1.1.1"  // 🔥 Bugfix: Server-Erreichbarkeits-Check + Notification-Improvements
+        versionCode = 4  // 🔥 v1.1.2: UX Fixes + CancellationException Handling
+        versionName = "1.1.2"  // 🔥 v1.1.2: Better UX + Job Cancellation Fix
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -129,6 +129,9 @@ dependencies {
 
     // LocalBroadcastManager für UI Refresh
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+
+    // SwipeRefreshLayout für Pull-to-Refresh
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // Testing (bleiben so)
     testImplementation(libs.junit)

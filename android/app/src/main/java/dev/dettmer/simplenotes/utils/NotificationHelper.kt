@@ -288,4 +288,40 @@ object NotificationHelper {
             Logger.d(TAG, "🗑️ Auto-cancelled error notification after 30s timeout")
         }, 30_000)
     }
+    
+    /**
+     * Zeigt Warnung wenn Server längere Zeit nicht erreichbar (v1.1.2)
+     * Throttling: Max. 1 Warnung pro 24h
+     */
+    fun showSyncWarning(context: Context, hoursSinceLastSync: Long) {
+        // PendingIntent für App-Öffnung
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle("⚠️ Sync-Warnung")
+            .setContentText("Server seit ${hoursSinceLastSync}h nicht erreichbar")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("Der WebDAV-Server ist seit ${hoursSinceLastSync} Stunden nicht erreichbar. " +
+                        "Bitte prüfe deine Netzwerkverbindung oder Server-Einstellungen."))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+            as NotificationManager
+        manager.notify(SYNC_NOTIFICATION_ID, notification)
+        
+        Logger.d(TAG, "⚠️ Showed sync warning: Server unreachable for ${hoursSinceLastSync}h")
+    }
 }
