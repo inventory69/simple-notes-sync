@@ -25,30 +25,27 @@
 ## Features
 
 ### 📝 Notizen
-- Einfache Textnotizen erstellen und bearbeiten
-- Automatisches Speichern
-- Swipe-to-Delete mit Bestätigung
+* Einfache Textnotizen mit automatischem Speichern
+* Swipe-to-Delete mit Bestätigung
+* Material Design 3 Editor
 
 ### 🔄 Synchronisation
-- Auto-Sync (15/30/60 Min Intervalle)
-- WiFi-basiert - Sync bei Heim-WLAN-Verbindung
-- Server-Check (2s Timeout) - Keine Fehler in fremden Netzwerken
-- Konfliktfreies Merging via Timestamps
+* **Pull-to-Refresh** für manuellen Sync
+* **Auto-Sync** (15/30/60 Min) nur im Heim-WLAN
+* **Smart Server-Check** - Keine Fehler in fremden Netzwerken
+* **Konfliktfreies Merging** - Deine Änderungen gehen nie verloren
 
-### 🏠 Self-Hosted & Privacy
-- WebDAV-Server (Nextcloud, ownCloud, etc.)
-- Deine Daten bei dir - Kein Tracking, keine Analytics
-- 100% Open Source (MIT Lizenz)
+### 🔒 Privacy & Self-Hosted
+* **WebDAV-Server** (Nextcloud, ownCloud, etc.)
+* **Docker Setup-Anleitung** in den Docs enthalten
+* **Deine Daten bleiben bei dir** - Kein Tracking, keine Cloud
+* **HTTP nur lokal** - HTTPS für externe Server
+* **100% Open Source** (MIT Lizenz)
 
 ### 🔋 Performance
-- Akkuschonend (~0.2-0.8% pro Tag)
-- Doze Mode optimiert
-- Offline-First - Alle Features ohne Internet
-
-### 🎨 Material Design 3
-- Dynamic Colors (Material You)
-- Dark Mode
-- Moderne, intuitive UI
+* **Akkuschonend** (~0.2-0.8% pro Tag)
+* **Offline-First** - Funktioniert ohne Internet
+* **Dark Mode** & Dynamic Colors
 
 ---
 
@@ -105,4 +102,4 @@ Beiträge sind willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Details
 
 MIT License - siehe [LICENSE](LICENSE)
 
-**v1.1.1** · Gebaut mit Kotlin + Material Design 3
+**v1.1.2** · Gebaut mit Kotlin + Material Design 3
