@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:elevation="0dp"
-        app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel"
+        app:navigationIcon="?attr/homeAsUpIndicator"
         app:title="@string/edit_note"
         app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
 

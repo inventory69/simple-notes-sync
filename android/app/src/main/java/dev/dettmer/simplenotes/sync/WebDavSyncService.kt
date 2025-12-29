@@ -190,6 +190,44 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
+     * Prüft ob lokale Änderungen seit letztem Sync vorhanden sind (v1.1.2)
+     * Performance-Optimierung: Vermeidet unnötige Sync-Operationen
+     * 
+     * @return true wenn unsynced changes vorhanden, false sonst
+     */
+    suspend fun hasUnsyncedChanges(): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val lastSyncTime = getLastSyncTimestamp()
+            
+            // Wenn noch nie gesynct, dann haben wir Änderungen
+            if (lastSyncTime == 0L) {
+                Logger.d(TAG, "📝 Never synced - assuming changes exist")
+                return@withContext true
+            }
+            
+            // Prüfe ob Notizen existieren die neuer sind als letzter Sync
+            val storage = dev.dettmer.simplenotes.storage.NotesStorage(context)
+            val allNotes = storage.loadAllNotes()
+            
+            val hasChanges = allNotes.any { note ->
+                note.updatedAt > lastSyncTime
+            }
+            
+            Logger.d(TAG, "📊 Unsynced changes check: $hasChanges (${allNotes.size} notes total)")
+            if (hasChanges) {
+                val unsyncedCount = allNotes.count { note -> note.updatedAt > lastSyncTime }
+                Logger.d(TAG, "   → $unsyncedCount notes modified since last sync")
+            }
+            
+            hasChanges
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to check for unsynced changes - assuming changes exist", e)
+            // Bei Fehler lieber sync durchführen (safe default)
+            true
+        }
+    }
+    
+    /**
      * Prüft ob WebDAV-Server erreichbar ist (ohne Sync zu starten)
      * Verwendet Socket-Check für schnelle Erreichbarkeitsprüfung
      * 
@@ -481,13 +519,19 @@ class WebDavSyncService(private val context: Context) {
     }
     
     private fun saveLastSyncTimestamp() {
+        val now = System.currentTimeMillis()
         prefs.edit()
-            .putLong(Constants.KEY_LAST_SYNC, System.currentTimeMillis())
+            .putLong(Constants.KEY_LAST_SYNC, now)
+            .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)  // 🔥 v1.1.2: Track successful sync
             .apply()
     }
     
     fun getLastSyncTimestamp(): Long {
         return prefs.getLong(Constants.KEY_LAST_SYNC, 0)
+    }
+    
+    fun getLastSuccessfulSyncTimestamp(): Long {
+        return prefs.getLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, 0)
     }
     
     /**

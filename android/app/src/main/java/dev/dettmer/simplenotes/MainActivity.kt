@@ -34,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : AppCompatActivity() {
     
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var emptyStateCard: MaterialCardView
     private lateinit var fabAddNote: FloatingActionButton
     private lateinit var toolbar: MaterialToolbar
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     
     private lateinit var adapter: NotesAdapter
     private val storage by lazy { NotesStorage(this) }
@@ -152,6 +154,12 @@ class MainActivity : AppCompatActivity() {
             try {
                 val syncService = WebDavSyncService(this@MainActivity)
                 
+                // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
+                if (!syncService.hasUnsyncedChanges()) {
+                    Logger.d(TAG, "⏭️ Auto-sync ($source): No unsynced changes - skipping")
+                    return@launch
+                }
+                
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
                 val isReachable = withContext(Dispatchers.IO) {
                     syncService.isServerReachable()
@@ -220,6 +228,7 @@ class MainActivity : AppCompatActivity() {
         emptyStateCard = findViewById(R.id.emptyStateCard)
         fabAddNote = findViewById(R.id.fabAddNote)
         toolbar = findViewById(R.id.toolbar)
+        swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
     }
     
     private fun setupToolbar() {
@@ -233,8 +242,70 @@ class MainActivity : AppCompatActivity() {
         recyclerViewNotes.adapter = adapter
         recyclerViewNotes.layoutManager = LinearLayoutManager(this)
         
+        // 🔥 v1.1.2: Setup Pull-to-Refresh
+        setupPullToRefresh()
+        
         // Setup Swipe-to-Delete
         setupSwipeToDelete()
+    }
+    
+    /**
+     * Setup Pull-to-Refresh für manuellen Sync (v1.1.2)
+     */
+    private fun setupPullToRefresh() {
+        swipeRefreshLayout.setOnRefreshListener {
+            Logger.d(TAG, "🔄 Pull-to-Refresh triggered - starting manual sync")
+            
+            lifecycleScope.launch {
+                try {
+                    val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                    val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+                    
+                    if (serverUrl.isNullOrEmpty()) {
+                        showToast("⚠️ Server noch nicht konfiguriert")
+                        swipeRefreshLayout.isRefreshing = false
+                        return@launch
+                    }
+                    
+                    val syncService = WebDavSyncService(this@MainActivity)
+                    
+                    // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
+                    if (!syncService.hasUnsyncedChanges()) {
+                        Logger.d(TAG, "⏭️ No unsynced changes, skipping server reachability check")
+                        showToast("✅ Bereits synchronisiert")
+                        swipeRefreshLayout.isRefreshing = false
+                        return@launch
+                    }
+                    
+                    // Check if server is reachable
+                    if (!syncService.isServerReachable()) {
+                        showToast("⚠️ Server nicht erreichbar")
+                        swipeRefreshLayout.isRefreshing = false
+                        return@launch
+                    }
+                    
+                    // Perform sync
+                    val result = syncService.syncNotes()
+                    
+                    if (result.isSuccess) {
+                        showToast("✅ ${result.syncedCount} Notizen synchronisiert")
+                        loadNotes()
+                    } else {
+                        showToast("❌ Sync fehlgeschlagen: ${result.errorMessage}")
+                    }
+                } catch (e: Exception) {
+                    Logger.e(TAG, "Pull-to-Refresh sync failed", e)
+                    showToast("❌ Fehler: ${e.message}")
+                } finally {
+                    swipeRefreshLayout.isRefreshing = false
+                }
+            }
+        }
+        
+        // Set Material 3 color scheme
+        swipeRefreshLayout.setColorSchemeResources(
+            com.google.android.material.R.color.material_dynamic_primary50
+        )
     }
     
     private fun setupSwipeToDelete() {
@@ -336,10 +407,17 @@ class MainActivity : AppCompatActivity() {
     private fun triggerManualSync() {
         lifecycleScope.launch {
             try {
-                showToast("Starte Synchronisation...")
-                
                 // Create sync service
                 val syncService = WebDavSyncService(this@MainActivity)
+                
+                // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
+                if (!syncService.hasUnsyncedChanges()) {
+                    Logger.d(TAG, "⏭️ Manual Sync: No unsynced changes - skipping")
+                    showToast("✅ Bereits synchronisiert")
+                    return@launch
+                }
+                
+                showToast("Starte Synchronisation...")
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
                 val isReachable = withContext(Dispatchers.IO) {

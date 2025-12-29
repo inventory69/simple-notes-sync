@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow HTTP for all connections during development/testing -->
+    <!-- Production validation happens in UrlValidator.kt to restrict HTTP to:
+         - Private IP ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x, 127.x.x.x
+         - .local domains (mDNS/Bonjour)
+         
+         This permissive config is necessary because Android's Network Security Config
+         doesn't support IP-based rules, only domain patterns.
+         We handle security through application-level validation instead. -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
