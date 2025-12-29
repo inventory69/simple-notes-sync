@@ -1,0 +1,12 @@
+v1.1.2 - UX & Performance
+
+• Fixed "Job was cancelled" error notifications
+• Back arrow instead of X in editor
+• Pull-to-Refresh for manual sync
+• HTTP/HTTPS protocol selector (radio buttons)
+• Inline error display (no toast spam)
+• Grouped settings (Auto-Sync & Interval)
+• Sync only on actual changes (saves battery)
+• 24h server offline warning
+• HTTP only for local networks (RFC 1918 IPs)
+• Removed auto-save notifications

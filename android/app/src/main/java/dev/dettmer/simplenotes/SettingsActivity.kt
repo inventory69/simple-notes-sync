@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -20,14 +21,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.chip.Chip
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import dev.dettmer.simplenotes.utils.UrlValidator
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.sync.NetworkMonitor
@@ -49,6 +48,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val LICENSE_URL = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
     }
     
+    private lateinit var textInputLayoutServerUrl: com.google.android.material.textfield.TextInputLayout
     private lateinit var editTextServerUrl: EditText
     private lateinit var editTextUsername: EditText
     private lateinit var editTextPassword: EditText
@@ -57,7 +57,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var buttonSyncNow: Button
     private lateinit var buttonRestoreFromServer: Button
     private lateinit var textViewServerStatus: TextView
-    private lateinit var chipAutoSaveStatus: Chip
+    
+    // Protocol Selection UI
+    private lateinit var protocolRadioGroup: RadioGroup
+    private lateinit var radioHttp: RadioButton
+    private lateinit var radioHttps: RadioButton
+    private lateinit var protocolHintText: TextView
     
     // Sync Interval UI
     private lateinit var radioGroupSyncInterval: RadioGroup
@@ -67,8 +72,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var cardGitHubRepo: MaterialCardView
     private lateinit var cardDeveloperProfile: MaterialCardView
     private lateinit var cardLicense: MaterialCardView
-    
-    private var autoSaveIndicatorJob: Job? = null
     
     private val prefs by lazy {
         getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
@@ -98,6 +101,7 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun findViews() {
+        textInputLayoutServerUrl = findViewById(R.id.textInputLayoutServerUrl)
         editTextServerUrl = findViewById(R.id.editTextServerUrl)
         editTextUsername = findViewById(R.id.editTextUsername)
         editTextPassword = findViewById(R.id.editTextPassword)
@@ -106,7 +110,12 @@ class SettingsActivity : AppCompatActivity() {
         buttonSyncNow = findViewById(R.id.buttonSyncNow)
         buttonRestoreFromServer = findViewById(R.id.buttonRestoreFromServer)
         textViewServerStatus = findViewById(R.id.textViewServerStatus)
-        chipAutoSaveStatus = findViewById(R.id.chipAutoSaveStatus)
+        
+        // Protocol Selection UI
+        protocolRadioGroup = findViewById(R.id.protocolRadioGroup)
+        radioHttp = findViewById(R.id.radioHttp)
+        radioHttps = findViewById(R.id.radioHttps)
+        protocolHintText = findViewById(R.id.protocolHintText)
         
         // Sync Interval UI
         radioGroupSyncInterval = findViewById(R.id.radioGroupSyncInterval)
@@ -119,16 +128,91 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun loadSettings() {
-        editTextServerUrl.setText(prefs.getString(Constants.KEY_SERVER_URL, ""))
+        val savedUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+        
+        // Parse existing URL to extract protocol and host/path
+        if (savedUrl.isNotEmpty()) {
+            val (protocol, hostPath) = parseUrl(savedUrl)
+            
+            // Set protocol radio button
+            when (protocol) {
+                "http" -> radioHttp.isChecked = true
+                "https" -> radioHttps.isChecked = true
+                else -> radioHttp.isChecked = true // Default to HTTP (most users have local servers)
+            }
+            
+            // Set URL with protocol prefix in the text field
+            editTextServerUrl.setText("$protocol://$hostPath")
+        } else {
+            // Default: HTTP selected (lokale Server sind häufiger), empty URL with prefix
+            radioHttp.isChecked = true
+            editTextServerUrl.setText("http://")
+        }
+        
         editTextUsername.setText(prefs.getString(Constants.KEY_USERNAME, ""))
         editTextPassword.setText(prefs.getString(Constants.KEY_PASSWORD, ""))
         switchAutoSync.isChecked = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+        
+        // Update hint text based on selected protocol
+        updateProtocolHint()
         
         // Server Status prüfen
         checkServerStatus()
     }
     
+    /**
+     * Parse URL into protocol and host/path components
+     * @param url Full URL like "https://example.com:8080/webdav"
+     * @return Pair of (protocol, hostPath) like ("https", "example.com:8080/webdav")
+     */
+    private fun parseUrl(url: String): Pair<String, String> {
+        return when {
+            url.startsWith("https://") -> "https" to url.removePrefix("https://")
+            url.startsWith("http://") -> "http" to url.removePrefix("http://")
+            else -> "http" to url // Default to HTTP if no protocol specified
+        }
+    }
+    
+    /**
+     * Update the hint text below protocol selection based on selected protocol
+     */
+    private fun updateProtocolHint() {
+        protocolHintText.text = if (radioHttp.isChecked) {
+            "HTTP nur für lokale Netzwerke (z.B. 192.168.x.x, 10.x.x.x)"
+        } else {
+            "HTTPS für sichere Verbindungen über das Internet"
+        }
+    }
+    
+    /**
+     * Update protocol prefix in URL field when radio button changes
+     * Keeps the host/path part, only changes http:// <-> https://
+     */
+    private fun updateProtocolInUrl() {
+        val currentText = editTextServerUrl.text.toString()
+        val newProtocol = if (radioHttp.isChecked) "http" else "https"
+        
+        // Extract host/path without protocol
+        val hostPath = when {
+            currentText.startsWith("https://") -> currentText.removePrefix("https://")
+            currentText.startsWith("http://") -> currentText.removePrefix("http://")
+            else -> currentText
+        }
+        
+        // Set new URL with correct protocol
+        editTextServerUrl.setText("$newProtocol://$hostPath")
+        
+        // Move cursor to end
+        editTextServerUrl.setSelection(editTextServerUrl.text?.length ?: 0)
+    }
+    
     private fun setupListeners() {
+        // Protocol selection listener - update URL prefix when radio changes
+        protocolRadioGroup.setOnCheckedChangeListener { _, checkedId ->
+            updateProtocolInUrl()
+            updateProtocolHint()
+        }
+        
         buttonTestConnection.setOnClickListener {
             saveSettings()
             testConnection()
@@ -146,23 +230,22 @@ class SettingsActivity : AppCompatActivity() {
         
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             onAutoSyncToggled(isChecked)
-            showAutoSaveIndicator()
         }
+        
+        // Clear error when user starts typing again
+        editTextServerUrl.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                textInputLayoutServerUrl.error = null
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
         
         // Server Status Check bei Settings-Änderung
         editTextServerUrl.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 checkServerStatus()
-                showAutoSaveIndicator()
             }
-        }
-        
-        editTextUsername.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) showAutoSaveIndicator()
-        }
-        
-        editTextPassword.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) showAutoSaveIndicator()
         }
     }
     
@@ -258,8 +341,26 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun saveSettings() {
+        // URL is already complete with protocol in the text field (http:// or https://)
+        val fullUrl = editTextServerUrl.text.toString().trim()
+        
+        // Clear previous error
+        textInputLayoutServerUrl.error = null
+        textInputLayoutServerUrl.isErrorEnabled = false
+        
+        // 🔥 v1.1.2: Validate HTTP URL (only allow for local networks)
+        if (fullUrl.isNotEmpty()) {
+            val (isValid, errorMessage) = UrlValidator.validateHttpUrl(fullUrl)
+            if (!isValid) {
+                // Only show error in TextField (no Toast)
+                textInputLayoutServerUrl.isErrorEnabled = true
+                textInputLayoutServerUrl.error = errorMessage
+                return
+            }
+        }
+        
         prefs.edit().apply {
-            putString(Constants.KEY_SERVER_URL, editTextServerUrl.text.toString().trim())
+            putString(Constants.KEY_SERVER_URL, fullUrl)
             putString(Constants.KEY_USERNAME, editTextUsername.text.toString().trim())
             putString(Constants.KEY_PASSWORD, editTextPassword.text.toString().trim())
             putBoolean(Constants.KEY_AUTO_SYNC, switchAutoSync.isChecked)
@@ -268,6 +369,24 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun testConnection() {
+        // URL is already complete with protocol in the text field (http:// or https://)
+        val fullUrl = editTextServerUrl.text.toString().trim()
+        
+        // Clear previous error
+        textInputLayoutServerUrl.error = null
+        textInputLayoutServerUrl.isErrorEnabled = false
+        
+        // 🔥 v1.1.2: Validate before testing
+        if (fullUrl.isNotEmpty()) {
+            val (isValid, errorMessage) = UrlValidator.validateHttpUrl(fullUrl)
+            if (!isValid) {
+                // Only show error in TextField (no Toast)
+                textInputLayoutServerUrl.isErrorEnabled = true
+                textInputLayoutServerUrl.error = errorMessage
+                return
+            }
+        }
+        
         lifecycleScope.launch {
             try {
                 showToast("Teste Verbindung...")
@@ -291,8 +410,23 @@ class SettingsActivity : AppCompatActivity() {
     private fun syncNow() {
         lifecycleScope.launch {
             try {
-                showToast("Synchronisiere...")
                 val syncService = WebDavSyncService(this@SettingsActivity)
+                
+                // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
+                if (!syncService.hasUnsyncedChanges()) {
+                    showToast("✅ Bereits synchronisiert")
+                    return@launch
+                }
+                
+                showToast("Synchronisiere...")
+                
+                // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in anderen Triggern)
+                if (!syncService.isServerReachable()) {
+                    showToast("⚠️ Server nicht erreichbar")
+                    checkServerStatus() // Server-Status aktualisieren
+                    return@launch
+                }
+                
                 val result = syncService.syncNotes()
                 
                 if (result.isSuccess) {
@@ -417,32 +551,6 @@ class SettingsActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to restart NetworkMonitor", e)
             showToast("Fehler beim Neustart des NetworkMonitors")
-        }
-    }
-    
-    private fun showAutoSaveIndicator() {
-        // Cancel previous job if still running
-        autoSaveIndicatorJob?.cancel()
-        
-        // Show saving indicator
-        chipAutoSaveStatus.apply {
-            visibility = android.view.View.VISIBLE
-            text = "💾 Speichere..."
-            setChipBackgroundColorResource(android.R.color.darker_gray)
-        }
-        
-        // Save settings
-        saveSettings()
-        
-        // Show saved confirmation after short delay
-        autoSaveIndicatorJob = lifecycleScope.launch {
-            delay(300) // Short delay to show "Speichere..."
-            chipAutoSaveStatus.apply {
-                text = "✓ Gespeichert"
-                setChipBackgroundColorResource(android.R.color.holo_green_light)
-            }
-            delay(2000) // Show for 2 seconds
-            chipAutoSaveStatus.visibility = android.view.View.GONE
         }
     }
     
