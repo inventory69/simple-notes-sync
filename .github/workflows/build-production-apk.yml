@@ -104,24 +104,22 @@ jobs:
       
       - name: F-Droid Changelogs lesen
         run: |
-          # Lese deutsche Changelog (Hauptsprache)
+          # Lese deutsche Changelog (Hauptsprache) - Use printf to ensure proper formatting
           if [ -f "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
-            {
-              echo 'CHANGELOG_DE<<CHANGELOG_EOF'
-              cat "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt"
-              echo 'CHANGELOG_EOF'
-            } >> $GITHUB_ENV
+            CHANGELOG_CONTENT=$(cat "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt")
+            echo "CHANGELOG_DE<<GHADELIMITER" >> $GITHUB_ENV
+            echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
+            echo "GHADELIMITER" >> $GITHUB_ENV
           else
             echo "CHANGELOG_DE=Keine deutschen Release Notes verfügbar." >> $GITHUB_ENV
           fi
           
           # Lese englische Changelog (optional)
           if [ -f "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
-            {
-              echo 'CHANGELOG_EN<<CHANGELOG_EOF'
-              cat "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt"
-              echo 'CHANGELOG_EOF'
-            } >> $GITHUB_ENV
+            CHANGELOG_CONTENT_EN=$(cat "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt")
+            echo "CHANGELOG_EN<<GHADELIMITER" >> $GITHUB_ENV
+            echo "$CHANGELOG_CONTENT_EN" >> $GITHUB_ENV
+            echo "GHADELIMITER" >> $GITHUB_ENV
           else
             echo "CHANGELOG_EN=" >> $GITHUB_ENV
           fi
