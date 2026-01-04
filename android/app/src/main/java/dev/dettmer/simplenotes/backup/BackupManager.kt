@@ -1,0 +1,361 @@
+package dev.dettmer.simplenotes.backup
+
+import android.content.Context
+import android.net.Uri
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+
+/**
+ * BackupManager: Lokale Backup & Restore Funktionalität
+ * 
+ * Features:
+ * - Backup aller Notizen in JSON-Datei
+ * - Restore mit 3 Modi (Merge, Replace, Overwrite Duplicates)
+ * - Auto-Backup vor Restore (Sicherheitsnetz)
+ * - Backup-Validierung
+ */
+class BackupManager(private val context: Context) {
+    
+    companion object {
+        private const val TAG = "BackupManager"
+        private const val BACKUP_VERSION = 1
+        private const val AUTO_BACKUP_DIR = "auto_backups"
+        private const val AUTO_BACKUP_RETENTION_DAYS = 7
+    }
+    
+    private val storage = NotesStorage(context)
+    private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
+    
+    /**
+     * Erstellt Backup aller Notizen
+     * 
+     * @param uri Output-URI (via Storage Access Framework)
+     * @return BackupResult mit Erfolg/Fehler Info
+     */
+    suspend fun createBackup(uri: Uri): BackupResult = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Logger.d(TAG, "📦 Creating backup to: $uri")
+            
+            val allNotes = storage.loadAllNotes()
+            Logger.d(TAG, "   Found ${allNotes.size} notes to backup")
+            
+            val backupData = BackupData(
+                backup_version = BACKUP_VERSION,
+                created_at = System.currentTimeMillis(),
+                notes_count = allNotes.size,
+                app_version = BuildConfig.VERSION_NAME,
+                notes = allNotes
+            )
+            
+            val jsonString = gson.toJson(backupData)
+            
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(jsonString.toByteArray())
+                Logger.d(TAG, "✅ Backup created successfully")
+            }
+            
+            BackupResult(
+                success = true,
+                notes_count = allNotes.size,
+                message = "Backup erstellt: ${allNotes.size} Notizen"
+            )
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to create backup", e)
+            BackupResult(
+                success = false,
+                error = "Backup fehlgeschlagen: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Erstellt automatisches Backup (vor Restore)
+     * Gespeichert in app-internem Storage
+     * 
+     * @return Uri des Auto-Backups oder null bei Fehler
+     */
+    suspend fun createAutoBackup(): Uri? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val autoBackupDir = File(context.filesDir, AUTO_BACKUP_DIR).apply {
+                if (!exists()) mkdirs()
+            }
+            
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
+                .format(Date())
+            val filename = "auto_backup_before_restore_$timestamp.json"
+            val file = File(autoBackupDir, filename)
+            
+            Logger.d(TAG, "📦 Creating auto-backup: ${file.absolutePath}")
+            
+            val allNotes = storage.loadAllNotes()
+            val backupData = BackupData(
+                backup_version = BACKUP_VERSION,
+                created_at = System.currentTimeMillis(),
+                notes_count = allNotes.size,
+                app_version = BuildConfig.VERSION_NAME,
+                notes = allNotes
+            )
+            
+            file.writeText(gson.toJson(backupData))
+            
+            // Cleanup alte Auto-Backups
+            cleanupOldAutoBackups(autoBackupDir)
+            
+            Logger.d(TAG, "✅ Auto-backup created: ${file.absolutePath}")
+            Uri.fromFile(file)
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to create auto-backup", e)
+            null
+        }
+    }
+    
+    /**
+     * Stellt Notizen aus Backup wieder her
+     * 
+     * @param uri Backup-Datei URI
+     * @param mode Wiederherstellungs-Modus (Merge/Replace/Overwrite)
+     * @return RestoreResult mit Details
+     */
+    suspend fun restoreBackup(uri: Uri, mode: RestoreMode): RestoreResult = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Logger.d(TAG, "📥 Restoring backup from: $uri (mode: $mode)")
+            
+            // 1. Backup-Datei lesen
+            val jsonString = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.bufferedReader().use { it.readText() }
+            } ?: return@withContext RestoreResult(
+                success = false,
+                error = "Datei konnte nicht gelesen werden"
+            )
+            
+            // 2. Backup validieren & parsen
+            val validationResult = validateBackup(jsonString)
+            if (!validationResult.isValid) {
+                return@withContext RestoreResult(
+                    success = false,
+                    error = validationResult.errorMessage ?: "Ungültige Backup-Datei"
+                )
+            }
+            
+            val backupData = gson.fromJson(jsonString, BackupData::class.java)
+            Logger.d(TAG, "   Backup valid: ${backupData.notes_count} notes, version ${backupData.backup_version}")
+            
+            // 3. Auto-Backup erstellen (Sicherheitsnetz)
+            val autoBackupUri = createAutoBackup()
+            if (autoBackupUri == null) {
+                Logger.w(TAG, "⚠️ Auto-backup failed, but continuing with restore")
+            }
+            
+            // 4. Restore durchführen (je nach Modus)
+            val result = when (mode) {
+                RestoreMode.MERGE -> restoreMerge(backupData.notes)
+                RestoreMode.REPLACE -> restoreReplace(backupData.notes)
+                RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(backupData.notes)
+            }
+            
+            Logger.d(TAG, "✅ Restore completed: ${result.imported_notes} imported, ${result.skipped_notes} skipped")
+            result
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to restore backup", e)
+            RestoreResult(
+                success = false,
+                error = "Wiederherstellung fehlgeschlagen: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Validiert Backup-Datei
+     */
+    private fun validateBackup(jsonString: String): ValidationResult {
+        return try {
+            val backupData = gson.fromJson(jsonString, BackupData::class.java)
+            
+            // Version kompatibel?
+            if (backupData.backup_version > BACKUP_VERSION) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "Backup-Version nicht unterstützt (v${backupData.backup_version} benötigt v${BACKUP_VERSION}+)"
+                )
+            }
+            
+            // Notizen-Array vorhanden?
+            if (backupData.notes.isEmpty()) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "Backup enthält keine Notizen"
+                )
+            }
+            
+            // Alle Notizen haben ID, title, content?
+            val invalidNotes = backupData.notes.filter { note ->
+                note.id.isBlank() || note.title.isBlank()
+            }
+            
+            if (invalidNotes.isNotEmpty()) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "Backup enthält ${invalidNotes.size} ungültige Notizen"
+                )
+            }
+            
+            ValidationResult(isValid = true)
+            
+        } catch (e: Exception) {
+            ValidationResult(
+                isValid = false,
+                errorMessage = "Backup-Datei beschädigt oder ungültig: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Restore-Modus: MERGE
+     * Fügt neue Notizen hinzu, behält bestehende
+     */
+    private fun restoreMerge(backupNotes: List<Note>): RestoreResult {
+        val existingNotes = storage.loadAllNotes()
+        val existingIds = existingNotes.map { it.id }.toSet()
+        
+        val newNotes = backupNotes.filter { it.id !in existingIds }
+        val skippedNotes = backupNotes.size - newNotes.size
+        
+        newNotes.forEach { note ->
+            storage.saveNote(note)
+        }
+        
+        return RestoreResult(
+            success = true,
+            imported_notes = newNotes.size,
+            skipped_notes = skippedNotes,
+            message = "${newNotes.size} neue Notizen importiert, $skippedNotes übersprungen"
+        )
+    }
+    
+    /**
+     * Restore-Modus: REPLACE
+     * Löscht alle bestehenden Notizen, importiert Backup
+     */
+    private fun restoreReplace(backupNotes: List<Note>): RestoreResult {
+        // Alle bestehenden Notizen löschen
+        storage.deleteAllNotes()
+        
+        // Backup-Notizen importieren
+        backupNotes.forEach { note ->
+            storage.saveNote(note)
+        }
+        
+        return RestoreResult(
+            success = true,
+            imported_notes = backupNotes.size,
+            skipped_notes = 0,
+            message = "Alle Notizen ersetzt: ${backupNotes.size} importiert"
+        )
+    }
+    
+    /**
+     * Restore-Modus: OVERWRITE_DUPLICATES
+     * Backup überschreibt bei ID-Konflikten
+     */
+    private fun restoreOverwriteDuplicates(backupNotes: List<Note>): RestoreResult {
+        val existingNotes = storage.loadAllNotes()
+        val existingIds = existingNotes.map { it.id }.toSet()
+        
+        val newNotes = backupNotes.filter { it.id !in existingIds }
+        val overwrittenNotes = backupNotes.filter { it.id in existingIds }
+        
+        // Alle Backup-Notizen speichern (überschreibt automatisch)
+        backupNotes.forEach { note ->
+            storage.saveNote(note)
+        }
+        
+        return RestoreResult(
+            success = true,
+            imported_notes = newNotes.size,
+            skipped_notes = 0,
+            overwritten_notes = overwrittenNotes.size,
+            message = "${newNotes.size} neu, ${overwrittenNotes.size} überschrieben"
+        )
+    }
+    
+    /**
+     * Löscht Auto-Backups älter als RETENTION_DAYS
+     */
+    private fun cleanupOldAutoBackups(autoBackupDir: File) {
+        try {
+            val retentionTimeMs = AUTO_BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000L
+            val cutoffTime = System.currentTimeMillis() - retentionTimeMs
+            
+            autoBackupDir.listFiles()?.forEach { file ->
+                if (file.lastModified() < cutoffTime) {
+                    Logger.d(TAG, "🗑️ Deleting old auto-backup: ${file.name}")
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to cleanup old backups", e)
+        }
+    }
+}
+
+/**
+ * Backup-Daten Struktur (JSON)
+ */
+data class BackupData(
+    val backup_version: Int,
+    val created_at: Long,
+    val notes_count: Int,
+    val app_version: String,
+    val notes: List<Note>
+)
+
+/**
+ * Wiederherstellungs-Modi
+ */
+enum class RestoreMode {
+    MERGE,                  // Bestehende + Neue (Standard)
+    REPLACE,                // Alles löschen + Importieren
+    OVERWRITE_DUPLICATES    // Backup überschreibt bei ID-Konflikten
+}
+
+/**
+ * Backup-Ergebnis
+ */
+data class BackupResult(
+    val success: Boolean,
+    val notes_count: Int = 0,
+    val message: String? = null,
+    val error: String? = null
+)
+
+/**
+ * Restore-Ergebnis
+ */
+data class RestoreResult(
+    val success: Boolean,
+    val imported_notes: Int = 0,
+    val skipped_notes: Int = 0,
+    val overwritten_notes: Int = 0,
+    val message: String? = null,
+    val error: String? = null
+)
+
+/**
+ * Validierungs-Ergebnis
+ */
+data class ValidationResult(
+    val isValid: Boolean,
+    val errorMessage: String? = null
+)

@@ -444,9 +444,11 @@ class WebDavSyncService(private val context: Context) {
     private fun uploadLocalNotes(sardine: Sardine, serverUrl: String): Int {
         var uploadedCount = 0
         val localNotes = storage.loadAllNotes()
+        val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
         
         for (note in localNotes) {
             try {
+                // 1. JSON-Upload (bestehend, unverändert)
                 if (note.syncStatus == SyncStatus.LOCAL_ONLY || note.syncStatus == SyncStatus.PENDING) {
                     val noteUrl = "$serverUrl/${note.id}.json"
                     val jsonBytes = note.toJson().toByteArray()
@@ -457,6 +459,18 @@ class WebDavSyncService(private val context: Context) {
                     val updatedNote = note.copy(syncStatus = SyncStatus.SYNCED)
                     storage.saveNote(updatedNote)
                     uploadedCount++
+                    
+                    // 2. Markdown-Export (NEU in v1.2.0)
+                    // Läuft NACH erfolgreichem JSON-Upload
+                    if (markdownExportEnabled) {
+                        try {
+                            exportToMarkdown(sardine, serverUrl, note)
+                            Logger.d(TAG, "   📝 MD exported: ${note.title}")
+                        } catch (e: Exception) {
+                            Logger.e(TAG, "MD-Export failed for ${note.id}: ${e.message}")
+                            // Kein throw! JSON-Sync darf nicht blockiert werden
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 // Mark as pending for retry
@@ -466,6 +480,49 @@ class WebDavSyncService(private val context: Context) {
         }
         
         return uploadedCount
+    }
+    
+    /**
+     * Exportiert einzelne Note als Markdown (Task #1.2.0-11)
+     * 
+     * @param sardine Sardine-Client
+     * @param serverUrl Server-URL (notes/ Ordner)
+     * @param note Note zum Exportieren
+     */
+    private fun exportToMarkdown(sardine: Sardine, serverUrl: String, note: Note) {
+        val mdUrl = serverUrl.replace("/notes", "/notes-md")
+        
+        // Erstelle notes-md/ Ordner falls nicht vorhanden
+        if (!sardine.exists(mdUrl)) {
+            sardine.createDirectory(mdUrl)
+            Logger.d(TAG, "📁 Created notes-md/ directory")
+        }
+        
+        // Sanitize Filename (Task #1.2.0-12)
+        val filename = sanitizeFilename(note.title) + ".md"
+        val noteUrl = "$mdUrl/$filename"
+        
+        // Konvertiere zu Markdown
+        val mdContent = note.toMarkdown().toByteArray()
+        
+        // Upload
+        sardine.put(noteUrl, mdContent, "text/markdown")
+    }
+    
+    /**
+     * Sanitize Filename für sichere Dateinamen (Task #1.2.0-12)
+     * 
+     * Entfernt Windows/Linux-verbotene Zeichen, begrenzt Länge
+     * 
+     * @param title Original-Titel
+     * @return Sicherer Filename
+     */
+    private fun sanitizeFilename(title: String): String {
+        return title
+            .replace(Regex("[<>:\"/\\\\|?*]"), "_")  // Ersetze verbotene Zeichen
+            .replace(Regex("\\s+"), " ")              // Normalisiere Whitespace
+            .take(200)                                 // Max 200 Zeichen (Reserve für .md)
+            .trim('_', ' ')                            // Trim Underscores/Spaces
     }
     
     private data class DownloadResult(
@@ -616,6 +673,86 @@ class WebDavSyncService(private val context: Context) {
                 errorMessage = e.message ?: "Unbekannter Fehler",
                 restoredCount = 0
             )
+        }
+    }
+    
+    /**
+     * Synchronisiert Markdown-Dateien (Import von Desktop-Programmen) (Task #1.2.0-14)
+     * 
+     * Last-Write-Wins Konfliktauflösung basierend auf updatedAt Timestamp
+     * 
+     * @param serverUrl WebDAV Server-URL (notes/ Ordner)
+     * @param username WebDAV Username
+     * @param password WebDAV Password
+     * @return Anzahl importierter Notizen
+     */
+    suspend fun syncMarkdownFiles(
+        serverUrl: String, 
+        username: String, 
+        password: String
+    ): Int = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Logger.d(TAG, "📝 Starting Markdown sync...")
+            
+            val sardine = OkHttpSardine()
+            sardine.setCredentials(username, password)
+            
+            val mdUrl = serverUrl.replace("/notes", "/notes-md")
+            
+            // Check if notes-md/ exists
+            if (!sardine.exists(mdUrl)) {
+                Logger.d(TAG, "⚠️ notes-md/ directory not found - skipping MD import")
+                return@withContext 0
+            }
+            
+            val localNotes = storage.loadAllNotes()
+            val mdResources = sardine.list(mdUrl).filter { it.name.endsWith(".md") }
+            var importedCount = 0
+            
+            Logger.d(TAG, "📂 Found ${mdResources.size} markdown files")
+            
+            for (resource in mdResources) {
+                try {
+                    // Download MD-File
+                    val mdContent = sardine.get(resource.href.toString())
+                        .bufferedReader().use { it.readText() }
+                    
+                    // Parse zu Note
+                    val mdNote = Note.fromMarkdown(mdContent) ?: continue
+                    
+                    val localNote = localNotes.find { it.id == mdNote.id }
+                    
+                    // Konfliktauflösung: Last-Write-Wins
+                    when {
+                        localNote == null -> {
+                            // Neue Notiz vom Desktop
+                            storage.saveNote(mdNote)
+                            importedCount++
+                            Logger.d(TAG, "   ✅ Imported new: ${mdNote.title}")
+                        }
+                        mdNote.updatedAt > localNote.updatedAt -> {
+                            // Desktop-Version ist neuer (Last-Write-Wins)
+                            storage.saveNote(mdNote)
+                            importedCount++
+                            Logger.d(TAG, "   ✅ Updated from MD: ${mdNote.title}")
+                        }
+                        // Sonst: Lokale Version behalten
+                        else -> {
+                            Logger.d(TAG, "   ⏭️ Local newer, skipping: ${mdNote.title}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Logger.e(TAG, "Failed to import ${resource.name}", e)
+                    // Continue with other files
+                }
+            }
+            
+            Logger.d(TAG, "✅ Markdown sync completed: $importedCount imported")
+            importedCount
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "Markdown sync failed", e)
+            0
         }
     }
 }

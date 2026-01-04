@@ -19,6 +19,10 @@ object Constants {
     const val PREF_SYNC_INTERVAL_MINUTES = "sync_interval_minutes"
     const val DEFAULT_SYNC_INTERVAL_MINUTES = 30L
     
+    // 🔥 v1.2.0: Markdown Export/Import
+    const val KEY_MARKDOWN_EXPORT = "markdown_export_enabled"
+    const val KEY_MARKDOWN_AUTO_IMPORT = "markdown_auto_import_enabled"
+    
     // WorkManager
     const val SYNC_WORK_TAG = "notes_sync"
     const val SYNC_DELAY_SECONDS = 5L
