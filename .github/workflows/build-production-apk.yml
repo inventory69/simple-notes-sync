@@ -107,9 +107,9 @@ jobs:
           # Lese deutsche Changelog (Hauptsprache)
           if [ -f "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
             {
-              echo 'CHANGELOG_DE<<EOF'
+              echo 'CHANGELOG_DE<<CHANGELOG_EOF'
               cat "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt"
-              echo 'EOF'
+              echo 'CHANGELOG_EOF'
             } >> $GITHUB_ENV
           else
             echo "CHANGELOG_DE=Keine deutschen Release Notes verfügbar." >> $GITHUB_ENV
@@ -118,9 +118,9 @@ jobs:
           # Lese englische Changelog (optional)
           if [ -f "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
             {
-              echo 'CHANGELOG_EN<<EOF'
+              echo 'CHANGELOG_EN<<CHANGELOG_EOF'
               cat "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt"
-              echo 'EOF'
+              echo 'CHANGELOG_EOF'
             } >> $GITHUB_ENV
           else
             echo "CHANGELOG_EN=" >> $GITHUB_ENV
