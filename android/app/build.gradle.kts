@@ -17,8 +17,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4  // 🔥 v1.1.2: UX Fixes + CancellationException Handling
-        versionName = "1.1.2"  // 🔥 v1.1.2: Better UX + Job Cancellation Fix
+        versionCode = 5  // 🔥 v1.2.0: Local Backup + Markdown Desktop Integration
+        versionName = "1.2.0"  // 🔥 v1.2.0: Backup/Restore + Joplin/Obsidian Support
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         

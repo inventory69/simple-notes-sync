@@ -387,6 +387,92 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Material 3 Card: Markdown Desktop-Integration (v1.2.0) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.Material3.CardView.Elevated"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Markdown Desktop-Integration"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Info Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:text="ℹ️ Exportiert Notizen zusätzlich als .md Dateien. Mounte WebDAV als Netzlaufwerk um mit VS Code, Typora oder jedem Markdown-Editor zu bearbeiten. JSON-Sync bleibt primäres Format."
+                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                            android:textColor="?attr/colorOnPrimaryContainer"
+                            android:lineSpacingMultiplier="1.3" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Markdown Export Toggle -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📝 Markdown Export (Desktop-Zugriff)"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switchMarkdownExport"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+
+                    </LinearLayout>
+
+                    <!-- Import Markdown Button -->
+                    <Button
+                        android:id="@+id/buttonImportMarkdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📥 Markdown-Änderungen importieren"
+                        style="@style/Widget.Material3.Button.TonalButton" />
+
+                    <!-- Import Info Text -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Importiert manuelle Änderungen von Desktop-Apps (.md Dateien vom Server)"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Material 3 Card: Backup & Restore -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -409,12 +495,12 @@
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_marginBottom="12dp" />
 
-                    <!-- Warning Info Card -->
+                    <!-- Info Card (anstatt Warning) -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        app:cardBackgroundColor="?attr/colorErrorContainer"
+                        app:cardBackgroundColor="?attr/colorPrimaryContainer"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp">
 
@@ -422,19 +508,61 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:padding="16dp"
-                            android:text="@string/backup_restore_warning"
+                            android:text="ℹ️ Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt."
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="?attr/colorOnErrorContainer"
+                            android:textColor="?attr/colorOnPrimaryContainer"
                             android:lineSpacingMultiplier="1.3" />
 
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Restore Button -->
+                    <!-- Lokales Backup Sektion -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lokales Backup"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Backup erstellen Button -->
+                    <Button
+                        android:id="@+id/buttonCreateBackup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📥 Backup erstellen"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.Material3.Button.TonalButton" />
+
+                    <!-- Aus Datei wiederherstellen Button -->
+                    <Button
+                        android:id="@+id/buttonRestoreFromFile"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📤 Aus Datei wiederherstellen"
+                        android:layout_marginBottom="16dp"
+                        style="@style/Widget.Material3.Button.TonalButton" />
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="?attr/colorOutline"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Server-Backup Sektion -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Server-Backup"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Vom Server wiederherstellen Button -->
                     <Button
                         android:id="@+id/buttonRestoreFromServer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/restore_from_server"
+                        android:text="🔄 Vom Server wiederherstellen"
                         style="@style/Widget.Material3.Button.TonalButton" />
 
                 </LinearLayout>

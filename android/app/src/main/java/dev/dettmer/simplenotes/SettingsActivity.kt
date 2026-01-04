@@ -13,6 +13,7 @@ import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -26,6 +27,8 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import dev.dettmer.simplenotes.backup.BackupManager
+import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.utils.UrlValidator
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -53,9 +56,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var editTextUsername: EditText
     private lateinit var editTextPassword: EditText
     private lateinit var switchAutoSync: SwitchCompat
+    private lateinit var switchMarkdownExport: SwitchCompat
     private lateinit var buttonTestConnection: Button
     private lateinit var buttonSyncNow: Button
+    private lateinit var buttonCreateBackup: Button
+    private lateinit var buttonRestoreFromFile: Button
     private lateinit var buttonRestoreFromServer: Button
+    private lateinit var buttonImportMarkdown: Button
     private lateinit var textViewServerStatus: TextView
     
     // Protocol Selection UI
@@ -72,6 +79,22 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var cardGitHubRepo: MaterialCardView
     private lateinit var cardDeveloperProfile: MaterialCardView
     private lateinit var cardLicense: MaterialCardView
+    
+    // Backup Manager
+    private val backupManager by lazy { BackupManager(this) }
+    
+    // Activity Result Launchers
+    private val createBackupLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { createBackup(it) }
+    }
+    
+    private val restoreBackupLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { showRestoreDialog(RestoreSource.LOCAL_FILE, it) }
+    }
     
     private val prefs by lazy {
         getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
@@ -106,9 +129,13 @@ class SettingsActivity : AppCompatActivity() {
         editTextUsername = findViewById(R.id.editTextUsername)
         editTextPassword = findViewById(R.id.editTextPassword)
         switchAutoSync = findViewById(R.id.switchAutoSync)
+        switchMarkdownExport = findViewById(R.id.switchMarkdownExport)
         buttonTestConnection = findViewById(R.id.buttonTestConnection)
         buttonSyncNow = findViewById(R.id.buttonSyncNow)
+        buttonCreateBackup = findViewById(R.id.buttonCreateBackup)
+        buttonRestoreFromFile = findViewById(R.id.buttonRestoreFromFile)
         buttonRestoreFromServer = findViewById(R.id.buttonRestoreFromServer)
+        buttonImportMarkdown = findViewById(R.id.buttonImportMarkdown)
         textViewServerStatus = findViewById(R.id.textViewServerStatus)
         
         // Protocol Selection UI
@@ -152,6 +179,7 @@ class SettingsActivity : AppCompatActivity() {
         editTextUsername.setText(prefs.getString(Constants.KEY_USERNAME, ""))
         editTextPassword.setText(prefs.getString(Constants.KEY_PASSWORD, ""))
         switchAutoSync.isChecked = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+        switchMarkdownExport.isChecked = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)  // Default: disabled (offline-first)
         
         // Update hint text based on selected protocol
         updateProtocolHint()
@@ -223,13 +251,34 @@ class SettingsActivity : AppCompatActivity() {
             syncNow()
         }
         
+        buttonCreateBackup.setOnClickListener {
+            // Dateiname mit Timestamp
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
+                .format(java.util.Date())
+            val filename = "simplenotes_backup_$timestamp.json"
+            createBackupLauncher.launch(filename)
+        }
+        
+        buttonRestoreFromFile.setOnClickListener {
+            restoreBackupLauncher.launch(arrayOf("application/json"))
+        }
+        
         buttonRestoreFromServer.setOnClickListener {
             saveSettings()
-            showRestoreConfirmation()
+            showRestoreDialog(RestoreSource.WEBDAV_SERVER, null)
+        }
+        
+        buttonImportMarkdown.setOnClickListener {
+            saveSettings()
+            importMarkdownChanges()
         }
         
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             onAutoSyncToggled(isChecked)
+        }
+        
+        switchMarkdownExport.setOnCheckedChangeListener { _, isChecked ->
+            onMarkdownExportToggled(isChecked)
         }
         
         // Clear error when user starts typing again
@@ -498,6 +547,67 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
     
+    private fun onMarkdownExportToggled(enabled: Boolean) {
+        prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
+        
+        if (enabled) {
+            showToast("Markdown-Export aktiviert - Notizen werden als .md-Dateien exportiert")
+        } else {
+            showToast("Markdown-Export deaktiviert - nur JSON-Sync aktiv")
+        }
+    }
+    
+    private fun importMarkdownChanges() {
+        // Prüfen ob Server konfiguriert ist
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+        val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
+        val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+        
+        if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
+            showToast("Bitte zuerst WebDAV-Server konfigurieren")
+            return
+        }
+        
+        // Import-Dialog mit Warnung
+        AlertDialog.Builder(this)
+            .setTitle("Markdown-Import")
+            .setMessage(
+                "Importiert Änderungen aus .md-Dateien vom Server.\n\n" +
+                "⚠️ Bei Konflikten: Last-Write-Wins (neuere Zeitstempel gewinnen)\n\n" +
+                "Fortfahren?"
+            )
+            .setPositiveButton("Importieren") { _, _ ->
+                performMarkdownImport(serverUrl, username, password)
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+    
+    private fun performMarkdownImport(serverUrl: String, username: String, password: String) {
+        showToast("Importiere Markdown-Dateien...")
+        
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val syncService = WebDavSyncService(this@SettingsActivity)
+                val importCount = syncService.syncMarkdownFiles(serverUrl, username, password)
+                
+                withContext(Dispatchers.Main) {
+                    if (importCount > 0) {
+                        showToast("$importCount Notizen aus Markdown importiert")
+                        // Benachrichtige MainActivity zum Neuladen
+                        sendBroadcast(Intent("dev.dettmer.simplenotes.NOTES_CHANGED"))
+                    } else {
+                        showToast("Keine Markdown-Änderungen gefunden")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showToast("Import-Fehler: ${e.message}")
+                }
+            }
+        }
+    }
+    
     private fun checkBatteryOptimization() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         val packageName = packageName
@@ -611,5 +721,232 @@ class SettingsActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         saveSettings()
+    }
+    
+    // ========================================
+    // BACKUP & RESTORE FUNCTIONS (v1.2.0)
+    // ========================================
+    
+    /**
+     * Restore-Quelle (Lokale Datei oder WebDAV Server)
+     */
+    private enum class RestoreSource {
+        LOCAL_FILE,
+        WEBDAV_SERVER
+    }
+    
+    /**
+     * Erstellt Backup (Task #1.2.0-04)
+     */
+    private fun createBackup(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                Logger.d(TAG, "📦 Creating backup...")
+                val result = backupManager.createBackup(uri)
+                
+                if (result.success) {
+                    showToast("✅ ${result.message}")
+                } else {
+                    showErrorDialog("Backup fehlgeschlagen", result.error ?: "Unbekannter Fehler")
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to create backup", e)
+                showErrorDialog("Backup fehlgeschlagen", e.message ?: "Unbekannter Fehler")
+            }
+        }
+    }
+    
+    /**
+     * Universeller Restore-Dialog für beide Quellen (Task #1.2.0-05 + #1.2.0-05b)
+     * 
+     * @param source Lokale Datei oder WebDAV Server
+     * @param fileUri URI der lokalen Datei (nur für LOCAL_FILE)
+     */
+    private fun showRestoreDialog(source: RestoreSource, fileUri: Uri?) {
+        val sourceText = when (source) {
+            RestoreSource.LOCAL_FILE -> "Lokale Datei"
+            RestoreSource.WEBDAV_SERVER -> "WebDAV Server"
+        }
+        
+        // Custom View mit Radio Buttons
+        val dialogView = layoutInflater.inflate(android.R.layout.select_dialog_singlechoice, null)
+        val radioGroup = android.widget.RadioGroup(this).apply {
+            orientation = android.widget.RadioGroup.VERTICAL
+            setPadding(50, 20, 50, 20)
+        }
+        
+        // Radio Buttons erstellen
+        val radioMerge = android.widget.RadioButton(this).apply {
+            text = "⚪ Zusammenführen (Standard)\n   → Neue hinzufügen, Bestehende behalten"
+            id = 0
+            isChecked = true
+            setPadding(10, 10, 10, 10)
+        }
+        
+        val radioReplace = android.widget.RadioButton(this).apply {
+            text = "⚪ Ersetzen\n   → Alle löschen & Backup importieren"
+            id = 1
+            setPadding(10, 10, 10, 10)
+        }
+        
+        val radioOverwrite = android.widget.RadioButton(this).apply {
+            text = "⚪ Duplikate überschreiben\n   → Backup gewinnt bei Konflikten"
+            id = 2
+            setPadding(10, 10, 10, 10)
+        }
+        
+        radioGroup.addView(radioMerge)
+        radioGroup.addView(radioReplace)
+        radioGroup.addView(radioOverwrite)
+        
+        // Hauptlayout
+        val mainLayout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+        
+        // Info Text
+        val infoText = android.widget.TextView(this).apply {
+            text = "Quelle: $sourceText\n\nWiederherstellungs-Modus:"
+            textSize = 16f
+            setPadding(0, 0, 0, 20)
+        }
+        
+        // Hinweis Text
+        val hintText = android.widget.TextView(this).apply {
+            text = "\nℹ️ Ein Sicherheits-Backup wird vor dem Wiederherstellen automatisch erstellt."
+            textSize = 14f
+            setTypeface(null, android.graphics.Typeface.ITALIC)
+            setPadding(0, 20, 0, 0)
+        }
+        
+        mainLayout.addView(infoText)
+        mainLayout.addView(radioGroup)
+        mainLayout.addView(hintText)
+        
+        // Dialog erstellen
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ Backup wiederherstellen?")
+            .setView(mainLayout)
+            .setPositiveButton("Wiederherstellen") { _, _ ->
+                val selectedMode = when (radioGroup.checkedRadioButtonId) {
+                    1 -> RestoreMode.REPLACE
+                    2 -> RestoreMode.OVERWRITE_DUPLICATES
+                    else -> RestoreMode.MERGE
+                }
+                
+                when (source) {
+                    RestoreSource.LOCAL_FILE -> fileUri?.let { performRestoreFromFile(it, selectedMode) }
+                    RestoreSource.WEBDAV_SERVER -> performRestoreFromServer(selectedMode)
+                }
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+    
+    /**
+     * Führt Restore aus lokaler Datei durch (Task #1.2.0-05)
+     */
+    private fun performRestoreFromFile(uri: Uri, mode: RestoreMode) {
+        lifecycleScope.launch {
+            val progressDialog = android.app.ProgressDialog(this@SettingsActivity).apply {
+                setMessage("Wiederherstellen...")
+                setCancelable(false)
+                show()
+            }
+            
+            try {
+                Logger.d(TAG, "📥 Restoring from file: $uri (mode: $mode)")
+                val result = backupManager.restoreBackup(uri, mode)
+                
+                progressDialog.dismiss()
+                
+                if (result.success) {
+                    val message = result.message ?: "Wiederhergestellt: ${result.imported_notes} Notizen"
+                    showToast("✅ $message")
+                    
+                    // Refresh MainActivity's note list
+                    setResult(RESULT_OK)
+                    broadcastNotesChanged()
+                } else {
+                    showErrorDialog("Wiederherstellung fehlgeschlagen", result.error ?: "Unbekannter Fehler")
+                }
+            } catch (e: Exception) {
+                progressDialog.dismiss()
+                Logger.e(TAG, "Failed to restore from file", e)
+                showErrorDialog("Wiederherstellung fehlgeschlagen", e.message ?: "Unbekannter Fehler")
+            }
+        }
+    }
+    
+    /**
+     * Führt Restore vom Server durch (Task #1.2.0-05b)
+     * Nutzt neues universelles Dialog-System mit Restore-Modi
+     * 
+     * HINWEIS: Die alte WebDavSyncService.restoreFromServer() Funktion
+     * unterstützt noch keine Restore-Modi. Aktuell wird immer REPLACE verwendet.
+     * TODO: WebDavSyncService.restoreFromServer() erweitern für v1.2.1+
+     */
+    private fun performRestoreFromServer(mode: RestoreMode) {
+        lifecycleScope.launch {
+            val progressDialog = android.app.ProgressDialog(this@SettingsActivity).apply {
+                setMessage("Wiederherstellen vom Server...")
+                setCancelable(false)
+                show()
+            }
+            
+            try {
+                Logger.d(TAG, "📥 Restoring from server (mode: $mode)")
+                Logger.w(TAG, "⚠️ Server-Restore nutzt aktuell immer REPLACE Mode (TODO: v1.2.1+)")
+                
+                // Auto-Backup erstellen (Sicherheitsnetz)
+                val autoBackupUri = backupManager.createAutoBackup()
+                if (autoBackupUri == null) {
+                    Logger.w(TAG, "⚠️ Auto-backup failed, but continuing with restore")
+                }
+                
+                // Server-Restore durchführen
+                val webdavService = WebDavSyncService(this@SettingsActivity)
+                val result = withContext(Dispatchers.IO) {
+                    // Nutzt alte Funktion (immer REPLACE)
+                    webdavService.restoreFromServer()
+                }
+                
+                progressDialog.dismiss()
+                
+                if (result.isSuccess) {
+                    showToast("✅ Wiederhergestellt: ${result.restoredCount} Notizen")
+                    setResult(RESULT_OK)
+                    broadcastNotesChanged()
+                } else {
+                    showErrorDialog("Wiederherstellung fehlgeschlagen", result.errorMessage ?: "Unbekannter Fehler")
+                }
+            } catch (e: Exception) {
+                progressDialog.dismiss()
+                Logger.e(TAG, "Failed to restore from server", e)
+                showErrorDialog("Wiederherstellung fehlgeschlagen", e.message ?: "Unbekannter Fehler")
+            }
+        }
+    }
+    
+    /**
+     * Sendet Broadcast dass Notizen geändert wurden
+     */
+    private fun broadcastNotesChanged() {
+        val intent = Intent(dev.dettmer.simplenotes.sync.SyncWorker.ACTION_SYNC_COMPLETED)
+        intent.putExtra("success", true)
+        intent.putExtra("syncedCount", 0)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+    
+    /**
+     * Zeigt Error-Dialog an
+     */
+    private fun showErrorDialog(title: String, message: String) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
 }

@@ -1,0 +1,13 @@
+v1.2.0 - Backup & Desktop-Integration
+
+🆕 Lokales Backup/Restore
+• Exportiere alle Notizen als JSON
+• 3 Wiederherstellungs-Modi (Merge/Replace/Overwrite)
+• Auto-Backup vor Restore
+
+🆕 Markdown Desktop-Integration (optional)
+• .md Export für Desktop-Editoren (WebDAV-Mount)
+• Last-Write-Wins Sync
+• Manueller Import
+
+📚 Sync-Architektur Doku

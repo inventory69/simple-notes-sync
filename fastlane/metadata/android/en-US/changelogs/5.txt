@@ -1,0 +1,13 @@
+v1.2.0 - Backup & Desktop Integration
+
+🆕 Local Backup/Restore
+• Export all notes as JSON
+• 3 restore modes (Merge/Replace/Overwrite)
+• Auto-backup before restore
+
+🆕 Markdown Desktop Integration (optional)
+• .md export for desktop editors (WebDAV mount)
+• Last-Write-Wins sync
+• Manual import
+
+📚 Sync architecture docs
