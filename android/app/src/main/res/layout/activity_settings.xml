@@ -109,7 +109,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         app:startIconDrawable="@android:drawable/ic_menu_compass"
                         app:endIconMode="clear_text"
-                        app:helperText="z.B. http://192.168.0.188:8080/webdav"
+                        app:helperText="z.B. http://192.168.0.188:8080/notes"
                         app:helperTextEnabled="true"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"

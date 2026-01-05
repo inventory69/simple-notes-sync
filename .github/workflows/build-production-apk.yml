@@ -151,12 +151,12 @@ jobs:
             
             ## 📋 Changelog / Release Notes
             
-            ${{ env.CHANGELOG_EN }}
+            ${{ env.CHANGELOG_DE }}
             
             <details>
-            <summary>�🇪 Deutsche Version (zum Aufklappen)</summary>
+            <summary>🌍 English Version</summary>
             
-            ${{ env.CHANGELOG_DE }}
+            ${{ env.CHANGELOG_EN }}
             
             </details>
             

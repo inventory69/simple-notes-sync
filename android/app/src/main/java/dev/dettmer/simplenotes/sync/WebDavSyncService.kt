@@ -31,6 +31,7 @@ class WebDavSyncService(private val context: Context) {
     
     private val storage: NotesStorage
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     
     init {
         if (BuildConfig.DEBUG) {
@@ -187,6 +188,72 @@ class WebDavSyncService(private val context: Context) {
     
     private fun getServerUrl(): String? {
         return prefs.getString(Constants.KEY_SERVER_URL, null)
+    }
+    
+    /**
+     * Erzeugt notes/ URL aus Base-URL mit Smart Detection (Task #1.2.1-12)
+     * 
+     * Beispiele:
+     * - http://server:8080/ → http://server:8080/notes/
+     * - http://server:8080/notes/ → http://server:8080/notes/
+     * - http://server:8080/notes → http://server:8080/notes/
+     * - http://server:8080/my-path/ → http://server:8080/my-path/notes/
+     * 
+     * @param baseUrl Base Server-URL
+     * @return notes/ Ordner-URL (mit trailing /)
+     */
+    private fun getNotesUrl(baseUrl: String): String {
+        val normalized = baseUrl.trimEnd('/')
+        
+        // Wenn URL bereits mit /notes endet → direkt nutzen
+        return if (normalized.endsWith("/notes")) {
+            "$normalized/"
+        } else {
+            "$normalized/notes/"
+        }
+    }
+    
+    /**
+     * Erzeugt Markdown-Ordner-URL basierend auf getNotesUrl() (Task #1.2.1-14)
+     * 
+     * Beispiele:
+     * - http://server:8080/ → http://server:8080/notes-md/
+     * - http://server:8080/notes/ → http://server:8080/notes-md/
+     * - http://server:8080/notes → http://server:8080/notes-md/
+     * 
+     * @param baseUrl Base Server-URL
+     * @return Markdown-Ordner-URL (mit trailing /)
+     */
+    private fun getMarkdownUrl(baseUrl: String): String {
+        val notesUrl = getNotesUrl(baseUrl)
+        val normalized = notesUrl.trimEnd('/')
+        
+        // Ersetze /notes mit /notes-md
+        return normalized.replace("/notes", "/notes-md") + "/"
+    }
+    
+    /**
+     * Stellt sicher dass notes-md/ Ordner existiert
+     * 
+     * Wird beim ersten erfolgreichen Sync aufgerufen (unabhängig von MD-Feature).
+     * Cached in Memory - nur einmal pro App-Session.
+     */
+    private fun ensureMarkdownDirectoryExists(sardine: Sardine, serverUrl: String) {
+        if (markdownDirEnsured) return
+        
+        try {
+            val mdUrl = getMarkdownUrl(serverUrl)
+            
+            if (!sardine.exists(mdUrl)) {
+                sardine.createDirectory(mdUrl)
+                Logger.d(TAG, "📁 Created notes-md/ directory (for future use)")
+            }
+            
+            markdownDirEnsured = true
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to create notes-md/: ${e.message}")
+            // Nicht kritisch - User kann später manuell erstellen
+        }
     }
     
     /**
@@ -350,19 +417,23 @@ class WebDavSyncService(private val context: Context) {
             var conflictCount = 0
             
             Logger.d(TAG, "📍 Step 3: Checking server directory")
-            // Ensure server directory exists
+            // Ensure notes/ directory exists
+            val notesUrl = getNotesUrl(serverUrl)
             try {
-                Logger.d(TAG, "🔍 Checking if server directory exists...")
-                if (!sardine.exists(serverUrl)) {
-                    Logger.d(TAG, "📁 Creating server directory...")
-                    sardine.createDirectory(serverUrl)
+                Logger.d(TAG, "🔍 Checking if notes/ directory exists...")
+                if (!sardine.exists(notesUrl)) {
+                    Logger.d(TAG, "📁 Creating notes/ directory...")
+                    sardine.createDirectory(notesUrl)
                 }
-                Logger.d(TAG, "    ✅ Server directory ready")
+                Logger.d(TAG, "    ✅ notes/ directory ready")
             } catch (e: Exception) {
-                Logger.e(TAG, "💥 CRASH checking/creating server directory!", e)
+                Logger.e(TAG, "💥 CRASH checking/creating notes/ directory!", e)
                 e.printStackTrace()
                 throw e
             }
+            
+            // Ensure notes-md/ directory exists (for Markdown export)
+            ensureMarkdownDirectoryExists(sardine, serverUrl)
             
             Logger.d(TAG, "📍 Step 4: Uploading local notes")
             // Upload local notes
@@ -448,9 +519,10 @@ class WebDavSyncService(private val context: Context) {
         
         for (note in localNotes) {
             try {
-                // 1. JSON-Upload (bestehend, unverändert)
+                // 1. JSON-Upload (Task #1.2.1-13: nutzt getNotesUrl())
                 if (note.syncStatus == SyncStatus.LOCAL_ONLY || note.syncStatus == SyncStatus.PENDING) {
-                    val noteUrl = "$serverUrl/${note.id}.json"
+                    val notesUrl = getNotesUrl(serverUrl)
+                    val noteUrl = "$notesUrl${note.id}.json"
                     val jsonBytes = note.toJson().toByteArray()
                     
                     sardine.put(noteUrl, jsonBytes, "application/json")
@@ -490,7 +562,7 @@ class WebDavSyncService(private val context: Context) {
      * @param note Note zum Exportieren
      */
     private fun exportToMarkdown(sardine: Sardine, serverUrl: String, note: Note) {
-        val mdUrl = serverUrl.replace("/notes", "/notes-md")
+        val mdUrl = getMarkdownUrl(serverUrl)
         
         // Erstelle notes-md/ Ordner falls nicht vorhanden
         if (!sardine.exists(mdUrl)) {
@@ -525,6 +597,79 @@ class WebDavSyncService(private val context: Context) {
             .trim('_', ' ')                            // Trim Underscores/Spaces
     }
     
+    /**
+     * Exportiert ALLE lokalen Notizen als Markdown (Initial-Export)
+     * 
+     * Wird beim ersten Aktivieren der Desktop-Integration aufgerufen.
+     * Exportiert auch bereits synchronisierte Notizen.
+     * 
+     * @return Anzahl exportierter Notizen
+     */
+    suspend fun exportAllNotesToMarkdown(
+        serverUrl: String,
+        username: String,
+        password: String,
+        onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
+    ): Int = withContext(Dispatchers.IO) {
+        Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
+        
+        // Erstelle Sardine-Client mit gegebenen Credentials
+        val wifiAddress = getWiFiInetAddress()
+        
+        val okHttpClient = if (wifiAddress != null) {
+            Logger.d(TAG, "✅ Using WiFi-bound socket factory")
+            OkHttpClient.Builder()
+                .socketFactory(WiFiSocketFactory(wifiAddress))
+                .build()
+        } else {
+            Logger.d(TAG, "⚠️ Using default OkHttpClient (no WiFi binding)")
+            OkHttpClient.Builder().build()
+        }
+        
+        val sardine = OkHttpSardine(okHttpClient).apply {
+            setCredentials(username, password)
+        }
+        
+        val mdUrl = getMarkdownUrl(serverUrl)
+        
+        // Ordner sollte bereits existieren (durch #1.2.1-00), aber Sicherheitscheck
+        ensureMarkdownDirectoryExists(sardine, serverUrl)
+        
+        // Hole ALLE lokalen Notizen (inklusive SYNCED)
+        val allNotes = storage.loadAllNotes()
+        val totalCount = allNotes.size
+        var exportedCount = 0
+        
+        Logger.d(TAG, "📝 Found $totalCount notes to export")
+        
+        allNotes.forEachIndexed { index, note ->
+            try {
+                // Progress-Callback
+                onProgress(index + 1, totalCount)
+                
+                // Sanitize Filename
+                val filename = sanitizeFilename(note.title) + ".md"
+                val noteUrl = "$mdUrl/$filename"
+                
+                // Konvertiere zu Markdown
+                val mdContent = note.toMarkdown().toByteArray()
+                
+                // Upload (überschreibt falls vorhanden)
+                sardine.put(noteUrl, mdContent, "text/markdown")
+                
+                exportedCount++
+                Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title}")
+                
+            } catch (e: Exception) {
+                Logger.e(TAG, "❌ Failed to export ${note.title}: ${e.message}")
+                // Continue mit nächster Note (keine Abbruch bei Einzelfehlern)
+            }
+        }
+        
+        Logger.d(TAG, "✅ Initial export completed: $exportedCount/$totalCount notes")
+        return@withContext exportedCount
+    }
+    
     private data class DownloadResult(
         val downloadedCount: Int,
         val conflictCount: Int
@@ -535,7 +680,8 @@ class WebDavSyncService(private val context: Context) {
         var conflictCount = 0
         
         try {
-            val resources = sardine.list(serverUrl)
+            val notesUrl = getNotesUrl(serverUrl)
+            val resources = sardine.list(notesUrl)
             
             for (resource in resources) {
                 if (resource.isDirectory || !resource.name.endsWith(".json")) {
@@ -611,8 +757,10 @@ class WebDavSyncService(private val context: Context) {
             
             Logger.d(TAG, "🔄 Starting restore from server...")
             
+            val notesUrl = getNotesUrl(serverUrl)
+            
             // List all files on server
-            val resources = sardine.list(serverUrl)
+            val resources = sardine.list(notesUrl)
             val jsonFiles = resources.filter { 
                 !it.isDirectory && it.name.endsWith(".json")
             }
@@ -624,7 +772,7 @@ class WebDavSyncService(private val context: Context) {
             // Download and parse each file
             for (resource in jsonFiles) {
                 try {
-                    val fileUrl = serverUrl.trimEnd('/') + "/" + resource.name
+                    val fileUrl = notesUrl.trimEnd('/') + "/" + resource.name
                     val content = sardine.get(fileUrl).bufferedReader().use { it.readText() }
                     
                     val note = Note.fromJson(content)
@@ -697,7 +845,7 @@ class WebDavSyncService(private val context: Context) {
             val sardine = OkHttpSardine()
             sardine.setCredentials(username, password)
             
-            val mdUrl = serverUrl.replace("/notes", "/notes-md")
+            val mdUrl = getMarkdownUrl(serverUrl)
             
             // Check if notes-md/ exists
             if (!sardine.exists(mdUrl)) {

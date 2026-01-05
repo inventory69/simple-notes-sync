@@ -17,8 +17,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 5  // 🔥 v1.2.0: Local Backup + Markdown Desktop Integration
-        versionName = "1.2.0"  // 🔥 v1.2.0: Backup/Restore + Joplin/Obsidian Support
+        versionCode = 6  // 🐛 v1.2.1: Markdown Initial Export Bugfix
+        versionName = "1.2.1"  // 🐛 v1.2.1: Markdown Initial Export Bugfix
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
