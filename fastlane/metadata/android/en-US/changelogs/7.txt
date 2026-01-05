@@ -1,0 +1,12 @@
+v1.2.2 - Backward Compatibility for v1.2.0 Users
+
+Critical Bugfix
+• Server restore now finds ALL notes (Root + /notes/)
+• Users upgrading from v1.2.0 no longer lose data
+• Old notes from Root folder are found during restore
+
+Technical Details
+• Dual-mode download only active for server restore
+• Normal syncs remain fast (scan only /notes/)
+• Automatic deduplication prevents duplicates
+• Smooth migration: New uploads go to /notes/, old ones remain readable
