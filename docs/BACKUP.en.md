@@ -317,7 +317,7 @@ Step-by-step:
 ---
 
 **📚 See also:**
-- [QUICKSTART.en.md](QUICKSTART.en.md) - App installation and setup
+- [QUICKSTART.en.md](../QUICKSTART.en.md) - App installation and setup
 - [FEATURES.en.md](FEATURES.en.md) - Complete feature list
 - [DESKTOP.en.md](DESKTOP.en.md) - Desktop integration with Markdown
 

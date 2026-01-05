@@ -317,7 +317,7 @@ Schritt-für-Schritt:
 ---
 
 **📚 Siehe auch:**
-- [QUICKSTART.md](QUICKSTART.md) - App-Installation und Einrichtung
+- [QUICKSTART.md](../QUICKSTART.md) - App-Installation und Einrichtung
 - [FEATURES.md](FEATURES.md) - Vollständige Feature-Liste
 - [DESKTOP.md](DESKTOP.md) - Desktop-Integration mit Markdown
 

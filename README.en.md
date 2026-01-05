@@ -6,7 +6,7 @@
 [![Material Design 3](https://img.shields.io/badge/Material-Design%203-green.svg)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Documentation](DOCS.en.md)** · **🚀 [Quick Start](QUICKSTART.en.md)**
+**📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Documentation](docs/DOCS.en.md)** · **🚀 [Quick Start](QUICKSTART.en.md)**
 
 **🌍 Languages:** [Deutsch](README.md) · **English**
 
@@ -32,7 +32,7 @@
 - 🔋 **Battery-friendly** - ~0.2-0.8% per day
 - 🎨 **Material Design 3** - Dark mode & dynamic colors
 
-➡️ **Complete feature list:** [FEATURES.en.md](FEATURES.en.md)
+➡️ **Complete feature list:** [FEATURES.en.md](docs/FEATURES.en.md)
 
 ---
 
@@ -71,12 +71,9 @@ docker compose up -d
 | Document | Content |
 |----------|---------|
 | **[QUICKSTART.en.md](QUICKSTART.en.md)** | Step-by-step installation |
-| **[FEATURES.en.md](FEATURES.en.md)** | Complete feature list |
-| **[BACKUP.en.md](BACKUP.en.md)** | Backup & restore guide |
-| **[DESKTOP.en.md](DESKTOP.en.md)** | Desktop integration (Markdown) |
-| **[DOCS.en.md](DOCS.en.md)** | Technical details & troubleshooting |
-| **[CHANGELOG.md](CHANGELOG.md)** | Version history |
-
+| **[FEATURES.en.md](docs/FEATURES.en.md)** | Complete feature list |
+| **[BACKUP.en.md](docs/BACKUP.en.md)** | Backup & restore guide |
+| **[DESKTOP.en.md](docs/DESKTOP.en.md)** | Desktop integration (Markdown) |
 ---
 
 ## 🛠️ Development
@@ -86,7 +83,7 @@ cd android
 ./gradlew assembleStandardRelease
 ```
 
-➡️ **Build guide:** [DOCS.en.md](DOCS.en.md)
+➡️ **Build guide:** [DOCS.en.md](docs/DOCS.en.md)
 
 ---
 
