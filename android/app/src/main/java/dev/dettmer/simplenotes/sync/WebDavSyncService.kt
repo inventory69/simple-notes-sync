@@ -675,49 +675,144 @@ class WebDavSyncService(private val context: Context) {
         val conflictCount: Int
     )
     
-    private fun downloadRemoteNotes(sardine: Sardine, serverUrl: String): DownloadResult {
+    private fun downloadRemoteNotes(
+        sardine: Sardine, 
+        serverUrl: String,
+        includeRootFallback: Boolean = false  // 🆕 v1.2.2: Only for restore from server
+    ): DownloadResult {
         var downloadedCount = 0
         var conflictCount = 0
+        val processedIds = mutableSetOf<String>()  // 🆕 v1.2.2: Track already loaded notes
         
         try {
+            // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
             val notesUrl = getNotesUrl(serverUrl)
-            val resources = sardine.list(notesUrl)
+            Logger.d(TAG, "🔍 Phase 1: Checking /notes/ at: $notesUrl")
             
-            for (resource in resources) {
-                if (resource.isDirectory || !resource.name.endsWith(".json")) {
-                    continue
-                }
+            if (sardine.exists(notesUrl)) {
+                Logger.d(TAG, "   ✅ /notes/ exists, scanning...")
+                val resources = sardine.list(notesUrl)
                 
-                val noteUrl = resource.href.toString()
-                val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
-                val remoteNote = Note.fromJson(jsonContent) ?: continue
-                
-                val localNote = storage.loadNote(remoteNote.id)
-                
-                when {
-                    localNote == null -> {
-                        // New note from server
-                        storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                        downloadedCount++
+                for (resource in resources) {
+                    if (resource.isDirectory || !resource.name.endsWith(".json")) {
+                        continue
                     }
-                    localNote.updatedAt < remoteNote.updatedAt -> {
-                        // Remote is newer
-                        if (localNote.syncStatus == SyncStatus.PENDING) {
-                            // Conflict detected
-                            storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
-                            conflictCount++
-                        } else {
-                            // Safe to overwrite
+                    
+                    // 🔧 Fix: Build full URL instead of using href directly
+                    val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
+                    val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
+                    val remoteNote = Note.fromJson(jsonContent) ?: continue
+                    
+                    processedIds.add(remoteNote.id)  // 🆕 Mark as processed
+                    
+                    val localNote = storage.loadNote(remoteNote.id)
+                    
+                    when {
+                        localNote == null -> {
+                            // New note from server
                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                             downloadedCount++
+                            Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
+                        }
+                        localNote.updatedAt < remoteNote.updatedAt -> {
+                            // Remote is newer
+                            if (localNote.syncStatus == SyncStatus.PENDING) {
+                                // Conflict detected
+                                storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                conflictCount++
+                            } else {
+                                // Safe to overwrite
+                                storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                downloadedCount++
+                                Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
+                            }
                         }
                     }
                 }
+                Logger.d(TAG, "   📊 Phase 1 complete: $downloadedCount notes from /notes/")
+            } else {
+                Logger.w(TAG, "   ⚠️ /notes/ does not exist, skipping Phase 1")
             }
+            
+            // 🆕 PHASE 2: BACKWARD-COMPATIBILITY - Download from Root (old structure v1.2.0)
+            // ⚠️ ONLY for restore from server! Normal sync should NOT scan Root
+            if (includeRootFallback) {
+                val rootUrl = serverUrl.trimEnd('/')
+                Logger.d(TAG, "🔍 Phase 2: Checking ROOT at: $rootUrl (Restore mode)")
+                
+                try {
+                    val rootResources = sardine.list(rootUrl)
+                    Logger.d(TAG, "   📂 Found ${rootResources.size} resources in ROOT")
+                
+                val oldNotes = rootResources.filter { resource ->
+                    !resource.isDirectory && 
+                    resource.name.endsWith(".json") &&
+                    !resource.path.contains("/notes/") &&  // Not from /notes/ subdirectory
+                    !resource.path.contains("/notes-md/")  // Not from /notes-md/
+                }
+                
+                Logger.d(TAG, "   🔎 Filtered to ${oldNotes.size} .json files (excluding /notes/ and /notes-md/)")
+                
+                if (oldNotes.isNotEmpty()) {
+                    Logger.w(TAG, "⚠️ Found ${oldNotes.size} notes in ROOT (old v1.2.0 structure)")
+                    
+                    for (resource in oldNotes) {
+                        // 🔧 Fix: Build full URL instead of using href directly
+                        val noteUrl = rootUrl.trimEnd('/') + "/" + resource.name
+                        Logger.d(TAG, "   📄 Processing: ${resource.name} from ${resource.path}")
+                        
+                        val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
+                        val remoteNote = Note.fromJson(jsonContent) ?: continue
+                        
+                        // Skip if already loaded from /notes/
+                        if (processedIds.contains(remoteNote.id)) {
+                            Logger.d(TAG, "   ⏭️ Skipping ${remoteNote.id} (already loaded from /notes/)")
+                            continue
+                        }
+                        
+                        processedIds.add(remoteNote.id)
+                        val localNote = storage.loadNote(remoteNote.id)
+                        
+                        when {
+                            localNote == null -> {
+                                storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                downloadedCount++
+                                Logger.d(TAG, "   ✅ Downloaded from ROOT: ${remoteNote.id}")
+                            }
+                            localNote.updatedAt < remoteNote.updatedAt -> {
+                                if (localNote.syncStatus == SyncStatus.PENDING) {
+                                    storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                    conflictCount++
+                                } else {
+                                    storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                    downloadedCount++
+                                    Logger.d(TAG, "   ✅ Updated from ROOT: ${remoteNote.id}")
+                                }
+                            }
+                            else -> {
+                                // Local is newer - do nothing
+                                Logger.d(TAG, "   ⏭️ Local is newer: ${remoteNote.id}")
+                            }
+                        }
+                    }
+                    Logger.d(TAG, "   📊 Phase 2 complete: downloaded ${oldNotes.size} notes from ROOT")
+                } else {
+                    Logger.d(TAG, "   ℹ️ No old notes found in ROOT")
+                }
+                } catch (e: Exception) {
+                    Logger.e(TAG, "⚠️ Failed to scan ROOT directory: ${e.message}", e)
+                    Logger.e(TAG, "   Stack trace: ${e.stackTraceToString()}")
+                    // Not fatal - new users may not have root access
+                }
+            } else {
+                Logger.d(TAG, "⏭️ Skipping Phase 2 (Root scan) - only enabled for restore from server")
+            }
+            
         } catch (e: Exception) {
-            // Log error but don't fail entire sync
+            Logger.e(TAG, "❌ downloadRemoteNotes failed", e)
         }
         
+        Logger.d(TAG, "📊 Total download result: $downloadedCount notes, $conflictCount conflicts")
         return DownloadResult(downloadedCount, conflictCount)
     }
     
@@ -757,38 +852,18 @@ class WebDavSyncService(private val context: Context) {
             
             Logger.d(TAG, "🔄 Starting restore from server...")
             
-            val notesUrl = getNotesUrl(serverUrl)
+            // Clear local storage FIRST
+            Logger.d(TAG, "🗑️ Clearing local storage...")
+            storage.deleteAllNotes()
             
-            // List all files on server
-            val resources = sardine.list(notesUrl)
-            val jsonFiles = resources.filter { 
-                !it.isDirectory && it.name.endsWith(".json")
-            }
+            // 🆕 v1.2.2: Use downloadRemoteNotes() with Root fallback enabled
+            val result = downloadRemoteNotes(
+                sardine = sardine, 
+                serverUrl = serverUrl,
+                includeRootFallback = true  // ✅ Enable backward compatibility for restore
+            )
             
-            Logger.d(TAG, "📂 Found ${jsonFiles.size} files on server")
-            
-            val restoredNotes = mutableListOf<Note>()
-            
-            // Download and parse each file
-            for (resource in jsonFiles) {
-                try {
-                    val fileUrl = notesUrl.trimEnd('/') + "/" + resource.name
-                    val content = sardine.get(fileUrl).bufferedReader().use { it.readText() }
-                    
-                    val note = Note.fromJson(content)
-                    if (note != null) {
-                        restoredNotes.add(note)
-                        Logger.d(TAG, "✅ Downloaded: ${note.title}")
-                    } else {
-                        Logger.e(TAG, "❌ Failed to parse ${resource.name}: Note.fromJson returned null")
-                    }
-                } catch (e: Exception) {
-                    Logger.e(TAG, "❌ Failed to download ${resource.name}", e)
-                    // Continue with other files
-                }
-            }
-            
-            if (restoredNotes.isEmpty()) {
+            if (result.downloadedCount == 0) {
                 return@withContext RestoreResult(
                     isSuccess = false,
                     errorMessage = "Keine Notizen auf Server gefunden",
@@ -796,22 +871,14 @@ class WebDavSyncService(private val context: Context) {
                 )
             }
             
-            // Clear local storage
-            Logger.d(TAG, "🗑️ Clearing local storage...")
-            storage.deleteAllNotes()
+            saveLastSyncTimestamp()
             
-            // Save all restored notes
-            Logger.d(TAG, "💾 Saving ${restoredNotes.size} notes...")
-            restoredNotes.forEach { note ->
-                storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
-            }
-            
-            Logger.d(TAG, "✅ Restore completed: ${restoredNotes.size} notes")
+            Logger.d(TAG, "✅ Restore completed: ${result.downloadedCount} notes")
             
             RestoreResult(
                 isSuccess = true,
                 errorMessage = null,
-                restoredCount = restoredNotes.size
+                restoredCount = result.downloadedCount
             )
             
         } catch (e: Exception) {

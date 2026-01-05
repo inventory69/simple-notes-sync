@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.2] - TBD
+
+### Fixed
+- **Backward Compatibility for v1.2.0 Users (Critical)**
+  - App now reads BOTH old (Root) AND new (`/notes/`) folder structures
+  - Users upgrading from v1.2.0 no longer lose their existing notes
+  - Server-Restore now finds notes from v1.2.0 stored in Root folder
+  - Automatic deduplication prevents loading the same note twice
+  - Graceful error handling if Root folder is not accessible
+
+### Technical
+- `WebDavSyncService.downloadRemoteNotes()` - Dual-mode download (Root + /notes/)
+- `WebDavSyncService.restoreFromServer()` - Now uses dual-mode download
+- Migration happens naturally: new uploads go to `/notes/`, old notes stay readable
+
+---
+
 ## [1.2.1] - 2026-01-05
 
 ### Fixed

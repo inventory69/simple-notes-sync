@@ -17,8 +17,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6  // 🐛 v1.2.1: Markdown Initial Export Bugfix
-        versionName = "1.2.1"  // 🐛 v1.2.1: Markdown Initial Export Bugfix
+        versionCode = 7  // 🔧 v1.2.2: Backward compatibility for v1.2.0 migration
+        versionName = "1.2.2"  // 🔧 v1.2.2: Dual-mode download (Root + /notes/)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
