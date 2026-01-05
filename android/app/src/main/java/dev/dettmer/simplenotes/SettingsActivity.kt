@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes
 
+import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -548,11 +549,83 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun onMarkdownExportToggled(enabled: Boolean) {
-        prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
-        
         if (enabled) {
-            showToast("Markdown-Export aktiviert - Notizen werden als .md-Dateien exportiert")
+            // Initial-Export wenn Feature aktiviert wird
+            lifecycleScope.launch {
+                try {
+                    val noteStorage = dev.dettmer.simplenotes.storage.NotesStorage(this@SettingsActivity)
+                    val currentNoteCount = noteStorage.loadAllNotes().size
+                    
+                    if (currentNoteCount > 0) {
+                        // Zeige Progress-Dialog
+                        val progressDialog = ProgressDialog(this@SettingsActivity).apply {
+                            setTitle("Markdown-Export")
+                            setMessage("Exportiere Notizen nach Markdown...")
+                            setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+                            max = currentNoteCount
+                            progress = 0
+                            setCancelable(false)
+                            show()
+                        }
+                        
+                        try {
+                            // Hole Server-Daten
+                            val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+                            val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
+                            val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+                            
+                            if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
+                                progressDialog.dismiss()
+                                showToast("⚠️ Bitte zuerst WebDAV-Server konfigurieren")
+                                switchMarkdownExport.isChecked = false
+                                return@launch
+                            }
+                            
+                            // Führe Initial-Export aus
+                            val syncService = WebDavSyncService(this@SettingsActivity)
+                            val exportedCount = syncService.exportAllNotesToMarkdown(
+                                serverUrl = serverUrl,
+                                username = username,
+                                password = password,
+                                onProgress = { current, total ->
+                                    runOnUiThread {
+                                        progressDialog.progress = current
+                                        progressDialog.setMessage("Exportiere $current/$total Notizen...")
+                                    }
+                                }
+                            )
+                            
+                            progressDialog.dismiss()
+                            
+                            // Speichere Einstellung
+                            prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
+                            
+                            // Erfolgs-Nachricht
+                            showToast("✅ $exportedCount Notizen nach Markdown exportiert")
+                            
+                        } catch (e: Exception) {
+                            progressDialog.dismiss()
+                            showToast("❌ Export fehlgeschlagen: ${e.message}")
+                            
+                            // Deaktiviere Toggle bei Fehler
+                            switchMarkdownExport.isChecked = false
+                            return@launch
+                        }
+                    } else {
+                        // Keine Notizen vorhanden - speichere Einstellung direkt
+                        prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
+                        showToast("Markdown-Export aktiviert - Notizen werden als .md-Dateien exportiert")
+                    }
+                    
+                } catch (e: Exception) {
+                    Logger.e(TAG, "Error toggling markdown export: ${e.message}")
+                    showToast("Fehler: ${e.message}")
+                    switchMarkdownExport.isChecked = false
+                }
+            }
         } else {
+            // Deaktivieren - nur Setting speichern
+            prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
             showToast("Markdown-Export deaktiviert - nur JSON-Sync aktiv")
         }
     }

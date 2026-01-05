@@ -1,0 +1,12 @@
+v1.2.1 - Initial Export + URL Normalization
+
+Fehlerbehebung
+• Bestehende Notizen werden beim Aktivieren der Desktop-Integration exportiert
+• Markdown-Dateien landen korrekt im /notes-md/ Ordner
+• Vereinfachte Server-Konfiguration: Nur Base-URL eingeben (z.B. http://server:8080/)
+• App erstellt automatisch /notes/ und /notes-md/
+• Beide URL-Varianten funktionieren: mit und ohne /notes
+
+Verbesserungen
+• Beispiel-URL zeigt jetzt /notes statt /webdav
+• Progress-Dialog beim Export

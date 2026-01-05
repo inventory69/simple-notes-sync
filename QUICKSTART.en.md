@@ -76,7 +76,9 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
    | **Password** | (your password from `.env`) |
    | **Gateway SSID** | Name of your WiFi network |
 
-4. **Press "Test connection"**
+   > **💡 Note:** Enter only the base URL (without `/notes`). The app automatically creates `/notes/` for JSON files and `/notes-md/` for Markdown export.
+
+4. **Press "Test connection"****
    - ✅ Success? → Continue to step 4
    - ❌ Error? → See [Troubleshooting](#troubleshooting)
 

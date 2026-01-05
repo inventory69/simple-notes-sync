@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.1] - 2026-01-05
+
+### Fixed
+- **Markdown Initial Export Bugfix**
+  - Existing notes are now exported as Markdown when Desktop Integration is activated
+  - Previously, only new notes created after activation were exported
+  - Progress dialog shows export status with current/total counter
+  - Error handling for network issues during export
+  - Individual note failures don't abort the entire export
+
+- **Markdown Directory Structure Fix**
+  - Markdown files now correctly land in `/notes-md/` folder
+  - Smart URL detection supports both Root-URL and `/notes` URL structures
+  - Previously, MD files were incorrectly placed in the root directory
+  - Markdown import now finds files correctly
+
+- **JSON URL Normalization**
+  - Simplified server configuration: enter only base URL (e.g., `http://server:8080/`)
+  - App automatically creates `/notes/` for JSON files and `/notes-md/` for Markdown
+  - Smart detection: both `http://server:8080/` and `http://server:8080/notes/` work correctly
+  - Backward compatible: existing setups with `/notes` in URL continue to work
+  - No migration required for existing users
+
+### Changed
+- **Markdown Directory Creation**
+  - `notes-md/` folder is now created on first sync (regardless of Desktop Integration setting)
+  - Prevents 404 errors when mounting WebDAV folder
+  - Better user experience: folder is visible before enabling the feature
+
+- **Settings UI Improvements**
+  - Updated example URL from `/webdav` to `/notes` to match app behavior
+  - Example now shows: `http://192.168.0.188:8080/notes`
+
+### Technical
+- `WebDavSyncService.ensureMarkdownDirectoryExists()` - Creates MD folder early
+- `WebDavSyncService.getMarkdownUrl()` - Smart URL detection for both structures
+- `WebDavSyncService.exportAllNotesToMarkdown()` - Exports all local notes with progress callback
+- `SettingsActivity.onMarkdownExportToggled()` - Triggers initial export with ProgressDialog
+
+---
+
 ## [1.2.0] - 2026-01-04
 
 ### Added
