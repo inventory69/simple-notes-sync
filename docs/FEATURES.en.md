@@ -181,9 +181,10 @@
 - ✅ **OkHttp** - HTTP client (via Sardine)
 
 ### Build Variants
-- ✅ **Standard** - Google Play version (with Google services prepared)
-- ✅ **F-Droid** - FOSS version (no Google dependencies)
+- ✅ **Standard** - Universal APK (100% FOSS, no Google dependencies)
+- ✅ **F-Droid** - Identical to Standard (100% FOSS)
 - ✅ **Debug/Release** - Development and production
+- ✅ **No Google Services** - Completely FOSS, no proprietary libraries
 
 ---
 
@@ -209,7 +210,11 @@
 
 Planned for upcoming versions (see [TODO.md](project-docs/simple-notes-sync/planning/TODO.md)):
 
-### v1.3.0 - Advanced Organization
+### v1.3.0 - Web Editor & Organization
+- ⏳ **Browser-based editor** - Edit notes in web browser
+- ⏳ **WebDAV access via browser** - No mount needed
+- ⏳ **Mobile-optimized** - Responsive design
+- ⏳ **Offline-capable** - Progressive Web App (PWA)
 - ⏳ **Tags/labels** - Categorize notes
 - ⏳ **Search** - Full-text search in all notes
 - ⏳ **Sorting** - By date, title, tags

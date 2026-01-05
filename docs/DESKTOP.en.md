@@ -498,7 +498,7 @@ Planned for v1.3.0+:
 ---
 
 **📚 See also:**
-- [QUICKSTART.en.md](QUICKSTART.en.md) - App setup
+- [QUICKSTART.en.md](../QUICKSTART.en.md) - App setup
 - [FEATURES.en.md](FEATURES.en.md) - Complete feature list
 - [BACKUP.en.md](BACKUP.en.md) - Backup & restore
 

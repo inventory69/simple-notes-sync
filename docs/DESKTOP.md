@@ -498,7 +498,7 @@ Geplant für v1.3.0+:
 ---
 
 **📚 Siehe auch:**
-- [QUICKSTART.md](QUICKSTART.md) - App-Einrichtung
+- [QUICKSTART.md](../QUICKSTART.md) - App-Einrichtung
 - [FEATURES.md](FEATURES.md) - Vollständige Feature-Liste
 - [BACKUP.md](BACKUP.md) - Backup & Wiederherstellung
 
