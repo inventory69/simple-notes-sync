@@ -6,7 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.2.2] - TBD
+## [1.3.0] - 2026-01-07
+
+### Added
+- **🚀 Multi-Device Sync** (Thanks to Thomas from Bielefeld for reporting!)
+  - Automatic download of new notes from other devices
+  - Deletion tracking prevents "zombie notes" (deleted notes don't come back)
+  - Smart cleanup: Re-created notes (newer timestamp) are downloaded
+  - Works with all devices: v1.2.0, v1.2.1, v1.2.2, and v1.3.0
+
+- **🗑️ Server Deletion via Swipe Gesture**
+  - Swipe left on notes to delete from server (requires confirmation)
+  - Prevents duplicate notes on other devices
+  - Works with deletion tracking system
+  - Material Design confirmation dialog
+
+- **⚡ E-Tag Performance Optimization**
+  - Smart server checking with E-Tag caching (~150ms vs 3000ms for "no changes")
+  - 20x faster when server has no updates
+  - E-Tag hybrid approach: E-Tag for JSON (fast), timestamp for Markdown (reliable)
+  - Battery-friendly with minimal server requests
+
+- **📥 Markdown Auto-Sync Toggle**
+  - NEW: Unified Auto-Sync toggle in Settings (replaces separate Export/Auto-Import toggles)
+  - When enabled: Notes export to Markdown AND import changes automatically
+  - When disabled: Manual sync button appears for on-demand synchronization
+  - Performance: Auto-Sync OFF = 0ms overhead
+
+- **🔘 Manual Markdown Sync Button**
+  - Manual sync button for performance-conscious users
+  - Shows import/export counts after completion
+  - Only visible when Auto-Sync is disabled
+  - On-demand synchronization (~150-200ms only when triggered)
+
+- **⚙️ Server-Restore Modes**
+  - MERGE: Keep local notes + add server notes
+  - REPLACE: Delete all local + download from server
+  - OVERWRITE: Update duplicates, keep non-duplicates
+  - Restore modes now work correctly for WebDAV restore
+
+### Technical
+- New `DeletionTracker` model with JSON persistence
+- `NotesStorage`: Added deletion tracking methods
+- `WebDavSyncService.hasUnsyncedChanges()`: Intelligent server checks with E-Tag caching
+- `WebDavSyncService.downloadRemoteNotes()`: Deletion-aware downloads
+- `WebDavSyncService.restoreFromServer()`: Support for restore modes
+- `WebDavSyncService.deleteNoteFromServer()`: Server deletion with YAML frontmatter scanning
+- `WebDavSyncService.importMarkdownFiles()`: Automatic Markdown import during sync
+- `WebDavSyncService.manualMarkdownSync()`: Manual sync with result counts
+- `MainActivity.setupSwipeToDelete()`: Two-stage swipe deletion with confirmation
+- E-Tag caching in SharedPreferences for performance
+
+---
+
+## [1.2.2] - 2026-01-06
 
 ### Fixed
 - **Backward Compatibility for v1.2.0 Users (Critical)**
