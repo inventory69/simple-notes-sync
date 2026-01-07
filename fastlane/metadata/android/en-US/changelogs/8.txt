@@ -1,0 +1,12 @@
+v1.3.0 - Multi-Device Sync
+
+NEW FEATURES:
+• Multi-Device Sync with deletion tracking (no zombie notes)
+• Swipe gesture for server deletion (prevents duplicates on other devices)
+• E-Tag performance optimization (~150ms vs 3s)
+• Markdown Auto-Sync toggle (unified Export + Import)
+• Manual Markdown sync button
+• Server restore modes (Merge/Replace/Overwrite)
+
+Thanks to Thomas from Bielefeld!
+Compatible: v1.2.0-v1.3.0

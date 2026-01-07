@@ -9,6 +9,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.view.MenuItem
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
@@ -57,14 +58,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var editTextUsername: EditText
     private lateinit var editTextPassword: EditText
     private lateinit var switchAutoSync: SwitchCompat
-    private lateinit var switchMarkdownExport: SwitchCompat
+    private lateinit var switchMarkdownAutoSync: SwitchCompat
     private lateinit var buttonTestConnection: Button
     private lateinit var buttonSyncNow: Button
     private lateinit var buttonCreateBackup: Button
     private lateinit var buttonRestoreFromFile: Button
     private lateinit var buttonRestoreFromServer: Button
-    private lateinit var buttonImportMarkdown: Button
+    private lateinit var buttonManualMarkdownSync: Button
     private lateinit var textViewServerStatus: TextView
+    private lateinit var textViewManualSyncInfo: TextView
     
     // Protocol Selection UI
     private lateinit var protocolRadioGroup: RadioGroup
@@ -130,14 +132,15 @@ class SettingsActivity : AppCompatActivity() {
         editTextUsername = findViewById(R.id.editTextUsername)
         editTextPassword = findViewById(R.id.editTextPassword)
         switchAutoSync = findViewById(R.id.switchAutoSync)
-        switchMarkdownExport = findViewById(R.id.switchMarkdownExport)
+        switchMarkdownAutoSync = findViewById(R.id.switchMarkdownAutoSync)
         buttonTestConnection = findViewById(R.id.buttonTestConnection)
         buttonSyncNow = findViewById(R.id.buttonSyncNow)
         buttonCreateBackup = findViewById(R.id.buttonCreateBackup)
         buttonRestoreFromFile = findViewById(R.id.buttonRestoreFromFile)
         buttonRestoreFromServer = findViewById(R.id.buttonRestoreFromServer)
-        buttonImportMarkdown = findViewById(R.id.buttonImportMarkdown)
+        buttonManualMarkdownSync = findViewById(R.id.buttonManualMarkdownSync)
         textViewServerStatus = findViewById(R.id.textViewServerStatus)
+        textViewManualSyncInfo = findViewById(R.id.textViewManualSyncInfo)
         
         // Protocol Selection UI
         protocolRadioGroup = findViewById(R.id.protocolRadioGroup)
@@ -180,7 +183,14 @@ class SettingsActivity : AppCompatActivity() {
         editTextUsername.setText(prefs.getString(Constants.KEY_USERNAME, ""))
         editTextPassword.setText(prefs.getString(Constants.KEY_PASSWORD, ""))
         switchAutoSync.isChecked = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
-        switchMarkdownExport.isChecked = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)  // Default: disabled (offline-first)
+        
+        // Load Markdown Auto-Sync (backward compatible)
+        val markdownExport = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
+        val markdownAutoImport = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+        val markdownAutoSync = markdownExport && markdownAutoImport
+        switchMarkdownAutoSync.isChecked = markdownAutoSync
+        
+        updateMarkdownButtonVisibility()
         
         // Update hint text based on selected protocol
         updateProtocolHint()
@@ -269,17 +279,16 @@ class SettingsActivity : AppCompatActivity() {
             showRestoreDialog(RestoreSource.WEBDAV_SERVER, null)
         }
         
-        buttonImportMarkdown.setOnClickListener {
-            saveSettings()
-            importMarkdownChanges()
+        buttonManualMarkdownSync.setOnClickListener {
+            performManualMarkdownSync()
         }
         
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             onAutoSyncToggled(isChecked)
         }
         
-        switchMarkdownExport.setOnCheckedChangeListener { _, isChecked ->
-            onMarkdownExportToggled(isChecked)
+        switchMarkdownAutoSync.setOnCheckedChangeListener { _, isChecked ->
+            onMarkdownAutoSyncToggled(isChecked)
         }
         
         // Clear error when user starts typing again
@@ -548,7 +557,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
     
-    private fun onMarkdownExportToggled(enabled: Boolean) {
+    private fun onMarkdownAutoSyncToggled(enabled: Boolean) {
         if (enabled) {
             // Initial-Export wenn Feature aktiviert wird
             lifecycleScope.launch {
@@ -559,7 +568,7 @@ class SettingsActivity : AppCompatActivity() {
                     if (currentNoteCount > 0) {
                         // Zeige Progress-Dialog
                         val progressDialog = ProgressDialog(this@SettingsActivity).apply {
-                            setTitle("Markdown-Export")
+                            setTitle("Markdown Auto-Sync")
                             setMessage("Exportiere Notizen nach Markdown...")
                             setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
                             max = currentNoteCount
@@ -577,7 +586,7 @@ class SettingsActivity : AppCompatActivity() {
                             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                                 progressDialog.dismiss()
                                 showToast("⚠️ Bitte zuerst WebDAV-Server konfigurieren")
-                                switchMarkdownExport.isChecked = false
+                                switchMarkdownAutoSync.isChecked = false
                                 return@launch
                             }
                             
@@ -597,8 +606,13 @@ class SettingsActivity : AppCompatActivity() {
                             
                             progressDialog.dismiss()
                             
-                            // Speichere Einstellung
-                            prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
+                            // Speichere beide Einstellungen
+                            prefs.edit()
+                                .putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled)
+                                .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, enabled)
+                                .apply()
+                            
+                            updateMarkdownButtonVisibility()
                             
                             // Erfolgs-Nachricht
                             showToast("✅ $exportedCount Notizen nach Markdown exportiert")
@@ -608,76 +622,35 @@ class SettingsActivity : AppCompatActivity() {
                             showToast("❌ Export fehlgeschlagen: ${e.message}")
                             
                             // Deaktiviere Toggle bei Fehler
-                            switchMarkdownExport.isChecked = false
+                            switchMarkdownAutoSync.isChecked = false
                             return@launch
                         }
                     } else {
-                        // Keine Notizen vorhanden - speichere Einstellung direkt
-                        prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
-                        showToast("Markdown-Export aktiviert - Notizen werden als .md-Dateien exportiert")
+                        // Keine Notizen vorhanden - speichere Einstellungen direkt
+                        prefs.edit()
+                            .putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled)
+                            .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, enabled)
+                            .apply()
+                        
+                        updateMarkdownButtonVisibility()
+                        showToast("Markdown Auto-Sync aktiviert - Notizen werden als .md-Dateien exportiert und importiert")
                     }
                     
                 } catch (e: Exception) {
-                    Logger.e(TAG, "Error toggling markdown export: ${e.message}")
+                    Logger.e(TAG, "Error toggling markdown auto-sync: ${e.message}")
                     showToast("Fehler: ${e.message}")
-                    switchMarkdownExport.isChecked = false
+                    switchMarkdownAutoSync.isChecked = false
                 }
             }
         } else {
-            // Deaktivieren - nur Setting speichern
-            prefs.edit().putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled).apply()
-            showToast("Markdown-Export deaktiviert - nur JSON-Sync aktiv")
-        }
-    }
-    
-    private fun importMarkdownChanges() {
-        // Prüfen ob Server konfiguriert ist
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
-        val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
-        val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
-        
-        if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
-            showToast("Bitte zuerst WebDAV-Server konfigurieren")
-            return
-        }
-        
-        // Import-Dialog mit Warnung
-        AlertDialog.Builder(this)
-            .setTitle("Markdown-Import")
-            .setMessage(
-                "Importiert Änderungen aus .md-Dateien vom Server.\n\n" +
-                "⚠️ Bei Konflikten: Last-Write-Wins (neuere Zeitstempel gewinnen)\n\n" +
-                "Fortfahren?"
-            )
-            .setPositiveButton("Importieren") { _, _ ->
-                performMarkdownImport(serverUrl, username, password)
-            }
-            .setNegativeButton("Abbrechen", null)
-            .show()
-    }
-    
-    private fun performMarkdownImport(serverUrl: String, username: String, password: String) {
-        showToast("Importiere Markdown-Dateien...")
-        
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val syncService = WebDavSyncService(this@SettingsActivity)
-                val importCount = syncService.syncMarkdownFiles(serverUrl, username, password)
-                
-                withContext(Dispatchers.Main) {
-                    if (importCount > 0) {
-                        showToast("$importCount Notizen aus Markdown importiert")
-                        // Benachrichtige MainActivity zum Neuladen
-                        sendBroadcast(Intent("dev.dettmer.simplenotes.NOTES_CHANGED"))
-                    } else {
-                        showToast("Keine Markdown-Änderungen gefunden")
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    showToast("Import-Fehler: ${e.message}")
-                }
-            }
+            // Deaktivieren - Settings speichern
+            prefs.edit()
+                .putBoolean(Constants.KEY_MARKDOWN_EXPORT, enabled)
+                .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, enabled)
+                .apply()
+            
+            updateMarkdownButtonVisibility()
+            showToast("Markdown Auto-Sync deaktiviert - nur JSON-Sync aktiv")
         }
     }
     
@@ -940,7 +913,7 @@ class SettingsActivity : AppCompatActivity() {
                     
                     // Refresh MainActivity's note list
                     setResult(RESULT_OK)
-                    broadcastNotesChanged()
+                    broadcastNotesChanged(result.imported_notes)
                 } else {
                     showErrorDialog("Wiederherstellung fehlgeschlagen", result.error ?: "Unbekannter Fehler")
                 }
@@ -953,12 +926,7 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     /**
-     * Führt Restore vom Server durch (Task #1.2.0-05b)
-     * Nutzt neues universelles Dialog-System mit Restore-Modi
-     * 
-     * HINWEIS: Die alte WebDavSyncService.restoreFromServer() Funktion
-     * unterstützt noch keine Restore-Modi. Aktuell wird immer REPLACE verwendet.
-     * TODO: WebDavSyncService.restoreFromServer() erweitern für v1.2.1+
+     * Server-Restore mit Restore-Modi (v1.3.0)
      */
     private fun performRestoreFromServer(mode: RestoreMode) {
         lifecycleScope.launch {
@@ -970,7 +938,6 @@ class SettingsActivity : AppCompatActivity() {
             
             try {
                 Logger.d(TAG, "📥 Restoring from server (mode: $mode)")
-                Logger.w(TAG, "⚠️ Server-Restore nutzt aktuell immer REPLACE Mode (TODO: v1.2.1+)")
                 
                 // Auto-Backup erstellen (Sicherheitsnetz)
                 val autoBackupUri = backupManager.createAutoBackup()
@@ -981,8 +948,7 @@ class SettingsActivity : AppCompatActivity() {
                 // Server-Restore durchführen
                 val webdavService = WebDavSyncService(this@SettingsActivity)
                 val result = withContext(Dispatchers.IO) {
-                    // Nutzt alte Funktion (immer REPLACE)
-                    webdavService.restoreFromServer()
+                    webdavService.restoreFromServer(mode)  // ✅ Pass mode parameter
                 }
                 
                 progressDialog.dismiss()
@@ -990,7 +956,7 @@ class SettingsActivity : AppCompatActivity() {
                 if (result.isSuccess) {
                     showToast("✅ Wiederhergestellt: ${result.restoredCount} Notizen")
                     setResult(RESULT_OK)
-                    broadcastNotesChanged()
+                    broadcastNotesChanged(result.restoredCount)
                 } else {
                     showErrorDialog("Wiederherstellung fehlgeschlagen", result.errorMessage ?: "Unbekannter Fehler")
                 }
@@ -1005,11 +971,68 @@ class SettingsActivity : AppCompatActivity() {
     /**
      * Sendet Broadcast dass Notizen geändert wurden
      */
-    private fun broadcastNotesChanged() {
+    private fun broadcastNotesChanged(count: Int = 0) {
         val intent = Intent(dev.dettmer.simplenotes.sync.SyncWorker.ACTION_SYNC_COMPLETED)
         intent.putExtra("success", true)
-        intent.putExtra("syncedCount", 0)
+        intent.putExtra("syncedCount", count)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+    
+    /**
+     * Updates visibility of manual sync button based on Auto-Sync toggle state
+     */
+    private fun updateMarkdownButtonVisibility() {
+        val autoSyncEnabled = switchMarkdownAutoSync.isChecked
+        val visibility = if (autoSyncEnabled) View.GONE else View.VISIBLE
+        
+        textViewManualSyncInfo.visibility = visibility
+        buttonManualMarkdownSync.visibility = visibility
+    }
+    
+    /**
+     * Performs manual Markdown sync (Export + Import)
+     * Called when manual sync button is clicked
+     */
+    private fun performManualMarkdownSync() {
+        lifecycleScope.launch {
+            var progressDialog: ProgressDialog? = null
+            try {
+                // Validierung
+                val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "")
+                val username = prefs.getString(Constants.KEY_USERNAME, "")
+                val password = prefs.getString(Constants.KEY_PASSWORD, "")
+                
+                if (serverUrl.isNullOrBlank() || username.isNullOrBlank() || password.isNullOrBlank()) {
+                    showToast("⚠️ Bitte zuerst WebDAV-Server konfigurieren")
+                    return@launch
+                }
+                
+                // Progress-Dialog
+                progressDialog = ProgressDialog(this@SettingsActivity).apply {
+                    setTitle("Markdown-Sync")
+                    setMessage("Synchronisiere Markdown-Dateien...")
+                    setCancelable(false)
+                    show()
+                }
+                
+                // Sync ausführen
+                val syncService = dev.dettmer.simplenotes.sync.WebDavSyncService(this@SettingsActivity)
+                val result = syncService.manualMarkdownSync()
+                
+                progressDialog.dismiss()
+                
+                // Erfolgs-Nachricht
+                val message = "✅ Sync abgeschlossen\n📤 ${result.exportedCount} exportiert\n📥 ${result.importedCount} importiert"
+                showToast(message)
+                
+                Logger.d("SettingsActivity", "Manual markdown sync: exported=${result.exportedCount}, imported=${result.importedCount}")
+                
+            } catch (e: Exception) {
+                progressDialog?.dismiss()
+                showToast("❌ Sync fehlgeschlagen: ${e.message}")
+                Logger.e("SettingsActivity", "Manual markdown sync failed", e)
+            }
+        }
     }
     
     /**

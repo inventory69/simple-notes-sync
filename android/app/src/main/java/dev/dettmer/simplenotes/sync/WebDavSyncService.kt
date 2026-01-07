@@ -6,6 +6,7 @@ import android.net.NetworkCapabilities
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -21,7 +22,16 @@ import java.net.NetworkInterface
 import java.net.Proxy
 import java.net.Socket
 import java.net.URL
+import java.util.Date
 import javax.net.SocketFactory
+
+/**
+ * Result of manual Markdown sync operation
+ */
+data class ManualMarkdownSyncResult(
+    val exportedCount: Int,
+    val importedCount: Int
+)
 
 class WebDavSyncService(private val context: Context) {
     
@@ -257,6 +267,131 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
+     * Checks if server has changes using E-Tag caching
+     * 
+     * v1.3.0: Also checks /notes-md/ if Markdown Auto-Import enabled
+     * 
+     * Performance: ~100-200ms (E-Tag cache hit)
+     *              ~300-500ms (E-Tag miss, needs PROPFIND)
+     * 
+     * Strategy:
+     * 1. Store E-Tag of /notes/ collection after each sync
+     * 2. HEAD request to check if E-Tag changed
+     * 3. If changed → server has updates
+     * 4. If unchanged → skip sync
+     */
+    private suspend fun checkServerForChanges(sardine: Sardine, serverUrl: String): Boolean {
+        return try {
+            val startTime = System.currentTimeMillis()
+            val lastSyncTime = getLastSyncTimestamp()
+            
+            if (lastSyncTime == 0L) {
+                Logger.d(TAG, "📝 Never synced - assuming server has changes")
+                return true
+            }
+            
+            val notesUrl = getNotesUrl(serverUrl)
+            if (!sardine.exists(notesUrl)) {
+                Logger.d(TAG, "📁 /notes/ doesn't exist - no server changes")
+                return false
+            }
+            
+            // ====== JSON FILES CHECK (/notes/) ======
+            
+            // Optimierung 1: E-Tag Check (fastest - ~100ms)
+            val cachedETag = prefs.getString("notes_collection_etag", null)
+            var jsonHasChanges = false
+            
+            if (cachedETag != null) {
+                try {
+                    val resources = sardine.list(notesUrl, 0)  // Depth 0 = only collection itself
+                    val currentETag = resources.firstOrNull()?.contentLength?.toString() ?: ""
+                    
+                    if (currentETag == cachedETag) {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        Logger.d(TAG, "⚡ E-Tag match - no JSON changes (${elapsed}ms)")
+                        // Don't return yet - check Markdown too!
+                    } else {
+                        Logger.d(TAG, "🔄 E-Tag changed - JSON files have updates")
+                        return true  // Early return if JSON changed
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "E-Tag check failed: ${e.message}, falling back to timestamp check")
+                    jsonHasChanges = true
+                }
+            } else {
+                jsonHasChanges = true
+            }
+            
+            // Optimierung 2: Smart Timestamp Check for JSON (medium - ~300ms)
+            if (jsonHasChanges || cachedETag == null) {
+                val resources = sardine.list(notesUrl, 1)  // Depth 1 = collection + children
+                
+                val jsonHasNewer = resources.any { resource ->
+                    !resource.isDirectory && 
+                    resource.name.endsWith(".json") &&
+                    resource.modified?.time?.let { it > lastSyncTime } ?: false
+                }
+                
+                if (jsonHasNewer) {
+                    val elapsed = System.currentTimeMillis() - startTime
+                    Logger.d(TAG, "🔍 JSON check: hasNewer=true (${resources.size} resources, ${elapsed}ms)")
+                    return true
+                }
+            }
+            
+            // ====== MARKDOWN FILES CHECK (/notes-md/) ======
+            // IMPORTANT: E-Tag for collections does NOT work for content changes!
+            // → Use hybrid approach: If-Modified-Since + Timestamp fallback
+            
+            val markdownAutoImportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+            if (!markdownAutoImportEnabled) {
+                Logger.d(TAG, "⏭️ Markdown check skipped (auto-import disabled)")
+            } else {
+                val mdUrl = getMarkdownUrl(serverUrl)
+                
+                if (!sardine.exists(mdUrl)) {
+                    Logger.d(TAG, "📁 /notes-md/ doesn't exist - no markdown changes")
+                } else {
+                    Logger.d(TAG, "📝 Checking Markdown files (hybrid approach)...")
+                    
+                    // Strategy: Timestamp-based check (reliable, always works)
+                    // Note: If-Modified-Since support varies by WebDAV server
+                    // We use timestamp comparison which is universal
+                    val mdResources = sardine.list(mdUrl, 1)
+                    val mdHasNewer = mdResources.any { resource ->
+                        !resource.isDirectory && 
+                        resource.name.endsWith(".md") &&
+                        resource.modified?.time?.let { 
+                            val hasNewer = it > lastSyncTime
+                            if (hasNewer) {
+                                Logger.d(TAG, "   📄 ${resource.name}: modified=${resource.modified}, lastSync=$lastSyncTime")
+                            }
+                            hasNewer
+                        } ?: false
+                    }
+                    
+                    if (mdHasNewer) {
+                        val mdCount = mdResources.count { !it.isDirectory && it.name.endsWith(".md") }
+                        Logger.d(TAG, "📝 Markdown files have changes ($mdCount files checked)")
+                        return true
+                    } else {
+                        Logger.d(TAG, "✅ Markdown files up-to-date (timestamp check)")
+                    }
+                }
+            }
+            
+            val elapsed = System.currentTimeMillis() - startTime
+            Logger.d(TAG, "✅ No changes detected (JSON + Markdown checked, ${elapsed}ms)")
+            return false
+            
+        } catch (e: Exception) {
+            Logger.w(TAG, "Server check failed: ${e.message} - assuming changes exist")
+            true  // Safe default: check anyway
+        }
+    }
+    
+    /**
      * Prüft ob lokale Änderungen seit letztem Sync vorhanden sind (v1.1.2)
      * Performance-Optimierung: Vermeidet unnötige Sync-Operationen
      * 
@@ -266,31 +401,50 @@ class WebDavSyncService(private val context: Context) {
         return@withContext try {
             val lastSyncTime = getLastSyncTimestamp()
             
-            // Wenn noch nie gesynct, dann haben wir Änderungen
+            // Check 1: Never synced
             if (lastSyncTime == 0L) {
-                Logger.d(TAG, "📝 Never synced - assuming changes exist")
+                Logger.d(TAG, "📝 Never synced - has changes: true")
                 return@withContext true
             }
             
-            // Prüfe ob Notizen existieren die neuer sind als letzter Sync
-            val storage = dev.dettmer.simplenotes.storage.NotesStorage(context)
+            // Check 2: Local changes
+            val storage = NotesStorage(context)
             val allNotes = storage.loadAllNotes()
-            
-            val hasChanges = allNotes.any { note ->
+            val hasLocalChanges = allNotes.any { note ->
                 note.updatedAt > lastSyncTime
             }
             
-            Logger.d(TAG, "📊 Unsynced changes check: $hasChanges (${allNotes.size} notes total)")
-            if (hasChanges) {
-                val unsyncedCount = allNotes.count { note -> note.updatedAt > lastSyncTime }
-                Logger.d(TAG, "   → $unsyncedCount notes modified since last sync")
+            if (hasLocalChanges) {
+                val unsyncedCount = allNotes.count { it.updatedAt > lastSyncTime }
+                Logger.d(TAG, "📝 Local changes: $unsyncedCount notes modified")
+                return@withContext true
             }
             
-            hasChanges
+            // Check 3: Server changes (respects user preference)
+            val alwaysCheckServer = prefs.getBoolean(Constants.KEY_ALWAYS_CHECK_SERVER, true)
+            
+            if (!alwaysCheckServer) {
+                Logger.d(TAG, "⏭️ Server check disabled by user - has changes: false")
+                return@withContext false
+            }
+            
+            // Perform intelligent server check
+            val sardine = getSardine()
+            val serverUrl = getServerUrl()
+            
+            if (sardine == null || serverUrl == null) {
+                Logger.w(TAG, "⚠️ Cannot check server - no credentials")
+                return@withContext false
+            }
+            
+            val hasServerChanges = checkServerForChanges(sardine, serverUrl)
+            Logger.d(TAG, "📊 Final check: local=$hasLocalChanges, server=$hasServerChanges")
+            
+            hasServerChanges
+            
         } catch (e: Exception) {
-            Logger.e(TAG, "Failed to check for unsynced changes - assuming changes exist", e)
-            // Bei Fehler lieber sync durchführen (safe default)
-            true
+            Logger.e(TAG, "Failed to check for unsynced changes", e)
+            true  // Safe default
         }
     }
     
@@ -452,7 +606,11 @@ class WebDavSyncService(private val context: Context) {
             // Download remote notes
             try {
                 Logger.d(TAG, "⬇️ Downloading remote notes...")
-                val downloadResult = downloadRemoteNotes(sardine, serverUrl)
+                val downloadResult = downloadRemoteNotes(
+                    sardine, 
+                    serverUrl,
+                    includeRootFallback = true  // ✅ v1.3.0: Enable for v1.2.0 compatibility
+                )
                 syncedCount += downloadResult.downloadedCount
                 conflictCount += downloadResult.conflictCount
                 Logger.d(TAG, "✅ Downloaded: ${downloadResult.downloadedCount} notes, Conflicts: ${downloadResult.conflictCount}")
@@ -462,7 +620,24 @@ class WebDavSyncService(private val context: Context) {
                 throw e
             }
             
-            Logger.d(TAG, "📍 Step 6: Saving sync timestamp")
+            Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
+            // Auto-import Markdown files from server
+            var markdownImportedCount = 0
+            try {
+                val markdownAutoImportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+                if (markdownAutoImportEnabled) {
+                    Logger.d(TAG, "📥 Auto-importing Markdown files...")
+                    markdownImportedCount = importMarkdownFiles(sardine, serverUrl)
+                    Logger.d(TAG, "✅ Auto-imported: $markdownImportedCount Markdown files")
+                } else {
+                    Logger.d(TAG, "⏭️ Markdown auto-import disabled")
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ Markdown auto-import failed (non-fatal)", e)
+                // Non-fatal, continue
+            }
+            
+            Logger.d(TAG, "📍 Step 7: Saving sync timestamp")
             // Update last sync timestamp
             try {
                 saveLastSyncTimestamp()
@@ -473,12 +648,24 @@ class WebDavSyncService(private val context: Context) {
                 // Non-fatal, continue
             }
             
-            Logger.d(TAG, "🎉 Sync completed successfully - Total synced: $syncedCount")
+            // ✅ v1.3.0: Hybrid counting to prevent double-counting
+            // - If JSON sync occurred, it represents unique notes (JSON is source of truth)
+            // - If ONLY Markdown edits (no JSON), use Markdown count
+            val effectiveSyncedCount = if (syncedCount > 0) {
+                syncedCount  // JSON-based count is authoritative
+            } else {
+                markdownImportedCount  // Fallback: Markdown-only edits
+            }
+            
+            Logger.d(TAG, "🎉 Sync completed successfully: $effectiveSyncedCount notes")
+            if (markdownImportedCount > 0 && syncedCount > 0) {
+                Logger.d(TAG, "📝 Including $markdownImportedCount Markdown file updates")
+            }
             Logger.d(TAG, "═══════════════════════════════════════")
             
             SyncResult(
                 isSuccess = true,
-                syncedCount = syncedCount,
+                syncedCount = effectiveSyncedCount,
                 conflictCount = conflictCount
             )
             
@@ -678,11 +865,21 @@ class WebDavSyncService(private val context: Context) {
     private fun downloadRemoteNotes(
         sardine: Sardine, 
         serverUrl: String,
-        includeRootFallback: Boolean = false  // 🆕 v1.2.2: Only for restore from server
+        includeRootFallback: Boolean = false,  // 🆕 v1.2.2: Only for restore from server
+        forceOverwrite: Boolean = false,  // 🆕 v1.3.0: For OVERWRITE_DUPLICATES mode
+        deletionTracker: DeletionTracker = storage.loadDeletionTracker()  // 🆕 v1.3.0: Allow passing fresh tracker
     ): DownloadResult {
         var downloadedCount = 0
         var conflictCount = 0
+        var skippedDeleted = 0  // NEW: Track skipped deleted notes
         val processedIds = mutableSetOf<String>()  // 🆕 v1.2.2: Track already loaded notes
+        
+        Logger.d(TAG, "📥 downloadRemoteNotes() called:")
+        Logger.d(TAG, "   includeRootFallback: $includeRootFallback")
+        Logger.d(TAG, "   forceOverwrite: $forceOverwrite")
+        
+        // Use provided deletion tracker (allows fresh tracker from restore)
+        var trackerModified = false
         
         try {
             // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
@@ -703,6 +900,24 @@ class WebDavSyncService(private val context: Context) {
                     val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
                     val remoteNote = Note.fromJson(jsonContent) ?: continue
                     
+                    // NEW: Check if note was deleted locally
+                    if (deletionTracker.isDeleted(remoteNote.id)) {
+                        val deletedAt = deletionTracker.getDeletionTimestamp(remoteNote.id)
+                        
+                        // Smart check: Was note re-created on server after deletion?
+                        if (deletedAt != null && remoteNote.updatedAt > deletedAt) {
+                            Logger.d(TAG, "   📝 Note re-created on server after deletion: ${remoteNote.id}")
+                            deletionTracker.removeDeletion(remoteNote.id)
+                            trackerModified = true
+                            // Continue with download below
+                        } else {
+                            Logger.d(TAG, "   ⏭️ Skipping deleted note: ${remoteNote.id}")
+                            skippedDeleted++
+                            processedIds.add(remoteNote.id)
+                            continue
+                        }
+                    }
+                    
                     processedIds.add(remoteNote.id)  // 🆕 Mark as processed
                     
                     val localNote = storage.loadNote(remoteNote.id)
@@ -713,6 +928,12 @@ class WebDavSyncService(private val context: Context) {
                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                             downloadedCount++
                             Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
+                        }
+                        forceOverwrite -> {
+                            // OVERWRITE mode: Always replace regardless of timestamps
+                            storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                            downloadedCount++
+                            Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
                         }
                         localNote.updatedAt < remoteNote.updatedAt -> {
                             // Remote is newer
@@ -729,7 +950,7 @@ class WebDavSyncService(private val context: Context) {
                         }
                     }
                 }
-                Logger.d(TAG, "   📊 Phase 1 complete: $downloadedCount notes from /notes/")
+                Logger.d(TAG, "   📊 Phase 1: $downloadedCount downloaded, $skippedDeleted skipped (deleted)")
             } else {
                 Logger.w(TAG, "   ⚠️ /notes/ does not exist, skipping Phase 1")
             }
@@ -738,7 +959,7 @@ class WebDavSyncService(private val context: Context) {
             // ⚠️ ONLY for restore from server! Normal sync should NOT scan Root
             if (includeRootFallback) {
                 val rootUrl = serverUrl.trimEnd('/')
-                Logger.d(TAG, "🔍 Phase 2: Checking ROOT at: $rootUrl (Restore mode)")
+                Logger.d(TAG, "🔍 Phase 2: Checking ROOT at: $rootUrl (v1.2.0 compat)")
                 
                 try {
                     val rootResources = sardine.list(rootUrl)
@@ -770,6 +991,19 @@ class WebDavSyncService(private val context: Context) {
                             continue
                         }
                         
+                        // NEW: Check deletion tracker
+                        if (deletionTracker.isDeleted(remoteNote.id)) {
+                            val deletedAt = deletionTracker.getDeletionTimestamp(remoteNote.id)
+                            if (deletedAt != null && remoteNote.updatedAt > deletedAt) {
+                                deletionTracker.removeDeletion(remoteNote.id)
+                                trackerModified = true
+                            } else {
+                                Logger.d(TAG, "   ⏭️ Skipping deleted note: ${remoteNote.id}")
+                                skippedDeleted++
+                                continue
+                            }
+                        }
+                        
                         processedIds.add(remoteNote.id)
                         val localNote = storage.loadNote(remoteNote.id)
                         
@@ -778,6 +1012,12 @@ class WebDavSyncService(private val context: Context) {
                                 storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                 downloadedCount++
                                 Logger.d(TAG, "   ✅ Downloaded from ROOT: ${remoteNote.id}")
+                            }
+                            forceOverwrite -> {
+                                // OVERWRITE mode: Always replace regardless of timestamps
+                                storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                downloadedCount++
+                                Logger.d(TAG, "   ♻️ Overwritten from ROOT: ${remoteNote.id}")
                             }
                             localNote.updatedAt < remoteNote.updatedAt -> {
                                 if (localNote.syncStatus == SyncStatus.PENDING) {
@@ -812,12 +1052,45 @@ class WebDavSyncService(private val context: Context) {
             Logger.e(TAG, "❌ downloadRemoteNotes failed", e)
         }
         
-        Logger.d(TAG, "📊 Total download result: $downloadedCount notes, $conflictCount conflicts")
+        // NEW: Save deletion tracker if modified
+        if (trackerModified) {
+            storage.saveDeletionTracker(deletionTracker)
+            Logger.d(TAG, "💾 Deletion tracker updated")
+        }
+        
+        Logger.d(TAG, "📊 Total: $downloadedCount downloaded, $conflictCount conflicts, $skippedDeleted deleted")
         return DownloadResult(downloadedCount, conflictCount)
     }
     
     private fun saveLastSyncTimestamp() {
         val now = System.currentTimeMillis()
+        
+        // v1.3.0: Save E-Tag only for JSON (Markdown uses timestamp check)
+        try {
+            val sardine = getSardine()
+            val serverUrl = getServerUrl()
+            
+            if (sardine != null && serverUrl != null) {
+                val notesUrl = getNotesUrl(serverUrl)
+                
+                // JSON E-Tag only
+                val notesResources = sardine.list(notesUrl, 0)
+                val notesETag = notesResources.firstOrNull()?.contentLength?.toString()
+                
+                prefs.edit()
+                    .putLong(Constants.KEY_LAST_SYNC, now)
+                    .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)
+                    .putString("notes_collection_etag", notesETag)
+                    .apply()
+                
+                Logger.d(TAG, "💾 Saved sync timestamp + JSON E-Tag")
+                return
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "Failed to save E-Tag: ${e.message}")
+        }
+        
+        // Fallback: Save timestamp only
         prefs.edit()
             .putLong(Constants.KEY_LAST_SYNC, now)
             .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)  // 🔥 v1.1.2: Track successful sync
@@ -833,10 +1106,13 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
-     * Restore all notes from server - overwrites local storage
+     * Restore all notes from server with different modes (v1.3.0)
+     * @param mode RestoreMode (REPLACE, MERGE, or OVERWRITE_DUPLICATES)
      * @return RestoreResult with count of restored notes
      */
-    suspend fun restoreFromServer(): RestoreResult = withContext(Dispatchers.IO) {
+    suspend fun restoreFromServer(
+        mode: dev.dettmer.simplenotes.backup.RestoreMode = dev.dettmer.simplenotes.backup.RestoreMode.REPLACE
+    ): RestoreResult = withContext(Dispatchers.IO) {
         return@withContext try {
             val sardine = getSardine() ?: return@withContext RestoreResult(
                 isSuccess = false,
@@ -850,20 +1126,57 @@ class WebDavSyncService(private val context: Context) {
                 restoredCount = 0
             )
             
-            Logger.d(TAG, "🔄 Starting restore from server...")
+            Logger.d(TAG, "═══════════════════════════════════════")
+            Logger.d(TAG, "🔄 restoreFromServer() ENTRY")
+            Logger.d(TAG, "Mode: $mode")
+            Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
             
-            // Clear local storage FIRST
-            Logger.d(TAG, "🗑️ Clearing local storage...")
-            storage.deleteAllNotes()
+            // ✅ v1.3.0 FIX: WICHTIG - Deletion Tracker bei ALLEN Modi clearen!
+            // Restore bedeutet: "Server ist die Quelle der Wahrheit"
+            // → Lokale Deletion-History ist irrelevant
+            Logger.d(TAG, "🗑️ Clearing deletion tracker (restore mode)")
+            storage.clearDeletionTracker()
             
-            // 🆕 v1.2.2: Use downloadRemoteNotes() with Root fallback enabled
+            // Determine forceOverwrite flag
+            val forceOverwrite = (mode == dev.dettmer.simplenotes.backup.RestoreMode.OVERWRITE_DUPLICATES)
+            Logger.d(TAG, "forceOverwrite: $forceOverwrite")
+            
+            // Mode-specific preparation
+            when (mode) {
+                dev.dettmer.simplenotes.backup.RestoreMode.REPLACE -> {
+                    // Clear everything
+                    Logger.d(TAG, "🗑️ REPLACE mode: Clearing local storage...")
+                    storage.deleteAllNotes()
+                    // Tracker already cleared above
+                }
+                dev.dettmer.simplenotes.backup.RestoreMode.MERGE -> {
+                    // Keep local notes, just add from server
+                    Logger.d(TAG, "🔀 MERGE mode: Keeping local notes...")
+                    // ✅ Tracker cleared → Server notes will NOT be skipped
+                }
+                dev.dettmer.simplenotes.backup.RestoreMode.OVERWRITE_DUPLICATES -> {
+                    // Will overwrite in downloadRemoteNotes if needed
+                    Logger.d(TAG, "♻️ OVERWRITE mode: Will force update duplicates...")
+                    // ✅ Tracker cleared → Server notes will NOT be skipped
+                }
+            }
+            
+            // 🆕 v1.2.2: Use downloadRemoteNotes() with Root fallback + forceOverwrite
+            // 🆕 v1.3.0: Pass FRESH empty tracker to avoid loading stale cached data
+            Logger.d(TAG, "📡 Calling downloadRemoteNotes() - includeRootFallback: true, forceOverwrite: $forceOverwrite")
+            val emptyTracker = DeletionTracker()  // Fresh empty tracker after clear
             val result = downloadRemoteNotes(
                 sardine = sardine, 
                 serverUrl = serverUrl,
-                includeRootFallback = true  // ✅ Enable backward compatibility for restore
+                includeRootFallback = true,  // ✅ Enable backward compatibility for restore
+                forceOverwrite = forceOverwrite,  // ✅ v1.3.0: Force overwrite for OVERWRITE_DUPLICATES mode
+                deletionTracker = emptyTracker  // ✅ v1.3.0: Use fresh tracker to prevent skipping
             )
             
-            if (result.downloadedCount == 0) {
+            Logger.d(TAG, "📊 Download result: downloaded=${result.downloadedCount}, conflicts=${result.conflictCount}")
+            
+            if (result.downloadedCount == 0 && mode == dev.dettmer.simplenotes.backup.RestoreMode.REPLACE) {
+                Logger.w(TAG, "⚠️ No notes found on server!")
                 return@withContext RestoreResult(
                     isSuccess = false,
                     errorMessage = "Keine Notizen auf Server gefunden",
@@ -871,9 +1184,31 @@ class WebDavSyncService(private val context: Context) {
                 )
             }
             
+            // NOTE: Code that removes restored notes from deletion tracker is now REDUNDANT
+            // because we cleared the tracker at the start. But keep it for safety:
+            if (result.downloadedCount > 0) {
+                val deletionTracker = storage.loadDeletionTracker()
+                val allNotes = storage.loadAllNotes()
+                var trackingModified = false
+                
+                allNotes.forEach { note ->
+                    if (deletionTracker.isDeleted(note.id)) {
+                        deletionTracker.removeDeletion(note.id)
+                        trackingModified = true
+                        Logger.d(TAG, "🔓 Removed from deletion tracker: ${note.id} (restored from server)")
+                    }
+                }
+                
+                if (trackingModified) {
+                    storage.saveDeletionTracker(deletionTracker)
+                    Logger.d(TAG, "💾 Updated deletion tracker after restore")
+                }
+            }
+            
             saveLastSyncTimestamp()
             
             Logger.d(TAG, "✅ Restore completed: ${result.downloadedCount} notes")
+            Logger.d(TAG, "═══════════════════════════════════════")
             
             RestoreResult(
                 isSuccess = true,
@@ -882,7 +1217,12 @@ class WebDavSyncService(private val context: Context) {
             )
             
         } catch (e: Exception) {
-            Logger.e(TAG, "❌ Restore failed", e)
+            Logger.e(TAG, "═══════════════════════════════════════")
+            Logger.e(TAG, "💥 restoreFromServer() EXCEPTION")
+            Logger.e(TAG, "Exception type: ${e.javaClass.name}")
+            Logger.e(TAG, "Exception message: ${e.message}")
+            e.printStackTrace()
+            Logger.e(TAG, "═══════════════════════════════════════")
             RestoreResult(
                 isSuccess = false,
                 errorMessage = e.message ?: "Unbekannter Fehler",
@@ -968,6 +1308,295 @@ class WebDavSyncService(private val context: Context) {
         } catch (e: Exception) {
             Logger.e(TAG, "Markdown sync failed", e)
             0
+        }
+    }
+    
+    /**
+     * Auto-import Markdown files during regular sync (v1.3.0)
+     * Called automatically if KEY_MARKDOWN_AUTO_IMPORT is enabled
+     */
+    private fun importMarkdownFiles(sardine: Sardine, serverUrl: String): Int {
+        return try {
+            Logger.d(TAG, "📝 Importing Markdown files...")
+            
+            val mdUrl = getMarkdownUrl(serverUrl)
+            
+            // Check if notes-md/ exists
+            if (!sardine.exists(mdUrl)) {
+                Logger.d(TAG, "   ⚠️ notes-md/ directory not found - skipping")
+                return 0
+            }
+            
+            val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
+            var importedCount = 0
+            
+            Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
+            
+            for (resource in mdResources) {
+                try {
+                    Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
+                    
+                    // Build full URL
+                    val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
+                    
+                    // Download MD content
+                    val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
+                    Logger.d(TAG, "      Downloaded ${mdContent.length} chars")
+                    
+                    // Parse to Note
+                    val mdNote = Note.fromMarkdown(mdContent)
+                    if (mdNote == null) {
+                        Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
+                        continue
+                    }
+                    Logger.d(TAG, "      Parsed: id=${mdNote.id}, title=${mdNote.title}, updatedAt=${Date(mdNote.updatedAt)}")
+                    
+                    val localNote = storage.loadNote(mdNote.id)
+                    Logger.d(TAG, "      Local note: ${if (localNote == null) "NOT FOUND" else "exists, updatedAt=${Date(localNote.updatedAt)}, syncStatus=${localNote.syncStatus}"}")
+                    
+                    // Use server file modification time for reliable change detection
+                    val serverModifiedTime = resource.modified?.time ?: 0L
+                    Logger.d(TAG, "      Comparison: serverModified=$serverModifiedTime, localUpdated=${localNote?.updatedAt ?: 0L}")
+                    
+                    // Conflict resolution: Last-Write-Wins
+                    when {
+                        localNote == null -> {
+                            // New note from desktop
+                            storage.saveNote(mdNote.copy(syncStatus = SyncStatus.SYNCED))
+                            importedCount++
+                            Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
+                        }
+                        serverModifiedTime > localNote.updatedAt -> {
+                            // Server file is newer (based on modification time)
+                            Logger.d(TAG, "      Decision: Server is newer!")
+                            if (localNote.syncStatus == SyncStatus.PENDING) {
+                                // Conflict: local has pending changes
+                                storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
+                            } else {
+                                // Content comparison to preserve timestamps on export-only updates
+                                val contentChanged = mdNote.content != localNote.content || 
+                                                   mdNote.title != localNote.title
+                                
+                                // Detect if YAML timestamp wasn't updated despite content change
+                                val yamlInconsistent = contentChanged && mdNote.updatedAt <= localNote.updatedAt
+                                
+                                // Log inconsistencies for debugging
+                                if (yamlInconsistent) {
+                                    Logger.w(TAG, "   ⚠️ Inconsistency: ${mdNote.title}")
+                                    Logger.w(TAG, "      Content changed but YAML timestamp not updated")
+                                    Logger.w(TAG, "      YAML: ${mdNote.updatedAt}, Local: ${localNote.updatedAt}")
+                                    Logger.w(TAG, "      Using current time as fallback")
+                                }
+                                
+                                // Determine final timestamp with auto-correction
+                                val finalUpdatedAt: Long = when {
+                                    // No content change → preserve local timestamp (export-only)
+                                    !contentChanged -> localNote.updatedAt
+                                    
+                                    // Content changed + YAML timestamp properly updated
+                                    !yamlInconsistent -> mdNote.updatedAt
+                                    
+                                    // Content changed + YAML timestamp NOT updated → use current time
+                                    else -> System.currentTimeMillis()
+                                }
+                                
+                                storage.saveNote(mdNote.copy(
+                                    updatedAt = finalUpdatedAt,
+                                    syncStatus = SyncStatus.SYNCED
+                                ))
+                                importedCount++
+                                
+                                // Detailed logging
+                                when {
+                                    !contentChanged -> Logger.d(TAG, "   ✅ Re-synced (export-only, timestamp preserved): ${mdNote.title}")
+                                    yamlInconsistent -> Logger.d(TAG, "   ✅ Updated (content changed, timestamp corrected): ${mdNote.title}")
+                                    else -> Logger.d(TAG, "   ✅ Updated (content changed, YAML timestamp valid): ${mdNote.title}")
+                                }
+                            }
+                        }
+                        else -> {
+                            Logger.d(TAG, "   ⏭️ Skipped ${mdNote.title}: local is newer (server=$serverModifiedTime, local=${localNote.updatedAt})")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Logger.e(TAG, "   ⚠️ Failed to import ${resource.name}", e)
+                    // Continue with other files
+                }
+            }
+            
+            Logger.d(TAG, "   📊 Markdown import complete: $importedCount notes")
+            importedCount
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "❌ Markdown import failed", e)
+            0
+        }
+    }
+    
+    /**
+     * Finds a Markdown file by scanning YAML frontmatter for note ID
+     * Used when local note is deleted and title is unavailable
+     * 
+     * @param sardine Sardine client
+     * @param mdUrl Base URL of notes-md/ directory
+     * @param noteId The note ID to search for
+     * @return Filename if found, null otherwise
+     */
+    private suspend fun findMarkdownFileByNoteId(
+        sardine: Sardine,
+        mdUrl: String,
+        noteId: String
+    ): String? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Logger.d(TAG, "🔍 Scanning MD files for ID: $noteId")
+            val resources = sardine.list(mdUrl)
+            
+            for (resource in resources) {
+                if (resource.isDirectory || !resource.name.endsWith(".md")) {
+                    continue
+                }
+                
+                try {
+                    // Download MD content
+                    val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
+                    val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
+                    
+                    // Parse YAML frontmatter for ID
+                    val idMatch = Regex("""^---\s*\n.*?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
+                        .find(mdContent)
+                    
+                    if (idMatch?.groupValues?.get(1) == noteId) {
+                        Logger.d(TAG, "   ✅ Found MD file: ${resource.name}")
+                        return@withContext resource.name
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "   ⚠️ Failed to parse ${resource.name}: ${e.message}")
+                    // Continue with next file
+                }
+            }
+            
+            Logger.w(TAG, "   ❌ No MD file found for ID: $noteId")
+            null
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to scan MD files: ${e.message}")
+            null
+        }
+    }
+    
+    /**
+     * Deletes a note from the server (JSON + Markdown)
+     * Does NOT delete from local storage!
+     * 
+     * @param noteId The ID of the note to delete
+     * @return true if at least one file was deleted, false otherwise
+     */
+    suspend fun deleteNoteFromServer(noteId: String): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val sardine = getSardine() ?: return@withContext false
+            val serverUrl = getServerUrl() ?: return@withContext false
+            
+            var deletedJson = false
+            var deletedMd = false
+            
+            // Delete JSON
+            val jsonUrl = getNotesUrl(serverUrl) + "$noteId.json"
+            if (sardine.exists(jsonUrl)) {
+                sardine.delete(jsonUrl)
+                deletedJson = true
+                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json")
+            }
+            
+            // Delete Markdown (v1.3.0: YAML-scan based approach)
+            val mdBaseUrl = getMarkdownUrl(serverUrl)
+            val note = storage.loadNote(noteId)
+            var mdFilenameToDelete: String? = null
+            
+            if (note != null) {
+                // Fast path: Note still exists locally, use title
+                mdFilenameToDelete = sanitizeFilename(note.title) + ".md"
+                Logger.d(TAG, "🔍 MD deletion: Using title from local note: $mdFilenameToDelete")
+            } else {
+                // Fallback: Note deleted locally, scan YAML frontmatter
+                Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
+                mdFilenameToDelete = findMarkdownFileByNoteId(sardine, mdBaseUrl, noteId)
+            }
+            
+            if (mdFilenameToDelete != null) {
+                val mdUrl = mdBaseUrl.trimEnd('/') + "/" + mdFilenameToDelete
+                if (sardine.exists(mdUrl)) {
+                    sardine.delete(mdUrl)
+                    deletedMd = true
+                    Logger.d(TAG, "🗑️ Deleted from server: $mdFilenameToDelete")
+                } else {
+                    Logger.w(TAG, "⚠️ MD file not found: $mdFilenameToDelete")
+                }
+            } else {
+                Logger.w(TAG, "⚠️ Could not determine MD filename for note $noteId")
+            }
+            
+            if (!deletedJson && !deletedMd) {
+                Logger.w(TAG, "⚠️ Note $noteId not found on server")
+                return@withContext false
+            }
+            
+            // Remove from deletion tracker (was explicitly deleted from server)
+            val deletionTracker = storage.loadDeletionTracker()
+            if (deletionTracker.isDeleted(noteId)) {
+                deletionTracker.removeDeletion(noteId)
+                storage.saveDeletionTracker(deletionTracker)
+                Logger.d(TAG, "🔓 Removed from deletion tracker: $noteId")
+            }
+            
+            true
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to delete note from server: $noteId", e)
+            false
+        }
+    }
+    
+    /**
+     * Manual Markdown sync: Export all notes + Import all MD files
+     * Used by manual sync button in settings (when Auto-Sync is OFF)
+     * 
+     * @return ManualMarkdownSyncResult with export and import counts
+     */
+    suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val sardine = getSardine() ?: throw Exception("Sardine client konnte nicht erstellt werden")
+            val serverUrl = getServerUrl() ?: throw Exception("Server-URL nicht konfiguriert")
+            
+            val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
+            val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+            
+            if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
+                throw Exception("WebDAV-Server nicht vollständig konfiguriert")
+            }
+            
+            Logger.d(TAG, "🔄 Manual Markdown Sync START")
+            
+            // Step 1: Export alle lokalen Notizen nach Markdown
+            val exportedCount = exportAllNotesToMarkdown(
+                serverUrl = serverUrl,
+                username = username,
+                password = password
+            )
+            Logger.d(TAG, "   ✅ Export: $exportedCount notes")
+            
+            // Step 2: Import alle Server-Markdown-Dateien
+            val importedCount = importMarkdownFiles(sardine, serverUrl)
+            Logger.d(TAG, "   ✅ Import: $importedCount notes")
+            
+            Logger.d(TAG, "🎉 Manual Markdown Sync COMPLETE: exported=$exportedCount, imported=$importedCount")
+            
+            ManualMarkdownSyncResult(
+                exportedCount = exportedCount,
+                importedCount = importedCount
+            )
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "❌ Manual Markdown Sync FAILED", e)
+            throw e
         }
     }
 }

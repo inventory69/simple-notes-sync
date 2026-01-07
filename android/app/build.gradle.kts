@@ -17,8 +17,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7  // 🔧 v1.2.2: Backward compatibility for v1.2.0 migration
-        versionName = "1.2.2"  // 🔧 v1.2.2: Dual-mode download (Root + /notes/)
+        versionCode = 8  // 🚀 v1.3.0: Multi-Device Sync with deletion tracking
+        versionName = "1.3.0"  // 🚀 v1.3.0: Multi-Device Sync, E-Tag caching, Markdown auto-import
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
