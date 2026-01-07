@@ -21,13 +21,19 @@ import com.google.android.material.color.DynamicColors
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.dettmer.simplenotes.adapters.NotesAdapter
+import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.showToast
 import dev.dettmer.simplenotes.utils.Constants
 import android.widget.TextView
+import android.widget.CheckBox
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -320,36 +326,20 @@ class MainActivity : AppCompatActivity() {
             ): Boolean = false
             
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.adapterPosition
-                val note = adapter.currentList[position]
-                val notesCopy = adapter.currentList.toMutableList()
+                val position = viewHolder.bindingAdapterPosition
+                val swipedNote = adapter.currentList[position]
                 
-                // Track pending deletion to prevent flicker
-                pendingDeletions.add(note.id)
+                // Store original list BEFORE removing note
+                val originalList = adapter.currentList.toList()
                 
-                // Remove from list immediately for visual feedback
-                notesCopy.removeAt(position)
-                adapter.submitList(notesCopy)
+                // Remove from list for visual feedback (NOT from storage yet!)
+                val listWithoutNote = originalList.toMutableList().apply {
+                    removeAt(position)
+                }
+                adapter.submitList(listWithoutNote)
                 
-                // Show Snackbar with UNDO
-                Snackbar.make(
-                    recyclerViewNotes,
-                    "Notiz gelöscht",
-                    Snackbar.LENGTH_LONG
-                ).setAction("RÜCKGÄNGIG") {
-                    // UNDO: Remove from pending deletions and restore
-                    pendingDeletions.remove(note.id)
-                    loadNotes()
-                }.addCallback(object : Snackbar.Callback() {
-                    override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                        if (event != DISMISS_EVENT_ACTION) {
-                            // Snackbar dismissed without UNDO → Actually delete the note
-                            storage.deleteNote(note.id)
-                            pendingDeletions.remove(note.id)
-                            loadNotes()
-                        }
-                    }
-                }).show()
+                // Show dialog with ability to restore
+                showServerDeletionDialog(swipedNote, originalList)
             }
             
             override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
@@ -359,6 +349,104 @@ class MainActivity : AppCompatActivity() {
         })
         
         itemTouchHelper.attachToRecyclerView(recyclerViewNotes)
+    }
+    
+    private fun showServerDeletionDialog(note: Note, originalList: List<Note>) {
+        val alwaysDeleteFromServer = prefs.getBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, false)
+        
+        if (alwaysDeleteFromServer) {
+            // Auto-delete from server without asking
+            deleteNoteLocally(note, deleteFromServer = true)
+            return
+        }
+        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_server_deletion, null)
+        val checkboxAlways = dialogView.findViewById<CheckBox>(R.id.checkboxAlwaysDeleteFromServer)
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Notiz löschen")
+            .setMessage("\"${note.title}\" wird lokal gelöscht.\n\nAuch vom Server löschen?")
+            .setView(dialogView)
+            .setNeutralButton("Abbrechen") { _, _ ->
+                // RESTORE: Re-submit original list (note is NOT deleted from storage)
+                adapter.submitList(originalList)
+            }
+            .setOnCancelListener {
+                // User pressed back - also restore
+                adapter.submitList(originalList)
+            }
+            .setPositiveButton("Nur lokal") { _, _ ->
+                if (checkboxAlways.isChecked) {
+                    prefs.edit().putBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, false).apply()
+                }
+                // NOW actually delete from storage
+                deleteNoteLocally(note, deleteFromServer = false)
+            }
+            .setNegativeButton("Vom Server löschen") { _, _ ->
+                if (checkboxAlways.isChecked) {
+                    prefs.edit().putBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, true).apply()
+                }
+                deleteNoteLocally(note, deleteFromServer = true)
+            }
+            .setCancelable(true)
+            .show()
+    }
+    
+    private fun deleteNoteLocally(note: Note, deleteFromServer: Boolean) {
+        // Track pending deletion to prevent flicker
+        pendingDeletions.add(note.id)
+        
+        // Delete from storage
+        storage.deleteNote(note.id)
+        
+        // Reload to reflect changes
+        loadNotes()
+        
+        // Show Snackbar with UNDO option
+        val message = if (deleteFromServer) {
+            "\"${note.title}\" wird lokal und vom Server gelöscht"
+        } else {
+            "\"${note.title}\" lokal gelöscht (Server bleibt)"
+        }
+        
+        Snackbar.make(recyclerViewNotes, message, Snackbar.LENGTH_LONG)
+            .setAction("RÜCKGÄNGIG") {
+                // UNDO: Restore note
+                storage.saveNote(note)
+                pendingDeletions.remove(note.id)
+                loadNotes()
+            }
+            .addCallback(object : Snackbar.Callback() {
+                override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                    if (event != DISMISS_EVENT_ACTION) {
+                        // Snackbar dismissed without UNDO
+                        pendingDeletions.remove(note.id)
+                        
+                        // Delete from server if requested
+                        if (deleteFromServer) {
+                            lifecycleScope.launch {
+                                try {
+                                    val webdavService = WebDavSyncService(this@MainActivity)
+                                    val success = webdavService.deleteNoteFromServer(note.id)
+                                    if (success) {
+                                        runOnUiThread {
+                                            Toast.makeText(this@MainActivity, "Vom Server gelöscht", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        runOnUiThread {
+                                            Toast.makeText(this@MainActivity, "Server-Löschung fehlgeschlagen", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    runOnUiThread {
+                                        Toast.makeText(this@MainActivity, "Server-Fehler: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }).show()
     }
     
     private fun setupFab() {

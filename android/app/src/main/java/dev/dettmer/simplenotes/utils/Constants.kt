@@ -23,6 +23,10 @@ object Constants {
     const val KEY_MARKDOWN_EXPORT = "markdown_export_enabled"
     const val KEY_MARKDOWN_AUTO_IMPORT = "markdown_auto_import_enabled"
     
+    // 🔥 v1.3.0: Performance & Multi-Device Sync
+    const val KEY_ALWAYS_CHECK_SERVER = "always_check_server"
+    const val KEY_ALWAYS_DELETE_FROM_SERVER = "always_delete_from_server"
+    
     // WorkManager
     const val SYNC_WORK_TAG = "notes_sync"
     const val SYNC_DELAY_SECONDS = 5L
