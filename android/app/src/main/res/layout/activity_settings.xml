@@ -429,11 +429,11 @@
 
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Markdown Export Toggle -->
+                    <!-- Markdown Auto-Sync Toggle (fusioniert Export + Auto-Import) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginBottom="8dp"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
 
@@ -441,33 +441,46 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="📝 Markdown Export (Desktop-Zugriff)"
+                            android:text="🔄 Markdown Auto-Sync"
                             android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                         <androidx.appcompat.widget.SwitchCompat
-                            android:id="@+id/switchMarkdownExport"
+                            android:id="@+id/switchMarkdownAutoSync"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true" />
+                            android:checked="false" />
 
                     </LinearLayout>
 
-                    <!-- Import Markdown Button -->
-                    <Button
-                        android:id="@+id/buttonImportMarkdown"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="📥 Markdown-Änderungen importieren"
-                        style="@style/Widget.Material3.Button.TonalButton" />
-
-                    <!-- Import Info Text -->
+                    <!-- Auto-Sync Info Text -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Importiert manuelle Änderungen von Desktop-Apps (.md Dateien vom Server)"
+                        android:layout_marginBottom="16dp"
+                        android:text="Synchronisiert Notizen automatisch als .md Dateien (Upload + Download bei jedem Sync)"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Manual Sync Info (nur sichtbar wenn Auto-Sync OFF) -->
+                    <TextView
+                        android:id="@+id/textViewManualSyncInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="Oder synchronisiere Markdown-Dateien manuell:"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="?attr/colorOnSurface"
+                        android:visibility="gone" />
+
+                    <!-- Manual Sync Button (nur sichtbar wenn Auto-Sync OFF) -->
+                    <Button
+                        android:id="@+id/buttonManualMarkdownSync"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Markdown synchronisieren"
+                        android:visibility="gone"
+                        style="@style/Widget.Material3.Button.TonalButton" />
 
                 </LinearLayout>
 
