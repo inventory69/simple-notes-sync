@@ -17,8 +17,31 @@ object Logger {
     
     private var fileLoggingEnabled = false
     private var logFile: File? = null
+    private var appContext: Context? = null
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
     private val maxLogEntries = 500 // Nur letzte 500 Einträge
+    
+    /**
+     * Setzt den File-Logging Status (für UI Toggle)
+     */
+    fun setFileLoggingEnabled(enabled: Boolean) {
+        fileLoggingEnabled = enabled
+        if (!enabled) {
+            logFile = null
+        }
+    }
+    
+    /**
+     * Gibt zurück, ob File-Logging aktiviert ist
+     */
+    fun isFileLoggingEnabled(): Boolean = fileLoggingEnabled
+    
+    /**
+     * Initialisiert den Logger mit App-Context
+     */
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
     
     /**
      * Aktiviert File-Logging für Debugging
@@ -51,10 +74,46 @@ object Logger {
     fun getLogFile(): File? = logFile
     
     /**
+     * Gibt Log-Datei mit Context zurück (für SettingsActivity)
+     */
+    fun getLogFile(context: Context): File? {
+        if (logFile == null && fileLoggingEnabled) {
+            logFile = File(context.filesDir, "simplenotes_debug.log")
+        }
+        return logFile
+    }
+    
+    /**
+     * Löscht die Log-Datei
+     */
+    fun clearLogFile(context: Context): Boolean {
+        return try {
+            val file = File(context.filesDir, "simplenotes_debug.log")
+            if (file.exists()) {
+                file.delete()
+                logFile = null
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("Logger", "Failed to clear log file", e)
+            false
+        }
+    }
+    
+    /**
      * Schreibt Log-Eintrag in Datei
      */
     private fun writeToFile(level: String, tag: String, message: String, throwable: Throwable? = null) {
-        if (!fileLoggingEnabled || logFile == null) return
+        if (!fileLoggingEnabled) return
+        
+        // Lazy-init logFile mit appContext
+        if (logFile == null && appContext != null) {
+            logFile = File(appContext!!.filesDir, "simplenotes_debug.log")
+        }
+        
+        if (logFile == null) return
         
         try {
             val timestamp = dateFormat.format(Date())

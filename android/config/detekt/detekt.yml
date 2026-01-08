@@ -1,0 +1,136 @@
+# ⚡ v1.3.1: detekt Configuration
+# Pragmatic rules for simple-notes-sync
+
+build:
+  maxIssues: 100  # Allow existing issues for v1.3.1 release, fix in v1.4.0
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+comments:
+  CommentOverPrivateProperty:
+    active: false
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+
+complexity:
+  ComplexCondition:
+    active: true
+    threshold: 5
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 15
+    ignoreSingleWhenExpression: true
+  LargeClass:
+    active: true
+    threshold: 600  # Increased for WebDavSyncService
+  LongMethod:
+    active: true
+    threshold: 80  # Increased for sync methods
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 7
+  NestedBlockDepth:
+    active: true
+    threshold: 5
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 25
+    thresholdInClasses: 25
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+    thresholdInEnums: 10
+
+empty-blocks:
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: "_|(ignore|expected).*"
+  EmptyFunctionBlock:
+    active: true
+    ignoreOverridden: true
+
+exceptions:
+  SwallowedException:
+    active: true
+    ignoredExceptionTypes:
+      - "InterruptedException"
+      - "MalformedURLException"
+      - "NumberFormatException"
+      - "ParseException"
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - "Error"
+      - "Throwable"
+    allowedExceptionNameRegex: "_|(ignore|expected).*"
+
+naming:
+  FunctionNaming:
+    active: true
+    functionPattern: "[a-zA-Z][a-zA-Z0-9]*"
+  VariableNaming:
+    active: true
+    variablePattern: "[a-z][A-Za-z0-9]*"
+  PackageNaming:
+    active: true
+    packagePattern: "[a-z]+(\\.[a-z][A-Za-z0-9]*)*"
+
+performance:
+  SpreadOperator:
+    active: false  # Spread operator is fine in most cases
+
+potential-bugs:
+  CastToNullableType:
+    active: true
+  EqualsWithHashCodeExist:
+    active: true
+  UnconditionalJumpStatementInLoop:
+    active: true
+
+style:
+  ForbiddenComment:
+    active: true
+    comments:
+      - "FIXME:"
+      - "STOPSHIP:"
+    allowedPatterns: ""
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - "-1"
+      - "0"
+      - "1"
+      - "2"
+      - "100"
+      - "1000"
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreAnnotation: true
+    ignoreEnums: true
+    ignoreRanges: true
+    ignoreExtensionFunctions: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+    excludePackageStatements: true
+    excludeImportStatements: true
+  ReturnCount:
+    active: true
+    max: 4
+    excludedFunctions: []
+    excludeLabeled: true
+    excludeReturnFromLambda: true
+    excludeGuardClauses: true
+  UnusedImports:
+    active: true
+  UnusedPrivateMember:
+    active: true
+    allowedNames: "_.*"
+  WildcardImport:
+    active: false  # Allow wildcard imports

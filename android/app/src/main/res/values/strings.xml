@@ -57,4 +57,10 @@
     <string name="restore_progress">Stelle Notizen wieder her…</string>
     <string name="restore_success">✓ %d Notizen wiederhergestellt</string>
     <string name="restore_error">Fehler: %s</string>
+    
+    <!-- Sync Status Banner (v1.3.1) -->
+    <string name="sync_status_syncing">Synchronisiere…</string>
+    <string name="sync_status_completed">Synchronisierung abgeschlossen</string>
+    <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
+    <string name="sync_already_running">Synchronisierung läuft bereits</string>
 </resources>

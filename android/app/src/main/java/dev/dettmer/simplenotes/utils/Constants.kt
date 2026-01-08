@@ -27,6 +27,9 @@ object Constants {
     const val KEY_ALWAYS_CHECK_SERVER = "always_check_server"
     const val KEY_ALWAYS_DELETE_FROM_SERVER = "always_delete_from_server"
     
+    // 🔥 v1.3.1: Debug & Logging
+    const val KEY_FILE_LOGGING_ENABLED = "file_logging_enabled"
+    
     // WorkManager
     const val SYNC_WORK_TAG = "notes_sync"
     const val SYNC_DELAY_SECONDS = 5L

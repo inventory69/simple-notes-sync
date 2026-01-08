@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    // ⚡ v1.3.1: ktlint deaktiviert wegen Parser-Problemen, aktivieren in v1.4.0
+    // alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
 }
 
 import java.util.Properties
@@ -17,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8  // 🚀 v1.3.0: Multi-Device Sync with deletion tracking
-        versionName = "1.3.0"  // 🚀 v1.3.0: Multi-Device Sync, E-Tag caching, Markdown auto-import
+        versionCode = 9  // 🚀 v1.3.1: Sync-Performance & Debug-Logging
+        versionName = "1.3.1"  // 🚀 v1.3.1: Skip unchanged MD-Files, Sync-Mutex, Debug-Logging UI
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -75,6 +78,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            // ⚡ v1.3.1: Debug-Builds können parallel zur Release-App installiert werden
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            isDebuggable = true
+            
+            // Optionales separates Icon-Label für Debug-Builds
+            resValue("string", "app_name_debug", "Simple Notes (Debug)")
+        }
+        
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -143,4 +156,28 @@ dependencies {
 fun getBuildDate(): String {
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     return dateFormat.format(Date())
+}
+
+// ⚡ v1.3.1: ktlint deaktiviert wegen Parser-Problemen
+// Aktivieren in v1.4.0 wenn Code-Stil bereinigt wurde
+// ktlint {
+//     android = true
+//     outputToConsole = true
+//     ignoreFailures = true
+//     enableExperimentalRules = false
+//     filter {
+//         exclude("**/generated/**")
+//         exclude("**/build/**")
+//     }
+// }
+
+// ⚡ v1.3.1: detekt-Konfiguration
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    baseline = file("$rootDir/config/detekt/baseline.xml")
+    
+    // Parallel-Verarbeitung für schnellere Checks
+    parallel = true
 }

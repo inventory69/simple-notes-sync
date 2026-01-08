@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.net.Inet4Address
@@ -37,11 +38,20 @@ class WebDavSyncService(private val context: Context) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
+        
+        // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
+        private val syncMutex = Mutex()
     }
     
     private val storage: NotesStorage
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
+    private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
+    
+    // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
+    private var sessionSardine: Sardine? = null
+    private var sessionWifiAddress: InetAddress? = null
+    private var sessionWifiAddressChecked = false  // Flag ob WiFi-Check bereits durchgeführt
     
     init {
         if (BuildConfig.DEBUG) {
@@ -74,9 +84,24 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
+     * ⚡ v1.3.1: Gecachte WiFi-Adresse zurückgeben oder berechnen
+     */
+    private fun getOrCacheWiFiAddress(): InetAddress? {
+        // Return cached if already checked this session
+        if (sessionWifiAddressChecked) {
+            return sessionWifiAddress
+        }
+        
+        // Calculate and cache
+        sessionWifiAddress = getWiFiInetAddressInternal()
+        sessionWifiAddressChecked = true
+        return sessionWifiAddress
+    }
+    
+    /**
      * Findet WiFi Interface IP-Adresse (um VPN zu umgehen)
      */
-    private fun getWiFiInetAddress(): InetAddress? {
+    private fun getWiFiInetAddressInternal(): InetAddress? {
         try {
             Logger.d(TAG, "🔍 getWiFiInetAddress() called")
             
@@ -171,15 +196,35 @@ class WebDavSyncService(private val context: Context) {
         }
     }
     
-    private fun getSardine(): Sardine? {
+    /**
+     * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
+     * Spart ~100ms pro Aufruf durch Wiederverwendung
+     */
+    private fun getOrCreateSardine(): Sardine? {
+        // Return cached if available
+        sessionSardine?.let { 
+            Logger.d(TAG, "⚡ Reusing cached Sardine client")
+            return it 
+        }
+        
+        // Create new client
+        val sardine = createSardineClient()
+        sessionSardine = sardine
+        return sardine
+    }
+    
+    /**
+     * Erstellt einen neuen Sardine-Client (intern)
+     */
+    private fun createSardineClient(): Sardine? {
         val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
         val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
         
         Logger.d(TAG, "🔧 Creating OkHttpSardine with WiFi binding")
         Logger.d(TAG, "    Context: ${context.javaClass.simpleName}")
         
-        // Versuche WiFi-IP zu finden
-        val wifiAddress = getWiFiInetAddress()
+        // ⚡ v1.3.1: Verwende gecachte WiFi-Adresse
+        val wifiAddress = getOrCacheWiFiAddress()
         
         val okHttpClient = if (wifiAddress != null) {
             Logger.d(TAG, "✅ Using WiFi-bound socket factory")
@@ -194,6 +239,18 @@ class WebDavSyncService(private val context: Context) {
         return OkHttpSardine(okHttpClient).apply {
             setCredentials(username, password)
         }
+    }
+    
+    /**
+     * ⚡ v1.3.1: Session-Caches leeren (am Ende von syncNotes)
+     */
+    private fun clearSessionCache() {
+        sessionSardine = null
+        sessionWifiAddress = null
+        sessionWifiAddressChecked = false
+        notesDirEnsured = false
+        markdownDirEnsured = false
+        Logger.d(TAG, "🧹 Session caches cleared")
     }
     
     private fun getServerUrl(): String? {
@@ -267,6 +324,31 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
+     * ⚡ v1.3.1: Stellt sicher dass notes/ Ordner existiert (mit Cache)
+     * 
+     * Spart ~500ms pro Sync durch Caching
+     */
+    private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
+        if (notesDirEnsured) {
+            Logger.d(TAG, "⚡ notes/ directory already verified (cached)")
+            return
+        }
+        
+        try {
+            Logger.d(TAG, "🔍 Checking if notes/ directory exists...")
+            if (!sardine.exists(notesUrl)) {
+                Logger.d(TAG, "📁 Creating notes/ directory...")
+                sardine.createDirectory(notesUrl)
+            }
+            Logger.d(TAG, "    ✅ notes/ directory ready")
+            notesDirEnsured = true
+        } catch (e: Exception) {
+            Logger.e(TAG, "💥 CRASH checking/creating notes/ directory!", e)
+            throw e
+        }
+    }
+    
+    /**
      * Checks if server has changes using E-Tag caching
      * 
      * v1.3.0: Also checks /notes-md/ if Markdown Auto-Import enabled
@@ -298,47 +380,13 @@ class WebDavSyncService(private val context: Context) {
             
             // ====== JSON FILES CHECK (/notes/) ======
             
-            // Optimierung 1: E-Tag Check (fastest - ~100ms)
-            val cachedETag = prefs.getString("notes_collection_etag", null)
-            var jsonHasChanges = false
+            // ⚡ v1.3.1: File-level E-Tag check in downloadRemoteNotes() is optimal!
+            // Collection E-Tag doesn't work (server-dependent, doesn't track file changes)
+            // → Always proceed to download phase where file-level E-Tags provide fast skips
             
-            if (cachedETag != null) {
-                try {
-                    val resources = sardine.list(notesUrl, 0)  // Depth 0 = only collection itself
-                    val currentETag = resources.firstOrNull()?.contentLength?.toString() ?: ""
-                    
-                    if (currentETag == cachedETag) {
-                        val elapsed = System.currentTimeMillis() - startTime
-                        Logger.d(TAG, "⚡ E-Tag match - no JSON changes (${elapsed}ms)")
-                        // Don't return yet - check Markdown too!
-                    } else {
-                        Logger.d(TAG, "🔄 E-Tag changed - JSON files have updates")
-                        return true  // Early return if JSON changed
-                    }
-                } catch (e: Exception) {
-                    Logger.w(TAG, "E-Tag check failed: ${e.message}, falling back to timestamp check")
-                    jsonHasChanges = true
-                }
-            } else {
-                jsonHasChanges = true
-            }
-            
-            // Optimierung 2: Smart Timestamp Check for JSON (medium - ~300ms)
-            if (jsonHasChanges || cachedETag == null) {
-                val resources = sardine.list(notesUrl, 1)  // Depth 1 = collection + children
-                
-                val jsonHasNewer = resources.any { resource ->
-                    !resource.isDirectory && 
-                    resource.name.endsWith(".json") &&
-                    resource.modified?.time?.let { it > lastSyncTime } ?: false
-                }
-                
-                if (jsonHasNewer) {
-                    val elapsed = System.currentTimeMillis() - startTime
-                    Logger.d(TAG, "🔍 JSON check: hasNewer=true (${resources.size} resources, ${elapsed}ms)")
-                    return true
-                }
-            }
+            // For hasUnsyncedChanges(): Conservative approach - assume changes may exist
+            // Actual file-level E-Tag checks in downloadRemoteNotes() will skip unchanged files (0ms each)
+            var hasJsonChanges = true  // Assume yes, let file E-Tags optimize
             
             // ====== MARKDOWN FILES CHECK (/notes-md/) ======
             // IMPORTANT: E-Tag for collections does NOT work for content changes!
@@ -382,7 +430,15 @@ class WebDavSyncService(private val context: Context) {
             }
             
             val elapsed = System.currentTimeMillis() - startTime
-            Logger.d(TAG, "✅ No changes detected (JSON + Markdown checked, ${elapsed}ms)")
+            
+            // Return TRUE if JSON or Markdown have potential changes
+            // (File-level E-Tags will do the actual skip optimization during sync)
+            if (hasJsonChanges) {
+                Logger.d(TAG, "✅ JSON may have changes - will check file E-Tags (${elapsed}ms)")
+                return true
+            }
+            
+            Logger.d(TAG, "✅ No changes detected (Markdown checked, ${elapsed}ms)")
             return false
             
         } catch (e: Exception) {
@@ -429,7 +485,7 @@ class WebDavSyncService(private val context: Context) {
             }
             
             // Perform intelligent server check
-            val sardine = getSardine()
+            val sardine = getOrCreateSardine()
             val serverUrl = getServerUrl()
             
             if (sardine == null || serverUrl == null) {
@@ -484,7 +540,7 @@ class WebDavSyncService(private val context: Context) {
     
     suspend fun testConnection(): SyncResult = withContext(Dispatchers.IO) {
         return@withContext try {
-            val sardine = getSardine() ?: return@withContext SyncResult(
+            val sardine = getOrCreateSardine() ?: return@withContext SyncResult(
                 isSuccess = false,
                 errorMessage = "Server-Zugangsdaten nicht konfiguriert"
             )
@@ -529,18 +585,29 @@ class WebDavSyncService(private val context: Context) {
     }
     
     suspend fun syncNotes(): SyncResult = withContext(Dispatchers.IO) {
-        Logger.d(TAG, "═══════════════════════════════════════")
-        Logger.d(TAG, "🔄 syncNotes() ENTRY")
-        Logger.d(TAG, "Context: ${context.javaClass.simpleName}")
-        Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
+        // 🔒 v1.3.1: Verhindere parallele Syncs
+        if (!syncMutex.tryLock()) {
+            Logger.d(TAG, "⏭️ Sync already in progress - skipping")
+            return@withContext SyncResult(
+                isSuccess = true,
+                syncedCount = 0,
+                errorMessage = null
+            )
+        }
+        
+        try {
+            Logger.d(TAG, "═══════════════════════════════════════")
+            Logger.d(TAG, "🔄 syncNotes() ENTRY")
+            Logger.d(TAG, "Context: ${context.javaClass.simpleName}")
+            Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
         
         return@withContext try {
             Logger.d(TAG, "📍 Step 1: Getting Sardine client")
             
             val sardine = try {
-                getSardine()
+                getOrCreateSardine()
             } catch (e: Exception) {
-                Logger.e(TAG, "💥 CRASH in getSardine()!", e)
+                Logger.e(TAG, "💥 CRASH in getOrCreateSardine()!", e)
                 e.printStackTrace()
                 throw e
             }
@@ -571,20 +638,9 @@ class WebDavSyncService(private val context: Context) {
             var conflictCount = 0
             
             Logger.d(TAG, "📍 Step 3: Checking server directory")
-            // Ensure notes/ directory exists
+            // ⚡ v1.3.1: Verwende gecachte Directory-Checks
             val notesUrl = getNotesUrl(serverUrl)
-            try {
-                Logger.d(TAG, "🔍 Checking if notes/ directory exists...")
-                if (!sardine.exists(notesUrl)) {
-                    Logger.d(TAG, "📁 Creating notes/ directory...")
-                    sardine.createDirectory(notesUrl)
-                }
-                Logger.d(TAG, "    ✅ notes/ directory ready")
-            } catch (e: Exception) {
-                Logger.e(TAG, "💥 CRASH checking/creating notes/ directory!", e)
-                e.printStackTrace()
-                throw e
-            }
+            ensureNotesDirectoryExists(sardine, notesUrl)
             
             // Ensure notes-md/ directory exists (for Markdown export)
             ensureMarkdownDirectoryExists(sardine, serverUrl)
@@ -697,6 +753,12 @@ class WebDavSyncService(private val context: Context) {
                 }
             )
         }
+        } finally {
+            // ⚡ v1.3.1: Session-Caches leeren
+            clearSessionCache()
+            // 🔒 v1.3.1: Sync-Mutex freigeben
+            syncMutex.unlock()
+        }
     }
     
     private fun uploadLocalNotes(sardine: Sardine, serverUrl: String): Int {
@@ -712,12 +774,32 @@ class WebDavSyncService(private val context: Context) {
                     val noteUrl = "$notesUrl${note.id}.json"
                     val jsonBytes = note.toJson().toByteArray()
                     
+                    Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title})")
                     sardine.put(noteUrl, jsonBytes, "application/json")
+                    Logger.d(TAG, "      ✅ Upload successful")
                     
                     // Update sync status
                     val updatedNote = note.copy(syncStatus = SyncStatus.SYNCED)
                     storage.saveNote(updatedNote)
                     uploadedCount++
+                    
+                    // ⚡ v1.3.1: Refresh E-Tag after upload to prevent re-download
+                    // Get new E-Tag from server via PROPFIND
+                    try {
+                        val uploadedResource = sardine.list(noteUrl, 0).firstOrNull()
+                        val newETag = uploadedResource?.etag
+                        if (newETag != null) {
+                            prefs.edit().putString("etag_json_${note.id}", newETag).apply()
+                            Logger.d(TAG, "      ⚡ Cached new E-Tag: ${newETag.take(8)}")
+                        } else {
+                            // Fallback: invalidate if server doesn't provide E-Tag
+                            prefs.edit().remove("etag_json_${note.id}").apply()
+                            Logger.d(TAG, "      ⚠️ No E-Tag from server, invalidated cache")
+                        }
+                    } catch (e: Exception) {
+                        Logger.w(TAG, "      ⚠️ Failed to refresh E-Tag: ${e.message}")
+                        prefs.edit().remove("etag_json_${note.id}").apply()
+                    }
                     
                     // 2. Markdown-Export (NEU in v1.2.0)
                     // Läuft NACH erfolgreichem JSON-Upload
@@ -800,8 +882,8 @@ class WebDavSyncService(private val context: Context) {
     ): Int = withContext(Dispatchers.IO) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
         
-        // Erstelle Sardine-Client mit gegebenen Credentials
-        val wifiAddress = getWiFiInetAddress()
+        // ⚡ v1.3.1: Use cached WiFi address
+        val wifiAddress = getOrCacheWiFiAddress()
         
         val okHttpClient = if (wifiAddress != null) {
             Logger.d(TAG, "✅ Using WiFi-bound socket factory")
@@ -854,6 +936,15 @@ class WebDavSyncService(private val context: Context) {
         }
         
         Logger.d(TAG, "✅ Initial export completed: $exportedCount/$totalCount notes")
+        
+        // ⚡ v1.3.1: Set lastSyncTimestamp to enable timestamp-based skip on next sync
+        // This prevents re-downloading all MD files on the first manual sync after initial export
+        if (exportedCount > 0) {
+            val timestamp = System.currentTimeMillis()
+            prefs.edit().putLong("last_sync_timestamp", timestamp).apply()
+            Logger.d(TAG, "💾 Set lastSyncTimestamp after initial export (enables fast next sync)")
+        }
+        
         return@withContext exportedCount
     }
     
@@ -886,17 +977,62 @@ class WebDavSyncService(private val context: Context) {
             val notesUrl = getNotesUrl(serverUrl)
             Logger.d(TAG, "🔍 Phase 1: Checking /notes/ at: $notesUrl")
             
+            // ⚡ v1.3.1: Performance - Get last sync time for skip optimization
+            val lastSyncTime = getLastSyncTimestamp()
+            var skippedUnchanged = 0
+            
             if (sardine.exists(notesUrl)) {
                 Logger.d(TAG, "   ✅ /notes/ exists, scanning...")
                 val resources = sardine.list(notesUrl)
+                val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
+                Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
                 
-                for (resource in resources) {
-                    if (resource.isDirectory || !resource.name.endsWith(".json")) {
+                for (resource in jsonFiles) {
+                    
+                    val noteId = resource.name.removeSuffix(".json")
+                    val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
+                    
+                    // ⚡ v1.3.1: HYBRID PERFORMANCE - Timestamp + E-Tag (like Markdown!)
+                    val serverETag = resource.etag
+                    val cachedETag = prefs.getString("etag_json_$noteId", null)
+                    val serverModified = resource.modified?.time ?: 0L
+                    
+                    // 🐛 DEBUG: Log every file check to diagnose performance
+                    val serverETagPreview = serverETag?.take(8) ?: "null"
+                    val cachedETagPreview = cachedETag?.take(8) ?: "null"
+                    Logger.d(TAG, "   🔍 [$noteId] etag=$serverETagPreview/$cachedETagPreview modified=$serverModified lastSync=$lastSyncTime")
+                    
+                    // PRIMARY: Timestamp check (works on first sync!)
+                    // Same logic as Markdown sync - skip if not modified since last sync
+                    if (!forceOverwrite && lastSyncTime > 0 && serverModified <= lastSyncTime) {
+                        skippedUnchanged++
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: Not modified since last sync (timestamp)")
+                        processedIds.add(noteId)
                         continue
                     }
                     
-                    // 🔧 Fix: Build full URL instead of using href directly
-                    val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
+                    // SECONDARY: E-Tag check (for performance after first sync)
+                    // Catches cases where file was re-uploaded with same content
+                    if (!forceOverwrite && serverETag != null && serverETag == cachedETag) {
+                        skippedUnchanged++
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
+                        processedIds.add(noteId)
+                        continue
+                    }
+                    
+                    // 🐛 DEBUG: Log download reason
+                    val downloadReason = when {
+                        lastSyncTime == 0L -> "First sync ever"
+                        serverModified > lastSyncTime && serverETag == null -> "Modified + no server E-Tag"
+                        serverModified > lastSyncTime && cachedETag == null -> "Modified + no cached E-Tag"
+                        serverModified > lastSyncTime -> "Modified + E-Tag changed"
+                        serverETag == null -> "No server E-Tag"
+                        cachedETag == null -> "No cached E-Tag"
+                        else -> "E-Tag changed"
+                    }
+                    Logger.d(TAG, "   📥 Downloading $noteId: $downloadReason")
+                    
+                    // Download and process
                     val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
                     val remoteNote = Note.fromJson(jsonContent) ?: continue
                     
@@ -928,12 +1064,22 @@ class WebDavSyncService(private val context: Context) {
                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                             downloadedCount++
                             Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
+                            
+                            // ⚡ Cache E-Tag for next sync
+                            if (serverETag != null) {
+                                prefs.edit().putString("etag_json_$noteId", serverETag).apply()
+                            }
                         }
                         forceOverwrite -> {
                             // OVERWRITE mode: Always replace regardless of timestamps
                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                             downloadedCount++
                             Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
+                            
+                            // ⚡ Cache E-Tag for next sync
+                            if (serverETag != null) {
+                                prefs.edit().putString("etag_json_$noteId", serverETag).apply()
+                            }
                         }
                         localNote.updatedAt < remoteNote.updatedAt -> {
                             // Remote is newer
@@ -946,11 +1092,16 @@ class WebDavSyncService(private val context: Context) {
                                 storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                 downloadedCount++
                                 Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
+                                
+                                // ⚡ Cache E-Tag for next sync
+                                if (serverETag != null) {
+                                    prefs.edit().putString("etag_json_$noteId", serverETag).apply()
+                                }
                             }
                         }
                     }
                 }
-                Logger.d(TAG, "   📊 Phase 1: $downloadedCount downloaded, $skippedDeleted skipped (deleted)")
+                Logger.d(TAG, "   📊 Phase 1: $downloadedCount downloaded, $skippedDeleted skipped (deleted), $skippedUnchanged skipped (unchanged)")
             } else {
                 Logger.w(TAG, "   ⚠️ /notes/ does not exist, skipping Phase 1")
             }
@@ -1065,36 +1216,14 @@ class WebDavSyncService(private val context: Context) {
     private fun saveLastSyncTimestamp() {
         val now = System.currentTimeMillis()
         
-        // v1.3.0: Save E-Tag only for JSON (Markdown uses timestamp check)
-        try {
-            val sardine = getSardine()
-            val serverUrl = getServerUrl()
-            
-            if (sardine != null && serverUrl != null) {
-                val notesUrl = getNotesUrl(serverUrl)
-                
-                // JSON E-Tag only
-                val notesResources = sardine.list(notesUrl, 0)
-                val notesETag = notesResources.firstOrNull()?.contentLength?.toString()
-                
-                prefs.edit()
-                    .putLong(Constants.KEY_LAST_SYNC, now)
-                    .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)
-                    .putString("notes_collection_etag", notesETag)
-                    .apply()
-                
-                Logger.d(TAG, "💾 Saved sync timestamp + JSON E-Tag")
-                return
-            }
-        } catch (e: Exception) {
-            Logger.w(TAG, "Failed to save E-Tag: ${e.message}")
-        }
-        
-        // Fallback: Save timestamp only
+        // ⚡ v1.3.1: Simplified - file-level E-Tags cached individually in downloadRemoteNotes()
+        // No need for collection E-Tag (doesn't work reliably across WebDAV servers)
         prefs.edit()
             .putLong(Constants.KEY_LAST_SYNC, now)
-            .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)  // 🔥 v1.1.2: Track successful sync
+            .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)
             .apply()
+        
+        Logger.d(TAG, "💾 Saved sync timestamp (file E-Tags cached individually)")
     }
     
     fun getLastSyncTimestamp(): Long {
@@ -1114,7 +1243,7 @@ class WebDavSyncService(private val context: Context) {
         mode: dev.dettmer.simplenotes.backup.RestoreMode = dev.dettmer.simplenotes.backup.RestoreMode.REPLACE
     ): RestoreResult = withContext(Dispatchers.IO) {
         return@withContext try {
-            val sardine = getSardine() ?: return@withContext RestoreResult(
+            val sardine = getOrCreateSardine() ?: return@withContext RestoreResult(
                 isSuccess = false,
                 errorMessage = "Server-Zugangsdaten nicht konfiguriert",
                 restoredCount = 0
@@ -1136,6 +1265,20 @@ class WebDavSyncService(private val context: Context) {
             // → Lokale Deletion-History ist irrelevant
             Logger.d(TAG, "🗑️ Clearing deletion tracker (restore mode)")
             storage.clearDeletionTracker()
+            
+            // ⚡ v1.3.1 FIX: Clear lastSyncTimestamp to force download ALL files
+            // Restore = "Server ist die Quelle" → Ignore lokale Sync-History
+            val previousSyncTime = getLastSyncTimestamp()
+            prefs.edit().putLong("last_sync_timestamp", 0).apply()
+            Logger.d(TAG, "🔄 Cleared lastSyncTimestamp (was: $previousSyncTime) - will download all files")
+            
+            // ⚡ v1.3.1 FIX: Clear E-Tag caches to force re-download
+            val editor = prefs.edit()
+            prefs.all.keys.filter { it.startsWith("etag_json_") }.forEach { key ->
+                editor.remove(key)
+            }
+            editor.apply()
+            Logger.d(TAG, "🔄 Cleared E-Tag caches - will re-download all files")
             
             // Determine forceOverwrite flag
             val forceOverwrite = (mode == dev.dettmer.simplenotes.backup.RestoreMode.OVERWRITE_DUPLICATES)
@@ -1314,6 +1457,8 @@ class WebDavSyncService(private val context: Context) {
     /**
      * Auto-import Markdown files during regular sync (v1.3.0)
      * Called automatically if KEY_MARKDOWN_AUTO_IMPORT is enabled
+     * 
+     * ⚡ v1.3.1: Performance-Optimierung - Skip unveränderte Dateien
      */
     private fun importMarkdownFiles(sardine: Sardine, serverUrl: String): Int {
         return try {
@@ -1329,11 +1474,26 @@ class WebDavSyncService(private val context: Context) {
             
             val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
             var importedCount = 0
+            var skippedCount = 0  // ⚡ v1.3.1: Zähle übersprungene Dateien
             
             Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
             
+            // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
+            val lastSyncTime = getLastSyncTimestamp()
+            Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
+            
             for (resource in mdResources) {
                 try {
+                    val serverModifiedTime = resource.modified?.time ?: 0L
+                    
+                    // ⚡ v1.3.1: PERFORMANCE - Skip wenn Datei seit letztem Sync nicht geändert wurde
+                    // Das ist der Haupt-Performance-Fix! Spart ~500ms pro Datei bei Nextcloud.
+                    if (lastSyncTime > 0 && serverModifiedTime <= lastSyncTime) {
+                        skippedCount++
+                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: not modified since last sync")
+                        continue
+                    }
+                    
                     Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
                     
                     // Build full URL
@@ -1354,11 +1514,22 @@ class WebDavSyncService(private val context: Context) {
                     val localNote = storage.loadNote(mdNote.id)
                     Logger.d(TAG, "      Local note: ${if (localNote == null) "NOT FOUND" else "exists, updatedAt=${Date(localNote.updatedAt)}, syncStatus=${localNote.syncStatus}"}")
                     
-                    // Use server file modification time for reliable change detection
-                    val serverModifiedTime = resource.modified?.time ?: 0L
-                    Logger.d(TAG, "      Comparison: serverModified=$serverModifiedTime, localUpdated=${localNote?.updatedAt ?: 0L}")
+                    // ⚡ v1.3.1: Content-basierte Erkennung
+                    // Wichtig: Vergleiche IMMER den Inhalt, wenn die Datei seit letztem Sync geändert wurde!
+                    // Der YAML-Timestamp kann veraltet sein (z.B. bei externer Bearbeitung ohne Obsidian)
+                    Logger.d(TAG, "      Comparison: mdUpdatedAt=${mdNote.updatedAt}, localUpdated=${localNote?.updatedAt ?: 0L}")
                     
-                    // Conflict resolution: Last-Write-Wins
+                    // Content-Vergleich: Ist der Inhalt tatsächlich unterschiedlich?
+                    val contentChanged = localNote != null && (
+                        mdNote.content != localNote.content || 
+                        mdNote.title != localNote.title
+                    )
+                    
+                    if (contentChanged) {
+                        Logger.d(TAG, "      📝 Content differs from local!")
+                    }
+                    
+                    // Conflict resolution: Content-First, dann Timestamp
                     when {
                         localNote == null -> {
                             // New note from desktop
@@ -1366,57 +1537,41 @@ class WebDavSyncService(private val context: Context) {
                             importedCount++
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
                         }
-                        serverModifiedTime > localNote.updatedAt -> {
-                            // Server file is newer (based on modification time)
-                            Logger.d(TAG, "      Decision: Server is newer!")
+                        // ⚡ v1.3.1 FIX: Content-basierter Skip - nur wenn Inhalt UND Timestamp gleich
+                        localNote.syncStatus == SyncStatus.SYNCED && !contentChanged && localNote.updatedAt >= mdNote.updatedAt -> {
+                            // Inhalt identisch UND Timestamps passen → Skip
+                            skippedCount++
+                            Logger.d(TAG, "   ⏭️ Skipped ${mdNote.title}: content identical (local=${localNote.updatedAt}, md=${mdNote.updatedAt})")
+                        }
+                        // ⚡ v1.3.1 FIX: Content geändert aber YAML-Timestamp nicht aktualisiert → Importieren!
+                        contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
+                            // Inhalt wurde extern geändert ohne YAML-Update → mit aktuellem Timestamp importieren
+                            val newTimestamp = System.currentTimeMillis()
+                            storage.saveNote(mdNote.copy(
+                                updatedAt = newTimestamp,
+                                syncStatus = SyncStatus.SYNCED
+                            ))
+                            importedCount++
+                            Logger.d(TAG, "   ✅ Imported changed content (YAML timestamp outdated): ${mdNote.title}")
+                        }
+                        mdNote.updatedAt > localNote.updatedAt -> {
+                            // Markdown has newer YAML timestamp
+                            Logger.d(TAG, "      Decision: Markdown has newer timestamp!")
                             if (localNote.syncStatus == SyncStatus.PENDING) {
                                 // Conflict: local has pending changes
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {
-                                // Content comparison to preserve timestamps on export-only updates
-                                val contentChanged = mdNote.content != localNote.content || 
-                                                   mdNote.title != localNote.title
-                                
-                                // Detect if YAML timestamp wasn't updated despite content change
-                                val yamlInconsistent = contentChanged && mdNote.updatedAt <= localNote.updatedAt
-                                
-                                // Log inconsistencies for debugging
-                                if (yamlInconsistent) {
-                                    Logger.w(TAG, "   ⚠️ Inconsistency: ${mdNote.title}")
-                                    Logger.w(TAG, "      Content changed but YAML timestamp not updated")
-                                    Logger.w(TAG, "      YAML: ${mdNote.updatedAt}, Local: ${localNote.updatedAt}")
-                                    Logger.w(TAG, "      Using current time as fallback")
-                                }
-                                
-                                // Determine final timestamp with auto-correction
-                                val finalUpdatedAt: Long = when {
-                                    // No content change → preserve local timestamp (export-only)
-                                    !contentChanged -> localNote.updatedAt
-                                    
-                                    // Content changed + YAML timestamp properly updated
-                                    !yamlInconsistent -> mdNote.updatedAt
-                                    
-                                    // Content changed + YAML timestamp NOT updated → use current time
-                                    else -> System.currentTimeMillis()
-                                }
-                                
-                                storage.saveNote(mdNote.copy(
-                                    updatedAt = finalUpdatedAt,
-                                    syncStatus = SyncStatus.SYNCED
-                                ))
+                                // Import with the newer YAML timestamp
+                                storage.saveNote(mdNote.copy(syncStatus = SyncStatus.SYNCED))
                                 importedCount++
-                                
-                                // Detailed logging
-                                when {
-                                    !contentChanged -> Logger.d(TAG, "   ✅ Re-synced (export-only, timestamp preserved): ${mdNote.title}")
-                                    yamlInconsistent -> Logger.d(TAG, "   ✅ Updated (content changed, timestamp corrected): ${mdNote.title}")
-                                    else -> Logger.d(TAG, "   ✅ Updated (content changed, YAML timestamp valid): ${mdNote.title}")
-                                }
+                                Logger.d(TAG, "   ✅ Updated from Markdown (newer timestamp): ${mdNote.title}")
                             }
                         }
                         else -> {
-                            Logger.d(TAG, "   ⏭️ Skipped ${mdNote.title}: local is newer (server=$serverModifiedTime, local=${localNote.updatedAt})")
+                            // Local has pending changes but MD is older - keep local
+                            skippedCount++
+                            Logger.d(TAG, "   ⏭️ Skipped ${mdNote.title}: local is newer or pending (local=${localNote.updatedAt}, md=${mdNote.updatedAt})")
                         }
                     }
                 } catch (e: Exception) {
@@ -1425,7 +1580,8 @@ class WebDavSyncService(private val context: Context) {
                 }
             }
             
-            Logger.d(TAG, "   📊 Markdown import complete: $importedCount notes")
+            // ⚡ v1.3.1: Verbessertes Logging mit Skip-Count
+            Logger.d(TAG, "   📊 Markdown import complete: $importedCount imported, $skippedCount skipped (unchanged)")
             importedCount
             
         } catch (e: Exception) {
@@ -1493,7 +1649,7 @@ class WebDavSyncService(private val context: Context) {
      */
     suspend fun deleteNoteFromServer(noteId: String): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val sardine = getSardine() ?: return@withContext false
+            val sardine = getOrCreateSardine() ?: return@withContext false
             val serverUrl = getServerUrl() ?: return@withContext false
             
             var deletedJson = false
@@ -1563,7 +1719,7 @@ class WebDavSyncService(private val context: Context) {
      */
     suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(Dispatchers.IO) {
         return@withContext try {
-            val sardine = getSardine() ?: throw Exception("Sardine client konnte nicht erstellt werden")
+            val sardine = getOrCreateSardine() ?: throw Exception("Sardine client konnte nicht erstellt werden")
             val serverUrl = getServerUrl() ?: throw Exception("Server-URL nicht konfiguriert")
             
             val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
