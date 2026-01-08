@@ -1,13 +1,13 @@
 v1.3.1 - Multi-Device Sync Fix + Performance
 
-🔧 Multi-Device JSON Sync (Thanks Thomas!):
-• JSON files now sync between devices
-• Works without Markdown enabled
-• No duplicate downloads anymore
+Multi-Device JSON Sync (Thanks Thomas!):
+- JSON files now sync between devices
+- Works without Markdown enabled
+- No duplicate downloads anymore
 
-⚡ Performance Improvements:
-• Sync speed: 12-14s → 2-3s
-• First sync after MD export now fast
-• JSON matches Markdown speed
+Performance Improvements:
+- Sync speed: 12-14s -> 2-3s
+- First sync after MD export now fast
+- JSON matches Markdown speed
 
 + Sync status UI, content MD import, debug tools
