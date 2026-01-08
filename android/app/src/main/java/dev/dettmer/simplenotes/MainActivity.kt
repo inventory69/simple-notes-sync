@@ -39,8 +39,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.sync.SyncStateManager
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import android.view.View
+import android.widget.LinearLayout
 
 class MainActivity : AppCompatActivity() {
     
@@ -50,8 +53,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toolbar: MaterialToolbar
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     
+    // 🔄 v1.3.1: Sync Status Banner
+    private lateinit var syncStatusBanner: LinearLayout
+    private lateinit var syncStatusText: TextView
+    
     private lateinit var adapter: NotesAdapter
     private val storage by lazy { NotesStorage(this) }
+    
+    // Menu reference for sync button state
+    private var optionsMenu: Menu? = null
     
     // Track pending deletions to prevent flicker when notes reload
     private val pendingDeletions = mutableSetOf<String>()
@@ -97,9 +107,10 @@ class MainActivity : AppCompatActivity() {
         
         setContentView(R.layout.activity_main)
         
-        // File Logging aktivieren wenn eingestellt
-        if (prefs.getBoolean("file_logging_enabled", false)) {
-            Logger.enableFileLogging(this)
+        // Logger initialisieren und File-Logging aktivieren wenn eingestellt
+        Logger.init(this)
+        if (prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)) {
+            Logger.setFileLoggingEnabled(true)
         }
         
         // Alte Sync-Notifications beim App-Start löschen
@@ -116,6 +127,65 @@ class MainActivity : AppCompatActivity() {
         setupFab()
         
         loadNotes()
+        
+        // 🔄 v1.3.1: Observe sync state for UI updates
+        setupSyncStateObserver()
+    }
+    
+    /**
+     * 🔄 v1.3.1: Beobachtet Sync-Status für UI-Feedback
+     */
+    private fun setupSyncStateObserver() {
+        SyncStateManager.syncStatus.observe(this) { status ->
+            when (status.state) {
+                SyncStateManager.SyncState.SYNCING -> {
+                    // Disable sync controls
+                    setSyncControlsEnabled(false)
+                    // 🔄 v1.3.1: Show sync status banner (ersetzt SwipeRefresh-Animation)
+                    syncStatusText.text = getString(R.string.sync_status_syncing)
+                    syncStatusBanner.visibility = View.VISIBLE
+                }
+                SyncStateManager.SyncState.COMPLETED -> {
+                    // Re-enable sync controls
+                    setSyncControlsEnabled(true)
+                    swipeRefreshLayout.isRefreshing = false
+                    // Show completed briefly, then hide
+                    syncStatusText.text = status.message ?: getString(R.string.sync_status_completed)
+                    lifecycleScope.launch {
+                        kotlinx.coroutines.delay(1500)
+                        syncStatusBanner.visibility = View.GONE
+                        SyncStateManager.reset()
+                    }
+                }
+                SyncStateManager.SyncState.ERROR -> {
+                    // Re-enable sync controls
+                    setSyncControlsEnabled(true)
+                    swipeRefreshLayout.isRefreshing = false
+                    // Show error briefly, then hide
+                    syncStatusText.text = status.message ?: getString(R.string.sync_status_error)
+                    lifecycleScope.launch {
+                        kotlinx.coroutines.delay(3000)
+                        syncStatusBanner.visibility = View.GONE
+                        SyncStateManager.reset()
+                    }
+                }
+                SyncStateManager.SyncState.IDLE -> {
+                    setSyncControlsEnabled(true)
+                    swipeRefreshLayout.isRefreshing = false
+                    syncStatusBanner.visibility = View.GONE
+                }
+            }
+        }
+    }
+    
+    /**
+     * 🔄 v1.3.1: Aktiviert/deaktiviert Sync-Controls (Button + SwipeRefresh)
+     */
+    private fun setSyncControlsEnabled(enabled: Boolean) {
+        // Menu Sync-Button
+        optionsMenu?.findItem(R.id.action_sync)?.isEnabled = enabled
+        // SwipeRefresh
+        swipeRefreshLayout.isEnabled = enabled
     }
     
     override fun onResume() {
@@ -151,6 +221,12 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
+        // 🔄 v1.3.1: Check if sync already running
+        if (!SyncStateManager.tryStartSync("auto-$source")) {
+            Logger.d(TAG, "⏭️ Auto-sync ($source): Another sync already in progress")
+            return
+        }
+        
         Logger.d(TAG, "🔄 Auto-sync triggered ($source)")
         
         // Update last sync timestamp
@@ -163,6 +239,7 @@ class MainActivity : AppCompatActivity() {
                 // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): No unsynced changes - skipping")
+                    SyncStateManager.reset()
                     return@launch
                 }
                 
@@ -173,6 +250,7 @@ class MainActivity : AppCompatActivity() {
                 
                 if (!isReachable) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): Server not reachable - skipping silently")
+                    SyncStateManager.reset()
                     return@launch
                 }
                 
@@ -184,6 +262,7 @@ class MainActivity : AppCompatActivity() {
                 // Feedback abhängig von Source
                 if (result.isSuccess && result.syncedCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
+                    SyncStateManager.markCompleted("${result.syncedCount} Notizen")
                     
                     // onResume: Nur Success-Toast
                     showToast("✅ Gesynct: ${result.syncedCount} Notizen")
@@ -191,14 +270,17 @@ class MainActivity : AppCompatActivity() {
                     
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
+                    SyncStateManager.markCompleted()
                     
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
+                    SyncStateManager.markError(result.errorMessage)
                     // Kein Toast - App ist im Hintergrund
                 }
                 
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 Auto-sync exception ($source): ${e.message}")
+                SyncStateManager.markError(e.message)
                 // Kein Toast - App ist im Hintergrund
             }
         }
@@ -235,6 +317,10 @@ class MainActivity : AppCompatActivity() {
         fabAddNote = findViewById(R.id.fabAddNote)
         toolbar = findViewById(R.id.toolbar)
         swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+        
+        // 🔄 v1.3.1: Sync Status Banner
+        syncStatusBanner = findViewById(R.id.syncStatusBanner)
+        syncStatusText = findViewById(R.id.syncStatusText)
     }
     
     private fun setupToolbar() {
@@ -262,6 +348,12 @@ class MainActivity : AppCompatActivity() {
         swipeRefreshLayout.setOnRefreshListener {
             Logger.d(TAG, "🔄 Pull-to-Refresh triggered - starting manual sync")
             
+            // 🔄 v1.3.1: Check if sync already running (Banner zeigt Status)
+            if (!SyncStateManager.tryStartSync("pullToRefresh")) {
+                swipeRefreshLayout.isRefreshing = false
+                return@setOnRefreshListener
+            }
+            
             lifecycleScope.launch {
                 try {
                     val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -269,7 +361,7 @@ class MainActivity : AppCompatActivity() {
                     
                     if (serverUrl.isNullOrEmpty()) {
                         showToast("⚠️ Server noch nicht konfiguriert")
-                        swipeRefreshLayout.isRefreshing = false
+                        SyncStateManager.reset()
                         return@launch
                     }
                     
@@ -278,15 +370,13 @@ class MainActivity : AppCompatActivity() {
                     // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                     if (!syncService.hasUnsyncedChanges()) {
                         Logger.d(TAG, "⏭️ No unsynced changes, skipping server reachability check")
-                        showToast("✅ Bereits synchronisiert")
-                        swipeRefreshLayout.isRefreshing = false
+                        SyncStateManager.markCompleted("Bereits synchronisiert")
                         return@launch
                     }
                     
                     // Check if server is reachable
                     if (!syncService.isServerReachable()) {
-                        showToast("⚠️ Server nicht erreichbar")
-                        swipeRefreshLayout.isRefreshing = false
+                        SyncStateManager.markError("Server nicht erreichbar")
                         return@launch
                     }
                     
@@ -294,16 +384,14 @@ class MainActivity : AppCompatActivity() {
                     val result = syncService.syncNotes()
                     
                     if (result.isSuccess) {
-                        showToast("✅ ${result.syncedCount} Notizen synchronisiert")
+                        SyncStateManager.markCompleted("${result.syncedCount} Notizen")
                         loadNotes()
                     } else {
-                        showToast("❌ Sync fehlgeschlagen: ${result.errorMessage}")
+                        SyncStateManager.markError(result.errorMessage)
                     }
                 } catch (e: Exception) {
                     Logger.e(TAG, "Pull-to-Refresh sync failed", e)
-                    showToast("❌ Fehler: ${e.message}")
-                } finally {
-                    swipeRefreshLayout.isRefreshing = false
+                    SyncStateManager.markError(e.message)
                 }
             }
         }
@@ -493,6 +581,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun triggerManualSync() {
+        // 🔄 v1.3.1: Check if sync already running (Banner zeigt Status)
+        if (!SyncStateManager.tryStartSync("manual")) {
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 // Create sync service
@@ -501,11 +594,9 @@ class MainActivity : AppCompatActivity() {
                 // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ Manual Sync: No unsynced changes - skipping")
-                    showToast("✅ Bereits synchronisiert")
+                    SyncStateManager.markCompleted("Bereits synchronisiert")
                     return@launch
                 }
-                
-                showToast("Starte Synchronisation...")
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
                 val isReachable = withContext(Dispatchers.IO) {
@@ -514,7 +605,7 @@ class MainActivity : AppCompatActivity() {
                 
                 if (!isReachable) {
                     Logger.d(TAG, "⏭️ Manual Sync: Server not reachable - aborting")
-                    showToast("Server nicht erreichbar")
+                    SyncStateManager.markError("Server nicht erreichbar")
                     return@launch
                 }
                 
@@ -525,20 +616,21 @@ class MainActivity : AppCompatActivity() {
                 
                 // Show result
                 if (result.isSuccess) {
-                    showToast("Sync erfolgreich: ${result.syncedCount} Notizen")
+                    SyncStateManager.markCompleted("${result.syncedCount} Notizen")
                     loadNotes() // Reload notes
                 } else {
-                    showToast("Sync Fehler: ${result.errorMessage}")
+                    SyncStateManager.markError(result.errorMessage)
                 }
                 
             } catch (e: Exception) {
-                showToast("Sync Fehler: ${e.message}")
+                SyncStateManager.markError(e.message)
             }
         }
     }
     
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
+        optionsMenu = menu  // 🔄 v1.3.1: Store reference for sync button state
         return true
     }
     

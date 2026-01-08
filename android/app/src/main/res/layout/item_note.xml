@@ -64,7 +64,7 @@
                 android:layout_height="18dp"
                 android:layout_gravity="center_vertical"
                 android:src="@android:drawable/ic_popup_sync"
-                android:tint="?attr/colorPrimary"
+                app:tint="?attr/colorPrimary"
                 android:contentDescription="@string/sync_status" />
 
         </LinearLayout>

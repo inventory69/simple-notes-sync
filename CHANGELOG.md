@@ -6,6 +6,93 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.1] - 2026-01-08
+
+### Fixed
+- **🔧 Multi-Device JSON Sync (Danke an Thomas aus Bielefeld)**
+  - JSON-Dateien werden jetzt korrekt zwischen Geräten synchronisiert
+  - Funktioniert auch ohne aktiviertes Markdown
+  - Hybrid-Optimierung: Server-Timestamp (Primary) + E-Tag (Secondary) Checks
+  - E-Tag wird nach Upload gecached um Re-Download zu vermeiden
+
+### Performance Improvements
+- **⚡ JSON Sync Performance-Parität**
+  - JSON-Sync erreicht jetzt gleiche Performance wie Markdown (~2-3 Sekunden)
+  - Timestamp-basierte Skip-Logik für unveränderte Dateien (~500ms pro Datei gespart)
+  - E-Tag-Matching als Fallback für Dateien die seit letztem Sync modifiziert wurden
+  - **Beispiel:** 24 Dateien von 12-14s auf ~2.7s reduziert (keine Änderungen)
+
+- **⏭️ Skip unveränderte Dateien** (Haupt-Performance-Fix!)
+  - JSON-Dateien: Überspringt alle Notizen, die seit letztem Sync nicht geändert wurden
+  - Markdown-Dateien: Überspringt unveränderte MD-Dateien basierend auf Server-Timestamp
+  - **Spart ~500ms pro Datei** bei Nextcloud (~20 Dateien = 10 Sekunden gespart!)
+  - Von 21 Sekunden Sync-Zeit auf 2-3 Sekunden reduziert
+
+- **⚡ Session-Caching für WebDAV** 
+  - Sardine-Client wird pro Sync-Session wiederverwendet (~600ms gespart)
+  - WiFi-IP-Adresse wird gecacht statt bei jeder Anfrage neu ermittelt (~300ms gespart)
+  - `/notes/` Ordner-Existenz wird nur einmal pro Sync geprüft (~500ms gespart)
+  - **Gesamt: ~1.4 Sekunden zusätzlich gespart**
+
+- **📝 Content-basierte Markdown-Erkennung**
+  - Extern bearbeitete Markdown-Dateien werden auch erkannt wenn YAML-Timestamp nicht aktualisiert wurde
+  - Löst das Problem: Obsidian/Texteditor-Änderungen wurden nicht importiert
+  - Hybridansatz: Erst Timestamp-Check (schnell), dann Content-Vergleich (zuverlässig)
+
+### Added
+- **🔄 Sync-Status-Anzeige (UI)**
+  - Sichtbares Banner "Synchronisiere..." mit ProgressBar während Sync läuft
+  - Sync-Button und Pull-to-Refresh werden deaktiviert während Sync aktiv
+  - Verhindert versehentliche Doppel-Syncs durch visuelle Rückmeldung
+  - Auch in Einstellungen: "Jetzt synchronisieren" Button wird deaktiviert
+
+### Fixed
+- **🔧 Sync-Mutex verhindert doppelte Syncs**
+  - Keine doppelten Toast-Nachrichten mehr bei schnellem Pull-to-Refresh
+  - Concurrent Sync-Requests werden korrekt blockiert
+
+- **🐛 Lint-Fehler behoben**
+  - `View.generateViewId()` statt hardcodierte IDs in RadioButtons
+  - `app:tint` statt `android:tint` für AppCompat-Kompatibilität
+
+### Added
+- **🔍 detekt Code-Analyse**
+  - Statische Code-Analyse mit detekt 1.23.4 integriert
+  - Pragmatische Konfiguration für Sync-intensive Codebasis
+  - 91 Issues identifiziert (als Baseline für v1.4.0)
+
+- **🏗️ Debug Build mit separatem Package**
+  - Debug-APK kann parallel zur Release-Version installiert werden
+  - Package: `dev.dettmer.simplenotes.debug` (Debug) vs `dev.dettmer.simplenotes` (Release)
+  - App-Name zeigt "Simple Notes (Debug)" für einfache Unterscheidung
+
+- **📊 Debug-Logging UI**
+  - Neuer "Debug Log" Button in Einstellungen → Erweitert
+  - Zeigt letzte Sync-Logs mit Zeitstempeln
+  - Export-Funktion für Fehlerberichte
+
+### Technical
+- `WebDavSyncService`: Hybrid-Optimierung für JSON-Downloads (Timestamp PRIMARY, E-Tag SECONDARY)
+- `WebDavSyncService`: E-Tag refresh nach Upload statt Invalidierung (verhindert Re-Download)
+- E-Tag Caching: `SharedPreferences` mit Key-Pattern `etag_json_{noteId}`
+- Skip-Logik: `if (serverModified <= lastSync) skip` → ~1ms pro Datei
+- Fallback E-Tag: `if (serverETag == cachedETag) skip` → für Dateien modifiziert nach lastSync
+- PROPFIND nach PUT: Fetch E-Tag nach Upload für korrektes Caching
+- `SyncStateManager`: Neuer Singleton mit `StateFlow<Boolean>` für Sync-Status
+- `MainActivity`: Observer auf `SyncStateManager.isSyncing` für UI-Updates
+- Layout: `sync_status_banner` mit `ProgressBar` + `TextView`
+- `WebDavSyncService`: Skip-Logik für unveränderte JSON/MD Dateien basierend auf `lastSyncTimestamp`
+- `WebDavSyncService`: Neue Session-Cache-Variablen (`sessionSardine`, `sessionWifiAddress`, `notesDirEnsured`)
+- `getOrCreateSardine()`: Cached Sardine-Client mit automatischer Credentials-Konfiguration
+- `getOrCacheWiFiAddress()`: WiFi-Adresse wird nur einmal pro Sync ermittelt
+- `clearSessionCache()`: Aufräumen am Ende jeder Sync-Session
+- `ensureNotesDirectoryExists()`: Cached Directory-Check
+- Content-basierter Import: Vergleicht MD-Content mit lokaler Note wenn Timestamps gleich
+- Build-Tooling: detekt aktiviert, ktlint vorbereitet (deaktiviert wegen Parser-Problemen)
+- Debug BuildType: `applicationIdSuffix = ".debug"`, `versionNameSuffix = "-debug"`
+
+---
+
 ## [1.3.0] - 2026-01-07
 
 ### Added

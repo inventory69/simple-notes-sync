@@ -34,6 +34,7 @@ import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.utils.UrlValidator
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -83,6 +84,11 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var cardDeveloperProfile: MaterialCardView
     private lateinit var cardLicense: MaterialCardView
     
+    // Debug Section UI
+    private lateinit var switchFileLogging: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var buttonExportLogs: Button
+    private lateinit var buttonClearLogs: Button
+    
     // Backup Manager
     private val backupManager by lazy { BackupManager(this) }
     
@@ -124,6 +130,7 @@ class SettingsActivity : AppCompatActivity() {
         setupListeners()
         setupSyncIntervalPicker()
         setupAboutSection()
+        setupDebugSection()
     }
     
     private fun findViews() {
@@ -156,6 +163,11 @@ class SettingsActivity : AppCompatActivity() {
         cardGitHubRepo = findViewById(R.id.cardGitHubRepo)
         cardDeveloperProfile = findViewById(R.id.cardDeveloperProfile)
         cardLicense = findViewById(R.id.cardLicense)
+        
+        // Debug Section UI
+        switchFileLogging = findViewById(R.id.switchFileLogging)
+        buttonExportLogs = findViewById(R.id.buttonExportLogs)
+        buttonClearLogs = findViewById(R.id.buttonClearLogs)
     }
     
     private fun loadSettings() {
@@ -387,6 +399,109 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     /**
+     * Setup Debug section with file logging toggle and export functionality
+     */
+    private fun setupDebugSection() {
+        // Load current file logging state
+        val fileLoggingEnabled = prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
+        switchFileLogging.isChecked = fileLoggingEnabled
+        
+        // Update Logger state
+        Logger.setFileLoggingEnabled(fileLoggingEnabled)
+        
+        // Toggle file logging
+        switchFileLogging.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, isChecked).apply()
+            Logger.setFileLoggingEnabled(isChecked)
+            
+            if (isChecked) {
+                showToast("📝 Datei-Logging aktiviert")
+                Logger.i(TAG, "File logging enabled by user")
+            } else {
+                showToast("📝 Datei-Logging deaktiviert")
+            }
+        }
+        
+        // Export logs button
+        buttonExportLogs.setOnClickListener {
+            exportAndShareLogs()
+        }
+        
+        // Clear logs button
+        buttonClearLogs.setOnClickListener {
+            showClearLogsConfirmation()
+        }
+    }
+    
+    /**
+     * Export logs and share via system share sheet
+     */
+    private fun exportAndShareLogs() {
+        lifecycleScope.launch {
+            try {
+                val logFile = Logger.getLogFile(this@SettingsActivity)
+                
+                if (logFile == null || !logFile.exists() || logFile.length() == 0L) {
+                    showToast("📭 Keine Logs vorhanden")
+                    return@launch
+                }
+                
+                // Create share intent using FileProvider
+                val logUri = FileProvider.getUriForFile(
+                    this@SettingsActivity,
+                    "${BuildConfig.APPLICATION_ID}.fileprovider",
+                    logFile
+                )
+                
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_STREAM, logUri)
+                    putExtra(Intent.EXTRA_SUBJECT, "SimpleNotes Sync Logs")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                
+                startActivity(Intent.createChooser(shareIntent, "Logs teilen via..."))
+                Logger.i(TAG, "Logs exported and shared")
+                
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to export logs", e)
+                showToast("❌ Fehler beim Exportieren: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Show confirmation dialog before clearing logs
+     */
+    private fun showClearLogsConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Logs löschen?")
+            .setMessage("Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.")
+            .setPositiveButton("Löschen") { _, _ ->
+                clearLogs()
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+    
+    /**
+     * Clear all log files
+     */
+    private fun clearLogs() {
+        try {
+            val cleared = Logger.clearLogFile(this)
+            if (cleared) {
+                showToast("🗑️ Logs gelöscht")
+            } else {
+                showToast("📭 Keine Logs zum Löschen")
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to clear logs", e)
+            showToast("❌ Fehler beim Löschen: ${e.message}")
+        }
+    }
+    
+    /**
      * Opens URL in browser
      */
     private fun openUrl(url: String) {
@@ -467,6 +582,14 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun syncNow() {
+        // 🔄 v1.3.1: Check if sync already running (Button wird deaktiviert)
+        if (!SyncStateManager.tryStartSync("settings")) {
+            return
+        }
+        
+        // Disable button during sync
+        buttonSyncNow.isEnabled = false
+        
         lifecycleScope.launch {
             try {
                 val syncService = WebDavSyncService(this@SettingsActivity)
@@ -474,14 +597,16 @@ class SettingsActivity : AppCompatActivity() {
                 // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                 if (!syncService.hasUnsyncedChanges()) {
                     showToast("✅ Bereits synchronisiert")
+                    SyncStateManager.markCompleted()
                     return@launch
                 }
                 
-                showToast("Synchronisiere...")
+                showToast("🔄 Synchronisiere...")
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in anderen Triggern)
                 if (!syncService.isServerReachable()) {
                     showToast("⚠️ Server nicht erreichbar")
+                    SyncStateManager.markError("Server nicht erreichbar")
                     checkServerStatus() // Server-Status aktualisieren
                     return@launch
                 }
@@ -490,18 +615,24 @@ class SettingsActivity : AppCompatActivity() {
                 
                 if (result.isSuccess) {
                     if (result.hasConflicts) {
-                        showToast("Sync abgeschlossen. ${result.conflictCount} Konflikte erkannt!")
+                        showToast("✅ Sync abgeschlossen. ${result.conflictCount} Konflikte erkannt!")
                     } else {
-                        showToast("Erfolgreich! ${result.syncedCount} Notizen synchronisiert")
+                        showToast("✅ Erfolgreich! ${result.syncedCount} Notizen synchronisiert")
                     }
+                    SyncStateManager.markCompleted("${result.syncedCount} Notizen")
                     checkServerStatus() // ✅ Server-Status nach Sync aktualisieren
                 } else {
-                    showToast("Sync fehlgeschlagen: ${result.errorMessage}")
+                    showToast("❌ Sync fehlgeschlagen: ${result.errorMessage}")
+                    SyncStateManager.markError(result.errorMessage)
                     checkServerStatus() // ✅ Auch bei Fehler aktualisieren
                 }
             } catch (e: Exception) {
-                showToast("Fehler: ${e.message}")
+                showToast("❌ Fehler: ${e.message}")
+                SyncStateManager.markError(e.message)
                 checkServerStatus() // ✅ Auch bei Exception aktualisieren
+            } finally {
+                // Re-enable button
+                buttonSyncNow.isEnabled = true
             }
         }
     }
@@ -824,20 +955,20 @@ class SettingsActivity : AppCompatActivity() {
         // Radio Buttons erstellen
         val radioMerge = android.widget.RadioButton(this).apply {
             text = "⚪ Zusammenführen (Standard)\n   → Neue hinzufügen, Bestehende behalten"
-            id = 0
+            id = android.view.View.generateViewId()
             isChecked = true
             setPadding(10, 10, 10, 10)
         }
         
         val radioReplace = android.widget.RadioButton(this).apply {
             text = "⚪ Ersetzen\n   → Alle löschen & Backup importieren"
-            id = 1
+            id = android.view.View.generateViewId()
             setPadding(10, 10, 10, 10)
         }
         
         val radioOverwrite = android.widget.RadioButton(this).apply {
             text = "⚪ Duplikate überschreiben\n   → Backup gewinnt bei Konflikten"
-            id = 2
+            id = android.view.View.generateViewId()
             setPadding(10, 10, 10, 10)
         }
         
@@ -876,8 +1007,8 @@ class SettingsActivity : AppCompatActivity() {
             .setView(mainLayout)
             .setPositiveButton("Wiederherstellen") { _, _ ->
                 val selectedMode = when (radioGroup.checkedRadioButtonId) {
-                    1 -> RestoreMode.REPLACE
-                    2 -> RestoreMode.OVERWRITE_DUPLICATES
+                    radioReplace.id -> RestoreMode.REPLACE
+                    radioOverwrite.id -> RestoreMode.OVERWRITE_DUPLICATES
                     else -> RestoreMode.MERGE
                 }
                 

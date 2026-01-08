@@ -22,6 +22,39 @@
             app:title="@string/app_name"
             app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
+        <!-- 🔄 v1.3.1: Sync Status Banner -->
+        <LinearLayout
+            android:id="@+id/syncStatusBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:background="?attr/colorPrimaryContainer"
+            android:visibility="gone">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/syncProgressIndicator"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:indeterminate="true"
+                app:indicatorSize="24dp"
+                app:trackThickness="3dp"
+                app:indicatorColor="?attr/colorOnPrimaryContainer" />
+
+            <TextView
+                android:id="@+id/syncStatusText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/sync_status_syncing"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnPrimaryContainer" />
+
+        </LinearLayout>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- SwipeRefreshLayout für Pull-to-Refresh (v1.1.2) -->
