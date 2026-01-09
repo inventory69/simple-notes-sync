@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.models
 
+import dev.dettmer.simplenotes.utils.Logger
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,11 +50,14 @@ $content
     }
     
     companion object {
+        private const val TAG = "Note"
+        
         fun fromJson(json: String): Note? {
             return try {
                 val gson = com.google.gson.Gson()
                 gson.fromJson(json, Note::class.java)
             } catch (e: Exception) {
+                Logger.w(TAG, "Failed to parse JSON: ${e.message}")
                 null
             }
         }
@@ -102,6 +106,7 @@ $content
                     syncStatus = SyncStatus.SYNCED  // Annahme: Vom Server importiert
                 )
             } catch (e: Exception) {
+                Logger.w(TAG, "Failed to parse Markdown: ${e.message}")
                 null
             }
         }
@@ -126,6 +131,7 @@ $content
                 sdf.timeZone = TimeZone.getTimeZone("UTC")
                 sdf.parse(dateString)?.time ?: System.currentTimeMillis()
             } catch (e: Exception) {
+                Logger.w(TAG, "Failed to parse ISO8601 date '$dateString': ${e.message}")
                 System.currentTimeMillis()  // Fallback
             }
         }

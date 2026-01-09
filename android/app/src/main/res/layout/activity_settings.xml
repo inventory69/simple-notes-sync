@@ -818,6 +818,17 @@
 
                     </com.google.android.material.card.MaterialCardView>
 
+                    <!-- F-Droid Privacy Notice -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/file_logging_privacy_notice"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginBottom="16dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp" />
+
                     <!-- Export Logs Button -->
                     <Button
                         android:id="@+id/buttonExportLogs"

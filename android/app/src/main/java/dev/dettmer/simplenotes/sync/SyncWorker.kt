@@ -117,7 +117,11 @@ class SyncWorker(
             
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 4: Processing result")
-                Logger.d(TAG, "📦 Sync result: success=${result.isSuccess}, count=${result.syncedCount}, error=${result.errorMessage}")
+                Logger.d(
+                    TAG,
+                    "📦 Sync result: success=${result.isSuccess}, " +
+                        "count=${result.syncedCount}, error=${result.errorMessage}"
+                )
             }
             
             if (result.isSuccess) {

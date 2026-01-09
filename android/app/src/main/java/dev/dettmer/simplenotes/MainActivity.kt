@@ -76,6 +76,8 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_SETTINGS = 1002
         private const val MIN_AUTO_SYNC_INTERVAL_MS = 60_000L // 1 Minute
         private const val PREF_LAST_AUTO_SYNC_TIME = "last_auto_sync_timestamp"
+        private const val SYNC_COMPLETED_DELAY_MS = 1500L
+        private const val ERROR_DISPLAY_DELAY_MS = 3000L
     }
     
     /**
@@ -152,7 +154,7 @@ class MainActivity : AppCompatActivity() {
                     // Show completed briefly, then hide
                     syncStatusText.text = status.message ?: getString(R.string.sync_status_completed)
                     lifecycleScope.launch {
-                        kotlinx.coroutines.delay(1500)
+                        kotlinx.coroutines.delay(SYNC_COMPLETED_DELAY_MS)
                         syncStatusBanner.visibility = View.GONE
                         SyncStateManager.reset()
                     }
@@ -164,7 +166,7 @@ class MainActivity : AppCompatActivity() {
                     // Show error briefly, then hide
                     syncStatusText.text = status.message ?: getString(R.string.sync_status_error)
                     lifecycleScope.launch {
-                        kotlinx.coroutines.delay(3000)
+                        kotlinx.coroutines.delay(ERROR_DISPLAY_DELAY_MS)
                         syncStatusBanner.visibility = View.GONE
                         SyncStateManager.reset()
                     }
@@ -518,16 +520,28 @@ class MainActivity : AppCompatActivity() {
                                     val success = webdavService.deleteNoteFromServer(note.id)
                                     if (success) {
                                         runOnUiThread {
-                                            Toast.makeText(this@MainActivity, "Vom Server gelöscht", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Vom Server gelöscht",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     } else {
                                         runOnUiThread {
-                                            Toast.makeText(this@MainActivity, "Server-Löschung fehlgeschlagen", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Server-Löschung fehlgeschlagen",
+                                                Toast.LENGTH_LONG
+                                            ).show()
                                         }
                                     }
                                 } catch (e: Exception) {
                                     runOnUiThread {
-                                        Toast.makeText(this@MainActivity, "Server-Fehler: ${e.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Server-Fehler: ${e.message}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                     }
                                 }
                             }

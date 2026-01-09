@@ -130,6 +130,11 @@
 - ✅ **Password storage** - Android SharedPreferences (encrypted)
 - ✅ **No third-party libs** - Only Android SDK + Sardine (WebDAV)
 
+### Developer Features
+- ✅ **File logging** - Optional, only when enabled _(NEW in v1.3.2)_
+- ✅ **Privacy notice** - Explicit warning on activation
+- ✅ **Local logs** - Logs stay on device
+
 ---
 
 ## 🔋 Performance & Optimization
@@ -171,6 +176,7 @@
 - ✅ **Dispatchers.IO** - Background operations
 - ✅ **SharedPreferences** - Settings storage
 - ✅ **File-based storage** - JSON files locally
+- ✅ **Custom exceptions** - Dedicated SyncException for better error handling _(NEW in v1.3.2)_
 
 ### Dependencies
 - ✅ **AndroidX** - Jetpack libraries
@@ -208,27 +214,22 @@
 
 ## 🔮 Future Features
 
-Planned for upcoming versions (see [TODO.md](project-docs/simple-notes-sync/planning/TODO.md)):
+Planned for upcoming versions:
 
-### v1.3.0 - Web Editor & Organization
-- ⏳ **Browser-based editor** - Edit notes in web browser
-- ⏳ **WebDAV access via browser** - No mount needed
-- ⏳ **Mobile-optimized** - Responsive design
-- ⏳ **Offline-capable** - Progressive Web App (PWA)
-- ⏳ **Tags/labels** - Categorize notes
-- ⏳ **Search** - Full-text search in all notes
-- ⏳ **Sorting** - By date, title, tags
-- ⏳ **Filter** - Filter by tags
+### v1.4.0 - Checklists
+- ⏳ **Checklist notes** - New note type with checkboxes
+- ⏳ **Completed items** - Strike-through/check off
+- ⏳ **Drag & drop** - Reorder items
 
-### v1.4.0 - Sharing & Export
-- ⏳ **Share note** - Via share intent
-- ⏳ **Export single note** - As .txt or .md
-- ⏳ **Import from text** - Via share intent
+### v1.5.0 - Internationalization
+- ⏳ **Multi-language** - German + English UI
+- ⏳ **Language selection** - Selectable in settings
+- ⏳ **Full translation** - All strings in both languages
 
-### v1.5.0 - Advanced Editor Features
-- ⏳ **Markdown preview** - In-app rendering
-- ⏳ **Checklists** - TODO lists in notes
-- ⏳ **Syntax highlighting** - For code snippets
+### v1.6.0 - Modern APIs
+- ⏳ **Replace LocalBroadcastManager** - Use SharedFlow instead
+- ⏳ **PackageInfo Flags** - Use PackageInfoFlags.of()
+- ⏳ **Complexity refactoring** - Split long functions
 
 ---
 
@@ -271,4 +272,4 @@ A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Last update:** v1.2.1 (2026-01-05)
+**Last update:** v1.3.2 (2026-01-10)

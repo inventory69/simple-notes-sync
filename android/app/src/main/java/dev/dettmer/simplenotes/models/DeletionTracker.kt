@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.models
 
+import dev.dettmer.simplenotes.utils.Logger
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -49,6 +50,8 @@ data class DeletionTracker(
     }
     
     companion object {
+        private const val TAG = "DeletionTracker"
+        
         fun fromJson(json: String): DeletionTracker? {
             return try {
                 val jsonObject = JSONObject(json)
@@ -70,6 +73,7 @@ data class DeletionTracker(
                 
                 DeletionTracker(version, deletedNotes)
             } catch (e: Exception) {
+                Logger.w(TAG, "Failed to parse DeletionTracker JSON: ${e.message}")
                 null
             }
         }

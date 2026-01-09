@@ -1,0 +1,5 @@
+Under the hood improvements:
+- Improved sync performance through optimized code
+- More stable error handling for connection issues
+- More memory-efficient data processing
+- Added privacy notice for file logging

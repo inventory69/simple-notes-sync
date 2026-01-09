@@ -130,6 +130,11 @@
 - ✅ **Passwort-Speicherung** - Android SharedPreferences (verschlüsselt)
 - ✅ **Keine Drittanbieter-Libs** - Nur Android SDK + Sardine (WebDAV)
 
+### Entwickler-Features
+- ✅ **Datei-Logging** - Optional, nur bei Aktivierung _(NEU in v1.3.2)_
+- ✅ **Datenschutz-Hinweis** - Explizite Warnung bei Aktivierung
+- ✅ **Lokale Logs** - Logs bleiben auf dem Gerät
+
 ---
 
 ## 🔋 Performance & Optimierung
@@ -171,6 +176,7 @@
 - ✅ **Dispatchers.IO** - Background-Operationen
 - ✅ **SharedPreferences** - Settings-Speicherung
 - ✅ **File-Based Storage** - JSON-Dateien lokal
+- ✅ **Custom Exceptions** - Dedizierte SyncException für bessere Fehlerbehandlung _(NEU in v1.3.2)_
 
 ### Abhängigkeiten
 - ✅ **AndroidX** - Jetpack Libraries
@@ -208,27 +214,22 @@
 
 ## 🔮 Zukünftige Features
 
-Geplant für kommende Versionen (siehe [TODO.md](project-docs/simple-notes-sync/planning/TODO.md)):
+Geplant für kommende Versionen:
 
-### v1.3.0 - Web Editor & Organisation
-- ⏳ **Browser-basierter Editor** - Notizen im Webbrowser bearbeiten
-- ⏳ **WebDAV-Zugriff via Browser** - Kein Mount nötig
-- ⏳ **Mobile-optimiert** - Responsive Design
-- ⏳ **Offline-fähig** - Progressive Web App (PWA)
-- ⏳ **Tags/Labels** - Kategorisierung von Notizen
-- ⏳ **Suche** - Volltextsuche in allen Notizen
-- ⏳ **Sortierung** - Nach Datum, Titel, Tags
-- ⏳ **Filter** - Nach Tags filtern
+### v1.4.0 - Checklisten
+- ⏳ **Checklisten-Notizen** - Neuer Notiz-Typ mit Checkboxen
+- ⏳ **Erledigte Items** - Durchstreichen/Abhaken
+- ⏳ **Drag & Drop** - Items neu anordnen
 
-### v1.4.0 - Sharing & Export
-- ⏳ **Notiz teilen** - Via Share-Intent
-- ⏳ **Einzelne Notiz exportieren** - Als .txt oder .md
-- ⏳ **Import von Text** - Via Share-Intent
+### v1.5.0 - Internationalisierung
+- ⏳ **Mehrsprachigkeit** - Deutsch + Englisch UI
+- ⏳ **Sprachauswahl** - In Einstellungen wählbar
+- ⏳ **Vollständige Übersetzung** - Alle Strings in beiden Sprachen
 
-### v1.5.0 - Erweiterte Editor-Features
-- ⏳ **Markdown-Vorschau** - In-App Rendering
-- ⏳ **Checklisten** - TODO-Listen in Notizen
-- ⏳ **Syntax-Highlighting** - Für Code-Snippets
+### v1.6.0 - Modern APIs
+- ⏳ **LocalBroadcastManager ersetzen** - SharedFlow stattdessen
+- ⏳ **PackageInfo Flags** - PackageInfoFlags.of() verwenden
+- ⏳ **Komplexitäts-Refactoring** - Lange Funktionen aufteilen
 
 ---
 
@@ -271,4 +272,4 @@ A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v1.2.1 (2026-01-05)
+**Letzte Aktualisierung:** v1.3.2 (2026-01-10)

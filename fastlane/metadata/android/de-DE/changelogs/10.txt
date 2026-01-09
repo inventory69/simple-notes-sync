@@ -1,0 +1,5 @@
+Unter der Haube haben wir ordentlich aufgeraumt:
+- Verbesserte Sync-Performance durch optimierten Code
+- Stabilere Fehlerbehandlung bei Verbindungsproblemen
+- Speichereffizientere Datenverarbeitung
+- Datenschutz-Hinweis fur Datei-Logging hinzugefugt
