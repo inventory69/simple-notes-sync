@@ -35,23 +35,15 @@ android {
         includeInBundle = false  // Also disable for AAB (Google Play)
     }
     
-    // Enable multiple APKs per ABI for smaller downloads
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a")
-            isUniversalApk = true  // Also generate universal APK
-        }
-    }
-    
     // Product Flavors for F-Droid and standard builds
+    // Note: APK splits are disabled to ensure single APK output
     flavorDimensions += "distribution"
     productFlavors {
         create("fdroid") {
             dimension = "distribution"
             // F-Droid builds have no proprietary dependencies
             // All dependencies in this project are already FOSS-compatible
+            // No APK splits - F-Droid expects single universal APK
         }
         
         create("standard") {
