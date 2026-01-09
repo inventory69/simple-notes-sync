@@ -5,7 +5,6 @@ import android.util.Log
 import dev.dettmer.simplenotes.BuildConfig
 import java.io.File
 import java.io.FileWriter
-import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -15,11 +14,12 @@ import java.util.*
  */
 object Logger {
     
+    private const val MAX_LOG_ENTRIES = 500 // Nur letzte 500 Einträge
+    
     private var fileLoggingEnabled = false
     private var logFile: File? = null
     private var appContext: Context? = null
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
-    private val maxLogEntries = 500 // Nur letzte 500 Einträge
     
     /**
      * Setzt den File-Logging Status (für UI Toggle)
@@ -139,13 +139,13 @@ object Logger {
     }
     
     /**
-     * Begrenzt Log-Datei auf maxLogEntries
+     * Begrenzt Log-Datei auf MAX_LOG_ENTRIES
      */
     private fun trimLogFile() {
         try {
             val lines = logFile?.readLines() ?: return
-            if (lines.size > maxLogEntries) {
-                val trimmed = lines.takeLast(maxLogEntries)
+            if (lines.size > MAX_LOG_ENTRIES) {
+                val trimmed = lines.takeLast(MAX_LOG_ENTRIES)
                 logFile?.writeText(trimmed.joinToString("\n") + "\n")
             }
         } catch (e: Exception) {

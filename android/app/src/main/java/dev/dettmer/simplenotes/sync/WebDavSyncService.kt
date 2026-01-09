@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.SyncException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -20,7 +21,6 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
-import java.net.Proxy
 import java.net.Socket
 import java.net.URL
 import java.util.Date
@@ -38,6 +38,9 @@ class WebDavSyncService(private val context: Context) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
+        private const val SOCKET_TIMEOUT_MS = 2000
+        private const val MAX_FILENAME_LENGTH = 200
+        private const val ETAG_PREVIEW_LENGTH = 8
         
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
@@ -101,6 +104,7 @@ class WebDavSyncService(private val context: Context) {
     /**
      * Findet WiFi Interface IP-Adresse (um VPN zu umgehen)
      */
+    @Suppress("ReturnCount") // Early returns for network validation checks
     private fun getWiFiInetAddressInternal(): InetAddress? {
         try {
             Logger.d(TAG, "🔍 getWiFiInetAddress() called")
@@ -145,7 +149,11 @@ class WebDavSyncService(private val context: Context) {
                 while (addresses.hasMoreElements()) {
                     val addr = addresses.nextElement()
                     
-                    Logger.d(TAG, "        Address: ${addr.hostAddress}, IPv4=${addr is Inet4Address}, loopback=${addr.isLoopbackAddress}, linkLocal=${addr.isLinkLocalAddress}")
+                    Logger.d(
+                        TAG,
+                        "        Address: ${addr.hostAddress}, IPv4=${addr is Inet4Address}, " +
+                            "loopback=${addr.isLoopbackAddress}, linkLocal=${addr.isLinkLocalAddress}"
+                    )
                     
                     // Nur IPv4, nicht loopback, nicht link-local
                     if (addr is Inet4Address && !addr.isLoopbackAddress && !addr.isLinkLocalAddress) {
@@ -362,6 +370,7 @@ class WebDavSyncService(private val context: Context) {
      * 3. If changed → server has updates
      * 4. If unchanged → skip sync
      */
+    @Suppress("ReturnCount") // Early returns for conditional checks
     private suspend fun checkServerForChanges(sardine: Sardine, serverUrl: String): Boolean {
         return try {
             val startTime = System.currentTimeMillis()
@@ -413,7 +422,11 @@ class WebDavSyncService(private val context: Context) {
                         resource.modified?.time?.let { 
                             val hasNewer = it > lastSyncTime
                             if (hasNewer) {
-                                Logger.d(TAG, "   📄 ${resource.name}: modified=${resource.modified}, lastSync=$lastSyncTime")
+                                Logger.d(
+                                    TAG,
+                                    "   📄 ${resource.name}: modified=${resource.modified}, " +
+                                        "lastSync=$lastSyncTime"
+                                )
                             }
                             hasNewer
                         } ?: false
@@ -524,10 +537,10 @@ class WebDavSyncService(private val context: Context) {
             
             Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
             
-            // Socket-Check mit 2s Timeout
+            // Socket-Check mit Timeout
             // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
             val socket = Socket()
-            socket.connect(InetSocketAddress(host, port), 2000)
+            socket.connect(InetSocketAddress(host, port), SOCKET_TIMEOUT_MS)
             socket.close()
             
             Logger.d(TAG, "✅ Server is reachable")
@@ -669,7 +682,11 @@ class WebDavSyncService(private val context: Context) {
                 )
                 syncedCount += downloadResult.downloadedCount
                 conflictCount += downloadResult.conflictCount
-                Logger.d(TAG, "✅ Downloaded: ${downloadResult.downloadedCount} notes, Conflicts: ${downloadResult.conflictCount}")
+                Logger.d(
+                    TAG,
+                    "✅ Downloaded: ${downloadResult.downloadedCount} notes, " +
+                        "Conflicts: ${downloadResult.conflictCount}"
+                )
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 CRASH in downloadRemoteNotes()!", e)
                 e.printStackTrace()
@@ -790,7 +807,7 @@ class WebDavSyncService(private val context: Context) {
                         val newETag = uploadedResource?.etag
                         if (newETag != null) {
                             prefs.edit().putString("etag_json_${note.id}", newETag).apply()
-                            Logger.d(TAG, "      ⚡ Cached new E-Tag: ${newETag.take(8)}")
+                            Logger.d(TAG, "      ⚡ Cached new E-Tag: ${newETag.take(ETAG_PREVIEW_LENGTH)}")
                         } else {
                             // Fallback: invalidate if server doesn't provide E-Tag
                             prefs.edit().remove("etag_json_${note.id}").apply()
@@ -814,6 +831,7 @@ class WebDavSyncService(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
+                Logger.w(TAG, "Upload failed for note ${note.id}, marking as pending: ${e.message}")
                 // Mark as pending for retry
                 val updatedNote = note.copy(syncStatus = SyncStatus.PENDING)
                 storage.saveNote(updatedNote)
@@ -862,7 +880,7 @@ class WebDavSyncService(private val context: Context) {
         return title
             .replace(Regex("[<>:\"/\\\\|?*]"), "_")  // Ersetze verbotene Zeichen
             .replace(Regex("\\s+"), " ")              // Normalisiere Whitespace
-            .take(200)                                 // Max 200 Zeichen (Reserve für .md)
+            .take(MAX_FILENAME_LENGTH)                 // Max Zeichen (Reserve für .md)
             .trim('_', ' ')                            // Trim Underscores/Spaces
     }
     
@@ -998,9 +1016,13 @@ class WebDavSyncService(private val context: Context) {
                     val serverModified = resource.modified?.time ?: 0L
                     
                     // 🐛 DEBUG: Log every file check to diagnose performance
-                    val serverETagPreview = serverETag?.take(8) ?: "null"
-                    val cachedETagPreview = cachedETag?.take(8) ?: "null"
-                    Logger.d(TAG, "   🔍 [$noteId] etag=$serverETagPreview/$cachedETagPreview modified=$serverModified lastSync=$lastSyncTime")
+                    val serverETagPreview = serverETag?.take(ETAG_PREVIEW_LENGTH) ?: "null"
+                    val cachedETagPreview = cachedETag?.take(ETAG_PREVIEW_LENGTH) ?: "null"
+                    Logger.d(
+                        TAG,
+                        "   🔍 [$noteId] etag=$serverETagPreview/$cachedETagPreview " +
+                            "modified=$serverModified lastSync=$lastSyncTime"
+                    )
                     
                     // PRIMARY: Timestamp check (works on first sync!)
                     // Same logic as Markdown sync - skip if not modified since last sync
@@ -1101,7 +1123,11 @@ class WebDavSyncService(private val context: Context) {
                         }
                     }
                 }
-                Logger.d(TAG, "   📊 Phase 1: $downloadedCount downloaded, $skippedDeleted skipped (deleted), $skippedUnchanged skipped (unchanged)")
+                Logger.d(
+                    TAG,
+                    "   📊 Phase 1: $downloadedCount downloaded, $skippedDeleted skipped (deleted), " +
+                        "$skippedUnchanged skipped (unchanged)"
+                )
             } else {
                 Logger.w(TAG, "   ⚠️ /notes/ does not exist, skipping Phase 1")
             }
@@ -1306,7 +1332,11 @@ class WebDavSyncService(private val context: Context) {
             
             // 🆕 v1.2.2: Use downloadRemoteNotes() with Root fallback + forceOverwrite
             // 🆕 v1.3.0: Pass FRESH empty tracker to avoid loading stale cached data
-            Logger.d(TAG, "📡 Calling downloadRemoteNotes() - includeRootFallback: true, forceOverwrite: $forceOverwrite")
+            Logger.d(
+                TAG,
+                "📡 Calling downloadRemoteNotes() - " +
+                    "includeRootFallback: true, forceOverwrite: $forceOverwrite"
+            )
             val emptyTracker = DeletionTracker()  // Fresh empty tracker after clear
             val result = downloadRemoteNotes(
                 sardine = sardine, 
@@ -1509,15 +1539,31 @@ class WebDavSyncService(private val context: Context) {
                         Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
                         continue
                     }
-                    Logger.d(TAG, "      Parsed: id=${mdNote.id}, title=${mdNote.title}, updatedAt=${Date(mdNote.updatedAt)}")
+                    Logger.d(
+                        TAG,
+                        "      Parsed: id=${mdNote.id}, title=${mdNote.title}, " +
+                            "updatedAt=${Date(mdNote.updatedAt)}"
+                    )
                     
                     val localNote = storage.loadNote(mdNote.id)
-                    Logger.d(TAG, "      Local note: ${if (localNote == null) "NOT FOUND" else "exists, updatedAt=${Date(localNote.updatedAt)}, syncStatus=${localNote.syncStatus}"}")
+                    Logger.d(
+                        TAG,
+                        "      Local note: " + if (localNote == null) {
+                            "NOT FOUND"
+                        } else {
+                            "exists, updatedAt=${Date(localNote.updatedAt)}, " +
+                                "syncStatus=${localNote.syncStatus}"
+                        }
+                    )
                     
                     // ⚡ v1.3.1: Content-basierte Erkennung
                     // Wichtig: Vergleiche IMMER den Inhalt, wenn die Datei seit letztem Sync geändert wurde!
                     // Der YAML-Timestamp kann veraltet sein (z.B. bei externer Bearbeitung ohne Obsidian)
-                    Logger.d(TAG, "      Comparison: mdUpdatedAt=${mdNote.updatedAt}, localUpdated=${localNote?.updatedAt ?: 0L}")
+                    Logger.d(
+                        TAG,
+                        "      Comparison: mdUpdatedAt=${mdNote.updatedAt}, " +
+                            "localUpdated=${localNote?.updatedAt ?: 0L}"
+                    )
                     
                     // Content-Vergleich: Ist der Inhalt tatsächlich unterschiedlich?
                     val contentChanged = localNote != null && (
@@ -1538,10 +1584,16 @@ class WebDavSyncService(private val context: Context) {
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
                         }
                         // ⚡ v1.3.1 FIX: Content-basierter Skip - nur wenn Inhalt UND Timestamp gleich
-                        localNote.syncStatus == SyncStatus.SYNCED && !contentChanged && localNote.updatedAt >= mdNote.updatedAt -> {
+                        localNote.syncStatus == SyncStatus.SYNCED &&
+                            !contentChanged &&
+                            localNote.updatedAt >= mdNote.updatedAt -> {
                             // Inhalt identisch UND Timestamps passen → Skip
                             skippedCount++
-                            Logger.d(TAG, "   ⏭️ Skipped ${mdNote.title}: content identical (local=${localNote.updatedAt}, md=${mdNote.updatedAt})")
+                            Logger.d(
+                                TAG,
+                                "   ⏭️ Skipped ${mdNote.title}: content identical " +
+                                    "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
+                            )
                         }
                         // ⚡ v1.3.1 FIX: Content geändert aber YAML-Timestamp nicht aktualisiert → Importieren!
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
@@ -1571,7 +1623,11 @@ class WebDavSyncService(private val context: Context) {
                         else -> {
                             // Local has pending changes but MD is older - keep local
                             skippedCount++
-                            Logger.d(TAG, "   ⏭️ Skipped ${mdNote.title}: local is newer or pending (local=${localNote.updatedAt}, md=${mdNote.updatedAt})")
+                            Logger.d(
+                                TAG,
+                                "   ⏭️ Skipped ${mdNote.title}: local is newer or pending " +
+                                    "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
+                            )
                         }
                     }
                 } catch (e: Exception) {
@@ -1719,14 +1775,16 @@ class WebDavSyncService(private val context: Context) {
      */
     suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(Dispatchers.IO) {
         return@withContext try {
-            val sardine = getOrCreateSardine() ?: throw Exception("Sardine client konnte nicht erstellt werden")
-            val serverUrl = getServerUrl() ?: throw Exception("Server-URL nicht konfiguriert")
+            val sardine = getOrCreateSardine()
+                ?: throw SyncException("Sardine client konnte nicht erstellt werden")
+            val serverUrl = getServerUrl()
+                ?: throw SyncException("Server-URL nicht konfiguriert")
             
             val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
             val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
             
             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
-                throw Exception("WebDAV-Server nicht vollständig konfiguriert")
+                throw SyncException("WebDAV-Server nicht vollständig konfiguriert")
             }
             
             Logger.d(TAG, "🔄 Manual Markdown Sync START")

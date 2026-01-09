@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 9  // 🚀 v1.3.1: Sync-Performance & Debug-Logging
-        versionName = "1.3.1"  // 🚀 v1.3.1: Skip unchanged MD-Files, Sync-Mutex, Debug-Logging UI
+        versionCode = 10  // 🚀 v1.3.2: Lint-Cleanup "Clean Slate"
+        versionName = "1.3.2"  // 🚀 v1.3.2: Code-Qualität-Release (alle einfachen Lint-Issues behoben)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         

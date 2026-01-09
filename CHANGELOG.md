@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.2] - 2026-01-10
+
+### Changed
+- **🧹 Code-Qualität: "Clean Slate" Release**
+  - Alle einfachen Lint-Issues behoben (Phase 1-7 des Cleanup-Plans)
+  - Unused Imports und Members entfernt
+  - Magic Numbers durch benannte Konstanten ersetzt
+  - SwallowedExceptions mit Logger.w() versehen
+  - MaxLineLength-Verstöße reformatiert
+  - ConstructorParameterNaming (snake_case → camelCase mit @SerializedName)
+  - Custom Exceptions: SyncException.kt und ValidationException.kt erstellt
+
+### Added  
+- **📝 F-Droid Privacy Notice**
+  - Datenschutz-Hinweis für die Datei-Logging-Funktion
+  - Erklärt dass Logs nur lokal gespeichert werden
+  - Erfüllt F-Droid Opt-in Consent-Anforderungen
+
+### Technical Improvements
+- **⚡ Neue Konstanten für bessere Wartbarkeit**
+  - `SYNC_COMPLETED_DELAY_MS`, `ERROR_DISPLAY_DELAY_MS` (MainActivity)
+  - `CONNECTION_TIMEOUT_MS` (SettingsActivity)
+  - `SOCKET_TIMEOUT_MS`, `MAX_FILENAME_LENGTH`, `ETAG_PREVIEW_LENGTH` (WebDavSyncService)
+  - `AUTO_CANCEL_TIMEOUT_MS` (NotificationHelper)
+  - RFC 1918 IP-Range Konstanten (UrlValidator)
+  - `DAYS_THRESHOLD`, `TRUNCATE_SUFFIX_LENGTH` (Extensions)
+
+- **🔒 @Suppress Annotations für legitime Patterns**
+  - ReturnCount: Frühe Returns für Validierung sind idiomatisch
+  - LoopWithTooManyJumpStatements: Komplexe Sync-Logik dokumentiert
+
+### Notes
+- Komplexe Refactorings (LargeClass, LongMethod) für v1.3.3+ geplant
+- Deprecation-Warnungen (LocalBroadcastManager, ProgressDialog) bleiben bestehen
+
+---
+
 ## [1.3.1] - 2026-01-08
 
 ### Fixed

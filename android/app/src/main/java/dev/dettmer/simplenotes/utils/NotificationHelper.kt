@@ -20,6 +20,7 @@ object NotificationHelper {
     private const val CHANNEL_DESCRIPTION = "Benachrichtigungen über Sync-Status"
     private const val NOTIFICATION_ID = 1001
     private const val SYNC_NOTIFICATION_ID = 2
+    private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
     
     /**
      * Erstellt Notification Channel (Android 8.0+)
@@ -286,7 +287,7 @@ object NotificationHelper {
         Handler(Looper.getMainLooper()).postDelayed({
             manager.cancel(SYNC_NOTIFICATION_ID)
             Logger.d(TAG, "🗑️ Auto-cancelled error notification after 30s timeout")
-        }, 30_000)
+        }, AUTO_CANCEL_TIMEOUT_MS)
     }
     
     /**
