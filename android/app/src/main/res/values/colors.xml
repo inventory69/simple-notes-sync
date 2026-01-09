@@ -4,6 +4,9 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     
+    <!-- Adaptive Icon Background -->
+    <color name="ic_launcher_background">#f9e9c8</color>
+    
     <!-- Material 3 Light Theme Colors -->
     <color name="md_theme_light_primary">#6750A4</color>
     <color name="md_theme_light_onPrimary">#FFFFFF</color>

@@ -4,12 +4,14 @@ KEY FEATURES:
 
 • Create and edit simple notes
 • WebDAV synchronization with your own server
+• Multi-device sync (phone, tablet, desktop)
+• Markdown export for Obsidian/desktop editors
 • Automatic synchronization on home WiFi
 • Configurable sync interval (15/30/60 minutes)
 • Transparent battery usage display
 • Material Design 3 with Dynamic Colors (Android 12+)
-• Swipe-to-delete with confirmation dialog
-• Server backup & restore
+• Swipe-to-delete with server sync
+• Server backup & restore (Merge/Replace/Overwrite)
 • Fully usable offline
 • No ads, no trackers
 
@@ -17,14 +19,23 @@ PRIVACY:
 
 Your data stays with you! The app only communicates with your own WebDAV server. No cloud services, no tracking libraries, no analytics tools.
 
+MULTI-DEVICE SYNC:
+
+• Notes sync automatically between all your devices
+• Deletion tracking prevents "zombie notes"
+• Smart conflict resolution through timestamps
+• Markdown files for desktop editing (Obsidian, VS Code, etc.)
+• Changes from desktop editors are auto-imported
+
 SYNCHRONIZATION:
 
 • Supports all WebDAV servers (Nextcloud, ownCloud, etc.)
 • Configurable interval: 15, 30, or 60 minutes
+• Optimized performance: skips unchanged files (~2-3s sync time)
+• E-Tag caching for 20x faster "no changes" checks
 • Measured battery consumption: only ~0.4% per day (at 30min)
 • Doze Mode optimized for reliable background syncs
 • Manual synchronization available anytime
-• Conflict-free merging through timestamps
 
 MATERIAL DESIGN 3:
 
@@ -32,6 +43,7 @@ MATERIAL DESIGN 3:
 • Dynamic Colors (Material You) on Android 12+
 • Dark Mode support
 • Intuitive gestures (Swipe-to-delete)
+• Live sync status indicator
 
 Open Source under MIT License
 Source code: https://github.com/inventory69/simple-notes-sync
