@@ -7,6 +7,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+private const val DAYS_THRESHOLD = 7L
+private const val TRUNCATE_SUFFIX_LENGTH = 3
+
 // Toast Extensions
 fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(this, message, duration).show()
@@ -27,7 +30,7 @@ fun Long.toReadableTime(): String {
             val hours = TimeUnit.MILLISECONDS.toHours(diff)
             "Vor $hours Std"
         }
-        diff < TimeUnit.DAYS.toMillis(7) -> {
+        diff < TimeUnit.DAYS.toMillis(DAYS_THRESHOLD) -> {
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             "Vor $days Tagen"
         }
@@ -41,7 +44,7 @@ fun Long.toReadableTime(): String {
 // Truncate long strings
 fun String.truncate(maxLength: Int): String {
     return if (length > maxLength) {
-        substring(0, maxLength - 3) + "..."
+        substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + "..."
     } else {
         this
     }

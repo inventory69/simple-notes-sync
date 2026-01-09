@@ -63,4 +63,7 @@
     <string name="sync_status_completed">Synchronisierung abgeschlossen</string>
     <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
     <string name="sync_already_running">Synchronisierung läuft bereits</string>
+    
+    <!-- Debug/Logging Section (v1.3.2) -->
+    <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
 </resources>

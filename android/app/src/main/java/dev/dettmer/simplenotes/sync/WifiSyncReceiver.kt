@@ -28,6 +28,7 @@ class WifiSyncReceiver : BroadcastReceiver() {
         }
     }
     
+    @Suppress("ReturnCount") // Early returns for WiFi validation checks
     private fun isConnectedToHomeWifi(context: Context): Boolean {
         val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         val homeSSID = prefs.getString(Constants.KEY_HOME_SSID, null) ?: return false
