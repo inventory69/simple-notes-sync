@@ -4,12 +4,14 @@ HAUPTFUNKTIONEN:
 
 • Einfache Notizen erstellen und bearbeiten
 • WebDAV-Synchronisation mit eigenem Server
+• Multi-Device Sync (Handy, Tablet, Desktop)
+• Markdown-Export für Obsidian/Desktop-Editoren
 • Automatische Synchronisation im Heim-WLAN
 • Konfigurierbares Sync-Interval (15/30/60 Minuten)
 • Transparente Batterie-Verbrauchsanzeige
 • Material Design 3 mit Dynamic Colors (Android 12+)
-• Swipe-to-Delete mit Bestätigungsdialog
-• Server-Backup & Wiederherstellung
+• Swipe-to-Delete mit Server-Sync
+• Server-Backup & Wiederherstellung (Merge/Replace/Overwrite)
 • Komplett offline nutzbar
 • Keine Werbung, keine Tracker
 
@@ -17,14 +19,23 @@ DATENSCHUTZ:
 
 Deine Daten bleiben bei dir! Die App kommuniziert nur mit deinem eigenen WebDAV-Server. Keine Cloud-Dienste, keine Tracking-Bibliotheken, keine Analysetools.
 
+MULTI-DEVICE SYNC:
+
+• Notizen synchronisieren automatisch zwischen allen Geräten
+• Lösch-Tracking verhindert "Zombie-Notizen"
+• Intelligente Konfliktlösung durch Timestamps
+• Markdown-Dateien für Desktop-Bearbeitung (Obsidian, VS Code, etc.)
+• Änderungen von Desktop-Editoren werden automatisch importiert
+
 SYNCHRONISATION:
 
 • Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
 • Konfigurierbares Interval: 15, 30 oder 60 Minuten
+• Optimierte Performance: überspringt unveränderte Dateien (~2-3s Sync-Zeit)
+• E-Tag Caching für 20x schnellere "keine Änderungen" Checks
 • Gemessener Akkuverbrauch: nur ~0.4% pro Tag (bei 30min)
 • Doze Mode optimiert für zuverlässige Background-Syncs
 • Manuelle Synchronisation jederzeit möglich
-• Konfliktfreie Zusammenführung durch Timestamps
 
 MATERIAL DESIGN 3:
 
@@ -32,6 +43,7 @@ MATERIAL DESIGN 3:
 • Dynamic Colors (Material You) auf Android 12+
 • Dark Mode Support
 • Intuitive Gesten (Swipe-to-Delete)
+• Live Sync-Status Anzeige
 
 Open Source unter MIT-Lizenz
 Quellcode: https://github.com/inventory69/simple-notes-sync
