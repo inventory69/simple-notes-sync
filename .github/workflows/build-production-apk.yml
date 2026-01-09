@@ -61,33 +61,15 @@ jobs:
         run: |
           mkdir -p apk-output
           
-          # === Standard Flavor (mit Google Services) ===
-          # Universal APK (funktioniert auf allen Geraeten)
-          cp android/app/build/outputs/apk/standard/release/app-standard-universal-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk
+          # Standard Flavor - Universal APK
+          cp android/app/build/outputs/apk/standard/release/app-standard-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard.apk
           
-          # ARM64 APK (moderne Geräte 2018+)
-          cp android/app/build/outputs/apk/standard/release/app-standard-arm64-v8a-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-arm64-v8a.apk
+          # F-Droid Flavor - Universal APK
+          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-release.apk \
+             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk
           
-          # ARMv7 APK (ältere Geräte)
-          cp android/app/build/outputs/apk/standard/release/app-standard-armeabi-v7a-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard-armeabi-v7a.apk
-          
-          # === F-Droid Flavor (ohne Google Services) ===
-          # Universal APK
-          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-universal-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-universal.apk
-          
-          # ARM64 APK
-          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-arm64-v8a-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-arm64-v8a.apk
-          
-          # ARMv7 APK
-          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-armeabi-v7a-release.apk \
-             apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-armeabi-v7a.apk
-          
-          echo "✅ APK-Dateien vorbereitet (Standard + F-Droid):"
+          echo "✅ APK-Dateien vorbereitet:"
           ls -lh apk-output/
       
       - name: APK-Artefakte hochladen
@@ -138,14 +120,8 @@ jobs:
             
             | Variante | Datei | Info |
             |----------|-------|------|
-            | **🏆 Empfohlen** | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-universal.apk` | Funktioniert auf allen Android-Geraeten |
-            | Modern (2018+) | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-arm64-v8a.apk` | Kleinere Dateigröße fuer 64-bit Geräte |
-            | Aelter (<2018) | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard-armeabi-v7a.apk` | Fuer 32-bit ARM Geräte |
-            | F-Droid Universal | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-universal.apk` | Fuer F-Droid Store |
-            | F-Droid ARM64 | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-arm64-v8a.apk` | F-Droid 64-bit |
-            | F-Droid ARMv7 | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid-armeabi-v7a.apk` | F-Droid 32-bit |
-            
-            💡 **Nicht sicher?** → Nimm die **Universal** APK!
+            | **🏆 Empfohlen** | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard.apk` | Standard-Version (funktioniert auf allen Geraeten) |
+            | F-Droid | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk` | Fuer F-Droid Store |
             
             ---
             
