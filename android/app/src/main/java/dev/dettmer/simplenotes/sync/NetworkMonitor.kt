@@ -227,7 +227,11 @@ class NetworkMonitor(private val context: Context) {
             if (isWifi) {
                 lastConnectedNetworkId = activeNetwork.toString()
                 Logger.d(TAG, "    ✅ Initial WiFi network: $lastConnectedNetworkId")
-                Logger.d(TAG, "    📡 WiFi already connected at startup - onAvailable() will only trigger on network change")
+                Logger.d(
+                    TAG,
+                    "    📡 WiFi already connected at startup - " +
+                        "onAvailable() will only trigger on network change"
+                )
             } else {
                 lastConnectedNetworkId = null
                 Logger.d(TAG, "    ⚠️ Not on WiFi at startup")
@@ -268,7 +272,7 @@ class NetworkMonitor(private val context: Context) {
             connectivityManager.unregisterNetworkCallback(networkCallback)
             Logger.d(TAG, "✅ WiFi monitoring stopped")
         } catch (e: Exception) {
-            // Already unregistered
+            Logger.w(TAG, "NetworkCallback already unregistered: ${e.message}")
         }
     }
 }

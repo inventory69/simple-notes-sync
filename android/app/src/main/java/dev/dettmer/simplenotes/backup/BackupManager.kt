@@ -49,10 +49,10 @@ class BackupManager(private val context: Context) {
             Logger.d(TAG, "   Found ${allNotes.size} notes to backup")
             
             val backupData = BackupData(
-                backup_version = BACKUP_VERSION,
-                created_at = System.currentTimeMillis(),
-                notes_count = allNotes.size,
-                app_version = BuildConfig.VERSION_NAME,
+                backupVersion = BACKUP_VERSION,
+                createdAt = System.currentTimeMillis(),
+                notesCount = allNotes.size,
+                appVersion = BuildConfig.VERSION_NAME,
                 notes = allNotes
             )
             
@@ -65,7 +65,7 @@ class BackupManager(private val context: Context) {
             
             BackupResult(
                 success = true,
-                notes_count = allNotes.size,
+                notesCount = allNotes.size,
                 message = "Backup erstellt: ${allNotes.size} Notizen"
             )
             
@@ -99,10 +99,10 @@ class BackupManager(private val context: Context) {
             
             val allNotes = storage.loadAllNotes()
             val backupData = BackupData(
-                backup_version = BACKUP_VERSION,
-                created_at = System.currentTimeMillis(),
-                notes_count = allNotes.size,
-                app_version = BuildConfig.VERSION_NAME,
+                backupVersion = BACKUP_VERSION,
+                createdAt = System.currentTimeMillis(),
+                notesCount = allNotes.size,
+                appVersion = BuildConfig.VERSION_NAME,
                 notes = allNotes
             )
             
@@ -149,7 +149,7 @@ class BackupManager(private val context: Context) {
             }
             
             val backupData = gson.fromJson(jsonString, BackupData::class.java)
-            Logger.d(TAG, "   Backup valid: ${backupData.notes_count} notes, version ${backupData.backup_version}")
+            Logger.d(TAG, "   Backup valid: ${backupData.notesCount} notes, version ${backupData.backupVersion}")
             
             // 3. Auto-Backup erstellen (Sicherheitsnetz)
             val autoBackupUri = createAutoBackup()
@@ -164,7 +164,7 @@ class BackupManager(private val context: Context) {
                 RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(backupData.notes)
             }
             
-            Logger.d(TAG, "✅ Restore completed: ${result.imported_notes} imported, ${result.skipped_notes} skipped")
+            Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
             result
             
         } catch (e: Exception) {
@@ -184,10 +184,11 @@ class BackupManager(private val context: Context) {
             val backupData = gson.fromJson(jsonString, BackupData::class.java)
             
             // Version kompatibel?
-            if (backupData.backup_version > BACKUP_VERSION) {
+            if (backupData.backupVersion > BACKUP_VERSION) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "Backup-Version nicht unterstützt (v${backupData.backup_version} benötigt v${BACKUP_VERSION}+)"
+                    errorMessage = "Backup-Version nicht unterstützt " +
+                        "(v${backupData.backupVersion} benötigt v${BACKUP_VERSION}+)"
                 )
             }
             
@@ -238,8 +239,8 @@ class BackupManager(private val context: Context) {
         
         return RestoreResult(
             success = true,
-            imported_notes = newNotes.size,
-            skipped_notes = skippedNotes,
+            importedNotes = newNotes.size,
+            skippedNotes = skippedNotes,
             message = "${newNotes.size} neue Notizen importiert, $skippedNotes übersprungen"
         )
     }
@@ -259,8 +260,8 @@ class BackupManager(private val context: Context) {
         
         return RestoreResult(
             success = true,
-            imported_notes = backupNotes.size,
-            skipped_notes = 0,
+            importedNotes = backupNotes.size,
+            skippedNotes = 0,
             message = "Alle Notizen ersetzt: ${backupNotes.size} importiert"
         )
     }
@@ -283,9 +284,9 @@ class BackupManager(private val context: Context) {
         
         return RestoreResult(
             success = true,
-            imported_notes = newNotes.size,
-            skipped_notes = 0,
-            overwritten_notes = overwrittenNotes.size,
+            importedNotes = newNotes.size,
+            skippedNotes = 0,
+            overwrittenNotes = overwrittenNotes.size,
             message = "${newNotes.size} neu, ${overwrittenNotes.size} überschrieben"
         )
     }
@@ -312,12 +313,17 @@ class BackupManager(private val context: Context) {
 
 /**
  * Backup-Daten Struktur (JSON)
+ * NOTE: Property names use @SerializedName for JSON compatibility with snake_case
  */
 data class BackupData(
-    val backup_version: Int,
-    val created_at: Long,
-    val notes_count: Int,
-    val app_version: String,
+    @com.google.gson.annotations.SerializedName("backup_version")
+    val backupVersion: Int,
+    @com.google.gson.annotations.SerializedName("created_at")
+    val createdAt: Long,
+    @com.google.gson.annotations.SerializedName("notes_count")
+    val notesCount: Int,
+    @com.google.gson.annotations.SerializedName("app_version")
+    val appVersion: String,
     val notes: List<Note>
 )
 
@@ -335,7 +341,7 @@ enum class RestoreMode {
  */
 data class BackupResult(
     val success: Boolean,
-    val notes_count: Int = 0,
+    val notesCount: Int = 0,
     val message: String? = null,
     val error: String? = null
 )
@@ -345,9 +351,9 @@ data class BackupResult(
  */
 data class RestoreResult(
     val success: Boolean,
-    val imported_notes: Int = 0,
-    val skipped_notes: Int = 0,
-    val overwritten_notes: Int = 0,
+    val importedNotes: Int = 0,
+    val skippedNotes: Int = 0,
+    val overwrittenNotes: Int = 0,
     val message: String? = null,
     val error: String? = null
 )

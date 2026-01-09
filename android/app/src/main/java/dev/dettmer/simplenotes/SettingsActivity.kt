@@ -25,8 +25,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.DynamicColors
-import com.google.android.material.switchmaterial.SwitchMaterial
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import dev.dettmer.simplenotes.backup.BackupManager
@@ -39,7 +37,6 @@ import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.showToast
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -52,6 +49,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val GITHUB_REPO_URL = "https://github.com/inventory69/simple-notes-sync"
         private const val GITHUB_PROFILE_URL = "https://github.com/inventory69"
         private const val LICENSE_URL = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
+        private const val CONNECTION_TIMEOUT_MS = 3000
     }
     
     private lateinit var textInputLayoutServerUrl: com.google.android.material.textfield.TextInputLayout
@@ -325,7 +323,10 @@ class SettingsActivity : AppCompatActivity() {
      */
     private fun setupSyncIntervalPicker() {
         // Load current interval from preferences
-        val currentInterval = prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
+        val currentInterval = prefs.getLong(
+            Constants.PREF_SYNC_INTERVAL_MINUTES,
+            Constants.DEFAULT_SYNC_INTERVAL_MINUTES
+        )
         
         // Set checked radio button based on current interval
         val checkedId = when (currentInterval) {
@@ -654,8 +655,8 @@ class SettingsActivity : AppCompatActivity() {
                 try {
                     val url = URL(serverUrl)
                     val connection = url.openConnection() as HttpURLConnection
-                    connection.connectTimeout = 3000
-                    connection.readTimeout = 3000
+                    connection.connectTimeout = CONNECTION_TIMEOUT_MS
+                    connection.readTimeout = CONNECTION_TIMEOUT_MS
                     val code = connection.responseCode
                     connection.disconnect()
                     code in 200..299 || code == 401  // 401 = Server da, Auth fehlt
@@ -764,7 +765,10 @@ class SettingsActivity : AppCompatActivity() {
                             .apply()
                         
                         updateMarkdownButtonVisibility()
-                        showToast("Markdown Auto-Sync aktiviert - Notizen werden als .md-Dateien exportiert und importiert")
+                        showToast(
+                            "Markdown Auto-Sync aktiviert - " +
+                                "Notizen werden als .md-Dateien exportiert und importiert"
+                        )
                     }
                     
                 } catch (e: Exception) {
@@ -818,11 +822,13 @@ class SettingsActivity : AppCompatActivity() {
             intent.data = Uri.parse("package:$packageName")
             startActivity(intent)
         } catch (e: Exception) {
+            Logger.w(TAG, "Failed to open battery optimization settings: ${e.message}")
             // Fallback: Open general battery settings
             try {
                 val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                 startActivity(intent)
             } catch (e2: Exception) {
+                Logger.w(TAG, "Failed to open fallback battery settings: ${e2.message}")
                 showToast("Bitte Akku-Optimierung manuell deaktivieren")
             }
         }
@@ -838,49 +844,6 @@ class SettingsActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to restart NetworkMonitor", e)
             showToast("Fehler beim Neustart des NetworkMonitors")
-        }
-    }
-    
-    private fun showRestoreConfirmation() {
-        android.app.AlertDialog.Builder(this)
-            .setTitle(R.string.restore_confirmation_title)
-            .setMessage(R.string.restore_confirmation_message)
-            .setPositiveButton(R.string.restore_button) { _, _ ->
-                performRestore()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-    
-    private fun performRestore() {
-        val progressDialog = android.app.ProgressDialog(this).apply {
-            setMessage(getString(R.string.restore_progress))
-            setCancelable(false)
-            show()
-        }
-        
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val webdavService = WebDavSyncService(this@SettingsActivity)
-                val result = withContext(Dispatchers.IO) {
-                    webdavService.restoreFromServer()
-                }
-                
-                progressDialog.dismiss()
-                
-                if (result.isSuccess) {
-                    showToast(getString(R.string.restore_success, result.restoredCount))
-                    // Refresh MainActivity's note list
-                    setResult(RESULT_OK)
-                } else {
-                    showToast(getString(R.string.restore_error, result.errorMessage))
-                }
-                checkServerStatus()
-            } catch (e: Exception) {
-                progressDialog.dismiss()
-                showToast(getString(R.string.restore_error, e.message))
-                checkServerStatus()
-            }
         }
     }
     
@@ -946,7 +909,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         
         // Custom View mit Radio Buttons
-        val dialogView = layoutInflater.inflate(android.R.layout.select_dialog_singlechoice, null)
         val radioGroup = android.widget.RadioGroup(this).apply {
             orientation = android.widget.RadioGroup.VERTICAL
             setPadding(50, 20, 50, 20)
@@ -1039,12 +1001,12 @@ class SettingsActivity : AppCompatActivity() {
                 progressDialog.dismiss()
                 
                 if (result.success) {
-                    val message = result.message ?: "Wiederhergestellt: ${result.imported_notes} Notizen"
+                    val message = result.message ?: "Wiederhergestellt: ${result.importedNotes} Notizen"
                     showToast("✅ $message")
                     
                     // Refresh MainActivity's note list
                     setResult(RESULT_OK)
-                    broadcastNotesChanged(result.imported_notes)
+                    broadcastNotesChanged(result.importedNotes)
                 } else {
                     showErrorDialog("Wiederherstellung fehlgeschlagen", result.error ?: "Unbekannter Fehler")
                 }
@@ -1153,10 +1115,16 @@ class SettingsActivity : AppCompatActivity() {
                 progressDialog.dismiss()
                 
                 // Erfolgs-Nachricht
-                val message = "✅ Sync abgeschlossen\n📤 ${result.exportedCount} exportiert\n📥 ${result.importedCount} importiert"
+                val message = "✅ Sync abgeschlossen\n" +
+                    "📤 ${result.exportedCount} exportiert\n" +
+                    "📥 ${result.importedCount} importiert"
                 showToast(message)
                 
-                Logger.d("SettingsActivity", "Manual markdown sync: exported=${result.exportedCount}, imported=${result.importedCount}")
+                Logger.d(
+                    "SettingsActivity",
+                    "Manual markdown sync: exported=${result.exportedCount}, " +
+                        "imported=${result.importedCount}"
+                )
                 
             } catch (e: Exception) {
                 progressDialog?.dismiss()

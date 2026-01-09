@@ -8,6 +8,16 @@ import java.net.URL
  */
 object UrlValidator {
     
+    // RFC 1918 Private IP Ranges
+    private const val PRIVATE_CLASS_A_FIRST_OCTET = 10
+    private const val PRIVATE_CLASS_B_FIRST_OCTET = 172
+    private const val PRIVATE_CLASS_B_SECOND_OCTET_MIN = 16
+    private const val PRIVATE_CLASS_B_SECOND_OCTET_MAX = 31
+    private const val PRIVATE_CLASS_C_FIRST_OCTET = 192
+    private const val PRIVATE_CLASS_C_SECOND_OCTET = 168
+    private const val LOCALHOST_FIRST_OCTET = 127
+    private const val OCTET_MAX_VALUE = 255
+    
     /**
      * Prüft ob eine URL eine lokale/private Adresse ist
      * Erlaubt:
@@ -17,6 +27,7 @@ object UrlValidator {
      * - 127.x.x.x (Localhost)
      * - .local domains (mDNS/Bonjour)
      */
+    @Suppress("ReturnCount") // Early returns for validation checks are clearer
     fun isLocalUrl(url: String): Boolean {
         return try {
             val parsedUrl = URL(url)
@@ -40,25 +51,29 @@ object UrlValidator {
                 val octets = match.groupValues.drop(1).map { it.toInt() }
                 
                 // Validate octets are in range 0-255
-                if (octets.any { it > 255 }) {
+                if (octets.any { it > OCTET_MAX_VALUE }) {
                     return false
                 }
                 
-                val (o1, o2, o3, o4) = octets
+                // Extract octets individually (destructuring with 4 elements triggers detekt warning)
+                val o1 = octets[0]
+                val o2 = octets[1]
                 
                 // Check RFC 1918 private IP ranges
                 return when {
                     // 10.0.0.0/8 (10.0.0.0 - 10.255.255.255)
-                    o1 == 10 -> true
+                    o1 == PRIVATE_CLASS_A_FIRST_OCTET -> true
                     
                     // 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
-                    o1 == 172 && o2 in 16..31 -> true
+                    o1 == PRIVATE_CLASS_B_FIRST_OCTET &&
+                        o2 in PRIVATE_CLASS_B_SECOND_OCTET_MIN..PRIVATE_CLASS_B_SECOND_OCTET_MAX -> true
                     
                     // 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
-                    o1 == 192 && o2 == 168 -> true
+                    o1 == PRIVATE_CLASS_C_FIRST_OCTET &&
+                        o2 == PRIVATE_CLASS_C_SECOND_OCTET -> true
                     
                     // 127.0.0.0/8 (Localhost)
-                    o1 == 127 -> true
+                    o1 == LOCALHOST_FIRST_OCTET -> true
                     
                     else -> false
                 }
@@ -67,7 +82,7 @@ object UrlValidator {
             // Not a recognized local address
             false
         } catch (e: Exception) {
-            // Invalid URL format
+            Logger.w("UrlValidator", "Failed to parse URL: ${e.message}")
             false
         }
     }

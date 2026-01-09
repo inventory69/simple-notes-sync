@@ -85,7 +85,7 @@ cd android
 ./gradlew assembleStandardRelease
 ```
 
-➡️ **Build guide:** [DOCS.en.md](docs/DOCS.en.md)
+➡️ **Build guide:** [DOCS.en.md](docs/DOCS.en.md#-build--deployment)
 
 ---
 
@@ -101,4 +101,4 @@ MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**v1.2.1** · Built with ❤️ using Kotlin + Material Design 3
+**v1.3.2** · Built with ❤️ using Kotlin + Material Design 3
