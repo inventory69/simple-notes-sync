@@ -24,9 +24,6 @@ android {
         versionName = "1.4.0"  // 🚀 v1.4.0: Checklists, Multi-Device Sync Fixes, UX Improvements
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
-        // 🔥 NEU: Build Date für About Screen
-        buildConfigField("String", "BUILD_DATE", "\"${getBuildDate()}\"")
     }
     
     // Disable Google dependency metadata for F-Droid/IzzyOnDroid compatibility
@@ -142,12 +139,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-}
-
-// 🔥 NEU: Helper function für Build Date
-fun getBuildDate(): String {
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    return dateFormat.format(Date())
 }
 
 // ⚡ v1.3.1: ktlint deaktiviert wegen Parser-Problemen
