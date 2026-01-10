@@ -119,7 +119,21 @@ Builds:
     scandelete:
       - android/gradle/wrapper
 
+  - versionName: 1.3.2
+    versionCode: 10
+    commit: v1.3.2
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-java-alternatives -a
+    gradle:
+      - fdroid
+    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
+    scandelete:
+      - android/gradle/wrapper
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.3.1
-CurrentVersionCode: 9
+CurrentVersion: 1.3.2
+CurrentVersionCode: 10
