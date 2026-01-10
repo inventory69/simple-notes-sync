@@ -8,8 +8,16 @@
 
 ## 📝 Notiz-Verwaltung
 
+### Notiz-Typen
+- ✅ **Textnotizen** - Klassische Freitext-Notizen
+- ✅ **Checklisten** _(NEU in v1.4.0)_ - Aufgabenlisten mit Tap-to-Check
+  - ➕ Items hinzufügen über Eingabefeld
+  - ☑️ Tap zum Abhaken/Wieder-Öffnen
+  - 📌 Long-Press für Drag & Drop Sortierung
+  - 🗑️ Swipe-to-Delete für einzelne Items
+  - ~~Durchstreichen~~ bei erledigten Einträgen
+
 ### Basis-Funktionen
-- ✅ **Einfache Textnotizen** - Fokus auf Inhalt, keine Ablenkung
 - ✅ **Automatisches Speichern** - Kein manuelles Speichern nötig
 - ✅ **Titel + Inhalt** - Klare Struktur für jede Notiz
 - ✅ **Zeitstempel** - Erstellungs- und Änderungsdatum automatisch
@@ -52,9 +60,11 @@
 
 ### Markdown-Export
 - ✅ **Automatischer Export** - Jede Notiz → `.md` Datei
+- ✅ **Checklisten als Task-Listen** _(NEU)_ - `- [ ]` / `- [x]` Format (GitHub-kompatibel)
 - ✅ **Dual-Format** - JSON (Master) + Markdown (Mirror)
 - ✅ **Dateinamen-Sanitization** - Sichere Dateinamen aus Titeln
-- ✅ **Frontmatter-Metadata** - YAML mit ID, Timestamps, Tags
+- ✅ **Duplikat-Handling** _(NEU)_ - ID-Suffix bei gleichen Titeln
+- ✅ **Frontmatter-Metadata** - YAML mit ID, Timestamps, Type
 - ✅ **WebDAV-Sync** - Parallel zum JSON-Sync
 - ✅ **Optional** - In Einstellungen ein/ausschaltbar
 - ✅ **Initial Export** - Alle bestehenden Notizen beim Aktivieren
@@ -81,16 +91,16 @@
 
 ### Auto-Sync
 - ✅ **Intervall-Auswahl** - 15, 30 oder 60 Minuten
-- ✅ **WLAN-Bindung** - Nur im konfigurierten Heim-WLAN
+- ✅ **WiFi-Trigger** - Sync bei WiFi-Verbindung _(keine SSID-Einschränkung)_
 - ✅ **Akkuschonend** - ~0.2-0.8% pro Tag
-- ✅ **Smart Server-Check** - Keine Fehler in fremden Netzwerken
+- ✅ **Smart Server-Check** - Sync nur wenn Server erreichbar
 - ✅ **WorkManager** - Zuverlässige Background-Ausführung
 - ✅ **Battery-Optimierung kompatibel** - Funktioniert auch mit Doze Mode
 
 ### Sync-Trigger (6 Stück)
 1. ✅ **Periodic Sync** - Automatisch nach Intervall
 2. ✅ **App-Start Sync** - Beim Öffnen der App
-3. ✅ **WiFi-Connect Sync** - Wenn Heim-WLAN verbindet
+3. ✅ **WiFi-Connect Sync** - Bei jeder WiFi-Verbindung
 4. ✅ **Manual Sync** - Button in Einstellungen
 5. ✅ **Pull-to-Refresh** - Wisch-Geste in Notizliste
 6. ✅ **Settings-Save Sync** - Nach Server-Konfiguration
@@ -109,7 +119,6 @@
 - ✅ **HTTP/HTTPS** - HTTP nur lokal, HTTPS für extern
 - ✅ **Username/Password** - Basic Authentication
 - ✅ **Connection Test** - In Einstellungen testen
-- ✅ **Gateway SSID** - WLAN-Name für Auto-Sync
 - ✅ **Server-URL Normalisierung** - Automatisches `/notes/` und `/notes-md/` _(NEU in v1.2.1)_
 - ✅ **Flexible URL-Eingabe** - Beide Varianten funktionieren: `http://server/` und `http://server/notes/`
 
@@ -141,8 +150,8 @@
 
 ### Akku-Effizienz
 - ✅ **Optimierte Sync-Intervalle** - 15/30/60 Min
-- ✅ **WLAN-Only** - Kein Mobile Data Sync
-- ✅ **Smart Server-Check** - Nur im Heim-WLAN
+- ✅ **WiFi-Only** - Kein Mobile Data Sync
+- ✅ **Smart Server-Check** - Sync nur wenn Server erreichbar
 - ✅ **WorkManager** - System-optimierte Ausführung
 - ✅ **Doze Mode kompatibel** - Sync läuft auch im Standby
 - ✅ **Gemessener Verbrauch:**
