@@ -26,11 +26,12 @@
 
 ## ✨ Highlights
 
+- ✅ **NEU: Checklisten** - Tap-to-Check, Drag & Drop, Swipe-to-Delete
 - 📝 **Offline-First** - Funktioniert ohne Internet
-- 🔄 **Auto-Sync** - Nur im Heim-WLAN (15/30/60 Min)
+- 🔄 **Auto-Sync** - Bei WiFi-Verbindung (15/30/60 Min)
 - 🔒 **Self-Hosted** - Deine Daten bleiben bei dir (WebDAV)
 - 💾 **Lokales Backup** - Export/Import als JSON-Datei
-- 🖥️ **Desktop-Integration** - Markdown-Export für VS Code, Typora, etc.
+- 🖥️ **Desktop-Integration** - Markdown-Export für Obsidian, VS Code, Typora
 - 🔋 **Akkuschonend** - ~0.2-0.8% pro Tag
 - 🎨 **Material Design 3** - Dark Mode & Dynamic Colors
 
@@ -104,4 +105,4 @@ MIT License - siehe [LICENSE](LICENSE)
 
 ---
 
-**v1.3.2** · Built with ❤️ using Kotlin + Material Design 3
+**v1.4.0** · Built with ❤️ using Kotlin + Material Design 3

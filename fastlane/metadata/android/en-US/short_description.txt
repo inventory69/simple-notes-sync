@@ -1,1 +1,1 @@
-Simple note-taking app with WebDAV synchronization
+Notes & checklists with WebDAV sync to your own server

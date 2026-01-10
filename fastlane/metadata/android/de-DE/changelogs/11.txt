@@ -1,0 +1,12 @@
+NEU: Checklisten!
+- Erstelle Checklisten-Notizen mit Tap-to-Check
+- Markdown-Export als GitHub-Style Aufgabenlisten
+
+Fixes:
+- Robusteres Markdown-Parsing
+- Doppelte Dateinamen bekommen ID-Suffix
+- Keine Benachrichtigungen wenn App offen ist
+
+Privacy:
+- 2 WiFi-Permissions entfernt (ACCESS/CHANGE_WIFI_STATE)
+- WiFi-Binding funktioniert bereits ohne SSID-Zugriff!

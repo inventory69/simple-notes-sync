@@ -2,6 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -18,8 +19,9 @@
         app:title="@string/edit_note"
         app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
-    <!-- Material 3 Outlined TextInputLayout with 16dp corners -->
+    <!-- Title Input (für beide Typen) -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
@@ -44,8 +46,9 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Material 3 Outlined TextInputLayout for Content -->
+    <!-- Content Input (nur für TEXT sichtbar) -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilContent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -73,5 +76,40 @@
             android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
     </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- v1.4.0: Checklist Container (nur für CHECKLIST sichtbar) -->
+    <LinearLayout
+        android:id="@+id/checklistContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <!-- Checklist Items RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChecklistItems"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="8dp"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_checklist_editor" />
+
+        <!-- Add Item Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddItem"
+            style="@style/Widget.Material3.Button.TextButton.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/add_item"
+            app:icon="@android:drawable/ic_input_add" />
+
+    </LinearLayout>
 
 </LinearLayout>

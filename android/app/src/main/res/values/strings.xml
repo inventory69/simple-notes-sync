@@ -24,6 +24,7 @@
     <string name="note_title_placeholder">Note Title</string>
     <string name="note_content_placeholder">Note content preview…</string>
     <string name="note_timestamp_placeholder">Vor 2 Std</string>
+    <string name="untitled">Ohne Titel</string>
     
     <!-- Delete Confirmation Dialog -->
     <string name="delete_note_title">Notiz löschen?</string>
@@ -42,10 +43,9 @@
     
     <!-- Auto-Sync Settings -->
     <string name="sync_settings">Sync-Einstellungen</string>
-    <string name="home_ssid">Heim-WLAN SSID</string>
     <string name="auto_sync">Auto-Sync aktiviert</string>
     <string name="sync_status">Sync-Status</string>
-    <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert nur im selben Netzwerk\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%%/Tag)</string>
+    <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%%/Tag)</string>
     
     <!-- Backup & Restore -->
     <string name="backup_restore_title">Backup &amp; Wiederherstellung</string>
@@ -66,4 +66,27 @@
     
     <!-- Debug/Logging Section (v1.3.2) -->
     <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
+    
+    <!-- ========================== -->
+    <!-- CHECKLIST FEATURE (v1.4.0) -->
+    <!-- ========================== -->
+    
+    <!-- FAB Menu -->
+    <string name="create_text_note">Notiz</string>
+    <string name="create_checklist">Liste</string>
+    
+    <!-- Editor -->
+    <string name="new_checklist">Neue Liste</string>
+    <string name="edit_checklist">Liste bearbeiten</string>
+    <string name="add_item">Element hinzufügen</string>
+    <string name="item_placeholder">Neues Element…</string>
+    <string name="reorder_item">Element verschieben</string>
+    <string name="delete_item">Element löschen</string>
+    <string name="note_is_empty">Notiz ist leer</string>
+    <string name="note_saved">Notiz gespeichert</string>
+    <string name="note_deleted">Notiz gelöscht</string>
+    
+    <!-- List Preview -->
+    <string name="checklist_progress">%1$d/%2$d erledigt</string>
+    <string name="empty_checklist">Keine Einträge</string>
 </resources>

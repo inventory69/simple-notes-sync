@@ -44,6 +44,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import android.view.View
 import android.widget.LinearLayout
+import android.view.Gravity
+import android.widget.PopupMenu
+import dev.dettmer.simplenotes.models.NoteType
 
 class MainActivity : AppCompatActivity() {
     
@@ -551,10 +554,53 @@ class MainActivity : AppCompatActivity() {
             }).show()
     }
     
+    /**
+     * v1.4.0: Setup FAB mit Dropdown für Notiz-Typ Auswahl
+     */
     private fun setupFab() {
-        fabAddNote.setOnClickListener {
-            openNoteEditor(null)
+        fabAddNote.setOnClickListener { view ->
+            showNoteTypePopup(view)
         }
+    }
+    
+    /**
+     * v1.4.0: Zeigt Popup-Menü zur Auswahl des Notiz-Typs
+     */
+    private fun showNoteTypePopup(anchor: View) {
+        val popupMenu = PopupMenu(this, anchor, Gravity.END)
+        popupMenu.inflate(R.menu.menu_fab_note_types)
+        
+        // Icons im Popup anzeigen (via Reflection, da standardmäßig ausgeblendet)
+        try {
+            val fields = popupMenu.javaClass.declaredFields
+            for (field in fields) {
+                if ("mPopup" == field.name) {
+                    field.isAccessible = true
+                    val menuPopupHelper = field.get(popupMenu)
+                    val classPopupHelper = Class.forName(menuPopupHelper.javaClass.name)
+                    val setForceIcons = classPopupHelper.getMethod("setForceShowIcon", Boolean::class.java)
+                    setForceIcons.invoke(menuPopupHelper, true)
+                    break
+                }
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "Could not force show icons in popup menu: ${e.message}")
+        }
+        
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            val noteType = when (menuItem.itemId) {
+                R.id.action_create_text_note -> NoteType.TEXT
+                R.id.action_create_checklist -> NoteType.CHECKLIST
+                else -> return@setOnMenuItemClickListener false
+            }
+            
+            val intent = Intent(this, NoteEditorActivity::class.java)
+            intent.putExtra(NoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
+            startActivity(intent)
+            true
+        }
+        
+        popupMenu.show()
     }
     
     private fun loadNotes() {

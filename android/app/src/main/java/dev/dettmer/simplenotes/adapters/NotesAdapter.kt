@@ -11,11 +11,17 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.toReadableTime
 import dev.dettmer.simplenotes.utils.truncate
 
+/**
+ * Adapter für die Notizen-Liste
+ * 
+ * v1.4.0: Unterstützt jetzt TEXT und CHECKLIST Notizen
+ */
 class NotesAdapter(
     private val onNoteClick: (Note) -> Unit
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
@@ -31,15 +37,45 @@ class NotesAdapter(
     }
     
     inner class NoteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val ivNoteTypeIcon: ImageView = itemView.findViewById(R.id.ivNoteTypeIcon)
         private val textViewTitle: TextView = itemView.findViewById(R.id.textViewTitle)
         private val textViewContent: TextView = itemView.findViewById(R.id.textViewContent)
+        private val textViewChecklistPreview: TextView = itemView.findViewById(R.id.textViewChecklistPreview)
         private val textViewTimestamp: TextView = itemView.findViewById(R.id.textViewTimestamp)
         private val imageViewSyncStatus: ImageView = itemView.findViewById(R.id.imageViewSyncStatus)
         
         fun bind(note: Note) {
-            textViewTitle.text = note.title.ifEmpty { "Ohne Titel" }
-            textViewContent.text = note.content.truncate(100)
+            // Titel
+            textViewTitle.text = note.title.ifEmpty { 
+                itemView.context.getString(R.string.untitled) 
+            }
             textViewTimestamp.text = note.updatedAt.toReadableTime()
+            
+            // v1.4.0: Typ-spezifische Anzeige
+            when (note.noteType) {
+                NoteType.TEXT -> {
+                    ivNoteTypeIcon.setImageResource(R.drawable.ic_note_24)
+                    textViewContent.text = note.content.truncate(100)
+                    textViewContent.visibility = View.VISIBLE
+                    textViewChecklistPreview.visibility = View.GONE
+                }
+                NoteType.CHECKLIST -> {
+                    ivNoteTypeIcon.setImageResource(R.drawable.ic_checklist_24)
+                    textViewContent.visibility = View.GONE
+                    textViewChecklistPreview.visibility = View.VISIBLE
+                    
+                    // Fortschritt berechnen
+                    val items = note.checklistItems ?: emptyList()
+                    val checkedCount = items.count { it.isChecked }
+                    val totalCount = items.size
+                    
+                    textViewChecklistPreview.text = if (totalCount > 0) {
+                        itemView.context.getString(R.string.checklist_progress, checkedCount, totalCount)
+                    } else {
+                        itemView.context.getString(R.string.empty_checklist)
+                    }
+                }
+            }
             
             // Sync Icon nur zeigen wenn Sync konfiguriert ist
             val prefs = itemView.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)

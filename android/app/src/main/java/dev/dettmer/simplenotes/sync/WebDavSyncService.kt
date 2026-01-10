@@ -41,6 +41,7 @@ class WebDavSyncService(private val context: Context) {
         private const val SOCKET_TIMEOUT_MS = 2000
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
+        private const val CONTENT_PREVIEW_LENGTH = 50
         
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
@@ -858,8 +859,31 @@ class WebDavSyncService(private val context: Context) {
         }
         
         // Sanitize Filename (Task #1.2.0-12)
-        val filename = sanitizeFilename(note.title) + ".md"
-        val noteUrl = "$mdUrl/$filename"
+        val baseFilename = sanitizeFilename(note.title)
+        var filename = "$baseFilename.md"
+        var noteUrl = "$mdUrl/$filename"
+        
+        // Prüfe ob Datei bereits existiert und von anderer Note stammt
+        try {
+            if (sardine.exists(noteUrl)) {
+                // Lese existierende Datei und prüfe ID im YAML-Header
+                val existingContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
+                val existingIdMatch = Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
+                    .find(existingContent)
+                val existingId = existingIdMatch?.groupValues?.get(1)
+                
+                if (existingId != null && existingId != note.id) {
+                    // Andere Note hat gleichen Titel - verwende ID-Suffix
+                    val shortId = note.id.take(8)
+                    filename = "${baseFilename}_$shortId.md"
+                    noteUrl = "$mdUrl/$filename"
+                    Logger.d(TAG, "📝 Duplicate title, using: $filename")
+                }
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
+            // Continue with default filename
+        }
         
         // Konvertiere zu Markdown
         val mdContent = note.toMarkdown().toByteArray()
@@ -882,6 +906,29 @@ class WebDavSyncService(private val context: Context) {
             .replace(Regex("\\s+"), " ")              // Normalisiere Whitespace
             .take(MAX_FILENAME_LENGTH)                 // Max Zeichen (Reserve für .md)
             .trim('_', ' ')                            // Trim Underscores/Spaces
+    }
+    
+    /**
+     * Generiert eindeutigen Markdown-Dateinamen für eine Notiz.
+     * Bei Duplikaten wird die Note-ID als Suffix angehängt.
+     * 
+     * @param note Die Notiz
+     * @param usedFilenames Set der bereits verwendeten Dateinamen (ohne .md)
+     * @return Eindeutiger Dateiname (ohne .md Extension)
+     */
+    private fun getUniqueMarkdownFilename(note: Note, usedFilenames: MutableSet<String>): String {
+        val baseFilename = sanitizeFilename(note.title)
+        
+        return if (usedFilenames.contains(baseFilename)) {
+            // Duplikat - hänge gekürzte ID an
+            val shortId = note.id.take(8)
+            val uniqueFilename = "${baseFilename}_$shortId"
+            usedFilenames.add(uniqueFilename)
+            uniqueFilename
+        } else {
+            usedFilenames.add(baseFilename)
+            baseFilename
+        }
     }
     
     /**
@@ -927,6 +974,9 @@ class WebDavSyncService(private val context: Context) {
         val totalCount = allNotes.size
         var exportedCount = 0
         
+        // Track used filenames to handle duplicates
+        val usedFilenames = mutableSetOf<String>()
+        
         Logger.d(TAG, "📝 Found $totalCount notes to export")
         
         allNotes.forEachIndexed { index, note ->
@@ -934,8 +984,8 @@ class WebDavSyncService(private val context: Context) {
                 // Progress-Callback
                 onProgress(index + 1, totalCount)
                 
-                // Sanitize Filename
-                val filename = sanitizeFilename(note.title) + ".md"
+                // Eindeutiger Filename (mit Duplikat-Handling)
+                val filename = getUniqueMarkdownFilename(note, usedFilenames) + ".md"
                 val noteUrl = "$mdUrl/$filename"
                 
                 // Konvertiere zu Markdown
@@ -945,7 +995,7 @@ class WebDavSyncService(private val context: Context) {
                 sardine.put(noteUrl, mdContent, "text/markdown")
                 
                 exportedCount++
-                Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title}")
+                Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
                 
             } catch (e: Exception) {
                 Logger.e(TAG, "❌ Failed to export ${note.title}: ${e.message}")
@@ -1539,13 +1589,27 @@ class WebDavSyncService(private val context: Context) {
                         Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
                         continue
                     }
+                    
+                    // v1.4.0 FIX: Validierung - leere TEXT-Notizen nicht importieren wenn lokal Content existiert
+                    val localNote = storage.loadNote(mdNote.id)
+                    if (mdNote.noteType == dev.dettmer.simplenotes.models.NoteType.TEXT &&
+                        mdNote.content.isBlank() && 
+                        localNote != null && localNote.content.isNotBlank()) {
+                        Logger.w(
+                            TAG,
+                            "      ⚠️ Skipping ${resource.name}: " +
+                                "MD content empty but local has content - likely parse error!"
+                        )
+                        continue
+                    }
+                    
                     Logger.d(
                         TAG,
                         "      Parsed: id=${mdNote.id}, title=${mdNote.title}, " +
-                            "updatedAt=${Date(mdNote.updatedAt)}"
+                            "updatedAt=${Date(mdNote.updatedAt)}, " +
+                            "content=${mdNote.content.take(CONTENT_PREVIEW_LENGTH)}..."
                     )
                     
-                    val localNote = storage.loadNote(mdNote.id)
                     Logger.d(
                         TAG,
                         "      Local note: " + if (localNote == null) {

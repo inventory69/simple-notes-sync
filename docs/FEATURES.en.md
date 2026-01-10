@@ -8,8 +8,16 @@
 
 ## 📝 Note Management
 
+### Note Types
+- ✅ **Text notes** - Classic free-form notes
+- ✅ **Checklists** _(NEW in v1.4.0)_ - Task lists with tap-to-check
+  - ➕ Add items via input field
+  - ☑️ Tap to check/uncheck
+  - 📌 Long-press for drag & drop sorting
+  - 🗑️ Swipe-to-delete individual items
+  - ~~Strikethrough~~ for completed entries
+
 ### Basic Features
-- ✅ **Simple text notes** - Focus on content, no distractions
 - ✅ **Auto-save** - No manual saving needed
 - ✅ **Title + content** - Clear structure for each note
 - ✅ **Timestamps** - Creation and modification date automatically
@@ -52,9 +60,11 @@
 
 ### Markdown Export
 - ✅ **Automatic export** - Each note → `.md` file
+- ✅ **Checklists as task lists** _(NEW)_ - `- [ ]` / `- [x]` format (GitHub-compatible)
 - ✅ **Dual-format** - JSON (master) + Markdown (mirror)
 - ✅ **Filename sanitization** - Safe filenames from titles
-- ✅ **Frontmatter metadata** - YAML with ID, timestamps, tags
+- ✅ **Duplicate handling** _(NEW)_ - ID suffix for same titles
+- ✅ **Frontmatter metadata** - YAML with ID, timestamps, type
 - ✅ **WebDAV sync** - Parallel to JSON sync
 - ✅ **Optional** - Toggle in settings
 - ✅ **Initial export** - All existing notes when activated
@@ -81,16 +91,16 @@
 
 ### Auto-Sync
 - ✅ **Interval selection** - 15, 30 or 60 minutes
-- ✅ **WiFi binding** - Only in configured home WiFi
+- ✅ **WiFi trigger** - Sync on WiFi connection _(no SSID restriction)_
 - ✅ **Battery-friendly** - ~0.2-0.8% per day
-- ✅ **Smart server check** - No errors on foreign networks
+- ✅ **Smart server check** - Sync only when server is reachable
 - ✅ **WorkManager** - Reliable background execution
 - ✅ **Battery optimization compatible** - Works even with Doze mode
 
 ### Sync Triggers (6 total)
 1. ✅ **Periodic sync** - Automatically after interval
 2. ✅ **App-start sync** - When opening the app
-3. ✅ **WiFi-connect sync** - When home WiFi connects
+3. ✅ **WiFi-connect sync** - On any WiFi connection
 4. ✅ **Manual sync** - Button in settings
 5. ✅ **Pull-to-refresh** - Swipe gesture in notes list
 6. ✅ **Settings-save sync** - After server configuration
@@ -109,7 +119,6 @@
 - ✅ **HTTP/HTTPS** - HTTP only local, HTTPS for external
 - ✅ **Username/password** - Basic authentication
 - ✅ **Connection test** - Test in settings
-- ✅ **Gateway SSID** - WiFi name for auto-sync
 - ✅ **Server URL normalization** - Automatic `/notes/` and `/notes-md/` _(NEW in v1.2.1)_
 - ✅ **Flexible URL input** - Both variants work: `http://server/` and `http://server/notes/`
 
@@ -142,7 +151,7 @@
 ### Battery Efficiency
 - ✅ **Optimized sync intervals** - 15/30/60 min
 - ✅ **WiFi-only** - No mobile data sync
-- ✅ **Smart server check** - Only in home WiFi
+- ✅ **Smart server check** - Sync only when server is reachable
 - ✅ **WorkManager** - System-optimized execution
 - ✅ **Doze mode compatible** - Sync runs even in standby
 - ✅ **Measured consumption:**
