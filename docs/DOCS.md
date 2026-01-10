@@ -78,7 +78,7 @@ val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
 
 ### Network Detection
 
-Statt SSID-basierter Erkennung (Android 13+ Privacy-Probleme) verwenden wir **Gateway IP Comparison**:
+Wir verwenden **Gateway IP Comparison** um zu prüfen, ob der Server erreichbar ist:
 
 ```kotlin
 fun isInHomeNetwork(): Boolean {
@@ -127,7 +127,7 @@ Die App verwendet **4 verschiedene Sync-Trigger** mit unterschiedlichen Anwendun
 | **1. Manueller Sync** | `MainActivity.kt` | `triggerManualSync()` | User klickt auf Sync-Button im Menü | ✅ Ja |
 | **2. Auto-Sync (onResume)** | `MainActivity.kt` | `triggerAutoSync()` | App wird geöffnet/fortgesetzt | ✅ Ja |
 | **3. Hintergrund-Sync (Periodic)** | `SyncWorker.kt` | `doWork()` | Alle 15/30/60 Minuten (konfigurierbar) | ✅ Ja |
-| **4. WiFi-Connect Sync** | `NetworkMonitor.kt` → `SyncWorker.kt` | `triggerWifiConnectSync()` | WiFi an/SSID-Wechsel | ✅ Ja |
+| **4. WiFi-Connect Sync** | `NetworkMonitor.kt` → `SyncWorker.kt` | `triggerWifiConnectSync()` | WiFi verbunden | ✅ Ja |
 
 ### Server-Erreichbarkeits-Check (Pre-Check)
 
@@ -168,7 +168,7 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
 | Manueller Sync | Toast: "Server nicht erreichbar" | Toast: "✅ Gesynct: X Notizen" | Keins |
 | Auto-Sync (onResume) | Silent abort (kein Toast) | Toast: "✅ Gesynct: X Notizen" | Max. 1x/Min |
 | Hintergrund-Sync | Silent abort (kein Toast) | Silent (LocalBroadcast only) | 15/30/60 Min |
-| WiFi-Connect Sync | Silent abort (kein Toast) | Silent (LocalBroadcast only) | SSID-basiert |
+| WiFi-Connect Sync | Silent abort (kein Toast) | Silent (LocalBroadcast only) | WiFi-basiert |
 
 ---
 
@@ -349,7 +349,7 @@ Die App benötigt **minimale Permissions**:
 ```
 
 **Keine Location Permissions!**  
-Frühere Versionen benötigten `ACCESS_FINE_LOCATION` für SSID-Erkennung. Jetzt verwenden wir Gateway IP Comparison.
+Wir verwenden Gateway IP Comparison statt SSID-Erkennung. Keine Standortberechtigung nötig.
 
 ---
 

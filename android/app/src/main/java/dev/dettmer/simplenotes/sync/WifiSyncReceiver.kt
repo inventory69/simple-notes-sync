@@ -5,12 +5,17 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.wifi.WifiManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.dettmer.simplenotes.utils.Constants
 import java.util.concurrent.TimeUnit
 
+/**
+ * WiFi-Sync BroadcastReceiver
+ * 
+ * Triggert Sync wenn WiFi verbunden wird (jedes WiFi, keine SSID-Prüfung mehr)
+ * Die eigentliche Server-Erreichbarkeitsprüfung erfolgt im SyncWorker.
+ */
 class WifiSyncReceiver : BroadcastReceiver() {
     
     override fun onReceive(context: Context, intent: Intent) {
@@ -22,34 +27,24 @@ class WifiSyncReceiver : BroadcastReceiver() {
             return
         }
         
-        // Check if connected to home WiFi
-        if (isConnectedToHomeWifi(context)) {
+        // Check if connected to any WiFi (SSID-Prüfung entfernt in v1.4.0)
+        if (isConnectedToWifi(context)) {
             scheduleSyncWork(context)
         }
     }
     
-    @Suppress("ReturnCount") // Early returns for WiFi validation checks
-    private fun isConnectedToHomeWifi(context: Context): Boolean {
-        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val homeSSID = prefs.getString(Constants.KEY_HOME_SSID, null) ?: return false
-        
+    /**
+     * Prüft ob ein WiFi-Netzwerk verbunden ist (beliebiges WiFi)
+     * Die Server-Erreichbarkeitsprüfung erfolgt erst im SyncWorker.
+     */
+    private fun isConnectedToWifi(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) 
             as ConnectivityManager
         
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         
-        if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-            return false
-        }
-        
-        // Get current SSID
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) 
-            as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        val currentSSID = wifiInfo.ssid.replace("\"", "")
-        
-        return currentSSID == homeSSID
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
     
     private fun scheduleSyncWork(context: Context) {

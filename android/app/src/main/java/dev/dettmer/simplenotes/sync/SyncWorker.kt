@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.sync
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -20,6 +21,21 @@ class SyncWorker(
     companion object {
         private const val TAG = "SyncWorker"
         const val ACTION_SYNC_COMPLETED = "dev.dettmer.simplenotes.SYNC_COMPLETED"
+    }
+    
+    /**
+     * Prüft ob die App im Vordergrund ist.
+     * Wenn ja, brauchen wir keine Benachrichtigung - die UI zeigt die Änderungen direkt.
+     */
+    private fun isAppInForeground(): Boolean {
+        val activityManager = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appProcesses = activityManager.runningAppProcesses ?: return false
+        val packageName = applicationContext.packageName
+        
+        return appProcesses.any { process ->
+            process.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+            process.processName == packageName
+        }
     }
     
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -131,14 +147,20 @@ class SyncWorker(
                 Logger.i(TAG, "✅ Sync successful: ${result.syncedCount} notes")
                 
                 // Nur Notification zeigen wenn tatsächlich etwas gesynct wurde
+                // UND die App nicht im Vordergrund ist (sonst sieht User die Änderungen direkt)
                 if (result.syncedCount > 0) {
-                    if (BuildConfig.DEBUG) {
-                        Logger.d(TAG, "    Showing success notification...")
+                    val appInForeground = isAppInForeground()
+                    if (appInForeground) {
+                        Logger.d(TAG, "ℹ️ App in foreground - skipping notification (UI shows changes)")
+                    } else {
+                        if (BuildConfig.DEBUG) {
+                            Logger.d(TAG, "    Showing success notification...")
+                        }
+                        NotificationHelper.showSyncSuccess(
+                            applicationContext,
+                            result.syncedCount
+                        )
                     }
-                    NotificationHelper.showSyncSuccess(
-                        applicationContext,
-                        result.syncedCount
-                    )
                 } else {
                     Logger.d(TAG, "ℹ️ No changes to sync - no notification")
                 }

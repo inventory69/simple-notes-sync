@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.4.0: Checklist Item Layout für Editor -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="4dp"
+    android:paddingHorizontal="8dp"
+    android:minHeight="48dp">
+
+    <!-- Drag Handle -->
+    <ImageView
+        android:id="@+id/ivDragHandle"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/ic_drag_handle_24"
+        android:contentDescription="@string/reorder_item"
+        android:importantForAccessibility="yes" />
+
+    <!-- Checkbox -->
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/cbItem"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="0dp"
+        android:minHeight="0dp" />
+
+    <!-- Text Input (ohne Box, nur transparent) -->
+    <EditText
+        android:id="@+id/etItemText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@null"
+        android:hint="@string/item_placeholder"
+        android:inputType="text"
+        android:imeOptions="actionNext"
+        android:maxLines="3"
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+        tools:text="Milch kaufen" />
+
+    <!-- Delete Button -->
+    <ImageButton
+        android:id="@+id/btnDeleteItem"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_delete_24"
+        android:contentDescription="@string/delete_item"
+        app:tint="?attr/colorOnSurfaceVariant" />
+
+</LinearLayout>
