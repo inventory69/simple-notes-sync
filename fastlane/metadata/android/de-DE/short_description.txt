@@ -1,1 +1,1 @@
-Einfache Notizen-App mit WebDAV-Synchronisation
+Notizen & Checklisten mit WebDAV-Sync zu deinem eigenen Server

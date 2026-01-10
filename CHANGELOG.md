@@ -6,6 +6,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.0] - 2026-01-10
+
+### 🎉 New Feature: Checklists
+
+- **✅ Checklist Notes**
+  - New note type: Checklists with tap-to-toggle items
+  - Add items via dedicated input field with "+" button
+  - Drag & drop reordering (long-press to activate)
+  - Swipe-to-delete items
+  - Visual distinction: Checked items get strikethrough styling
+  - Type selector when creating new notes (Text or Checklist)
+
+- **📝 Markdown Integration**
+  - Checklists export as GitHub-style task lists (`- [ ]` / `- [x]`)
+  - Compatible with Obsidian, Notion, and other Markdown editors
+  - Full round-trip: Edit in Obsidian → Sync back to app
+  - YAML frontmatter includes `type: checklist` for identification
+
+### Fixed
+
+- **� Markdown Parsing Robustness**
+  - Fixed content extraction after title (was returning empty for some formats)
+  - Now handles single newline after title (was requiring double newline)
+  - Protection: Skips import if parsed content is empty but local has content
+
+- **📂 Duplicate Filename Handling**
+  - Notes with identical titles now get unique Markdown filenames
+  - Format: `title_shortid.md` (e.g., `test_71540ca9.md`)
+  - Prevents data loss from filename collisions
+
+- **🔔 Notification UX**
+  - No sync notifications when app is in foreground
+  - User sees changes directly in UI - no redundant notification
+  - Background syncs still show notifications as expected
+
+### Privacy Improvements
+
+- **🔒 WiFi Permissions Removed**
+  - Removed `ACCESS_WIFI_STATE` permission
+  - Removed `CHANGE_WIFI_STATE` permission
+  - WiFi binding now works via IP detection instead of SSID matching
+  - Cleaned up all SSID-related code from codebase and documentation
+
+### Technical Improvements
+
+- **📦 New Data Model**
+  - `NoteType` enum: `TEXT`, `CHECKLIST`
+  - `ChecklistItem` data class with id, text, isChecked, order
+  - `Note.kt` extended with `noteType` and `checklistItems` fields
+
+- **🔄 Sync Protocol v1.4.0**
+  - JSON format updated to include checklist fields
+  - Full backward compatibility with v1.3.x notes
+  - Robust JSON parsing with manual field extraction
+
+---
+
 ## [1.3.2] - 2026-01-10
 
 ### Changed

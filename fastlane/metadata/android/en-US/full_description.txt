@@ -2,16 +2,15 @@ Simple Notes Sync is a minimalist note-taking app with WebDAV synchronization.
 
 KEY FEATURES:
 
-• Create and edit simple notes
+• Create text notes and checklists
+• Checklists with tap-to-check, drag & drop, swipe-to-delete
 • WebDAV synchronization with your own server
 • Multi-device sync (phone, tablet, desktop)
 • Markdown export for Obsidian/desktop editors
+• Checklists export as GitHub-style task lists
 • Automatic synchronization on home WiFi
 • Configurable sync interval (15/30/60 minutes)
-• Transparent battery usage display
 • Material Design 3 with Dynamic Colors (Android 12+)
-• Swipe-to-delete with server sync
-• Server backup & restore (Merge/Replace/Overwrite)
 • Fully usable offline
 • No ads, no trackers
 

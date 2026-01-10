@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_create_text_note"
+        android:icon="@drawable/ic_note_24"
+        android:title="@string/create_text_note" />
+    <item
+        android:id="@+id/action_create_checklist"
+        android:icon="@drawable/ic_checklist_24"
+        android:title="@string/create_checklist" />
+</menu>

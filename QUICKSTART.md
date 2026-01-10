@@ -74,7 +74,6 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
    | **WebDAV Server URL** | `http://DEINE-SERVER-IP:8080/` |
    | **Benutzername** | `noteuser` |
    | **Passwort** | (dein Passwort aus `.env`) |
-   | **Gateway SSID** | Name deines WLAN-Netzwerks |
 
    > **💡 Hinweis:** Gib nur die Base-URL ein (ohne `/notes`). Die App erstellt automatisch `/notes/` für JSON-Dateien und `/notes-md/` für Markdown-Export.
 
@@ -158,9 +157,8 @@ Für zuverlässigen Auto-Sync:
    # Sollte "Up" zeigen
    ```
 
-2. **Gleiche WLAN?**
+2. **Gleiches Netzwerk?**
    - Smartphone und Server müssen im selben Netzwerk sein
-   - Prüfe SSID in App-Einstellungen
 
 3. **IP-Adresse korrekt?**
    ```bash
@@ -193,9 +191,9 @@ Für zuverlässigen Auto-Sync:
 2. **Akku-Optimierung deaktiviert?**
    - Siehe [Akku-Optimierung](#-akku-optimierung-deaktivieren)
 
-3. **Im richtigen WLAN?**
-   - Sync funktioniert nur wenn SSID = Gateway SSID
-   - Prüfe aktuelle SSID in Android-Einstellungen
+3. **Mit WiFi verbunden?**
+   - Auto-Sync triggert bei jeder WiFi-Verbindung
+   - Prüfe, ob du mit einem WLAN verbunden bist
 
 4. **Manuell testen:**
    - ⚙️ Einstellungen → "Jetzt synchronisieren"
