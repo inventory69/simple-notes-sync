@@ -371,13 +371,12 @@ class SettingsActivity : AppCompatActivity() {
      * Setup about section with version info and clickable cards
      */
     private fun setupAboutSection() {
-        // Display app version with build date
+        // Display app version
         try {
             val versionName = BuildConfig.VERSION_NAME
             val versionCode = BuildConfig.VERSION_CODE
-            val buildDate = BuildConfig.BUILD_DATE
             
-            textViewAppVersion.text = "Version $versionName ($versionCode)\nErstellt am: $buildDate"
+            textViewAppVersion.text = "Version $versionName ($versionCode)"
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to load version info", e)
             textViewAppVersion.text = "Version nicht verfügbar"
