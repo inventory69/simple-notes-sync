@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.1] - 2026-01-11
+
+### Fixed
+
+- **🗑️ Löschen älterer Notizen (v1.2.0 Kompatibilität)**
+  - Notizen aus App-Version v1.2.0 oder früher werden jetzt korrekt vom Server gelöscht
+  - Behebt Problem bei Multi-Device-Nutzung mit älteren Notizen
+
+- **🔄 Checklisten-Sync Abwärtskompatibilität**
+  - Checklisten werden jetzt auch als Text-Fallback im `content`-Feld gespeichert
+  - Ältere App-Versionen (v1.3.x) zeigen Checklisten als lesbaren Text
+  - Format: GitHub-Style Task-Listen (`[ ] Item` / `[x] Item`)
+  - Recovery-Mode: Falls Checklisten-Items verloren gehen, werden sie aus dem Content wiederhergestellt
+
+### Improved
+
+- **📝 Checklisten Auto-Zeilenumbruch**
+  - Lange Checklisten-Texte werden jetzt automatisch umgebrochen
+  - Keine Begrenzung auf 3 Zeilen mehr
+  - Enter-Taste erstellt weiterhin ein neues Item
+
+### Looking Ahead
+
+> 🚀 **v1.5.0** wird das nächste größere Release. Wir sammeln Ideen und Feedback!  
+> Feature-Requests gerne als [GitHub Issue](https://github.com/inventory69/simple-notes-sync/issues) einreichen.
+
+---
+
 ## [1.4.0] - 2026-01-10
 
 ### 🎉 New Feature: Checklists
