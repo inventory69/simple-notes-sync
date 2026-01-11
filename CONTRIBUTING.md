@@ -14,7 +14,7 @@ Danke, dass du zu Simple Notes Sync beitragen möchtest!
 
 1. **Fork & Clone**
    ```bash
-   git clone https://github.com/DEIN-USERNAME/simple-notes-sync.git
+   git clone https://github.com/inventory69/simple-notes-sync.git
    cd simple-notes-sync
    ```
 
@@ -139,7 +139,7 @@ Thanks for wanting to contribute to Simple Notes Sync!
 
 1. **Fork & Clone**
    ```bash
-   git clone https://github.com/YOUR-USERNAME/simple-notes-sync.git
+   git clone https://github.com/inventory69/simple-notes-sync.git
    cd simple-notes-sync
    ```
 
