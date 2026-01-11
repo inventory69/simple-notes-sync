@@ -131,6 +131,9 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
         setupFab()
         
+        // v1.4.1: Migrate checklists for backwards compatibility
+        migrateChecklistsForBackwardsCompat()
+        
         loadNotes()
         
         // 🔄 v1.3.1: Observe sync state for UI updates
@@ -728,6 +731,54 @@ class MainActivity : AppCompatActivity() {
             // Restore was successful, reload notes
             loadNotes()
         }
+    }
+    
+    /**
+     * v1.4.1: Migriert bestehende Checklisten für Abwärtskompatibilität.
+     * 
+     * Problem: v1.4.0 Checklisten haben leeren "content", was auf älteren
+     * App-Versionen (v1.3.x) als leere Notiz angezeigt wird.
+     * 
+     * Lösung: Alle Checklisten ohne Fallback-Content als PENDING markieren,
+     * damit sie beim nächsten Sync mit Fallback-Content hochgeladen werden.
+     * 
+     * TODO: Diese Migration kann entfernt werden, sobald v1.4.0 nicht mehr
+     * im Umlauf ist (ca. 6 Monate nach v1.4.1 Release, also ~Juli 2026).
+     * Tracking: https://github.com/inventory69/simple-notes-sync/issues/XXX
+     */
+    private fun migrateChecklistsForBackwardsCompat() {
+        val migrationKey = "v1.4.1_checklist_migration_done"
+        
+        // Nur einmal ausführen
+        if (prefs.getBoolean(migrationKey, false)) {
+            return
+        }
+        
+        val allNotes = storage.loadAllNotes()
+        val checklistsToMigrate = allNotes.filter { note ->
+            note.noteType == NoteType.CHECKLIST && 
+            note.content.isBlank() &&
+            note.checklistItems?.isNotEmpty() == true
+        }
+        
+        if (checklistsToMigrate.isNotEmpty()) {
+            Logger.d(TAG, "🔄 v1.4.1 Migration: Found ${checklistsToMigrate.size} checklists without fallback content")
+            
+            for (note in checklistsToMigrate) {
+                // Als PENDING markieren, damit beim nächsten Sync der Fallback-Content 
+                // generiert und hochgeladen wird
+                val updatedNote = note.copy(
+                    syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING
+                )
+                storage.saveNote(updatedNote)
+                Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
+            }
+            
+            Logger.d(TAG, "✅ v1.4.1 Migration: ${checklistsToMigrate.size} checklists marked for re-sync")
+        }
+        
+        // Migration als erledigt markieren
+        prefs.edit().putBoolean(migrationKey, true).apply()
     }
     
     override fun onRequestPermissionsResult(

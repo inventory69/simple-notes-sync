@@ -31,6 +31,7 @@
         android:minHeight="0dp" />
 
     <!-- Text Input (ohne Box, nur transparent) -->
+    <!-- v1.4.1: Auto-Zeilenumbruch für lange Texte -->
     <EditText
         android:id="@+id/etItemText"
         android:layout_width="0dp"
@@ -38,9 +39,7 @@
         android:layout_weight="1"
         android:background="@null"
         android:hint="@string/item_placeholder"
-        android:inputType="text"
-        android:imeOptions="actionNext"
-        android:maxLines="3"
+        android:inputType="textMultiLine|textCapSentences"
         android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
         tools:text="Milch kaufen" />
 

@@ -147,7 +147,21 @@ Builds:
     scandelete:
       - android/gradle/wrapper
 
+  - versionName: 1.4.1
+    versionCode: 12
+    commit: v1.4.1
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-java-alternatives -a
+    gradle:
+      - fdroid
+    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
+    scandelete:
+      - android/gradle/wrapper
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.4.0
-CurrentVersionCode: 11
+CurrentVersion: 1.4.1
+CurrentVersionCode: 12
