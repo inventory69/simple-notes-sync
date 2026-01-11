@@ -1764,6 +1764,9 @@ class WebDavSyncService(private val context: Context) {
      * Deletes a note from the server (JSON + Markdown)
      * Does NOT delete from local storage!
      * 
+     * v1.4.1: Now supports v1.2.0 compatibility mode - also checks ROOT folder
+     * for notes that were created before the /notes/ directory structure.
+     * 
      * @param noteId The ID of the note to delete
      * @return true if at least one file was deleted, false otherwise
      */
@@ -1775,12 +1778,21 @@ class WebDavSyncService(private val context: Context) {
             var deletedJson = false
             var deletedMd = false
             
-            // Delete JSON
+            // v1.4.1: Try to delete JSON from /notes/ first (standard path)
             val jsonUrl = getNotesUrl(serverUrl) + "$noteId.json"
             if (sardine.exists(jsonUrl)) {
                 sardine.delete(jsonUrl)
                 deletedJson = true
-                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json")
+                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /notes/)")
+            } else {
+                // v1.4.1: Fallback - check ROOT folder for v1.2.0 compatibility
+                val rootJsonUrl = serverUrl.trimEnd('/') + "/$noteId.json"
+                Logger.d(TAG, "🔍 JSON not in /notes/, checking ROOT: $rootJsonUrl")
+                if (sardine.exists(rootJsonUrl)) {
+                    sardine.delete(rootJsonUrl)
+                    deletedJson = true
+                    Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from ROOT - v1.2.0 compat)")
+                }
             }
             
             // Delete Markdown (v1.3.0: YAML-scan based approach)

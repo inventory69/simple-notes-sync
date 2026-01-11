@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 11  // 🚀 v1.4.0: Checklists Feature
-        versionName = "1.4.0"  // 🚀 v1.4.0: Checklists, Multi-Device Sync Fixes, UX Improvements
+        versionCode = 12  // 🔧 v1.4.1: Bugfixes (Root-Delete, Checklist Compat)
+        versionName = "1.4.1"  // 🔧 v1.4.1: Root-Folder Delete Fix, Checklisten-Sync Abwärtskompatibilität
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

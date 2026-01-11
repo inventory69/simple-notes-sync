@@ -3,12 +3,10 @@ package dev.dettmer.simplenotes.adapters
 import android.graphics.Paint
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -55,32 +53,30 @@ class ChecklistEditorAdapter(
             editText.setText(item.text)
             updateStrikethrough(item.isChecked)
             
-            // TextWatcher für Änderungen
+            // v1.4.1: TextWatcher für Änderungen + Enter-Erkennung für neues Item
             textWatcher = object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
                     val pos = bindingAdapterPosition
-                    if (pos != RecyclerView.NO_POSITION) {
-                        onItemTextChanged(pos, s?.toString() ?: "")
+                    if (pos == RecyclerView.NO_POSITION) return
+                    
+                    val text = s?.toString() ?: ""
+                    
+                    // Prüfe ob ein Newline eingegeben wurde
+                    if (text.contains("\n")) {
+                        // Newline entfernen und neues Item erstellen
+                        val cleanText = text.replace("\n", "")
+                        editText.setText(cleanText)
+                        editText.setSelection(cleanText.length)
+                        onItemTextChanged(pos, cleanText)
+                        onAddNewItem(pos + 1)
+                    } else {
+                        onItemTextChanged(pos, text)
                     }
                 }
             }
             editText.addTextChangedListener(textWatcher)
-            
-            // Enter-Taste = neues Item
-            editText.setOnEditorActionListener { _, actionId, event ->
-                if (actionId == EditorInfo.IME_ACTION_NEXT || 
-                    (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)) {
-                    val pos = bindingAdapterPosition
-                    if (pos != RecyclerView.NO_POSITION) {
-                        onAddNewItem(pos + 1)
-                    }
-                    true
-                } else {
-                    false
-                }
-            }
             
             // Delete Button
             deleteButton.setOnClickListener {

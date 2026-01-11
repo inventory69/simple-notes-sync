@@ -20,13 +20,42 @@ data class Note(
     val checklistItems: List<ChecklistItem>? = null
 ) {
     /**
-     * Serialisiert Note zu JSON (v1.4.0: Nutzt Gson für komplexe Strukturen)
+     * Serialisiert Note zu JSON
+     * v1.4.0: Nutzt Gson für komplexe Strukturen
+     * v1.4.1: Für Checklisten wird ein Fallback-Content generiert, damit ältere
+     *         App-Versionen (v1.3.x) die Notiz als Text anzeigen können.
      */
     fun toJson(): String {
         val gson = com.google.gson.GsonBuilder()
             .setPrettyPrinting()
             .create()
-        return gson.toJson(this)
+        
+        // v1.4.1: Für Checklisten den Fallback-Content generieren
+        val noteToSerialize = if (noteType == NoteType.CHECKLIST && checklistItems != null) {
+            this.copy(content = generateChecklistFallbackContent())
+        } else {
+            this
+        }
+        
+        return gson.toJson(noteToSerialize)
+    }
+    
+    /**
+     * v1.4.1: Generiert einen lesbaren Text-Fallback aus Checklist-Items.
+     * Format: GitHub-Style Task-Listen (kompatibel mit Markdown)
+     * 
+     * Beispiel:
+     * [ ] Milch kaufen
+     * [x] Brot gekauft
+     * [ ] Eier
+     * 
+     * Wird von älteren App-Versionen (v1.3.x) als normaler Text angezeigt.
+     */
+    private fun generateChecklistFallbackContent(): String {
+        return checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
+            val checkbox = if (item.isChecked) "[x]" else "[ ]"
+            "$checkbox ${item.text}"
+        } ?: ""
     }
     
     /**
@@ -88,7 +117,7 @@ type: ${noteType.name.lowercase()}
                 
                 // Checklist-Items parsen (kann null sein)
                 val checklistItemsType = object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
-                val checklistItems = if (jsonObject.has("checklistItems") &&
+                var checklistItems: List<ChecklistItem>? = if (jsonObject.has("checklistItems") &&
                     !jsonObject.get("checklistItems").isJsonNull
                 ) {
                     gson.fromJson<List<ChecklistItem>>(
@@ -97,6 +126,19 @@ type: ${noteType.name.lowercase()}
                     )
                 } else {
                     null
+                }
+                
+                // v1.4.1: Recovery-Mode - Falls Checkliste aber keine Items, 
+                // versuche Content als Fallback zu parsen
+                if (noteType == NoteType.CHECKLIST && 
+                    (checklistItems == null || checklistItems.isEmpty()) &&
+                    rawNote.content.isNotBlank()) {
+                    
+                    val recoveredItems = parseChecklistFromContent(rawNote.content)
+                    if (recoveredItems.isNotEmpty()) {
+                        Logger.d(TAG, "🔄 Recovered ${recoveredItems.size} checklist items from content fallback")
+                        checklistItems = recoveredItems
+                    }
                 }
                 
                 // Note mit korrekten Werten erstellen
@@ -129,6 +171,34 @@ type: ${noteType.name.lowercase()}
             val deviceId: String = "",
             val syncStatus: SyncStatus? = null
         )
+        
+        /**
+         * v1.4.1: Parst GitHub-Style Checklisten aus Text (Recovery-Mode).
+         * 
+         * Unterstützte Formate:
+         * - [ ] Unchecked item
+         * - [x] Checked item
+         * - [X] Checked item (case insensitive)
+         * 
+         * Wird verwendet, wenn eine v1.4.0 Checkliste von einer älteren
+         * App-Version (v1.3.x) bearbeitet wurde und die checklistItems verloren gingen.
+         * 
+         * @param content Der Text-Content der Notiz
+         * @return Liste von ChecklistItems oder leere Liste
+         */
+        private fun parseChecklistFromContent(content: String): List<ChecklistItem> {
+            val pattern = Regex("""^\s*\[([ xX])\]\s*(.+)$""", RegexOption.MULTILINE)
+            return pattern.findAll(content).mapIndexed { index, match ->
+                val checked = match.groupValues[1].lowercase() == "x"
+                val text = match.groupValues[2].trim()
+                ChecklistItem(
+                    id = UUID.randomUUID().toString(),
+                    text = text,
+                    isChecked = checked,
+                    order = index
+                )
+            }.toList()
+        }
         
         /**
          * Parst Markdown zurück zu Note-Objekt (Task #1.2.0-09)
