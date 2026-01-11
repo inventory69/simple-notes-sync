@@ -1,0 +1,4 @@
+• Bugfix: Löschen von Notizen aus älteren App-Versionen (v1.2.0)
+• Bugfix: Checklisten-Sync mit älteren App-Versionen (v1.3.x)
+• Checklisten werden jetzt auch als Text-Fallback gespeichert
+• Neu: Checklisten-Texte werden automatisch umgebrochen
