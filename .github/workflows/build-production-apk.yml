@@ -116,26 +116,26 @@ jobs:
           prerelease: false
           generate_release_notes: false
           body: |
+            ## 📋 Changelog / Release Notes
+            
+            ${{ env.CHANGELOG_EN }}
+            
+            <details>
+            <summary>🇩🇪 German Version</summary>
+            
+            ${{ env.CHANGELOG_DE }}
+            
+            </details>
+
+            ---
+
             ## 📦 Downloads
             
             | Variante | Datei | Info |
             |----------|-------|------|
             | **🏆 Empfohlen** | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard.apk` | Standard-Version (funktioniert auf allen Geraeten) |
             | F-Droid | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk` | Fuer F-Droid Store |
-            
-            ---
-            
-            ## 📋 Changelog / Release Notes
-            
-            ${{ env.CHANGELOG_DE }}
-            
-            <details>
-            <summary>🌍 English Version</summary>
-            
-            ${{ env.CHANGELOG_EN }}
-            
-            </details>
-            
+                        
             ---
             
             ## 📊 Build-Info

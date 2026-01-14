@@ -172,7 +172,7 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
 
 ---
 
-## �🔋 Akku-Optimierung
+## 🔋 Akku-Optimierung
 
 ### Verbrauchsanalyse
 

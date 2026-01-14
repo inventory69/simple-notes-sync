@@ -77,6 +77,10 @@ docker compose up -d
 | **[FEATURES.en.md](docs/FEATURES.en.md)** | Complete feature list |
 | **[BACKUP.en.md](docs/BACKUP.en.md)** | Backup & restore guide |
 | **[DESKTOP.en.md](docs/DESKTOP.en.md)** | Desktop integration (Markdown) |
+| **[DOCS.en.md](docs/DOCS.en.md)** | Technical details & troubleshooting |
+| **[CHANGELOG.md](CHANGELOG.md)** | Version history |
+| **[UPCOMING.en.md](docs/UPCOMING.en.md)** | Upcoming features 🚀 |
+
 ---
 
 ## 🛠️ Development
@@ -102,4 +106,4 @@ MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**v1.4.0** · Built with ❤️ using Kotlin + Material Design 3
+**v1.4.1** · Built with ❤️ using Kotlin + Material Design 3

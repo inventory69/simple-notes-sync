@@ -79,6 +79,7 @@ docker compose up -d
 | **[DESKTOP.md](docs/DESKTOP.md)** | Desktop-Integration (Markdown) |
 | **[DOCS.md](docs/DOCS.md)** | Technische Details & Troubleshooting |
 | **[CHANGELOG.md](CHANGELOG.md)** | Versionshistorie |
+| **[UPCOMING.md](docs/UPCOMING.md)** | Geplante Features 🚀 |
 
 ---
 
@@ -105,4 +106,4 @@ MIT License - siehe [LICENSE](LICENSE)
 
 ---
 
-**v1.4.0** · Built with ❤️ using Kotlin + Material Design 3
+**v1.4.1** · Built with ❤️ using Kotlin + Material Design 3

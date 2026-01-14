@@ -1,4 +1,4 @@
-name: 💡 Feature Request / Feature-Wunsch
+name: "💡 Feature Request / Feature-Wunsch"
 description: Schlage eine neue Funktion vor / Suggest a new feature
 title: "[FEATURE] "
 labels: ["enhancement"]
@@ -11,7 +11,7 @@ body:
   - type: textarea
     id: feature-description
     attributes:
-      label: 💡 Feature-Beschreibung / Feature Description
+      label: "💡 Feature-Beschreibung / Feature Description"
       description: Was möchtest du hinzugefügt haben? / What would you like to be added?
       placeholder: "z.B. Notizen sollten Markdown-Formatierung unterstützen / e.g. Notes should support markdown formatting"
     validations:
@@ -20,7 +20,7 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: 🎯 Problem / Motivation
+      label: "🎯 Problem / Motivation"
       description: Welches Problem würde dieses Feature lösen? / What problem would this feature solve?
       placeholder: "z.B. Ich möchte Code-Snippets und Listen in meinen Notizen formatieren / e.g. I want to format code snippets and lists in my notes"
     validations:
@@ -29,7 +29,7 @@ body:
   - type: textarea
     id: solution
     attributes:
-      label: 📝 Vorgeschlagene Lösung / Proposed Solution
+      label: "📝 Vorgeschlagene Lösung / Proposed Solution"
       description: Wie könnte das Feature funktionieren? / How could the feature work?
       placeholder: "z.B. Markdown-Editor mit Live-Preview / e.g. Markdown editor with live preview"
     validations:
@@ -38,7 +38,7 @@ body:
   - type: textarea
     id: alternatives
     attributes:
-      label: 🔄 Alternativen / Alternatives
+      label: "🔄 Alternativen / Alternatives"
       description: Hast du andere Lösungsansätze in Betracht gezogen? / Have you considered other solutions?
     validations:
       required: false
@@ -46,7 +46,7 @@ body:
   - type: dropdown
     id: platform
     attributes:
-      label: 📱 Plattform / Platform
+      label: "📱 Plattform / Platform"
       description: Für welche Komponente ist das Feature? / For which component is the feature?
       options:
         - Android App
@@ -59,7 +59,7 @@ body:
   - type: dropdown
     id: priority
     attributes:
-      label: 🌟 Priorität (aus deiner Sicht) / Priority (from your perspective)
+      label: "⭐ Priorität (aus deiner Sicht) / Priority (from your perspective)"
       options:
         - Nice to have
         - Wichtig / Important
@@ -70,7 +70,7 @@ body:
   - type: checkboxes
     id: willing-to-contribute
     attributes:
-      label: 🤝 Beitragen / Contribute
+      label: "🤝 Beitragen / Contribute"
       options:
         - label: Ich würde gerne bei der Implementierung helfen / I would like to help with implementation
           required: false
@@ -78,7 +78,7 @@ body:
   - type: textarea
     id: additional
     attributes:
-      label: 🔧 Zusätzliche Informationen / Additional Context
+      label: "🔧 Zusätzliche Informationen / Additional Context"
       description: Screenshots, Mockups, Links, ähnliche Apps, etc.
     validations:
       required: false
