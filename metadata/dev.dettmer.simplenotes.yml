@@ -8,158 +8,21 @@ SourceCode: https://github.com/inventory69/simple-notes-sync
 IssueTracker: https://github.com/inventory69/simple-notes-sync/issues
 Changelog: https://github.com/inventory69/simple-notes-sync/releases
 
-AutoName: Simple Notes Sync
+AutoName: Simple Notes
 
 RepoType: git
 Repo: https://github.com/inventory69/simple-notes-sync.git
-
-AntiFeatures:
-  NonFreeNet:
-    en-US: |-
-      Allows unencrypted HTTP connections to self-hosted WebDAV servers on local networks.
-      Starting with v1.1.2, HTTP connections will be restricted to:
-      - Private IP ranges (RFC 1918: 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
-      - Localhost (127.0.0.1, ::1)
-      - .local domains (mDNS)
-      HTTPS is recommended and supported for all connections.
-    de-DE: |-
-      Erlaubt unverschlüsselte HTTP-Verbindungen zu selbst gehosteten WebDAV-Servern in lokalen Netzwerken.
-      Ab Version 1.1.2 werden HTTP-Verbindungen eingeschränkt auf:
-      - Private IP-Bereiche (RFC 1918: 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
-      - Localhost (127.0.0.1, ::1)
-      - .local-Domains (mDNS)
-      HTTPS wird empfohlen und für alle Verbindungen unterstützt.
+Binaries: https://github.com/inventory69/simple-notes-sync/releases/download/v%v/simple-notes-sync-v%v-fdroid.apk
 
 Builds:
-  - versionName: 1.1.1
-    versionCode: 3
-    commit: v1.1.1
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    srclibs:
-      - reproducible-apk-tools@v0.2.8
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.2.0
-    versionCode: 5
-    commit: v1.2.0
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    srclibs:
-      - reproducible-apk-tools@v0.2.8
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.2.1
-    versionCode: 6
-    commit: v1.2.1
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.2.2
-    versionCode: 7
-    commit: v1.2.2
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.3.0
-    versionCode: 8
-    commit: v1.3.0
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.3.1
-    versionCode: 9
-    commit: v1.3.1
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.3.2
-    versionCode: 10
-    commit: v1.3.2
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
-  - versionName: 1.4.0
-    versionCode: 11
-    commit: v1.4.0
-    subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
-    gradle:
-      - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
-
   - versionName: 1.4.1
     versionCode: 12
-    commit: v1.4.1
+    commit: 7128c25bd519861ca136e4be9b67ce280ef184bf
     subdir: android/app
-    sudo:
-      - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless
-      - update-java-alternatives -a
     gradle:
       - fdroid
-    prebuild: sed -i -e '/signingConfig/d' build.gradle.kts
-    scandelete:
-      - android/gradle/wrapper
+
+AllowedAPKSigningKeys: 42a1c613bbc673045af3dc8191bf9cb6456ee44c7dce40c7cfb566facb69f16a
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

@@ -2,4 +2,3 @@
 • Bugfix: Checklist sync with older app versions (v1.3.x)
 • Checklists are now also saved as text fallback
 • New: Checklist texts now wrap automatically
-p automatically

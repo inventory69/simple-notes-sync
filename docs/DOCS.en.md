@@ -118,7 +118,7 @@ fun isInHomeNetwork(): Boolean {
 
 ---
 
-## � Sync Trigger Overview
+## 🔄 Sync Trigger Overview
 
 The app uses **4 different sync triggers** with different use cases:
 
@@ -172,7 +172,7 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
 
 ---
 
-## �🔋 Battery Optimization
+## 🔋 Battery Optimization
 
 ### Usage Analysis
 

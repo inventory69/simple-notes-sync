@@ -1,4 +1,4 @@
-name: ❓ Question / Frage
+name: "❓ Question / Frage"
 description: Stelle eine Frage zur Nutzung / Ask a question about usage
 title: "[QUESTION] "
 labels: ["question"]
@@ -11,7 +11,7 @@ body:
   - type: textarea
     id: question
     attributes:
-      label: ❓ Frage / Question
+      label: "❓ Frage / Question"
       description: Was möchtest du wissen? / What would you like to know?
       placeholder: "z.B. Wie kann ich die Sync-URL für einen externen Server konfigurieren? / e.g. How can I configure the sync URL for an external server?"
     validations:
@@ -20,7 +20,7 @@ body:
   - type: checkboxes
     id: documentation-checked
     attributes:
-      label: 📚 Dokumentation gelesen / Documentation checked
+      label: "📚 Dokumentation gelesen / Documentation checked"
       description: Hast du bereits in der Dokumentation nachgeschaut? / Have you already checked the documentation?
       options:
         - label: Ich habe die [README](https://github.com/inventory69/simple-notes-sync/blob/main/README.md) gelesen / I have read the README
@@ -33,7 +33,7 @@ body:
   - type: textarea
     id: tried
     attributes:
-      label: 🔍 Was hast du bereits versucht? / What have you already tried?
+      label: "🔍 Was hast du bereits versucht? / What have you already tried?"
       description: Hilf uns, dir besser zu helfen / Help us help you better
       placeholder: "z.B. Ich habe versucht die Server-URL anzupassen, aber... / e.g. I tried adjusting the server URL, but..."
     validations:
@@ -42,7 +42,7 @@ body:
   - type: dropdown
     id: topic
     attributes:
-      label: � Thema / Topic
+      label: "📌 Thema / Topic"
       description: Um was geht es? / What is this about?
       options:
         - Server Setup / Server-Einrichtung
@@ -57,7 +57,7 @@ body:
   - type: textarea
     id: context
     attributes:
-      label: � Kontext / Context
+      label: "💬 Kontext / Context"
       description: Zusätzliche Informationen die hilfreich sein könnten / Additional information that might be helpful
       placeholder: |
         - Android Version: Android 13
@@ -70,7 +70,7 @@ body:
   - type: textarea
     id: additional
     attributes:
-      label: 🔧 Screenshots / Config
+      label: "🔧 Screenshots / Config"
       description: Falls hilfreich (KEINE Passwörter!) / If helpful (NO passwords!)
     validations:
       required: false

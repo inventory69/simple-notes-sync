@@ -1,4 +1,4 @@
-name: 🐛 Bug Report / Fehlerbericht
+name: "🐛 Bug Report / Fehlerbericht"
 description: Melde einen Fehler in der App / Report a bug in the app
 title: "[BUG] "
 labels: ["bug"]
@@ -13,7 +13,7 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: 🐛 Beschreibung / Description
+      label: "🐛 Beschreibung / Description"
       description: Beschreibe den Fehler kurz und präzise / Describe the bug briefly and precisely
       placeholder: "z.B. Auto-Sync funktioniert nicht mehr nach App-Update / e.g. Auto-sync stopped working after app update"
     validations:
@@ -22,9 +22,11 @@ body:
   - type: dropdown
     id: android-version
     attributes:
-      label: 📱 Android Version
+      label: "📱 Android Version"
       description: Welche Android Version verwendest du? / Which Android version are you using?
       options:
+        - Android 16
+        - Android 15
         - Android 14
         - Android 13
         - Android 12
@@ -40,7 +42,7 @@ body:
   - type: input
     id: app-version
     attributes:
-      label: 📲 App Version
+      label: "📲 App Version"
       description: Welche Version der App verwendest du? (Einstellungen → Über) / Which app version? (Settings → About)
       placeholder: "z.B. / e.g. v1.1.0"
     validations:
@@ -49,7 +51,7 @@ body:
   - type: input
     id: device
     attributes:
-      label: 📱 Gerät / Device
+      label: "📱 Gerät / Device"
       description: Welches Gerät verwendest du? / Which device are you using?
       placeholder: "z.B. Samsung Galaxy S21, Google Pixel 7, etc."
     validations:
@@ -58,7 +60,7 @@ body:
   - type: textarea
     id: steps
     attributes:
-      label: 🔄 Schritte zum Reproduzieren / Steps to Reproduce
+      label: "📋 Schritte zum Reproduzieren / Steps to Reproduce"
       description: Wie kann der Fehler reproduziert werden? / How can the bug be reproduced?
       placeholder: |
         1. Öffne die App / Open the app
@@ -71,7 +73,7 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: ✅ Erwartetes Verhalten / Expected Behavior
+      label: "✅ Erwartetes Verhalten / Expected Behavior"
       description: Was sollte passieren? / What should happen?
       placeholder: "z.B. Notizen sollten alle 30 Min synchronisiert werden / e.g. Notes should sync every 30 min"
     validations:
@@ -80,7 +82,7 @@ body:
   - type: textarea
     id: actual
     attributes:
-      label: ❌ Tatsächliches Verhalten / Actual Behavior
+      label: "❌ Tatsächliches Verhalten / Actual Behavior"
       description: Was passiert stattdessen? / What happens instead?
       placeholder: "z.B. Sync funktioniert nicht, keine Notification / e.g. Sync doesn't work, no notification"
     validations:
@@ -89,7 +91,7 @@ body:
   - type: dropdown
     id: sync-enabled
     attributes:
-      label: � Auto-Sync aktiviert? / Auto-Sync enabled?
+      label: Auto-Sync aktiviert? / Auto-Sync enabled?
       options:
         - "Ja / Yes"
         - "Nein / No"
