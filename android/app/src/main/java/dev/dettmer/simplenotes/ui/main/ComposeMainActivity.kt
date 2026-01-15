@@ -28,7 +28,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.color.DynamicColors
-import dev.dettmer.simplenotes.NoteEditorActivity
+import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -230,17 +230,17 @@ class ComposeMainActivity : ComponentActivity() {
     
     private fun openNoteEditor(noteId: String?) {
         cameFromEditor = true
-        val intent = Intent(this, NoteEditorActivity::class.java)
+        val intent = Intent(this, ComposeNoteEditorActivity::class.java)
         noteId?.let {
-            intent.putExtra(NoteEditorActivity.EXTRA_NOTE_ID, it)
+            intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_ID, it)
         }
         startActivity(intent)
     }
     
     private fun createNote(noteType: NoteType) {
         cameFromEditor = true
-        val intent = Intent(this, NoteEditorActivity::class.java)
-        intent.putExtra(NoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
+        val intent = Intent(this, ComposeNoteEditorActivity::class.java)
+        intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
         startActivity(intent)
     }
     

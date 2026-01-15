@@ -19,6 +19,7 @@
     <string name="content">Inhalt</string>
     <string name="save">Speichern</string>
     <string name="delete">Löschen</string>
+    <string name="back">Zurück</string>
     
     <!-- Note List Item (Preview placeholders) -->
     <string name="note_title_placeholder">Note Title</string>
@@ -81,6 +82,7 @@
     <string name="add_item">Element hinzufügen</string>
     <string name="item_placeholder">Neues Element…</string>
     <string name="reorder_item">Element verschieben</string>
+    <string name="drag_to_reorder">Ziehen zum Sortieren</string>
     <string name="delete_item">Element löschen</string>
     <string name="note_is_empty">Notiz ist leer</string>
     <string name="note_saved">Notiz gespeichert</string>
