@@ -43,10 +43,16 @@
             android:windowSoftInputMode="adjustResize"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Settings Activity -->
+        <!-- Settings Activity (Legacy - XML-based) -->
         <activity
             android:name=".SettingsActivity"
             android:parentActivityName=".MainActivity" />
+
+        <!-- Settings Activity v1.5.0 (Jetpack Compose) -->
+        <activity
+            android:name=".ui.settings.ComposeSettingsActivity"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.SimpleNotes" />
 
         <!-- Boot Receiver - Startet WorkManager nach Reboot -->
         <receiver

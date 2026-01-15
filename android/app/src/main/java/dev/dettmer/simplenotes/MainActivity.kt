@@ -638,7 +638,8 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun openSettings() {
-        val intent = Intent(this, SettingsActivity::class.java)
+        // v1.5.0: Use new Jetpack Compose Settings
+        val intent = Intent(this, dev.dettmer.simplenotes.ui.settings.ComposeSettingsActivity::class.java)
         @Suppress("DEPRECATION")
         startActivityForResult(intent, REQUEST_SETTINGS)
     }
