@@ -470,6 +470,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Trigger auto-sync (onResume)
      * Only runs if server is configured and interval has passed
+     * v1.5.0: Silent-Sync - kein Banner während des Syncs, Fehler werden trotzdem angezeigt
      */
     fun triggerAutoSync(source: String = "auto") {
         // Throttling check
@@ -483,7 +484,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
-        if (!SyncStateManager.tryStartSync("auto-$source")) {
+        // v1.5.0: silent=true - kein Banner bei Auto-Sync, aber Fehler werden trotzdem angezeigt
+        if (!SyncStateManager.tryStartSync("auto-$source", silent = true)) {
             Logger.d(TAG, "⏭️ Auto-sync ($source): Another sync already in progress")
             return
         }

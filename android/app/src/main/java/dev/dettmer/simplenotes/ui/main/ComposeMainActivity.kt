@@ -234,14 +234,28 @@ class ComposeMainActivity : ComponentActivity() {
         noteId?.let {
             intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_ID, it)
         }
-        startActivity(intent)
+        
+        // v1.5.0: Add slide animation
+        val options = ActivityOptions.makeCustomAnimation(
+            this,
+            dev.dettmer.simplenotes.R.anim.slide_in_right,
+            dev.dettmer.simplenotes.R.anim.slide_out_left
+        )
+        startActivity(intent, options.toBundle())
     }
     
     private fun createNote(noteType: NoteType) {
         cameFromEditor = true
         val intent = Intent(this, ComposeNoteEditorActivity::class.java)
         intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
-        startActivity(intent)
+        
+        // v1.5.0: Add slide animation
+        val options = ActivityOptions.makeCustomAnimation(
+            this,
+            dev.dettmer.simplenotes.R.anim.slide_in_right,
+            dev.dettmer.simplenotes.R.anim.slide_out_left
+        )
+        startActivity(intent, options.toBundle())
     }
     
     private fun openSettings() {

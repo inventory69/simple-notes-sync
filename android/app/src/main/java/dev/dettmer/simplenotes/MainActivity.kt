@@ -182,6 +182,11 @@ class MainActivity : AppCompatActivity() {
                     swipeRefreshLayout.isRefreshing = false
                     syncStatusBanner.visibility = View.GONE
                 }
+                // v1.5.0: Silent-Sync - Banner nicht anzeigen, aber Sync-Controls deaktivieren
+                SyncStateManager.SyncState.SYNCING_SILENT -> {
+                    setSyncControlsEnabled(false)
+                    // Kein Banner anzeigen bei Silent-Sync (z.B. onResume Auto-Sync)
+                }
             }
         }
     }
@@ -222,6 +227,7 @@ class MainActivity : AppCompatActivity() {
      * - Nur Success-Toast (kein "Auto-Sync..." Toast)
      * 
      * NOTE: WiFi-Connect Sync nutzt WorkManager (auch wenn App geschlossen!)
+     * v1.5.0: Silent-Sync - kein Banner während des Syncs, Fehler werden trotzdem angezeigt
      */
     private fun triggerAutoSync(source: String = "unknown") {
         // Throttling: Max 1 Sync pro Minute
@@ -230,7 +236,8 @@ class MainActivity : AppCompatActivity() {
         }
         
         // 🔄 v1.3.1: Check if sync already running
-        if (!SyncStateManager.tryStartSync("auto-$source")) {
+        // v1.5.0: silent=true - kein Banner bei Auto-Sync
+        if (!SyncStateManager.tryStartSync("auto-$source", silent = true)) {
             Logger.d(TAG, "⏭️ Auto-sync ($source): Another sync already in progress")
             return
         }
