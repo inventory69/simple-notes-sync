@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -252,9 +255,30 @@ private fun TextNoteContent(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
+    // v1.5.0: Use TextFieldValue to control cursor position
+    var textFieldValue by remember(content) {
+        mutableStateOf(TextFieldValue(
+            text = content,
+            selection = TextRange(content.length)
+        ))
+    }
+    
+    // Sync external changes
+    LaunchedEffect(content) {
+        if (textFieldValue.text != content) {
+            textFieldValue = TextFieldValue(
+                text = content,
+                selection = TextRange(content.length)
+            )
+        }
+    }
+    
     OutlinedTextField(
-        value = content,
-        onValueChange = onContentChange,
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            textFieldValue = newValue
+            onContentChange(newValue.text)
+        },
         modifier = modifier.focusRequester(focusRequester),
         label = { Text(stringResource(R.string.content)) },
         shape = RoundedCornerShape(16.dp)

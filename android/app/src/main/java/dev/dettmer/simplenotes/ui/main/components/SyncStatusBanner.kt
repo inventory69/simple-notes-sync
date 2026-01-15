@@ -22,6 +22,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 /**
  * Sync status banner shown below the toolbar during sync
  * v1.5.0: Jetpack Compose MainActivity Redesign
+ * v1.5.0: SYNCING_SILENT ignorieren - Banner nur bei manuellen Syncs oder Fehlern anzeigen
  */
 @Composable
 fun SyncStatusBanner(
@@ -29,7 +30,10 @@ fun SyncStatusBanner(
     message: String?,
     modifier: Modifier = Modifier
 ) {
-    val isVisible = syncState != SyncStateManager.SyncState.IDLE
+    // v1.5.0: Banner nicht anzeigen bei IDLE oder SYNCING_SILENT (Auto-Sync im Hintergrund)
+    // Fehler werden trotzdem angezeigt (ERROR state nach Silent-Sync wechselt zu ERROR, nicht SYNCING_SILENT)
+    val isVisible = syncState != SyncStateManager.SyncState.IDLE 
+                    && syncState != SyncStateManager.SyncState.SYNCING_SILENT
     
     AnimatedVisibility(
         visible = isVisible,
@@ -57,6 +61,7 @@ fun SyncStatusBanner(
             Text(
                 text = when (syncState) {
                     SyncStateManager.SyncState.SYNCING -> "Synchronisiere..."
+                    SyncStateManager.SyncState.SYNCING_SILENT -> "" // v1.5.0: Wird nicht angezeigt (isVisible = false)
                     SyncStateManager.SyncState.COMPLETED -> message ?: "Synchronisiert"
                     SyncStateManager.SyncState.ERROR -> message ?: "Fehler"
                     SyncStateManager.SyncState.IDLE -> ""

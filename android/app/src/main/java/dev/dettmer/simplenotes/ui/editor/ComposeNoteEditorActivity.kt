@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -48,11 +49,30 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         
         enableEdgeToEdge()
         
+        // v1.5.0: Handle back button with slide animation
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+                @Suppress("DEPRECATION")
+                overridePendingTransition(
+                    dev.dettmer.simplenotes.R.anim.slide_in_left,
+                    dev.dettmer.simplenotes.R.anim.slide_out_right
+                )
+            }
+        })
+        
         setContent {
             SimpleNotesTheme {
                 NoteEditorScreen(
                     viewModel = viewModel,
-                    onNavigateBack = { finish() }
+                    onNavigateBack = {
+                        finish()
+                        @Suppress("DEPRECATION")
+                        overridePendingTransition(
+                            dev.dettmer.simplenotes.R.anim.slide_in_left,
+                            dev.dettmer.simplenotes.R.anim.slide_out_right
+                        )
+                    }
                 )
             }
         }

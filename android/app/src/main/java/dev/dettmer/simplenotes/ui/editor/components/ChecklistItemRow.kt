@@ -142,7 +142,8 @@ fun ChecklistItemRow(
             keyboardActions = KeyboardActions(
                 onNext = { onAddNewItem() }
             ),
-            singleLine = true,
+            singleLine = false,
+            maxLines = 5,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             decorationBox = { innerTextField ->
                 Box {

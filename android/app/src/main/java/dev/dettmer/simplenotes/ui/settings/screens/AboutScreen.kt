@@ -1,8 +1,13 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -25,11 +31,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
@@ -76,9 +85,26 @@ fun AboutScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "📝",
-                        style = MaterialTheme.typography.displayMedium
+                    // v1.5.0: App icon loaded from PackageManager and converted to Bitmap
+                    val context = LocalContext.current
+                    val appIcon = remember {
+                        val drawable = context.packageManager.getApplicationIcon(context.packageName)
+                        // Convert any Drawable (including AdaptiveIconDrawable) to Bitmap
+                        val bitmap = Bitmap.createBitmap(
+                            drawable.intrinsicWidth.coerceAtLeast(1),
+                            drawable.intrinsicHeight.coerceAtLeast(1),
+                            Bitmap.Config.ARGB_8888
+                        )
+                        val canvas = Canvas(bitmap)
+                        drawable.setBounds(0, 0, canvas.width, canvas.height)
+                        drawable.draw(canvas)
+                        bitmap.asImageBitmap()
+                    }
+                    
+                    Image(
+                        bitmap = appIcon,
+                        contentDescription = "App Icon",
+                        modifier = Modifier.size(96.dp)
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
