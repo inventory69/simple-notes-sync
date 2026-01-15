@@ -1,0 +1,70 @@
+package dev.dettmer.simplenotes.ui.main.components
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.sync.SyncStateManager
+
+/**
+ * Sync status banner shown below the toolbar during sync
+ * v1.5.0: Jetpack Compose MainActivity Redesign
+ */
+@Composable
+fun SyncStatusBanner(
+    syncState: SyncStateManager.SyncState,
+    message: String?,
+    modifier: Modifier = Modifier
+) {
+    val isVisible = syncState != SyncStateManager.SyncState.IDLE
+    
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = expandVertically(),
+        exit = shrinkVertically(),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (syncState == SyncStateManager.SyncState.SYNCING) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 3.dp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Text(
+                text = when (syncState) {
+                    SyncStateManager.SyncState.SYNCING -> "Synchronisiere..."
+                    SyncStateManager.SyncState.COMPLETED -> message ?: "Synchronisiert"
+                    SyncStateManager.SyncState.ERROR -> message ?: "Fehler"
+                    SyncStateManager.SyncState.IDLE -> ""
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}

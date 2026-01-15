@@ -11,8 +11,8 @@ activity = "1.8.0"
 constraintlayout = "2.1.4"
 ktlint = "12.1.0"
 detekt = "1.23.4"
-# Jetpack Compose v1.5.0
-composeBom = "2024.02.00"
+# Jetpack Compose v1.5.0 - Updated for 120Hz performance
+composeBom = "2026.01.00"
 navigationCompose = "2.7.6"
 lifecycleRuntimeCompose = "2.7.0"
 activityCompose = "1.8.2"
