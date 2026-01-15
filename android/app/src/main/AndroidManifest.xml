@@ -44,11 +44,18 @@
             android:exported="false"
             android:theme="@style/Theme.SimpleNotes" />
 
-        <!-- Editor Activity -->
+        <!-- Editor Activity (Legacy - XML-based) -->
         <activity
             android:name=".NoteEditorActivity"
             android:windowSoftInputMode="adjustResize"
             android:parentActivityName=".ui.main.ComposeMainActivity" />
+
+        <!-- Editor Activity v1.5.0 (Jetpack Compose) -->
+        <activity
+            android:name=".ui.editor.ComposeNoteEditorActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".ui.main.ComposeMainActivity"
+            android:theme="@style/Theme.SimpleNotes" />
 
         <!-- Settings Activity (Legacy - XML-based) -->
         <activity

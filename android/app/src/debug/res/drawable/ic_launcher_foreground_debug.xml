@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug overlay for launcher icon - original icon + red "DEBUG" badge -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Original foreground icon from mipmap -->
+    <item android:drawable="@mipmap/ic_launcher_foreground" />
+    
+    <!-- Debug Badge: Red circle with "D" in top-right corner -->
+    <item>
+        <inset
+            android:insetLeft="60dp"
+            android:insetTop="10dp"
+            android:insetRight="10dp"
+            android:insetBottom="60dp">
+            <layer-list>
+                <!-- Red circle background -->
+                <item>
+                    <shape android:shape="oval">
+                        <solid android:color="#E53935" />
+                        <size android:width="28dp" android:height="28dp" />
+                    </shape>
+                </item>
+            </layer-list>
+        </inset>
+    </item>
+</layer-list>

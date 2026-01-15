@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug version: Orange-tinted background to distinguish from release -->
+    <color name="ic_launcher_background_debug">#FFB74D</color>
+</resources>
