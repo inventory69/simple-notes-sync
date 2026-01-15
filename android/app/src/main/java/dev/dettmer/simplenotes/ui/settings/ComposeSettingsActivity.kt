@@ -3,28 +3,22 @@ package dev.dettmer.simplenotes.ui.settings
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.SimpleNotesApplication
+import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Logger
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -57,11 +51,24 @@ class ComposeSettingsActivity : ComponentActivity() {
         // Enable edge-to-edge display
         enableEdgeToEdge()
         
+        // Handle back button with slide animation
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                setResult(RESULT_OK)
+                finish()
+                @Suppress("DEPRECATION")
+                overridePendingTransition(
+                    dev.dettmer.simplenotes.R.anim.slide_in_left,
+                    dev.dettmer.simplenotes.R.anim.slide_out_right
+                )
+            }
+        })
+        
         // Collect events from ViewModel (for Activity-level actions)
         collectViewModelEvents()
         
         setContent {
-            SimpleNotesSettingsTheme {
+            SimpleNotesTheme {
                 val navController = rememberNavController()
                 val context = LocalContext.current
                 
@@ -78,6 +85,11 @@ class ComposeSettingsActivity : ComponentActivity() {
                     onFinish = {
                         setResult(RESULT_OK)
                         finish()
+                        @Suppress("DEPRECATION")
+                        overridePendingTransition(
+                            dev.dettmer.simplenotes.R.anim.slide_in_left,
+                            dev.dettmer.simplenotes.R.anim.slide_out_right
+                        )
                     }
                 )
             }
@@ -174,35 +186,4 @@ class ComposeSettingsActivity : ComponentActivity() {
             Logger.e(TAG, "❌ Failed to restart NetworkMonitor: ${e.message}")
         }
     }
-}
-
-/**
- * Material 3 Theme with Dynamic Colors support
- */
-@Composable
-fun SimpleNotesSettingsTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val context = LocalContext.current
-    
-    val colorScheme = when {
-        // Dynamic colors are available on Android 12+
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) {
-                dynamicDarkColorScheme(context)
-            } else {
-                dynamicLightColorScheme(context)
-            }
-        }
-        // Fallback to static Material 3 colors
-        darkTheme -> darkColorScheme()
-        else -> lightColorScheme()
-    }
-    
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
 }

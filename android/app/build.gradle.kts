@@ -99,6 +99,11 @@ android {
         buildConfig = true  // Enable BuildConfig generation
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }
+    
+    // v1.5.0 Hotfix: Strong Skipping Mode für bessere 120Hz Performance
+    composeCompiler {
+        enableStrongSkippingMode = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

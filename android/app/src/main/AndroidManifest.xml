@@ -27,8 +27,9 @@
         android:theme="@style/Theme.SimpleNotes"
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
+        <!-- MainActivity v1.5.0 (Jetpack Compose) - Launcher -->
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.main.ComposeMainActivity"
             android:exported="true"
             android:theme="@style/Theme.SimpleNotes.Splash">
             <intent-filter>
@@ -37,21 +38,27 @@
             </intent-filter>
         </activity>
 
+        <!-- Legacy MainActivity (XML-based) - kept for reference -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SimpleNotes" />
+
         <!-- Editor Activity -->
         <activity
             android:name=".NoteEditorActivity"
             android:windowSoftInputMode="adjustResize"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".ui.main.ComposeMainActivity" />
 
         <!-- Settings Activity (Legacy - XML-based) -->
         <activity
             android:name=".SettingsActivity"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".ui.main.ComposeMainActivity" />
 
         <!-- Settings Activity v1.5.0 (Jetpack Compose) -->
         <activity
             android:name=".ui.settings.ComposeSettingsActivity"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName=".ui.main.ComposeMainActivity"
             android:theme="@style/Theme.SimpleNotes" />
 
         <!-- Boot Receiver - Startet WorkManager nach Reboot -->
