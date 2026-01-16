@@ -4,5 +4,6 @@
 • NEW: Long-press selection mode for batch delete
 • Modernized Settings with 7 organized screens
 • Silent-Sync mode (no banner during auto-sync)
-• Improved NoteEditor with slide animations
+• "Nothing to sync" feedback in status banner
+• Various UI/UX improvements and bug fixes
 • App icon in About screen and empty state
