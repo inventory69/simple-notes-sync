@@ -20,7 +20,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
@@ -44,7 +46,7 @@ fun MarkdownSettingsScreen(
     exportProgress?.let { progress ->
         AlertDialog(
             onDismissRequest = { /* Not dismissable */ },
-            title = { Text("Markdown Auto-Sync") },
+            title = { Text(stringResource(R.string.markdown_dialog_title)) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -53,9 +55,9 @@ fun MarkdownSettingsScreen(
                 ) {
                     Text(
                         text = if (progress.isComplete) {
-                            "✅ Export abgeschlossen"
+                            stringResource(R.string.markdown_export_complete)
                         } else {
-                            "Exportiere ${progress.current}/${progress.total} Notizen..."
+                            stringResource(R.string.markdown_export_progress, progress.current, progress.total)
                         },
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -75,7 +77,7 @@ fun MarkdownSettingsScreen(
     }
     
     SettingsScaffold(
-        title = "Markdown Desktop-Integration",
+        title = stringResource(R.string.markdown_settings_title),
         onBack = onBack
     ) { paddingValues ->
         Column(
@@ -88,17 +90,15 @@ fun MarkdownSettingsScreen(
             
             // Info Card
             SettingsInfoCard(
-                text = "📝 Exportiert Notizen zusätzlich als .md-Dateien. Mounte " +
-                    "WebDAV als Netzlaufwerk um mit VS Code, Typora oder jedem " +
-                    "Markdown-Editor zu bearbeiten. JSON-Sync bleibt primäres Format."
+                text = stringResource(R.string.markdown_info)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             // Markdown Auto-Sync Toggle
             SettingsSwitch(
-                title = "Markdown Auto-Sync",
-                subtitle = "Synchronisiert Notizen automatisch als .md-Dateien (Upload + Download bei jedem Sync)",
+                title = stringResource(R.string.markdown_auto_sync_title),
+                subtitle = stringResource(R.string.markdown_auto_sync_subtitle),
                 checked = markdownAutoSync,
                 onCheckedChange = { viewModel.setMarkdownAutoSync(it) },
                 icon = Icons.Default.Description
@@ -109,14 +109,13 @@ fun MarkdownSettingsScreen(
                 SettingsDivider()
                 
                 SettingsInfoCard(
-                    text = "Manueller Sync exportiert alle Notizen als .md-Dateien und " +
-                        "importiert .md-Dateien vom Server. Nützlich für einmalige Synchronisation."
+                    text = stringResource(R.string.markdown_manual_sync_info)
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 SettingsButton(
-                    text = "📝 Manueller Markdown-Sync",
+                    text = stringResource(R.string.markdown_manual_sync_button),
                     onClick = { viewModel.performManualMarkdownSync() },
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )

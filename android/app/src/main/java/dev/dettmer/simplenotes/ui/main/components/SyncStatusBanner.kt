@@ -16,7 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.sync.SyncStateManager
 
 /**
@@ -60,10 +62,10 @@ fun SyncStatusBanner(
             
             Text(
                 text = when (syncState) {
-                    SyncStateManager.SyncState.SYNCING -> "Synchronisiere..."
+                    SyncStateManager.SyncState.SYNCING -> stringResource(R.string.sync_status_syncing)
                     SyncStateManager.SyncState.SYNCING_SILENT -> "" // v1.5.0: Wird nicht angezeigt (isVisible = false)
-                    SyncStateManager.SyncState.COMPLETED -> message ?: "Synchronisiert"
-                    SyncStateManager.SyncState.ERROR -> message ?: "Fehler"
+                    SyncStateManager.SyncState.COMPLETED -> message ?: stringResource(R.string.sync_status_completed)
+                    SyncStateManager.SyncState.ERROR -> message ?: stringResource(R.string.sync_status_error)
                     SyncStateManager.SyncState.IDLE -> ""
                 },
                 style = MaterialTheme.typography.bodyMedium,

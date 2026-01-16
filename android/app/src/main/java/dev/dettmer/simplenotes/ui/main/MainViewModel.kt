@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -236,15 +237,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Show snackbar with undo
         val count = selectedNotes.size
         val message = if (deleteFromServer) {
-            "$count Notiz${if (count > 1) "en" else ""} werden vom Server gelöscht"
+            getString(R.string.snackbar_notes_deleted_server, count)
         } else {
-            "$count Notiz${if (count > 1) "en" else ""} lokal gelöscht"
+            getString(R.string.snackbar_notes_deleted_local, count)
         }
         
         viewModelScope.launch {
             _showSnackbar.emit(SnackbarData(
                 message = message,
-                actionLabel = "RÜCKGÄNGIG",
+                actionLabel = getString(R.string.snackbar_undo),
                 onAction = {
                     undoDeleteMultiple(selectedNotes)
                 }
@@ -336,15 +337,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         // Show snackbar with undo
         val message = if (deleteFromServer) {
-            "\"${note.title}\" wird vom Server gelöscht"
+            getString(R.string.snackbar_note_deleted_server, note.title)
         } else {
-            "\"${note.title}\" lokal gelöscht"
+            getString(R.string.snackbar_note_deleted_local, note.title)
         }
         
         viewModelScope.launch {
             _showSnackbar.emit(SnackbarData(
                 message = message,
-                actionLabel = "RÜCKGÄNGIG",
+                actionLabel = getString(R.string.snackbar_undo),
                 onAction = {
                     undoDelete(note)
                 }
@@ -390,12 +391,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (success) {
-                    _showToast.emit("Vom Server gelöscht")
+                    _showToast.emit(getString(R.string.snackbar_deleted_from_server))
                 } else {
-                    _showToast.emit("Server-Löschung fehlgeschlagen")
+                    _showToast.emit(getString(R.string.snackbar_server_delete_failed))
                 }
             } catch (e: Exception) {
-                _showToast.emit("Server-Fehler: ${e.message}")
+                _showToast.emit(getString(R.string.snackbar_server_error, e.message ?: ""))
             } finally {
                 // Remove from pending deletions
                 _pendingDeletions.value = _pendingDeletions.value - noteId
@@ -446,7 +447,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 
                 if (!isReachable) {
                     Logger.d(TAG, "⏭️ $source Sync: Server not reachable")
-                    SyncStateManager.markError("Server nicht erreichbar")
+                    SyncStateManager.markError(getString(R.string.snackbar_server_unreachable))
                     return@launch
                 }
                 
@@ -456,7 +457,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (result.isSuccess) {
-                    SyncStateManager.markCompleted("${result.syncedCount} Notizen")
+                    SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
                     loadNotes()
                 } else {
                     SyncStateManager.markError(result.errorMessage)
@@ -524,8 +525,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 
                 if (result.isSuccess && result.syncedCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
-                    SyncStateManager.markCompleted("${result.syncedCount} Notizen")
-                    _showToast.emit("✅ Gesynct: ${result.syncedCount} Notizen")
+                    SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
+                    _showToast.emit(getString(R.string.snackbar_synced_count, result.syncedCount))
                     loadNotes()
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
@@ -558,6 +559,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
     // Helpers
     // ═══════════════════════════════════════════════════════════════════════
+    
+    private fun getString(resId: Int): String = getApplication<android.app.Application>().getString(resId)
+    
+    private fun getString(resId: Int, vararg formatArgs: Any): String = 
+        getApplication<android.app.Application>().getString(resId, *formatArgs)
     
     fun isServerConfigured(): Boolean {
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)

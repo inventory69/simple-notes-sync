@@ -21,9 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDangerButton
@@ -48,7 +50,7 @@ fun DebugSettingsScreen(
     var showClearLogsDialog by remember { mutableStateOf(false) }
     
     SettingsScaffold(
-        title = "Debug & Diagnose",
+        title = stringResource(R.string.debug_settings_title),
         onBack = onBack
     ) { paddingValues ->
         Column(
@@ -61,8 +63,8 @@ fun DebugSettingsScreen(
             
             // File Logging Toggle
             SettingsSwitch(
-                title = "Datei-Logging",
-                subtitle = "Sync-Logs in Datei speichern",
+                title = stringResource(R.string.debug_file_logging_title),
+                subtitle = stringResource(R.string.debug_file_logging_subtitle),
                 checked = fileLoggingEnabled,
                 onCheckedChange = { viewModel.setFileLogging(it) },
                 icon = Icons.AutoMirrored.Filled.Notes
@@ -70,21 +72,18 @@ fun DebugSettingsScreen(
             
             // Privacy Info
             SettingsInfoCard(
-                text = "🔒 Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert " +
-                    "und niemals an externe Server gesendet. Die Logs enthalten " +
-                    "Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen " +
-                    "oder exportieren."
+                text = stringResource(R.string.debug_privacy_info)
             )
             
             SettingsDivider()
             
-            SettingsSectionHeader(text = "Log-Aktionen")
+            SettingsSectionHeader(text = stringResource(R.string.debug_log_actions_section))
             
             Spacer(modifier = Modifier.height(8.dp))
             
             // Export Logs Button
             SettingsButton(
-                text = "📤 Logs exportieren & teilen",
+                text = stringResource(R.string.debug_export_logs),
                 onClick = {
                     val logFile = viewModel.getLogFile()
                     if (logFile != null && logFile.exists() && logFile.length() > 0L) {
@@ -97,11 +96,11 @@ fun DebugSettingsScreen(
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_STREAM, logUri)
-                            putExtra(Intent.EXTRA_SUBJECT, "SimpleNotes Sync Logs")
+                            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.debug_logs_subject))
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                         
-                        context.startActivity(Intent.createChooser(shareIntent, "Logs teilen via..."))
+                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.debug_logs_share_via)))
                     }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -111,7 +110,7 @@ fun DebugSettingsScreen(
             
             // Clear Logs Button
             SettingsDangerButton(
-                text = "🗑️ Logs löschen",
+                text = stringResource(R.string.debug_delete_logs),
                 onClick = { showClearLogsDialog = true },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -124,9 +123,9 @@ fun DebugSettingsScreen(
     if (showClearLogsDialog) {
         AlertDialog(
             onDismissRequest = { showClearLogsDialog = false },
-            title = { Text("Logs löschen?") },
+            title = { Text(stringResource(R.string.debug_delete_logs_title)) },
             text = {
-                Text("Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.")
+                Text(stringResource(R.string.debug_delete_logs_message))
             },
             confirmButton = {
                 TextButton(
@@ -135,12 +134,12 @@ fun DebugSettingsScreen(
                         viewModel.clearLogs()
                     }
                 ) {
-                    Text("Löschen")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearLogsDialog = false }) {
-                    Text("Abbrechen")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.utils
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import dev.dettmer.simplenotes.R
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -16,8 +17,6 @@ object NotificationHelper {
     
     private const val TAG = "NotificationHelper"
     private const val CHANNEL_ID = "notes_sync_channel"
-    private const val CHANNEL_NAME = "Notizen Synchronisierung"
-    private const val CHANNEL_DESCRIPTION = "Benachrichtigungen über Sync-Status"
     private const val NOTIFICATION_ID = 1001
     private const val SYNC_NOTIFICATION_ID = 2
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
@@ -29,9 +28,11 @@ object NotificationHelper {
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channelName = context.getString(R.string.notification_channel_name)
+            val channelDescription = context.getString(R.string.notification_channel_desc)
             
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-                description = CHANNEL_DESCRIPTION
+            val channel = NotificationChannel(CHANNEL_ID, channelName, importance).apply {
+                description = channelDescription
                 enableVibration(true)
                 enableLights(true)
             }
@@ -68,8 +69,8 @@ object NotificationHelper {
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_upload)
-            .setContentTitle("Sync erfolgreich")
-            .setContentText("$syncedCount Notiz(en) synchronisiert")
+            .setContentTitle(context.getString(R.string.notification_sync_success_title))
+            .setContentText(context.getString(R.string.notification_sync_success_message, syncedCount))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -96,7 +97,7 @@ object NotificationHelper {
     fun showSyncFailureNotification(context: Context, errorMessage: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("Sync fehlgeschlagen")
+            .setContentTitle(context.getString(R.string.notification_sync_failed_title))
             .setContentText(errorMessage)
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(errorMessage))
@@ -125,8 +126,8 @@ object NotificationHelper {
     fun showSyncProgressNotification(context: Context): Int {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_sync)
-            .setContentTitle("Synchronisiere...")
-            .setContentText("Notizen werden synchronisiert")
+            .setContentTitle(context.getString(R.string.notification_sync_progress_title))
+            .setContentText(context.getString(R.string.notification_sync_progress_message))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setProgress(0, 0, true)
@@ -161,8 +162,8 @@ object NotificationHelper {
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Sync-Konflikt erkannt")
-            .setContentText("$conflictCount Notiz(en) haben Konflikte")
+            .setContentTitle(context.getString(R.string.notification_sync_conflict_title))
+            .setContentText(context.getString(R.string.notification_sync_conflict_message, conflictCount))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -212,8 +213,8 @@ object NotificationHelper {
     fun showSyncInProgress(context: Context) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("Synchronisierung läuft")
-            .setContentText("Notizen werden synchronisiert...")
+            .setContentTitle(context.getString(R.string.notification_sync_in_progress_title))
+            .setContentText(context.getString(R.string.notification_sync_in_progress_message))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()
@@ -240,8 +241,8 @@ object NotificationHelper {
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("Sync erfolgreich")
-            .setContentText("$count Notizen synchronisiert")
+            .setContentTitle(context.getString(R.string.notification_sync_success_title))
+            .setContentText(context.getString(R.string.notification_sync_success_message, count))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pendingIntent)  // Click öffnet App
@@ -271,7 +272,7 @@ object NotificationHelper {
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle("Sync Fehler")
+            .setContentTitle(context.getString(R.string.notification_sync_error_title))
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_ERROR)
@@ -308,11 +309,10 @@ object NotificationHelper {
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle("⚠️ Sync-Warnung")
-            .setContentText("Server seit ${hoursSinceLastSync}h nicht erreichbar")
+            .setContentTitle(context.getString(R.string.notification_sync_warning_title))
+            .setContentText(context.getString(R.string.notification_sync_warning_message, hoursSinceLastSync.toInt()))
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("Der WebDAV-Server ist seit ${hoursSinceLastSync} Stunden nicht erreichbar. " +
-                        "Bitte prüfe deine Netzwerkverbindung oder Server-Einstellungen."))
+                .bigText(context.getString(R.string.notification_sync_warning_detail, hoursSinceLastSync.toInt())))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pendingIntent)

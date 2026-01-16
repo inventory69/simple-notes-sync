@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,8 +19,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsCard
@@ -46,8 +50,18 @@ fun SettingsMainScreen(
         viewModel.checkServerStatus()
     }
     
+    // Get current language for display (no remember - always fresh value after activity recreate)
+    val locales = AppCompatDelegate.getApplicationLocales()
+    val currentLanguageName = if (locales.isEmpty) {
+        null // System default
+    } else {
+        locales[0]?.displayLanguage?.replaceFirstChar { it.uppercase() }
+    }
+    val systemDefaultText = stringResource(R.string.language_system_default)
+    val languageSubtitle = currentLanguageName ?: systemDefaultText
+    
     SettingsScaffold(
-        title = "Einstellungen",
+        title = stringResource(R.string.settings_title),
         onBack = onBack
     ) { paddingValues ->
         LazyColumn(
@@ -56,6 +70,16 @@ fun SettingsMainScreen(
                 .padding(paddingValues),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
+            // Language Settings
+            item {
+                SettingsCard(
+                    icon = Icons.Default.Language,
+                    title = stringResource(R.string.settings_language),
+                    subtitle = languageSubtitle,
+                    onClick = { onNavigate(SettingsRoute.Language) }
+                )
+            }
+            
             // Server-Einstellungen
             item {
                 // v1.5.0 Fix: Nur Prefix-URLs gelten als "nicht konfiguriert"
@@ -65,13 +89,13 @@ fun SettingsMainScreen(
                 
                 SettingsCard(
                     icon = Icons.Default.Cloud,
-                    title = "Server-Einstellungen",
+                    title = stringResource(R.string.settings_server),
                     subtitle = if (isConfigured) serverUrl else null,
                     statusText = when (serverStatus) {
-                        is SettingsViewModel.ServerStatus.Reachable -> "✅ Erreichbar"
-                        is SettingsViewModel.ServerStatus.Unreachable -> "❌ Nicht erreichbar"
-                        is SettingsViewModel.ServerStatus.Checking -> "🔍 Prüfe..."
-                        is SettingsViewModel.ServerStatus.NotConfigured -> "⚠️ Nicht konfiguriert"
+                        is SettingsViewModel.ServerStatus.Reachable -> stringResource(R.string.settings_server_status_reachable)
+                        is SettingsViewModel.ServerStatus.Unreachable -> stringResource(R.string.settings_server_status_unreachable)
+                        is SettingsViewModel.ServerStatus.Checking -> stringResource(R.string.settings_server_status_checking)
+                        is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(R.string.settings_server_status_not_configured)
                         else -> null
                     },
                     statusColor = when (serverStatus) {
@@ -87,14 +111,14 @@ fun SettingsMainScreen(
             // Sync-Einstellungen
             item {
                 val intervalText = when (syncInterval) {
-                    15L -> "15 Min"
-                    60L -> "60 Min"
-                    else -> "30 Min"
+                    15L -> stringResource(R.string.settings_interval_15min)
+                    60L -> stringResource(R.string.settings_interval_60min)
+                    else -> stringResource(R.string.settings_interval_30min)
                 }
                 SettingsCard(
                     icon = Icons.Default.Sync,
-                    title = "Sync-Einstellungen",
-                    subtitle = if (autoSyncEnabled) "Auto-Sync: An • $intervalText" else "Auto-Sync: Aus",
+                    title = stringResource(R.string.settings_sync),
+                    subtitle = if (autoSyncEnabled) stringResource(R.string.settings_sync_auto_on, intervalText) else stringResource(R.string.settings_sync_auto_off),
                     onClick = { onNavigate(SettingsRoute.Sync) }
                 )
             }
@@ -103,8 +127,8 @@ fun SettingsMainScreen(
             item {
                 SettingsCard(
                     icon = Icons.Default.Description,
-                    title = "Markdown Desktop-Integration",
-                    subtitle = if (markdownAutoSync) "Auto-Sync: An" else "Auto-Sync: Aus",
+                    title = stringResource(R.string.settings_markdown),
+                    subtitle = if (markdownAutoSync) stringResource(R.string.settings_markdown_auto_on) else stringResource(R.string.settings_markdown_auto_off),
                     onClick = { onNavigate(SettingsRoute.Markdown) }
                 )
             }
@@ -113,8 +137,8 @@ fun SettingsMainScreen(
             item {
                 SettingsCard(
                     icon = Icons.Default.Backup,
-                    title = "Backup & Wiederherstellung",
-                    subtitle = "Lokales oder Server-Backup",
+                    title = stringResource(R.string.settings_backup),
+                    subtitle = stringResource(R.string.settings_backup_subtitle),
                     onClick = { onNavigate(SettingsRoute.Backup) }
                 )
             }
@@ -123,8 +147,8 @@ fun SettingsMainScreen(
             item {
                 SettingsCard(
                     icon = Icons.Default.Info,
-                    title = "Über diese App",
-                    subtitle = "Version ${BuildConfig.VERSION_NAME}",
+                    title = stringResource(R.string.settings_about),
+                    subtitle = stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                     onClick = { onNavigate(SettingsRoute.About) }
                 )
             }
@@ -133,8 +157,8 @@ fun SettingsMainScreen(
             item {
                 SettingsCard(
                     icon = Icons.Default.BugReport,
-                    title = "Debug & Diagnose",
-                    subtitle = if (fileLoggingEnabled) "Logging: An" else "Logging: Aus",
+                    title = stringResource(R.string.settings_debug),
+                    subtitle = if (fileLoggingEnabled) stringResource(R.string.settings_debug_logging_on) else stringResource(R.string.settings_debug_logging_off),
                     onClick = { onNavigate(SettingsRoute.Debug) }
                 )
             }

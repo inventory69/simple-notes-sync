@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import dev.dettmer.simplenotes.ui.settings.screens.AboutScreen
 import dev.dettmer.simplenotes.ui.settings.screens.BackupSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DebugSettingsScreen
+import dev.dettmer.simplenotes.ui.settings.screens.LanguageSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.MarkdownSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
@@ -32,6 +33,13 @@ fun SettingsNavHost(
                 viewModel = viewModel,
                 onNavigate = { route -> navController.navigate(route.route) },
                 onBack = onFinish
+            )
+        }
+        
+        // Language Settings
+        composable(SettingsRoute.Language.route) {
+            LanguageSettingsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
         

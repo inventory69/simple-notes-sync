@@ -21,7 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
@@ -71,7 +73,7 @@ fun BackupSettingsScreen(
     }
     
     SettingsScaffold(
-        title = "Backup & Wiederherstellung",
+        title = stringResource(R.string.backup_settings_title),
         onBack = onBack
     ) { paddingValues ->
         Column(
@@ -84,19 +86,18 @@ fun BackupSettingsScreen(
             
             // Info Card
             SettingsInfoCard(
-                text = "📦 Bei jeder Wiederherstellung wird automatisch ein " +
-                    "Sicherheits-Backup erstellt."
+                text = stringResource(R.string.backup_auto_info)
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
             // Local Backup Section
-            SettingsSectionHeader(text = "Lokales Backup")
+            SettingsSectionHeader(text = stringResource(R.string.backup_local_section))
             
             Spacer(modifier = Modifier.height(8.dp))
             
             SettingsButton(
-                text = "💾 Backup erstellen",
+                text = stringResource(R.string.backup_create),
                 onClick = {
                     val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
                         .format(Date())
@@ -110,7 +111,7 @@ fun BackupSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             SettingsOutlinedButton(
-                text = "📂 Aus Datei wiederherstellen",
+                text = stringResource(R.string.backup_restore_file),
                 onClick = {
                     restoreFileLauncher.launch(arrayOf("application/json"))
                 },
@@ -121,12 +122,12 @@ fun BackupSettingsScreen(
             SettingsDivider()
             
             // Server Backup Section
-            SettingsSectionHeader(text = "Server-Backup")
+            SettingsSectionHeader(text = stringResource(R.string.backup_server_section))
             
             Spacer(modifier = Modifier.height(8.dp))
             
             SettingsOutlinedButton(
-                text = "☁️ Vom Server wiederherstellen",
+                text = stringResource(R.string.backup_restore_server),
                 onClick = {
                     restoreSource = RestoreSource.Server
                     showRestoreDialog = true
@@ -186,42 +187,42 @@ private fun RestoreModeDialog(
     onDismiss: () -> Unit
 ) {
     val sourceText = when (source) {
-        RestoreSource.LocalFile -> "Lokale Datei"
-        RestoreSource.Server -> "WebDAV Server"
+        RestoreSource.LocalFile -> stringResource(R.string.backup_restore_source_file)
+        RestoreSource.Server -> stringResource(R.string.backup_restore_source_server)
     }
     
     val modeOptions = listOf(
         RadioOption(
             value = RestoreMode.MERGE,
-            title = "⚪ Zusammenführen (Standard)",
-            subtitle = "Neue hinzufügen, Bestehende behalten"
+            title = stringResource(R.string.backup_mode_merge_title),
+            subtitle = stringResource(R.string.backup_mode_merge_subtitle)
         ),
         RadioOption(
             value = RestoreMode.REPLACE,
-            title = "⚪ Ersetzen",
-            subtitle = "Alle löschen & Backup importieren"
+            title = stringResource(R.string.backup_mode_replace_title),
+            subtitle = stringResource(R.string.backup_mode_replace_subtitle)
         ),
         RadioOption(
             value = RestoreMode.OVERWRITE_DUPLICATES,
-            title = "⚪ Duplikate überschreiben",
-            subtitle = "Backup gewinnt bei Konflikten"
+            title = stringResource(R.string.backup_mode_overwrite_title),
+            subtitle = stringResource(R.string.backup_mode_overwrite_subtitle)
         )
     )
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("⚠️ Backup wiederherstellen?") },
+        title = { Text(stringResource(R.string.backup_restore_dialog_title)) },
         text = {
             Column {
                 Text(
-                    text = "Quelle: $sourceText",
+                    text = stringResource(R.string.backup_restore_source, sourceText),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "Wiederherstellungs-Modus:",
+                    text = stringResource(R.string.backup_restore_mode_label),
                     style = MaterialTheme.typography.labelLarge
                 )
                 
@@ -236,7 +237,7 @@ private fun RestoreModeDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = "ℹ️ Ein Sicherheits-Backup wird vor dem Wiederherstellen automatisch erstellt.",
+                    text = stringResource(R.string.backup_restore_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -244,12 +245,12 @@ private fun RestoreModeDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Wiederherstellen")
+                Text(stringResource(R.string.backup_restore_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

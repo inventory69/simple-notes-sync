@@ -1,94 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ============================= -->
+    <!-- APP IDENTITY                  -->
+    <!-- ============================= -->
     <string name="app_name">Simple Notes</string>
     
-    <!-- Main Activity -->
-    <string name="no_notes_yet">Noch keine Notizen.\nTippe + um eine zu erstellen.</string>
-    <string name="add_note">Notiz hinzufügen</string>
-    <string name="sync">Synchronisieren</string>
-    <string name="settings">Einstellungen</string>
+    <!-- ============================= -->
+    <!-- MAIN SCREEN                   -->
+    <!-- ============================= -->
+    <string name="main_title">Simple Notes</string>
+    <string name="no_notes_yet">No notes yet.\nTap + to create one.</string>
+    <string name="add_note">Add note</string>
+    <string name="sync">Sync</string>
+    <string name="settings">Settings</string>
+    <string name="action_sync">Sync</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_close_selection">Close selection</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_delete_selected">Delete selected</string>
+    <string name="selection_count">%d selected</string>
     
-    <!-- Empty State -->
+    <!-- ============================= -->
+    <!-- EMPTY STATE                   -->
+    <!-- ============================= -->
     <string name="empty_state_emoji">📝</string>
-    <string name="empty_state_title">Noch keine Notizen</string>
-    <string name="empty_state_message">Tippe auf ➕ um deine erste Notiz zu erstellen</string>
+    <string name="empty_state_title">No notes yet</string>
+    <string name="empty_state_message">Tap + to create a new note</string>
     
-    <!-- Note Editor -->
-    <string name="edit_note">Notiz bearbeiten</string>
-    <string name="new_note">Neue Notiz</string>
-    <string name="title">Titel</string>
-    <string name="content">Inhalt</string>
-    <string name="save">Speichern</string>
-    <string name="delete">Löschen</string>
-    <string name="back">Zurück</string>
+    <!-- ============================= -->
+    <!-- FAB MENU                      -->
+    <!-- ============================= -->
+    <string name="fab_new_note">New note</string>
+    <string name="fab_text_note">Text note</string>
+    <string name="fab_checklist">Checklist</string>
+    <string name="create_text_note">Note</string>
+    <string name="create_checklist">List</string>
     
-    <!-- Note List Item (Preview placeholders) -->
+    <!-- ============================= -->
+    <!-- NOTE CARD                     -->
+    <!-- ============================= -->
     <string name="note_title_placeholder">Note Title</string>
     <string name="note_content_placeholder">Note content preview…</string>
-    <string name="note_timestamp_placeholder">Vor 2 Std</string>
-    <string name="untitled">Ohne Titel</string>
+    <string name="note_timestamp_placeholder">2 hours ago</string>
+    <string name="untitled">Untitled</string>
+    <string name="checklist_progress">%1$d/%2$d done</string>
+    <string name="empty_checklist">No entries</string>
     
-    <!-- Delete Confirmation Dialog -->
-    <string name="delete_note_title">Notiz löschen?</string>
-    <string name="delete_note_message">Diese Aktion kann nicht rückgängig gemacht werden.</string>
-    <string name="cancel">Abbrechen</string>
+    <!-- ============================= -->
+    <!-- SYNC STATUS BANNER            -->
+    <!-- ============================= -->
+    <string name="sync_status">Sync Status</string>
+    <string name="sync_syncing">Syncing…</string>
+    <string name="sync_completed">Synced</string>
+    <string name="sync_error">Error</string>
+    <string name="sync_status_syncing">Syncing…</string>
+    <string name="sync_status_completed">Sync completed</string>
+    <string name="sync_status_error">Sync failed</string>
+    <string name="sync_already_running">Sync already in progress</string>
     
-    <!-- Settings -->
-    <string name="server_settings">Server-Einstellungen</string>
+    <!-- ============================= -->
+    <!-- DELETE DIALOGS                -->
+    <!-- ============================= -->
+    <string name="delete_note_title">Delete note?</string>
+    <string name="delete_notes_title">Delete %d notes?</string>
+    <string name="delete_note_message">How do you want to delete this note?</string>
+    <string name="delete_notes_message">How do you want to delete these %d notes?</string>
+    <string name="delete_everywhere">Delete everywhere (also server)</string>
+    <string name="delete_local_only">Delete local only</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <!-- Legacy delete dialogs -->
+    <string name="legacy_delete_dialog_title">Delete note</string>
+    <string name="legacy_delete_dialog_message">\"%s\" will be deleted locally.\n\nAlso delete from server?</string>
+    <string name="legacy_delete_from_server">Delete from server</string>
+    <string name="legacy_delete_with_server">\"%s\" will be deleted locally and from server</string>
+    <string name="legacy_delete_local_only">\"%s\" deleted locally (server remains)</string>
+    
+    <!-- ============================= -->
+    <!-- SNACKBAR MESSAGES             -->
+    <!-- ============================= -->
+    <string name="snackbar_undo">UNDO</string>
+    <string name="snackbar_note_deleted_local">\"%s\" deleted locally</string>
+    <string name="snackbar_note_deleted_server">\"%s\" will be deleted from server</string>
+    <string name="snackbar_notes_deleted_local">%d note(s) deleted locally</string>
+    <string name="snackbar_notes_deleted_server">%d note(s) will be deleted from server</string>
+    <string name="snackbar_deleted_from_server">Deleted from server</string>
+    <string name="snackbar_server_delete_failed">Server deletion failed</string>
+    <string name="snackbar_server_error">Server error: %s</string>
+    <string name="snackbar_already_synced">Already synced</string>
+    <string name="snackbar_server_unreachable">Server not reachable</string>
+    <string name="snackbar_synced_count">✅ Synced: %d notes</string>
+    
+    <!-- ============================= -->
+    <!-- URL VALIDATION ERRORS         -->
+    <!-- ============================= -->
+    <string name="error_http_local_only">HTTP is only allowed for local servers (e.g. 192.168.x.x, 10.x.x.x, nas.local). For public servers, please use HTTPS.</string>
+    <string name="error_invalid_protocol">Invalid protocol: %s. Please use HTTP or HTTPS.</string>
+    <string name="error_invalid_url">Invalid URL: %s</string>
+    <string name="error_server_not_configured">WebDAV server not fully configured</string>
+    <string name="error_sardine_client_failed">Sardine client could not be created</string>
+    <string name="error_server_url_not_configured">Server URL not configured</string>
+    
+    <!-- ============================= -->
+    <!-- NOTE EDITOR                   -->
+    <!-- ============================= -->
+    <string name="new_note">New Note</string>
+    <string name="edit_note">Edit Note</string>
+    <string name="new_checklist">New List</string>
+    <string name="edit_checklist">Edit List</string>
+    <string name="title">Title</string>
+    <string name="content">Content</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="add_item">Add item</string>
+    <string name="item_placeholder">New item…</string>
+    <string name="reorder_item">Reorder item</string>
+    <string name="drag_to_reorder">Drag to reorder</string>
+    <string name="delete_item">Delete item</string>
+    <string name="note_is_empty">Note is empty</string>
+    <string name="note_saved">Note saved</string>
+    <string name="note_deleted">Note deleted</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - MAIN               -->
+    <!-- ============================= -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_subtitle">%s</string>
+    <string name="settings_server">Server Settings</string>
+    <string name="settings_server_status_reachable">✅ Reachable</string>
+    <string name="settings_server_status_unreachable">❌ Not reachable</string>
+    <string name="settings_server_status_checking">🔍 Checking…</string>
+    <string name="settings_server_status_not_configured">⚠️ Not configured</string>
+    <string name="settings_sync">Sync Settings</string>
+    <string name="settings_sync_auto_on">Auto-Sync: On • %s</string>
+    <string name="settings_sync_auto_off">Auto-Sync: Off</string>
+    <string name="settings_interval_15min">15 min</string>
+    <string name="settings_interval_30min">30 min</string>
+    <string name="settings_interval_60min">60 min</string>
+    <string name="settings_markdown">Markdown Desktop Integration</string>
+    <string name="settings_markdown_auto_on">Auto-Sync: On</string>
+    <string name="settings_markdown_auto_off">Auto-Sync: Off</string>
+    <string name="settings_backup">Backup &amp; Restore</string>
+    <string name="settings_backup_subtitle">Local or server backup</string>
+    <string name="settings_about">About this App</string>
+    <string name="settings_debug">Debug &amp; Diagnostics</string>
+    <string name="settings_debug_logging_on">Logging: On</string>
+    <string name="settings_debug_logging_off">Logging: Off</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - SERVER             -->
+    <!-- ============================= -->
+    <string name="server_settings">Server Settings</string>
+    <string name="server_settings_title">Server Settings</string>
+    <string name="server_connection_type">Connection Type</string>
+    <string name="server_connection_http">🏠 Internal (HTTP)</string>
+    <string name="server_connection_https">🌐 External (HTTPS)</string>
+    <string name="server_connection_http_hint">HTTP only for local networks (e.g. 192.168.x.x, 10.x.x.x)</string>
+    <string name="server_connection_https_hint">HTTPS for secure connections over the internet</string>
+    <string name="server_address">Server Address</string>
+    <string name="server_address_hint">e.g. http://192.168.0.188:8080/notes</string>
     <string name="server_url">Server URL</string>
-    <string name="username">Benutzername</string>
-    <string name="password">Passwort</string>
-    <string name="server_status_label">Server-Status:</string>
-    <string name="server_status_checking">Prüfe…</string>
-    <string name="test_connection">Verbindung testen</string>
-    <string name="sync_now">Jetzt synchronisieren</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="server_password_show">Show</string>
+    <string name="server_password_hide">Hide</string>
+    <string name="server_status_label">Server Status:</string>
+    <string name="server_status_reachable">✅ Reachable</string>
+    <string name="server_status_unreachable">❌ Not reachable</string>
+    <string name="server_status_checking">🔍 Checking…</string>
+    <string name="server_status_not_configured">⚠️ Not configured</string>
+    <string name="server_status_unknown">❓ Unknown</string>
+    <string name="test_connection">Test Connection</string>
+    <string name="sync_now">Sync now</string>
     
-    <!-- Auto-Sync Settings -->
-    <string name="sync_settings">Sync-Einstellungen</string>
-    <string name="auto_sync">Auto-Sync aktiviert</string>
-    <string name="sync_status">Sync-Status</string>
-    <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%%/Tag)</string>
+    <!-- ============================= -->
+    <!-- SETTINGS - SYNC               -->
+    <!-- ============================= -->
+    <string name="sync_settings">Sync Settings</string>
+    <string name="sync_settings_title">Sync Settings</string>
+    <string name="auto_sync">Auto-Sync enabled</string>
+    <string name="sync_auto_sync_info">🔄 Auto-Sync:\n• Checks every 30 min if server is reachable\n• Works on any WiFi connection\n• Runs in background\n• Minimal battery usage (~0.4%/day)</string>
+    <string name="sync_auto_sync_enabled">Auto-Sync enabled</string>
+    <string name="sync_interval_section">Sync Interval</string>
+    <string name="sync_interval_info">Determines how often the app syncs in the background. Shorter intervals mean more up-to-date data, but use slightly more battery.\n\n⏱️ Note: When your phone is in standby, Android may delay syncs (up to 60 min) to save battery. This is normal and affects all background apps.</string>
+    <string name="sync_interval_15min_title">⚡ Every 15 minutes</string>
+    <string name="sync_interval_15min_subtitle">Fastest sync • ~0.8% battery/day (~23 mAh)</string>
+    <string name="sync_interval_30min_title">✓ Every 30 minutes (Recommended)</string>
+    <string name="sync_interval_30min_subtitle">Balanced ratio • ~0.4% battery/day (~12 mAh)</string>
+    <string name="sync_interval_60min_title">🔋 Every 60 minutes</string>
+    <string name="sync_interval_60min_subtitle">Maximum battery life • ~0.2% battery/day (~6 mAh est.)</string>
+    <!-- Legacy -->
+    <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Checks every 30 min if server is reachable\n• Works on any WiFi connection\n• Runs in background\n• Minimal battery usage (~0.4%%/day)</string>
     
-    <!-- Backup & Restore -->
-    <string name="backup_restore_title">Backup &amp; Wiederherstellung</string>
-    <string name="backup_restore_warning">⚠️ Achtung:\n\nDie Wiederherstellung überschreibt ALLE lokalen Notizen mit den Daten vom Server. Diese Aktion kann nicht rückgängig gemacht werden!</string>
-    <string name="restore_from_server">Vom Server wiederherstellen</string>
-    <string name="restore_confirmation_title">⚠️ Vom Server wiederherstellen?</string>
-    <string name="restore_confirmation_message">WARNUNG: Alle lokalen Notizen werden gelöscht und durch die Notizen vom Server ersetzt.\n\nDieser Vorgang kann nicht rückgängig gemacht werden!</string>
-    <string name="restore_button">Wiederherstellen</string>
-    <string name="restore_progress">Stelle Notizen wieder her…</string>
-    <string name="restore_success">✓ %d Notizen wiederhergestellt</string>
-    <string name="restore_error">Fehler: %s</string>
+    <!-- ============================= -->
+    <!-- SETTINGS - MARKDOWN           -->
+    <!-- ============================= -->
+    <string name="markdown_settings_title">Markdown Desktop Integration</string>
+    <string name="markdown_dialog_title">Markdown Auto-Sync</string>
+    <string name="markdown_export_complete">✅ Export complete</string>
+    <string name="markdown_export_progress">Exporting %1$d/%2$d notes…</string>
+    <string name="markdown_info">📝 Exports notes additionally as .md files. Mount WebDAV as network drive to edit with VS Code, Typora, or any Markdown editor. JSON sync remains primary format.</string>
+    <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
+    <string name="markdown_auto_sync_subtitle">Automatically syncs notes as .md files (upload + download on each sync)</string>
+    <string name="markdown_manual_sync_info">Manual sync exports all notes as .md files and imports .md files from the server. Useful for one-time sync.</string>
+    <string name="markdown_manual_sync_button">📝 Manual Markdown Sync</string>
     
-    <!-- Sync Status Banner (v1.3.1) -->
-    <string name="sync_status_syncing">Synchronisiere…</string>
-    <string name="sync_status_completed">Synchronisierung abgeschlossen</string>
-    <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
-    <string name="sync_already_running">Synchronisierung läuft bereits</string>
+    <!-- ============================= -->
+    <!-- SETTINGS - BACKUP             -->
+    <!-- ============================= -->
+    <string name="backup_settings_title">Backup &amp; Restore</string>
+    <string name="backup_restore_title">Backup &amp; Restore</string>
+    <string name="backup_auto_info">📦 A safety backup is automatically created before each restore.</string>
+    <string name="backup_local_section">Local Backup</string>
+    <string name="backup_create">💾 Create Backup</string>
+    <string name="backup_restore_file">📂 Restore from File</string>
+    <string name="backup_server_section">Server Backup</string>
+    <string name="backup_restore_server">☁️ Restore from Server</string>
+    <string name="backup_restore_dialog_title">⚠️ Restore Backup?</string>
+    <string name="backup_restore_source">Source: %s</string>
+    <string name="backup_restore_source_file">Local File</string>
+    <string name="backup_restore_source_server">WebDAV Server</string>
+    <string name="backup_restore_mode_label">Restore Mode:</string>
+    <string name="backup_mode_merge_title">⚪ Merge (Default)</string>
+    <string name="backup_mode_merge_subtitle">Add new, keep existing</string>
+    <string name="backup_mode_merge_full">⚪ Merge (Default)\n   → Add new, keep existing</string>
+    <string name="backup_mode_replace_title">⚪ Replace</string>
+    <string name="backup_mode_replace_subtitle">Delete all &amp; import backup</string>
+    <string name="backup_mode_replace_full">⚪ Replace\n   → Delete all &amp; import backup</string>
+    <string name="backup_mode_overwrite_title">⚪ Overwrite duplicates</string>
+    <string name="backup_mode_overwrite_subtitle">Backup wins on conflicts</string>
+    <string name="backup_mode_overwrite_full">⚪ Overwrite duplicates\n   → Backup wins on conflicts</string>
+    <string name="backup_restore_info">ℹ️ A safety backup will be automatically created before restoring.</string>
+    <string name="backup_restore_button">Restore</string>
+    <!-- Legacy -->
+    <string name="backup_restore_warning">⚠️ Warning:\n\nRestoring will overwrite ALL local notes with data from the server. This action cannot be undone!</string>
+    <string name="restore_from_server">Restore from Server</string>
+    <string name="restore_confirmation_title">⚠️ Restore from Server?</string>
+    <string name="restore_confirmation_message">WARNING: All local notes will be deleted and replaced with notes from the server.\n\nThis action cannot be undone!</string>
+    <string name="restore_button">Restore</string>
+    <string name="restore_progress">Restoring notes…</string>
+    <string name="restore_success">✓ %d notes restored</string>
+    <string name="restore_error">Error: %s</string>
     
-    <!-- Debug/Logging Section (v1.3.2) -->
-    <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
+    <!-- ============================= -->
+    <!-- SETTINGS - DEBUG              -->
+    <!-- ============================= -->
+    <string name="debug_settings_title">Debug &amp; Diagnostics</string>
+    <string name="debug_file_logging_title">File Logging</string>
+    <string name="debug_file_logging_subtitle">Save sync logs to file</string>
+    <string name="debug_privacy_info">🔒 Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
+    <string name="debug_log_actions_section">Log Actions</string>
+    <string name="debug_export_logs">📤 Export &amp; Share Logs</string>
+    <string name="debug_logs_subject">SimpleNotes Sync Logs</string>
+    <string name="debug_logs_share_via">Share logs via…</string>
+    <string name="debug_delete_logs">🗑️ Delete Logs</string>
+    <string name="debug_delete_logs_title">Delete logs?</string>
+    <string name="debug_delete_logs_message">All saved sync logs will be permanently deleted.</string>
+    <!-- Legacy -->
+    <string name="file_logging_privacy_notice">ℹ️ Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
     
-    <!-- ========================== -->
-    <!-- CHECKLIST FEATURE (v1.4.0) -->
-    <!-- ========================== -->
+    <!-- ============================= -->
+    <!-- SETTINGS - LANGUAGE           -->
+    <!-- ============================= -->
+    <string name="language_settings_title">Language</string>
+    <string name="language_system_default">System Default</string>
+    <string name="language_english">English</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_info">ℹ️ Choose your preferred language. The app will restart to apply the change.</string>
+    <string name="language_changed_restart">Language changed. Restarting…</string>
     
-    <!-- FAB Menu -->
-    <string name="create_text_note">Notiz</string>
-    <string name="create_checklist">Liste</string>
+    <!-- ============================= -->
+    <!-- SETTINGS - ABOUT              -->
+    <!-- ============================= -->
+    <string name="about_settings_title">About this App</string>
+    <string name="about_app_name">Simple Notes Sync</string>
+    <string name="about_version">Version %1$s (%2$d)</string>
+    <string name="about_links_section">Links</string>
+    <string name="about_github_title">GitHub Repository</string>
+    <string name="about_github_subtitle">Source code, issues &amp; documentation</string>
+    <string name="about_developer_title">Developer</string>
+    <string name="about_developer_subtitle">GitHub Profile: @inventory69</string>
+    <string name="about_license_title">License</string>
+    <string name="about_license_subtitle">MIT License - Open Source</string>
+    <string name="about_privacy_title">🔒 Privacy</string>
+    <string name="about_privacy_text">This app collects no data. All notes are stored only locally on your device and on your own WebDAV server. No telemetry, no ads.</string>
     
-    <!-- Editor -->
-    <string name="new_checklist">Neue Liste</string>
-    <string name="edit_checklist">Liste bearbeiten</string>
-    <string name="add_item">Element hinzufügen</string>
-    <string name="item_placeholder">Neues Element…</string>
-    <string name="reorder_item">Element verschieben</string>
-    <string name="drag_to_reorder">Ziehen zum Sortieren</string>
-    <string name="delete_item">Element löschen</string>
-    <string name="note_is_empty">Notiz ist leer</string>
-    <string name="note_saved">Notiz gespeichert</string>
-    <string name="note_deleted">Notiz gelöscht</string>
+    <!-- ============================= -->
+    <!-- TOAST MESSAGES                -->
+    <!-- ============================= -->
+    <string name="toast_connection_success">✅ Connection successful!</string>
+    <string name="toast_connection_failed">❌ %s</string>
+    <string name="toast_error">❌ Error: %s</string>
+    <string name="toast_syncing">🔄 Syncing…</string>
+    <string name="toast_already_synced">✅ Already synced</string>
+    <string name="toast_sync_success">✅ %d notes synced</string>
+    <string name="toast_sync_failed">❌ %s</string>
+    <string name="toast_auto_sync_enabled">✅ Auto-Sync enabled</string>
+    <string name="toast_auto_sync_disabled">Auto-Sync disabled</string>
+    <string name="toast_sync_interval">⏱️ Sync interval: %s</string>
+    <string name="toast_sync_interval_15min">15 minutes</string>
+    <string name="toast_sync_interval_30min">30 minutes</string>
+    <string name="toast_sync_interval_60min">60 minutes</string>
+    <string name="toast_configure_server_first">⚠️ Please configure WebDAV server first</string>
+    <string name="toast_markdown_exported">✅ %d notes exported to Markdown</string>
+    <string name="toast_markdown_enabled">📝 Markdown Auto-Sync enabled</string>
+    <string name="toast_markdown_disabled">📝 Markdown Auto-Sync disabled</string>
+    <string name="toast_markdown_syncing">📝 Markdown sync running…</string>
+    <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
+    <string name="toast_export_failed">❌ Export failed: %s</string>
+    <string name="toast_backup_success">✅ %s</string>
+    <string name="toast_backup_failed">❌ Backup failed: %s</string>
+    <string name="toast_restore_success">✅ %d notes restored</string>
+    <string name="toast_restore_failed">❌ Restore failed: %s</string>
+    <string name="toast_notifications_enabled">Notifications enabled</string>
+    <string name="toast_notifications_disabled">Notifications disabled. You can enable them in settings.</string>
+    <string name="toast_battery_optimization">Please disable battery optimization manually</string>
+    <string name="toast_logs_deleted">🗑️ Logs deleted</string>
+    <string name="toast_no_logs_to_delete">📭 No logs to delete</string>
+    <string name="toast_logs_delete_error">❌ Error deleting: %s</string>
+    <string name="toast_link_error">❌ Error opening link</string>
+    <string name="toast_file_logging_enabled">📝 File logging enabled</string>
+    <string name="toast_file_logging_disabled">📝 File logging disabled</string>
+    <string name="toast_sync_interval_changed">⏱️ Sync interval changed to %s</string>
+    <string name="version_not_available">Version not available</string>
+    <string name="status_checking">🔍 Checking…</string>
+    <string name="battery_optimization_dialog_message">Please select \'Not optimized\' for Simple Notes.</string>
+    <string name="battery_optimization_dialog_title">Background Synchronization</string>
+    <string name="battery_optimization_dialog_full_message">For the app to sync in the background, battery optimization must be disabled.\n\nPlease select \'Not optimized\' for Simple Notes.</string>
+    <string name="battery_optimization_open_settings">Open Settings</string>
+    <string name="battery_optimization_later">Later</string>
+    <string name="content_description_back">Back</string>
+    <string name="error_invalid_backup_file">Invalid backup file</string>
+    <string name="error_backup_version_unsupported">Backup version not supported (v%1$d requires v%2$d+)</string>
+    <string name="error_backup_empty">Backup contains no notes</string>
+    <string name="error_backup_invalid_notes">Backup contains %d invalid notes</string>
+    <string name="error_backup_corrupt">Backup file corrupt or invalid: %s</string>
+    <string name="error_restore_failed">Restore failed: %s</string>
+    <string name="restore_merge_result">%1$d new notes imported, %2$d skipped</string>
+    <string name="restore_overwrite_result">%1$d new, %2$d overwritten</string>
+    <string name="restore_replace_result">All notes replaced: %d imported</string>
     
-    <!-- List Preview -->
-    <string name="checklist_progress">%1$d/%2$d erledigt</string>
-    <string name="empty_checklist">Keine Einträge</string>
+    <!-- ============================= -->
+    <!-- RELATIVE TIME                 -->
+    <!-- ============================= -->
+    <string name="time_just_now">Just now</string>
+    <string name="time_minutes_ago">%d min ago</string>
+    <string name="time_hours_ago">%d hours ago</string>
+    <string name="time_days_ago">%d days ago</string>
+    
+    <!-- ============================= -->
+    <!-- NOTIFICATIONS                 -->
+    <!-- ============================= -->
+    <string name="notification_channel_name">Notes Synchronization</string>
+    <string name="notification_channel_desc">Notifications about sync status</string>
+    <string name="notification_sync_success_title">Sync successful</string>
+    <string name="notification_sync_success_message">%d note(s) synchronized</string>
+    <string name="notification_sync_failed_title">Sync failed</string>
+    <string name="notification_sync_progress_title">Syncing…</string>
+    <string name="notification_sync_progress_message">Notes are being synchronized</string>
+    <string name="notification_sync_conflict_title">Sync conflict detected</string>
+    <string name="notification_sync_conflict_message">%d note(s) have conflicts</string>
+    <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
+    <string name="notification_sync_warning_message">Server unreachable for %dh</string>
+    <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
+    <string name="notification_sync_in_progress_title">Synchronization in progress</string>
+    <string name="notification_sync_in_progress_message">Notes are being synchronized…</string>
+    <string name="notification_sync_error_title">Sync Error</string>
+    
+    <!-- ============================= -->
+    <!-- PLURALS                       -->
+    <!-- ============================= -->
+    <plurals name="notes_count">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
+    
+    <plurals name="notes_deleted_local">
+        <item quantity="one">%d note deleted locally</item>
+        <item quantity="other">%d notes deleted locally</item>
+    </plurals>
+    
+    <plurals name="notes_deleted_server">
+        <item quantity="one">%d note will be deleted from server</item>
+        <item quantity="other">%d notes will be deleted from server</item>
+    </plurals>
+    
+    <plurals name="notes_synced">
+        <item quantity="one">%d note synced</item>
+        <item quantity="other">%d notes synced</item>
+    </plurals>
 </resources>

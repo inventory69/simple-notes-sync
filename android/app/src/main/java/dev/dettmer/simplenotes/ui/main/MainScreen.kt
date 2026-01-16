@@ -42,8 +42,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
@@ -231,7 +233,7 @@ private fun MainTopBar(
     TopAppBar(
         title = {
             Text(
-                text = "Simple Notes",
+                text = stringResource(R.string.main_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -242,13 +244,13 @@ private fun MainTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Synchronisieren"
+                    contentDescription = stringResource(R.string.action_sync)
                 )
             }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Einstellungen"
+                    contentDescription = stringResource(R.string.action_settings)
                 )
             }
         },
@@ -276,13 +278,13 @@ private fun SelectionTopBar(
             IconButton(onClick = onCloseSelection) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Auswahl beenden"
+                    contentDescription = stringResource(R.string.action_close_selection)
                 )
             }
         },
         title = {
             Text(
-                text = "$selectedCount ausgewählt",
+                text = stringResource(R.string.selection_count, selectedCount),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -292,7 +294,7 @@ private fun SelectionTopBar(
                 IconButton(onClick = onSelectAll) {
                     Icon(
                         imageVector = Icons.Default.SelectAll,
-                        contentDescription = "Alle auswählen"
+                        contentDescription = stringResource(R.string.action_select_all)
                     )
                 }
             }
@@ -303,7 +305,7 @@ private fun SelectionTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Ausgewählte löschen",
+                    contentDescription = stringResource(R.string.action_delete_selected),
                     tint = if (selectedCount > 0) {
                         MaterialTheme.colorScheme.error
                     } else {

@@ -7,16 +7,17 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.SimpleNotesApplication
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Logger
@@ -34,7 +35,7 @@ import kotlinx.coroutines.launch
  * - Navigation with back button in each screen
  * - Clean separation of concerns with SettingsViewModel
  */
-class ComposeSettingsActivity : ComponentActivity() {
+class ComposeSettingsActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "ComposeSettingsActivity"
@@ -133,16 +134,12 @@ class ComposeSettingsActivity : ComponentActivity() {
      */
     private fun showBatteryOptimizationDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Hintergrund-Synchronisation")
-            .setMessage(
-                "Damit die App im Hintergrund synchronisieren kann, " +
-                "muss die Akku-Optimierung deaktiviert werden.\n\n" +
-                "Bitte wähle 'Nicht optimieren' für Simple Notes."
-            )
-            .setPositiveButton("Einstellungen öffnen") { _, _ ->
+            .setTitle(getString(R.string.battery_optimization_dialog_title))
+            .setMessage(getString(R.string.battery_optimization_dialog_full_message))
+            .setPositiveButton(getString(R.string.battery_optimization_open_settings)) { _, _ ->
                 openBatteryOptimizationSettings()
             }
-            .setNegativeButton("Später") { dialog, _ ->
+            .setNegativeButton(getString(R.string.battery_optimization_later)) { dialog, _ ->
                 dialog.dismiss()
             }
             .setCancelable(false)

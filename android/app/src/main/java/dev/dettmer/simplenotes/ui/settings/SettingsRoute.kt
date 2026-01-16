@@ -6,6 +6,7 @@ package dev.dettmer.simplenotes.ui.settings
  */
 sealed class SettingsRoute(val route: String) {
     data object Main : SettingsRoute("settings_main")
+    data object Language : SettingsRoute("settings_language")
     data object Server : SettingsRoute("settings_server")
     data object Sync : SettingsRoute("settings_sync")
     data object Markdown : SettingsRoute("settings_markdown")

@@ -6,6 +6,7 @@ import android.net.NetworkCapabilities
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -1852,15 +1853,15 @@ class WebDavSyncService(private val context: Context) {
     suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(Dispatchers.IO) {
         return@withContext try {
             val sardine = getOrCreateSardine()
-                ?: throw SyncException("Sardine client konnte nicht erstellt werden")
+                ?: throw SyncException(context.getString(R.string.error_sardine_client_failed))
             val serverUrl = getServerUrl()
-                ?: throw SyncException("Server-URL nicht konfiguriert")
+                ?: throw SyncException(context.getString(R.string.error_server_url_not_configured))
             
             val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
             val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
             
             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
-                throw SyncException("WebDAV-Server nicht vollständig konfiguriert")
+                throw SyncException(context.getString(R.string.error_server_not_configured))
             }
             
             Logger.d(TAG, "🔄 Manual Markdown Sync START")

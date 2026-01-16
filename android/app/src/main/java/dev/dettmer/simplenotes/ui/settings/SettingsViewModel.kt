@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -184,10 +185,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 } else {
                     ServerStatus.Unreachable(result.errorMessage)
                 }
-                emitToast(if (result.isSuccess) "✅ Verbindung erfolgreich!" else "❌ ${result.errorMessage}")
+                emitToast(if (result.isSuccess) getString(R.string.toast_connection_success) else getString(R.string.toast_connection_failed, result.errorMessage ?: ""))
             } catch (e: Exception) {
                 _serverStatus.value = ServerStatus.Unreachable(e.message)
-                emitToast("❌ Fehler: ${e.message}")
+                emitToast(getString(R.string.toast_error, e.message ?: ""))
             }
         }
     }
@@ -225,22 +226,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isSyncing.value = true
             try {
-                emitToast("🔄 Synchronisiere...")
+                emitToast(getString(R.string.toast_syncing))
                 val syncService = WebDavSyncService(getApplication())
                 
                 if (!syncService.hasUnsyncedChanges()) {
-                    emitToast("✅ Bereits synchronisiert")
+                    emitToast(getString(R.string.toast_already_synced))
                     return@launch
                 }
                 
                 val result = syncService.syncNotes()
                 if (result.isSuccess) {
-                    emitToast("✅ ${result.syncedCount} Notizen synchronisiert")
+                    emitToast(getString(R.string.toast_sync_success, result.syncedCount))
                 } else {
-                    emitToast("❌ ${result.errorMessage}")
+                    emitToast(getString(R.string.toast_sync_failed, result.errorMessage ?: ""))
                 }
             } catch (e: Exception) {
-                emitToast("❌ Fehler: ${e.message}")
+                emitToast(getString(R.string.toast_error, e.message ?: ""))
             } finally {
                 _isSyncing.value = false
             }
@@ -260,10 +261,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // v1.5.0 Fix: Trigger battery optimization check and network monitor restart
                 _events.emit(SettingsEvent.RequestBatteryOptimization)
                 _events.emit(SettingsEvent.RestartNetworkMonitor)
-                emitToast("✅ Auto-Sync aktiviert")
+                emitToast(getString(R.string.toast_auto_sync_enabled))
             } else {
                 _events.emit(SettingsEvent.RestartNetworkMonitor)
-                emitToast("Auto-Sync deaktiviert")
+                emitToast(getString(R.string.toast_auto_sync_disabled))
             }
         }
     }
@@ -273,11 +274,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.edit().putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes).apply()
         viewModelScope.launch {
             val text = when (minutes) {
-                15L -> "15 Minuten"
-                60L -> "60 Minuten"
-                else -> "30 Minuten"
+                15L -> getString(R.string.toast_sync_interval_15min)
+                60L -> getString(R.string.toast_sync_interval_60min)
+                else -> getString(R.string.toast_sync_interval_30min)
             }
-            emitToast("⏱️ Sync-Intervall: $text")
+            emitToast(getString(R.string.toast_sync_interval, text))
         }
     }
     
@@ -296,7 +297,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
                     
                     if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
-                        emitToast("⚠️ Bitte zuerst WebDAV-Server konfigurieren")
+                        emitToast(getString(R.string.toast_configure_server_first))
                         // Don't enable - revert state
                         return@launch
                     }
@@ -329,7 +330,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             .apply()
                         
                         _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
-                        emitToast("✅ $exportedCount Notizen nach Markdown exportiert")
+                        emitToast(getString(R.string.toast_markdown_exported, exportedCount))
                         
                         // Clear progress after short delay
                         kotlinx.coroutines.delay(500)
@@ -342,12 +343,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             .putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
                             .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
                             .apply()
-                        emitToast("📝 Markdown Auto-Sync aktiviert")
+                        emitToast(getString(R.string.toast_markdown_enabled))
                     }
                     
                 } catch (e: Exception) {
                     _markdownExportProgress.value = null
-                    emitToast("❌ Export fehlgeschlagen: ${e.message}")
+                    emitToast(getString(R.string.toast_export_failed, e.message ?: ""))
                     // Don't enable on error
                 }
             }
@@ -359,7 +360,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
                 .apply()
             viewModelScope.launch {
-                emitToast("📝 Markdown Auto-Sync deaktiviert")
+                emitToast(getString(R.string.toast_markdown_disabled))
             }
         }
     }
@@ -367,12 +368,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun performManualMarkdownSync() {
         viewModelScope.launch {
             try {
-                emitToast("📝 Markdown-Sync läuft...")
+                emitToast(getString(R.string.toast_markdown_syncing))
                 val syncService = WebDavSyncService(getApplication())
                 val result = syncService.manualMarkdownSync()
-                emitToast("✅ Export: ${result.exportedCount} • Import: ${result.importedCount}")
+                emitToast(getString(R.string.toast_markdown_result, result.exportedCount, result.importedCount))
             } catch (e: Exception) {
-                emitToast("❌ Fehler: ${e.message}")
+                emitToast(getString(R.string.toast_error, e.message ?: ""))
             }
         }
     }
@@ -386,9 +387,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isBackupInProgress.value = true
             try {
                 val result = backupManager.createBackup(uri)
-                emitToast(if (result.success) "✅ ${result.message}" else "❌ ${result.error}")
+                emitToast(if (result.success) getString(R.string.toast_backup_success, result.message ?: "") else getString(R.string.toast_backup_failed, result.error ?: ""))
             } catch (e: Exception) {
-                emitToast("❌ Backup fehlgeschlagen: ${e.message}")
+                emitToast(getString(R.string.toast_backup_failed, e.message ?: ""))
             } finally {
                 _isBackupInProgress.value = false
             }
@@ -400,9 +401,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isBackupInProgress.value = true
             try {
                 val result = backupManager.restoreBackup(uri, mode)
-                emitToast(if (result.success) "✅ ${result.importedNotes} Notizen wiederhergestellt" else "❌ ${result.error}")
+                emitToast(if (result.success) getString(R.string.toast_restore_success, result.importedNotes) else getString(R.string.toast_restore_failed, result.error ?: ""))
             } catch (e: Exception) {
-                emitToast("❌ Wiederherstellung fehlgeschlagen: ${e.message}")
+                emitToast(getString(R.string.toast_restore_failed, e.message ?: ""))
             } finally {
                 _isBackupInProgress.value = false
             }
@@ -413,14 +414,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isBackupInProgress.value = true
             try {
-                emitToast("📥 Lade vom Server...")
+                emitToast(getString(R.string.restore_progress))
                 val syncService = WebDavSyncService(getApplication())
                 val result = withContext(Dispatchers.IO) {
                     syncService.restoreFromServer(mode)
                 }
-                emitToast(if (result.isSuccess) "✅ ${result.restoredCount} Notizen wiederhergestellt" else "❌ ${result.errorMessage}")
+                emitToast(if (result.isSuccess) getString(R.string.toast_restore_success, result.restoredCount) else getString(R.string.toast_restore_failed, result.errorMessage ?: ""))
             } catch (e: Exception) {
-                emitToast("❌ Fehler: ${e.message}")
+                emitToast(getString(R.string.toast_error, e.message ?: ""))
             } finally {
                 _isBackupInProgress.value = false
             }
@@ -436,7 +437,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.edit().putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, enabled).apply()
         Logger.setFileLoggingEnabled(enabled)
         viewModelScope.launch {
-            emitToast(if (enabled) "📝 Datei-Logging aktiviert" else "📝 Datei-Logging deaktiviert")
+            emitToast(if (enabled) getString(R.string.toast_file_logging_enabled) else getString(R.string.toast_file_logging_disabled))
         }
     }
     
@@ -444,9 +445,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 val cleared = Logger.clearLogFile(getApplication())
-                emitToast(if (cleared) "🗑️ Logs gelöscht" else "📭 Keine Logs zum Löschen")
+                emitToast(if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted))
             } catch (e: Exception) {
-                emitToast("❌ Fehler: ${e.message}")
+                emitToast(getString(R.string.toast_error, e.message ?: ""))
             }
         }
     }
@@ -456,6 +457,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
     // Helper
     // ═══════════════════════════════════════════════════════════════════════
+    
+    private fun getString(resId: Int): String = getApplication<android.app.Application>().getString(resId)
+    
+    private fun getString(resId: Int, vararg formatArgs: Any): String = 
+        getApplication<android.app.Application>().getString(resId, *formatArgs)
     
     private suspend fun emitToast(message: String) {
         _showToast.emit(message)

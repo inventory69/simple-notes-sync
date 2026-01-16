@@ -16,6 +16,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 
 /**
@@ -42,7 +44,7 @@ fun NoteTypeFAB(
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Neue Notiz"
+            contentDescription = stringResource(R.string.fab_new_note)
         )
         
         // Dropdown inside FAB - renders as popup overlay
@@ -51,7 +53,7 @@ fun NoteTypeFAB(
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
-                text = { Text("Text-Notiz") },
+                text = { Text(stringResource(R.string.fab_text_note)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Description,
@@ -65,7 +67,7 @@ fun NoteTypeFAB(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Checkliste") },
+                text = { Text(stringResource(R.string.fab_checklist)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.List,
