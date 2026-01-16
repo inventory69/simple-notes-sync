@@ -92,6 +92,7 @@
     <string name="snackbar_already_synced">Bereits synchronisiert</string>
     <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
     <string name="snackbar_synced_count">✅ Gesynct: %d Notizen</string>
+    <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
     
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
