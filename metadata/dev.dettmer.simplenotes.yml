@@ -17,7 +17,7 @@ Binaries: https://github.com/inventory69/simple-notes-sync/releases/download/v%v
 Builds:
   - versionName: 1.5.0
     versionCode: 13
-    commit: PLACEHOLDER_UPDATE_AFTER_MERGE
+    commit: 65395142fab487e0a286cc5dfe3cf8b76652379d
     subdir: android/app
     gradle:
       - fdroid
