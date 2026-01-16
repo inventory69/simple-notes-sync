@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -256,20 +254,24 @@ private fun TextNoteContent(
     modifier: Modifier = Modifier
 ) {
     // v1.5.0: Use TextFieldValue to control cursor position
-    var textFieldValue by remember(content) {
+    // Track if initial cursor position has been set (only set to end once on first load)
+    var initialCursorSet by remember { mutableStateOf(false) }
+    
+    var textFieldValue by remember {
         mutableStateOf(TextFieldValue(
             text = content,
             selection = TextRange(content.length)
         ))
     }
     
-    // Sync external changes
-    LaunchedEffect(content) {
-        if (textFieldValue.text != content) {
+    // Set initial cursor position only once when content first loads
+    LaunchedEffect(Unit) {
+        if (!initialCursorSet && content.isNotEmpty()) {
             textFieldValue = TextFieldValue(
                 text = content,
                 selection = TextRange(content.length)
             )
+            initialCursorSet = true
         }
     }
     

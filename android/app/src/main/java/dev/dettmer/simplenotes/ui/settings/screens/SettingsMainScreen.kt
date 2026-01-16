@@ -118,7 +118,11 @@ fun SettingsMainScreen(
                 SettingsCard(
                     icon = Icons.Default.Sync,
                     title = stringResource(R.string.settings_sync),
-                    subtitle = if (autoSyncEnabled) stringResource(R.string.settings_sync_auto_on, intervalText) else stringResource(R.string.settings_sync_auto_off),
+                    subtitle = if (autoSyncEnabled) {
+                        stringResource(R.string.settings_sync_auto_on, intervalText)
+                    } else {
+                        stringResource(R.string.settings_sync_auto_off)
+                    },
                     onClick = { onNavigate(SettingsRoute.Sync) }
                 )
             }
@@ -128,7 +132,11 @@ fun SettingsMainScreen(
                 SettingsCard(
                     icon = Icons.Default.Description,
                     title = stringResource(R.string.settings_markdown),
-                    subtitle = if (markdownAutoSync) stringResource(R.string.settings_markdown_auto_on) else stringResource(R.string.settings_markdown_auto_off),
+                    subtitle = if (markdownAutoSync) {
+                        stringResource(R.string.settings_markdown_auto_on)
+                    } else {
+                        stringResource(R.string.settings_markdown_auto_off)
+                    },
                     onClick = { onNavigate(SettingsRoute.Markdown) }
                 )
             }
@@ -158,7 +166,11 @@ fun SettingsMainScreen(
                 SettingsCard(
                     icon = Icons.Default.BugReport,
                     title = stringResource(R.string.settings_debug),
-                    subtitle = if (fileLoggingEnabled) stringResource(R.string.settings_debug_logging_on) else stringResource(R.string.settings_debug_logging_off),
+                    subtitle = if (fileLoggingEnabled) {
+                        stringResource(R.string.settings_debug_logging_on)
+                    } else {
+                        stringResource(R.string.settings_debug_logging_off)
+                    },
                     onClick = { onNavigate(SettingsRoute.Debug) }
                 )
             }

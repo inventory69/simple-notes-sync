@@ -1,14 +1,14 @@
-# Simple Notes Sync - Technical Documentation
+# Simple Notes Sync - Technische Dokumentation
 
-This file contains detailed technical information about implementation, architecture, and advanced features.
+Diese Datei enthält detaillierte technische Informationen über die Implementierung, Architektur und erweiterte Funktionen.
 
-**🌍 Languages:** [Deutsch](DOCS.md) · **English**
+**🌍 Sprachen:** **Deutsch** · [English](DOCS.md)
 
 ---
 
-## 📐 Architecture
+## 📐 Architektur
 
-### Overall Overview
+### Gesamtübersicht
 
 ```
 ┌─────────────────┐
@@ -23,81 +23,81 @@ This file contains detailed technical information about implementation, architec
 └─────────────────┘
 ```
 
-### Android App Architecture
+### Android App Architektur
 
 ```
 app/
 ├── models/
-│   ├── Note.kt              # Data class for notes
-│   └── SyncStatus.kt        # Sync status enum
+│   ├── Note.kt              # Data class für Notizen
+│   └── SyncStatus.kt        # Sync-Status Enum
 ├── storage/
-│   └── NotesStorage.kt      # Local JSON file storage
+│   └── NotesStorage.kt      # Lokale JSON-Datei Speicherung
 ├── sync/
-│   ├── WebDavSyncService.kt # WebDAV sync logic
-│   ├── NetworkMonitor.kt    # WiFi detection
-│   ├── SyncWorker.kt        # WorkManager background worker
-│   └── BootReceiver.kt      # Device reboot handler
+│   ├── WebDavSyncService.kt # WebDAV Sync-Logik
+│   ├── NetworkMonitor.kt    # WLAN-Erkennung
+│   ├── SyncWorker.kt        # WorkManager Background Worker
+│   └── BootReceiver.kt      # Device Reboot Handler
 ├── adapters/
-│   └── NotesAdapter.kt      # RecyclerView adapter
+│   └── NotesAdapter.kt      # RecyclerView Adapter
 ├── utils/
-│   ├── Constants.kt         # App constants
-│   ├── NotificationHelper.kt# Notification management
-│   └── Logger.kt            # Debug/release logging
+│   ├── Constants.kt         # App-Konstanten
+│   ├── NotificationHelper.kt# Notification Management
+│   └── Logger.kt            # Debug/Release Logging
 └── activities/
-    ├── MainActivity.kt      # Main view with list
-    ├── NoteEditorActivity.kt# Note editor
-    └── SettingsActivity.kt  # Server configuration
+    ├── MainActivity.kt      # Hauptansicht mit Liste
+    ├── NoteEditorActivity.kt# Editor für Notizen
+    └── SettingsActivity.kt  # Server-Konfiguration
 ```
 
 ---
 
-## 🔄 Auto-Sync Implementation
+## 🔄 Auto-Sync Implementierung
 
 ### WorkManager Periodic Task
 
-Auto-sync is based on **WorkManager** with the following configuration:
+Der Auto-Sync basiert auf **WorkManager** mit folgender Konfiguration:
 
 ```kotlin
 val constraints = Constraints.Builder()
-    .setRequiredNetworkType(NetworkType.UNMETERED)  // WiFi only
+    .setRequiredNetworkType(NetworkType.UNMETERED)  // Nur WiFi
     .build()
 
 val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-    30, TimeUnit.MINUTES,  // Every 30 minutes
+    30, TimeUnit.MINUTES,  // Alle 30 Minuten
     10, TimeUnit.MINUTES   // Flex interval
 )
     .setConstraints(constraints)
     .build()
 ```
 
-**Why WorkManager?**
-- ✅ Runs even when app is closed
-- ✅ Automatic restart after device reboot
+**Warum WorkManager?**
+- ✅ Läuft auch wenn App geschlossen ist
+- ✅ Automatischer Restart nach Device Reboot
 - ✅ Battery-efficient (Android managed)
-- ✅ Guaranteed execution when constraints are met
+- ✅ Garantierte Ausführung bei erfüllten Constraints
 
 ### Network Detection
 
-We use **Gateway IP Comparison** to check if the server is reachable:
+Wir verwenden **Gateway IP Comparison** um zu prüfen, ob der Server erreichbar ist:
 
 ```kotlin
 fun isInHomeNetwork(): Boolean {
-    val gatewayIP = getGatewayIP()         // e.g. 192.168.0.1
-    val serverIP = extractIPFromUrl(serverUrl)  // e.g. 192.168.0.188
+    val gatewayIP = getGatewayIP()         // z.B. 192.168.0.1
+    val serverIP = extractIPFromUrl(serverUrl)  // z.B. 192.168.0.188
     
-    return isSameNetwork(gatewayIP, serverIP)  // Checks /24 network
+    return isSameNetwork(gatewayIP, serverIP)  // Prüft /24 Netzwerk
 }
 ```
 
-**Advantages:**
-- ✅ No location permissions needed
-- ✅ Works with all Android versions
-- ✅ Reliable and fast
+**Vorteile:**
+- ✅ Keine Location Permissions nötig
+- ✅ Funktioniert mit allen Android Versionen
+- ✅ Zuverlässig und schnell
 
 ### Sync Flow
 
 ```
-1. WorkManager wakes up (every 30 min)
+1. WorkManager wacht auf (alle 30 Min)
    ↓
 2. Check: WiFi connected?
    ↓
@@ -105,7 +105,7 @@ fun isInHomeNetwork(): Boolean {
    ↓
 4. Load local notes
    ↓
-5. Upload new/changed notes → Server
+5. Upload neue/geänderte Notes → Server
    ↓
 6. Download remote notes ← Server
    ↓
@@ -118,20 +118,20 @@ fun isInHomeNetwork(): Boolean {
 
 ---
 
-## 🔄 Sync Trigger Overview
+## � Sync-Trigger Übersicht
 
-The app uses **4 different sync triggers** with different use cases:
+Die App verwendet **4 verschiedene Sync-Trigger** mit unterschiedlichen Anwendungsfällen:
 
-| Trigger | File | Function | When? | Pre-Check? |
-|---------|------|----------|-------|------------|
-| **1. Manual Sync** | `MainActivity.kt` | `triggerManualSync()` | User clicks sync button in menu | ✅ Yes |
-| **2. Auto-Sync (onResume)** | `MainActivity.kt` | `triggerAutoSync()` | App opened/resumed | ✅ Yes |
-| **3. Background Sync (Periodic)** | `SyncWorker.kt` | `doWork()` | Every 15/30/60 minutes (configurable) | ✅ Yes |
-| **4. WiFi-Connect Sync** | `NetworkMonitor.kt` → `SyncWorker.kt` | `triggerWifiConnectSync()` | WiFi connected | ✅ Yes |
+| Trigger | Datei | Funktion | Wann? | Pre-Check? |
+|---------|-------|----------|-------|------------|
+| **1. Manueller Sync** | `MainActivity.kt` | `triggerManualSync()` | User klickt auf Sync-Button im Menü | ✅ Ja |
+| **2. Auto-Sync (onResume)** | `MainActivity.kt` | `triggerAutoSync()` | App wird geöffnet/fortgesetzt | ✅ Ja |
+| **3. Hintergrund-Sync (Periodic)** | `SyncWorker.kt` | `doWork()` | Alle 15/30/60 Minuten (konfigurierbar) | ✅ Ja |
+| **4. WiFi-Connect Sync** | `NetworkMonitor.kt` → `SyncWorker.kt` | `triggerWifiConnectSync()` | WiFi verbunden | ✅ Ja |
 
-### Server Reachability Check (Pre-Check)
+### Server-Erreichbarkeits-Check (Pre-Check)
 
-**All 4 sync triggers** use a **pre-check** before the actual sync:
+**Alle 4 Sync-Trigger** verwenden vor dem eigentlichen Sync einen **Pre-Check**:
 
 ```kotlin
 // WebDavSyncService.kt - isServerReachable()
@@ -148,53 +148,53 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
 }
 ```
 
-**Why Socket Check instead of HTTP Request?**
-- ⚡ **Faster:** Socket connect is instant, HTTP request takes longer
-- 🔋 **Battery Efficient:** No HTTP overhead (headers, TLS handshake, etc.)
-- 🎯 **More Precise:** Only checks network reachability, not server logic
-- 🛡️ **Prevents Errors:** Detects foreign WiFi networks before sync error occurs
+**Warum Socket-Check statt HTTP-Request?**
+- ⚡ **Schneller:** Socket-Connect ist instant, HTTP-Request dauert länger
+- 🔋 **Akkuschonender:** Kein HTTP-Overhead (Headers, TLS Handshake, etc.)
+- 🎯 **Präziser:** Prüft nur Netzwerk-Erreichbarkeit, nicht Server-Logik
+- 🛡️ **Verhindert Fehler:** Erkennt fremde WiFi-Netze bevor Sync-Fehler entsteht
 
-**When does the check fail?**
-- ❌ Server offline/unreachable
-- ❌ Wrong WiFi network (e.g. public café WiFi)
-- ❌ Network not ready yet (DHCP/routing delay after WiFi connect)
-- ❌ VPN blocks server access
-- ❌ No WebDAV server URL configured
+**Wann schlägt der Check fehl?**
+- ❌ Server offline/nicht erreichbar
+- ❌ Falsches WiFi-Netzwerk (z.B. öffentliches Café-WiFi)
+- ❌ Netzwerk noch nicht bereit (DHCP/Routing-Delay nach WiFi-Connect)
+- ❌ VPN blockiert Server-Zugriff
+- ❌ Keine WebDAV-Server-URL konfiguriert
 
-### Sync Behavior by Trigger Type
+### Sync-Verhalten nach Trigger-Typ
 
-| Trigger | When server not reachable | On successful sync | Throttling |
-|---------|--------------------------|-------------------|------------|
-| Manual Sync | Toast: "Server not reachable" | Toast: "✅ Synced: X notes" | None |
-| Auto-Sync (onResume) | Silent abort (no toast) | Toast: "✅ Synced: X notes" | Max. 1x/min |
-| Background Sync | Silent abort (no toast) | Silent (LocalBroadcast only) | 15/30/60 min |
-| WiFi-Connect Sync | Silent abort (no toast) | Silent (LocalBroadcast only) | WiFi-based |
+| Trigger | Bei Server nicht erreichbar | Bei erfolgreichem Sync | Throttling |
+|---------|----------------------------|----------------------|------------|
+| Manueller Sync | Toast: "Server nicht erreichbar" | Toast: "✅ Gesynct: X Notizen" | Keins |
+| Auto-Sync (onResume) | Silent abort (kein Toast) | Toast: "✅ Gesynct: X Notizen" | Max. 1x/Min |
+| Hintergrund-Sync | Silent abort (kein Toast) | Silent (LocalBroadcast only) | 15/30/60 Min |
+| WiFi-Connect Sync | Silent abort (kein Toast) | Silent (LocalBroadcast only) | WiFi-basiert |
 
 ---
 
-## 🔋 Battery Optimization
+## 🔋 Akku-Optimierung
 
-### Usage Analysis
+### Verbrauchsanalyse
 
-| Component | Frequency | Usage | Details |
+| Komponente | Frequenz | Verbrauch | Details |
 |------------|----------|-----------|---------|
-| WorkManager Wakeup | Every 30 min | ~0.15 mAh | System wakes up |
-| Network Check | 48x/day | ~0.03 mAh | Gateway IP check |
-| WebDAV Sync | 2-3x/day | ~1.5 mAh | Only when changes |
-| **Total** | - | **~12 mAh/day** | **~0.4%** at 3000mAh |
+| WorkManager Wakeup | Alle 30 Min | ~0.15 mAh | System wacht auf |
+| Network Check | 48x/Tag | ~0.03 mAh | Gateway IP check |
+| WebDAV Sync | 2-3x/Tag | ~1.5 mAh | Nur bei Änderungen |
+| **Total** | - | **~12 mAh/Tag** | **~0.4%** bei 3000mAh |
 
-### Optimizations
+### Optimierungen
 
 1. **IP Caching**
    ```kotlin
    private var cachedServerIP: String? = null
-   // DNS lookup only once at start, not every check
+   // DNS lookup nur 1x beim Start, nicht bei jedem Check
    ```
 
 2. **Throttling**
    ```kotlin
    private var lastSyncTime = 0L
-   private const val MIN_SYNC_INTERVAL_MS = 60_000L  // Max 1 sync/min
+   private const val MIN_SYNC_INTERVAL_MS = 60_000L  // Max 1 Sync/Min
    ```
 
 3. **Conditional Logging**
@@ -207,9 +207,9 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
    ```
 
 4. **Network Constraints**
-   - WiFi only (not mobile data)
-   - Only when server is reachable
-   - No permanent listeners
+   - Nur WiFi (nicht mobile Daten)
+   - Nur wenn Server erreichbar
+   - Keine permanenten Listeners
 
 ---
 
@@ -255,15 +255,15 @@ suspend fun downloadNotes(): DownloadResult {
         val localNote = storage.loadNote(remoteNote.id)
         
         if (localNote == null) {
-            // New note from server
+            // Neue Note vom Server
             storage.saveNote(remoteNote)
             downloadedCount++
         } else if (localNote.modifiedAt < remoteNote.modifiedAt) {
-            // Server has newer version
+            // Server hat neuere Version
             storage.saveNote(remoteNote)
             downloadedCount++
         } else if (localNote.modifiedAt > remoteNote.modifiedAt) {
-            // Local version is newer → Conflict
+            // Lokale Version ist neuer → Conflict
             resolveConflict(localNote, remoteNote)
             conflictCount++
         }
@@ -275,19 +275,19 @@ suspend fun downloadNotes(): DownloadResult {
 
 ### Conflict Resolution
 
-Strategy: **Last-Write-Wins** with **Conflict Copy**
+Strategie: **Last-Write-Wins** mit **Conflict Copy**
 
 ```kotlin
 fun resolveConflict(local: Note, remote: Note) {
-    // Rename remote note (conflict copy)
+    // Remote Note umbenennen (Conflict Copy)
     val conflictNote = remote.copy(
         id = "${remote.id}_conflict_${System.currentTimeMillis()}",
-        title = "${remote.title} (Conflict)"
+        title = "${remote.title} (Konflikt)"
     )
     
     storage.saveNote(conflictNote)
     
-    // Local note remains
+    // Lokale Note bleibt
     local.syncStatus = SyncStatus.SYNCED
     storage.saveNote(local)
 }
@@ -302,7 +302,7 @@ fun resolveConflict(local: Note, remote: Note) {
 ```kotlin
 val channel = NotificationChannel(
     "notes_sync_channel",
-    "Notes Synchronization",
+    "Notizen Synchronisierung",
     NotificationManager.IMPORTANCE_DEFAULT
 )
 ```
@@ -315,9 +315,9 @@ fun showSyncSuccess(context: Context, count: Int) {
     val pendingIntent = PendingIntent.getActivity(context, 0, intent, FLAGS)
     
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setContentTitle("Sync successful")
-        .setContentText("$count notes synchronized")
-        .setContentIntent(pendingIntent)  // Click opens app
+        .setContentTitle("Sync erfolgreich")
+        .setContentText("$count Notizen synchronisiert")
+        .setContentIntent(pendingIntent)  // Click öffnet App
         .setAutoCancel(true)              // Dismiss on click
         .build()
     
@@ -329,10 +329,10 @@ fun showSyncSuccess(context: Context, count: Int) {
 
 ## 🛡️ Permissions
 
-The app requires **minimal permissions**:
+Die App benötigt **minimale Permissions**:
 
 ```xml
-<!-- Network -->
+<!-- Netzwerk -->
 <uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -348,28 +348,28 @@ The app requires **minimal permissions**:
 <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 ```
 
-**No Location Permissions!**  
-We use Gateway IP Comparison instead of SSID detection. No location permission required.
+**Keine Location Permissions!**  
+Wir verwenden Gateway IP Comparison statt SSID-Erkennung. Keine Standortberechtigung nötig.
 
 ---
 
 ## 🧪 Testing
 
-### Test Server
+### Server testen
 
 ```bash
-# WebDAV server reachable?
+# WebDAV Server erreichbar?
 curl -u noteuser:password http://192.168.0.188:8080/
 
-# Upload file
+# Datei hochladen
 echo '{"test":"data"}' > test.json
 curl -u noteuser:password -T test.json http://192.168.0.188:8080/test.json
 
-# Download file
+# Datei herunterladen
 curl -u noteuser:password http://192.168.0.188:8080/test.json
 ```
 
-### Test Android App
+### Android App testen
 
 **Unit Tests:**
 ```bash
@@ -384,15 +384,15 @@ cd android
 
 **Manual Testing Checklist:**
 
-- [ ] Create note → visible in list
-- [ ] Edit note → changes saved
-- [ ] Delete note → removed from list
-- [ ] Manual sync → server status "Reachable"
-- [ ] Auto-sync → notification after ~30 min
-- [ ] Close app → auto-sync continues
-- [ ] Device reboot → auto-sync starts automatically
-- [ ] Server offline → error notification
-- [ ] Notification click → app opens
+- [ ] Notiz erstellen → in Liste sichtbar
+- [ ] Notiz bearbeiten → Änderungen gespeichert
+- [ ] Notiz löschen → aus Liste entfernt
+- [ ] Manueller Sync → Server Status "Erreichbar"
+- [ ] Auto-Sync → Notification nach ~30 Min
+- [ ] App schließen → Auto-Sync funktioniert weiter
+- [ ] Device Reboot → Auto-Sync startet automatisch
+- [ ] Server offline → Error Notification
+- [ ] Notification Click → App öffnet sich
 
 ---
 
@@ -413,18 +413,18 @@ cd android
 # APK: app/build/outputs/apk/release/app-release-unsigned.apk
 ```
 
-### Sign (for Distribution)
+### Signieren (für Distribution)
 
 ```bash
-# Create keystore
+# Keystore erstellen
 keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-alias
 
-# Sign APK
+# APK signieren
 jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
   -keystore my-release-key.jks \
   app-release-unsigned.apk my-alias
 
-# Optimize
+# Optimieren
 zipalign -v 4 app-release-unsigned.apk app-release.apk
 ```
 
@@ -435,39 +435,39 @@ zipalign -v 4 app-release-unsigned.apk app-release.apk
 ### LogCat Filter
 
 ```bash
-# Only app logs
+# Nur App-Logs
 adb logcat -s SimpleNotesApp NetworkMonitor SyncWorker WebDavSyncService
 
-# With timestamps
+# Mit Timestamps
 adb logcat -v time -s SyncWorker
 
-# Save to file
+# In Datei speichern
 adb logcat -s SyncWorker > sync_debug.log
 ```
 
 ### Common Issues
 
-**Problem: Auto-sync not working**
+**Problem: Auto-Sync funktioniert nicht**
 ```
-Solution: Disable battery optimization
+Lösung: Akku-Optimierung deaktivieren
 Settings → Apps → Simple Notes → Battery → Don't optimize
 ```
 
-**Problem: Server not reachable**
+**Problem: Server nicht erreichbar**
 ```
 Check: 
-1. Server running? → docker-compose ps
-2. IP correct? → ip addr show
-3. Port open? → telnet 192.168.0.188 8080
+1. Server läuft? → docker-compose ps
+2. IP korrekt? → ip addr show
+3. Port offen? → telnet 192.168.0.188 8080
 4. Firewall? → sudo ufw allow 8080
 ```
 
-**Problem: Notifications not appearing**
+**Problem: Notifications kommen nicht**
 ```
 Check:
-1. Notification permission granted?
-2. Do Not Disturb active?
-3. App in background? → Force stop & restart
+1. Notification Permission erteilt?
+2. Do Not Disturb aktiv?
+3. App im Background? → Force stop & restart
 ```
 
 ---
@@ -504,26 +504,26 @@ androidx.localbroadcastmanager:localbroadcastmanager:1.1.0
 ## 🔮 Roadmap
 
 ### v1.1
-- [ ] Search & Filter
+- [ ] Suche & Filter
 - [ ] Dark Mode
-- [ ] Tags/Categories
+- [ ] Tags/Kategorien
 - [ ] Markdown Preview
 
 ### v2.0
 - [ ] Desktop Client (Flutter)
-- [ ] End-to-End Encryption
+- [ ] End-to-End Verschlüsselung
 - [ ] Shared Notes (Collaboration)
 - [ ] Attachment Support
 
 ---
 
-## 📖 Further Documentation
+## 📖 Weitere Dokumentation
 
 - [Project Docs](https://github.com/inventory69/project-docs/tree/main/simple-notes-sync)
-- [Sync Architecture](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/SYNC_ARCHITECTURE.md) - **Detailed Sync Trigger Documentation**
+- [Sync Architecture](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/SYNC_ARCHITECTURE.md) - **Detaillierte Sync-Trigger Dokumentation**
 - [Android Guide](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/ANDROID_GUIDE.md)
 - [Bugfix Documentation](https://github.com/inventory69/project-docs/blob/main/simple-notes-sync/BUGFIX_SYNC_SPAM_AND_NOTIFICATIONS.md)
 
 ---
 
-**Last updated:** December 25, 2025
+**Letzte Aktualisierung:** 25. Dezember 2025

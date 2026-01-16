@@ -256,10 +256,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (deleteFromServer) {
                 kotlinx.coroutines.delay(3500) // Snackbar shows for ~3s
                 // Only delete if not restored (check if still in pending)
-                selectedIds.forEach { noteId ->
-                    if (noteId in _pendingDeletions.value) {
-                        deleteNoteFromServer(noteId)
-                    }
+                val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
+                if (idsToDelete.isNotEmpty()) {
+                    deleteMultipleNotesFromServer(idsToDelete)
                 }
             } else {
                 // Just finalize local deletion
@@ -401,6 +400,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Remove from pending deletions
                 _pendingDeletions.value = _pendingDeletions.value - noteId
             }
+        }
+    }
+    
+    /**
+     * Delete multiple notes from server with aggregated toast
+     * Shows single toast at the end instead of one per note
+     */
+    private fun deleteMultipleNotesFromServer(noteIds: List<String>) {
+        viewModelScope.launch {
+            val webdavService = WebDavSyncService(getApplication())
+            var successCount = 0
+            var failCount = 0
+            
+            noteIds.forEach { noteId ->
+                try {
+                    val success = withContext(Dispatchers.IO) {
+                        webdavService.deleteNoteFromServer(noteId)
+                    }
+                    if (success) successCount++ else failCount++
+                } catch (e: Exception) {
+                    failCount++
+                } finally {
+                    _pendingDeletions.value = _pendingDeletions.value - noteId
+                }
+            }
+            
+            // Show aggregated toast
+            val message = when {
+                failCount == 0 -> getString(R.string.snackbar_notes_deleted_from_server, successCount)
+                successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
+                else -> getString(
+                    R.string.snackbar_notes_deleted_from_server_partial,
+                    successCount,
+                    successCount + failCount
+                )
+            }
+            _showToast.emit(message)
         }
     }
     

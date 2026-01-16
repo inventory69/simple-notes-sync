@@ -185,7 +185,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 } else {
                     ServerStatus.Unreachable(result.errorMessage)
                 }
-                emitToast(if (result.isSuccess) getString(R.string.toast_connection_success) else getString(R.string.toast_connection_failed, result.errorMessage ?: ""))
+                val message = if (result.isSuccess) {
+                    getString(R.string.toast_connection_success)
+                } else {
+                    getString(R.string.toast_connection_failed, result.errorMessage ?: "")
+                }
+                emitToast(message)
             } catch (e: Exception) {
                 _serverStatus.value = ServerStatus.Unreachable(e.message)
                 emitToast(getString(R.string.toast_error, e.message ?: ""))
@@ -387,7 +392,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isBackupInProgress.value = true
             try {
                 val result = backupManager.createBackup(uri)
-                emitToast(if (result.success) getString(R.string.toast_backup_success, result.message ?: "") else getString(R.string.toast_backup_failed, result.error ?: ""))
+                val message = if (result.success) {
+                    getString(R.string.toast_backup_success, result.message ?: "")
+                } else {
+                    getString(R.string.toast_backup_failed, result.error ?: "")
+                }
+                emitToast(message)
             } catch (e: Exception) {
                 emitToast(getString(R.string.toast_backup_failed, e.message ?: ""))
             } finally {
@@ -401,7 +411,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isBackupInProgress.value = true
             try {
                 val result = backupManager.restoreBackup(uri, mode)
-                emitToast(if (result.success) getString(R.string.toast_restore_success, result.importedNotes) else getString(R.string.toast_restore_failed, result.error ?: ""))
+                val message = if (result.success) {
+                    getString(R.string.toast_restore_success, result.importedNotes)
+                } else {
+                    getString(R.string.toast_restore_failed, result.error ?: "")
+                }
+                emitToast(message)
             } catch (e: Exception) {
                 emitToast(getString(R.string.toast_restore_failed, e.message ?: ""))
             } finally {
@@ -419,7 +434,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = withContext(Dispatchers.IO) {
                     syncService.restoreFromServer(mode)
                 }
-                emitToast(if (result.isSuccess) getString(R.string.toast_restore_success, result.restoredCount) else getString(R.string.toast_restore_failed, result.errorMessage ?: ""))
+                val message = if (result.isSuccess) {
+                    getString(R.string.toast_restore_success, result.restoredCount)
+                } else {
+                    getString(R.string.toast_restore_failed, result.errorMessage ?: "")
+                }
+                emitToast(message)
             } catch (e: Exception) {
                 emitToast(getString(R.string.toast_error, e.message ?: ""))
             } finally {
