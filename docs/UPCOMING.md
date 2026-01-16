@@ -1,56 +1,76 @@
-# Geplante Features 🚀
+# Upcoming Features 🚀
 
-**🌍 Languages:** **Deutsch** · [English](UPCOMING.en.md)
+**🌍 Languages:** [Deutsch](UPCOMING.de.md) · **English**
 
-> Was kommt als Nächstes? Hier findest du unsere Pläne für zukünftige Versionen.
-
----
-
-## v1.5.0 - Internationalisierung & UI-Polish
-
-> **Status:** In Entwicklung 🔨
-
-### 🌍 Mehrsprachigkeit
-
-- **Englisch als Standard-Sprache** - Internationale Nutzer willkommen
-- **Deutsche Übersetzung** - Vollständig übersetzt
-- **Automatische Spracherkennung** - Folgt der System-Sprache
-- **Manuelle Sprachwahl** - In den Einstellungen umschaltbar
-
-### ⚙️ Überarbeitete Einstellungen
-
-- **Modernisiertes Settings-Design** - Übersichtlicher und intuitiver
-- **Kategorisierte Optionen** - Sync, Backup, Entwickler-Optionen
-
-### 🎨 UI-Verbesserungen
-
-- **Splash Screen** - App-Icon beim Start
-- **Server-Ordner Prüfung** - Bessere Fehlermeldungen bei der Einrichtung
-- **Dezentere Sync-Anzeige** - Banner nur bei tatsächlichen Änderungen
+> What's next? Here you'll find our plans for future versions.
 
 ---
 
-## v1.6.0 - Modern APIs
+## v1.5.0 - Jetpack Compose & Internationalization ✅
 
-> **Status:** Geplant 📋
+> **Status:** Released 🎉 (January 2026)
 
-### 🔧 Technische Modernisierung
+### 🎨 Jetpack Compose UI
 
-- **Modernere Background-Sync Architektur** - Noch zuverlässiger
-- **Verbesserte Progress-Dialoge** - Material Design 3 konform
-- **Code-Qualität** - Interne Optimierungen
+- ✅ **Complete UI redesign** - From XML views to Jetpack Compose
+- ✅ **Modernized settings** - 7 categorized screens
+- ✅ **Selection Mode** - Long-press for multi-select
+- ✅ **Silent-Sync Mode** - No banner during auto-sync
+
+### 🌍 Multi-Language Support
+
+- ✅ **English + German** - 400+ translated strings
+- ✅ **Automatic language detection** - Follows system language
+- ✅ **Per-App Language (Android 13+)** - Native language selection
+
+### 🎨 UI Improvements
+
+- ✅ **Splash screen** - App foreground icon
+- ✅ **App icon** - In About screen and empty state
+- ✅ **Slide animations** - Smooth transitions in NoteEditor
 
 ---
 
-## 💡 Feedback & Wünsche
+## v1.6.0 - Technical Modernization
 
-Hast du eine Idee für ein neues Feature?
+> **Status:** Planned 📋
 
-- **[Feature Request erstellen](https://github.com/inventory69/simple-notes-sync/issues/new?template=feature_request.yml)**
-- **[Bestehende Wünsche ansehen](https://github.com/inventory69/simple-notes-sync/issues?q=is%3Aissue+label%3Aenhancement)**
+### 🔧 Server Folder Check
+
+- **WebDAV folder check** - Checks if folder exists and is writable on server
+- **Better error messages** - Helpful hints for server problems
+- **Connection test improvement** - Checks read/write permissions
+
+### 🔧 Technical Improvements
+
+- **Code refactoring** - Fix LongMethod and LargeClass warnings
+- **Modern background sync architecture** - Even more reliable
+- **Improved progress dialogs** - Material Design 3 compliant
 
 ---
 
-**Hinweis:** Diese Roadmap zeigt unsere aktuellen Pläne. Prioritäten können sich basierend auf Community-Feedback ändern.
+## v1.7.0 - Community Features
 
-[← Zurück zur Dokumentation](DOCS.md)
+> **Status:** Idea Collection 💡
+
+### Potential Features
+
+- **Additional languages** - Community translations (FR, ES, IT, ...)
+- **Categories/Tags** - Organize notes
+- **Search** - Full-text search in notes
+- **Widget** - Quick access from homescreen
+
+---
+
+## 💡 Feedback & Suggestions
+
+Have an idea for a new feature?
+
+- **[Create a feature request](https://github.com/inventory69/simple-notes-sync/issues/new?template=feature_request.yml)**
+- **[View existing requests](https://github.com/inventory69/simple-notes-sync/issues?q=is%3Aissue+label%3Aenhancement)**
+
+---
+
+**Note:** This roadmap shows our current plans. Priorities may change based on community feedback.
+
+[← Back to documentation](DOCS.md)

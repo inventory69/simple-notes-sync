@@ -159,7 +159,11 @@ fun ServerSettingsScreen(
                             } else {
                                 Icons.Default.Visibility
                             },
-                            contentDescription = if (passwordVisible) stringResource(R.string.server_password_hide) else stringResource(R.string.server_password_show)
+                            contentDescription = if (passwordVisible) {
+                                stringResource(R.string.server_password_hide)
+                            } else {
+                                stringResource(R.string.server_password_show)
+                            }
                         )
                     }
                 },

@@ -85,6 +85,8 @@
     <string name="snackbar_notes_deleted_local">%d Notiz(en) lokal gelöscht</string>
     <string name="snackbar_notes_deleted_server">%d Notiz(en) werden vom Server gelöscht</string>
     <string name="snackbar_deleted_from_server">Vom Server gelöscht</string>
+    <string name="snackbar_notes_deleted_from_server">%d Notiz(en) vom Server gelöscht</string>
+    <string name="snackbar_notes_deleted_from_server_partial">%1$d von %2$d Notizen vom Server gelöscht</string>
     <string name="snackbar_server_delete_failed">Server-Löschung fehlgeschlagen</string>
     <string name="snackbar_server_error">Server-Fehler: %s</string>
     <string name="snackbar_already_synced">Bereits synchronisiert</string>

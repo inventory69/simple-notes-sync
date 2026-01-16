@@ -86,6 +86,8 @@
     <string name="snackbar_notes_deleted_local">%d note(s) deleted locally</string>
     <string name="snackbar_notes_deleted_server">%d note(s) will be deleted from server</string>
     <string name="snackbar_deleted_from_server">Deleted from server</string>
+    <string name="snackbar_notes_deleted_from_server">%d note(s) deleted from server</string>
+    <string name="snackbar_notes_deleted_from_server_partial">%1$d of %2$d notes deleted from server</string>
     <string name="snackbar_server_delete_failed">Server deletion failed</string>
     <string name="snackbar_server_error">Server error: %s</string>
     <string name="snackbar_already_synced">Already synced</string>

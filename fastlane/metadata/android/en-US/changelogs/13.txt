@@ -1,0 +1,8 @@
+• Complete UI redesign with Jetpack Compose
+• NEW: English language support + Language selector
+• NEW: Auto-detects system language
+• NEW: Long-press selection mode for batch delete
+• Modernized Settings with 7 organized screens
+• Silent-Sync mode (no banner during auto-sync)
+• Improved NoteEditor with slide animations
+• App icon in About screen and empty state

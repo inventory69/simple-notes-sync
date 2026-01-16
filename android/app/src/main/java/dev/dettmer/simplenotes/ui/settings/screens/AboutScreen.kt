@@ -5,9 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -39,7 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
@@ -87,27 +84,28 @@ fun AboutScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // v1.5.0: App icon loaded from PackageManager and converted to Bitmap
+                    // v1.5.0: App icon foreground loaded directly for better quality
                     val context = LocalContext.current
                     val appIcon = remember {
-                        val drawable = context.packageManager.getApplicationIcon(context.packageName)
-                        // Convert any Drawable (including AdaptiveIconDrawable) to Bitmap
-                        val bitmap = Bitmap.createBitmap(
-                            drawable.intrinsicWidth.coerceAtLeast(1),
-                            drawable.intrinsicHeight.coerceAtLeast(1),
-                            Bitmap.Config.ARGB_8888
-                        )
-                        val canvas = Canvas(bitmap)
-                        drawable.setBounds(0, 0, canvas.width, canvas.height)
-                        drawable.draw(canvas)
-                        bitmap.asImageBitmap()
+                        val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher_foreground)
+                        drawable?.let {
+                            // Use fixed size for consistent quality (256x256)
+                            val size = 256
+                            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                            val canvas = Canvas(bitmap)
+                            it.setBounds(0, 0, size, size)
+                            it.draw(canvas)
+                            bitmap.asImageBitmap()
+                        }
                     }
                     
-                    Image(
-                        bitmap = appIcon,
-                        contentDescription = "App Icon",
-                        modifier = Modifier.size(96.dp)
-                    )
+                    appIcon?.let {
+                        Image(
+                            bitmap = it,
+                            contentDescription = stringResource(R.string.about_app_name),
+                            modifier = Modifier.size(96.dp)
+                        )
+                    }
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     

@@ -1,24 +1,24 @@
-# Desktop-Integration 🖥️
+# Desktop Integration 🖥️
 
-**🌍 Languages:** **Deutsch** · [English](DESKTOP.en.md)
+**🌍 Languages:** [Deutsch](DESKTOP.de.md) · **English**
 
-> Bearbeite deine Notizen mit jedem Markdown-Editor auf dem Desktop
-
----
-
-## 📋 Übersicht
-
-Die Desktop-Integration ermöglicht dir, Notizen auf dem PC/Mac zu bearbeiten:
-- 📝 Jeder Markdown-Editor funktioniert
-- 🔄 Automatische Synchronisation über WebDAV
-- 💾 Dual-Format: JSON (Master) + Markdown (Mirror)
-- ⚡ Last-Write-Wins Konfliktauflösung
+> Edit your notes with any Markdown editor on desktop
 
 ---
 
-## 🎯 Warum Markdown?
+## 📋 Overview
 
-### Dual-Format Architektur
+Desktop integration allows you to edit notes on PC/Mac:
+- 📝 Any Markdown editor works
+- 🔄 Automatic synchronization via WebDAV
+- 💾 Dual-format: JSON (master) + Markdown (mirror)
+- ⚡ Last-Write-Wins conflict resolution
+
+---
+
+## 🎯 Why Markdown?
+
+### Dual-Format Architecture
 
 ```
 ┌─────────────────────────────────────┐
@@ -45,85 +45,85 @@ Die Desktop-Integration ermöglicht dir, Notizen auf dem PC/Mac zu bearbeiten:
     └──────────────────────────────────┘
 ```
 
-### Vorteile
+### Advantages
 
 **JSON (Master):**
-- ✅ Zuverlässig und schnell
-- ✅ Strukturierte Daten (IDs, Timestamps)
-- ✅ Primärer Sync-Mechanismus
-- ✅ Immer aktiv
+- ✅ Reliable and fast
+- ✅ Structured data (IDs, timestamps)
+- ✅ Primary sync mechanism
+- ✅ Always active
 
 **Markdown (Mirror):**
-- ✅ Menschenlesbar
-- ✅ Desktop-Editor kompatibel
-- ✅ Syntax-Highlighting
-- ✅ Optional aktivierbar
+- ✅ Human-readable
+- ✅ Desktop editor compatible
+- ✅ Syntax highlighting
+- ✅ Optionally activatable
 
 ---
 
-## 🚀 Schnellstart
+## 🚀 Quick Start
 
-### 1. Erste Synchronisation
+### 1. First Synchronization
 
-**Wichtig:** Führe ZUERST einen Sync durch, bevor du Desktop-Integration aktivierst!
+**Important:** Perform a sync FIRST before activating desktop integration!
 
-1. **App einrichten** (siehe [QUICKSTART.md](QUICKSTART.md))
-2. **Server-Verbindung testen**
-3. **Erste Notiz erstellen**
-4. **Synchronisieren** (Pull-to-Refresh oder Auto-Sync)
-5. ✅ Server erstellt automatisch `/notes/` und `/notes-md/` Ordner
+1. **Set up app** (see [QUICKSTART.en.md](QUICKSTART.en.md))
+2. **Test server connection**
+3. **Create first note**
+4. **Synchronize** (pull-to-refresh or auto-sync)
+5. ✅ Server automatically creates `/notes/` and `/notes-md/` folders
 
-### 2. Desktop-Integration aktivieren
+### 2. Activate Desktop Integration
 
-1. **Einstellungen** → **Desktop-Integration**
-2. **Toggle aktivieren**
-3. **Initial Export startet** - Zeigt Progress (X/Y)
-4. ✅ Alle bestehenden Notizen werden als `.md` exportiert
+1. **Settings** → **Desktop Integration**
+2. **Toggle ON**
+3. **Initial export starts** - Shows progress (X/Y)
+4. ✅ All existing notes are exported as `.md`
 
-### 3. WebDAV als Netzlaufwerk mounten
+### 3. Mount WebDAV as Network Drive
 
 #### Windows
 
 ```
-1. Explorer öffnen
-2. Rechtsklick auf "Dieser PC"
-3. "Netzlaufwerk verbinden"
-4. URL eingeben: http://DEIN-SERVER:8080/notes-md/
-5. Benutzername: noteuser
-6. Passwort: (dein WebDAV-Passwort)
-7. Laufwerksbuchstabe: Z:\ (oder beliebig)
-8. Fertig!
+1. Open Explorer
+2. Right-click on "This PC"
+3. "Map network drive"
+4. Enter URL: http://YOUR-SERVER:8080/notes-md/
+5. Username: noteuser
+6. Password: (your WebDAV password)
+7. Drive letter: Z:\ (or any)
+8. Done!
 ```
 
-**Zugriff:** `Z:\` im Explorer
+**Access:** `Z:\` in Explorer
 
 #### macOS
 
 ```
-1. Finder öffnen
-2. Menü "Gehe zu" → "Mit Server verbinden" (⌘K)
-3. Server-Adresse: http://DEIN-SERVER:8080/notes-md/
-4. Verbinden
-5. Benutzername: noteuser
-6. Passwort: (dein WebDAV-Passwort)
-7. Fertig!
+1. Open Finder
+2. Menu "Go" → "Connect to Server" (⌘K)
+3. Server address: http://YOUR-SERVER:8080/notes-md/
+4. Connect
+5. Username: noteuser
+6. Password: (your WebDAV password)
+7. Done!
 ```
 
-**Zugriff:** Finder → Netzwerk → notes-md
+**Access:** Finder → Network → notes-md
 
 #### Linux (GNOME)
 
 ```
-1. Files / Nautilus öffnen
-2. "Andere Orte"
-3. "Mit Server verbinden"
-4. Server-Adresse: dav://DEIN-SERVER:8080/notes-md/
-5. Benutzername: noteuser
-6. Passwort: (dein WebDAV-Passwort)
-7. Fertig!
+1. Open Files / Nautilus
+2. "Other Locations"
+3. "Connect to Server"
+4. Server address: dav://YOUR-SERVER:8080/notes-md/
+5. Username: noteuser
+6. Password: (your WebDAV password)
+7. Done!
 ```
 
-**Zugriff:** `/run/user/1000/gvfs/dav:host=...`
+**Access:** `/run/user/1000/gvfs/dav:host=...`
 
 #### Linux (davfs2 - permanent)
 
@@ -131,101 +131,101 @@ Die Desktop-Integration ermöglicht dir, Notizen auf dem PC/Mac zu bearbeiten:
 # Installation
 sudo apt install davfs2
 
-# Mount-Point erstellen
+# Create mount point
 sudo mkdir -p /mnt/notes-md
 
-# Einmalig mounten
-sudo mount -t davfs http://DEIN-SERVER:8080/notes-md/ /mnt/notes-md
+# Mount once
+sudo mount -t davfs http://YOUR-SERVER:8080/notes-md/ /mnt/notes-md
 
 # Permanent in /etc/fstab
-echo "http://DEIN-SERVER:8080/notes-md/ /mnt/notes-md davfs rw,user,noauto 0 0" | sudo tee -a /etc/fstab
+echo "http://YOUR-SERVER:8080/notes-md/ /mnt/notes-md davfs rw,user,noauto 0 0" | sudo tee -a /etc/fstab
 ```
 
-**Zugriff:** `/mnt/notes-md/`
+**Access:** `/mnt/notes-md/`
 
 ---
 
-## 📝 Markdown-Editoren
+## 📝 Markdown Editors
 
-### Empfohlene Editoren
+### Recommended Editors
 
-#### 1. VS Code ⭐ _Empfohlen_
+#### 1. VS Code ⭐ _Recommended_
 
-**Vorteile:**
-- ✅ Kostenlos & Open Source
-- ✅ Markdown-Preview (Ctrl+Shift+V)
-- ✅ Syntax-Highlighting
-- ✅ Git-Integration
-- ✅ Erweiterungen (Spell Check, etc.)
+**Advantages:**
+- ✅ Free & open source
+- ✅ Markdown preview (Ctrl+Shift+V)
+- ✅ Syntax highlighting
+- ✅ Git integration
+- ✅ Extensions (spell check, etc.)
 
 **Setup:**
 ```
-1. VS Code installieren
-2. WebDAV-Laufwerk mounten
-3. Ordner öffnen: Z:\notes-md\ (Windows) oder /mnt/notes-md (Linux)
-4. Fertig! Markdown-Dateien bearbeiten
+1. Install VS Code
+2. Mount WebDAV drive
+3. Open folder: Z:\notes-md\ (Windows) or /mnt/notes-md (Linux)
+4. Done! Edit Markdown files
 ```
 
 **Extensions (optional):**
-- `Markdown All in One` - Shortcuts & Preview
-- `Markdown Preview Enhanced` - Bessere Preview
-- `Code Spell Checker` - Rechtschreibprüfung
+- `Markdown All in One` - Shortcuts & preview
+- `Markdown Preview Enhanced` - Better preview
+- `Code Spell Checker` - Spell checking
 
 #### 2. Typora
 
-**Vorteile:**
-- ✅ WYSIWYG Markdown-Editor
-- ✅ Minimalistisches Design
-- ✅ Live-Preview
-- ⚠️ Kostenpflichtig (~15€)
+**Advantages:**
+- ✅ WYSIWYG Markdown editor
+- ✅ Minimalist design
+- ✅ Live preview
+- ⚠️ Paid (~15€)
 
 **Setup:**
 ```
-1. Typora installieren
-2. WebDAV mounten
-3. Ordner in Typora öffnen
-4. Notizen bearbeiten
+1. Install Typora
+2. Mount WebDAV
+3. Open folder in Typora
+4. Edit notes
 ```
 
 #### 3. Notepad++
 
-**Vorteile:**
-- ✅ Leichtgewichtig
-- ✅ Schnell
-- ✅ Syntax-Highlighting
-- ⚠️ Keine Markdown-Preview
+**Advantages:**
+- ✅ Lightweight
+- ✅ Fast
+- ✅ Syntax highlighting
+- ⚠️ No Markdown preview
 
 **Setup:**
 ```
-1. Notepad++ installieren
-2. WebDAV mounten
-3. Dateien direkt öffnen
+1. Install Notepad++
+2. Mount WebDAV
+3. Open files directly
 ```
 
 #### 4. Obsidian
 
-**Vorteile:**
-- ✅ Zweite Gehirn-Philosophie
-- ✅ Graph-View für Verlinkungen
-- ✅ Viele Plugins
-- ⚠️ Sync-Konflikte möglich (2 Master)
+**Advantages:**
+- ✅ Second brain philosophy
+- ✅ Graph view for links
+- ✅ Many plugins
+- ⚠️ Sync conflicts possible (2 masters)
 
 **Setup:**
 ```
-1. Obsidian installieren
-2. WebDAV als Vault öffnen
-3. Vorsicht: Obsidian erstellt eigene Metadaten!
+1. Install Obsidian
+2. Open WebDAV as vault
+3. Caution: Obsidian creates own metadata!
 ```
 
-**⚠️ Nicht empfohlen:** Kann Frontmatter verändern
+**⚠️ Not recommended:** Can alter frontmatter
 
 ---
 
-## 📄 Markdown-Dateiformat
+## 📄 Markdown File Format
 
-### Struktur
+### Structure
 
-Jede Notiz wird als `.md` Datei mit YAML-Frontmatter exportiert:
+Each note is exported as `.md` file with YAML frontmatter:
 
 ```markdown
 ---
@@ -235,114 +235,114 @@ updated: 2026-01-05T14:30:22Z
 tags: []
 ---
 
-# Notiz-Titel
+# Note Title
 
-Notiz-Inhalt hier...
+Note content here...
 ```
 
-### Frontmatter-Felder
+### Frontmatter Fields
 
-| Feld | Typ | Beschreibung | Pflicht |
-|------|-----|--------------|---------|
-| `id` | UUID | Eindeutige Notiz-ID | ✅ Ja |
-| `created` | ISO8601 | Erstellungsdatum | ✅ Ja |
-| `updated` | ISO8601 | Änderungsdatum | ✅ Ja |
-| `tags` | Array | Tags (zukünftig) | ❌ Nein |
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| `id` | UUID | Unique note ID | ✅ Yes |
+| `created` | ISO8601 | Creation date | ✅ Yes |
+| `updated` | ISO8601 | Modification date | ✅ Yes |
+| `tags` | Array | Tags (future) | ❌ No |
 
-### Dateinamen
+### Filenames
 
-**Sanitization-Regeln:**
+**Sanitization rules:**
 ```
-Titel: "Meine Einkaufsliste 🛒"
-→ Dateiname: "Meine_Einkaufsliste.md"
+Title: "My Shopping List 🛒"
+→ Filename: "My_Shopping_List.md"
 
-Entfernt werden:
-- Emojis: 🛒 → entfernt
-- Sonderzeichen: / \ : * ? " < > | → entfernt
-- Mehrfache Leerzeichen → einzelnes Leerzeichen
-- Leerzeichen → Unterstrich _
+Removed:
+- Emojis: 🛒 → removed
+- Special chars: / \ : * ? " < > | → removed
+- Multiple spaces → single space
+- Spaces → underscore _
 ```
 
-**Beispiele:**
+**Examples:**
 ```
 "Meeting Notes 2026" → "Meeting_Notes_2026.md"
-"To-Do: Projekt" → "To-Do_Projekt.md"
-"Urlaub ☀️" → "Urlaub.md"
+"To-Do: Project" → "To-Do_Project.md"
+"Vacation ☀️" → "Vacation.md"
 ```
 
 ---
 
-## 🔄 Synchronisation
+## 🔄 Synchronization
 
 ### Workflow: Android → Desktop
 
-1. **Notiz in App erstellen/bearbeiten**
-2. **Sync ausführen** (Auto oder manuell)
-3. **JSON wird hochgeladen** (`/notes/abc-123.json`)
-4. **Markdown wird exportiert** (`/notes-md/Notiz_Titel.md`) _(nur wenn Desktop-Integration AN)_
-5. **Desktop-Editor zeigt Änderungen** (nach Refresh)
+1. **Create/edit note in app**
+2. **Run sync** (auto or manual)
+3. **JSON is uploaded** (`/notes/abc-123.json`)
+4. **Markdown is exported** (`/notes-md/Note_Title.md`) _(only if Desktop Integration ON)_
+5. **Desktop editor shows changes** (after refresh)
 
 ### Workflow: Desktop → Android
 
-1. **Markdown-Datei bearbeiten** (im gemounteten Ordner)
-2. **Speichern** - Datei liegt sofort auf Server
-3. **In App: Markdown-Import ausführen**
-   - Einstellungen → "Import Markdown Changes"
-   - Oder: Auto-Import bei jedem Sync (zukünftig)
-4. **App übernimmt Änderungen** (wenn Desktop-Version neuer)
+1. **Edit Markdown file** (in mounted folder)
+2. **Save** - File is immediately on server
+3. **In app: Run Markdown import**
+   - Settings → "Import Markdown Changes"
+   - Or: Auto-import on every sync (future)
+4. **App adopts changes** (if desktop version is newer)
 
-### Konfliktauflösung: Last-Write-Wins
+### Conflict Resolution: Last-Write-Wins
 
-**Regel:** Neueste Version (nach `updated` Timestamp) gewinnt
+**Rule:** Newest version (by `updated` timestamp) wins
 
-**Beispiel:**
+**Example:**
 ```
-App-Version:     updated: 2026-01-05 14:00
-Desktop-Version: updated: 2026-01-05 14:30
-→ Desktop gewinnt (neuerer Timestamp)
+App version:     updated: 2026-01-05 14:00
+Desktop version: updated: 2026-01-05 14:30
+→ Desktop wins (newer timestamp)
 ```
 
-**Automatisch:**
-- ✅ Beim Markdown-Import
-- ✅ Beim JSON-Sync
-- ⚠️ Keine Merge-Konflikte - nur komplettes Überschreiben
+**Automatic:**
+- ✅ On Markdown import
+- ✅ On JSON sync
+- ⚠️ No merge conflicts - only complete overwrite
 
 ---
 
-## ⚙️ Einstellungen
+## ⚙️ Settings
 
-### Desktop-Integration Toggle
+### Desktop Integration Toggle
 
-**Einstellungen → Desktop-Integration**
+**Settings → Desktop Integration**
 
-**AN (aktiviert):**
-- ✅ Neue Notizen → automatisch als `.md` exportiert
-- ✅ Aktualisierte Notizen → `.md` Update
-- ✅ Gelöschte Notizen → `.md` bleibt (zukünftig: auch löschen)
+**ON (activated):**
+- ✅ New notes → automatically exported as `.md`
+- ✅ Updated notes → `.md` update
+- ✅ Deleted notes → `.md` remains (future: also delete)
 
-**AUS (deaktiviert):**
-- ❌ Kein Markdown-Export
-- ✅ JSON-Sync läuft normal weiter
-- ✅ Bestehende `.md` Dateien bleiben erhalten
+**OFF (deactivated):**
+- ❌ No Markdown export
+- ✅ JSON sync continues normally
+- ✅ Existing `.md` files remain
 
 ### Initial Export
 
-**Was passiert beim Aktivieren:**
-1. Alle bestehenden Notizen werden gescannt
-2. Progress-Dialog zeigt Fortschritt (z.B. "23/42")
-3. Jede Notiz wird als `.md` exportiert
-4. Bei Fehlern: Einzelne Notiz wird übersprungen
-5. Erfolgsmeldung mit Anzahl exportierter Notizen
+**What happens on activation:**
+1. All existing notes are scanned
+2. Progress dialog shows progress (e.g., "23/42")
+3. Each note is exported as `.md`
+4. On errors: Individual note is skipped
+5. Success message with number of exported notes
 
-**Zeit:** ~1-2 Sekunden pro 50 Notizen
+**Time:** ~1-2 seconds per 50 notes
 
 ---
 
-## 🛠️ Erweiterte Nutzung
+## 🛠️ Advanced Usage
 
-### Manuelle Markdown-Erstellung
+### Manual Markdown Creation
 
-Du kannst `.md` Dateien manuell erstellen:
+You can create `.md` files manually:
 
 ```markdown
 ---
@@ -351,35 +351,35 @@ created: 2026-01-05T12:00:00Z
 updated: 2026-01-05T12:00:00Z
 ---
 
-# Neue Desktop-Notiz
+# New Desktop Note
 
-Inhalt hier...
+Content here...
 ```
 
-**⚠️ Wichtig:**
-- `id` muss gültige UUID sein (z.B. mit uuidgen.io)
-- Timestamps in ISO8601-Format
-- Frontmatter mit `---` umschließen
+**⚠️ Important:**
+- `id` must be valid UUID (e.g., with uuidgen.io)
+- Timestamps in ISO8601 format
+- Frontmatter enclosed with `---`
 
-### Bulk-Operations
+### Bulk Operations
 
-**Mehrere Notizen auf einmal bearbeiten:**
+**Edit multiple notes at once:**
 
-1. WebDAV mounten
-2. Alle `.md` Dateien in VS Code öffnen
-3. Suchen & Ersetzen über alle Dateien (Ctrl+Shift+H)
-4. Speichern
-5. In App: "Import Markdown Changes"
+1. Mount WebDAV
+2. Open all `.md` files in VS Code
+3. Find & Replace across all files (Ctrl+Shift+H)
+4. Save
+5. In app: "Import Markdown Changes"
 
 ### Scripting
 
-**Beispiel: Alle Notizen nach Datum sortieren**
+**Example: Sort all notes by date**
 
 ```bash
 #!/bin/bash
 cd /mnt/notes-md/
 
-# Alle .md Dateien nach Update-Datum sortieren
+# Sort all .md files by update date
 for file in *.md; do
   updated=$(grep "^updated:" "$file" | cut -d' ' -f2)
   echo "$updated $file"
@@ -388,118 +388,118 @@ done | sort
 
 ---
 
-## ❌ Fehlerbehebung
+## ❌ Troubleshooting
 
-### "404 Not Found" beim WebDAV-Mount
+### "404 Not Found" when mounting WebDAV
 
-**Ursache:** `/notes-md/` Ordner existiert nicht
+**Cause:** `/notes-md/` folder doesn't exist
 
-**Lösung:**
-1. **Erste Sync durchführen** - Ordner wird automatisch erstellt
-2. ODER: Manuell erstellen via Terminal:
+**Solution:**
+1. **Perform first sync** - Folder is created automatically
+2. OR: Create manually via terminal:
    ```bash
    curl -X MKCOL -u noteuser:password http://server:8080/notes-md/
    ```
 
-### Markdown-Dateien erscheinen nicht
+### Markdown files don't appear
 
-**Ursache:** Desktop-Integration nicht aktiviert
+**Cause:** Desktop integration not activated
 
-**Lösung:**
-1. Einstellungen → "Desktop-Integration" AN
-2. Warten auf Initial Export
-3. WebDAV-Ordner refreshen
+**Solution:**
+1. Settings → "Desktop Integration" ON
+2. Wait for initial export
+3. Refresh WebDAV folder
 
-### Änderungen vom Desktop erscheinen nicht in App
+### Changes from desktop don't appear in app
 
-**Ursache:** Markdown-Import nicht ausgeführt
+**Cause:** Markdown import not executed
 
-**Lösung:**
-1. Einstellungen → "Import Markdown Changes"
-2. ODER: Auto-Sync abwarten (zukünftiges Feature)
+**Solution:**
+1. Settings → "Import Markdown Changes"
+2. OR: Wait for auto-sync (future feature)
 
-### "Frontmatter fehlt" Fehler
+### "Frontmatter missing" error
 
-**Ursache:** `.md` Datei ohne gültiges YAML-Frontmatter
+**Cause:** `.md` file without valid YAML frontmatter
 
-**Lösung:**
-1. Datei in Editor öffnen
-2. Frontmatter am Anfang hinzufügen:
+**Solution:**
+1. Open file in editor
+2. Add frontmatter at the beginning:
    ```yaml
    ---
-   id: NEUE-UUID-HIER
+   id: NEW-UUID-HERE
    created: 2026-01-05T12:00:00Z
    updated: 2026-01-05T12:00:00Z
    ---
    ```
-3. Speichern und erneut importieren
+3. Save and import again
 
 ---
 
-## 🔒 Sicherheit & Best Practices
+## 🔒 Security & Best Practices
 
 ### Do's ✅
 
-- ✅ **Backup vor Bulk-Edits** - Lokales Backup erstellen
-- ✅ **Ein Editor zur Zeit** - Nicht parallel in App UND Desktop bearbeiten
-- ✅ **Sync abwarten** - Vor Desktop-Bearbeitung Sync durchführen
-- ✅ **Frontmatter respektieren** - Nicht manuell ändern (außer du weißt was du tust)
+- ✅ **Backup before bulk edits** - Create local backup
+- ✅ **One editor at a time** - Don't edit in app AND desktop in parallel
+- ✅ **Wait for sync** - Run sync before desktop editing
+- ✅ **Respect frontmatter** - Don't change manually (unless you know what you're doing)
 
 ### Don'ts ❌
 
-- ❌ **Parallel bearbeiten** - App und Desktop gleichzeitig → Konflikte
-- ❌ **Frontmatter löschen** - Notiz kann nicht mehr importiert werden
-- ❌ **IDs ändern** - Notiz wird als neue erkannt
-- ❌ **Timestamps manipulieren** - Konfliktauflösung funktioniert nicht
+- ❌ **Parallel editing** - App and desktop simultaneously → conflicts
+- ❌ **Delete frontmatter** - Note can't be imported anymore
+- ❌ **Change IDs** - Note is recognized as new
+- ❌ **Manipulate timestamps** - Conflict resolution doesn't work
 
-### Empfohlener Workflow
+### Recommended Workflow
 
 ```
-1. Sync in App (Pull-to-Refresh)
-2. Desktop öffnen
-3. Änderungen machen
-4. Speichern
-5. In App: "Import Markdown Changes"
-6. Überprüfen
-7. Weiteren Sync durchführen
+1. Sync in app (pull-to-refresh)
+2. Open desktop
+3. Make changes
+4. Save
+5. In app: "Import Markdown Changes"
+6. Verify
+7. Run another sync
 ```
 
 ---
 
-## 📊 Vergleich: JSON vs Markdown
+## 📊 Comparison: JSON vs Markdown
 
-| Aspekt | JSON | Markdown |
+| Aspect | JSON | Markdown |
 |--------|------|----------|
-| **Format** | Strukturiert | Fließtext |
-| **Lesbarkeit (Mensch)** | ⚠️ Mittel | ✅ Gut |
-| **Lesbarkeit (Maschine)** | ✅ Perfekt | ⚠️ Parsing nötig |
+| **Format** | Structured | Flowing text |
+| **Readability (human)** | ⚠️ Medium | ✅ Good |
+| **Readability (machine)** | ✅ Perfect | ⚠️ Parsing needed |
 | **Metadata** | Native | Frontmatter |
-| **Editoren** | Code-Editoren | Alle Text-Editoren |
-| **Sync-Geschwindigkeit** | ✅ Schnell | ⚠️ Langsamer |
-| **Zuverlässigkeit** | ✅ 100% | ⚠️ Frontmatter-Fehler möglich |
-| **Mobile-First** | ✅ Ja | ❌ Nein |
-| **Desktop-First** | ❌ Nein | ✅ Ja |
+| **Editors** | Code editors | All text editors |
+| **Sync speed** | ✅ Fast | ⚠️ Slower |
+| **Reliability** | ✅ 100% | ⚠️ Frontmatter errors possible |
+| **Mobile-first** | ✅ Yes | ❌ No |
+| **Desktop-first** | ❌ No | ✅ Yes |
 
-**Fazit:** Beide Formate nutzen = Beste Erfahrung auf beiden Plattformen!
-
----
-
-## 🔮 Zukünftige Features
-
-Geplant für v1.3.0+:
-
-- ⏳ **Auto-Markdown-Import** - Bei jedem Sync automatisch
-- ⏳ **Bidirektionaler Sync** - Ohne manuellen Import
-- ⏳ **Markdown-Vorschau** - In der App
-- ⏳ **Konflikts-UI** - Bei gleichzeitigen Änderungen
-- ⏳ **Tags in Frontmatter** - Synchronisiert mit App
-- ⏳ **Attachments** - Bilder/Dateien in Markdown
+**Conclusion:** Using both formats = Best experience on both platforms!
 
 ---
 
-**📚 Siehe auch:**
-- [QUICKSTART.md](../QUICKSTART.md) - App-Einrichtung
-- [FEATURES.md](FEATURES.md) - Vollständige Feature-Liste
-- [BACKUP.md](BACKUP.md) - Backup & Wiederherstellung
+## 🔮 Future Features
 
-**Letzte Aktualisierung:** v1.2.1 (2026-01-05)
+Planned for v1.3.0+:
+
+- ⏳ **Auto-Markdown-import** - Automatically on every sync
+- ⏳ **Bidirectional sync** - Without manual import
+- ⏳ **Markdown preview** - In the app
+- ⏳ **Conflict UI** - On simultaneous changes
+- ⏳ **Tags in frontmatter** - Synchronized with app
+- ⏳ **Attachments** - Images/files in Markdown
+
+---
+
+**📚 See also:**
+- [QUICKSTART.en.md](../QUICKSTART.en.md) - App setup
+- [FEATURES.en.md](FEATURES.en.md) - Complete feature list
+- [BACKUP.en.md](BACKUP.en.md) - Backup & restore
+
+**Last update:** v1.2.1 (2026-01-05)
