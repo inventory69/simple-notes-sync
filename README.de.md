@@ -17,9 +17,10 @@
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/1.jpg" width="250" alt="Notizliste">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.jpg" width="250" alt="Notiz bearbeiten">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.jpg" width="250" alt="Einstellungen">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/1.png" width="250" alt="Notizliste">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.png" width="250" alt="Notiz bearbeiten">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.png" width="250" alt="Checkliste bearbeiten">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/4.png" width="250" alt="Einstellungen">
 </p>
 
 ---
