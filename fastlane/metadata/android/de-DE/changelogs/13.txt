@@ -4,5 +4,6 @@
 • NEU: Long-Press Mehrfachauswahl zum Löschen
 • Modernisierte Einstellungen mit 7 Bereichen
 • Silent-Sync (kein Banner bei Auto-Sync)
-• Verbesserter NoteEditor mit Slide-Animationen
+• "Nichts zu syncen" Feedback im Status-Banner
+• Diverse UI/UX Verbesserungen und Bugfixes
 • App-Icon in Über-Screen und Leerzustand
