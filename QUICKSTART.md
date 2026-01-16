@@ -1,269 +1,269 @@
 # Quick Start Guide - Simple Notes Sync 📝
 
-> Schritt-für-Schritt Anleitung zur Installation und Einrichtung
+> Step-by-step installation and setup guide
 
-**🌍 Sprachen:** **Deutsch** · [English](QUICKSTART.en.md)
-
----
-
-## Voraussetzungen
-
-- ✅ Android 8.0+ Smartphone/Tablet
-- ✅ WLAN-Verbindung
-- ✅ Eigener Server mit Docker (optional - für Self-Hosting)
+**🌍 Languages:** [Deutsch](QUICKSTART.de.md) · **English**
 
 ---
 
-## Option 1: Mit eigenem Server (Self-Hosted) 🏠
+## Prerequisites
 
-### Schritt 1: WebDAV Server einrichten
+- ✅ Android 8.0+ smartphone/tablet
+- ✅ WiFi connection
+- ✅ Own server with Docker (optional - for self-hosting)
 
-Auf deinem Server (z.B. Raspberry Pi, NAS, VPS):
+---
+
+## Option 1: With own server (Self-Hosted) 🏠
+
+### Step 1: Setup WebDAV Server
+
+On your server (e.g. Raspberry Pi, NAS, VPS):
 
 ```bash
-# Repository klonen
+# Clone repository
 git clone https://github.com/inventory69/simple-notes-sync.git
 cd simple-notes-sync/server
 
-# Umgebungsvariablen konfigurieren
+# Configure environment variables
 cp .env.example .env
 nano .env
 ```
 
-**In `.env` anpassen:**
+**Adjust in `.env`:**
 ```env
-WEBDAV_PASSWORD=dein-sicheres-passwort-hier
+WEBDAV_PASSWORD=your-secure-password-here
 ```
 
-**Server starten:**
+**Start server:**
 ```bash
 docker compose up -d
 ```
 
-**IP-Adresse finden:**
+**Find IP address:**
 ```bash
 ip addr show | grep "inet " | grep -v 127.0.0.1
 ```
 
-➡️ **Notiere dir:** `http://DEINE-SERVER-IP:8080/`
+➡️ **Note down:** `http://YOUR-SERVER-IP:8080/`
 
 ---
 
-### Schritt 2: App installieren
+### Step 2: Install App
 
-1. **APK herunterladen:** [Neueste Version](https://github.com/inventory69/simple-notes-sync/releases/latest)
-   - Wähle: `simple-notes-sync-vX.X.X-standard-universal.apk`
+1. **Download APK:** [Latest version](https://github.com/inventory69/simple-notes-sync/releases/latest)
+   - Choose: `simple-notes-sync-vX.X.X-standard-universal.apk`
    
-2. **Installation erlauben:**
-   - Android: Einstellungen → Sicherheit → "Unbekannte Quellen" für deinen Browser aktivieren
+2. **Allow installation:**
+   - Android: Settings → Security → Enable "Unknown sources" for your browser
    
-3. **APK öffnen und installieren**
+3. **Open and install APK**
 
 ---
 
-### Schritt 3: App konfigurieren
+### Step 3: Configure App
 
-1. **App öffnen**
+1. **Open app**
 
-2. **Einstellungen öffnen** (⚙️ Icon oben rechts)
+2. **Open settings** (⚙️ icon top right)
 
-3. **Server-Einstellungen konfigurieren:**
+3. **Configure server settings:**
    
-   | Feld | Wert |
+   | Field | Value |
    |------|------|
-   | **WebDAV Server URL** | `http://DEINE-SERVER-IP:8080/` |
-   | **Benutzername** | `noteuser` |
-   | **Passwort** | (dein Passwort aus `.env`) |
+   | **WebDAV Server URL** | `http://YOUR-SERVER-IP:8080/` |
+   | **Username** | `noteuser` |
+   | **Password** | (your password from `.env`) |
 
-   > **💡 Hinweis:** Gib nur die Base-URL ein (ohne `/notes`). Die App erstellt automatisch `/notes/` für JSON-Dateien und `/notes-md/` für Markdown-Export.
+   > **💡 Note:** Enter only the base URL (without `/notes`). The app automatically creates `/notes/` for JSON files and `/notes-md/` for Markdown export.
 
-4. **"Verbindung testen"** drücken
-   - ✅ Erfolg? → Weiter zu Schritt 4
-   - ❌ Fehler? → Siehe [Troubleshooting](#troubleshooting)
+4. **Press "Test connection"****
+   - ✅ Success? → Continue to step 4
+   - ❌ Error? → See [Troubleshooting](#troubleshooting)
 
-5. **Auto-Sync aktivieren** (Toggle Switch)
+5. **Enable auto-sync** (toggle switch)
 
-6. **Sync-Intervall wählen:**
-   - **15 Min** - Maximale Aktualität (~0.8% Akku/Tag)
-   - **30 Min** - Empfohlen (~0.4% Akku/Tag) ⭐
-   - **60 Min** - Maximale Akkulaufzeit (~0.2% Akku/Tag)
-
----
-
-### Schritt 4: Erste Notiz erstellen
-
-1. Zurück zur Hauptansicht (← Pfeil)
-
-2. **"Notiz hinzufügen"** (+ Icon)
-
-3. Titel und Text eingeben
-
-4. **Speichern** (💾 Icon)
-
-5. **Warten auf Auto-Sync** (oder manuell: ⚙️ → "Jetzt synchronisieren")
-
-🎉 **Fertig!** Deine Notizen werden automatisch synchronisiert!
+6. **Choose sync interval:**
+   - **15 min** - Maximum currency (~0.8% battery/day)
+   - **30 min** - Recommended (~0.4% battery/day) ⭐
+   - **60 min** - Maximum battery life (~0.2% battery/day)
 
 ---
 
-## Option 2: Nur lokale Notizen (kein Server) 📱
+### Step 4: Create First Note
 
-Du kannst Simple Notes auch **ohne Server** nutzen:
+1. Back to main view (← arrow)
 
-1. **App installieren** (siehe Schritt 2 oben)
+2. **"Add note"** (+ icon)
 
-2. **Ohne Server-Konfiguration verwenden:**
-   - Notizen werden nur lokal gespeichert
-   - Kein Auto-Sync
-   - Perfekt für reine Offline-Nutzung
+3. Enter title and text
 
----
+4. **Save** (💾 icon)
 
-## 🔋 Akku-Optimierung deaktivieren
+5. **Wait for auto-sync** (or manually: ⚙️ → "Sync now")
 
-Für zuverlässigen Auto-Sync:
-
-1. **Einstellungen** → **Apps** → **Simple Notes Sync**
-
-2. **Akku** → **Akkuverbrauch**
-
-3. Wähle: **"Nicht optimieren"** oder **"Unbeschränkt"**
-
-💡 **Hinweis:** Android Doze Mode kann trotzdem Sync im Standby verzögern (~60 Min). Das ist normal und betrifft alle Apps.
+🎉 **Done!** Your notes will be automatically synchronized!
 
 ---
 
-## 📊 Sync-Intervalle im Detail
+## Option 2: Local notes only (no server) 📱
 
-| Intervall | Syncs/Tag | Akku/Tag | Akku/Sync | Anwendungsfall |
+You can also use Simple Notes **without a server**:
+
+1. **Install app** (see step 2 above)
+
+2. **Use without server configuration:**
+   - Notes are only stored locally
+   - No auto-sync
+   - Perfect for offline-only use
+
+---
+
+## 🔋 Disable Battery Optimization
+
+For reliable auto-sync:
+
+1. **Settings** → **Apps** → **Simple Notes Sync**
+
+2. **Battery** → **Battery usage**
+
+3. Select: **"Don't optimize"** or **"Unrestricted"**
+
+💡 **Note:** Android Doze Mode may still delay sync in standby (~60 min). This is normal and affects all apps.
+
+---
+
+## 📊 Sync Intervals in Detail
+
+| Interval | Syncs/day | Battery/day | Battery/sync | Use case |
 |-----------|-----------|----------|-----------|----------------|
-| **15 Min** | ~96 | ~0.8% (~23 mAh) | ~0.008% | ⚡ Maximal aktuell (mehrere Geräte) |
-| **30 Min** | ~48 | ~0.4% (~12 mAh) | ~0.008% | ✓ **Empfohlen** - ausgewogen |
-| **60 Min** | ~24 | ~0.2% (~6 mAh) | ~0.008% | 🔋 Maximale Akkulaufzeit |
+| **15 min** | ~96 | ~0.8% (~23 mAh) | ~0.008% | ⚡ Maximum currency (multiple devices) |
+| **30 min** | ~48 | ~0.4% (~12 mAh) | ~0.008% | ✓ **Recommended** - balanced |
+| **60 min** | ~24 | ~0.2% (~6 mAh) | ~0.008% | 🔋 Maximum battery life |
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Verbindungstest schlägt fehl
+### Connection test fails
 
-**Problem:** "Verbindung fehlgeschlagen" beim Test
+**Problem:** "Connection failed" during test
 
-**Lösungen:**
+**Solutions:**
 
-1. **Server läuft?**
+1. **Server running?**
    ```bash
    docker compose ps
-   # Sollte "Up" zeigen
+   # Should show "Up"
    ```
 
-2. **Gleiches Netzwerk?**
-   - Smartphone und Server müssen im selben Netzwerk sein
+2. **Same network?**
+   - Smartphone and server must be on same network
 
-3. **IP-Adresse korrekt?**
+3. **IP address correct?**
    ```bash
    ip addr show | grep "inet "
-   # Prüfe ob IP in URL stimmt
+   # Check if IP in URL matches
    ```
 
 4. **Firewall?**
    ```bash
-   # Port 8080 öffnen (falls Firewall aktiv)
+   # Open port 8080 (if firewall active)
    sudo ufw allow 8080/tcp
    ```
 
-5. **Server-Logs prüfen:**
+5. **Check server logs:**
    ```bash
    docker compose logs -f
    ```
 
 ---
 
-### Auto-Sync funktioniert nicht
+### Auto-sync not working
 
-**Problem:** Notizen werden nicht automatisch synchronisiert
+**Problem:** Notes are not automatically synchronized
 
-**Lösungen:**
+**Solutions:**
 
-1. **Auto-Sync aktiviert?**
-   - ⚙️ Einstellungen → Toggle "Auto-Sync" muss **AN** sein
+1. **Auto-sync enabled?**
+   - ⚙️ Settings → Toggle "Auto-sync" must be **ON**
 
-2. **Akku-Optimierung deaktiviert?**
-   - Siehe [Akku-Optimierung](#-akku-optimierung-deaktivieren)
+2. **Battery optimization disabled?**
+   - See [Disable Battery Optimization](#-disable-battery-optimization)
 
-3. **Mit WiFi verbunden?**
-   - Auto-Sync triggert bei jeder WiFi-Verbindung
-   - Prüfe, ob du mit einem WLAN verbunden bist
+3. **Connected to WiFi?**
+   - Auto-sync triggers on any WiFi connection
+   - Check if you're connected to a WiFi network
 
-4. **Manuell testen:**
-   - ⚙️ Einstellungen → "Jetzt synchronisieren"
-   - Funktioniert das? → Auto-Sync sollte auch funktionieren
+4. **Test manually:**
+   - ⚙️ Settings → "Sync now"
+   - Works? → Auto-sync should work too
 
 ---
 
-### Notizen werden nicht angezeigt
+### Notes not showing up
 
-**Problem:** Nach Installation sind keine Notizen da, obwohl welche auf dem Server liegen
+**Problem:** After installation, no notes visible even though they exist on server
 
-**Lösung:**
+**Solution:**
 
-1. **Einmalig manuell synchronisieren:**
-   - ⚙️ Einstellungen → "Jetzt synchronisieren"
+1. **Manually sync once:**
+   - ⚙️ Settings → "Sync now"
 
-2. **Server-Daten prüfen:**
+2. **Check server data:**
    ```bash
    docker compose exec webdav ls -la /data/
-   # Sollte .json Dateien zeigen
+   # Should show .json files
    ```
 
 ---
 
-### Fehler beim Sync
+### Sync errors
 
-**Problem:** Fehlermeldung beim Synchronisieren
+**Problem:** Error message during sync
 
-**Lösungen:**
+**Solutions:**
 
-1. **"401 Unauthorized"** → Passwort falsch
-   - Prüfe Passwort in App-Einstellungen
-   - Vergleiche mit `.env` auf Server
+1. **"401 Unauthorized"** → Wrong password
+   - Check password in app settings
+   - Compare with `.env` on server
 
-2. **"404 Not Found"** → URL falsch
-   - Sollte enden mit `/` (z.B. `http://192.168.1.100:8080/`)
+2. **"404 Not Found"** → Wrong URL
+   - Should end with `/` (e.g. `http://192.168.1.100:8080/`)
 
-3. **"Network error"** → Keine Verbindung
-   - Siehe [Verbindungstest schlägt fehl](#verbindungstest-schlägt-fehl)
+3. **"Network error"** → No connection
+   - See [Connection test fails](#connection-test-fails)
 
 ---
 
 ## 📱 Updates
 
-### Automatisch mit Obtainium (empfohlen)
+### Automatic with Obtainium (recommended)
 
-1. **[Obtainium installieren](https://github.com/ImranR98/Obtanium/releases/latest)**
+1. **[Install Obtainium](https://github.com/ImranR98/Obtanium/releases/latest)**
 
-2. **App hinzufügen:**
+2. **Add app:**
    - URL: `https://github.com/inventory69/simple-notes-sync`
-   - Auto-Update aktivieren
+   - Enable auto-update
 
-3. **Fertig!** Obtainium benachrichtigt dich bei neuen Versionen
+3. **Done!** Obtainium notifies you of new versions
 
-### Manuell
+### Manual
 
-1. Neue APK von [Releases](https://github.com/inventory69/simple-notes-sync/releases/latest) herunterladen
+1. Download new APK from [Releases](https://github.com/inventory69/simple-notes-sync/releases/latest)
 
-2. Installieren (überschreibt alte Version)
+2. Install (overwrites old version)
 
-3. Alle Daten bleiben erhalten!
-
----
-
-## 🆘 Weitere Hilfe
-
-- **GitHub Issues:** [Problem melden](https://github.com/inventory69/simple-notes-sync/issues)
-- **Vollständige Docs:** [DOCS.md](DOCS.md)
-- **Server Setup Details:** [server/README.md](server/README.md)
+3. All data remains intact!
 
 ---
 
-**Version:** 1.1.0 · **Erstellt:** Dezember 2025
+## 🆘 Further Help
+
+- **GitHub Issues:** [Report problem](https://github.com/inventory69/simple-notes-sync/issues)
+- **Complete docs:** [DOCS.en.md](DOCS.en.md)
+- **Server setup details:** [server/README.en.md](server/README.en.md)
+
+---
+
+**Version:** 1.1.0 · **Created:** December 2025

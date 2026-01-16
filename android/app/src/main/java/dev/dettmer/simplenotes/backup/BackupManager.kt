@@ -5,6 +5,7 @@ import android.net.Uri
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Logger
@@ -144,7 +145,7 @@ class BackupManager(private val context: Context) {
             if (!validationResult.isValid) {
                 return@withContext RestoreResult(
                     success = false,
-                    error = validationResult.errorMessage ?: "Ungültige Backup-Datei"
+                    error = validationResult.errorMessage ?: context.getString(R.string.error_invalid_backup_file)
                 )
             }
             
@@ -171,7 +172,7 @@ class BackupManager(private val context: Context) {
             Logger.e(TAG, "Failed to restore backup", e)
             RestoreResult(
                 success = false,
-                error = "Wiederherstellung fehlgeschlagen: ${e.message}"
+                error = context.getString(R.string.error_restore_failed, e.message ?: "")
             )
         }
     }
@@ -187,8 +188,7 @@ class BackupManager(private val context: Context) {
             if (backupData.backupVersion > BACKUP_VERSION) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "Backup-Version nicht unterstützt " +
-                        "(v${backupData.backupVersion} benötigt v${BACKUP_VERSION}+)"
+                    errorMessage = context.getString(R.string.error_backup_version_unsupported, backupData.backupVersion, BACKUP_VERSION)
                 )
             }
             
@@ -196,7 +196,7 @@ class BackupManager(private val context: Context) {
             if (backupData.notes.isEmpty()) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "Backup enthält keine Notizen"
+                    errorMessage = context.getString(R.string.error_backup_empty)
                 )
             }
             
@@ -208,7 +208,7 @@ class BackupManager(private val context: Context) {
             if (invalidNotes.isNotEmpty()) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "Backup enthält ${invalidNotes.size} ungültige Notizen"
+                    errorMessage = context.getString(R.string.error_backup_invalid_notes, invalidNotes.size)
                 )
             }
             
@@ -217,7 +217,7 @@ class BackupManager(private val context: Context) {
         } catch (e: Exception) {
             ValidationResult(
                 isValid = false,
-                errorMessage = "Backup-Datei beschädigt oder ungültig: ${e.message}"
+                errorMessage = context.getString(R.string.error_backup_corrupt, e.message ?: "")
             )
         }
     }
@@ -241,7 +241,7 @@ class BackupManager(private val context: Context) {
             success = true,
             importedNotes = newNotes.size,
             skippedNotes = skippedNotes,
-            message = "${newNotes.size} neue Notizen importiert, $skippedNotes übersprungen"
+            message = context.getString(R.string.restore_merge_result, newNotes.size, skippedNotes)
         )
     }
     
@@ -262,10 +262,10 @@ class BackupManager(private val context: Context) {
             success = true,
             importedNotes = backupNotes.size,
             skippedNotes = 0,
-            message = "Alle Notizen ersetzt: ${backupNotes.size} importiert"
+            message = context.getString(R.string.restore_replace_result, backupNotes.size)
         )
     }
-    
+
     /**
      * Restore-Modus: OVERWRITE_DUPLICATES
      * Backup überschreibt bei ID-Konflikten
@@ -287,7 +287,7 @@ class BackupManager(private val context: Context) {
             importedNotes = newNotes.size,
             skippedNotes = 0,
             overwrittenNotes = overwrittenNotes.size,
-            message = "${newNotes.size} neu, ${overwrittenNotes.size} überschrieben"
+            message = context.getString(R.string.restore_overwrite_result, newNotes.size, overwrittenNotes.size)
         )
     }
     

@@ -1,5 +1,7 @@
 package dev.dettmer.simplenotes.utils
 
+import android.content.Context
+import dev.dettmer.simplenotes.R
 import java.net.URL
 
 /**
@@ -91,7 +93,7 @@ object UrlValidator {
      * Validiert ob HTTP URL erlaubt ist
      * @return Pair<Boolean, String?> - (isValid, errorMessage)
      */
-    fun validateHttpUrl(url: String): Pair<Boolean, String?> {
+    fun validateHttpUrl(context: Context, url: String): Pair<Boolean, String?> {
         return try {
             val parsedUrl = URL(url)
             
@@ -107,16 +109,15 @@ object UrlValidator {
                 } else {
                     return Pair(
                         false,
-                        "HTTP ist nur für lokale Server erlaubt (z.B. 192.168.x.x, 10.x.x.x, nas.local). " +
-                        "Für öffentliche Server verwende bitte HTTPS."
+                        context.getString(R.string.error_http_local_only)
                     )
                 }
             }
             
             // Anderes Protokoll
-            Pair(false, "Ungültiges Protokoll: ${parsedUrl.protocol}. Bitte verwende HTTP oder HTTPS.")
+            Pair(false, context.getString(R.string.error_invalid_protocol, parsedUrl.protocol))
         } catch (e: Exception) {
-            Pair(false, "Ungültige URL: ${e.message}")
+            Pair(false, context.getString(R.string.error_invalid_url, e.message ?: ""))
         }
     }
 }

@@ -19,7 +19,8 @@ object SyncStateManager {
      */
     enum class SyncState {
         IDLE,           // Kein Sync aktiv
-        SYNCING,        // Sync läuft gerade
+        SYNCING,        // Sync läuft gerade (Banner sichtbar)
+        SYNCING_SILENT, // v1.5.0: Sync läuft im Hintergrund (kein Banner, z.B. onResume)
         COMPLETED,      // Sync erfolgreich abgeschlossen (kurz anzeigen)
         ERROR           // Sync fehlgeschlagen (kurz anzeigen)
     }
@@ -31,6 +32,7 @@ object SyncStateManager {
         val state: SyncState = SyncState.IDLE,
         val message: String? = null,
         val source: String? = null,  // "manual", "auto", "pullToRefresh", "background"
+        val silent: Boolean = false, // v1.5.0: Wenn true, wird nach Completion kein Banner angezeigt
         val timestamp: Long = System.currentTimeMillis()
     )
     
@@ -44,28 +46,35 @@ object SyncStateManager {
     private val lock = Any()
     
     /**
-     * Prüft ob gerade ein Sync läuft
+     * Prüft ob gerade ein Sync läuft (inkl. Silent-Sync)
      */
     val isSyncing: Boolean
-        get() = _syncStatus.value?.state == SyncState.SYNCING
+        get() {
+            val state = _syncStatus.value?.state
+            return state == SyncState.SYNCING || state == SyncState.SYNCING_SILENT
+        }
     
     /**
      * Versucht einen Sync zu starten.
+     * @param source Quelle des Syncs (für Logging)
+     * @param silent v1.5.0: Wenn true, wird kein Banner angezeigt (z.B. bei onResume Auto-Sync)
      * @return true wenn Sync gestartet werden kann, false wenn bereits einer läuft
      */
-    fun tryStartSync(source: String): Boolean {
+    fun tryStartSync(source: String, silent: Boolean = false): Boolean {
         synchronized(lock) {
             if (isSyncing) {
                 Logger.d(TAG, "⚠️ Sync already in progress, rejecting new sync from: $source")
                 return false
             }
             
-            Logger.d(TAG, "🔄 Starting sync from: $source")
+            val syncState = if (silent) SyncState.SYNCING_SILENT else SyncState.SYNCING
+            Logger.d(TAG, "🔄 Starting sync from: $source (silent=$silent)")
             _syncStatus.postValue(
                 SyncStatus(
-                    state = SyncState.SYNCING,
+                    state = syncState,
                     message = "Synchronisiere...",
-                    source = source
+                    source = source,
+                    silent = silent  // v1.5.0: Merkt sich ob silent für markCompleted()
                 )
             )
             return true
@@ -74,18 +83,29 @@ object SyncStateManager {
     
     /**
      * Markiert Sync als erfolgreich abgeschlossen
+     * v1.5.0: Bei Silent-Sync direkt auf IDLE wechseln (kein Banner)
      */
     fun markCompleted(message: String? = null) {
         synchronized(lock) {
-            val currentSource = _syncStatus.value?.source
-            Logger.d(TAG, "✅ Sync completed from: $currentSource")
-            _syncStatus.postValue(
-                SyncStatus(
-                    state = SyncState.COMPLETED,
-                    message = message,
-                    source = currentSource
+            val current = _syncStatus.value
+            val currentSource = current?.source
+            val wasSilent = current?.silent == true
+            
+            Logger.d(TAG, "✅ Sync completed from: $currentSource (silent=$wasSilent)")
+            
+            if (wasSilent) {
+                // v1.5.0: Silent-Sync - direkt auf IDLE, kein Banner anzeigen
+                _syncStatus.postValue(SyncStatus())
+            } else {
+                // Normaler Sync - COMPLETED State anzeigen
+                _syncStatus.postValue(
+                    SyncStatus(
+                        state = SyncState.COMPLETED,
+                        message = message,
+                        source = currentSource
+                    )
                 )
-            )
+            }
         }
     }
     

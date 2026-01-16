@@ -1,109 +1,111 @@
 # Simple Notes Sync 📝
 
-> Minimalistische Offline-Notizen mit Auto-Sync zu deinem eigenen Server
+> Minimalist offline notes with auto-sync to your own server
 
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://www.android.com/)
 [![Material Design 3](https://img.shields.io/badge/Material-Design%203-green.svg)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes)
+[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/dev.dettmer.simplenotes/)
 
-**📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Dokumentation](docs/DOCS.md)** · **🚀 [Quick Start](QUICKSTART.md)**
+**📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Documentation](docs/DOCS.md)** · **🚀 [Quick Start](QUICKSTART.md)**
 
-**🌍 Sprachen:** **Deutsch** · [English](README.en.md)
+**🌍 Languages:** [Deutsch](README.de.md) · **English**
 
 ---
 
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/1.jpg" width="250" alt="Notizliste">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.jpg" width="250" alt="Notiz bearbeiten">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.jpg" width="250" alt="Einstellungen">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="250" alt="Notes list">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="250" alt="Edit note">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="250" alt="Edit checklist">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="250" alt="Settings">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="250" alt="Server settings">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="250" alt="Sync status">
 </p>
 
 ---
 
 ## ✨ Highlights
 
-- ✅ **NEU: Checklisten** - Tap-to-Check, Drag & Drop, Swipe-to-Delete
-- 📝 **Offline-First** - Funktioniert ohne Internet
-- 🔄 **Auto-Sync** - Bei WiFi-Verbindung (15/30/60 Min)
-- 🔒 **Self-Hosted** - Deine Daten bleiben bei dir (WebDAV)
-- 💾 **Lokales Backup** - Export/Import als JSON-Datei
-- 🖥️ **Desktop-Integration** - Markdown-Export für Obsidian, VS Code, Typora
-- 🔋 **Akkuschonend** - ~0.2-0.8% pro Tag
-- 🎨 **Material Design 3** - Dark Mode & Dynamic Colors
+- ✅ **NEW: Checklists** - Tap-to-check, drag & drop
+- 🌍 **NEW: Multilingual** - English/German with language selector
+- 📝 **Offline-first** - Works without internet
+- 🔄 **Auto-sync** - WiFi reconnect, periodic intervals (15/30/60 min) & multi-device sync
+- 🔒 **Self-hosted** - Your data stays with you (WebDAV)
+- 💾 **Local backup** - Export/Import as JSON file
+- 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
+- 🔋 **Battery-friendly** - ~0.2-0.8% per day
+- 🎨 **Material Design 3** - Dark mode & dynamic colors
 
-➡️ **Vollständige Feature-Liste:** [FEATURES.md](docs/FEATURES.md)
+➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
 
 ---
 
-## 🚀 Schnellstart
+## 🚀 Quick Start
 
-### 1. Server Setup (5 Minuten)
+### 1. Server Setup (5 minutes)
 
 ```bash
 git clone https://github.com/inventory69/simple-notes-sync.git
 cd simple-notes-sync/server
 cp .env.example .env
-# Passwort in .env setzen
+# Set password in .env
 docker compose up -d
 ```
 
 ➡️ **Details:** [Server Setup Guide](server/README.md)
 
-### 2. App Installation (2 Minuten)
+### 2. App Installation (2 minutes)
 
-1. [APK herunterladen](https://github.com/inventory69/simple-notes-sync/releases/latest)
-2. Installieren & öffnen
-3. ⚙️ Einstellungen → Server konfigurieren:
-   - **URL:** `http://DEINE-SERVER-IP:8080/` _(nur Base-URL!)_
+1. [Download APK](https://github.com/inventory69/simple-notes-sync/releases/latest)
+2. Install & open
+3. ⚙️ Settings → Configure server:
+   - **URL:** `http://YOUR-SERVER-IP:8080/` _(base URL only!)_
    - **User:** `noteuser`
-   - **Passwort:** _(aus .env)_
-   - **WLAN:** _(dein Netzwerk-Name)_
-4. **Verbindung testen** → Auto-Sync aktivieren
-5. Fertig! 🎉
+   - **Password:** _(from .env)_
+   - **WiFi:** _(your network name)_
+4. **Test connection** → Enable auto-sync
+5. Done! 🎉
 
-➡️ **Ausführliche Anleitung:** [QUICKSTART.md](QUICKSTART.md)
-
----
-
-## 📚 Dokumentation
-
-| Dokument | Inhalt |
-|----------|--------|
-| **[QUICKSTART.md](QUICKSTART.md)** | Schritt-für-Schritt Installation |
-| **[FEATURES.md](docs/FEATURES.md)** | Vollständige Feature-Liste |
-| **[BACKUP.md](docs/BACKUP.md)** | Backup & Wiederherstellung |
-| **[DESKTOP.md](docs/DESKTOP.md)** | Desktop-Integration (Markdown) |
-| **[DOCS.md](docs/DOCS.md)** | Technische Details & Troubleshooting |
-| **[CHANGELOG.md](CHANGELOG.md)** | Versionshistorie |
-| **[UPCOMING.md](docs/UPCOMING.md)** | Geplante Features 🚀 |
+➡️ **Detailed guide:** [QUICKSTART.md](QUICKSTART.md)
 
 ---
 
-## 🛠️ Entwicklung
+## 📚 Documentation
+
+| Document | Content |
+|----------|---------|
+| **[QUICKSTART.md](QUICKSTART.md)** | Step-by-step installation |
+| **[FEATURES.md](docs/FEATURES.md)** | Complete feature list |
+| **[BACKUP.md](docs/BACKUP.md)** | Backup & restore guide |
+| **[DESKTOP.md](docs/DESKTOP.md)** | Desktop integration (Markdown) |
+| **[DOCS.md](docs/DOCS.md)** | Technical details & troubleshooting |
+| **[CHANGELOG.md](CHANGELOG.md)** | Version history |
+| **[UPCOMING.md](docs/UPCOMING.md)** | Upcoming features 🚀 |
+| **[TRANSLATING.md](docs/TRANSLATING.md)** | Translation guide 🌍 |
 
 ```bash
 cd android
 ./gradlew assembleStandardRelease
 ```
 
-➡️ **Build-Anleitung:** [DOCS.md](docs/DOCS.md#-build--deployment)
+➡️ **Build guide:** [DOCS.md](docs/DOCS.md#-build--deployment)
 
 ---
 
 ## 🤝 Contributing
 
-Beiträge willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md)
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## 📄 Lizenz
+## 📄 License
 
-MIT License - siehe [LICENSE](LICENSE)
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**v1.4.1** · Built with ❤️ using Kotlin + Material Design 3
+**v1.5.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3

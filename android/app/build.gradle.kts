@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)  // v1.5.0: Jetpack Compose Compiler
     // ⚡ v1.3.1: ktlint deaktiviert wegen Parser-Problemen, aktivieren in v1.4.0
     // alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
@@ -20,8 +21,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 12  // 🔧 v1.4.1: Bugfixes (Root-Delete, Checklist Compat)
-        versionName = "1.4.1"  // 🔧 v1.4.1: Root-Folder Delete Fix, Checklisten-Sync Abwärtskompatibilität
+        versionCode = 13  // 🔧 v1.5.0: Jetpack Compose Settings Redesign
+        versionName = "1.5.0"  // 🔧 v1.5.0: Jetpack Compose Settings Redesign
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -96,6 +97,12 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true  // Enable BuildConfig generation
+        compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
+    }
+    
+    // v1.5.0 Hotfix: Strong Skipping Mode für bessere 120Hz Performance
+    composeCompiler {
+        enableStrongSkippingMode = true
     }
 
     compileOptions {
@@ -134,6 +141,20 @@ dependencies {
 
     // SwipeRefreshLayout für Pull-to-Refresh
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // v1.5.0: Jetpack Compose für Settings Redesign
+    // ═══════════════════════════════════════════════════════════════════════
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    debugImplementation(libs.androidx.compose.ui.tooling)
 
     // Testing (bleiben so)
     testImplementation(libs.junit)

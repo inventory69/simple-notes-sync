@@ -1,0 +1,9 @@
+• Komplett neues UI-Design mit Jetpack Compose
+• NEU: Englische Sprachunterstützung + Sprachauswahl
+• NEU: Automatische Systemsprachen-Erkennung
+• NEU: Long-Press Mehrfachauswahl zum Löschen
+• Modernisierte Einstellungen mit 7 Bereichen
+• Silent-Sync (kein Banner bei Auto-Sync)
+• "Nichts zu syncen" Feedback im Status-Banner
+• Diverse UI/UX Verbesserungen und Bugfixes
+• App-Icon in Über-Screen und Leerzustand

@@ -15,9 +15,9 @@ Repo: https://github.com/inventory69/simple-notes-sync.git
 Binaries: https://github.com/inventory69/simple-notes-sync/releases/download/v%v/simple-notes-sync-v%v-fdroid.apk
 
 Builds:
-  - versionName: 1.4.1
-    versionCode: 12
-    commit: 7128c25bd519861ca136e4be9b67ce280ef184bf
+  - versionName: 1.5.0
+    versionCode: 13
+    commit: PLACEHOLDER_UPDATE_AFTER_MERGE
     subdir: android/app
     gradle:
       - fdroid
@@ -26,5 +26,5 @@ AllowedAPKSigningKeys: 42a1c613bbc673045af3dc8191bf9cb6456ee44c7dce40c7cfb566fac
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.4.1
-CurrentVersionCode: 12
+CurrentVersion: 1.5.0
+CurrentVersionCode: 13

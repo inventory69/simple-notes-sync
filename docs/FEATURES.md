@@ -1,284 +1,305 @@
-# Vollständige Feature-Liste 📋
+# Complete Feature List 📋
 
-**🌍 Languages:** **Deutsch** · [English](FEATURES.en.md)
+**🌍 Languages:** [Deutsch](FEATURES.de.md) · **English**
 
-> Alle Features von Simple Notes Sync im Detail
+> All features of Simple Notes Sync in detail
 
 ---
 
-## 📝 Notiz-Verwaltung
+## 📝 Note Management
 
-### Notiz-Typen
-- ✅ **Textnotizen** - Klassische Freitext-Notizen
-- ✅ **Checklisten** _(NEU in v1.4.0)_ - Aufgabenlisten mit Tap-to-Check
-  - ➕ Items hinzufügen über Eingabefeld
-  - ☑️ Tap zum Abhaken/Wieder-Öffnen
-  - 📌 Long-Press für Drag & Drop Sortierung
-  - 🗑️ Swipe-to-Delete für einzelne Items
-  - ~~Durchstreichen~~ bei erledigten Einträgen
+### Note Types
+- ✅ **Text notes** - Classic free-form notes
+- ✅ **Checklists** _(NEW in v1.4.0)_ - Task lists with tap-to-check
+  - ➕ Add items via input field
+  - ☑️ Tap to check/uncheck
+  - 📌 Long-press for drag & drop sorting
+  - ~~Strikethrough~~ for completed entries
 
-### Basis-Funktionen
-- ✅ **Automatisches Speichern** - Kein manuelles Speichern nötig
-- ✅ **Titel + Inhalt** - Klare Struktur für jede Notiz
-- ✅ **Zeitstempel** - Erstellungs- und Änderungsdatum automatisch
-- ✅ **Swipe-to-Delete** - Intuitive Geste zum Löschen
-- ✅ **Bestätigungs-Dialog** - Schutz vor versehentlichem Löschen
-- ✅ **Material Design 3** - Moderne, saubere UI
-- ✅ **Dark Mode** - Automatisch je nach System-Einstellung
-- ✅ **Dynamic Colors** - Passt sich deinem Android-Theme an
+### Basic Features
+- ✅ **Auto-save** - No manual saving needed
+- ✅ **Title + content** - Clear structure for each note
+- ✅ **Timestamps** - Creation and modification date automatically
+- ✅ **Selection Mode** _(NEW in v1.5.0)_ - Long-press for multi-select and batch delete
+- ✅ **Confirmation dialog** - Protection against accidental deletion
+- ✅ **Jetpack Compose UI** _(NEW in v1.5.0)_ - Modern, performant user interface
+- ✅ **Material Design 3** - Modern, clean UI
+- ✅ **Dark mode** - Automatically based on system settings
+- ✅ **Dynamic colors** - Adapts to your Android theme
 
 ### Editor
-- ✅ **Minimalistischer Editor** - Kein Schnickschnack
-- ✅ **Auto-Fokus** - Direkt losschreiben
-- ✅ **Vollbild-Modus** - Maximale Schreibfläche
-- ✅ **Speichern-Button** - Manuelle Bestätigung möglich
-- ✅ **Zurück-Navigation** - Speichert automatisch
+- ✅ **Minimalist editor** - No bells and whistles
+- ✅ **Auto-focus** - Start writing immediately
+- ✅ **Fullscreen mode** - Maximum writing space
+- ✅ **Save button** - Manual confirmation possible
+- ✅ **Back navigation** - Saves automatically
+- ✅ **Slide animations** _(NEW in v1.5.0)_ - Smooth transitions
 
 ---
 
-## 💾 Backup & Wiederherstellung
+## 🌍 Multilingual Support _(NEW in v1.5.0)_
 
-### Lokales Backup System
-- ✅ **JSON-Export** - Alle Notizen in einer Datei
-- ✅ **Freie Speicherort-Wahl** - Downloads, SD-Karte, Cloud-Ordner
-- ✅ **Dateinamen mit Zeitstempel** - `simplenotes_backup_YYYY-MM-DD_HHmmss.json`
-- ✅ **Vollständiger Export** - Titel, Inhalt, Timestamps, IDs
-- ✅ **Menschenlesbares Format** - JSON mit Formatierung
-- ✅ **Unabhängig vom Server** - Funktioniert komplett offline
+### Supported Languages
+- ✅ **English** - Primary language (default)
+- ✅ **German** - Fully translated
 
-### Wiederherstellungs-Modi
-- ✅ **Zusammenführen (Merge)** - Neue Notizen hinzufügen, bestehende behalten _(Standard)_
-- ✅ **Ersetzen (Replace)** - Alle löschen und Backup importieren
-- ✅ **Duplikate überschreiben (Overwrite)** - Backup gewinnt bei ID-Konflikten
-- ✅ **Automatisches Sicherheits-Backup** - Vor jeder Wiederherstellung
-- ✅ **Backup-Validierung** - Prüft Format und Version
-- ✅ **Fehlerbehandlung** - Klare Fehlermeldungen bei Problemen
+### Language Selection
+- ✅ **Automatic detection** - Follows system language
+- ✅ **Manual selection** - Switchable in settings
+- ✅ **Per-App Language** - Android 13+ native language selection
+- ✅ **locales_config.xml** - Complete Android integration
 
----
-
-## 🖥️ Desktop-Integration
-
-### Markdown-Export
-- ✅ **Automatischer Export** - Jede Notiz → `.md` Datei
-- ✅ **Checklisten als Task-Listen** _(NEU)_ - `- [ ]` / `- [x]` Format (GitHub-kompatibel)
-- ✅ **Dual-Format** - JSON (Master) + Markdown (Mirror)
-- ✅ **Dateinamen-Sanitization** - Sichere Dateinamen aus Titeln
-- ✅ **Duplikat-Handling** _(NEU)_ - ID-Suffix bei gleichen Titeln
-- ✅ **Frontmatter-Metadata** - YAML mit ID, Timestamps, Type
-- ✅ **WebDAV-Sync** - Parallel zum JSON-Sync
-- ✅ **Optional** - In Einstellungen ein/ausschaltbar
-- ✅ **Initial Export** - Alle bestehenden Notizen beim Aktivieren
-- ✅ **Progress-Anzeige** - Zeigt X/Y beim Export
-
-### Markdown-Import
-- ✅ **Desktop → App** - Änderungen vom Desktop importieren
-- ✅ **Last-Write-Wins** - Konfliktauflösung via Timestamp
-- ✅ **Frontmatter-Parsing** - Liest Metadata aus `.md` Dateien
-- ✅ **Neue Notizen erkennen** - Automatisch in App übernehmen
-- ✅ **Updates erkennen** - Nur wenn Desktop-Version neuer ist
-- ✅ **Fehlertoleranz** - Einzelne Fehler brechen Import nicht ab
-
-### WebDAV-Zugriff
-- ✅ **Network Drive Mount** - Windows, macOS, Linux
-- ✅ **Jeder Markdown-Editor** - VS Code, Typora, Notepad++, iA Writer
-- ✅ **Live-Bearbeitung** - Direkter Zugriff auf `.md` Dateien
-- ✅ **Ordner-Struktur** - `/notes/` für JSON, `/notes-md/` für Markdown
-- ✅ **Automatische Ordner-Erstellung** - Beim ersten Sync
+### Scope
+- ✅ **400+ strings** - Fully translated
+- ✅ **UI texts** - All buttons, dialogs, menus
+- ✅ **Error messages** - Helpful localized hints
+- ✅ **Settings** - 7 categorized screens
 
 ---
 
-## 🔄 Synchronisation
+## 💾 Backup & Restore
+
+### Local Backup System
+- ✅ **JSON export** - All notes in one file
+- ✅ **Free location choice** - Downloads, SD card, cloud folder
+- ✅ **Filenames with timestamp** - `simplenotes_backup_YYYY-MM-DD_HHmmss.json`
+- ✅ **Complete export** - Title, content, timestamps, IDs
+- ✅ **Human-readable format** - JSON with formatting
+- ✅ **Independent from server** - Works completely offline
+
+### Restore Modes
+- ✅ **Merge** - Add new notes, keep existing ones _(Default)_
+- ✅ **Replace** - Delete all and import backup
+- ✅ **Overwrite duplicates** - Backup wins on ID conflicts
+- ✅ **Automatic safety backup** - Before every restore
+- ✅ **Backup validation** - Checks format and version
+- ✅ **Error handling** - Clear error messages on issues
+
+---
+
+## 🖥️ Desktop Integration
+
+### Markdown Export
+- ✅ **Automatic export** - Each note → `.md` file
+- ✅ **Checklists as task lists** _(NEW)_ - `- [ ]` / `- [x]` format (GitHub-compatible)
+- ✅ **Dual-format** - JSON (master) + Markdown (mirror)
+- ✅ **Filename sanitization** - Safe filenames from titles
+- ✅ **Duplicate handling** _(NEW)_ - ID suffix for same titles
+- ✅ **Frontmatter metadata** - YAML with ID, timestamps, type
+- ✅ **WebDAV sync** - Parallel to JSON sync
+- ✅ **Optional** - Toggle in settings
+- ✅ **Initial export** - All existing notes when activated
+- ✅ **Progress indicator** - Shows X/Y during export
+
+### Markdown Import
+- ✅ **Desktop → App** - Import changes from desktop
+- ✅ **Last-Write-Wins** - Conflict resolution via timestamp
+- ✅ **Frontmatter parsing** - Reads metadata from `.md` files
+- ✅ **Detect new notes** - Automatically adopt to app
+- ✅ **Detect updates** - Only if desktop version is newer
+- ✅ **Error tolerance** - Individual errors don't abort import
+
+### WebDAV Access
+- ✅ **Network drive mount** - Windows, macOS, Linux
+- ✅ **Any Markdown editor** - VS Code, Typora, Notepad++, iA Writer
+- ✅ **Live editing** - Direct access to `.md` files
+- ✅ **Folder structure** - `/notes/` for JSON, `/notes-md/` for Markdown
+- ✅ **Automatic folder creation** - On first sync
+
+---
+
+## 🔄 Synchronization
 
 ### Auto-Sync
-- ✅ **Intervall-Auswahl** - 15, 30 oder 60 Minuten
-- ✅ **WiFi-Trigger** - Sync bei WiFi-Verbindung _(keine SSID-Einschränkung)_
-- ✅ **Akkuschonend** - ~0.2-0.8% pro Tag
-- ✅ **Smart Server-Check** - Sync nur wenn Server erreichbar
-- ✅ **WorkManager** - Zuverlässige Background-Ausführung
-- ✅ **Battery-Optimierung kompatibel** - Funktioniert auch mit Doze Mode
+- ✅ **Interval selection** - 15, 30 or 60 minutes
+- ✅ **WiFi trigger** - Sync on WiFi connection _(no SSID restriction)_
+- ✅ **Battery-friendly** - ~0.2-0.8% per day
+- ✅ **Smart server check** - Sync only when server is reachable
+- ✅ **WorkManager** - Reliable background execution
+- ✅ **Battery optimization compatible** - Works even with Doze mode
 
-### Sync-Trigger (6 Stück)
-1. ✅ **Periodic Sync** - Automatisch nach Intervall
-2. ✅ **App-Start Sync** - Beim Öffnen der App
-3. ✅ **WiFi-Connect Sync** - Bei jeder WiFi-Verbindung
-4. ✅ **Manual Sync** - Button in Einstellungen
-5. ✅ **Pull-to-Refresh** - Wisch-Geste in Notizliste
-6. ✅ **Settings-Save Sync** - Nach Server-Konfiguration
+### Sync Triggers (6 total)
+1. ✅ **Periodic sync** - Automatically after interval
+2. ✅ **App-start sync** - When opening the app
+3. ✅ **WiFi-connect sync** - On any WiFi connection
+4. ✅ **Manual sync** - Button in settings
+5. ✅ **Pull-to-refresh** - Swipe gesture in notes list
+6. ✅ **Settings-save sync** - After server configuration
 
-### Sync-Mechanismus
-- ✅ **Upload** - Lokale Änderungen zum Server
-- ✅ **Download** - Server-Änderungen in App
-- ✅ **Konflikt-Erkennung** - Bei gleichzeitigen Änderungen
-- ✅ **Konfliktfreies Merging** - Last-Write-Wins via Timestamp
-- ✅ **Sync-Status Tracking** - LOCAL_ONLY, PENDING, SYNCED, CONFLICT
-- ✅ **Fehlerbehandlung** - Retry bei Netzwerkproblemen
-- ✅ **Offline-First** - App funktioniert ohne Server
+### Sync Mechanism
+- ✅ **Upload** - Local changes to server
+- ✅ **Download** - Server changes to app
+- ✅ **Conflict detection** - On simultaneous changes
+- ✅ **Conflict-free merging** - Last-Write-Wins via timestamp
+- ✅ **Sync status tracking** - LOCAL_ONLY, PENDING, SYNCED, CONFLICT
+- ✅ **Error handling** - Retry on network issues
+- ✅ **Offline-first** - App works without server
 
-### Server-Verbindung
-- ✅ **WebDAV-Protokoll** - Standard-Protokoll
-- ✅ **HTTP/HTTPS** - HTTP nur lokal, HTTPS für extern
-- ✅ **Username/Password** - Basic Authentication
-- ✅ **Connection Test** - In Einstellungen testen
-- ✅ **Server-URL Normalisierung** - Automatisches `/notes/` und `/notes-md/` _(NEU in v1.2.1)_
-- ✅ **Flexible URL-Eingabe** - Beide Varianten funktionieren: `http://server/` und `http://server/notes/`
+### Server Connection
+- ✅ **WebDAV protocol** - Standard protocol
+- ✅ **HTTP/HTTPS** - HTTP only local, HTTPS for external
+- ✅ **Username/password** - Basic authentication
+- ✅ **Connection test** - Test in settings
+- ✅ **Server URL normalization** - Automatic `/notes/` and `/notes-md/` _(NEW in v1.2.1)_
+- ✅ **Flexible URL input** - Both variants work: `http://server/` and `http://server/notes/`
 
 ---
 
-## 🔒 Privacy & Sicherheit
+## 🔒 Privacy & Security
 
 ### Self-Hosted
-- ✅ **Eigener Server** - Volle Kontrolle über Daten
-- ✅ **Keine Cloud** - Keine Drittanbieter
-- ✅ **Kein Tracking** - Keine Analytik, keine Telemetrie
-- ✅ **Kein Account** - Nur Server-Zugangsdaten
-- ✅ **100% Open Source** - MIT Lizenz
+- ✅ **Own server** - Full control over data
+- ✅ **No cloud** - No third parties
+- ✅ **No tracking** - No analytics, no telemetry
+- ✅ **No account** - Only server credentials
+- ✅ **100% open source** - MIT License
 
-### Daten-Sicherheit
-- ✅ **Lokale Speicherung** - App-Private Storage (Android)
-- ✅ **WebDAV-Verschlüsselung** - HTTPS für externe Server
-- ✅ **Passwort-Speicherung** - Android SharedPreferences (verschlüsselt)
-- ✅ **Keine Drittanbieter-Libs** - Nur Android SDK + Sardine (WebDAV)
+### Data Security
+- ✅ **Local storage** - App-private storage (Android)
+- ✅ **WebDAV encryption** - HTTPS for external servers
+- ✅ **Password storage** - Android SharedPreferences (encrypted)
+- ✅ **No third-party libs** - Only Android SDK + Sardine (WebDAV)
 
-### Entwickler-Features
-- ✅ **Datei-Logging** - Optional, nur bei Aktivierung _(NEU in v1.3.2)_
-- ✅ **Datenschutz-Hinweis** - Explizite Warnung bei Aktivierung
-- ✅ **Lokale Logs** - Logs bleiben auf dem Gerät
+### Developer Features
+- ✅ **File logging** - Optional, only when enabled _(NEW in v1.3.2)_
+- ✅ **Privacy notice** - Explicit warning on activation
+- ✅ **Local logs** - Logs stay on device
 
 ---
 
-## 🔋 Performance & Optimierung
+## 🔋 Performance & Optimization
 
-### Akku-Effizienz
-- ✅ **Optimierte Sync-Intervalle** - 15/30/60 Min
-- ✅ **WiFi-Only** - Kein Mobile Data Sync
-- ✅ **Smart Server-Check** - Sync nur wenn Server erreichbar
-- ✅ **WorkManager** - System-optimierte Ausführung
-- ✅ **Doze Mode kompatibel** - Sync läuft auch im Standby
-- ✅ **Gemessener Verbrauch:**
-  - 15 Min: ~0.8% / Tag (~23 mAh)
-  - 30 Min: ~0.4% / Tag (~12 mAh) ⭐ _Empfohlen_
-  - 60 Min: ~0.2% / Tag (~6 mAh)
+### Battery Efficiency
+- ✅ **Optimized sync intervals** - 15/30/60 min
+- ✅ **WiFi-only** - No mobile data sync
+- ✅ **Smart server check** - Sync only when server is reachable
+- ✅ **WorkManager** - System-optimized execution
+- ✅ **Doze mode compatible** - Sync runs even in standby
+- ✅ **Measured consumption:**
+  - 15 min: ~0.8% / day (~23 mAh)
+  - 30 min: ~0.4% / day (~12 mAh) ⭐ _Recommended_
+  - 60 min: ~0.2% / day (~6 mAh)
 
-### App-Performance
-- ✅ **Offline-First** - Funktioniert ohne Internet
-- ✅ **Instant-Load** - Notizen laden in <100ms
-- ✅ **Smooth Scrolling** - RecyclerView mit ViewHolder
+### App Performance
+- ✅ **Offline-first** - Works without internet
+- ✅ **Instant-load** - Notes load in <100ms
+- ✅ **Smooth scrolling** - RecyclerView with ViewHolder
 - ✅ **Material Design 3** - Native Android UI
-- ✅ **Kotlin Coroutines** - Asynchrone Operationen
-- ✅ **Minimale APK-Größe** - ~2 MB
+- ✅ **Kotlin Coroutines** - Asynchronous operations
+- ✅ **Minimal APK size** - ~2 MB
 
 ---
 
-## 🛠️ Technische Details
+## 🛠️ Technical Details
 
-### Plattform
+### Platform
 - ✅ **Android 8.0+** (API 26+)
 - ✅ **Target SDK 36** (Android 15)
-- ✅ **Kotlin** - Moderne Programmiersprache
-- ✅ **Material Design 3** - Neueste Design-Richtlinien
-- ✅ **ViewBinding** - Typ-sichere View-Referenzen
+- ✅ **Kotlin** - Modern programming language
+- ✅ **Material Design 3** - Latest design guidelines
+- ✅ **ViewBinding** - Type-safe view references
 
-### Architektur
-- ✅ **MVVM-Light** - Einfache Architektur
-- ✅ **Single Activity** - Moderne Navigation
-- ✅ **Kotlin Coroutines** - Async/Await Pattern
-- ✅ **Dispatchers.IO** - Background-Operationen
-- ✅ **SharedPreferences** - Settings-Speicherung
-- ✅ **File-Based Storage** - JSON-Dateien lokal
-- ✅ **Custom Exceptions** - Dedizierte SyncException für bessere Fehlerbehandlung _(NEU in v1.3.2)_
+### Architecture
+- ✅ **MVVM-Light** - Simple architecture
+- ✅ **Single Activity** - Modern navigation
+- ✅ **Kotlin Coroutines** - Async/Await pattern
+- ✅ **Dispatchers.IO** - Background operations
+- ✅ **SharedPreferences** - Settings storage
+- ✅ **File-based storage** - JSON files locally
+- ✅ **Custom exceptions** - Dedicated SyncException for better error handling _(NEW in v1.3.2)_
 
-### Abhängigkeiten
-- ✅ **AndroidX** - Jetpack Libraries
+### Dependencies
+- ✅ **AndroidX** - Jetpack libraries
 - ✅ **Material Components** - Material Design 3
-- ✅ **Sardine** - WebDAV Client (com.thegrizzlylabs)
-- ✅ **Gson** - JSON Serialization
-- ✅ **WorkManager** - Background Tasks
-- ✅ **OkHttp** - HTTP Client (via Sardine)
+- ✅ **Sardine** - WebDAV client (com.thegrizzlylabs)
+- ✅ **Gson** - JSON serialization
+- ✅ **WorkManager** - Background tasks
+- ✅ **OkHttp** - HTTP client (via Sardine)
 
-### Build-Varianten
-- ✅ **Standard** - Universal APK (100% FOSS, keine Google-Dependencies)
-- ✅ **F-Droid** - Identisch mit Standard (100% FOSS)
-- ✅ **Debug/Release** - Entwicklung und Production
-- ✅ **Keine Google Services** - Komplett FOSS, keine proprietären Bibliotheken
+### Build Variants
+- ✅ **Standard** - Universal APK (100% FOSS, no Google dependencies)
+- ✅ **F-Droid** - Identical to Standard (100% FOSS)
+- ✅ **Debug/Release** - Development and production
+- ✅ **No Google Services** - Completely FOSS, no proprietary libraries
 
 ---
 
-## 📦 Server-Kompatibilität
+## 📦 Server Compatibility
 
-### Getestete WebDAV-Server
-- ✅ **Docker WebDAV** (empfohlen für Self-Hosting)
-- ✅ **Nextcloud** - Vollständig kompatibel
-- ✅ **ownCloud** - Funktioniert einwandfrei
+### Tested WebDAV Servers
+- ✅ **Docker WebDAV** (recommended for self-hosting)
+- ✅ **Nextcloud** - Fully compatible
+- ✅ **ownCloud** - Works perfectly
 - ✅ **Apache mod_dav** - Standard WebDAV
-- ✅ **nginx + WebDAV** - Mit korrekter Konfiguration
+- ✅ **nginx + WebDAV** - With correct configuration
 
-### Server-Features
-- ✅ **Basic Auth** - Username/Password
-- ✅ **Directory Listing** - Für Download
-- ✅ **PUT/GET** - Upload/Download
-- ✅ **MKCOL** - Ordner erstellen
-- ✅ **DELETE** - Notizen löschen (zukünftig)
+### Server Features
+- ✅ **Basic Auth** - Username/password
+- ✅ **Directory listing** - For download
+- ✅ **PUT/GET** - Upload/download
+- ✅ **MKCOL** - Create folders
+- ✅ **DELETE** - Delete notes (future)
 
 ---
 
-## 🔮 Zukünftige Features
+## 🔮 Future Features
 
-Geplant für kommende Versionen:
+Planned for upcoming versions:
 
-### v1.4.0 - Checklisten
-- ⏳ **Checklisten-Notizen** - Neuer Notiz-Typ mit Checkboxen
-- ⏳ **Erledigte Items** - Durchstreichen/Abhaken
-- ⏳ **Drag & Drop** - Items neu anordnen
+### v1.4.0 - Checklists
+- ⏳ **Checklist notes** - New note type with checkboxes
+- ⏳ **Completed items** - Strike-through/check off
+- ⏳ **Drag & drop** - Reorder items
 
-### v1.5.0 - Internationalisierung
-- ⏳ **Mehrsprachigkeit** - Deutsch + Englisch UI
-- ⏳ **Sprachauswahl** - In Einstellungen wählbar
-- ⏳ **Vollständige Übersetzung** - Alle Strings in beiden Sprachen
+### v1.5.0 - Internationalization
+- ⏳ **Multi-language** - German + English UI
+- ⏳ **Language selection** - Selectable in settings
+- ⏳ **Full translation** - All strings in both languages
 
 ### v1.6.0 - Modern APIs
-- ⏳ **LocalBroadcastManager ersetzen** - SharedFlow stattdessen
-- ⏳ **PackageInfo Flags** - PackageInfoFlags.of() verwenden
-- ⏳ **Komplexitäts-Refactoring** - Lange Funktionen aufteilen
+- ⏳ **Replace LocalBroadcastManager** - Use SharedFlow instead
+- ⏳ **PackageInfo Flags** - Use PackageInfoFlags.of()
+- ⏳ **Complexity refactoring** - Split long functions
 
 ---
 
-## 📊 Vergleich mit anderen Apps
+## 📊 Comparison with Other Apps
 
 | Feature | Simple Notes Sync | Google Keep | Nextcloud Notes |
 |---------|------------------|-------------|-----------------|
-| Offline-First | ✅ | ⚠️ Eingeschränkt | ⚠️ Eingeschränkt |
-| Self-Hosted | ✅ | ❌ | ✅ |
-| Auto-Sync | ✅ | ✅ | ✅ |
-| Markdown-Export | ✅ | ❌ | ✅ |
-| Desktop-Zugriff | ✅ (WebDAV) | ✅ (Web) | ✅ (Web + WebDAV) |
-| Lokales Backup | ✅ | ❌ | ⚠️ Server-Backup |
-| Kein Google-Account | ✅ | ❌ | ✅ |
-| Open Source | ✅ MIT | ❌ | ✅ AGPL |
-| APK-Größe | ~2 MB | ~50 MB | ~8 MB |
-| Akku-Verbrauch | ~0.4%/Tag | ~1-2%/Tag | ~0.5%/Tag |
+| Offline-first | ✅ | ⚠️ Limited | ⚠️ Limited |
+| Self-hosted | ✅ | ❌ | ✅ |
+| Auto-sync | ✅ | ✅ | ✅ |
+| Markdown export | ✅ | ❌ | ✅ |
+| Desktop access | ✅ (WebDAV) | ✅ (Web) | ✅ (Web + WebDAV) |
+| Local backup | ✅ | ❌ | ⚠️ Server backup |
+| No Google account | ✅ | ❌ | ✅ |
+| Open source | ✅ MIT | ❌ | ✅ AGPL |
+| APK size | ~2 MB | ~50 MB | ~8 MB |
+| Battery usage | ~0.4%/day | ~1-2%/day | ~0.5%/day |
 
 ---
 
 ## ❓ FAQ
 
-**Q: Brauche ich einen Server?**  
-A: Nein! Die App funktioniert auch komplett offline. Der Server ist optional für Sync.
+**Q: Do I need a server?**  
+A: No! The app works completely offline. The server is optional for sync.
 
-**Q: Welcher Server ist am besten?**  
-A: Für Einstieg: Docker WebDAV (einfach, leicht). Für Profis: Nextcloud (viele Features).
+**Q: Which server is best?**  
+A: For beginners: Docker WebDAV (simple, easy). For pros: Nextcloud (many features).
 
-**Q: Funktioniert Markdown-Export ohne Desktop-Integration?**  
-A: Nein, du musst das Feature in den Einstellungen aktivieren.
+**Q: Does Markdown export work without Desktop Integration?**  
+A: No, you need to activate the feature in settings.
 
-**Q: Gehen meine Daten verloren wenn ich den Server wechsle?**  
-A: Nein! Erstelle ein lokales Backup, wechsle Server, stelle wieder her.
+**Q: Will my data be lost if I switch servers?**  
+A: No! Create a local backup, switch servers, restore.
 
-**Q: Warum JSON + Markdown?**  
-A: JSON ist zuverlässig und schnell (Master). Markdown ist menschenlesbar (Mirror für Desktop).
+**Q: Why JSON + Markdown?**  
+A: JSON is reliable and fast (master). Markdown is human-readable (mirror for desktop).
 
-**Q: Kann ich die App ohne Google Play nutzen?**  
-A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
+**Q: Can I use the app without Google Play?**  
+A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v1.3.2 (2026-01-10)
+**Last update:** v1.3.2 (2026-01-10)

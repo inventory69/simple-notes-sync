@@ -227,9 +227,9 @@ class SettingsActivity : AppCompatActivity() {
      */
     private fun updateProtocolHint() {
         protocolHintText.text = if (radioHttp.isChecked) {
-            "HTTP nur für lokale Netzwerke (z.B. 192.168.x.x, 10.x.x.x)"
+            getString(R.string.server_connection_http_hint)
         } else {
-            "HTTPS für sichere Verbindungen über das Internet"
+            getString(R.string.server_connection_https_hint)
         }
     }
     
@@ -359,7 +359,7 @@ class SettingsActivity : AppCompatActivity() {
                     60L -> "60 Minuten"
                     else -> "$newInterval Minuten"
                 }
-                showToast("⏱️ Sync-Intervall auf $intervalText geändert")
+                showToast(getString(R.string.toast_sync_interval_changed, intervalText))
                 Logger.i(TAG, "Sync interval changed to $newInterval minutes, restarted periodic sync")
             } else {
                 showToast("⏱️ Sync-Intervall gespeichert (Auto-Sync ist deaktiviert)")
@@ -379,7 +379,7 @@ class SettingsActivity : AppCompatActivity() {
             textViewAppVersion.text = "Version $versionName ($versionCode)"
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to load version info", e)
-            textViewAppVersion.text = "Version nicht verfügbar"
+            textViewAppVersion.text = getString(R.string.version_not_available)
         }
         
         // GitHub Repository Card
@@ -475,12 +475,12 @@ class SettingsActivity : AppCompatActivity() {
      */
     private fun showClearLogsConfirmation() {
         AlertDialog.Builder(this)
-            .setTitle("Logs löschen?")
-            .setMessage("Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.")
-            .setPositiveButton("Löschen") { _, _ ->
+            .setTitle(getString(R.string.debug_delete_logs_title))
+            .setMessage(getString(R.string.debug_delete_logs_message))
+            .setPositiveButton(getString(R.string.delete)) { _, _ ->
                 clearLogs()
             }
-            .setNegativeButton("Abbrechen", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
     
@@ -491,13 +491,13 @@ class SettingsActivity : AppCompatActivity() {
         try {
             val cleared = Logger.clearLogFile(this)
             if (cleared) {
-                showToast("🗑️ Logs gelöscht")
+                showToast(getString(R.string.toast_logs_deleted))
             } else {
-                showToast("📭 Keine Logs zum Löschen")
+                showToast(getString(R.string.toast_no_logs_to_delete))
             }
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to clear logs", e)
-            showToast("❌ Fehler beim Löschen: ${e.message}")
+            showToast(getString(R.string.toast_logs_delete_error, e.message ?: ""))
         }
     }
     
@@ -510,7 +510,7 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to open URL: $url", e)
-            showToast("❌ Fehler beim Öffnen des Links")
+            showToast(getString(R.string.toast_link_error))
         }
     }
     
@@ -524,7 +524,7 @@ class SettingsActivity : AppCompatActivity() {
         
         // 🔥 v1.1.2: Validate HTTP URL (only allow for local networks)
         if (fullUrl.isNotEmpty()) {
-            val (isValid, errorMessage) = UrlValidator.validateHttpUrl(fullUrl)
+            val (isValid, errorMessage) = UrlValidator.validateHttpUrl(this, fullUrl)
             if (!isValid) {
                 // Only show error in TextField (no Toast)
                 textInputLayoutServerUrl.isErrorEnabled = true
@@ -552,7 +552,7 @@ class SettingsActivity : AppCompatActivity() {
         
         // 🔥 v1.1.2: Validate before testing
         if (fullUrl.isNotEmpty()) {
-            val (isValid, errorMessage) = UrlValidator.validateHttpUrl(fullUrl)
+            val (isValid, errorMessage) = UrlValidator.validateHttpUrl(this, fullUrl)
             if (!isValid) {
                 // Only show error in TextField (no Toast)
                 textInputLayoutServerUrl.isErrorEnabled = true
@@ -646,7 +646,7 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
         
-        textViewServerStatus.text = "🔍 Prüfe..."
+        textViewServerStatus.text = getString(R.string.status_checking)
         textViewServerStatus.setTextColor(getColor(android.R.color.darker_gray))
         
         lifecycleScope.launch {
@@ -803,12 +803,12 @@ class SettingsActivity : AppCompatActivity() {
             .setMessage(
                 "Damit die App im Hintergrund synchronisieren kann, " +
                 "muss die Akku-Optimierung deaktiviert werden.\n\n" +
-                "Bitte wähle 'Nicht optimieren' für Simple Notes."
+                getString(R.string.battery_optimization_dialog_message)
             )
-            .setPositiveButton("Einstellungen öffnen") { _, _ ->
+            .setPositiveButton(getString(R.string.battery_optimization_open_settings)) { _, _ ->
                 openBatteryOptimizationSettings()
             }
-            .setNegativeButton("Später") { dialog, _ ->
+            .setNegativeButton(getString(R.string.battery_optimization_later)) { dialog, _ ->
                 dialog.dismiss()
             }
             .setCancelable(false)
@@ -915,20 +915,20 @@ class SettingsActivity : AppCompatActivity() {
         
         // Radio Buttons erstellen
         val radioMerge = android.widget.RadioButton(this).apply {
-            text = "⚪ Zusammenführen (Standard)\n   → Neue hinzufügen, Bestehende behalten"
+            text = getString(R.string.backup_mode_merge_full)
             id = android.view.View.generateViewId()
             isChecked = true
             setPadding(10, 10, 10, 10)
         }
         
         val radioReplace = android.widget.RadioButton(this).apply {
-            text = "⚪ Ersetzen\n   → Alle löschen & Backup importieren"
+            text = getString(R.string.backup_mode_replace_full)
             id = android.view.View.generateViewId()
             setPadding(10, 10, 10, 10)
         }
         
         val radioOverwrite = android.widget.RadioButton(this).apply {
-            text = "⚪ Duplikate überschreiben\n   → Backup gewinnt bei Konflikten"
+            text = getString(R.string.backup_mode_overwrite_full)
             id = android.view.View.generateViewId()
             setPadding(10, 10, 10, 10)
         }
@@ -978,7 +978,7 @@ class SettingsActivity : AppCompatActivity() {
                     RestoreSource.WEBDAV_SERVER -> performRestoreFromServer(selectedMode)
                 }
             }
-            .setNegativeButton("Abbrechen", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
     

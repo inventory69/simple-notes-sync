@@ -1,42 +1,42 @@
-# Backup & Wiederherstellung 💾
+# Backup & Restore 💾
 
-**🌍 Languages:** **Deutsch** · [English](BACKUP.en.md)
+**🌍 Languages:** [Deutsch](BACKUP.de.md) · **English**
 
-> Sichere deine Notizen lokal - unabhängig vom Server
-
----
-
-## 📋 Übersicht
-
-Das Backup-System funktioniert **komplett offline** und unabhängig vom WebDAV-Server. Perfekt für:
-- 📥 Regelmäßige Sicherungen
-- 📤 Migration zu neuem Server
-- 🔄 Wiederherstellung nach Datenverlust
-- 💾 Archivierung alter Notizen
+> Secure your notes locally - independent from the server
 
 ---
 
-## 📥 Backup erstellen
+## 📋 Overview
 
-### Schritt-für-Schritt
+The backup system works **completely offline** and independent from the WebDAV server. Perfect for:
+- 📥 Regular backups
+- 📤 Migration to new server
+- 🔄 Recovery after data loss
+- 💾 Archiving old notes
 
-1. **Einstellungen öffnen** (⚙️ Icon oben rechts)
-2. **"Backup & Wiederherstellung"** Section finden
-3. **"📥 Backup erstellen"** antippen
-4. **Speicherort wählen:**
+---
+
+## 📥 Create Backup
+
+### Step-by-Step
+
+1. **Open settings** (⚙️ icon top right)
+2. **Find "Backup & Restore"** section
+3. **Tap "📥 Create backup"**
+4. **Choose location:**
    - 📁 Downloads
-   - 💳 SD-Karte
-   - ☁️ Cloud-Ordner (Nextcloud, Google Drive, etc.)
-   - 📧 E-Mail als Anhang
-5. **Fertig!** Backup-Datei ist gespeichert
+   - 💳 SD card
+   - ☁️ Cloud folder (Nextcloud, Google Drive, etc.)
+   - 📧 Email as attachment
+5. **Done!** Backup file is saved
 
-### Dateiformat
+### File Format
 
-**Dateiname:** `simplenotes_backup_YYYY-MM-DD_HHmmss.json`
+**Filename:** `simplenotes_backup_YYYY-MM-DD_HHmmss.json`
 
-**Beispiel:** `simplenotes_backup_2026-01-05_143022.json`
+**Example:** `simplenotes_backup_2026-01-05_143022.json`
 
-**Inhalt:**
+**Content:**
 ```json
 {
   "version": "1.2.1",
@@ -45,8 +45,8 @@ Das Backup-System funktioniert **komplett offline** und unabhängig vom WebDAV-S
   "notes": [
     {
       "id": "abc-123-def",
-      "title": "Einkaufsliste",
-      "content": "Milch\nBrot\nKäse",
+      "title": "Shopping List",
+      "content": "Milk\nBread\nCheese",
       "createdAt": 1704467422000,
       "updatedAt": 1704467422000
     }
@@ -54,105 +54,105 @@ Das Backup-System funktioniert **komplett offline** und unabhängig vom WebDAV-S
 }
 ```
 
-**Format-Details:**
-- ✅ Menschenlesbar (formatiertes JSON)
-- ✅ Alle Daten inklusive (Titel, Inhalt, IDs, Timestamps)
-- ✅ Versions-Info für Kompatibilität
-- ✅ Anzahl der Notizen für Validierung
+**Format details:**
+- ✅ Human-readable (formatted JSON)
+- ✅ All data included (title, content, IDs, timestamps)
+- ✅ Version info for compatibility
+- ✅ Note count for validation
 
 ---
 
-## 📤 Backup wiederherstellen
+## 📤 Restore Backup
 
-### 3 Wiederherstellungs-Modi
+### 3 Restore Modes
 
-#### 1. Zusammenführen (Merge) ⭐ _Empfohlen_
+#### 1. Merge ⭐ _Recommended_
 
-**Was passiert:**
-- ✅ Neue Notizen aus Backup werden hinzugefügt
-- ✅ Bestehende Notizen bleiben unverändert
-- ✅ Keine Datenverluste
+**What happens:**
+- ✅ New notes from backup are added
+- ✅ Existing notes remain unchanged
+- ✅ No data loss
 
-**Wann nutzen:**
-- Backup von anderem Gerät einspielen
-- Alte Notizen zurückholen
-- Versehentlich gelöschte Notizen wiederherstellen
+**When to use:**
+- Import backup from another device
+- Recover old notes
+- Restore accidentally deleted notes
 
-**Beispiel:**
+**Example:**
 ```
-App:    [Notiz A, Notiz B, Notiz C]
-Backup: [Notiz A, Notiz D, Notiz E]
-Ergebnis: [Notiz A, Notiz B, Notiz C, Notiz D, Notiz E]
-```
-
-#### 2. Ersetzen (Replace)
-
-**Was passiert:**
-- ❌ ALLE bestehenden Notizen werden gelöscht
-- ✅ Backup-Notizen werden importiert
-- ⚠️ Unwiderruflich (außer durch Auto-Backup)
-
-**Wann nutzen:**
-- Server-Wechsel (kompletter Neustart)
-- Zurück zu altem Backup-Stand
-- App-Neuinstallation
-
-**Beispiel:**
-```
-App:    [Notiz A, Notiz B, Notiz C]
-Backup: [Notiz X, Notiz Y]
-Ergebnis: [Notiz X, Notiz Y]
+App:    [Note A, Note B, Note C]
+Backup: [Note A, Note D, Note E]
+Result: [Note A, Note B, Note C, Note D, Note E]
 ```
 
-**⚠️ Warnung:** Automatisches Sicherheits-Backup wird erstellt!
+#### 2. Replace
 
-#### 3. Duplikate überschreiben (Overwrite)
+**What happens:**
+- ❌ ALL existing notes are deleted
+- ✅ Backup notes are imported
+- ⚠️ Irreversible (except through auto-backup)
 
-**Was passiert:**
-- ✅ Neue Notizen aus Backup werden hinzugefügt
-- 🔄 Bei ID-Konflikten gewinnt das Backup
-- ✅ Andere Notizen bleiben unverändert
+**When to use:**
+- Server migration (complete restart)
+- Return to old backup state
+- App reinstallation
 
-**Wann nutzen:**
-- Backup ist neuer als App-Daten
-- Desktop-Änderungen einspielen
-- Konflikt-Auflösung
-
-**Beispiel:**
+**Example:**
 ```
-App:    [Notiz A (v1), Notiz B, Notiz C]
-Backup: [Notiz A (v2), Notiz D]
-Ergebnis: [Notiz A (v2), Notiz B, Notiz C, Notiz D]
+App:    [Note A, Note B, Note C]
+Backup: [Note X, Note Y]
+Result: [Note X, Note Y]
 ```
 
-### Wiederherstellungs-Prozess
+**⚠️ Warning:** Automatic safety backup is created!
 
-1. **Einstellungen** → **"📤 Aus Datei wiederherstellen"**
-2. **Backup-Datei auswählen** (`.json`)
-3. **Modus wählen:**
-   - 🔵 Zusammenführen _(Standard)_
-   - 🟡 Duplikate überschreiben
-   - 🔴 Ersetzen _(Vorsicht!)_
-4. **Bestätigen** - Automatisches Sicherheits-Backup wird erstellt
-5. **Warten** - Import läuft
-6. **Fertig!** - Erfolgsmeldung mit Anzahl importierter Notizen
+#### 3. Overwrite Duplicates
+
+**What happens:**
+- ✅ New notes from backup are added
+- 🔄 On ID conflicts, backup wins
+- ✅ Other notes remain unchanged
+
+**When to use:**
+- Backup is newer than app data
+- Import desktop changes
+- Conflict resolution
+
+**Example:**
+```
+App:    [Note A (v1), Note B, Note C]
+Backup: [Note A (v2), Note D]
+Result: [Note A (v2), Note B, Note C, Note D]
+```
+
+### Restore Process
+
+1. **Settings** → **"📤 Restore from file"**
+2. **Select backup file** (`.json`)
+3. **Choose mode:**
+   - 🔵 Merge _(Default)_
+   - 🟡 Overwrite duplicates
+   - 🔴 Replace _(Caution!)_
+4. **Confirm** - Automatic safety backup is created
+5. **Wait** - Import runs
+6. **Done!** - Success message with number of imported notes
 
 ---
 
-## 🛡️ Automatisches Sicherheits-Backup
+## 🛡️ Automatic Safety Backup
 
-**Vor jeder Wiederherstellung:**
-- ✅ Automatisches Backup wird erstellt
-- 📁 Gespeichert in: `Android/data/dev.dettmer.simplenotes/files/`
-- 🏷️ Dateiname: `auto_backup_before_restore_YYYY-MM-DD_HHmmss.json`
-- ⏱️ Zeitstempel: Direkt vor Wiederherstellung
+**Before every restore:**
+- ✅ Automatic backup is created
+- 📁 Saved in: `Android/data/dev.dettmer.simplenotes/files/`
+- 🏷️ Filename: `auto_backup_before_restore_YYYY-MM-DD_HHmmss.json`
+- ⏱️ Timestamp: Right before restore
 
-**Warum?**
-- Schutz vor versehentlichem "Ersetzen"
-- Möglichkeit zum Rückgängigmachen
-- Doppelte Sicherheit
+**Why?**
+- Protection against accidental "Replace"
+- Ability to undo
+- Double security
 
-**Zugriff via Dateimanager:**
+**Access via file manager:**
 ```
 /Android/data/dev.dettmer.simplenotes/files/auto_backup_before_restore_*.json
 ```
@@ -161,164 +161,164 @@ Ergebnis: [Notiz A (v2), Notiz B, Notiz C, Notiz D]
 
 ## 💡 Best Practices
 
-### Backup-Strategie
+### Backup Strategy
 
-#### Regelmäßige Backups
+#### Regular Backups
 ```
-Täglich:   ❌ Zu oft (Server-Sync reicht)
-Wöchentlich: ✅ Empfohlen für wichtige Notizen
-Monatlich:  ✅ Archivierung
-Vor Updates: ✅ Sicherheit
+Daily:   ❌ Too often (server sync is enough)
+Weekly:  ✅ Recommended for important notes
+Monthly: ✅ Archiving
+Before updates: ✅ Safety
 ```
 
-#### 3-2-1 Regel
-1. **3 Kopien** - Original + 2 Backups
-2. **2 Medien** - z.B. SD-Karte + Cloud
-3. **1 Offsite** - z.B. Cloud-Speicher
+#### 3-2-1 Rule
+1. **3 copies** - Original + 2 backups
+2. **2 media** - e.g., SD card + cloud
+3. **1 offsite** - e.g., cloud storage
 
-### Backup-Speicherorte
+### Backup Locations
 
-**Lokal (schnell):**
-- 📱 Internal Storage / Downloads
-- 💳 SD-Karte
+**Local (fast):**
+- 📱 Internal storage / Downloads
+- 💳 SD card
 - 🖥️ PC (via USB)
 
-**Cloud (sicher):**
-- ☁️ Nextcloud (Self-Hosted)
-- 📧 E-Mail an sich selbst
-- 🗄️ Syncthing (Sync zwischen Geräten)
+**Cloud (secure):**
+- ☁️ Nextcloud (self-hosted)
+- 📧 Email to yourself
+- 🗄️ Syncthing (sync between devices)
 
-**⚠️ Vermeiden:**
-- ❌ Google Drive / Dropbox (Privacy)
-- ❌ Nur eine Kopie
-- ❌ Nur auf Server (wenn Server ausfällt)
-
----
-
-## 🔧 Erweiterte Nutzung
-
-### Backup-Datei bearbeiten
-
-Die `.json` Datei kann mit jedem Texteditor bearbeitet werden:
-
-1. **Öffnen mit:** VS Code, Notepad++, nano
-2. **Notizen hinzufügen/entfernen**
-3. **Titel/Inhalt ändern**
-4. **IDs anpassen** (für Migration)
-5. **Speichern** und in App importieren
-
-**⚠️ Wichtig:**
-- Valides JSON-Format behalten
-- IDs müssen eindeutig sein (UUIDs)
-- Timestamps in Millisekunden (Unix Epoch)
-
-### Bulk-Import
-
-Mehrere Backups zusammenführen:
-
-1. Backup 1 importieren (Modus: Zusammenführen)
-2. Backup 2 importieren (Modus: Zusammenführen)
-3. Backup 3 importieren (Modus: Zusammenführen)
-4. Ergebnis: Alle Notizen vereint
-
-### Server-Migration
-
-Schritt-für-Schritt:
-
-1. **Backup erstellen** auf altem Server
-2. **Neuen Server einrichten** (siehe [QUICKSTART.md](QUICKSTART.md))
-3. **Server-URL ändern** in App-Einstellungen
-4. **Backup wiederherstellen** (Modus: Ersetzen)
-5. **Sync testen** - Alle Notizen auf neuem Server
+**⚠️ Avoid:**
+- ❌ Google Drive / Dropbox (privacy)
+- ❌ Only one copy
+- ❌ Only on server (if server fails)
 
 ---
 
-## ❌ Fehlerbehebung
+## 🔧 Advanced Usage
 
-### "Backup-Datei ungültig"
+### Edit Backup File
 
-**Ursachen:**
-- Korrupte JSON-Datei
-- Falsche Datei-Endung (muss `.json` sein)
-- Inkompatible App-Version
+The `.json` file can be edited with any text editor:
 
-**Lösung:**
-1. JSON-Datei mit Validator prüfen (z.B. jsonlint.com)
-2. Dateiendung überprüfen
-3. Backup mit aktueller App-Version erstellen
+1. **Open with:** VS Code, Notepad++, nano
+2. **Add/remove notes**
+3. **Change title/content**
+4. **Adjust IDs** (for migration)
+5. **Save** and import to app
 
-### "Keine Berechtigung zum Speichern"
+**⚠️ Important:**
+- Keep valid JSON format
+- IDs must be unique (UUIDs)
+- Timestamps in milliseconds (Unix Epoch)
 
-**Ursachen:**
-- Speicher-Berechtigung fehlt
-- Schreibgeschützter Ordner
+### Bulk Import
 
-**Lösung:**
-1. Android: Einstellungen → Apps → Simple Notes → Berechtigungen
-2. "Speicher" aktivieren
-3. Anderen Speicherort wählen
+Merge multiple backups:
 
-### "Import fehlgeschlagen"
+1. Import backup 1 (Mode: Merge)
+2. Import backup 2 (Mode: Merge)
+3. Import backup 3 (Mode: Merge)
+4. Result: All notes combined
 
-**Ursachen:**
-- Zu wenig Speicherplatz
-- Korrupte Backup-Datei
-- App-Crash während Import
+### Server Migration
 
-**Lösung:**
-1. Speicherplatz freigeben
-2. Backup-Datei neu erstellen
-3. App neu starten und erneut importieren
+Step-by-step:
 
----
-
-## 🔒 Sicherheit & Privacy
-
-### Daten-Schutz
-- ✅ **Lokal gespeichert** - Kein Cloud-Upload ohne deine Aktion
-- ✅ **Keine Verschlüsselung** - Klartextformat für Lesbarkeit
-- ⚠️ **Sensible Daten?** - Backup-Datei selbst verschlüsseln (z.B. 7-Zip mit Passwort)
-
-### Empfehlungen
-- 🔐 Backup-Dateien in verschlüsseltem Container speichern
-- 🗑️ Alte Backups regelmäßig löschen
-- 📧 Nicht per unverschlüsselter E-Mail versenden
-- ☁️ Self-Hosted Cloud nutzen (Nextcloud)
+1. **Create backup** on old server
+2. **Set up new server** (see [QUICKSTART.en.md](QUICKSTART.en.md))
+3. **Change server URL** in app settings
+4. **Restore backup** (Mode: Replace)
+5. **Test sync** - All notes on new server
 
 ---
 
-## 📊 Technische Details
+## ❌ Troubleshooting
 
-### Format-Spezifikation
+### "Invalid backup file"
 
-**JSON-Struktur:**
+**Causes:**
+- Corrupt JSON file
+- Wrong file extension (must be `.json`)
+- Incompatible app version
+
+**Solution:**
+1. Check JSON file with validator (e.g., jsonlint.com)
+2. Verify file extension
+3. Create backup with current app version
+
+### "No permission to save"
+
+**Causes:**
+- Storage permission missing
+- Write-protected folder
+
+**Solution:**
+1. Android: Settings → Apps → Simple Notes → Permissions
+2. Activate "Storage"
+3. Choose different location
+
+### "Import failed"
+
+**Causes:**
+- Not enough storage space
+- Corrupt backup file
+- App crash during import
+
+**Solution:**
+1. Free up storage space
+2. Create new backup file
+3. Restart app and try again
+
+---
+
+## 🔒 Security & Privacy
+
+### Data Protection
+- ✅ **Locally stored** - No cloud upload without your action
+- ✅ **No encryption** - Plain text format for readability
+- ⚠️ **Sensitive data?** - Encrypt backup file yourself (e.g., 7-Zip with password)
+
+### Recommendations
+- 🔐 Store backup files in encrypted container
+- 🗑️ Regularly delete old backups
+- 📧 Don't send via unencrypted email
+- ☁️ Use self-hosted cloud (Nextcloud)
+
+---
+
+## 📊 Technical Details
+
+### Format Specification
+
+**JSON structure:**
 ```json
 {
-  "version": "string",        // App-Version beim Export
-  "exported_at": "ISO8601",   // Zeitstempel des Exports
-  "notes_count": number,      // Anzahl der Notizen
+  "version": "string",        // App version at export
+  "exported_at": "ISO8601",   // Export timestamp
+  "notes_count": number,      // Number of notes
   "notes": [
     {
-      "id": "UUID",           // Eindeutige ID
-      "title": "string",      // Notiz-Titel
-      "content": "string",    // Notiz-Inhalt
-      "createdAt": number,    // Unix Timestamp (ms)
-      "updatedAt": number     // Unix Timestamp (ms)
+      "id": "UUID",           // Unique ID
+      "title": "string",      // Note title
+      "content": "string",    // Note content
+      "createdAt": number,    // Unix timestamp (ms)
+      "updatedAt": number     // Unix timestamp (ms)
     }
   ]
 }
 ```
 
-### Kompatibilität
-- ✅ v1.2.0+ - Vollständig kompatibel
-- ⚠️ v1.1.x - Grundfunktionen (ohne Auto-Backup)
-- ❌ v1.0.x - Nicht unterstützt
+### Compatibility
+- ✅ v1.2.0+ - Fully compatible
+- ⚠️ v1.1.x - Basic functions (without auto-backup)
+- ❌ v1.0.x - Not supported
 
 ---
 
-**📚 Siehe auch:**
-- [QUICKSTART.md](../QUICKSTART.md) - App-Installation und Einrichtung
-- [FEATURES.md](FEATURES.md) - Vollständige Feature-Liste
-- [DESKTOP.md](DESKTOP.md) - Desktop-Integration mit Markdown
+**📚 See also:**
+- [QUICKSTART.en.md](../QUICKSTART.en.md) - App installation and setup
+- [FEATURES.en.md](FEATURES.en.md) - Complete feature list
+- [DESKTOP.en.md](DESKTOP.en.md) - Desktop integration with Markdown
 
-**Letzte Aktualisierung:** v1.2.1 (2026-01-05)
+**Last update:** v1.2.1 (2026-01-05)

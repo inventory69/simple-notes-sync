@@ -4,33 +4,79 @@ All notable changes to Simple Notes Sync will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+**🌍 Languages:** [Deutsch](CHANGELOG.de.md) · **English**
+
+---
+
+## [1.5.0] - 2026-01-15
+
+### 🎉 Major: Jetpack Compose UI Redesign
+
+The complete UI has been migrated from XML Views to Jetpack Compose. The app is now more modern, faster, and smoother.
+
+### 🌍 New Feature: Internationalization (i18n)
+
+- **English language support** - All 400+ strings translated
+- **Automatic language detection** - Follows system language
+- **Manual language selection** - Switchable in settings
+- **Per-App Language (Android 13+)** - Native language setting via system settings
+- **locales_config.xml** - Complete Android integration
+
+### ⚙️ Modernized Settings
+
+- **7 categorized settings screens** - Clearer and more intuitive
+- **Compose Navigation** - Smooth transitions between screens
+- **Consistent design** - Material Design 3 throughout
+
+### ✨ UI Improvements
+
+- **Selection Mode** - Long-press for multi-select instead of swipe-to-delete
+- **Batch Delete** - Delete multiple notes at once
+- **Silent-Sync Mode** - No banner during auto-sync (only for manual sync)
+- **App Icon in About Screen** - High-quality display
+- **App Icon in Empty State** - Instead of emoji when note list is empty
+- **Splash Screen Update** - Uses app foreground icon
+- **Slide Animations** - Smooth animations in NoteEditor
+
+### 🔧 Technical Improvements
+
+- **Jetpack Compose** - Complete UI migration
+- **Compose ViewModel Integration** - StateFlow for reactive UI
+- **Improved Code Quality** - Detekt/Lint warnings fixed
+- **Unused Imports Cleanup** - Cleaner codebase
+
+### Looking Ahead
+
+> 🚀 **v1.6.0** will bring server folder checking and further technical modernizations.
+> Feature requests welcome as [GitHub Issue](https://github.com/inventory69/simple-notes-sync/issues).
+
 ---
 
 ## [1.4.1] - 2026-01-11
 
 ### Fixed
 
-- **🗑️ Löschen älterer Notizen (v1.2.0 Kompatibilität)**
-  - Notizen aus App-Version v1.2.0 oder früher werden jetzt korrekt vom Server gelöscht
-  - Behebt Problem bei Multi-Device-Nutzung mit älteren Notizen
+- **🗑️ Deleting older notes (v1.2.0 compatibility)**
+  - Notes from app version v1.2.0 or earlier are now correctly deleted from the server
+  - Fixes issue with multi-device usage with older notes
 
-- **🔄 Checklisten-Sync Abwärtskompatibilität**
-  - Checklisten werden jetzt auch als Text-Fallback im `content`-Feld gespeichert
-  - Ältere App-Versionen (v1.3.x) zeigen Checklisten als lesbaren Text
-  - Format: GitHub-Style Task-Listen (`[ ] Item` / `[x] Item`)
-  - Recovery-Mode: Falls Checklisten-Items verloren gehen, werden sie aus dem Content wiederhergestellt
+- **🔄 Checklist sync backward compatibility**
+  - Checklists now also saved as text fallback in the `content` field
+  - Older app versions (v1.3.x) display checklists as readable text
+  - Format: GitHub-style task lists (`[ ] Item` / `[x] Item`)
+  - Recovery mode: If checklist items are lost, they are recovered from content
 
 ### Improved
 
-- **📝 Checklisten Auto-Zeilenumbruch**
-  - Lange Checklisten-Texte werden jetzt automatisch umgebrochen
-  - Keine Begrenzung auf 3 Zeilen mehr
-  - Enter-Taste erstellt weiterhin ein neues Item
+- **📝 Checklist auto line-wrap**
+  - Long checklist texts now automatically wrap
+  - No more limit to 3 lines
+  - Enter key still creates a new item
 
 ### Looking Ahead
 
-> 🚀 **v1.5.0** wird das nächste größere Release. Wir sammeln Ideen und Feedback!  
-> Feature-Requests gerne als [GitHub Issue](https://github.com/inventory69/simple-notes-sync/issues) einreichen.
+> 🚀 **v1.5.0** will be the next major release. We're collecting ideas and feedback!
+> Feature requests welcome as [GitHub Issue](https://github.com/inventory69/simple-notes-sync/issues).
 
 ---
 
