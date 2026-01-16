@@ -38,6 +38,7 @@ MULTI-DEVICE SYNC:
 SYNCHRONISATION:
 
 • Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
+• Automatische WiFi-Sync: Synchronisiert automatisch wenn du ein beliebiges WLAN betrittst (wenn Server erreichbar ist)
 • Konfigurierbares Interval: 15, 30 oder 60 Minuten
 • Optimierte Performance: überspringt unveränderte Dateien (~2-3s Sync-Zeit)
 • E-Tag Caching für 20x schnellere "keine Änderungen" Checks
