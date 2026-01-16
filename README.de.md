@@ -22,6 +22,8 @@
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.png" width="250" alt="Notiz bearbeiten">
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.png" width="250" alt="Checkliste bearbeiten">
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/4.png" width="250" alt="Einstellungen">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/5.png" width="250" alt="Server-Einstellungen">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/6.png" width="250" alt="Sync-Status">
 </p>
 
 ---
@@ -31,7 +33,7 @@
 - ✅ **NEU: Checklisten** - Tap-to-Check, Drag & Drop
 - 🌍 **NEU: Mehrsprachig** - Deutsch/Englisch mit Sprachauswahl
 - 📝 **Offline-First** - Funktioniert ohne Internet
-- 🔄 **Auto-Sync** - Bei WiFi-Verbindung (15/30/60 Min)
+- 🔄 **Auto-Sync** - WLAN-Verbindung, regelmäßige Intervalle (15/30/60 Min) & Multi-Geräte-Sync
 - 🔒 **Self-Hosted** - Deine Daten bleiben bei dir (WebDAV)
 - 💾 **Lokales Backup** - Export/Import als JSON-Datei
 - 🖥️ **Desktop-Integration** - Markdown-Export für Obsidian, VS Code, Typora

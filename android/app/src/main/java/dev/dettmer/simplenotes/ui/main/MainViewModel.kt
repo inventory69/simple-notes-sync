@@ -493,7 +493,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (result.isSuccess) {
-                    SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
+                    val bannerMessage = if (result.syncedCount > 0) {
+                        getString(R.string.toast_sync_success, result.syncedCount)
+                    } else {
+                        getString(R.string.snackbar_nothing_to_sync)
+                    }
+                    SyncStateManager.markCompleted(bannerMessage)
                     loadNotes()
                 } else {
                     SyncStateManager.markError(result.errorMessage)
@@ -566,7 +571,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     loadNotes()
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
-                    SyncStateManager.markCompleted()
+                    SyncStateManager.markCompleted(getString(R.string.snackbar_nothing_to_sync))
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
                     SyncStateManager.markError(result.errorMessage)
