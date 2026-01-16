@@ -3,7 +3,8 @@ Simple Notes Sync ist eine minimalistische Notizen-App mit WebDAV-Synchronisatio
 HAUPTFUNKTIONEN:
 
 • Text-Notizen und Checklisten erstellen
-• Checklisten mit Tap-to-Check, Drag & Drop, Swipe-to-Delete
+• Checklisten mit Tap-to-Check und Drag & Drop
+• Auswahlmodus: Long-Press zur Mehrfachauswahl für Batch-Aktionen
 • WebDAV-Synchronisation mit eigenem Server
 • Multi-Device Sync (Handy, Tablet, Desktop)
 • Markdown-Export für Obsidian/Desktop-Editoren
@@ -11,8 +12,16 @@ HAUPTFUNKTIONEN:
 • Automatische Synchronisation im Heim-WLAN
 • Konfigurierbares Sync-Interval (15/30/60 Minuten)
 • Material Design 3 mit Dynamic Colors (Android 12+)
+• Jetpack Compose UI - modern, schnell und flüssig
 • Komplett offline nutzbar
 • Keine Werbung, keine Tracker
+
+MEHRSPRACHIG:
+
+• Englische und deutsche Sprachunterstützung
+• Per-App Sprachauswahl (Android 13+)
+• Automatische Systemsprachen-Erkennung
+• Über 400 übersetzte Strings
 
 DATENSCHUTZ:
 
@@ -29,20 +38,23 @@ MULTI-DEVICE SYNC:
 SYNCHRONISATION:
 
 • Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
+• Automatische WiFi-Sync: Synchronisiert automatisch wenn du ein beliebiges WLAN betrittst (wenn Server erreichbar ist)
 • Konfigurierbares Interval: 15, 30 oder 60 Minuten
 • Optimierte Performance: überspringt unveränderte Dateien (~2-3s Sync-Zeit)
 • E-Tag Caching für 20x schnellere "keine Änderungen" Checks
 • Gemessener Akkuverbrauch: nur ~0.4% pro Tag (bei 30min)
+• Silent-Sync Modus: kein Banner bei Auto-Sync
 • Doze Mode optimiert für zuverlässige Background-Syncs
 • Manuelle Synchronisation jederzeit möglich
 
 MATERIAL DESIGN 3:
 
-• Moderne Benutzeroberfläche
+• Moderne Jetpack Compose Benutzeroberfläche
 • Dynamic Colors (Material You) auf Android 12+
 • Dark Mode Support
-• Intuitive Gesten (Swipe-to-Delete)
+• Auswahlmodus mit Batch-Löschen
 • Live Sync-Status Anzeige
+• Flüssige Slide-Animationen
 
 Open Source unter MIT-Lizenz
 Quellcode: https://github.com/inventory69/simple-notes-sync

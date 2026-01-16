@@ -1,0 +1,376 @@
+package dev.dettmer.simplenotes.ui.editor
+
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
+import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
+import kotlinx.coroutines.delay
+import dev.dettmer.simplenotes.utils.showToast
+import kotlin.math.roundToInt
+
+/**
+ * Main Composable for the Note Editor screen.
+ * 
+ * v1.5.0: Jetpack Compose NoteEditor Redesign
+ * - Supports both TEXT and CHECKLIST notes
+ * - Drag & Drop reordering for checklist items
+ * - Auto-keyboard focus for new items
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NoteEditorScreen(
+    viewModel: NoteEditorViewModel,
+    onNavigateBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    val checklistItems by viewModel.checklistItems.collectAsState()
+    
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var focusNewItemId by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    
+    // v1.5.0: Auto-keyboard support
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val titleFocusRequester = remember { FocusRequester() }
+    val contentFocusRequester = remember { FocusRequester() }
+    
+    // v1.5.0: Auto-focus and show keyboard
+    LaunchedEffect(uiState.isNewNote, uiState.noteType) {
+        delay(100) // Wait for layout
+        when {
+            uiState.isNewNote -> {
+                // New note: focus title
+                titleFocusRequester.requestFocus()
+                keyboardController?.show()
+            }
+            !uiState.isNewNote && uiState.noteType == NoteType.TEXT -> {
+                // Editing text note: focus content
+                contentFocusRequester.requestFocus()
+                keyboardController?.show()
+            }
+        }
+    }
+    
+    // Handle events
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is NoteEditorEvent.ShowToast -> {
+                    val message = when (event.message) {
+                        ToastMessage.NOTE_IS_EMPTY -> context.getString(R.string.note_is_empty)
+                        ToastMessage.NOTE_SAVED -> context.getString(R.string.note_saved)
+                        ToastMessage.NOTE_DELETED -> context.getString(R.string.note_deleted)
+                    }
+                    context.showToast(message)
+                }
+                is NoteEditorEvent.NavigateBack -> onNavigateBack()
+                is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
+            }
+        }
+    }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = when (uiState.toolbarTitle) {
+                            ToolbarTitle.NEW_NOTE -> stringResource(R.string.new_note)
+                            ToolbarTitle.EDIT_NOTE -> stringResource(R.string.edit_note)
+                            ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.new_checklist)
+                            ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.edit_checklist)
+                        }
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                },
+                actions = {
+                    // Delete button (only for existing notes)
+                    if (viewModel.canDelete()) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete)
+                            )
+                        }
+                    }
+                    
+                    // Save button
+                    IconButton(onClick = { viewModel.saveNote() }) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = stringResource(R.string.save)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        modifier = Modifier.imePadding()
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            // Title Input (for both types)
+            OutlinedTextField(
+                value = uiState.title,
+                onValueChange = { viewModel.updateTitle(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(titleFocusRequester),
+                label = { Text(stringResource(R.string.title)) },
+                singleLine = false,
+                maxLines = 2,
+                shape = RoundedCornerShape(16.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            when (uiState.noteType) {
+                NoteType.TEXT -> {
+                    // Content Input for TEXT notes
+                    TextNoteContent(
+                        content = uiState.content,
+                        onContentChange = { viewModel.updateContent(it) },
+                        focusRequester = contentFocusRequester,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
+                
+                NoteType.CHECKLIST -> {
+                    // Checklist Editor
+                    ChecklistEditor(
+                        items = checklistItems,
+                        scope = scope,
+                        focusNewItemId = focusNewItemId,
+                        onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
+                        onCheckedChange = { id, checked -> viewModel.updateChecklistItemChecked(id, checked) },
+                        onDelete = { id -> viewModel.deleteChecklistItem(id) },
+                        onAddNewItemAfter = { id -> 
+                            val newId = viewModel.addChecklistItemAfter(id)
+                            focusNewItemId = newId
+                        },
+                        onAddItemAtEnd = {
+                            val newId = viewModel.addChecklistItemAtEnd()
+                            focusNewItemId = newId
+                        },
+                        onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
+                        onFocusHandled = { focusNewItemId = null },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
+            }
+        }
+    }
+    
+    // Delete Confirmation Dialog - v1.5.0: Use shared component with server/local options
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            noteCount = 1,
+            onDismiss = { showDeleteDialog = false },
+            onDeleteLocal = {
+                showDeleteDialog = false
+                viewModel.deleteNote(deleteOnServer = false)
+            },
+            onDeleteEverywhere = {
+                showDeleteDialog = false
+                viewModel.deleteNote(deleteOnServer = true)
+            }
+        )
+    }
+}
+
+@Composable
+private fun TextNoteContent(
+    content: String,
+    onContentChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    modifier: Modifier = Modifier
+) {
+    // v1.5.0: Use TextFieldValue to control cursor position
+    // Track if initial cursor position has been set (only set to end once on first load)
+    var initialCursorSet by remember { mutableStateOf(false) }
+    
+    var textFieldValue by remember {
+        mutableStateOf(TextFieldValue(
+            text = content,
+            selection = TextRange(content.length)
+        ))
+    }
+    
+    // Set initial cursor position only once when content first loads
+    LaunchedEffect(Unit) {
+        if (!initialCursorSet && content.isNotEmpty()) {
+            textFieldValue = TextFieldValue(
+                text = content,
+                selection = TextRange(content.length)
+            )
+            initialCursorSet = true
+        }
+    }
+    
+    OutlinedTextField(
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            textFieldValue = newValue
+            onContentChange(newValue.text)
+        },
+        modifier = modifier.focusRequester(focusRequester),
+        label = { Text(stringResource(R.string.content)) },
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+private fun ChecklistEditor(
+    items: List<ChecklistItemState>,
+    scope: kotlinx.coroutines.CoroutineScope,
+    focusNewItemId: String?,
+    onTextChange: (String, String) -> Unit,
+    onCheckedChange: (String, Boolean) -> Unit,
+    onDelete: (String) -> Unit,
+    onAddNewItemAfter: (String) -> Unit,
+    onAddItemAtEnd: () -> Unit,
+    onMove: (Int, Int) -> Unit,
+    onFocusHandled: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+    val dragDropState = rememberDragDropListState(
+        lazyListState = listState,
+        scope = scope,
+        onMove = onMove
+    )
+    
+    Column(modifier = modifier) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            itemsIndexed(
+                items = items,
+                key = { _, item -> item.id }
+            ) { index, item ->
+                val isDragging = dragDropState.draggingItemIndex == index
+                val elevation by animateDpAsState(
+                    targetValue = if (isDragging) 8.dp else 0.dp,
+                    label = "elevation"
+                )
+                
+                val shouldFocus = item.id == focusNewItemId
+                
+                // v1.5.0: Clear focus request after handling
+                LaunchedEffect(shouldFocus) {
+                    if (shouldFocus) {
+                        onFocusHandled()
+                    }
+                }
+                
+                ChecklistItemRow(
+                    item = item,
+                    onTextChange = { onTextChange(item.id, it) },
+                    onCheckedChange = { onCheckedChange(item.id, it) },
+                    onDelete = { onDelete(item.id) },
+                    onAddNewItem = { onAddNewItemAfter(item.id) },
+                    requestFocus = shouldFocus,
+                    modifier = Modifier
+                        .dragContainer(dragDropState, index)
+                        .offset {
+                            IntOffset(
+                                0,
+                                if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
+                            )
+                        }
+                        .shadow(elevation, shape = RoundedCornerShape(8.dp))
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                )
+            }
+        }
+        
+        // Add Item Button
+        TextButton(
+            onClick = onAddItemAtEnd,
+            modifier = Modifier.padding(start = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Text(stringResource(R.string.add_item))
+        }
+    }
+}
+
+// v1.5.0: Local DeleteConfirmationDialog removed - now using shared component from ui/main/components/

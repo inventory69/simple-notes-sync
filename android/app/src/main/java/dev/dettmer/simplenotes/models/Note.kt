@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.models
 
+import androidx.compose.runtime.Immutable
 import dev.dettmer.simplenotes.utils.Logger
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -7,6 +8,12 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 
+/**
+ * Note data class with Compose stability annotation.
+ * @Immutable tells Compose this class is stable and won't change unexpectedly,
+ * enabling skip optimizations during recomposition.
+ */
+@Immutable
 data class Note(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
