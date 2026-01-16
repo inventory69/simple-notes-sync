@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 
 /**
  * Delete confirmation dialog with server/local options
@@ -28,15 +30,15 @@ fun DeleteConfirmationDialog(
     onDeleteEverywhere: () -> Unit
 ) {
     val title = if (noteCount == 1) {
-        "Notiz löschen?"
+        stringResource(R.string.delete_note_title)
     } else {
-        "$noteCount Notizen löschen?"
+        stringResource(R.string.delete_notes_title, noteCount)
     }
     
     val message = if (noteCount == 1) {
-        "Wie möchtest du diese Notiz löschen?"
+        stringResource(R.string.delete_note_message)
     } else {
-        "Wie möchtest du diese $noteCount Notizen löschen?"
+        stringResource(R.string.delete_notes_message, noteCount)
     }
     
     AlertDialog(
@@ -66,7 +68,7 @@ fun DeleteConfirmationDialog(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Überall löschen (auch Server)")
+                    Text(stringResource(R.string.delete_everywhere))
                 }
                 
                 // Delete local only
@@ -74,7 +76,7 @@ fun DeleteConfirmationDialog(
                     onClick = onDeleteLocal,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Nur lokal löschen")
+                    Text(stringResource(R.string.delete_local_only))
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -84,7 +86,7 @@ fun DeleteConfirmationDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Abbrechen")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         },

@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
@@ -36,7 +38,7 @@ fun SyncSettingsScreen(
     val syncInterval by viewModel.syncInterval.collectAsState()
     
     SettingsScaffold(
-        title = "Sync-Einstellungen",
+        title = stringResource(R.string.sync_settings_title),
         onBack = onBack
     ) { paddingValues ->
         Column(
@@ -49,18 +51,14 @@ fun SyncSettingsScreen(
             
             // Auto-Sync Info
             SettingsInfoCard(
-                text = "🔄 Auto-Sync:\n" +
-                    "• Prüft alle 30 Min. ob Server erreichbar\n" +
-                    "• Funktioniert bei jeder WiFi-Verbindung\n" +
-                    "• Läuft auch im Hintergrund\n" +
-                    "• Minimaler Akkuverbrauch (~0.4%/Tag)"
+                text = stringResource(R.string.sync_auto_sync_info)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             // Auto-Sync Toggle
             SettingsSwitch(
-                title = "Auto-Sync aktiviert",
+                title = stringResource(R.string.sync_auto_sync_enabled),
                 checked = autoSyncEnabled,
                 onCheckedChange = { viewModel.setAutoSync(it) },
                 icon = Icons.Default.Sync
@@ -69,14 +67,10 @@ fun SyncSettingsScreen(
             SettingsDivider()
             
             // Sync Interval Section
-            SettingsSectionHeader(text = "Sync-Intervall")
+            SettingsSectionHeader(text = stringResource(R.string.sync_interval_section))
             
             SettingsInfoCard(
-                text = "Legt fest, wie oft die App im Hintergrund synchronisiert. " +
-                    "Kürzere Intervalle bedeuten aktuellere Daten, verbrauchen aber etwas mehr Akku.\n\n" +
-                    "⏱️ Hinweis: Wenn dein Smartphone im Standby ist, kann Android die " +
-                    "Synchronisation verzögern (bis zu 60 Min.), um Akku zu sparen. " +
-                    "Das ist normal und betrifft alle Hintergrund-Apps."
+                text = stringResource(R.string.sync_interval_info)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -85,18 +79,18 @@ fun SyncSettingsScreen(
             val intervalOptions = listOf(
                 RadioOption(
                     value = 15L,
-                    title = "⚡ Alle 15 Minuten",
-                    subtitle = "Schnellste Synchronisation • ~0.8% Akku/Tag (~23 mAh)"
+                    title = stringResource(R.string.sync_interval_15min_title),
+                    subtitle = stringResource(R.string.sync_interval_15min_subtitle)
                 ),
                 RadioOption(
                     value = 30L,
-                    title = "✓ Alle 30 Minuten (Empfohlen)",
-                    subtitle = "Ausgewogenes Verhältnis • ~0.4% Akku/Tag (~12 mAh)"
+                    title = stringResource(R.string.sync_interval_30min_title),
+                    subtitle = stringResource(R.string.sync_interval_30min_subtitle)
                 ),
                 RadioOption(
                     value = 60L,
-                    title = "🔋 Alle 60 Minuten",
-                    subtitle = "Maximale Akkulaufzeit • ~0.2% Akku/Tag (~6 mAh geschätzt)"
+                    title = stringResource(R.string.sync_interval_60min_title),
+                    subtitle = stringResource(R.string.sync_interval_60min_subtitle)
                 )
             )
             

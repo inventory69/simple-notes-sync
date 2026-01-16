@@ -41,9 +41,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 
@@ -71,7 +73,7 @@ fun ServerSettingsScreen(
     }
     
     SettingsScaffold(
-        title = "Server-Einstellungen",
+        title = stringResource(R.string.server_settings_title),
         onBack = onBack
     ) { paddingValues ->
         Column(
@@ -83,7 +85,7 @@ fun ServerSettingsScreen(
         ) {
             // Verbindungstyp
             Text(
-                text = "Verbindungstyp",
+                text = stringResource(R.string.server_connection_type),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -95,22 +97,22 @@ fun ServerSettingsScreen(
                 FilterChip(
                     selected = !isHttps,
                     onClick = { viewModel.updateProtocol(false) },
-                    label = { Text("🏠 Intern (HTTP)") },
+                    label = { Text(stringResource(R.string.server_connection_http)) },
                     modifier = Modifier.weight(1f)
                 )
                 FilterChip(
                     selected = isHttps,
                     onClick = { viewModel.updateProtocol(true) },
-                    label = { Text("🌐 Extern (HTTPS)") },
+                    label = { Text(stringResource(R.string.server_connection_https)) },
                     modifier = Modifier.weight(1f)
                 )
             }
             
             Text(
                 text = if (!isHttps) {
-                    "HTTP nur für lokale Netzwerke (z.B. 192.168.x.x, 10.x.x.x)"
+                    stringResource(R.string.server_connection_http_hint)
                 } else {
-                    "HTTPS für sichere Verbindungen über das Internet"
+                    stringResource(R.string.server_connection_https_hint)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -121,8 +123,8 @@ fun ServerSettingsScreen(
             OutlinedTextField(
                 value = serverUrl,
                 onValueChange = { viewModel.updateServerUrl(it) },
-                label = { Text("Server-Adresse") },
-                supportingText = { Text("z.B. http://192.168.0.188:8080/notes") },
+                label = { Text(stringResource(R.string.server_address)) },
+                supportingText = { Text(stringResource(R.string.server_address_hint)) },
                 leadingIcon = { Icon(Icons.Default.Language, null) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -135,7 +137,7 @@ fun ServerSettingsScreen(
             OutlinedTextField(
                 value = username,
                 onValueChange = { viewModel.updateUsername(it) },
-                label = { Text("Benutzername") },
+                label = { Text(stringResource(R.string.username)) },
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -147,7 +149,7 @@ fun ServerSettingsScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { viewModel.updatePassword(it) },
-                label = { Text("Passwort") },
+                label = { Text(stringResource(R.string.password)) },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -157,7 +159,7 @@ fun ServerSettingsScreen(
                             } else {
                                 Icons.Default.Visibility
                             },
-                            contentDescription = if (passwordVisible) "Verstecken" else "Anzeigen"
+                            contentDescription = if (passwordVisible) stringResource(R.string.server_password_hide) else stringResource(R.string.server_password_show)
                         )
                     }
                 },
@@ -187,14 +189,14 @@ fun ServerSettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Server-Status:", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.server_status_label), style = MaterialTheme.typography.labelLarge)
                     Text(
                         text = when (serverStatus) {
-                            is SettingsViewModel.ServerStatus.Reachable -> "✅ Erreichbar"
-                            is SettingsViewModel.ServerStatus.Unreachable -> "❌ Nicht erreichbar"
-                            is SettingsViewModel.ServerStatus.Checking -> "🔍 Prüfe..."
-                            is SettingsViewModel.ServerStatus.NotConfigured -> "⚠️ Nicht konfiguriert"
-                            else -> "❓ Unbekannt"
+                            is SettingsViewModel.ServerStatus.Reachable -> stringResource(R.string.server_status_reachable)
+                            is SettingsViewModel.ServerStatus.Unreachable -> stringResource(R.string.server_status_unreachable)
+                            is SettingsViewModel.ServerStatus.Checking -> stringResource(R.string.server_status_checking)
+                            is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(R.string.server_status_not_configured)
+                            else -> stringResource(R.string.server_status_unknown)
                         },
                         color = when (serverStatus) {
                             is SettingsViewModel.ServerStatus.Reachable -> Color(0xFF4CAF50)
@@ -217,7 +219,7 @@ fun ServerSettingsScreen(
                     onClick = { viewModel.testConnection() },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Verbindung testen")
+                    Text(stringResource(R.string.test_connection))
                 }
                 
                 Button(
@@ -233,7 +235,7 @@ fun ServerSettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text("Jetzt synchronisieren")
+                    Text(stringResource(R.string.sync_now))
                 }
             }
         }

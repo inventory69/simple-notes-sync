@@ -39,8 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -66,6 +70,7 @@ fun NoteCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val borderColor = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -137,7 +142,7 @@ fun NoteCard(
                     
                     // Title
                     Text(
-                        text = note.title.ifEmpty { "Ohne Titel" },
+                        text = note.title.ifEmpty { stringResource(R.string.untitled) },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
@@ -154,7 +159,7 @@ fun NoteCard(
                         NoteType.TEXT -> note.content.take(100)
                         NoteType.CHECKLIST -> {
                             val items = note.checklistItems ?: emptyList()
-                            "${items.count { it.isChecked }}/${items.size} erledigt"
+                            stringResource(R.string.checklist_progress, items.count { it.isChecked }, items.size)
                         }
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -171,7 +176,7 @@ fun NoteCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = note.updatedAt.toReadableTime(),
+                        text = note.updatedAt.toReadableTime(context),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.weight(1f)
@@ -231,7 +236,7 @@ fun NoteCard(
                     if (isSelected) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Ausgewählt",
+                            contentDescription = stringResource(R.string.selection_count, 1),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )

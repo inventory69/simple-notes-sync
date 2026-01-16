@@ -467,10 +467,10 @@ class MainActivity : AppCompatActivity() {
         val checkboxAlways = dialogView.findViewById<CheckBox>(R.id.checkboxAlwaysDeleteFromServer)
         
         MaterialAlertDialogBuilder(this)
-            .setTitle("Notiz löschen")
-            .setMessage("\"${note.title}\" wird lokal gelöscht.\n\nAuch vom Server löschen?")
+            .setTitle(getString(R.string.legacy_delete_dialog_title))
+            .setMessage(getString(R.string.legacy_delete_dialog_message, note.title))
             .setView(dialogView)
-            .setNeutralButton("Abbrechen") { _, _ ->
+            .setNeutralButton(getString(R.string.cancel)) { _, _ ->
                 // RESTORE: Re-submit original list (note is NOT deleted from storage)
                 adapter.submitList(originalList)
             }
@@ -485,7 +485,7 @@ class MainActivity : AppCompatActivity() {
                 // NOW actually delete from storage
                 deleteNoteLocally(note, deleteFromServer = false)
             }
-            .setNegativeButton("Vom Server löschen") { _, _ ->
+            .setNegativeButton(getString(R.string.legacy_delete_from_server)) { _, _ ->
                 if (checkboxAlways.isChecked) {
                     prefs.edit().putBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, true).apply()
                 }
@@ -507,13 +507,13 @@ class MainActivity : AppCompatActivity() {
         
         // Show Snackbar with UNDO option
         val message = if (deleteFromServer) {
-            "\"${note.title}\" wird lokal und vom Server gelöscht"
+            getString(R.string.legacy_delete_with_server, note.title)
         } else {
-            "\"${note.title}\" lokal gelöscht (Server bleibt)"
+            getString(R.string.legacy_delete_local_only, note.title)
         }
         
         Snackbar.make(recyclerViewNotes, message, Snackbar.LENGTH_LONG)
-            .setAction("RÜCKGÄNGIG") {
+            .setAction(getString(R.string.snackbar_undo)) {
                 // UNDO: Restore note
                 storage.saveNote(note)
                 pendingDeletions.remove(note.id)
@@ -535,7 +535,7 @@ class MainActivity : AppCompatActivity() {
                                         runOnUiThread {
                                             Toast.makeText(
                                                 this@MainActivity,
-                                                "Vom Server gelöscht",
+                                                getString(R.string.snackbar_deleted_from_server),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
@@ -543,7 +543,7 @@ class MainActivity : AppCompatActivity() {
                                         runOnUiThread {
                                             Toast.makeText(
                                                 this@MainActivity,
-                                                "Server-Löschung fehlgeschlagen",
+                                                getString(R.string.snackbar_server_delete_failed),
                                                 Toast.LENGTH_LONG
                                             ).show()
                                         }
@@ -800,10 +800,9 @@ class MainActivity : AppCompatActivity() {
             REQUEST_NOTIFICATION_PERMISSION -> {
                 if (grantResults.isNotEmpty() && 
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    showToast("Benachrichtigungen aktiviert")
+                    showToast(getString(R.string.toast_notifications_enabled))
                 } else {
-                    showToast("Benachrichtigungen deaktiviert. " +
-                        "Du kannst sie in den Einstellungen aktivieren.")
+                    showToast(getString(R.string.toast_notifications_disabled))
                 }
             }
         }

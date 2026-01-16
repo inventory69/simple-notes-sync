@@ -37,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
@@ -59,7 +61,7 @@ fun AboutScreen(
     val licenseUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
     
     SettingsScaffold(
-        title = "Über diese App",
+        title = stringResource(R.string.about_settings_title),
         onBack = onBack
     ) { paddingValues ->
         Column(
@@ -110,7 +112,7 @@ fun AboutScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "Simple Notes Sync",
+                        text = stringResource(R.string.about_app_name),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -118,7 +120,7 @@ fun AboutScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     
                     Text(
-                        text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                        text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -127,13 +129,13 @@ fun AboutScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            SettingsSectionHeader(text = "Links")
+            SettingsSectionHeader(text = stringResource(R.string.about_links_section))
             
             // GitHub Repository
             AboutLinkItem(
                 icon = Icons.Default.Code,
-                title = "GitHub Repository",
-                subtitle = "Quellcode, Issues & Dokumentation",
+                title = stringResource(R.string.about_github_title),
+                subtitle = stringResource(R.string.about_github_subtitle),
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubRepoUrl))
                     context.startActivity(intent)
@@ -143,8 +145,8 @@ fun AboutScreen(
             // Developer
             AboutLinkItem(
                 icon = Icons.Default.Person,
-                title = "Entwickler",
-                subtitle = "GitHub Profil: @inventory69",
+                title = stringResource(R.string.about_developer_title),
+                subtitle = stringResource(R.string.about_developer_subtitle),
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubProfileUrl))
                     context.startActivity(intent)
@@ -154,8 +156,8 @@ fun AboutScreen(
             // License
             AboutLinkItem(
                 icon = Icons.Default.Policy,
-                title = "Lizenz",
-                subtitle = "MIT License - Open Source",
+                title = stringResource(R.string.about_license_title),
+                subtitle = stringResource(R.string.about_license_subtitle),
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(licenseUrl))
                     context.startActivity(intent)
@@ -177,14 +179,12 @@ fun AboutScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "🔒 Datenschutz",
+                        text = stringResource(R.string.about_privacy_title),
                         style = MaterialTheme.typography.titleSmall
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Diese App sammelt keine Daten. Alle Notizen werden " +
-                            "nur lokal auf deinem Gerät und auf deinem eigenen " +
-                            "WebDAV-Server gespeichert. Keine Telemetrie, keine Werbung.",
+                        text = stringResource(R.string.about_privacy_text),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

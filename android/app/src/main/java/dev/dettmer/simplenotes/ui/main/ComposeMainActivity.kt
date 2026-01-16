@@ -24,10 +24,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.color.DynamicColors
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -339,10 +341,10 @@ class ComposeMainActivity : ComponentActivity() {
             REQUEST_NOTIFICATION_PERMISSION -> {
                 if (grantResults.isNotEmpty() && 
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Benachrichtigungen aktiviert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.toast_notifications_enabled), Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, 
-                        "Benachrichtigungen deaktiviert. Du kannst sie in den Einstellungen aktivieren.", 
+                        getString(R.string.toast_notifications_disabled), 
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -363,21 +365,21 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Notiz löschen") },
+        title = { Text(stringResource(R.string.legacy_delete_dialog_title)) },
         text = { 
-            Text("\"$noteTitle\" wird lokal gelöscht.\n\nAuch vom Server löschen?") 
+            Text(stringResource(R.string.legacy_delete_dialog_message, noteTitle)) 
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text(stringResource(R.string.cancel))
             }
         },
         confirmButton = {
             TextButton(onClick = onDeleteLocal) {
-                Text("Nur lokal")
+                Text(stringResource(R.string.delete_local_only))
             }
             TextButton(onClick = onDeleteFromServer) {
-                Text("Vom Server löschen")
+                Text(stringResource(R.string.legacy_delete_from_server))
             }
         }
     )
