@@ -63,6 +63,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     
     // ═══════════════════════════════════════════════════════════════════════
+    // 🌟 v1.6.0: Offline Mode State (reactive)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    private val _isOfflineMode = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+    )
+    val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
+    
+    /**
+     * Refresh offline mode state from SharedPreferences
+     * Called when returning from Settings screen (in onResume)
+     */
+    fun refreshOfflineModeState() {
+        val oldValue = _isOfflineMode.value
+        val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        _isOfflineMode.value = newValue
+        Logger.d(TAG, "🔄 refreshOfflineModeState: offlineMode=$oldValue → $newValue")
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
     // Sync State (derived from SyncStateManager)
     // ═══════════════════════════════════════════════════════════════════════
     
@@ -460,6 +480,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Trigger manual sync (from toolbar button or pull-to-refresh)
      */
     fun triggerManualSync(source: String = "manual") {
+        // 🌟 v1.6.0: Block sync in offline mode
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
+            Logger.d(TAG, "⏭️ $source Sync blocked: Offline mode enabled")
+            return
+        }
+        
         if (!SyncStateManager.tryStartSync(source)) {
             return
         }
@@ -513,8 +539,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Trigger auto-sync (onResume)
      * Only runs if server is configured and interval has passed
      * v1.5.0: Silent-Sync - kein Banner während des Syncs, Fehler werden trotzdem angezeigt
+     * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_ON_RESUME
      */
     fun triggerAutoSync(source: String = "auto") {
+        // 🌟 v1.6.0: Check if onResume trigger is enabled
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)) {
+            Logger.d(TAG, "⏭️ onResume sync disabled - skipping")
+            return
+        }
+        
         // Throttling check
         if (!canTriggerAutoSync()) {
             return
@@ -523,6 +556,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Check if server is configured
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
         if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            Logger.d(TAG, "⏭️ Offline mode - skipping onResume sync")
             return
         }
         
@@ -607,6 +641,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<android.app.Application>().getString(resId, *formatArgs)
     
     fun isServerConfigured(): Boolean {
+        // 🌟 v1.6.0: Use reactive offline mode state
+        if (_isOfflineMode.value) {
+            return false
+        }
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        return !serverUrl.isNullOrEmpty() && serverUrl != "http://" && serverUrl != "https://"
+    }
+    
+    /**
+     * 🌟 v1.6.0: Check if server has a configured URL (ignores offline mode)
+     * Used for determining if sync would be available when offline mode is disabled
+     */
+    fun hasServerConfig(): Boolean {
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
         return !serverUrl.isNullOrEmpty() && serverUrl != "http://" && serverUrl != "https://"
     }

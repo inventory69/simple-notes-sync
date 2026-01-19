@@ -29,6 +29,27 @@ object Constants {
     // 🔥 v1.3.1: Debug & Logging
     const val KEY_FILE_LOGGING_ENABLED = "file_logging_enabled"
     
+    // 🔥 v1.6.0: Offline Mode Toggle
+    const val KEY_OFFLINE_MODE = "offline_mode_enabled"
+    
+    // 🔥 v1.6.0: Configurable Sync Triggers
+    const val KEY_SYNC_TRIGGER_ON_SAVE = "sync_trigger_on_save"
+    const val KEY_SYNC_TRIGGER_ON_RESUME = "sync_trigger_on_resume"
+    const val KEY_SYNC_TRIGGER_WIFI_CONNECT = "sync_trigger_wifi_connect"
+    const val KEY_SYNC_TRIGGER_PERIODIC = "sync_trigger_periodic"
+    const val KEY_SYNC_TRIGGER_BOOT = "sync_trigger_boot"
+    
+    // Sync Trigger Defaults (active after server configuration)
+    const val DEFAULT_TRIGGER_ON_SAVE = true
+    const val DEFAULT_TRIGGER_ON_RESUME = true
+    const val DEFAULT_TRIGGER_WIFI_CONNECT = true
+    const val DEFAULT_TRIGGER_PERIODIC = false
+    const val DEFAULT_TRIGGER_BOOT = false
+    
+    // Throttling for onSave sync (5 seconds)
+    const val MIN_ON_SAVE_SYNC_INTERVAL_MS = 5_000L
+    const val PREF_LAST_ON_SAVE_SYNC_TIME = "last_on_save_sync_time"
+    
     // WorkManager
     const val SYNC_WORK_TAG = "notes_sync"
     const val SYNC_DELAY_SECONDS = 5L

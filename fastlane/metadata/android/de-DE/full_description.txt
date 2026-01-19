@@ -38,11 +38,13 @@ MULTI-DEVICE SYNC:
 SYNCHRONISATION:
 
 • Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
-• Automatische WiFi-Sync: Synchronisiert automatisch wenn du ein beliebiges WLAN betrittst (wenn Server erreichbar ist)
-• Konfigurierbares Interval: 15, 30 oder 60 Minuten
+• Konfigurierbare Sync-Trigger: Wähle einzeln, wann synchronisiert wird
+• 5 Trigger: onSave (nach dem Speichern), onResume (beim Öffnen), WiFi-Connect, Periodic (15/30/60 Min), Boot
+• Offline-Modus: Alle Netzwerkfunktionen mit einem Schalter deaktivieren
+• Smarte Defaults: nur ereignisbasierte Trigger aktiv (~0.2%/Tag Akku)
+• Periodischer Sync optional (Standard: AUS)
 • Optimierte Performance: überspringt unveränderte Dateien (~2-3s Sync-Zeit)
 • E-Tag Caching für 20x schnellere "keine Änderungen" Checks
-• Gemessener Akkuverbrauch: nur ~0.4% pro Tag (bei 30min)
 • Silent-Sync Modus: kein Banner bei Auto-Sync
 • Doze Mode optimiert für zuverlässige Background-Syncs
 • Manuelle Synchronisation jederzeit möglich

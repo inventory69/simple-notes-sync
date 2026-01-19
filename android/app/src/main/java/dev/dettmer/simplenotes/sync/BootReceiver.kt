@@ -9,6 +9,7 @@ import dev.dettmer.simplenotes.utils.Logger
 /**
  * BootReceiver: Startet WorkManager nach Device Reboot
  * CRITICAL: Ohne diesen Receiver funktioniert Auto-Sync nach Reboot NICHT!
+ * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_BOOT
  */
 class BootReceiver : BroadcastReceiver() {
     
@@ -24,16 +25,22 @@ class BootReceiver : BroadcastReceiver() {
         
         Logger.d(TAG, "📱 BOOT_COMPLETED received")
         
-        // Prüfe ob Auto-Sync aktiviert ist
         val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
         
-        if (!autoSyncEnabled) {
-            Logger.d(TAG, "❌ Auto-sync disabled - not starting WorkManager")
+        // 🌟 v1.6.0: Check if Boot trigger is enabled
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, Constants.DEFAULT_TRIGGER_BOOT)) {
+            Logger.d(TAG, "⏭️ Boot sync disabled - not starting WorkManager")
             return
         }
         
-        Logger.d(TAG, "🚀 Auto-sync enabled - starting WorkManager")
+        // Check if server is configured
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            Logger.d(TAG, "⏭️ Offline mode - not starting WorkManager")
+            return
+        }
+        
+        Logger.d(TAG, "🚀 Boot sync enabled - starting WorkManager")
         
         // WorkManager neu starten
         val networkMonitor = NetworkMonitor(context.applicationContext)

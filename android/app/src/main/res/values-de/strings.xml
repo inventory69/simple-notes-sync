@@ -65,6 +65,7 @@
     <string name="delete_note_message">Wie möchtest du diese Notiz löschen?</string>
     <string name="delete_notes_message">Wie möchtest du diese %d Notizen löschen?</string>
     <string name="delete_everywhere">Überall löschen (auch Server)</string>
+    <string name="delete_everywhere_offline_hint">Nicht verfügbar im Offline-Modus</string>
     <string name="delete_local_only">Nur lokal löschen</string>
     <string name="delete">Löschen</string>
     <string name="cancel">Abbrechen</string>
@@ -135,9 +136,13 @@
     <string name="settings_server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="settings_server_status_checking">🔍 Prüfe…</string>
     <string name="settings_server_status_not_configured">⚠️ Nicht konfiguriert</string>
+    <string name="settings_server_status_offline_mode">📴 Offline-Modus</string>
     <string name="settings_sync">Sync-Einstellungen</string>
     <string name="settings_sync_auto_on">Auto-Sync: An • %s</string>
     <string name="settings_sync_auto_off">Auto-Sync: Aus</string>
+    <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
+    <string name="settings_sync_manual_only">Nur manueller Sync</string>
+    <string name="settings_sync_triggers_active">%d Trigger aktiv</string>
     <string name="settings_interval_15min">15 Min</string>
     <string name="settings_interval_30min">30 Min</string>
     <string name="settings_interval_60min">60 Min</string>
@@ -173,7 +178,10 @@
     <string name="server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="server_status_checking">🔍 Prüfe…</string>
     <string name="server_status_not_configured">⚠️ Nicht konfiguriert</string>
+    <string name="server_status_offline_mode">📴 Offline-Modus aktiv</string>
     <string name="server_status_unknown">❓ Unbekannt</string>
+    <string name="server_offline_mode_title">📴 Offline-Modus</string>
+    <string name="server_offline_mode_subtitle">Alle Netzwerkfunktionen deaktivieren</string>
     <string name="test_connection">Verbindung testen</string>
     <string name="sync_now">Jetzt synchronisieren</string>
     
@@ -195,6 +203,33 @@
     <string name="sync_interval_60min_subtitle">Maximale Akkulaufzeit • ~0.2% Akku/Tag (~6 mAh geschätzt)</string>
     <!-- Legacy -->
     <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%%/Tag)</string>
+    
+    <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
+    <string name="sync_section_instant">📲 Sofort-Sync</string>
+    <string name="sync_section_background">📡 Hintergrund-Sync</string>
+    <string name="sync_section_advanced">⚙️ Erweitert</string>
+    
+    <string name="sync_trigger_on_save_title">Nach dem Speichern</string>
+    <string name="sync_trigger_on_save_subtitle">Sync sofort nach jeder Änderung</string>
+    
+    <string name="sync_trigger_on_resume_title">Beim App-Start</string>
+    <string name="sync_trigger_on_resume_subtitle">Sync wenn die App geöffnet wird</string>
+    
+    <string name="sync_trigger_wifi_connect_title">Bei WiFi-Verbindung</string>
+    <string name="sync_trigger_wifi_connect_subtitle">Sync wenn WiFi verbunden wird</string>
+    
+    <string name="sync_trigger_periodic_title">Automatisch alle X Minuten</string>
+    <string name="sync_trigger_periodic_subtitle">Regelmäßiger Hintergrund-Sync</string>
+    
+    <string name="sync_trigger_boot_title">Nach Gerät-Neustart</string>
+    <string name="sync_trigger_boot_subtitle">Startet Hintergrund-Sync nach Reboot</string>
+    
+    <string name="sync_manual_hint">Manueller Sync (Toolbar/Pull-to-Refresh) ist ebenfalls verfügbar.</string>
+    <string name="sync_manual_hint_disabled">Sync ist im Offline-Modus nicht verfügbar.</string>
+    
+    <string name="sync_offline_mode_title">Offline-Modus</string>
+    <string name="sync_offline_mode_message">Du nutzt die App im Offline-Modus. Richte einen Server ein, um Notizen zu synchronisieren.</string>
+    <string name="sync_offline_mode_button">Server einrichten</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->

@@ -76,6 +76,9 @@ fun NoteEditorScreen(
     val uiState by viewModel.uiState.collectAsState()
     val checklistItems by viewModel.checklistItems.collectAsState()
     
+    // 🌟 v1.6.0: Offline mode state
+    val isOfflineMode by viewModel.isOfflineMode.collectAsState()
+    
     var showDeleteDialog by remember { mutableStateOf(false) }
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -233,6 +236,7 @@ fun NoteEditorScreen(
     if (showDeleteDialog) {
         DeleteConfirmationDialog(
             noteCount = 1,
+            isOfflineMode = isOfflineMode,
             onDismiss = { showDeleteDialog = false },
             onDeleteLocal = {
                 showDeleteDialog = false

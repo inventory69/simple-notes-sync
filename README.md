@@ -18,12 +18,12 @@
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="250" alt="Notes list">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="250" alt="Sync status">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="250" alt="Edit note">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="250" alt="Edit checklist">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="250" alt="Settings">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="250" alt="Server settings">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="250" alt="Sync status">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="250" alt="Sync settings">
 </p>
 
 ---
@@ -33,11 +33,11 @@
 - ✅ **NEW: Checklists** - Tap-to-check, drag & drop
 - 🌍 **NEW: Multilingual** - English/German with language selector
 - 📝 **Offline-first** - Works without internet
-- 🔄 **Auto-sync** - WiFi reconnect, periodic intervals (15/30/60 min) & multi-device sync
+- 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
 - 🔒 **Self-hosted** - Your data stays with you (WebDAV)
 - 💾 **Local backup** - Export/Import as JSON file
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
-- 🔋 **Battery-friendly** - ~0.2-0.8% per day
+- 🔋 **Battery-friendly** - ~0.2% with defaults, up to ~1.0% with periodic sync
 - 🎨 **Material Design 3** - Dark mode & dynamic colors
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
@@ -108,4 +108,4 @@ MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**v1.5.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.6.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3

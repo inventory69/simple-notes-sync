@@ -79,6 +79,9 @@ fun MainScreen(
     val selectedNotes by viewModel.selectedNotes.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     
+    // 🌟 v1.6.0: Reactive offline mode state
+    val isOfflineMode by viewModel.isOfflineMode.collectAsState()
+    
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
     
@@ -88,6 +91,13 @@ fun MainScreen(
     
     // Compute isSyncing once
     val isSyncing = syncState == SyncStateManager.SyncState.SYNCING
+    
+    // 🌟 v1.6.0: Reactive sync availability (recomposes when offline mode changes)
+    // Note: isOfflineMode is updated via StateFlow from MainViewModel.refreshOfflineModeState()
+    // which is called in ComposeMainActivity.onResume() when returning from Settings
+    val hasServerConfig = viewModel.hasServerConfig()
+    val isSyncAvailable = !isOfflineMode && hasServerConfig
+    val canSync = isSyncAvailable && !isSyncing
     
     // Handle snackbar events from ViewModel
     LaunchedEffect(Unit) {
@@ -136,7 +146,7 @@ fun MainScreen(
                 exit = slideOutVertically() + fadeOut()
             ) {
                 MainTopBar(
-                    syncEnabled = !isSyncing,
+                    syncEnabled = canSync,
                     onSyncClick = { viewModel.triggerManualSync("toolbar") },
                     onSettingsClick = onOpenSettings
                 )
@@ -146,10 +156,10 @@ fun MainScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
-        // PullToRefreshBox wraps the content with pull-to-refresh capability
+        // 🌟 v1.6.0: PullToRefreshBox only enabled when sync available
         PullToRefreshBox(
             isRefreshing = isSyncing,
-            onRefresh = { viewModel.triggerManualSync("pullToRefresh") },
+            onRefresh = { if (isSyncAvailable) viewModel.triggerManualSync("pullToRefresh") },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -207,6 +217,7 @@ fun MainScreen(
         if (showBatchDeleteDialog) {
             DeleteConfirmationDialog(
                 noteCount = selectedNotes.size,
+                isOfflineMode = isOfflineMode,
                 onDismiss = { showBatchDeleteDialog = false },
                 onDeleteLocal = {
                     viewModel.deleteSelectedNotes(deleteFromServer = false)

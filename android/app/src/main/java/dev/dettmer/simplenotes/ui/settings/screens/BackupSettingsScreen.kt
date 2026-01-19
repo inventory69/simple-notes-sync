@@ -49,6 +49,9 @@ fun BackupSettingsScreen(
 ) {
     val isBackupInProgress by viewModel.isBackupInProgress.collectAsState()
     
+    // 🌟 v1.6.0: Check if server restore is available
+    val isServerConfigured = viewModel.isServerConfigured()
+    
     // Restore dialog state
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreSource by remember { mutableStateOf<RestoreSource>(RestoreSource.LocalFile) }
@@ -126,6 +129,7 @@ fun BackupSettingsScreen(
             
             Spacer(modifier = Modifier.height(8.dp))
             
+            // 🌟 v1.6.0: Disabled when offline mode active
             SettingsOutlinedButton(
                 text = stringResource(R.string.backup_restore_server),
                 onClick = {
@@ -133,8 +137,20 @@ fun BackupSettingsScreen(
                     showRestoreDialog = true
                 },
                 isLoading = isBackupInProgress,
+                enabled = isServerConfigured,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
+            
+            // 🌟 v1.6.0: Show hint when offline
+            if (!isServerConfigured) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_sync_offline_mode),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
         }
