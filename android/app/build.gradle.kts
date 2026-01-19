@@ -21,8 +21,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13  // 🔧 v1.5.0: Jetpack Compose Settings Redesign
-        versionName = "1.5.0"  // 🔧 v1.5.0: Jetpack Compose Settings Redesign
+        versionCode = 14  // 🔧 v1.6.0: Configurable Sync Triggers
+        versionName = "1.6.0"  // 🔧 v1.6.0: Configurable Sync Triggers
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

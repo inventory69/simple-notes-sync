@@ -1,0 +1,6 @@
+• NEU: Konfigurierbare Sync-Trigger - Jeden einzeln aktivieren/deaktivieren
+• NEU: Offline-Modus - Alle Netzwerkfunktionen mit einem Schalter aus
+• 5 Trigger: onSave, onResume, WiFi, Periodic (15/30/60 Min), Boot
+• Smarte Defaults: Nur ereignisbasiert aktiv (~0.2%/Tag Akku)
+• Periodischer Sync optional (Standard: AUS)
+• Verschiedene Fixes und UI-Verbesserungen

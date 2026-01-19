@@ -95,24 +95,34 @@ fun SettingsDangerButton(
 
 /**
  * Info card with description text
+ * v1.6.0: Added isWarning parameter for offline mode warning
  */
 @Composable
 fun SettingsInfoCard(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isWarning: Boolean = false
 ) {
     androidx.compose.material3.Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            containerColor = if (isWarning) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            }
         )
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (isWarning) {
+                MaterialTheme.colorScheme.onErrorContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             modifier = Modifier.padding(16.dp),
             lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3f
         )

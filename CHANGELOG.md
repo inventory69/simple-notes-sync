@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.6.0] - 2026-01-19
+
+### 🎉 Major: Configurable Sync Triggers
+
+Fine-grained control over when your notes sync - choose which triggers fit your workflow best!
+
+### ⚙️ Sync Trigger System
+
+- **Individual trigger control** - Enable/disable each sync trigger separately in settings
+- **5 Independent Triggers:**
+  - **onSave Sync** - Sync immediately after saving a note (5s throttle)
+  - **onResume Sync** - Sync when app is opened (60s throttle)
+  - **WiFi-Connect Sync** - Sync when WiFi is connected
+  - **Periodic Sync** - Background sync every 15/30/60 minutes (configurable)
+  - **Boot Sync** - Start background sync after device restart
+
+- **Smart Defaults** - Only event-driven triggers active by default (onSave, onResume, WiFi-Connect)
+- **Battery Optimized** - ~0.2%/day with defaults, up to ~1.0% with periodic sync enabled
+- **Offline Mode UI** - Grayed-out sync toggles when no server configured
+- **Dynamic Settings Subtitle** - Shows count of active triggers on main settings screen
+
+### 🔧 Server Configuration Improvements
+
+- **Offline Mode Toggle** - Disable all network features with one switch
+- **Split Protocol & Host** - Protocol (http/https) shown as non-editable prefix
+- **Clickable Settings Cards** - Full card clickable for better UX
+- **Clickable Toggle Rows** - Click text/icon to toggle switches (not just the switch itself)
+
+### 🐛 Bug Fixes
+
+- **Fixed:** Missing 5th sync trigger (Boot) in main settings screen subtitle count
+- **Various fixes** - UI improvements and stability enhancements
+
+### 🔧 Technical Improvements
+
+- **Reactive offline mode state** - StateFlow ensures UI updates correctly
+- **Separated server config checks** - `hasServerConfig()` vs `isServerConfigured()` (offline-aware)
+- **Improved constants** - All sync trigger keys and defaults in Constants.kt
+- **Better code organization** - Settings screens refactored for clarity
+
+### Looking Ahead
+
+> 🚀 **v1.7.0** will bring server folder checking and additional community features.
+> Feature requests welcome as [GitHub Issue](https://github.com/inventory69/simple-notes-sync/issues).
+
+---
+
 ## [1.5.0] - 2026-01-15
 
 ### 🎉 Major: Jetpack Compose UI Redesign

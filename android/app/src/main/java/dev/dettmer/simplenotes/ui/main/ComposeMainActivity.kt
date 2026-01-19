@@ -177,6 +177,10 @@ class ComposeMainActivity : ComponentActivity() {
         
         Logger.d(TAG, "📱 ComposeMainActivity.onResume() - Registering receivers")
         
+        // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
+        // This ensures UI reflects current offline mode when returning from Settings
+        viewModel.refreshOfflineModeState()
+        
         // Register BroadcastReceiver for Background-Sync
         LocalBroadcastManager.getInstance(this).registerReceiver(
             syncCompletedReceiver,

@@ -1,15 +1,20 @@
 package dev.dettmer.simplenotes.ui.editor
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +47,7 @@ class NoteEditorViewModel(
     }
     
     private val storage = NotesStorage(application)
+    private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     
     // ═══════════════════════════════════════════════════════════════════════
     // State
@@ -52,6 +58,12 @@ class NoteEditorViewModel(
     
     private val _checklistItems = MutableStateFlow<List<ChecklistItemState>>(emptyList())
     val checklistItems: StateFlow<List<ChecklistItemState>> = _checklistItems.asStateFlow()
+    
+    // 🌟 v1.6.0: Offline Mode State
+    private val _isOfflineMode = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+    )
+    val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // Events
@@ -284,6 +296,10 @@ class NoteEditorViewModel(
             }
             
             _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_SAVED))
+            
+            // 🌟 v1.6.0: Trigger onSave Sync
+            triggerOnSaveSync()
+            
             _events.emit(NoteEditorEvent.NavigateBack)
         }
     }
@@ -331,6 +347,52 @@ class NoteEditorViewModel(
     }
     
     fun canDelete(): Boolean = existingNote != null
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 🌟 v1.6.0: Sync Trigger - onSave
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Triggers sync after saving a note (if enabled and server configured)
+     * v1.6.0: New configurable sync trigger
+     * 
+     * Separate throttling (5 seconds) to prevent spam when saving multiple times
+     */
+    private fun triggerOnSaveSync() {
+        // Check 1: Trigger enabled?
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)) {
+            Logger.d(TAG, "⏭️ onSave sync disabled - skipping")
+            return
+        }
+        
+        // Check 2: Server configured?
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            Logger.d(TAG, "⏭️ Offline mode - skipping onSave sync")
+            return
+        }
+        
+        // Check 3: Throttling (5 seconds) to prevent spam
+        val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
+        val now = System.currentTimeMillis()
+        val timeSinceLastSync = now - lastOnSaveSyncTime
+        
+        if (timeSinceLastSync < Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS) {
+            val remainingSeconds = (Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
+            Logger.d(TAG, "⏳ onSave sync throttled - wait ${remainingSeconds}s")
+            return
+        }
+        
+        // Update last sync time
+        prefs.edit().putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now).apply()
+        
+        // Trigger sync via WorkManager
+        Logger.d(TAG, "📤 Triggering onSave sync")
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .addTag(Constants.SYNC_WORK_TAG)
+            .build()
+        WorkManager.getInstance(getApplication()).enqueue(syncRequest)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

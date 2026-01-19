@@ -102,8 +102,22 @@ class NetworkMonitor(private val context: Context) {
     /**
      * Triggert WiFi-Connect Sync via WorkManager
      * WorkManager wacht App auf (funktioniert auch wenn App geschlossen!)
+     * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_WIFI_CONNECT
      */
     private fun triggerWifiConnectSync() {
+        // 🌟 v1.6.0: Check if WiFi-Connect trigger is enabled
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)) {
+            Logger.d(TAG, "⏭️ WiFi-Connect sync disabled - skipping")
+            return
+        }
+        
+        // Check if server is configured
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            Logger.d(TAG, "⏭️ Offline mode - skipping WiFi-Connect sync")
+            return
+        }
+        
         Logger.d(TAG, "📡 Scheduling WiFi-Connect sync via WorkManager")
         
         // 🔥 WICHTIG: NetworkType.UNMETERED constraint!
@@ -148,8 +162,25 @@ class NetworkMonitor(private val context: Context) {
     /**
      * Startet WorkManager periodic sync
      * 🔥 Interval aus SharedPrefs konfigurierbar (15/30/60 min)
+     * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_PERIODIC
      */
     private fun startPeriodicSync() {
+        // 🌟 v1.6.0: Check if Periodic trigger is enabled
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)) {
+            Logger.d(TAG, "⏭️ Periodic sync disabled - skipping")
+            // Cancel existing periodic work if disabled
+            WorkManager.getInstance(context).cancelUniqueWork(AUTO_SYNC_WORK_NAME)
+            return
+        }
+        
+        // Check if server is configured
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            Logger.d(TAG, "⏭️ Offline mode - skipping Periodic sync")
+            WorkManager.getInstance(context).cancelUniqueWork(AUTO_SYNC_WORK_NAME)
+            return
+        }
+        
         // 🔥 Interval aus SharedPrefs lesen
         val intervalMinutes = prefs.getLong(
             Constants.PREF_SYNC_INTERVAL_MINUTES,

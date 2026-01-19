@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,6 +45,14 @@ fun SettingsMainScreen(
     val syncInterval by viewModel.syncInterval.collectAsState()
     val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
+    
+    // 🌟 v1.6.0: Collect offline mode and trigger states
+    val offlineMode by viewModel.offlineMode.collectAsState()
+    val triggerOnSave by viewModel.triggerOnSave.collectAsState()
+    val triggerOnResume by viewModel.triggerOnResume.collectAsState()
+    val triggerWifiConnect by viewModel.triggerWifiConnect.collectAsState()
+    val triggerPeriodic by viewModel.triggerPeriodic.collectAsState()
+    val triggerBoot by viewModel.triggerBoot.collectAsState()
     
     // Check server status on first load
     LaunchedEffect(Unit) {
@@ -82,26 +91,28 @@ fun SettingsMainScreen(
             
             // Server-Einstellungen
             item {
-                // v1.5.0 Fix: Nur Prefix-URLs gelten als "nicht konfiguriert"
-                val isConfigured = serverUrl.isNotEmpty() && 
-                    serverUrl != "http://" && 
-                    serverUrl != "https://"
+                // 🌟 v1.6.0: Check if server is configured (host is not empty)
+                val isConfigured = serverUrl.isNotEmpty()
                 
                 SettingsCard(
                     icon = Icons.Default.Cloud,
                     title = stringResource(R.string.settings_server),
-                    subtitle = if (isConfigured) serverUrl else null,
-                    statusText = when (serverStatus) {
-                        is SettingsViewModel.ServerStatus.Reachable -> stringResource(R.string.settings_server_status_reachable)
-                        is SettingsViewModel.ServerStatus.Unreachable -> stringResource(R.string.settings_server_status_unreachable)
-                        is SettingsViewModel.ServerStatus.Checking -> stringResource(R.string.settings_server_status_checking)
-                        is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(R.string.settings_server_status_not_configured)
+                    subtitle = if (!offlineMode && isConfigured) serverUrl else null,
+                    statusText = when {
+                        offlineMode -> stringResource(R.string.settings_server_status_offline_mode)
+                        serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> stringResource(R.string.settings_server_status_offline_mode)
+                        serverStatus is SettingsViewModel.ServerStatus.Reachable -> stringResource(R.string.settings_server_status_reachable)
+                        serverStatus is SettingsViewModel.ServerStatus.Unreachable -> stringResource(R.string.settings_server_status_unreachable)
+                        serverStatus is SettingsViewModel.ServerStatus.Checking -> stringResource(R.string.settings_server_status_checking)
+                        serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(R.string.settings_server_status_offline_mode)
                         else -> null
                     },
-                    statusColor = when (serverStatus) {
-                        is SettingsViewModel.ServerStatus.Reachable -> Color(0xFF4CAF50)
-                        is SettingsViewModel.ServerStatus.Unreachable -> Color(0xFFF44336)
-                        is SettingsViewModel.ServerStatus.NotConfigured -> Color(0xFFFF9800)
+                    statusColor = when {
+                        offlineMode -> MaterialTheme.colorScheme.tertiary
+                        serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> MaterialTheme.colorScheme.tertiary
+                        serverStatus is SettingsViewModel.ServerStatus.Reachable -> Color(0xFF4CAF50)
+                        serverStatus is SettingsViewModel.ServerStatus.Unreachable -> Color(0xFFF44336)
+                        serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> MaterialTheme.colorScheme.tertiary
                         else -> Color.Gray
                     },
                     onClick = { onNavigate(SettingsRoute.Server) }
@@ -110,33 +121,52 @@ fun SettingsMainScreen(
             
             // Sync-Einstellungen
             item {
-                val intervalText = when (syncInterval) {
-                    15L -> stringResource(R.string.settings_interval_15min)
-                    60L -> stringResource(R.string.settings_interval_60min)
-                    else -> stringResource(R.string.settings_interval_30min)
-                }
+                // 🌟 v1.6.0: Build dynamic subtitle based on active triggers
+                val isServerConfigured = viewModel.isServerConfigured()
+                val activeTriggersCount = listOf(
+                    triggerOnSave,
+                    triggerOnResume,
+                    triggerWifiConnect,
+                    triggerPeriodic,
+                    triggerBoot
+                ).count { it }
+                
+                // 🌟 v1.6.0 Fix: Use statusText for offline mode (consistent with Server card)
+                val syncSubtitle = if (isServerConfigured) {
+                    if (activeTriggersCount == 0) {
+                        stringResource(R.string.settings_sync_manual_only)
+                    } else {
+                        stringResource(R.string.settings_sync_triggers_active, activeTriggersCount)
+                    }
+                } else null
+                
                 SettingsCard(
                     icon = Icons.Default.Sync,
                     title = stringResource(R.string.settings_sync),
-                    subtitle = if (autoSyncEnabled) {
-                        stringResource(R.string.settings_sync_auto_on, intervalText)
-                    } else {
-                        stringResource(R.string.settings_sync_auto_off)
-                    },
+                    subtitle = syncSubtitle,
+                    statusText = if (!isServerConfigured) stringResource(R.string.settings_sync_offline_mode) else null,
+                    statusColor = if (!isServerConfigured) MaterialTheme.colorScheme.tertiary else Color.Gray,
                     onClick = { onNavigate(SettingsRoute.Sync) }
                 )
             }
             
             // Markdown-Integration
             item {
+                // 🌟 v1.6.0 Fix: Use statusText for offline mode (consistent with Server card)
+                val isServerConfiguredForMarkdown = viewModel.isServerConfigured()
+                
                 SettingsCard(
                     icon = Icons.Default.Description,
                     title = stringResource(R.string.settings_markdown),
-                    subtitle = if (markdownAutoSync) {
-                        stringResource(R.string.settings_markdown_auto_on)
-                    } else {
-                        stringResource(R.string.settings_markdown_auto_off)
-                    },
+                    subtitle = if (isServerConfiguredForMarkdown) {
+                        if (markdownAutoSync) {
+                            stringResource(R.string.settings_markdown_auto_on)
+                        } else {
+                            stringResource(R.string.settings_markdown_auto_off)
+                        }
+                    } else null,
+                    statusText = if (!isServerConfiguredForMarkdown) stringResource(R.string.settings_sync_offline_mode) else null,
+                    statusColor = if (!isServerConfiguredForMarkdown) MaterialTheme.colorScheme.tertiary else Color.Gray,
                     onClick = { onNavigate(SettingsRoute.Markdown) }
                 )
             }

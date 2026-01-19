@@ -42,6 +42,10 @@ fun MarkdownSettingsScreen(
     val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val exportProgress by viewModel.markdownExportProgress.collectAsState()
     
+    // 🌟 v1.6.0: Check offline mode
+    val offlineMode by viewModel.offlineMode.collectAsState()
+    val isServerConfigured = viewModel.isServerConfigured()
+    
     // v1.5.0 Fix: Progress Dialog for initial export
     exportProgress?.let { progress ->
         AlertDialog(
@@ -96,15 +100,22 @@ fun MarkdownSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             // Markdown Auto-Sync Toggle
+            // 🌟 v1.6.0: Disabled when offline mode active
             SettingsSwitch(
                 title = stringResource(R.string.markdown_auto_sync_title),
-                subtitle = stringResource(R.string.markdown_auto_sync_subtitle),
+                subtitle = if (!isServerConfigured) {
+                    stringResource(R.string.settings_sync_offline_mode)
+                } else {
+                    stringResource(R.string.markdown_auto_sync_subtitle)
+                },
                 checked = markdownAutoSync,
                 onCheckedChange = { viewModel.setMarkdownAutoSync(it) },
-                icon = Icons.Default.Description
+                icon = Icons.Default.Description,
+                enabled = isServerConfigured
             )
             
             // Manual sync button (only visible when auto-sync is off)
+            // 🌟 v1.6.0: Also disabled in offline mode
             if (!markdownAutoSync) {
                 SettingsDivider()
                 
@@ -117,8 +128,20 @@ fun MarkdownSettingsScreen(
                 SettingsButton(
                     text = stringResource(R.string.markdown_manual_sync_button),
                     onClick = { viewModel.performManualMarkdownSync() },
+                    enabled = isServerConfigured,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+                
+                // 🌟 v1.6.0: Show hint when offline
+                if (!isServerConfigured) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.settings_sync_offline_mode),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))

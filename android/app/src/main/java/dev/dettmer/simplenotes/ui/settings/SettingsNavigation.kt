@@ -55,7 +55,13 @@ fun SettingsNavHost(
         composable(SettingsRoute.Sync.route) {
             SyncSettingsScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToServerSettings = {
+                    navController.navigate(SettingsRoute.Server.route) {
+                        // Avoid multiple copies of server settings in back stack
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         

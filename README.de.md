@@ -18,12 +18,12 @@
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/1.png" width="250" alt="Notizliste">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/6.png" width="250" alt="Sync-Status">
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.png" width="250" alt="Notiz bearbeiten">
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.png" width="250" alt="Checkliste bearbeiten">
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/4.png" width="250" alt="Einstellungen">
   <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/5.png" width="250" alt="Server-Einstellungen">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/6.png" width="250" alt="Sync-Status">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/7.png" width="250" alt="Sync-Einstellungen">
 </p>
 
 ---
@@ -33,11 +33,11 @@
 - ✅ **NEU: Checklisten** - Tap-to-Check, Drag & Drop
 - 🌍 **NEU: Mehrsprachig** - Deutsch/Englisch mit Sprachauswahl
 - 📝 **Offline-First** - Funktioniert ohne Internet
-- 🔄 **Auto-Sync** - WLAN-Verbindung, regelmäßige Intervalle (15/30/60 Min) & Multi-Geräte-Sync
+- 🔄 **Konfigurierbare Sync-Trigger** - onSave, onResume, WiFi-Verbindung, periodisch (15/30/60 Min), Boot
 - 🔒 **Self-Hosted** - Deine Daten bleiben bei dir (WebDAV)
 - 💾 **Lokales Backup** - Export/Import als JSON-Datei
 - 🖥️ **Desktop-Integration** - Markdown-Export für Obsidian, VS Code, Typora
-- 🔋 **Akkuschonend** - ~0.2-0.8% pro Tag
+- 🔋 **Akkuschonend** - ~0.2% mit Defaults, bis zu ~1.0% mit Periodic Sync
 - 🎨 **Material Design 3** - Dark Mode & Dynamic Colors
 
 ➡️ **Vollständige Feature-Liste:** [FEATURES.de.md](docs/FEATURES.de.md)
@@ -112,4 +112,4 @@ MIT License - siehe [LICENSE](LICENSE)
 
 ---
 
-**v1.4.1** · Built with ❤️ using Kotlin + Material Design 3
+**v1.6.0** · Built with ❤️ using Kotlin + Material Design 3

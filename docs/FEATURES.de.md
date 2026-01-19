@@ -169,16 +169,19 @@
 
 ## 🔋 Performance & Optimierung
 
-### Akku-Effizienz
-- ✅ **Optimierte Sync-Intervalle** - 15/30/60 Min
+### Akku-Effizienz (v1.6.0)
+- ✅ **Konfigurierbare Sync-Trigger** - Jeden Trigger einzeln aktivieren/deaktivieren
+- ✅ **Smarte Defaults** - Nur ereignisbasierte Trigger standardmäßig aktiv
+- ✅ **Optimierte Periodische Intervalle** - 15/30/60 Min (Standard: AUS)
 - ✅ **WiFi-Only** - Kein Mobile Data Sync
 - ✅ **Smart Server-Check** - Sync nur wenn Server erreichbar
 - ✅ **WorkManager** - System-optimierte Ausführung
 - ✅ **Doze Mode kompatibel** - Sync läuft auch im Standby
 - ✅ **Gemessener Verbrauch:**
-  - 15 Min: ~0.8% / Tag (~23 mAh)
-  - 30 Min: ~0.4% / Tag (~12 mAh) ⭐ _Empfohlen_
-  - 60 Min: ~0.2% / Tag (~6 mAh)
+  - Standard (nur ereignisbasiert): ~0.2%/Tag (~6.5 mAh) ⭐ _Optimal_
+  - Mit Periodic 15 Min: ~1.0%/Tag (~30 mAh)
+  - Mit Periodic 30 Min: ~0.6%/Tag (~19 mAh)
+  - Mit Periodic 60 Min: ~0.4%/Tag (~13 mAh)
 
 ### App-Performance
 - ✅ **Offline-First** - Funktioniert ohne Internet

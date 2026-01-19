@@ -33,7 +33,16 @@
 
 ## v1.6.0 - Technische Modernisierung
 
-> **Status:** In Planung 📋
+> **Status:** In Entwicklung 🚧
+
+### ⚙️ Konfigurierbare Sync-Trigger
+
+- ✅ **Individuelle Trigger-Kontrolle** - Jeden Sync-Trigger einzeln aktivieren/deaktivieren
+- ✅ **Ereignisbasierte Defaults** - onSave, onResume, WiFi-Connect standardmäßig aktiv
+- ✅ **Periodischer Sync optional** - 15/30/60 Min Intervalle (Standard: AUS)
+- ✅ **Boot Sync optional** - Periodischen Sync nach Geräteneustart starten (Standard: AUS)
+- ✅ **Offline-Modus UI** - Ausgegraute Toggles wenn kein Server konfiguriert
+- ✅ **Akku-optimiert** - ~0.2%/Tag mit Defaults, bis zu ~1.0% mit Periodic
 
 ### 🔧 Server-Ordner Prüfung
 

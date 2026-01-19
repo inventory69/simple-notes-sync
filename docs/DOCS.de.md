@@ -174,30 +174,68 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
 
 ## 🔋 Akku-Optimierung
 
-### Verbrauchsanalyse
+### v1.6.0: Konfigurierbare Sync-Trigger
+
+Seit v1.6.0 kann jeder Sync-Trigger einzeln aktiviert/deaktiviert werden. Das gibt Nutzern feine Kontrolle über den Akkuverbrauch.
+
+#### Sync-Trigger Übersicht
+
+| Trigger | Standard | Akku-Impact | Beschreibung |
+|---------|----------|-------------|--------------|
+| **Manueller Sync** | Immer an | 0 (nutzer-getriggert) | Toolbar-Button / Pull-to-Refresh |
+| **onSave Sync** | ✅ AN | ~0.5 mAh/Speichern | Sync sofort nach Speichern einer Notiz |
+| **onResume Sync** | ✅ AN | ~0.3 mAh/Öffnen | Sync beim App-Öffnen (60s Throttle) |
+| **WiFi-Connect** | ✅ AN | ~0.5 mAh/Verbindung | Sync bei WiFi-Verbindung |
+| **Periodic Sync** | ❌ AUS | 0.2-0.8%/Tag | Hintergrund-Sync alle 15/30/60 Min |
+| **Boot Sync** | ❌ AUS | ~0.1 mAh/Boot | Start Hintergrund-Sync nach Neustart |
+
+#### Akku-Verbrauchsberechnung
+
+**Typisches Nutzungsszenario (Standardeinstellungen):**
+- onSave: ~5 Speichern/Tag × 0.5 mAh = **~2.5 mAh**
+- onResume: ~10 Öffnen/Tag × 0.3 mAh = **~3 mAh**
+- WiFi-Connect: ~2 Verbindungen/Tag × 0.5 mAh = **~1 mAh**
+- **Gesamt: ~6.5 mAh/Tag (~0.2% bei 3000mAh Akku)**
+
+**Mit aktiviertem Periodic Sync (15/30/60 Min):**
+
+| Intervall | Syncs/Tag | Akku/Tag | Gesamt (mit Standards) |
+|-----------|-----------|----------|------------------------|
+| **15 Min** | ~96 | ~23 mAh | ~30 mAh (~1.0%) |
+| **30 Min** | ~48 | ~12 mAh | ~19 mAh (~0.6%) |
+| **60 Min** | ~24 | ~6 mAh | ~13 mAh (~0.4%) |
+
+#### Komponenten-Aufschlüsselung
 
 | Komponente | Frequenz | Verbrauch | Details |
 |------------|----------|-----------|---------|
-| WorkManager Wakeup | Alle 30 Min | ~0.15 mAh | System wacht auf |
-| Network Check | 48x/Tag | ~0.03 mAh | Gateway IP check |
-| WebDAV Sync | 2-3x/Tag | ~1.5 mAh | Nur bei Änderungen |
-| **Total** | - | **~12 mAh/Tag** | **~0.4%** bei 3000mAh |
+| WorkManager Wakeup | Pro Sync | ~0.15 mAh | System wacht auf |
+| Network Check | Pro Sync | ~0.03 mAh | Gateway IP Check |
+| WebDAV Sync | Nur bei Änderungen | ~0.25 mAh | HTTP PUT/GET |
+| **Pro-Sync Gesamt** | - | **~0.25 mAh** | Optimiert |
 
 ### Optimierungen
 
-1. **IP Caching**
+1. **Pre-Checks vor Sync**
+   ```kotlin
+   // Reihenfolge wichtig! Günstigste Checks zuerst
+   if (!hasUnsyncedChanges()) return  // Lokaler Check (günstig)
+   if (!isServerReachable()) return   // Netzwerk Check (teuer)
+   performSync()                       // Nur wenn beide bestehen
+   ```
+
+2. **Throttling**
+   - onResume: 60 Sekunden Mindestabstand
+   - onSave: 5 Sekunden Mindestabstand
+   - Periodic: 15/30/60 Minuten Intervalle
+
+3. **IP Caching**
    ```kotlin
    private var cachedServerIP: String? = null
    // DNS lookup nur 1x beim Start, nicht bei jedem Check
    ```
 
-2. **Throttling**
-   ```kotlin
-   private var lastSyncTime = 0L
-   private const val MIN_SYNC_INTERVAL_MS = 60_000L  // Max 1 Sync/Min
-   ```
-
-3. **Conditional Logging**
+4. **Conditional Logging**
    ```kotlin
    object Logger {
        fun d(tag: String, msg: String) {
@@ -206,7 +244,7 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
    }
    ```
 
-4. **Network Constraints**
+5. **Network Constraints**
    - Nur WiFi (nicht mobile Daten)
    - Nur wenn Server erreichbar
    - Keine permanenten Listeners

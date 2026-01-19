@@ -8,6 +8,54 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.6.0] - 2026-01-19
+
+### 🎉 Major: Konfigurierbare Sync-Trigger
+
+Feingranulare Kontrolle darüber, wann deine Notizen synchronisiert werden - wähle die Trigger, die am besten zu deinem Workflow passen!
+
+### ⚙️ Sync-Trigger System
+
+- **Individuelle Trigger-Kontrolle** - Jeden Sync-Trigger einzeln in den Einstellungen aktivieren/deaktivieren
+- **5 Unabhängige Trigger:**
+  - **onSave Sync** - Sync sofort nach dem Speichern einer Notiz (5s Throttle)
+  - **onResume Sync** - Sync beim Öffnen der App (60s Throttle)
+  - **WiFi-Connect Sync** - Sync bei WiFi-Verbindung
+  - **Periodischer Sync** - Hintergrund-Sync alle 15/30/60 Minuten (konfigurierbar)
+  - **Boot Sync** - Startet Hintergrund-Sync nach Geräteneustart
+
+- **Smarte Defaults** - Nur ereignisbasierte Trigger standardmäßig aktiv (onSave, onResume, WiFi-Connect)
+- **Akku-optimiert** - ~0.2%/Tag mit Defaults, bis zu ~1.0% mit aktiviertem periodischen Sync
+- **Offline-Modus UI** - Ausgegraute Sync-Toggles wenn kein Server konfiguriert
+- **Dynamischer Settings-Subtitle** - Zeigt Anzahl aktiver Trigger im Haupteinstellungs-Screen
+
+### 🔧 Server-Konfiguration Verbesserungen
+
+- **Offline-Modus Toggle** - Alle Netzwerkfunktionen mit einem Schalter deaktivieren
+- **Getrennte Protokoll & Host Eingabe** - Protokoll (http/https) als nicht-editierbares Präfix angezeigt
+- **Klickbare Settings-Cards** - Gesamte Card klickbar für bessere UX
+- **Klickbare Toggle-Zeilen** - Text/Icon klicken um Switches zu bedienen (nicht nur der Switch selbst)
+
+### 🐛 Bug Fixes
+
+- **Fix:** Fehlender 5. Sync-Trigger (Boot) in der Haupteinstellungs-Screen Subtitle-Zählung
+- **Fix:** Offline-Modus Status wird nicht aktualisiert beim Zurückkehren aus Einstellungen
+- **Fix:** Pull-to-Refresh funktioniert auch im Offline-Modus
+
+### 🔧 Technische Verbesserungen
+
+- **Reaktiver Offline-Modus Status** - StateFlow stellt sicher, dass UI korrekt aktualisiert wird
+- **Getrennte Server-Config Checks** - `hasServerConfig()` vs `isServerConfigured()` (offline-aware)
+- **Verbesserte Konstanten** - Alle Sync-Trigger Keys und Defaults in Constants.kt
+- **Bessere Code-Organisation** - Settings-Screens für Klarheit refactored
+
+### Looking Ahead
+
+> 🚀 **v1.7.0** wird Server-Ordner Prüfung und weitere Community-Features bringen.
+> Feature-Requests sind willkommen als [GitHub Issue](https://github.com/inventory69/simple-notes-sync/issues).
+
+---
+
 ## [1.5.0] - 2026-01-15
 
 ### 🎉 Major: Jetpack Compose UI Redesign

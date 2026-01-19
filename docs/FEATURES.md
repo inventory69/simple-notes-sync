@@ -169,16 +169,19 @@
 
 ## 🔋 Performance & Optimization
 
-### Battery Efficiency
-- ✅ **Optimized sync intervals** - 15/30/60 min
+### Battery Efficiency (v1.6.0)
+- ✅ **Configurable sync triggers** - Enable/disable each trigger individually
+- ✅ **Smart defaults** - Only event-driven triggers active by default
+- ✅ **Optimized periodic intervals** - 15/30/60 min (default: OFF)
 - ✅ **WiFi-only** - No mobile data sync
 - ✅ **Smart server check** - Sync only when server is reachable
 - ✅ **WorkManager** - System-optimized execution
 - ✅ **Doze mode compatible** - Sync runs even in standby
 - ✅ **Measured consumption:**
-  - 15 min: ~0.8% / day (~23 mAh)
-  - 30 min: ~0.4% / day (~12 mAh) ⭐ _Recommended_
-  - 60 min: ~0.2% / day (~6 mAh)
+  - Default (event-driven only): ~0.2%/day (~6.5 mAh) ⭐ _Optimal_
+  - With periodic 15 min: ~1.0%/day (~30 mAh)
+  - With periodic 30 min: ~0.6%/day (~19 mAh)
+  - With periodic 60 min: ~0.4%/day (~13 mAh)
 
 ### App Performance
 - ✅ **Offline-first** - Works without internet
