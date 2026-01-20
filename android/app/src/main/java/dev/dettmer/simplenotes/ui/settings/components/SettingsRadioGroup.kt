@@ -1,3 +1,4 @@
+@file:Suppress("MatchingDeclarationName")
 package dev.dettmer.simplenotes.ui.settings.components
 
 import androidx.compose.foundation.layout.Column

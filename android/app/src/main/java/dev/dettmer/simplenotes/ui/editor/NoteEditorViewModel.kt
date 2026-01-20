@@ -120,7 +120,7 @@ class NoteEditorViewModel(
             currentNoteType = try {
                 NoteType.valueOf(noteTypeString)
             } catch (e: IllegalArgumentException) {
-                Logger.w(TAG, "Invalid note type '$noteTypeString', defaulting to TEXT")
+                Logger.w(TAG, "Invalid note type '$noteTypeString', defaulting to TEXT: ${e.message}")
                 NoteType.TEXT
             }
             

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional, will migrate in v2.0.0
+
 package dev.dettmer.simplenotes.sync
 
 import android.app.ActivityManager
@@ -255,6 +257,7 @@ class SyncWorker(
     /**
      * Sendet Broadcast an MainActivity für UI Refresh
      */
+    @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but still functional, will migrate in v2.0.0
     private fun broadcastSyncCompleted(success: Boolean, count: Int) {
         val intent = Intent(ACTION_SYNC_COMPLETED).apply {
             putExtra("success", success)

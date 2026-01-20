@@ -1,0 +1,2 @@
+• Code quality improvements
+• Better preparation for future updates
