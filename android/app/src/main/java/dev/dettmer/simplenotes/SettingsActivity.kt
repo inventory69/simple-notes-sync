@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // Legacy code using ProgressDialog & LocalBroadcastManager, will be removed in v2.0.0
+
 package dev.dettmer.simplenotes
 
 import android.app.ProgressDialog
@@ -42,6 +44,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+@Suppress("LargeClass", "DEPRECATION") // Legacy code using ProgressDialog & LocalBroadcastManager, will be removed in v2.0.0
 class SettingsActivity : AppCompatActivity() {
     
     companion object {

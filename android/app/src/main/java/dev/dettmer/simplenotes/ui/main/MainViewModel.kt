@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.SyncConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -271,6 +272,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             ))
             
+            @Suppress("MagicNumber") // Snackbar timing coordination
             // If delete from server, actually delete after a short delay
             // (to allow undo action before server deletion)
             if (deleteFromServer) {
@@ -370,6 +372,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             ))
             
+            @Suppress("MagicNumber") // Snackbar timing
             // If delete from server, actually delete after snackbar timeout
             if (deleteFromServer) {
                 kotlinx.coroutines.delay(3500) // Snackbar shows for ~3s
@@ -440,6 +443,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     if (success) successCount++ else failCount++
                 } catch (e: Exception) {
+                    Logger.w(TAG, "Failed to delete note $noteId from server: ${e.message}")
                     failCount++
                 } finally {
                     _pendingDeletions.value = _pendingDeletions.value - noteId

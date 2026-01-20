@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // Legacy code using LocalBroadcastManager, will be removed in v2.0.0
+
 package dev.dettmer.simplenotes
 
 import android.Manifest
@@ -48,6 +50,11 @@ import android.view.Gravity
 import android.widget.PopupMenu
 import dev.dettmer.simplenotes.models.NoteType
 
+/**
+ * Legacy MainActivity - DEPRECATED seit v1.5.0, wird entfernt in v2.0.0
+ * Ersetzt durch ComposeMainActivity
+ */
+@Suppress("DEPRECATION") // Legacy code using LocalBroadcastManager, will be removed in v2.0.0
 class MainActivity : AppCompatActivity() {
     
     private lateinit var recyclerViewNotes: RecyclerView

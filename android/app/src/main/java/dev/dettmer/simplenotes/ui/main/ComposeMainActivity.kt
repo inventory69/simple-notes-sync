@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // LocalBroadcastManager & deprecated lifecycle methods, will migrate in v2.0.0
+
 package dev.dettmer.simplenotes.ui.main
 
 import android.Manifest
@@ -182,6 +184,7 @@ class ComposeMainActivity : ComponentActivity() {
         viewModel.refreshOfflineModeState()
         
         // Register BroadcastReceiver for Background-Sync
+        @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional
         LocalBroadcastManager.getInstance(this).registerReceiver(
             syncCompletedReceiver,
             IntentFilter(SyncWorker.ACTION_SYNC_COMPLETED)
@@ -207,6 +210,7 @@ class ComposeMainActivity : ComponentActivity() {
         super.onPause()
         
         // Unregister BroadcastReceiver
+        @Suppress("DEPRECATION")
         LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
         Logger.d(TAG, "📡 BroadcastReceiver unregistered")
     }
@@ -215,6 +219,7 @@ class ComposeMainActivity : ComponentActivity() {
         SyncStateManager.syncStatus.observe(this) { status ->
             viewModel.updateSyncState(status)
             
+            @Suppress("MagicNumber") // UI timing delays for banner visibility
             // Hide banner after delay for completed/error states
             when (status.state) {
                 SyncStateManager.SyncState.COMPLETED -> {
@@ -334,6 +339,8 @@ class ComposeMainActivity : ComponentActivity() {
         }
     }
     
+    @Deprecated("Deprecated in API 23", ReplaceWith("Use ActivityResultContracts"))
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
