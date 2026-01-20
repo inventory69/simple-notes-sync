@@ -31,9 +31,9 @@
 
 ---
 
-## v1.6.0 - Technische Modernisierung
+## v1.6.0 - Technische Modernisierung ✅
 
-> **Status:** In Entwicklung 🚧
+> **Status:** Released 🎉 (Januar 2026)
 
 ### ⚙️ Konfigurierbare Sync-Trigger
 
@@ -44,6 +44,34 @@
 - ✅ **Offline-Modus UI** - Ausgegraute Toggles wenn kein Server konfiguriert
 - ✅ **Akku-optimiert** - ~0.2%/Tag mit Defaults, bis zu ~1.0% mit Periodic
 
+---
+
+## v1.6.1 - Clean Code ✅
+
+> **Status:** Released 🎉 (Januar 2026)
+
+### 🧹 Code-Qualität
+
+- ✅ **detekt: 0 Issues** - Alle 29 Code-Qualitäts-Issues behoben
+- ✅ **Zero Build Warnings** - Alle 21 Deprecation Warnings eliminiert
+- ✅ **ktlint reaktiviert** - Mit Compose-spezifischen Regeln
+- ✅ **CI/CD Lint-Checks** - In PR Build Workflow integriert
+- ✅ **Constants Refactoring** - Dimensions.kt, SyncConstants.kt
+
+---
+
+## v1.7.0 - Staggered Grid Layout
+
+> **Status:** Geplant 📝
+
+### 🎨 Adaptives Layout
+
+- **Staggered Grid** - Pinterest-artiges Layout mit `LazyVerticalStaggeredGrid`
+- **Intelligente Größen** - Kleine Notizen (kurzer Text, wenige Checklist-Items) kompakt dargestellt
+- **Layout-Umschalter** - Zwischen Listen- und Grid-Ansicht in Einstellungen wechseln
+- **Adaptive Spalten** - 2-3 Spalten basierend auf Bildschirmgröße
+- **120 FPS optimiert** - Lazy Loading für flüssiges Scrollen bei vielen Notizen
+
 ### 🔧 Server-Ordner Prüfung
 
 - **WebDAV Folder Check** - Prüft ob der Ordner auf dem Server existiert und beschreibbar ist
@@ -52,22 +80,43 @@
 
 ### 🔧 Technische Verbesserungen
 
-- **Code-Refactoring** - LongMethod und LargeClass Warnings beheben
-- **Modernere Background-Sync Architektur** - Noch zuverlässiger
+- **Code-Refactoring** - LargeClass Komponenten aufteilen (WebDavSyncService, SettingsActivity)
 - **Verbesserte Progress-Dialoge** - Material Design 3 konform
 
 ---
 
-## v1.7.0 - Community Features
+## v2.0.0 - Legacy Cleanup
 
-> **Status:** Ideen-Sammlung 💡
+> **Status:** Geplant 📝
 
-### Mögliche Features
+### 🗑️ Legacy Code Entfernung
 
-- **Zusätzliche Sprachen** - Community-Übersetzungen (FR, ES, IT, ...)
+- **SettingsActivity entfernen** - Ersetzt durch ComposeSettingsActivity
+- **MainActivity entfernen** - Ersetzt durch ComposeMainActivity
+- **LocalBroadcastManager → SharedFlow** - Moderne Event-Architektur
+- **ProgressDialog → Material Dialog** - Volle Material 3 Konformität
+- **AbstractSavedStateViewModelFactory → viewModelFactory** - Moderne ViewModel-Erstellung
+
+---
+
+## 📋 Backlog
+
+> Features für zukünftige Überlegungen
+
+### 🔐 Sicherheits-Verbesserungen
+
+- **Passwortgeschützte lokale Backups** - Backup-ZIP mit Passwort verschlüsseln
+- **Biometrische Entsperrung** - Fingerabdruck/Gesichtserkennung für App
+
+### 🎨 UI Features
+
+- **Widget** - Schnellzugriff vom Homescreen
 - **Kategorien/Tags** - Notizen organisieren
 - **Suche** - Volltextsuche in Notizen
-- **Widget** - Schnellzugriff vom Homescreen
+
+### 🌍 Community
+
+- **Zusätzliche Sprachen** - Community-Übersetzungen (FR, ES, IT, ...)
 
 ---
 
