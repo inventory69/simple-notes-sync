@@ -57,6 +57,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
  * v1.5.0: Jetpack Compose Settings Redesign
  * v1.6.0: Offline Mode Toggle
  */
+@Suppress("LongMethod", "MagicNumber") // Compose UI + Color hex values
 @Composable
 fun ServerSettingsScreen(
     viewModel: SettingsViewModel,

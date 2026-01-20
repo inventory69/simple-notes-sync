@@ -33,6 +33,31 @@ jobs:
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "📱 Version: $VERSION_NAME (Code: $VERSION_CODE)"
+      
+      # 🔍 Code Quality Checks (v1.6.1)
+      - name: Run detekt (Code Quality)
+        run: |
+          cd android
+          ./gradlew detekt --no-daemon
+        continue-on-error: false
+      
+      - name: Run ktlint (Code Style)
+        run: |
+          cd android
+          ./gradlew ktlintCheck --no-daemon
+        continue-on-error: true  # Parser-Probleme in Legacy-Code
+      
+      - name: Upload Lint Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports-pr-${{ github.event.pull_request.number }}
+          path: |
+            android/app/build/reports/detekt/
+            android/app/build/reports/ktlint/
+            android/app/build/reports/lint-results*.html
+          retention-days: 7
+      
       - name: Debug Build erstellen (ohne Signing)
         run: |
           cd android

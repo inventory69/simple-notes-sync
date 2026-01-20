@@ -83,6 +83,7 @@ fun ChecklistItemRow(
     val alpha = if (item.isChecked) 0.6f else 1.0f
     val textDecoration = if (item.isChecked) TextDecoration.LineThrough else TextDecoration.None
     
+    @Suppress("MagicNumber") // UI padding values are self-explanatory
     Row(
         modifier = modifier
             .fillMaxWidth()

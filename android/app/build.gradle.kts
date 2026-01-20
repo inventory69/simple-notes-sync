@@ -2,8 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)  // v1.5.0: Jetpack Compose Compiler
-    // ⚡ v1.3.1: ktlint deaktiviert wegen Parser-Problemen, aktivieren in v1.4.0
-    // alias(libs.plugins.ktlint)
+    alias(libs.plugins.ktlint)  // ✅ v1.6.1: Reaktiviert nach Code-Cleanup
     alias(libs.plugins.detekt)
 }
 
@@ -21,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 14  // 🔧 v1.6.0: Configurable Sync Triggers
-        versionName = "1.6.0"  // 🔧 v1.6.0: Configurable Sync Triggers
+        versionCode = 15  // 🔧 v1.6.1: Lint-Cleanup detekt and ktlint
+        versionName = "1.6.1"  // 🔧 v1.6.1: Lint-Cleanup detekt and ktlint
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -101,9 +100,8 @@ android {
     }
     
     // v1.5.0 Hotfix: Strong Skipping Mode für bessere 120Hz Performance
-    composeCompiler {
-        enableStrongSkippingMode = true
-    }
+    // v1.6.1: Feature ist ab dieser Kotlin/Compose Version bereits Standard
+    // composeCompiler { }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -162,18 +160,21 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
-// ⚡ v1.3.1: ktlint deaktiviert wegen Parser-Problemen
-// Aktivieren in v1.4.0 wenn Code-Stil bereinigt wurde
-// ktlint {
-//     android = true
-//     outputToConsole = true
-//     ignoreFailures = true
-//     enableExperimentalRules = false
-//     filter {
-//         exclude("**/generated/**")
-//         exclude("**/build/**")
-//     }
-// }
+// ✅ v1.6.1: ktlint reaktiviert nach Code-Cleanup
+ktlint {
+    android = true
+    outputToConsole = true
+    ignoreFailures = true  // Parser-Probleme in WebDavSyncService.kt und build.gradle.kts
+    enableExperimentalRules = false
+    
+    filter {
+        exclude("**/generated/**")
+        exclude("**/build/**")
+        // Legacy adapters with ktlint parser issues
+        exclude("**/adapters/NotesAdapter.kt")
+        exclude("**/SettingsActivity.kt")
+    }
+}
 
 // ⚡ v1.3.1: detekt-Konfiguration
 detekt {

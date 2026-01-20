@@ -291,6 +291,7 @@ private fun TextNoteContent(
     )
 }
 
+@Suppress("LongParameterList") // Compose functions commonly have many callback parameters
 @Composable
 private fun ChecklistEditor(
     items: List<ChecklistItemState>,

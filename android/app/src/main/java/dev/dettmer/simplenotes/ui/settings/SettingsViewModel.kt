@@ -462,6 +462,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
                         emitToast(getString(R.string.toast_markdown_exported, exportedCount))
                         
+                        @Suppress("MagicNumber") // UI progress delay
                         // Clear progress after short delay
                         kotlinx.coroutines.delay(500)
                         _markdownExportProgress.value = null
