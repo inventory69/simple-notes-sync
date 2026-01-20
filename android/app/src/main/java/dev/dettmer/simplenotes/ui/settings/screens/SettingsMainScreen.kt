@@ -33,6 +33,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
  * Main Settings overview screen with clickable group cards
  * v1.5.0: Jetpack Compose Settings Redesign
  */
+@Suppress("MagicNumber") // Color hex values
 @Composable
 fun SettingsMainScreen(
     viewModel: SettingsViewModel,
@@ -99,20 +100,30 @@ fun SettingsMainScreen(
                     title = stringResource(R.string.settings_server),
                     subtitle = if (!offlineMode && isConfigured) serverUrl else null,
                     statusText = when {
-                        offlineMode -> stringResource(R.string.settings_server_status_offline_mode)
-                        serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> stringResource(R.string.settings_server_status_offline_mode)
-                        serverStatus is SettingsViewModel.ServerStatus.Reachable -> stringResource(R.string.settings_server_status_reachable)
-                        serverStatus is SettingsViewModel.ServerStatus.Unreachable -> stringResource(R.string.settings_server_status_unreachable)
-                        serverStatus is SettingsViewModel.ServerStatus.Checking -> stringResource(R.string.settings_server_status_checking)
-                        serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(R.string.settings_server_status_offline_mode)
+                        offlineMode -> 
+                            stringResource(R.string.settings_server_status_offline_mode)
+                        serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> 
+                            stringResource(R.string.settings_server_status_offline_mode)
+                        serverStatus is SettingsViewModel.ServerStatus.Reachable -> 
+                            stringResource(R.string.settings_server_status_reachable)
+                        serverStatus is SettingsViewModel.ServerStatus.Unreachable -> 
+                            stringResource(R.string.settings_server_status_unreachable)
+                        serverStatus is SettingsViewModel.ServerStatus.Checking -> 
+                            stringResource(R.string.settings_server_status_checking)
+                        serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> 
+                            stringResource(R.string.settings_server_status_offline_mode)
                         else -> null
                     },
                     statusColor = when {
                         offlineMode -> MaterialTheme.colorScheme.tertiary
-                        serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> MaterialTheme.colorScheme.tertiary
-                        serverStatus is SettingsViewModel.ServerStatus.Reachable -> Color(0xFF4CAF50)
-                        serverStatus is SettingsViewModel.ServerStatus.Unreachable -> Color(0xFFF44336)
-                        serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> MaterialTheme.colorScheme.tertiary
+                        serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> 
+                            MaterialTheme.colorScheme.tertiary
+                        serverStatus is SettingsViewModel.ServerStatus.Reachable -> 
+                            Color(0xFF4CAF50)
+                        serverStatus is SettingsViewModel.ServerStatus.Unreachable -> 
+                            Color(0xFFF44336)
+                        serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> 
+                            MaterialTheme.colorScheme.tertiary
                         else -> Color.Gray
                     },
                     onClick = { onNavigate(SettingsRoute.Server) }

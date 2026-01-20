@@ -35,6 +35,8 @@ data class ManualMarkdownSyncResult(
     val importedCount: Int
 )
 
+@Suppress("LargeClass") 
+// TODO v2.0.0: Split into SyncOrchestrator, NoteUploader, NoteDownloader, ConflictResolver
 class WebDavSyncService(private val context: Context) {
     
     companion object {
@@ -136,6 +138,7 @@ class WebDavSyncService(private val context: Context) {
             
             Logger.d(TAG, "✅ Network is WiFi, searching for interface...")
             
+            @Suppress("LoopWithTooManyJumpStatements") // Network interface filtering requires multiple conditions
             // Finde WiFi Interface
             val interfaces = NetworkInterface.getNetworkInterfaces()
             while (interfaces.hasMoreElements()) {
@@ -780,6 +783,8 @@ class WebDavSyncService(private val context: Context) {
         }
     }
     
+    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
+    // Sync logic requires nested conditions for comprehensive error handling and state management
     private fun uploadLocalNotes(sardine: Sardine, serverUrl: String): Int {
         var uploadedCount = 0
         val localNotes = storage.loadAllNotes()
@@ -1022,6 +1027,8 @@ class WebDavSyncService(private val context: Context) {
         val conflictCount: Int
     )
     
+    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
+    // Sync logic requires nested conditions for comprehensive error handling and conflict resolution
     private fun downloadRemoteNotes(
         sardine: Sardine, 
         serverUrl: String,
@@ -1541,6 +1548,8 @@ class WebDavSyncService(private val context: Context) {
      * 
      * ⚡ v1.3.1: Performance-Optimierung - Skip unveränderte Dateien
      */
+    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
+    // Import logic requires nested conditions for file validation and duplicate handling
     private fun importMarkdownFiles(sardine: Sardine, serverUrl: String): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")

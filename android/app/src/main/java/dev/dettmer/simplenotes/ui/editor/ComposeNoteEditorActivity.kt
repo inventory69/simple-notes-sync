@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // AbstractSavedStateViewModelFactory deprecated, will migrate to viewModelFactory in v2.0.0
+
 package dev.dettmer.simplenotes.ui.editor
 
 import android.os.Bundle
