@@ -8,6 +8,46 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.6.1] - 2026-01-20
+
+### 🧹 Code-Qualität & Build-Verbesserungen
+
+- **detekt: 0 Issues** - Alle 29 Code-Qualitäts-Issues behoben
+  - Triviale Fixes: Unused Imports, MaxLineLength
+  - Datei umbenannt: DragDropState.kt → DragDropListState.kt
+  - MagicNumbers → Constants (Dimensions.kt, SyncConstants.kt)
+  - SwallowedException: Logger.w() für besseres Error-Tracking hinzugefügt
+  - LongParameterList: ChecklistEditorCallbacks data class erstellt
+  - LongMethod: ServerSettingsScreen in Komponenten aufgeteilt
+  - @Suppress Annotationen für Legacy-Code (WebDavSyncService, SettingsActivity)
+
+- **Zero Build Warnings** - Alle 21 Deprecation Warnings eliminiert
+  - File-level @Suppress für deprecated Imports
+  - ProgressDialog, LocalBroadcastManager, AbstractSavedStateViewModelFactory
+  - onActivityResult, onRequestPermissionsResult
+  - Gradle Compose Config bereinigt (StrongSkipping ist jetzt Standard)
+
+- **ktlint reaktiviert** - Linting mit Compose-spezifischen Regeln wieder aktiviert
+  - .editorconfig mit Compose Formatierungsregeln erstellt
+  - Legacy-Dateien ausgeschlossen: WebDavSyncService.kt, build.gradle.kts
+  - ignoreFailures=true für graduelle Migration
+
+- **CI/CD Verbesserungen** - GitHub Actions Lint-Checks integriert
+  - detekt + ktlint + Android Lint laufen vor Build in pr-build-check.yml
+  - Stellt Code-Qualität bei jedem Pull Request sicher
+
+### 🔧 Technische Verbesserungen
+
+- **Constants Refactoring** - Bessere Code-Organisation
+  - ui/theme/Dimensions.kt: UI-bezogene Konstanten
+  - utils/SyncConstants.kt: Sync-Operations Konstanten
+
+- **Vorbereitung für v2.0.0** - Legacy-Code für Entfernung markiert
+  - SettingsActivity und MainActivity (ersetzt durch Compose-Versionen)
+  - Alle deprecated APIs mit Removal-Plan dokumentiert
+
+---
+
 ## [1.6.0] - 2026-01-19
 
 ### 🎉 Major: Konfigurierbare Sync-Trigger
