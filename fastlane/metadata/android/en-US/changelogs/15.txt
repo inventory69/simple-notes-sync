@@ -1,0 +1,6 @@
+• Code quality: detekt 0 issues (29 fixed)
+• Build: Zero warnings (21 deprecations fixed)
+• ktlint reactivated with Compose rules
+• CI/CD: Lint checks integrated into GitHub Actions
+• Constants refactoring: Dimensions.kt, SyncConstants.kt
+• Preparation for v2.0.0 legacy cleanup
