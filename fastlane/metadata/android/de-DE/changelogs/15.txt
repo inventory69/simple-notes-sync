@@ -1,6 +1,2 @@
-• Code-Qualität: detekt 0 Issues (29 behoben)
-• Build: Zero Warnings (21 Deprecations behoben)
-• ktlint reaktiviert mit Compose-Regeln
-• CI/CD: Lint-Checks in GitHub Actions integriert
-• Constants Refactoring: Dimensions.kt, SyncConstants.kt
-• Vorbereitung für v2.0.0 Legacy-Cleanup
+• Code Quality Verbesserungen
+• Bessere Vorbereitung für zukünftige Updates
