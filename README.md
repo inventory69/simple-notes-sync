@@ -1,17 +1,26 @@
-# Simple Notes Sync 📝
+<div align="center">
 
-> Minimalist offline notes with auto-sync to your own server
+# Simple Notes Sync
 
-[![Android](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://www.android.com/)
-[![Material Design 3](https://img.shields.io/badge/Material-Design%203-green.svg)](https://m3.material.io/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**Minimalist offline notes with auto-sync to your own server**
 
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes)
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/dev.dettmer.simplenotes/)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
+[![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
+[![License](https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge)](LICENSE)
 
-**📱 [APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest)** · **📖 [Documentation](docs/DOCS.md)** · **🚀 [Quick Start](QUICKSTART.md)**
+[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="60">](https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes)
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="60">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync)
+[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="60">](https://f-droid.org/packages/dev.dettmer.simplenotes/)
 
-**🌍 Languages:** [Deutsch](README.de.md) · **English**
+
+
+[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)
+
+**🌍** [Deutsch](README.de.md) · **English**
+
+</div>
 
 ---
 
@@ -25,6 +34,14 @@
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="250" alt="Server settings">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="250" alt="Sync settings">
 </p>
+
+---
+
+<div align="center">
+
+📝 Offline-first &nbsp;•&nbsp; 🔄 Smart Sync &nbsp;•&nbsp; 🔒 Self-hosted &nbsp;•&nbsp; 🔋 Battery-friendly
+
+</div>
 
 ---
 
@@ -108,4 +125,8 @@ MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**v1.6.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+<div align="center">
+
+**v1.6.1** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+
+</div>
