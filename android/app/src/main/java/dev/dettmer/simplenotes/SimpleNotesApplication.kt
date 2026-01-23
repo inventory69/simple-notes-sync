@@ -18,8 +18,14 @@ class SimpleNotesApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        // File-Logging ZUERST aktivieren (damit alle Logs geschrieben werden!)
         val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        
+        // 🔧 Hotfix v1.6.2: Migrate offline mode setting BEFORE any ViewModel initialization
+        // This prevents the offline mode bug where users updating from v1.5.0 incorrectly
+        // appear as offline even though they have a configured server
+        migrateOfflineModeSetting(prefs)
+        
+        // File-Logging ZUERST aktivieren (damit alle Logs geschrieben werden!)
         if (prefs.getBoolean("file_logging_enabled", false)) {
             Logger.enableFileLogging(this)
             Logger.d(TAG, "📝 File logging enabled at Application startup")
@@ -49,5 +55,31 @@ class SimpleNotesApplication : Application() {
         
         // WorkManager läuft weiter auch nach onTerminate!
         // Nur bei deaktiviertem Auto-Sync stoppen wir es
+    }
+    
+    /**
+     * 🔧 Hotfix v1.6.2: Migrate offline mode setting for updates from v1.5.0
+     * 
+     * Problem: KEY_OFFLINE_MODE didn't exist in v1.5.0, but MainViewModel 
+     * and NoteEditorViewModel use `true` as default, causing existing users 
+     * with configured servers to appear in offline mode after update.
+     * 
+     * Fix: Set the key BEFORE any ViewModel is initialized based on whether
+     * a server was already configured.
+     */
+    private fun migrateOfflineModeSetting(prefs: android.content.SharedPreferences) {
+        if (!prefs.contains(Constants.KEY_OFFLINE_MODE)) {
+            val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+            val hasServerConfig = !serverUrl.isNullOrEmpty() && 
+                                  serverUrl != "http://" && 
+                                  serverUrl != "https://"
+            
+            // If server was configured → offlineMode = false (continue syncing)
+            // If no server → offlineMode = true (new users / offline users)
+            val offlineModeValue = !hasServerConfig
+            prefs.edit().putBoolean(Constants.KEY_OFFLINE_MODE, offlineModeValue).apply()
+            
+            Logger.i(TAG, "🔄 Migrated offline_mode_enabled: hasServer=$hasServerConfig → offlineMode=$offlineModeValue")
+        }
     }
 }

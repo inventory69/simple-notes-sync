@@ -1,0 +1,2 @@
+• Fixes offline mode issue after updating from v1.5.0
+• Users with configured servers are no longer incorrectly shown as offline

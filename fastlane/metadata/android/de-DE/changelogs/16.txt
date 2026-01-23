@@ -1,0 +1,2 @@
+• Behebt Offline-Modus Problem nach Update von v1.5.0
+• Nutzer mit konfiguriertem Server werden nicht mehr fälschlicherweise als offline angezeigt
