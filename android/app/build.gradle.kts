@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15  // 🔧 v1.6.1: Lint-Cleanup detekt and ktlint
-        versionName = "1.6.1"  // 🔧 v1.6.1: Lint-Cleanup detekt and ktlint
+        versionCode = 16  // 🔧 v1.6.2: Hotfix offline mode migration bug
+        versionName = "1.6.2"  // 🔧 v1.6.2: Hotfix offline mode migration bug
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
