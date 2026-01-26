@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16  // 🔧 v1.6.2: Hotfix offline mode migration bug
-        versionName = "1.6.2"  // 🔧 v1.6.2: Hotfix offline mode migration bug
+        versionCode = 17  // 🎨 v1.7.0: Grid Layout + Backup Encryption
+        versionName = "1.7.0"  // 🎨 v1.7.0: Grid Layout + Backup Encryption
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -99,6 +99,11 @@ android {
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }
     
+    // v1.7.0: Mock Android framework classes in unit tests (Log, etc.)
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+    
     // v1.5.0 Hotfix: Strong Skipping Mode für bessere 120Hz Performance
     // v1.6.1: Feature ist ab dieser Kotlin/Compose Version bereits Standard
     // composeCompiler { }
@@ -139,6 +144,9 @@ dependencies {
 
     // SwipeRefreshLayout für Pull-to-Refresh
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
+    // 🔐 v1.7.0: AndroidX Security Crypto für Backup-Verschlüsselung
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // ═══════════════════════════════════════════════════════════════════════
     // v1.5.0: Jetpack Compose für Settings Redesign

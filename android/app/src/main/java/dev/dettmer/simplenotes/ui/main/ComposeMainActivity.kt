@@ -183,6 +183,9 @@ class ComposeMainActivity : ComponentActivity() {
         // This ensures UI reflects current offline mode when returning from Settings
         viewModel.refreshOfflineModeState()
         
+        // 🎨 v1.7.0: Refresh display mode when returning from Settings
+        viewModel.refreshDisplayMode()
+        
         // Register BroadcastReceiver for Background-Sync
         @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional
         LocalBroadcastManager.getInstance(this).registerReceiver(

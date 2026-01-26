@@ -1,0 +1,8 @@
+• Grid-Ansicht: Pinterest-Style Layout ohne Lücken
+• Grid-Ansicht: Konsistente Abstände, Scroll-Position bleibt erhalten
+• Nur-WLAN Sync Toggle in Einstellungen
+• VPN-Unterstützung: Sync funktioniert korrekt bei aktivem VPN
+• Server-Wechsel: Sync-Status wird für alle Notizen zurückgesetzt
+• Self-signed SSL: Dokumentation für eigene Zertifikate
+• Schnellere Server-Prüfung (1s Timeout)
+• "Sync läuft bereits" Feedback

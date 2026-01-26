@@ -82,6 +82,9 @@ fun DebugSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             // Export Logs Button
+            val logsSubject = stringResource(R.string.debug_logs_subject)
+            val logsShareVia = stringResource(R.string.debug_logs_share_via)
+            
             SettingsButton(
                 text = stringResource(R.string.debug_export_logs),
                 onClick = {
@@ -96,11 +99,11 @@ fun DebugSettingsScreen(
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_STREAM, logUri)
-                            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.debug_logs_subject))
+                            putExtra(Intent.EXTRA_SUBJECT, logsSubject)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                         
-                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.debug_logs_share_via)))
+                        context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
                     }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)

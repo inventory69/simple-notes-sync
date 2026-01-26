@@ -50,6 +50,9 @@ fun SyncSettingsScreen(
     val triggerBoot by viewModel.triggerBoot.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
     
+    // 🆕 v1.7.0: WiFi-only sync
+    val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
+    
     // Check if server is configured
     val isServerConfigured = viewModel.isServerConfigured()
     
@@ -105,6 +108,16 @@ fun SyncSettingsScreen(
                 checked = triggerOnResume,
                 onCheckedChange = { viewModel.setTriggerOnResume(it) },
                 icon = Icons.Default.PhonelinkRing,
+                enabled = isServerConfigured
+            )
+            
+            // 🆕 v1.7.0: WiFi-Only Sync Toggle
+            SettingsSwitch(
+                title = stringResource(R.string.sync_wifi_only_title),
+                subtitle = stringResource(R.string.sync_wifi_only_subtitle),
+                checked = wifiOnlySync,
+                onCheckedChange = { viewModel.setWifiOnlySync(it) },
+                icon = Icons.Default.Wifi,
                 enabled = isServerConfigured
             )
             

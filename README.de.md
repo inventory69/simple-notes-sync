@@ -97,6 +97,7 @@ docker compose up -d
 | **[FEATURES.de.md](docs/FEATURES.de.md)** | Vollständige Feature-Liste |
 | **[BACKUP.de.md](docs/BACKUP.de.md)** | Backup & Wiederherstellung |
 | **[DESKTOP.de.md](docs/DESKTOP.de.md)** | Desktop-Integration (Markdown) |
+| **[SELF_SIGNED_SSL.md](docs/SELF_SIGNED_SSL.md)** | Self-signed SSL Zertifikat Setup |
 | **[DOCS.de.md](docs/DOCS.de.md)** | Technische Details & Troubleshooting |
 | **[CHANGELOG.de.md](CHANGELOG.de.md)** | Versionshistorie |
 | **[UPCOMING.de.md](docs/UPCOMING.de.md)** | Geplante Features 🚀 |
@@ -129,6 +130,6 @@ MIT License - siehe [LICENSE](LICENSE)
 
 <div align="center">
 
-**v1.6.1** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.7.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

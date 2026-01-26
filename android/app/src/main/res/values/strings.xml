@@ -197,11 +197,11 @@
     <string name="sync_interval_section">Sync Interval</string>
     <string name="sync_interval_info">Determines how often the app syncs in the background. Shorter intervals mean more up-to-date data, but use slightly more battery.\n\n⏱️ Note: When your phone is in standby, Android may delay syncs (up to 60 min) to save battery. This is normal and affects all background apps.</string>
     <string name="sync_interval_15min_title">⚡ Every 15 minutes</string>
-    <string name="sync_interval_15min_subtitle">Fastest sync • ~0.8% battery/day (~23 mAh)</string>
+    <string name="sync_interval_15min_subtitle">Fastest sync • ~0.8%% battery/day (~23 mAh)</string>
     <string name="sync_interval_30min_title">✓ Every 30 minutes (Recommended)</string>
-    <string name="sync_interval_30min_subtitle">Balanced ratio • ~0.4% battery/day (~12 mAh)</string>
+    <string name="sync_interval_30min_subtitle">Balanced ratio • ~0.4%% battery/day (~12 mAh)</string>
     <string name="sync_interval_60min_title">🔋 Every 60 minutes</string>
-    <string name="sync_interval_60min_subtitle">Maximum battery life • ~0.2% battery/day (~6 mAh est.)</string>
+    <string name="sync_interval_60min_subtitle">Maximum battery life • ~0.2%% battery/day (~6 mAh est.)</string>
     <!-- Legacy -->
     <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Checks every 30 min if server is reachable\n• Works on any WiFi connection\n• Runs in background\n• Minimal battery usage (~0.4%%/day)</string>
     
@@ -224,6 +224,11 @@
     
     <string name="sync_trigger_boot_title">After Device Restart</string>
     <string name="sync_trigger_boot_subtitle">Starts background sync after reboot</string>
+    
+    <!-- 🆕 v1.7.0: WiFi-Only Sync -->
+    <string name="sync_wifi_only_title">WiFi-only sync</string>
+    <string name="sync_wifi_only_subtitle">Sync only when connected to WiFi. Saves mobile data and prevents long wait times.</string>
+    <string name="sync_wifi_only_hint">Sync only works when connected to WiFi</string>
     
     <string name="sync_manual_hint">Manual sync (toolbar/pull-to-refresh) is also available.</string>
     <string name="sync_manual_hint_disabled">Sync is not available in offline mode.</string>
@@ -254,6 +259,20 @@
     <string name="backup_local_section">Local Backup</string>
     <string name="backup_create">💾 Create Backup</string>
     <string name="backup_restore_file">📂 Restore from File</string>
+    
+    <!-- 🔐 v1.7.0: Encryption -->
+    <string name="backup_encryption_title">Encrypt Backup</string>
+    <string name="backup_encryption_subtitle">Password-protect your backup file</string>
+    <string name="backup_encryption_password">Password</string>
+    <string name="backup_encryption_password_hint">Enter password (min. 8 characters)</string>
+    <string name="backup_encryption_confirm">Confirm Password</string>
+    <string name="backup_encryption_confirm_hint">Re-enter password</string>
+    <string name="backup_encryption_error_mismatch">Passwords don\'t match</string>
+    <string name="backup_encryption_error_too_short">Password too short (min. 8 characters)</string>
+    <string name="backup_decryption_required">🔒 Encrypted Backup</string>
+    <string name="backup_decryption_password">Enter password to decrypt</string>
+    <string name="backup_decryption_error">❌ Decryption failed. Wrong password?</string>
+    
     <string name="backup_server_section">Server Backup</string>
     <string name="backup_restore_server">☁️ Restore from Server</string>
     <string name="backup_restore_dialog_title">⚠️ Restore Backup?</string>
@@ -310,6 +329,15 @@
     <string name="language_changed_restart">Language changed. Restarting…</string>
     
     <!-- ============================= -->
+    <!-- SETTINGS - DISPLAY            -->
+    <!-- ============================= -->
+    <string name="display_settings_title">Display</string>
+    <string name="display_mode_title">Note Display Mode</string>
+    <string name="display_mode_list">📋 List View</string>
+    <string name="display_mode_grid">🎨 Grid View</string>
+    <string name="display_mode_info">Grid view shows notes in a staggered Pinterest-style layout. Small notes appear side-by-side, large notes take full width.</string>
+    
+    <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
     <string name="about_settings_title">About this App</string>
@@ -358,6 +386,8 @@
     <string name="toast_logs_deleted">🗑️ Logs deleted</string>
     <string name="toast_no_logs_to_delete">📭 No logs to delete</string>
     <string name="toast_logs_delete_error">❌ Error deleting: %s</string>
+    <!-- 🔄 v1.7.0: Server change notification -->
+    <string name="toast_server_changed_sync_reset">🔄 Server changed. %d notes will be uploaded on next sync.</string>
     <string name="toast_link_error">❌ Error opening link</string>
     <string name="toast_file_logging_enabled">📝 File logging enabled</string>
     <string name="toast_file_logging_disabled">📝 File logging disabled</string>
