@@ -206,9 +206,12 @@
     <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Checks every 30 min if server is reachable\n• Works on any WiFi connection\n• Runs in background\n• Minimal battery usage (~0.4%%/day)</string>
     
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
+    <string name="sync_section_network">📶 Network Restriction</string>
     <string name="sync_section_instant">📲 Instant Sync</string>
     <string name="sync_section_background">📡 Background Sync</string>
     <string name="sync_section_advanced">⚙️ Advanced</string>
+    
+    <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
     
     <string name="sync_trigger_on_save_title">After Saving</string>
     <string name="sync_trigger_on_save_subtitle">Sync immediately after each change</string>
@@ -228,7 +231,7 @@
     <!-- 🆕 v1.7.0: WiFi-Only Sync -->
     <string name="sync_wifi_only_title">WiFi-only sync</string>
     <string name="sync_wifi_only_subtitle">Sync only when connected to WiFi. Saves mobile data and prevents long wait times.</string>
-    <string name="sync_wifi_only_hint">Sync only works when connected to WiFi</string>
+    <string name="sync_wifi_only_blocked">Sync only works when connected to WiFi</string>
     
     <string name="sync_manual_hint">Manual sync (toolbar/pull-to-refresh) is also available.</string>
     <string name="sync_manual_hint_disabled">Sync is not available in offline mode.</string>

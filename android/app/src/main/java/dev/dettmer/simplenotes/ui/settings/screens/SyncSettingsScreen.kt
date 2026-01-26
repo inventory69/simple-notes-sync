@@ -86,6 +86,31 @@ fun SyncSettingsScreen(
             }
             
             // ═══════════════════════════════════════════════════════════════
+            // 🆕 v1.7.0: NETZWERK-EINSCHRÄNKUNG Section (Global für alle Trigger)
+            // ═══════════════════════════════════════════════════════════════
+            
+            SettingsSectionHeader(text = stringResource(R.string.sync_section_network))
+            
+            // WiFi-Only Sync Toggle - Gilt für ALLE Trigger außer WiFi-Connect
+            SettingsSwitch(
+                title = stringResource(R.string.sync_wifi_only_title),
+                subtitle = stringResource(R.string.sync_wifi_only_subtitle),
+                checked = wifiOnlySync,
+                onCheckedChange = { viewModel.setWifiOnlySync(it) },
+                icon = Icons.Default.Wifi,
+                enabled = isServerConfigured
+            )
+            
+            // Info-Hinweis dass WiFi-Connect davon ausgenommen ist
+            if (wifiOnlySync && isServerConfigured) {
+                SettingsInfoCard(
+                    text = stringResource(R.string.sync_wifi_only_hint)
+                )
+            }
+            
+            SettingsDivider()
+            
+            // ═══════════════════════════════════════════════════════════════
             // SOFORT-SYNC Section
             // ═══════════════════════════════════════════════════════════════
             
@@ -108,16 +133,6 @@ fun SyncSettingsScreen(
                 checked = triggerOnResume,
                 onCheckedChange = { viewModel.setTriggerOnResume(it) },
                 icon = Icons.Default.PhonelinkRing,
-                enabled = isServerConfigured
-            )
-            
-            // 🆕 v1.7.0: WiFi-Only Sync Toggle
-            SettingsSwitch(
-                title = stringResource(R.string.sync_wifi_only_title),
-                subtitle = stringResource(R.string.sync_wifi_only_subtitle),
-                checked = wifiOnlySync,
-                onCheckedChange = { viewModel.setWifiOnlySync(it) },
-                icon = Icons.Default.Wifi,
                 enabled = isServerConfigured
             )
             
