@@ -429,8 +429,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isSyncing.value = true
             try {
-                emitToast(getString(R.string.toast_syncing))
                 val syncService = WebDavSyncService(getApplication())
+                
+                // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung
+                val gateResult = syncService.canSync()
+                if (!gateResult.canSync) {
+                    if (gateResult.isBlockedByWifiOnly) {
+                        emitToast(getString(R.string.sync_wifi_only_hint))
+                    } else {
+                        emitToast(getString(R.string.toast_sync_failed, "Offline mode"))
+                    }
+                    return@launch
+                }
+                
+                emitToast(getString(R.string.toast_syncing))
                 
                 if (!syncService.hasUnsyncedChanges()) {
                     emitToast(getString(R.string.toast_already_synced))

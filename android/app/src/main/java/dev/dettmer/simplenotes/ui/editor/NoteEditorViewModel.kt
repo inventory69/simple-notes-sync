@@ -355,6 +355,7 @@ class NoteEditorViewModel(
     /**
      * Triggers sync after saving a note (if enabled and server configured)
      * v1.6.0: New configurable sync trigger
+     * v1.7.0: Uses central canSync() gate for WiFi-only check
      * 
      * Separate throttling (5 seconds) to prevent spam when saving multiple times
      */
@@ -365,24 +366,19 @@ class NoteEditorViewModel(
             return
         }
         
-        // Check 2: Server configured?
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
-            Logger.d(TAG, "⏭️ Offline mode - skipping onSave sync")
+        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
+        val syncService = WebDavSyncService(getApplication())
+        val gateResult = syncService.canSync()
+        if (!gateResult.canSync) {
+            if (gateResult.isBlockedByWifiOnly) {
+                Logger.d(TAG, "⏭️ onSave sync blocked: WiFi-only mode, not on WiFi")
+            } else {
+                Logger.d(TAG, "⏭️ onSave sync blocked: ${gateResult.blockReason ?: "offline/no server"}")
+            }
             return
         }
         
-        // 🆕 v1.7.0: WiFi-Only Check
-        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
-        if (wifiOnlySync) {
-            val syncService = WebDavSyncService(getApplication())
-            if (!syncService.isOnWiFi()) {
-                Logger.d(TAG, "⏭️ onSave sync blocked: WiFi-only mode, not on WiFi")
-                return
-            }
-        }
-        
-        // Check 3: Throttling (5 seconds) to prevent spam
+        // Check 2: Throttling (5 seconds) to prevent spam
         val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
         val now = System.currentTimeMillis()
         val timeSinceLastSync = now - lastOnSaveSyncTime
