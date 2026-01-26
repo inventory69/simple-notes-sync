@@ -186,6 +186,7 @@ class NetworkMonitor(private val context: Context) {
     /**
      * 🆕 v1.7.0: Stoppt nur WiFi-Monitoring, nicht den gesamten NetworkMonitor
      */
+    @Suppress("SwallowedException")
     private fun stopWifiMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
