@@ -372,6 +372,16 @@ class NoteEditorViewModel(
             return
         }
         
+        // 🆕 v1.7.0: WiFi-Only Check
+        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
+        if (wifiOnlySync) {
+            val syncService = WebDavSyncService(getApplication())
+            if (!syncService.isOnWiFi()) {
+                Logger.d(TAG, "⏭️ onSave sync blocked: WiFi-only mode, not on WiFi")
+                return
+            }
+        }
+        
         // Check 3: Throttling (5 seconds) to prevent spam
         val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
         val now = System.currentTimeMillis()

@@ -9,6 +9,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import kotlinx.coroutines.CancellationException
@@ -82,6 +83,32 @@ class SyncWorker(
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
+                
+                return@withContext Result.success()
+            }
+            
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 2.5: Checking WiFi-only setting")
+            }
+            
+            // 🆕 v1.7.0: WiFi-Only Check (zentral für alle Sync-Arten)
+            val prefs = applicationContext.getSharedPreferences(
+                Constants.PREFS_NAME,
+                Context.MODE_PRIVATE
+            )
+            val wifiOnlySync = prefs.getBoolean(
+                Constants.KEY_WIFI_ONLY_SYNC,
+                Constants.DEFAULT_WIFI_ONLY_SYNC
+            )
+            
+            if (wifiOnlySync && !syncService.isOnWiFi()) {
+                Logger.d(TAG, "⏭️ WiFi-only mode enabled, but not on WiFi - skipping sync")
+                Logger.d(TAG, "   User can still manually sync when on WiFi")
+                
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (WiFi-only skip)")
                     Logger.d(TAG, "═══════════════════════════════════════")
                 }
                 
