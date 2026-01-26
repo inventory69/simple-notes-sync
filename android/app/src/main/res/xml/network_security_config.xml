@@ -11,6 +11,8 @@
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
+            <!-- 🔐 v1.7.0: Trust user-installed CA certificates for self-signed SSL support -->
+            <certificates src="user" />
         </trust-anchors>
     </base-config>
 </network-security-config>

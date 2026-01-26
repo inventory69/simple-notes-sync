@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import dev.dettmer.simplenotes.ui.settings.screens.AboutScreen
 import dev.dettmer.simplenotes.ui.settings.screens.BackupSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DebugSettingsScreen
+import dev.dettmer.simplenotes.ui.settings.screens.DisplaySettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.LanguageSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.MarkdownSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
@@ -91,6 +92,14 @@ fun SettingsNavHost(
         // Debug Settings
         composable(SettingsRoute.Debug.route) {
             DebugSettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        
+        // 🎨 v1.7.0: Display Settings
+        composable(SettingsRoute.Display.route) {
+            DisplaySettingsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )

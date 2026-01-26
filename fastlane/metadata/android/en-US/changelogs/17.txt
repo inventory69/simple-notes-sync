@@ -1,0 +1,8 @@
+• Grid view: Pinterest-style layout without gaps
+• Grid view: Consistent spacing, scroll position preserved
+• WiFi-only sync toggle in settings
+• VPN support: Sync works correctly when VPN is active
+• Server change: Sync status resets to pending for all notes
+• Self-signed SSL: Documentation for custom certificates
+• Faster server check (1s timeout)
+• "Sync already running" feedback

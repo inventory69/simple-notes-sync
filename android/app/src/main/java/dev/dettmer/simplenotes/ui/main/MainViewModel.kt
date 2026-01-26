@@ -11,7 +11,6 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
-import dev.dettmer.simplenotes.utils.SyncConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,6 +80,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
         _isOfflineMode.value = newValue
         Logger.d(TAG, "🔄 refreshOfflineModeState: offlineMode=$oldValue → $newValue")
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🎨 v1.7.0: Display Mode State
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    private val _displayMode = MutableStateFlow(
+        prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+    )
+    val displayMode: StateFlow<String> = _displayMode.asStateFlow()
+    
+    /**
+     * Refresh display mode from SharedPreferences
+     * Called when returning from Settings screen
+     */
+    fun refreshDisplayMode() {
+        val newValue = prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+        _displayMode.value = newValue
+        Logger.d(TAG, "🔄 refreshDisplayMode: displayMode=${_displayMode.value} → $newValue")
     }
     
     // ═══════════════════════════════════════════════════════════════════════
@@ -490,7 +508,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
+        // 🆕 v1.7.0: WiFi-Only Check (sofort, kein Netzwerk-Wait)
+        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
+        if (wifiOnlySync) {
+            val syncService = WebDavSyncService(getApplication())
+            if (!syncService.isOnWiFi()) {
+                Logger.d(TAG, "⏭️ $source Sync blocked: WiFi-only mode, not on WiFi")
+                SyncStateManager.markError(getString(R.string.sync_wifi_only_hint))
+                return
+            }
+        }
+        
+        // 🆕 v1.7.0: Feedback wenn Sync bereits läuft
         if (!SyncStateManager.tryStartSync(source)) {
+            if (SyncStateManager.isSyncing) {
+                Logger.d(TAG, "⏭️ $source Sync blocked: Another sync in progress")
+                viewModelScope.launch {
+                    _showSnackbar.emit(SnackbarData(
+                        message = getString(R.string.sync_already_running),
+                        actionLabel = "",
+                        onAction = {}
+                    ))
+                }
+            }
             return
         }
         

@@ -91,6 +91,19 @@ docker compose up -d
 
 ---
 
+## 🔐 APK Verification
+
+All official releases are signed with the same certificate. 
+
+**Recommended:** Verify with [AppVerifier](https://github.com/nicholson-lab/AppVerifier) (Android app)
+
+**Expected SHA-256:**
+```
+42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
+```
+
+---
+
 ## 📚 Documentation
 
 | Document | Content |
@@ -99,6 +112,7 @@ docker compose up -d
 | **[FEATURES.md](docs/FEATURES.md)** | Complete feature list |
 | **[BACKUP.md](docs/BACKUP.md)** | Backup & restore guide |
 | **[DESKTOP.md](docs/DESKTOP.md)** | Desktop integration (Markdown) |
+| **[SELF_SIGNED_SSL.md](docs/SELF_SIGNED_SSL.md)** | Self-signed SSL certificate setup |
 | **[DOCS.md](docs/DOCS.md)** | Technical details & troubleshooting |
 | **[CHANGELOG.md](CHANGELOG.md)** | Version history |
 | **[UPCOMING.md](docs/UPCOMING.md)** | Upcoming features 🚀 |
@@ -127,6 +141,6 @@ MIT License - see [LICENSE](LICENSE)
 
 <div align="center">
 
-**v1.6.1** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.7.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

@@ -41,7 +41,7 @@ class WebDavSyncService(private val context: Context) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        private const val SOCKET_TIMEOUT_MS = 2000
+        private const val SOCKET_TIMEOUT_MS = 1000  // 🆕 v1.7.0: Reduziert von 2s auf 1s
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
@@ -130,7 +130,14 @@ class WebDavSyncService(private val context: Context) {
                 return null
             }
             
-            // Nur wenn WiFi aktiv
+            // 🔒 v1.7.0: VPN-Detection - Skip WiFi binding when VPN is active
+            // When VPN is active, traffic should route through VPN, not directly via WiFi
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                Logger.d(TAG, "🔒 VPN detected - using default routing (traffic will go through VPN)")
+                return null
+            }
+            
+            // Nur wenn WiFi aktiv (und kein VPN)
             if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 Logger.d(TAG, "⚠️ Not on WiFi, using default routing")
                 return null
@@ -552,6 +559,25 @@ class WebDavSyncService(private val context: Context) {
             true
         } catch (e: Exception) {
             Logger.d(TAG, "❌ Server not reachable: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * 🆕 v1.7.0: Prüft ob Gerät aktuell im WLAN ist
+     * Für schnellen Pre-Check VOR dem langsamen Socket-Check
+     * 
+     * @return true wenn WLAN verbunden, false sonst (mobil oder kein Netzwerk)
+     */
+    fun isOnWiFi(): Boolean {
+        return try {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) 
+                as? ConnectivityManager ?: return false
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to check WiFi state", e)
             false
         }
     }

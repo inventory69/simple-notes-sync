@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Sync
@@ -87,6 +88,22 @@ fun SettingsMainScreen(
                     title = stringResource(R.string.settings_language),
                     subtitle = languageSubtitle,
                     onClick = { onNavigate(SettingsRoute.Language) }
+                )
+            }
+            
+            // 🎨 v1.7.0: Display Settings
+            item {
+                val displayMode by viewModel.displayMode.collectAsState()
+                val displaySubtitle = when (displayMode) {
+                    "grid" -> stringResource(R.string.display_mode_grid)
+                    else -> stringResource(R.string.display_mode_list)
+                }
+                
+                SettingsCard(
+                    icon = Icons.Default.GridView,
+                    title = stringResource(R.string.display_settings_title),
+                    subtitle = displaySubtitle,
+                    onClick = { onNavigate(SettingsRoute.Display) }
                 )
             }
             

@@ -323,6 +323,34 @@ type: ${noteType.name.lowercase()}
     }
 }
 
+/**
+ * 🎨 v1.7.0: Note size classification for Staggered Grid Layout
+ */
+enum class NoteSize {
+    SMALL,  // Compact display (< 80 chars or ≤ 4 checklist items)
+    LARGE;  // Full-width display
+    
+    companion object {
+        const val SMALL_TEXT_THRESHOLD = 80  // Max characters for compact text note
+        const val SMALL_CHECKLIST_THRESHOLD = 4  // Max items for compact checklist
+    }
+}
+
+/**
+ * 🎨 v1.7.0: Determine note size for grid layout optimization
+ */
+fun Note.getSize(): NoteSize {
+    return when (noteType) {
+        NoteType.TEXT -> {
+            if (content.length < NoteSize.SMALL_TEXT_THRESHOLD) NoteSize.SMALL else NoteSize.LARGE
+        }
+        NoteType.CHECKLIST -> {
+            val itemCount = checklistItems?.size ?: 0
+            if (itemCount <= NoteSize.SMALL_CHECKLIST_THRESHOLD) NoteSize.SMALL else NoteSize.LARGE
+        }
+    }
+}
+
 // Extension für JSON-Escaping
 fun String.escapeJson(): String {
     return this

@@ -146,6 +146,19 @@ jobs:
             
             ---
             
+            ## 🔐 APK Signature Verification
+            
+            All APKs are signed with the official release certificate.
+            
+            **Recommended:** Verify with [AppVerifier](https://github.com/nicholson-lab/AppVerifier) (Android app)
+            
+            **Expected SHA-256:**
+            ```
+            42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
+            ```
+            
+            ---
+            
             **[📖 Dokumentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Issue melden](https://github.com/inventory69/simple-notes-sync/issues)**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
