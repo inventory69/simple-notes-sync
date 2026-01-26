@@ -582,6 +582,44 @@ class WebDavSyncService(private val context: Context) {
         }
     }
     
+    /**
+     * 🆕 v1.7.0: Zentrale Sync-Gate Prüfung
+     * Prüft ALLE Voraussetzungen bevor ein Sync gestartet wird.
+     * Diese Funktion sollte VOR jedem syncNotes() Aufruf verwendet werden.
+     * 
+     * @return SyncGateResult mit canSync flag und optionalem Blockierungsgrund
+     */
+    fun canSync(): SyncGateResult {
+        // 1. Offline Mode Check
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
+            return SyncGateResult(canSync = false, blockReason = null) // Silent skip
+        }
+        
+        // 2. Server configured?
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            return SyncGateResult(canSync = false, blockReason = null) // Silent skip
+        }
+        
+        // 3. WiFi-Only Check
+        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
+        if (wifiOnlySync && !isOnWiFi()) {
+            return SyncGateResult(canSync = false, blockReason = "wifi_only")
+        }
+        
+        return SyncGateResult(canSync = true, blockReason = null)
+    }
+    
+    /**
+     * 🆕 v1.7.0: Result-Klasse für canSync()
+     */
+    data class SyncGateResult(
+        val canSync: Boolean,
+        val blockReason: String? = null
+    ) {
+        val isBlockedByWifiOnly: Boolean get() = blockReason == "wifi_only"
+    }
+    
     suspend fun testConnection(): SyncResult = withContext(Dispatchers.IO) {
         return@withContext try {
             val sardine = getOrCreateSardine() ?: return@withContext SyncResult(

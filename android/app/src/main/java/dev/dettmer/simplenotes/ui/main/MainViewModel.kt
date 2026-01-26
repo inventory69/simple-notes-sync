@@ -500,23 +500,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     /**
      * Trigger manual sync (from toolbar button or pull-to-refresh)
+     * v1.7.0: Uses central canSync() gate for WiFi-only check
      */
     fun triggerManualSync(source: String = "manual") {
-        // 🌟 v1.6.0: Block sync in offline mode
-        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
-            Logger.d(TAG, "⏭️ $source Sync blocked: Offline mode enabled")
-            return
-        }
-        
-        // 🆕 v1.7.0: WiFi-Only Check (sofort, kein Netzwerk-Wait)
-        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
-        if (wifiOnlySync) {
-            val syncService = WebDavSyncService(getApplication())
-            if (!syncService.isOnWiFi()) {
+        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
+        val syncService = WebDavSyncService(getApplication())
+        val gateResult = syncService.canSync()
+        if (!gateResult.canSync) {
+            if (gateResult.isBlockedByWifiOnly) {
                 Logger.d(TAG, "⏭️ $source Sync blocked: WiFi-only mode, not on WiFi")
                 SyncStateManager.markError(getString(R.string.sync_wifi_only_hint))
-                return
+            } else {
+                Logger.d(TAG, "⏭️ $source Sync blocked: ${gateResult.blockReason ?: "offline/no server"}")
             }
+            return
         }
         
         // 🆕 v1.7.0: Feedback wenn Sync bereits läuft
@@ -536,8 +533,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         viewModelScope.launch {
             try {
-                val syncService = WebDavSyncService(getApplication())
-                
                 // Check for unsynced changes
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
@@ -584,6 +579,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Only runs if server is configured and interval has passed
      * v1.5.0: Silent-Sync - kein Banner während des Syncs, Fehler werden trotzdem angezeigt
      * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_ON_RESUME
+     * v1.7.0: Uses central canSync() gate for WiFi-only check
      */
     fun triggerAutoSync(source: String = "auto") {
         // 🌟 v1.6.0: Check if onResume trigger is enabled
@@ -597,10 +593,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
-        // Check if server is configured
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
-            Logger.d(TAG, "⏭️ Offline mode - skipping onResume sync")
+        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
+        val syncService = WebDavSyncService(getApplication())
+        val gateResult = syncService.canSync()
+        if (!gateResult.canSync) {
+            if (gateResult.isBlockedByWifiOnly) {
+                Logger.d(TAG, "⏭️ Auto-sync ($source) blocked: WiFi-only mode, not on WiFi")
+            } else {
+                Logger.d(TAG, "⏭️ Auto-sync ($source) blocked: ${gateResult.blockReason ?: "offline/no server"}")
+            }
             return
         }
         
@@ -617,8 +618,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         viewModelScope.launch {
             try {
-                val syncService = WebDavSyncService(getApplication())
-                
                 // Check for unsynced changes
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): No unsynced changes - skipping")
