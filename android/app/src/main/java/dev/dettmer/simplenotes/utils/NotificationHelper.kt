@@ -11,7 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import dev.dettmer.simplenotes.MainActivity
+import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
 
 object NotificationHelper {
     
@@ -58,7 +58,7 @@ object NotificationHelper {
      * Zeigt Erfolgs-Notification nach Sync
      */
     fun showSyncSuccessNotification(context: Context, syncedCount: Int) {
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         
@@ -154,7 +154,7 @@ object NotificationHelper {
      * Zeigt Notification bei erkanntem Konflikt
      */
     fun showConflictNotification(context: Context, conflictCount: Int) {
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, ComposeMainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -229,7 +229,7 @@ object NotificationHelper {
      */
     fun showSyncSuccess(context: Context, count: Int) {
         // PendingIntent für App-Öffnung
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
@@ -260,7 +260,7 @@ object NotificationHelper {
      */
     fun showSyncError(context: Context, message: String) {
         // PendingIntent für App-Öffnung
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
@@ -297,7 +297,7 @@ object NotificationHelper {
      */
     fun showSyncWarning(context: Context, hoursSinceLastSync: Long) {
         // PendingIntent für App-Öffnung
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(

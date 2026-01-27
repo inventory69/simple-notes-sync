@@ -123,6 +123,26 @@ class NotesStorage(private val context: Context) {
         saveDeletionTracker(DeletionTracker())
         Logger.d(TAG, "🗑️ Deletion tracker cleared")
     }
+    
+    /**
+     * 🔄 v1.7.0: Reset all sync statuses to PENDING when server changes
+     * This ensures notes are uploaded to the new server on next sync
+     */
+    fun resetAllSyncStatusToPending(): Int {
+        val notes = loadAllNotes()
+        var updatedCount = 0
+        
+        notes.forEach { note ->
+            if (note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.SYNCED) {
+                val updatedNote = note.copy(syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING)
+                saveNote(updatedNote)
+                updatedCount++
+            }
+        }
+        
+        Logger.d(TAG, "🔄 Reset sync status for $updatedCount notes to PENDING")
+        return updatedCount
+    }
 
     
     fun getNotesDir(): File = notesDir

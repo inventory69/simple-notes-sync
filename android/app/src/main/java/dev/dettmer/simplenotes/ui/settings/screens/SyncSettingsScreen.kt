@@ -50,6 +50,9 @@ fun SyncSettingsScreen(
     val triggerBoot by viewModel.triggerBoot.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
     
+    // 🆕 v1.7.0: WiFi-only sync
+    val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
+    
     // Check if server is configured
     val isServerConfigured = viewModel.isServerConfigured()
     
@@ -81,6 +84,31 @@ fun SyncSettingsScreen(
                 
                 Spacer(modifier = Modifier.height(8.dp))
             }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // 🆕 v1.7.0: NETZWERK-EINSCHRÄNKUNG Section (Global für alle Trigger)
+            // ═══════════════════════════════════════════════════════════════
+            
+            SettingsSectionHeader(text = stringResource(R.string.sync_section_network))
+            
+            // WiFi-Only Sync Toggle - Gilt für ALLE Trigger außer WiFi-Connect
+            SettingsSwitch(
+                title = stringResource(R.string.sync_wifi_only_title),
+                subtitle = stringResource(R.string.sync_wifi_only_subtitle),
+                checked = wifiOnlySync,
+                onCheckedChange = { viewModel.setWifiOnlySync(it) },
+                icon = Icons.Default.Wifi,
+                enabled = isServerConfigured
+            )
+            
+            // Info-Hinweis dass WiFi-Connect davon ausgenommen ist
+            if (wifiOnlySync && isServerConfigured) {
+                SettingsInfoCard(
+                    text = stringResource(R.string.sync_wifi_only_hint)
+                )
+            }
+            
+            SettingsDivider()
             
             // ═══════════════════════════════════════════════════════════════
             // SOFORT-SYNC Section

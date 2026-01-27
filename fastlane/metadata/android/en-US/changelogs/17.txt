@@ -1,0 +1,7 @@
+• New: Grid view - Thanks to freemen
+• New: WiFi-only sync toggle in settings
+• New: Encryption for local backups - Thanks to @SilentCoderHere (#9)
+• Fixed: Sync works correctly when VPN is active - Thanks to @roughnecks (#11)
+• Improved: Server change - Sync status resets for all notes
+• Improved: "Sync already running" feedback for additional executions
+• Various fixes and UI improvements

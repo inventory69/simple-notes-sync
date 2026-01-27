@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.main.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -49,6 +50,8 @@ fun NotesList(
                 showSyncStatus = showSyncStatus,
                 isSelected = isSelected,
                 isSelectionMode = isSelectionMode,
+                // 🎨 v1.7.0: Padding hier in Liste (nicht in Card selbst)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 onClick = {
                     if (isSelectionMode) {
                         // In selection mode, tap toggles selection

@@ -83,6 +83,11 @@ fun NoteEditorScreen(
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
+    // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
+    val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
+    val msgNoteSaved = stringResource(R.string.note_saved)
+    val msgNoteDeleted = stringResource(R.string.note_deleted)
+    
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
     val titleFocusRequester = remember { FocusRequester() }
@@ -111,9 +116,9 @@ fun NoteEditorScreen(
             when (event) {
                 is NoteEditorEvent.ShowToast -> {
                     val message = when (event.message) {
-                        ToastMessage.NOTE_IS_EMPTY -> context.getString(R.string.note_is_empty)
-                        ToastMessage.NOTE_SAVED -> context.getString(R.string.note_saved)
-                        ToastMessage.NOTE_DELETED -> context.getString(R.string.note_deleted)
+                        ToastMessage.NOTE_IS_EMPTY -> msgNoteIsEmpty
+                        ToastMessage.NOTE_SAVED -> msgNoteSaved
+                        ToastMessage.NOTE_DELETED -> msgNoteDeleted
                     }
                     context.showToast(message)
                 }

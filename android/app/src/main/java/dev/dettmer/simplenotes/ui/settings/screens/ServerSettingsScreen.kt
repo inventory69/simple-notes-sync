@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +57,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
  * Server configuration settings screen
  * v1.5.0: Jetpack Compose Settings Redesign
  * v1.6.0: Offline Mode Toggle
+ * v1.7.0 Hotfix: Save settings on screen exit (not on every keystroke)
  */
 @Suppress("LongMethod", "MagicNumber") // Compose UI + Color hex values
 @Composable
@@ -73,6 +75,14 @@ fun ServerSettingsScreen(
     val isSyncing by viewModel.isSyncing.collectAsState()
     
     var passwordVisible by remember { mutableStateOf(false) }
+    
+    // 🔧 v1.7.0 Hotfix: Save server settings when leaving this screen
+    // This prevents false "server changed" detection during text input
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.saveServerSettingsManually()
+        }
+    }
     
     // Check server status on load (only if not in offline mode)
     LaunchedEffect(offlineMode) {

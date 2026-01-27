@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
+import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -33,6 +34,7 @@ import java.net.URL
  * 
  * Manages all settings state and actions across the Settings navigation graph.
  */
+@Suppress("TooManyFunctions") // v1.7.0: 35 Funktionen durch viele kleine Setter (setTrigger*, set*)
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     
     companion object {
@@ -42,6 +44,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     val backupManager = BackupManager(application)
+    private val notesStorage = NotesStorage(application) // v1.7.0: For server change detection
+    
+    // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
+    // This prevents false-positive "server changed" toasts during text input
+    private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
     
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings State
@@ -154,6 +161,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val triggerBoot: StateFlow<Boolean> = _triggerBoot.asStateFlow()
     
+    // 🎉 v1.7.0: WiFi-Only Sync Toggle
+    private val _wifiOnlySync = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
+    )
+    val wifiOnlySync: StateFlow<Boolean> = _wifiOnlySync.asStateFlow()
+    
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Settings State
     // ═══════════════════════════════════════════════════════════════════════
@@ -172,6 +185,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
     )
     val fileLoggingEnabled: StateFlow<Boolean> = _fileLoggingEnabled.asStateFlow()
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🎨 v1.7.0: Display Settings State
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    private val _displayMode = MutableStateFlow(
+        prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+    )
+    val displayMode: StateFlow<String> = _displayMode.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
@@ -216,39 +238,128 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /**
      * 🌟 v1.6.0: Update only the host part of the server URL
      * The protocol prefix is handled separately by updateProtocol()
+     * 🔧 v1.7.0 Hotfix: Removed auto-save to prevent false server-change detection
+     * 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
+     *    but WITHOUT server-change detection (detection happens only on screen exit)
      */
     fun updateServerHost(host: String) {
         _serverHost.value = host
-        saveServerSettings()
+        
+        // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
+        val prefix = if (_isHttps.value) "https://" else "http://"
+        val fullUrl = if (host.isEmpty()) "" else prefix + host
+        prefs.edit().putString(Constants.KEY_SERVER_URL, fullUrl).apply()
     }
     
     fun updateProtocol(useHttps: Boolean) {
         _isHttps.value = useHttps
         // 🌟 v1.6.0: Host stays the same, only prefix changes
-        saveServerSettings()
+        // 🔧 v1.7.0 Hotfix: Removed auto-save to prevent false server-change detection
+        // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
+        
+        // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
+        val prefix = if (useHttps) "https://" else "http://"
+        val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
+        prefs.edit().putString(Constants.KEY_SERVER_URL, fullUrl).apply()
     }
     
     fun updateUsername(value: String) {
         _username.value = value
-        saveServerSettings()
+        // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
+        prefs.edit().putString(Constants.KEY_USERNAME, value).apply()
     }
     
     fun updatePassword(value: String) {
         _password.value = value
-        saveServerSettings()
+        // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
+        prefs.edit().putString(Constants.KEY_PASSWORD, value).apply()
     }
     
-    private fun saveServerSettings() {
+    /**
+     * 🔧 v1.7.0 Hotfix: Manual save function - only called when leaving settings screen
+     * This prevents false "server changed" detection during text input
+     * 🔧 v1.7.0 Regression Fix: Settings are now saved IMMEDIATELY in update functions.
+     *    This function now ONLY handles server-change detection and sync reset.
+     */
+    fun saveServerSettingsManually() {
         // 🌟 v1.6.0: Construct full URL from prefix + host
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
         
-        prefs.edit().apply {
-            putString(Constants.KEY_SERVER_URL, fullUrl)
-            putString(Constants.KEY_USERNAME, _username.value)
-            putString(Constants.KEY_PASSWORD, _password.value)
-            apply()
+        // 🔄 v1.7.0: Detect server change ONLY against last confirmed URL
+        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl)
+        
+        // ✅ Settings are already saved in updateServerHost/Protocol/Username/Password
+        // This function now ONLY handles server-change detection
+        
+        // Reset sync status if server actually changed
+        if (serverChanged) {
+            viewModelScope.launch {
+                val count = notesStorage.resetAllSyncStatusToPending()
+                Logger.d(TAG, "🔄 Server changed from '$confirmedServerUrl' to '$fullUrl': Reset $count notes to PENDING")
+                emitToast(getString(R.string.toast_server_changed_sync_reset, count))
+            }
+            // Update confirmed state after reset
+            confirmedServerUrl = fullUrl
+        } else {
+            Logger.d(TAG, "💾 Server settings check complete (no server change detected)")
         }
+    }
+    
+    /**
+     * � v1.7.0 Hotfix: Improved server change detection
+     * 
+     * Only returns true if the server URL actually changed in a meaningful way.
+     * Handles edge cases:
+     * - First setup (empty → filled) = NOT a change
+     * - Protocol only (http → https) = NOT a change
+     * - Server removed (filled → empty) = NOT a change
+     * - Trailing slashes, case differences = NOT a change
+     * - Different hostname/port/path = IS a change ✓
+     */
+    private fun isServerReallyChanged(confirmedUrl: String, newUrl: String): Boolean {
+        // Empty → Non-empty = First setup, NOT a change
+        if (confirmedUrl.isEmpty() && newUrl.isNotEmpty()) {
+            Logger.d(TAG, "First server setup detected (no reset needed)")
+            return false
+        }
+        
+        // Both empty = No change
+        if (confirmedUrl.isEmpty() && newUrl.isEmpty()) {
+            return false
+        }
+        
+        // Non-empty → Empty = Server removed (keep notes local, no reset)
+        if (confirmedUrl.isNotEmpty() && newUrl.isEmpty()) {
+            Logger.d(TAG, "Server removed (notes stay local, no reset needed)")
+            return false
+        }
+        
+        // Same URL = No change
+        if (confirmedUrl == newUrl) {
+            return false
+        }
+        
+        // Normalize URLs for comparison (ignore protocol, trailing slash, case)
+        val normalize = { url: String ->
+            url.trim()
+                .removePrefix("http://")
+                .removePrefix("https://")
+                .removeSuffix("/")
+                .lowercase()
+        }
+        
+        val confirmedNormalized = normalize(confirmedUrl)
+        val newNormalized = normalize(newUrl)
+        
+        // Check if normalized URLs differ
+        val changed = confirmedNormalized != newNormalized
+        
+        if (changed) {
+            Logger.d(TAG, "Server URL changed: '$confirmedNormalized' → '$newNormalized'")
+        }
+        
+        return changed
     }
     
     fun testConnection() {
@@ -318,8 +429,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isSyncing.value = true
             try {
-                emitToast(getString(R.string.toast_syncing))
                 val syncService = WebDavSyncService(getApplication())
+                
+                // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung
+                val gateResult = syncService.canSync()
+                if (!gateResult.canSync) {
+                    if (gateResult.isBlockedByWifiOnly) {
+                        emitToast(getString(R.string.sync_wifi_only_hint))
+                    } else {
+                        emitToast(getString(R.string.toast_sync_failed, "Offline mode"))
+                    }
+                    return@launch
+                }
+                
+                emitToast(getString(R.string.toast_syncing))
                 
                 if (!syncService.hasUnsyncedChanges()) {
                     emitToast(getString(R.string.toast_already_synced))
@@ -410,6 +533,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _triggerBoot.value = enabled
         prefs.edit().putBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, enabled).apply()
         Logger.d(TAG, "Trigger Boot: $enabled")
+    }
+    
+    /**
+     * 🎉 v1.7.0: Set WiFi-only sync mode
+     * When enabled, sync only happens when connected to WiFi
+     */
+    fun setWifiOnlySync(enabled: Boolean) {
+        _wifiOnlySync.value = enabled
+        prefs.edit().putBoolean(Constants.KEY_WIFI_ONLY_SYNC, enabled).apply()
+        Logger.d(TAG, "📡 WiFi-only sync: $enabled")
     }
     
     // ═══════════════════════════════════════════════════════════════════════
@@ -519,11 +652,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Backup Actions
     // ═══════════════════════════════════════════════════════════════════════
     
-    fun createBackup(uri: Uri) {
+    fun createBackup(uri: Uri, password: String? = null) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
             try {
-                val result = backupManager.createBackup(uri)
+                val result = backupManager.createBackup(uri, password)
                 val message = if (result.success) {
                     getString(R.string.toast_backup_success, result.message ?: "")
                 } else {
@@ -538,11 +671,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
     
-    fun restoreFromFile(uri: Uri, mode: RestoreMode) {
+    fun restoreFromFile(uri: Uri, mode: RestoreMode, password: String? = null) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
             try {
-                val result = backupManager.restoreBackup(uri, mode)
+                val result = backupManager.restoreBackup(uri, mode, password)
                 val message = if (result.success) {
                     getString(R.string.toast_restore_success, result.importedNotes)
                 } else {
@@ -553,6 +686,29 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 emitToast(getString(R.string.toast_restore_failed, e.message ?: ""))
             } finally {
                 _isBackupInProgress.value = false
+            }
+        }
+    }
+    
+    /**
+     * 🔐 v1.7.0: Check if backup is encrypted and call appropriate callback
+     */
+    fun checkBackupEncryption(
+        uri: Uri,
+        onEncrypted: () -> Unit,
+        onPlaintext: () -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val isEncrypted = backupManager.isBackupEncrypted(uri)
+                if (isEncrypted) {
+                    onEncrypted()
+                } else {
+                    onPlaintext()
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to check encryption status", e)
+                onPlaintext()  // Assume plaintext on error
             }
         }
     }
@@ -664,4 +820,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val total: Int,
         val isComplete: Boolean = false
     )
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🎨 v1.7.0: Display Mode Functions
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Set display mode (list or grid)
+     */
+    fun setDisplayMode(mode: String) {
+        _displayMode.value = mode
+        prefs.edit().putString(Constants.KEY_DISPLAY_MODE, mode).apply()
+        Logger.d(TAG, "Display mode changed to: $mode")
+    }
 }

@@ -68,15 +68,20 @@ class NetworkMonitor(private val context: Context) {
                     
                     lastConnectedNetworkId = currentNetworkId
                     
-                    // Auto-Sync check
-                    val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
-                    Logger.d(TAG, "    Auto-Sync enabled: $autoSyncEnabled")
+                    // WiFi-Connect Trigger prüfen - NICHT KEY_AUTO_SYNC!
+                    // Der Callback ist registriert WEIL KEY_SYNC_TRIGGER_WIFI_CONNECT = true
+                    // Aber defensive Prüfung für den Fall, dass Settings sich geändert haben
+                    val wifiConnectEnabled = prefs.getBoolean(
+                        Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
+                        Constants.DEFAULT_TRIGGER_WIFI_CONNECT
+                    )
+                    Logger.d(TAG, "    WiFi-Connect trigger enabled: $wifiConnectEnabled")
                     
-                    if (autoSyncEnabled) {
-                        Logger.d(TAG, "    ✅ Triggering WorkManager...")
+                    if (wifiConnectEnabled) {
+                        Logger.d(TAG, "    ✅ Triggering WiFi-Connect sync...")
                         triggerWifiConnectSync()
                     } else {
-                        Logger.d(TAG, "    ❌ Auto-sync disabled - not triggering")
+                        Logger.d(TAG, "    ⏭️ WiFi-Connect trigger disabled in settings")
                     }
                 } else {
                     Logger.d(TAG, "    ⚠️ Same WiFi network as before - ignoring (no network change)")
@@ -140,23 +145,56 @@ class NetworkMonitor(private val context: Context) {
     
     /**
      * Startet WorkManager mit Network Constraints + NetworkCallback
+     * 
+     * 🆕 v1.7.0: Überarbeitete Logik - WiFi-Connect Trigger funktioniert UNABHÄNGIG von KEY_AUTO_SYNC
+     * - KEY_AUTO_SYNC + KEY_SYNC_TRIGGER_PERIODIC → Periodic Sync
+     * - KEY_SYNC_TRIGGER_WIFI_CONNECT → WiFi-Connect Trigger (unabhängig!)
      */
     fun startMonitoring() {
-        val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+        Logger.d(TAG, "🚀 NetworkMonitor.startMonitoring() called")
         
-        if (!autoSyncEnabled) {
-            Logger.d(TAG, "Auto-sync disabled - stopping all monitoring")
-            stopMonitoring()
-            return
+        val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+        val periodicEnabled = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)
+        val wifiConnectEnabled = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)
+        
+        Logger.d(TAG, "    Settings: autoSync=$autoSyncEnabled, periodic=$periodicEnabled, wifiConnect=$wifiConnectEnabled")
+        
+        // 1. Periodic Sync (nur wenn KEY_AUTO_SYNC UND KEY_SYNC_TRIGGER_PERIODIC aktiv)
+        if (autoSyncEnabled && periodicEnabled) {
+            Logger.d(TAG, "📅 Starting periodic sync...")
+            startPeriodicSync()
+        } else {
+            WorkManager.getInstance(context).cancelUniqueWork(AUTO_SYNC_WORK_NAME)
+            Logger.d(TAG, "⏭️ Periodic sync disabled (autoSync=$autoSyncEnabled, periodic=$periodicEnabled)")
         }
         
-        Logger.d(TAG, "🚀 Starting NetworkMonitor (WorkManager + WiFi Callback)")
+        // 2. WiFi-Connect Trigger (🆕 UNABHÄNGIG von KEY_AUTO_SYNC!)
+        if (wifiConnectEnabled) {
+            Logger.d(TAG, "📶 Starting WiFi monitoring...")
+            startWifiMonitoring()
+        } else {
+            stopWifiMonitoring()
+            Logger.d(TAG, "⏭️ WiFi-Connect trigger disabled")
+        }
         
-        // 1. WorkManager für periodic sync
-        startPeriodicSync()
-        
-        // 2. NetworkCallback für WiFi-Connect Detection
-        startWifiMonitoring()
+        // 3. Logging für Debug
+        if (!autoSyncEnabled && !wifiConnectEnabled) {
+            Logger.d(TAG, "🛑 No background triggers active")
+        }
+    }
+    
+    /**
+     * 🆕 v1.7.0: Stoppt nur WiFi-Monitoring, nicht den gesamten NetworkMonitor
+     */
+    @Suppress("SwallowedException")
+    private fun stopWifiMonitoring() {
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback)
+            Logger.d(TAG, "🛑 WiFi NetworkCallback unregistered")
+        } catch (e: Exception) {
+            // Already unregistered - das ist OK
+            Logger.d(TAG, "    WiFi callback already unregistered")
+        }
     }
     
     /**
