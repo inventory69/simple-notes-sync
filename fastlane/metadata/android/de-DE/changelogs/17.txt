@@ -1,8 +1,7 @@
-• Grid-Ansicht: Pinterest-Style Layout ohne Lücken
-• Grid-Ansicht: Konsistente Abstände, Scroll-Position bleibt erhalten
-• Nur-WLAN Sync Toggle in Einstellungen
-• VPN-Unterstützung: Sync funktioniert korrekt bei aktivem VPN
-• Server-Wechsel: Sync-Status wird für alle Notizen zurückgesetzt
-• Self-signed SSL: Dokumentation für eigene Zertifikate
-• Schnellere Server-Prüfung (1s Timeout)
-• "Sync läuft bereits" Feedback
+• Neu: Raster-Ansicht - Danke an freemen
+• Neu: Nur-WLAN Sync Toggle in Einstellungen
+• Neu: Verschlüsselung bei lokalen Backups - Danke an @SilentCoderHere (#9)
+• Behoben: Sync funktioniert korrekt bei aktivem VPN - Danke an @roughnecks (#11)
+• Verbessert: Server-Wechsel - Sync-Status wird für alle Notizen zurückgesetzt
+• Verbessert: "Sync läuft bereits" Feedback bei weiteren Ausführungen
+• Verschiedene Fixes und UI-Verbesserungen

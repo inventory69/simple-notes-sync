@@ -2,11 +2,11 @@ name: Build Android Production APK
 
 on:
   push:
-    branches: [ main ]  # Nur bei Push/Merge auf main triggern
-  workflow_dispatch:  # Ermöglicht manuellen Trigger
+    branches: [ main ]  # Only trigger on push/merge to main
+  workflow_dispatch:  # Enables manual trigger
 
 permissions:
-  contents: write  # Fuer Release-Erstellung erforderlich
+  contents: write  # Required for release creation
 
 jobs:
   build:
@@ -14,50 +14,50 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Code auschecken
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Java einrichten
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
       
-      - name: Semantic Versionsnummer aus build.gradle.kts extrahieren
+      - name: Extract semantic version from build.gradle.kts
         run: |
-          # Version aus build.gradle.kts fuer F-Droid Kompatibilität
+          # Version from build.gradle.kts for F-Droid compatibility
           VERSION_NAME=$(grep "versionName = " android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
           VERSION_CODE=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           
-          # Semantische Versionierung (nicht datums-basiert)
+          # Semantic versioning (not date-based)
           BUILD_NUMBER="$VERSION_CODE"
           
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "VERSION_TAG=v$VERSION_NAME" >> $GITHUB_ENV
           
-          echo "🚀 Baue Version: $VERSION_NAME (Code: $BUILD_NUMBER)"
+          echo "🚀 Building version: $VERSION_NAME (Code: $BUILD_NUMBER)"
       
-      - name: Version aus build.gradle.kts verifizieren
+      - name: Verify version from build.gradle.kts
         run: |
-          echo "✅ Verwende Version aus build.gradle.kts:"
+          echo "✅ Using version from build.gradle.kts:"
           grep -E "versionCode|versionName" android/app/build.gradle.kts
       
-      - name: Android Signing konfigurieren
+      - name: Configure Android signing
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/simple-notes-release.jks
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=simple-notes-release.jks" >> android/key.properties
-          echo "✅ Signing-Konfiguration erstellt"
+          echo "✅ Signing configuration created"
       
-      - name: Produktions-APK bauen (Standard + F-Droid Flavors)
+      - name: Build production APK (Standard + F-Droid Flavors)
         run: |
           cd android
           ./gradlew assembleStandardRelease assembleFdroidRelease --no-daemon --stacktrace
       
-      - name: APK-Varianten mit Versionsnamen kopieren
+      - name: Copy APK variants with version names
         run: |
           mkdir -p apk-output
           
@@ -69,34 +69,34 @@ jobs:
           cp android/app/build/outputs/apk/fdroid/release/app-fdroid-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk
           
-          echo "✅ APK-Dateien vorbereitet:"
+          echo "✅ APK files prepared:"
           ls -lh apk-output/
       
-      - name: APK-Artefakte hochladen
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: simple-notes-sync-apks-v${{ env.VERSION_NAME }}
           path: apk-output/*.apk
-          retention-days: 90  # Produktions-Builds länger aufbewahren
+          retention-days: 90  # Keep production builds longer
       
-      - name: Commit-Informationen auslesen
+      - name: Extract commit information
         run: |
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "COMMIT_DATE=$(git log -1 --format=%cd --date=iso-strict)" >> $GITHUB_ENV
       
-      - name: F-Droid Changelogs lesen
+      - name: Read F-Droid changelogs
         run: |
-          # Lese deutsche Changelog (Hauptsprache) - Use printf to ensure proper formatting
+          # Read German changelog (main language) - Use printf to ensure proper formatting
           if [ -f "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
             CHANGELOG_CONTENT=$(cat "fastlane/metadata/android/de-DE/changelogs/${{ env.BUILD_NUMBER }}.txt")
             echo "CHANGELOG_DE<<GHADELIMITER" >> $GITHUB_ENV
             echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
             echo "GHADELIMITER" >> $GITHUB_ENV
           else
-            echo "CHANGELOG_DE=Keine deutschen Release Notes verfügbar." >> $GITHUB_ENV
+            echo "CHANGELOG_DE=No German release notes available." >> $GITHUB_ENV
           fi
           
-          # Lese englische Changelog (optional)
+          # Read English changelog (optional)
           if [ -f "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt" ]; then
             CHANGELOG_CONTENT_EN=$(cat "fastlane/metadata/android/en-US/changelogs/${{ env.BUILD_NUMBER }}.txt")
             echo "CHANGELOG_EN<<GHADELIMITER" >> $GITHUB_ENV
@@ -127,24 +127,18 @@ jobs:
             
             </details>
 
-            ---
-
             ## 📦 Downloads
             
-            | Variante | Datei | Info |
-            |----------|-------|------|
-            | **🏆 Empfohlen** | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard.apk` | Standard-Version (funktioniert auf allen Geraeten) |
-            | F-Droid | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk` | Fuer F-Droid Store |
-                        
-            ---
+            | Variant | File | Info |
+            |---------|------|------|
+            | **🏆 Recommended** | `simple-notes-sync-v${{ env.VERSION_NAME }}-standard.apk` | Standard version (works on all devices) |
+            | F-Droid | `simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk` | For F-Droid Store |
             
-            ## 📊 Build-Info
+            ## 📊 Build Info
             
             - **Version:** ${{ env.VERSION_NAME }} (Code: ${{ env.BUILD_NUMBER }})
-            - **Datum:** ${{ env.COMMIT_DATE }}
+            - **Date:** ${{ env.COMMIT_DATE }}
             - **Commit:** ${{ env.SHORT_SHA }}
-            
-            ---
             
             ## 🔐 APK Signature Verification
             
@@ -157,8 +151,6 @@ jobs:
             42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
             ```
             
-            ---
-            
-            **[📖 Dokumentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Issue melden](https://github.com/inventory69/simple-notes-sync/issues)**
+            **[📖 Documentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Report Bug](https://github.com/inventory69/simple-notes-sync/issues)**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
