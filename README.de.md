@@ -1,7 +1,6 @@
 <div align="center">
 <br />
 <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="Logo" />
-<br /><br />
 </div>
 
 <h1 align="center">Simple Notes Sync</h1>
@@ -27,16 +26,17 @@
 </div>
 
 <p align="center">
-  <a href="https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes" style="display:inline-block;">
-    <img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80" style="vertical-align:middle; margin-right:10px;">
+<div align="center" style="display:flex; justify-content:center; gap:10px;">
+  <a href="https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes" style="text-decoration:none;">
+    <img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80" style="vertical-align:middle;">
   </a>
-  <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync" style="display:inline-block;">
-    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="55" style="vertical-align:middle; margin-right:10px;">
+  <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync" style="text-decoration:none;">
+    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="55" style="vertical-align:middle;">
   </a>
-  <a href="https://f-droid.org/packages/dev.dettmer.simplenotes/" style="display:inline-block;">
+  <a href="https://f-droid.org/packages/dev.dettmer.simplenotes/" style="text-decoration:none;">
     <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80" style="vertical-align:middle;">
   </a>
-</p>
+</div>
 <div align="center">
 <strong>SHA-256 Hash des Signaturzertifikats:</strong><br /> 42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
 </div>
@@ -140,7 +140,7 @@ Beiträge willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md)
 MIT License – siehe [LICENSE](LICENSE)
 
 <div align="center">
-
+<br /><br />
 **v1.7.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
