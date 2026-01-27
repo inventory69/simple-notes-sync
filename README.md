@@ -1,5 +1,4 @@
 <div align="center">
-<br />
 <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="Logo" />
 </div>
 
@@ -8,35 +7,32 @@
 <h4 align="center">Clean, offline-first notes with intelligent sync - simplicity meets smart synchronization.</h4>
 
 <div align="center">
-  <a href="https://www.android.com/">
-    <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
-  </a>
-  <a href="https://kotlinlang.org/">
-    <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
-  </a>
-  <a href="https://developer.android.com/compose/">
-    <img src="https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" />
-  </a>
-  <a href="https://m3.material.io/">
-    <img src="https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white" alt="Material 3" />
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge" alt="License" />
-  </a>
+  
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
+[![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
+[![License](https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge)](LICENSE)
+
 </div>
 
-<p align="center">
-<div align="center" style="display:flex; justify-content:center; gap:10px;">
-  <a href="https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes" style="text-decoration:none;">
-    <img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80" style="vertical-align:middle;">
-  </a>
-  <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync" style="text-decoration:none;">
-    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="55" style="vertical-align:middle;">
-  </a>
-  <a href="https://f-droid.org/packages/dev.dettmer.simplenotes/" style="text-decoration:none;">
-    <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80" style="vertical-align:middle;">
-  </a>
+<div align="center">
+
+<a href="https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes">
+<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png"
+alt="Get it on IzzyOnDroid" align="center" height="80" /></a>
+
+<a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync">
+<img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png"
+alt="Get it on Obtainium" align="center" height="54" />
+</a>
+
+<a href="https://f-droid.org/packages/dev.dettmer.simplenotes">
+<img src="https://f-droid.org/badge/get-it-on.png"
+alt="Get it on F-Droid" align="center" height="80" /></a>
+  
 </div>
+
 <div align="center">
 <strong>SHA-256 hash of the signing certificate:</strong><br />42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
 </div>
