@@ -1,28 +1,52 @@
 <div align="center">
+<br />
+<img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="Logo" />
+<br /><br />
+</div>
 
-# Simple Notes Sync
+<h1 align="center">Simple Notes Sync</h1>
 
-**Minimalist offline notes with auto-sync to your own server**
+<h4 align="center">Clean, offline-first notes with intelligent sync - simplicity meets smart synchronization.</h4>
 
-[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
-[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-[![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
-[![License](https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge)](LICENSE)
+<div align="center">
+  <a href="https://www.android.com/">
+    <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
+  </a>
+  <a href="https://kotlinlang.org/">
+    <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
+  </a>
+  <a href="https://developer.android.com/compose/">
+    <img src="https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" />
+  </a>
+  <a href="https://m3.material.io/">
+    <img src="https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white" alt="Material 3" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge" alt="License" />
+  </a>
+</div>
 
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="60">](https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes)
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="60">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync)
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="60">](https://f-droid.org/packages/dev.dettmer.simplenotes/)
+<p align="center">
+  <a href="https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes" style="display:inline-block;">
+    <img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80" style="vertical-align:middle; margin-right:10px;">
+  </a>
+  <a href="http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync" style="display:inline-block;">
+    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="55" style="vertical-align:middle; margin-right:10px;">
+  </a>
+  <a href="https://f-droid.org/packages/dev.dettmer.simplenotes/" style="display:inline-block;">
+    <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80" style="vertical-align:middle;">
+  </a>
+</p>
+<div align="center">
+<strong>SHA-256 hash of the signing certificate:</strong><br />42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
+</div>
 
+<div align="center">
 
-
-[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)
-
+<br />[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)<br />
 **🌍** [Deutsch](README.de.md) · **English**
 
 </div>
-
----
 
 ## 📱 Screenshots
 
@@ -35,31 +59,26 @@
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="250" alt="Sync settings">
 </p>
 
----
-
 <div align="center">
 
-📝 Offline-first &nbsp;•&nbsp; 🔄 Smart Sync &nbsp;•&nbsp; 🔒 Self-hosted &nbsp;•&nbsp; 🔋 Battery-friendly
+  📝 Offline-first &nbsp;•&nbsp; 🔄 Smart Sync &nbsp;•&nbsp; 🔒 Self-hosted &nbsp;•&nbsp; 🔋 Battery-friendly
 
 </div>
 
----
-
 ## ✨ Highlights
 
-- ✅ **NEW: Checklists** - Tap-to-check, drag & drop
-- 🌍 **NEW: Multilingual** - English/German with language selector
 - 📝 **Offline-first** - Works without internet
+- 📊 **Flexible views** - Switch between list and grid layout
+- ✅ **Checklists** - Tap-to-check, drag & drop
+- 🌍 **Multilingual** - English/German with language selector
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
 - 🔒 **Self-hosted** - Your data stays with you (WebDAV)
-- 💾 **Local backup** - Export/Import as JSON file
+- 💾 **Local backup** - Export/Import as JSON file (encryption available)
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
 - 🔋 **Battery-friendly** - ~0.2% with defaults, up to ~1.0% with periodic sync
-- 🎨 **Material Design 3** - Dark mode & dynamic colors
+- 🎨 **Material Design 3** - Dynamic dark/light mode & colors based on system settings
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
-
----
 
 ## 🚀 Quick Start
 
@@ -89,21 +108,6 @@ docker compose up -d
 
 ➡️ **Detailed guide:** [QUICKSTART.md](QUICKSTART.md)
 
----
-
-## 🔐 APK Verification
-
-All official releases are signed with the same certificate. 
-
-**Recommended:** Verify with [AppVerifier](https://github.com/nicholson-lab/AppVerifier) (Android app)
-
-**Expected SHA-256:**
-```
-42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
-```
-
----
-
 ## 📚 Documentation
 
 | Document | Content |
@@ -125,19 +129,13 @@ cd android
 
 ➡️ **Build guide:** [DOCS.md](docs/DOCS.md#-build--deployment)
 
----
-
 ## 🤝 Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
 
----
-
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
-
----
 
 <div align="center">
 
