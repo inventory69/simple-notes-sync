@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
+import dev.dettmer.simplenotes.ui.settings.components.BackupPasswordDialog
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
@@ -34,6 +35,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsOutlinedButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,11 +60,25 @@ fun BackupSettingsScreen(
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
     var selectedRestoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
     
+    // 🔐 v1.7.0: Encryption state
+    var encryptBackup by remember { mutableStateOf(false) }
+    var showEncryptionPasswordDialog by remember { mutableStateOf(false) }
+    var showDecryptionPasswordDialog by remember { mutableStateOf(false) }
+    var pendingBackupUri by remember { mutableStateOf<Uri?>(null) }
+    
     // File picker launchers
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        uri?.let { viewModel.createBackup(it) }
+        uri?.let {
+            // 🔐 v1.7.0: If encryption enabled, show password dialog first
+            if (encryptBackup) {
+                pendingBackupUri = it
+                showEncryptionPasswordDialog = true
+            } else {
+                viewModel.createBackup(it, password = null)
+            }
+        }
     }
     
     val restoreFileLauncher = rememberLauncherForActivityResult(
@@ -96,6 +112,16 @@ fun BackupSettingsScreen(
             
             // Local Backup Section
             SettingsSectionHeader(text = stringResource(R.string.backup_local_section))
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // 🔐 v1.7.0: Encryption toggle
+            SettingsSwitch(
+                title = stringResource(R.string.backup_encryption_title),
+                subtitle = stringResource(R.string.backup_encryption_subtitle),
+                checked = encryptBackup,
+                onCheckedChange = { encryptBackup = it }
+            )
             
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -156,6 +182,47 @@ fun BackupSettingsScreen(
         }
     }
     
+    // 🔐 v1.7.0: Encryption password dialog (for backup creation)
+    if (showEncryptionPasswordDialog) {
+        BackupPasswordDialog(
+            title = stringResource(R.string.backup_encryption_title),
+            onDismiss = {
+                showEncryptionPasswordDialog = false
+                pendingBackupUri = null
+            },
+            onConfirm = { password ->
+                showEncryptionPasswordDialog = false
+                pendingBackupUri?.let { uri ->
+                    viewModel.createBackup(uri, password)
+                }
+                pendingBackupUri = null
+            },
+            requireConfirmation = true
+        )
+    }
+    
+    // 🔐 v1.7.0: Decryption password dialog (for restore)
+    if (showDecryptionPasswordDialog) {
+        BackupPasswordDialog(
+            title = stringResource(R.string.backup_decryption_required),
+            onDismiss = {
+                showDecryptionPasswordDialog = false
+                pendingRestoreUri = null
+            },
+            onConfirm = { password ->
+                showDecryptionPasswordDialog = false
+                pendingRestoreUri?.let { uri ->
+                    when (restoreSource) {
+                        RestoreSource.LocalFile -> viewModel.restoreFromFile(uri, selectedRestoreMode, password)
+                        RestoreSource.Server -> { /* Server restore doesn't support encryption */ }
+                    }
+                }
+                pendingRestoreUri = null
+            },
+            requireConfirmation = false
+        )
+    }
+    
     // Restore Mode Dialog
     if (showRestoreDialog) {
         RestoreModeDialog(
@@ -167,7 +234,17 @@ fun BackupSettingsScreen(
                 when (restoreSource) {
                     RestoreSource.LocalFile -> {
                         pendingRestoreUri?.let { uri ->
-                            viewModel.restoreFromFile(uri, selectedRestoreMode)
+                            // 🔐 v1.7.0: Check if backup is encrypted
+                            viewModel.checkBackupEncryption(
+                                uri = uri,
+                                onEncrypted = {
+                                    showDecryptionPasswordDialog = true
+                                },
+                                onPlaintext = {
+                                    viewModel.restoreFromFile(uri, selectedRestoreMode, password = null)
+                                    pendingRestoreUri = null
+                                }
+                            )
                         }
                     }
                     RestoreSource.Server -> {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -50,6 +51,7 @@ import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
+import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusBanner
 import kotlinx.coroutines.launch
 
@@ -82,12 +84,17 @@ fun MainScreen(
     // 🌟 v1.6.0: Reactive offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
     
+    // 🎨 v1.7.0: Display mode (list or grid)
+    val displayMode by viewModel.displayMode.collectAsState()
+    
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    // 🎨 v1.7.0: gridState für Staggered Grid Layout
+    val gridState = rememberLazyStaggeredGridState()
     
     // Compute isSyncing once
     val isSyncing = syncState == SyncStateManager.SyncState.SYNCING
@@ -116,9 +123,14 @@ fun MainScreen(
     }
     
     // Phase 3: Scroll to top when new note created
+    // 🎨 v1.7.0: Unterstützt beide Display-Modi (list & grid)
     LaunchedEffect(scrollToTop) {
         if (scrollToTop) {
-            listState.animateScrollToItem(0)
+            if (displayMode == "grid") {
+                gridState.animateScrollToItem(0)
+            } else {
+                listState.animateScrollToItem(0)
+            }
             viewModel.resetScrollToTop()
         }
     }
@@ -177,22 +189,44 @@ fun MainScreen(
                     if (notes.isEmpty()) {
                         EmptyState(modifier = Modifier.weight(1f))
                     } else {
-                        NotesList(
-                            notes = notes,
-                            showSyncStatus = viewModel.isServerConfigured(),
-                            selectedNotes = selectedNotes,
-                            isSelectionMode = isSelectionMode,
-                            listState = listState,
-                            modifier = Modifier.weight(1f),
-                            onNoteClick = { note -> onOpenNote(note.id) },
-                            onNoteLongPress = { note -> 
-                                // Long-press starts selection mode
-                                viewModel.startSelectionMode(note.id)
-                            },
-                            onNoteSelectionToggle = { note ->
-                                viewModel.toggleNoteSelection(note.id)
-                            }
-                        )
+                        // 🎨 v1.7.0: Switch between List and Grid based on display mode
+                        if (displayMode == "grid") {
+                            NotesStaggeredGrid(
+                                notes = notes,
+                                gridState = gridState,
+                                showSyncStatus = viewModel.isServerConfigured(),
+                                selectedNoteIds = selectedNotes,
+                                isSelectionMode = isSelectionMode,
+                                modifier = Modifier.weight(1f),
+                                onNoteClick = { note ->
+                                    if (isSelectionMode) {
+                                        viewModel.toggleNoteSelection(note.id)
+                                    } else {
+                                        onOpenNote(note.id)
+                                    }
+                                },
+                                onNoteLongClick = { note ->
+                                    viewModel.startSelectionMode(note.id)
+                                }
+                            )
+                        } else {
+                            NotesList(
+                                notes = notes,
+                                showSyncStatus = viewModel.isServerConfigured(),
+                                selectedNotes = selectedNotes,
+                                isSelectionMode = isSelectionMode,
+                                listState = listState,
+                                modifier = Modifier.weight(1f),
+                                onNoteClick = { note -> onOpenNote(note.id) },
+                                onNoteLongPress = { note -> 
+                                    // Long-press starts selection mode
+                                    viewModel.startSelectionMode(note.id)
+                                },
+                                onNoteSelectionToggle = { note ->
+                                    viewModel.toggleNoteSelection(note.id)
+                                }
+                            )
+                        }
                     }
                 }
                 

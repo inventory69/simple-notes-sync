@@ -32,6 +32,10 @@ object Constants {
     // 🔥 v1.6.0: Offline Mode Toggle
     const val KEY_OFFLINE_MODE = "offline_mode_enabled"
     
+    // 🔥 v1.7.0: WiFi-Only Sync Toggle
+    const val KEY_WIFI_ONLY_SYNC = "wifi_only_sync_enabled"
+    const val DEFAULT_WIFI_ONLY_SYNC = false  // Standardmäßig auch mobil syncen
+    
     // 🔥 v1.6.0: Configurable Sync Triggers
     const val KEY_SYNC_TRIGGER_ON_SAVE = "sync_trigger_on_save"
     const val KEY_SYNC_TRIGGER_ON_RESUME = "sync_trigger_on_resume"
@@ -57,4 +61,10 @@ object Constants {
     // Notifications
     const val NOTIFICATION_CHANNEL_ID = "notes_sync_channel"
     const val NOTIFICATION_ID = 1001
+    
+    // 🎨 v1.7.0: Staggered Grid Layout
+    const val KEY_DISPLAY_MODE = "display_mode" // "list" or "grid"
+    const val DEFAULT_DISPLAY_MODE = "list"
+    const val GRID_COLUMNS = 2
+    const val GRID_SPACING_DP = 8
 }

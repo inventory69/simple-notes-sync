@@ -31,20 +31,24 @@ class BackupManager(private val context: Context) {
         private const val BACKUP_VERSION = 1
         private const val AUTO_BACKUP_DIR = "auto_backups"
         private const val AUTO_BACKUP_RETENTION_DAYS = 7
+        private const val MAGIC_BYTES_LENGTH = 4  // v1.7.0: For encryption check
     }
     
     private val storage = NotesStorage(context)
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
+    private val encryptionManager = EncryptionManager()  // 🔐 v1.7.0
     
     /**
      * Erstellt Backup aller Notizen
      * 
      * @param uri Output-URI (via Storage Access Framework)
+     * @param password Optional password for encryption (null = unencrypted)
      * @return BackupResult mit Erfolg/Fehler Info
      */
-    suspend fun createBackup(uri: Uri): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun createBackup(uri: Uri, password: String? = null): BackupResult = withContext(Dispatchers.IO) {
         return@withContext try {
-            Logger.d(TAG, "📦 Creating backup to: $uri")
+            val encryptedSuffix = if (password != null) " (encrypted)" else ""
+            Logger.d(TAG, "📦 Creating backup$encryptedSuffix to: $uri")
             
             val allNotes = storage.loadAllNotes()
             Logger.d(TAG, "   Found ${allNotes.size} notes to backup")
@@ -59,15 +63,22 @@ class BackupManager(private val context: Context) {
             
             val jsonString = gson.toJson(backupData)
             
+            // 🔐 v1.7.0: Encrypt if password is provided
+            val dataToWrite = if (password != null) {
+                encryptionManager.encrypt(jsonString.toByteArray(), password)
+            } else {
+                jsonString.toByteArray()
+            }
+            
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(jsonString.toByteArray())
-                Logger.d(TAG, "✅ Backup created successfully")
+                outputStream.write(dataToWrite)
+                Logger.d(TAG, "✅ Backup created successfully$encryptedSuffix")
             }
             
             BackupResult(
                 success = true,
                 notesCount = allNotes.size,
-                message = "Backup erstellt: ${allNotes.size} Notizen"
+                message = "Backup erstellt: ${allNotes.size} Notizen$encryptedSuffix"
             )
             
         } catch (e: Exception) {
@@ -126,19 +137,41 @@ class BackupManager(private val context: Context) {
      * 
      * @param uri Backup-Datei URI
      * @param mode Wiederherstellungs-Modus (Merge/Replace/Overwrite)
+     * @param password Optional password if backup is encrypted
      * @return RestoreResult mit Details
      */
-    suspend fun restoreBackup(uri: Uri, mode: RestoreMode): RestoreResult = withContext(Dispatchers.IO) {
+    suspend fun restoreBackup(uri: Uri, mode: RestoreMode, password: String? = null): RestoreResult = withContext(Dispatchers.IO) {
         return@withContext try {
             Logger.d(TAG, "📥 Restoring backup from: $uri (mode: $mode)")
             
             // 1. Backup-Datei lesen
-            val jsonString = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.bufferedReader().use { it.readText() }
+            val fileData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.readBytes()
             } ?: return@withContext RestoreResult(
                 success = false,
                 error = "Datei konnte nicht gelesen werden"
             )
+            
+            // 🔐 v1.7.0: Check if encrypted and decrypt if needed
+            val jsonString = try {
+                if (encryptionManager.isEncrypted(fileData)) {
+                    if (password == null) {
+                        return@withContext RestoreResult(
+                            success = false,
+                            error = "Backup ist verschlüsselt. Bitte Passwort eingeben."
+                        )
+                    }
+                    val decrypted = encryptionManager.decrypt(fileData, password)
+                    String(decrypted)
+                } else {
+                    String(fileData)
+                }
+            } catch (e: EncryptionException) {
+                return@withContext RestoreResult(
+                    success = false,
+                    error = "Entschlüsselung fehlgeschlagen: ${e.message}"
+                )
+            }
             
             // 2. Backup validieren & parsen
             val validationResult = validateBackup(jsonString)
@@ -174,6 +207,22 @@ class BackupManager(private val context: Context) {
                 success = false,
                 error = context.getString(R.string.error_restore_failed, e.message ?: "")
             )
+        }
+    }
+    
+    /**
+     * 🔐 v1.7.0: Check if backup file is encrypted
+     */
+    suspend fun isBackupEncrypted(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val header = ByteArray(MAGIC_BYTES_LENGTH)
+                val bytesRead = inputStream.read(header)
+                bytesRead == MAGIC_BYTES_LENGTH && encryptionManager.isEncrypted(header)
+            } ?: false
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to check encryption status", e)
+            false
         }
     }
     

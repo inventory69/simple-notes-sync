@@ -1,28 +1,48 @@
 <div align="center">
+<img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="Logo" />
+</div>
 
-# Simple Notes Sync
+<h1 align="center">Simple Notes Sync</h1>
 
-**Minimalist offline notes with auto-sync to your own server**
+<h4 align="center">Clean, offline-first notes with intelligent sync - simplicity meets smart synchronization.</h4>
 
+<div align="center">
+  
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
 [![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge)](LICENSE)
 
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="60">](https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes)
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="60">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync)
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="60">](https://f-droid.org/packages/dev.dettmer.simplenotes/)
+</div>
 
+<div align="center">
 
+<a href="https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes">
+<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png"
+alt="Get it on IzzyOnDroid" align="center" height="80" /></a>
 
-[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)
+<a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync">
+<img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png"
+alt="Get it on Obtainium" align="center" height="54" />
+</a>
 
+<a href="https://f-droid.org/packages/dev.dettmer.simplenotes">
+<img src="https://f-droid.org/badge/get-it-on.png"
+alt="Get it on F-Droid" align="center" height="80" /></a>
+  
+</div>
+
+<div align="center">
+<strong>SHA-256 hash of the signing certificate:</strong><br />42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
+</div>
+
+<div align="center">
+
+<br />[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)<br />
 **🌍** [Deutsch](README.de.md) · **English**
 
 </div>
-
----
 
 ## 📱 Screenshots
 
@@ -35,31 +55,26 @@
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="250" alt="Sync settings">
 </p>
 
----
-
 <div align="center">
 
-📝 Offline-first &nbsp;•&nbsp; 🔄 Smart Sync &nbsp;•&nbsp; 🔒 Self-hosted &nbsp;•&nbsp; 🔋 Battery-friendly
+  📝 Offline-first &nbsp;•&nbsp; 🔄 Smart Sync &nbsp;•&nbsp; 🔒 Self-hosted &nbsp;•&nbsp; 🔋 Battery-friendly
 
 </div>
 
----
-
 ## ✨ Highlights
 
-- ✅ **NEW: Checklists** - Tap-to-check, drag & drop
-- 🌍 **NEW: Multilingual** - English/German with language selector
 - 📝 **Offline-first** - Works without internet
+- 📊 **Flexible views** - Switch between list and grid layout
+- ✅ **Checklists** - Tap-to-check, drag & drop
+- 🌍 **Multilingual** - English/German with language selector
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
 - 🔒 **Self-hosted** - Your data stays with you (WebDAV)
-- 💾 **Local backup** - Export/Import as JSON file
+- 💾 **Local backup** - Export/Import as JSON file (encryption available)
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
 - 🔋 **Battery-friendly** - ~0.2% with defaults, up to ~1.0% with periodic sync
-- 🎨 **Material Design 3** - Dark mode & dynamic colors
+- 🎨 **Material Design 3** - Dynamic dark/light mode & colors based on system settings
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
-
----
 
 ## 🚀 Quick Start
 
@@ -89,8 +104,6 @@ docker compose up -d
 
 ➡️ **Detailed guide:** [QUICKSTART.md](QUICKSTART.md)
 
----
-
 ## 📚 Documentation
 
 | Document | Content |
@@ -99,6 +112,7 @@ docker compose up -d
 | **[FEATURES.md](docs/FEATURES.md)** | Complete feature list |
 | **[BACKUP.md](docs/BACKUP.md)** | Backup & restore guide |
 | **[DESKTOP.md](docs/DESKTOP.md)** | Desktop integration (Markdown) |
+| **[SELF_SIGNED_SSL.md](docs/SELF_SIGNED_SSL.md)** | Self-signed SSL certificate setup |
 | **[DOCS.md](docs/DOCS.md)** | Technical details & troubleshooting |
 | **[CHANGELOG.md](CHANGELOG.md)** | Version history |
 | **[UPCOMING.md](docs/UPCOMING.md)** | Upcoming features 🚀 |
@@ -111,22 +125,17 @@ cd android
 
 ➡️ **Build guide:** [DOCS.md](docs/DOCS.md#-build--deployment)
 
----
-
 ## 🤝 Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
-
----
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
 
----
-
 <div align="center">
+<br /><br />
 
-**v1.6.1** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.7.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

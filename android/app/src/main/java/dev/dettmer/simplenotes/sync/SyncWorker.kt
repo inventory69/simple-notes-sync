@@ -9,6 +9,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import kotlinx.coroutines.CancellationException
@@ -82,6 +83,27 @@ class SyncWorker(
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
+                
+                return@withContext Result.success()
+            }
+            
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 2.5: Checking sync gate (canSync)")
+            }
+            
+            // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (WiFi-Only, Offline Mode, Server Config)
+            val gateResult = syncService.canSync()
+            if (!gateResult.canSync) {
+                if (gateResult.isBlockedByWifiOnly) {
+                    Logger.d(TAG, "⏭️ WiFi-only mode enabled, but not on WiFi - skipping sync")
+                } else {
+                    Logger.d(TAG, "⏭️ Sync blocked by gate: ${gateResult.blockReason ?: "offline/no server"}")
+                }
+                
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (gate blocked)")
                     Logger.d(TAG, "═══════════════════════════════════════")
                 }
                 

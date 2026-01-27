@@ -8,6 +8,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.0] - 2026-01-26
+
+### 🎉 Major: Grid View, WiFi-Only Sync & VPN Support
+
+Pinterest-style grid, WiFi-only sync mode, and proper VPN support!
+
+### 🎨 Grid Layout
+
+- Pinterest-style staggered grid without gaps
+- Consistent 12dp spacing between cards
+- Scroll position preserved when returning from settings
+- New unified `NoteCardGrid` with dynamic preview lines (3 small, 6 large)
+
+### 📡 Sync Improvements
+
+- **WiFi-only sync toggle** - Sync only when connected to WiFi
+- **VPN support** - Sync works correctly when VPN is active (traffic routes through VPN)
+- **Server change detection** - All notes reset to PENDING when server URL changes
+- **Faster server check** - Socket timeout reduced from 2s to 1s
+- **"Sync already running" feedback** - Shows snackbar when sync is in progress
+
+### 🔒 Self-Signed SSL Support
+
+- **Documentation added** - Guide for using self-signed certificates
+- Uses Android's built-in CA trust store
+- Works with ownCloud, Nextcloud, Synology, home servers
+
+### 🔧 Technical
+
+- `NoteCardGrid` component with dynamic maxLines
+- Removed FullLine spans for gapless layout
+- `resetAllSyncStatusToPending()` in NotesStorage
+- VPN detection in `getOrCacheWiFiAddress()`
+
+---
+
 ## [1.6.1] - 2026-01-20
 
 ### 🧹 Code Quality & Build Improvements

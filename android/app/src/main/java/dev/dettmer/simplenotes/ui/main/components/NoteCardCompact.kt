@@ -48,17 +48,17 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
- * Note card - v1.5.0 with Multi-Select Support
+ * 🎨 v1.7.0: Compact Note Card for Grid Layout
  * 
- * ULTRA SIMPLE + SELECTION:
- * - NO remember() anywhere
- * - Direct MaterialTheme access
- * - Selection indicator via border + checkbox overlay
- * - Long-press starts selection mode
- * - Tap in selection mode toggles selection
+ * COMPACT DESIGN für kleine Notizen:
+ * - Reduzierter Padding (12dp statt 16dp)
+ * - Kleinere Icons (24dp statt 32dp)
+ * - Kompakte Typography (titleSmall)
+ * - Max 3 Zeilen Preview
+ * - Optimiert für Grid-Ansicht
  */
 @Composable
-fun NoteCard(
+fun NoteCardCompact(
     note: Note,
     showSyncStatus: Boolean,
     isSelected: Boolean = false,
@@ -72,13 +72,12 @@ fun NoteCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            // 🎨 v1.7.0: Externes Padding entfernt - Grid/Liste steuert Abstände
             .then(
                 if (isSelected) {
                     Modifier.border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(12.dp)
                     )
                 } else Modifier
             )
@@ -88,7 +87,7 @@ fun NoteCard(
                     onLongPress = { onLongClick() }
                 )
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
@@ -102,17 +101,17 @@ fun NoteCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(12.dp)
             ) {
-                // Header row
+                // Header row - COMPACT
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Type icon
+                    // Type icon - SMALLER
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(24.dp)
                             .background(
                                 MaterialTheme.colorScheme.primaryContainer,
                                 CircleShape
@@ -126,55 +125,62 @@ fun NoteCard(
                                 Icons.AutoMirrored.Outlined.List,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(12.dp)
                         )
                     }
                     
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     
-                    // Title
+                    // Title - COMPACT Typography
                     Text(
                         text = note.title.ifEmpty { stringResource(R.string.untitled) },
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
-                // Preview
+                // Preview - MAX 3 ZEILEN
                 Text(
                     text = when (note.noteType) {
-                        NoteType.TEXT -> note.content.take(100)
+                        NoteType.TEXT -> note.content
                         NoteType.CHECKLIST -> {
-                            val items = note.checklistItems ?: emptyList()
-                            stringResource(R.string.checklist_progress, items.count { it.isChecked }, items.size)
+                            note.checklistItems
+                                ?.joinToString("\n") { item ->
+                                    val prefix = if (item.isChecked) "✅" else "☐"
+                                    "$prefix ${item.text}"
+                                } ?: ""
                         }
                     },
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
-                // Footer
+                // Bottom row - KOMPAKT
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Timestamp - SMALLER
                     Text(
                         text = note.updatedAt.toReadableTime(context),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.weight(1f)
                     )
                     
+                    // Sync Status - KOMPAKT
                     if (showSyncStatus) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        
                         Icon(
                             imageVector = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> Icons.Outlined.CloudDone
@@ -188,7 +194,7 @@ fun NoteCard(
                                 SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
                                 else -> MaterialTheme.colorScheme.outline
                             },
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -201,11 +207,11 @@ fun NoteCard(
                 exit = fadeOut() + scaleOut(),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp)
+                    .padding(6.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(20.dp)
                         .clip(CircleShape)
                         .background(
                             if (isSelected) {
@@ -227,10 +233,10 @@ fun NoteCard(
                 ) {
                     if (isSelected) {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            imageVector = Icons.Filled.Check,
                             contentDescription = stringResource(R.string.selection_count, 1),
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(12.dp)
                         )
                     }
                 }

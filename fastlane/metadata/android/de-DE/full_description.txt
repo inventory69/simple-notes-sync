@@ -1,62 +1,32 @@
-Simple Notes Sync ist eine minimalistische Notizen-App mit WebDAV-Synchronisation.
+Simple Notes Sync ist eine minimalistische Notizen-App mit WebDAV-Synchronisation und modernen Features.
 
-HAUPTFUNKTIONEN:
-
-• Text-Notizen und Checklisten erstellen
-• Checklisten mit Tap-to-Check und Drag & Drop
-• Auswahlmodus: Long-Press zur Mehrfachauswahl für Batch-Aktionen
-• WebDAV-Synchronisation mit eigenem Server
+Hauptfunktionen:
+• Text-Notizen und Checklisten (Tap-to-Check, Drag & Drop)
+• NEU: Raster-Ansicht (Grid View) für Notizen
 • Multi-Device Sync (Handy, Tablet, Desktop)
-• Markdown-Export für Obsidian/Desktop-Editoren
-• Checklisten als GitHub-Style Task-Listen exportieren
-• Automatische Synchronisation im Heim-WLAN
-• Konfigurierbares Sync-Interval (15/30/60 Minuten)
-• Material Design 3 mit Dynamic Colors (Android 12+)
-• Jetpack Compose UI - modern, schnell und flüssig
+• WebDAV-Synchronisation mit eigenem Server (Nextcloud, ownCloud, etc.)
+• Markdown-Export und Import für Desktop-Editoren (Obsidian, VS Code)
+• NEU: WiFi-only Sync, VPN-Unterstützung, Verschlüsselung für lokale Backups
+• Konfigurierbare Sync-Trigger: onSave, onResume, WiFi, periodisch, Boot
 • Komplett offline nutzbar
 • Keine Werbung, keine Tracker
 
-MEHRSPRACHIG:
+Datenschutz & Sicherheit:
+• Alle Daten bleiben bei dir – keine Cloud, keine Tracking-Bibliotheken
+• Unterstützung für selbstsignierte SSL-Zertifikate (Self-signed SSL)
+• SHA-256 Hash des Signaturzertifikats in App und Releases sichtbar
 
-• Englische und deutsche Sprachunterstützung
-• Per-App Sprachauswahl (Android 13+)
-• Automatische Systemsprachen-Erkennung
-• Über 400 übersetzte Strings
+Synchronisation:
+• Automatisch oder manuell, optimierte Performance, periodischer Sync optional
+• Intelligente Konfliktlösung, Lösch-Tracking, Batch-Aktionen
 
-DATENSCHUTZ:
+UI & Design:
+• Moderne Jetpack Compose Oberfläche
+• Material Design 3, Dynamic Colors, Dark Mode
+• Animationen und Live Sync-Status
 
-Deine Daten bleiben bei dir! Die App kommuniziert nur mit deinem eigenen WebDAV-Server. Keine Cloud-Dienste, keine Tracking-Bibliotheken, keine Analysetools.
-
-MULTI-DEVICE SYNC:
-
-• Notizen synchronisieren automatisch zwischen allen Geräten
-• Lösch-Tracking verhindert "Zombie-Notizen"
-• Intelligente Konfliktlösung durch Timestamps
-• Markdown-Dateien für Desktop-Bearbeitung (Obsidian, VS Code, etc.)
-• Änderungen von Desktop-Editoren werden automatisch importiert
-
-SYNCHRONISATION:
-
-• Unterstützt alle WebDAV-Server (Nextcloud, ownCloud, etc.)
-• Konfigurierbare Sync-Trigger: Wähle einzeln, wann synchronisiert wird
-• 5 Trigger: onSave (nach dem Speichern), onResume (beim Öffnen), WiFi-Connect, Periodic (15/30/60 Min), Boot
-• Offline-Modus: Alle Netzwerkfunktionen mit einem Schalter deaktivieren
-• Smarte Defaults: nur ereignisbasierte Trigger aktiv (~0.2%/Tag Akku)
-• Periodischer Sync optional (Standard: AUS)
-• Optimierte Performance: überspringt unveränderte Dateien (~2-3s Sync-Zeit)
-• E-Tag Caching für 20x schnellere "keine Änderungen" Checks
-• Silent-Sync Modus: kein Banner bei Auto-Sync
-• Doze Mode optimiert für zuverlässige Background-Syncs
-• Manuelle Synchronisation jederzeit möglich
-
-MATERIAL DESIGN 3:
-
-• Moderne Jetpack Compose Benutzeroberfläche
-• Dynamic Colors (Material You) auf Android 12+
-• Dark Mode Support
-• Auswahlmodus mit Batch-Löschen
-• Live Sync-Status Anzeige
-• Flüssige Slide-Animationen
+Mehrsprachig:
+• Deutsch und Englisch, automatische Erkennung, App-Sprachauswahl
 
 Open Source unter MIT-Lizenz
 Quellcode: https://github.com/inventory69/simple-notes-sync

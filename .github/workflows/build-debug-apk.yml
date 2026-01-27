@@ -1,0 +1,87 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches: 
+      - 'debug/**'
+      - 'fix/**'
+      - 'feature/**'
+  workflow_dispatch:  # Manueller Trigger möglich
+
+jobs:
+  build-debug:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Extract version info
+        run: |
+          VERSION_NAME=$(grep "versionName = " android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
+          VERSION_CODE=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+      
+      - name: Build Debug APK (Standard + F-Droid)
+        run: |
+          cd android
+          ./gradlew assembleStandardDebug assembleFdroidDebug --no-daemon --stacktrace
+      
+      - name: Prepare Debug APK artifacts
+        run: |
+          mkdir -p debug-apks
+          
+          cp android/app/build/outputs/apk/standard/debug/app-standard-debug.apk \
+             debug-apks/simple-notes-sync-v${{ env.VERSION_NAME }}-${{ env.COMMIT_SHA }}-standard-debug.apk
+          
+          cp android/app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk \
+             debug-apks/simple-notes-sync-v${{ env.VERSION_NAME }}-${{ env.COMMIT_SHA }}-fdroid-debug.apk
+          
+          echo "✅ Debug APK Files ready:"
+          ls -lh debug-apks/
+      
+      - name: Upload Debug APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-notes-sync-debug-v${{ env.VERSION_NAME }}-${{ env.BUILD_TIME }}
+          path: debug-apks/*.apk
+          retention-days: 30  # Debug Builds länger aufbewahren
+          compression-level: 0  # APK ist bereits komprimiert
+      
+      - name: Create summary
+        run: |
+          echo "## 🐛 Debug APK Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** v${{ env.VERSION_NAME }} (Code: ${{ env.VERSION_CODE }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ env.BRANCH_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ env.COMMIT_SHA }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Built:** ${{ env.BUILD_TIME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Download" >> $GITHUB_STEP_SUMMARY
+          echo "Debug APK available in the Artifacts section above (expires in 30 days)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Enable unknown sources" >> $GITHUB_STEP_SUMMARY
+          echo "adb install simple-notes-sync-*-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What's included?" >> $GITHUB_STEP_SUMMARY
+          echo "- Full Logging enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- Not production signed" >> $GITHUB_STEP_SUMMARY
+          echo "- May have performance impact" >> $GITHUB_STEP_SUMMARY

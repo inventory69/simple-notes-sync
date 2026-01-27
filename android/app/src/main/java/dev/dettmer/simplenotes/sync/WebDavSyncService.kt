@@ -41,7 +41,7 @@ class WebDavSyncService(private val context: Context) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        private const val SOCKET_TIMEOUT_MS = 2000
+        private const val SOCKET_TIMEOUT_MS = 1000  // 🆕 v1.7.0: Reduziert von 2s auf 1s
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
@@ -130,7 +130,14 @@ class WebDavSyncService(private val context: Context) {
                 return null
             }
             
-            // Nur wenn WiFi aktiv
+            // 🔒 v1.7.0: VPN-Detection - Skip WiFi binding when VPN is active
+            // When VPN is active, traffic should route through VPN, not directly via WiFi
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                Logger.d(TAG, "🔒 VPN detected - using default routing (traffic will go through VPN)")
+                return null
+            }
+            
+            // Nur wenn WiFi aktiv (und kein VPN)
             if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 Logger.d(TAG, "⚠️ Not on WiFi, using default routing")
                 return null
@@ -554,6 +561,63 @@ class WebDavSyncService(private val context: Context) {
             Logger.d(TAG, "❌ Server not reachable: ${e.message}")
             false
         }
+    }
+    
+    /**
+     * 🆕 v1.7.0: Prüft ob Gerät aktuell im WLAN ist
+     * Für schnellen Pre-Check VOR dem langsamen Socket-Check
+     * 
+     * @return true wenn WLAN verbunden, false sonst (mobil oder kein Netzwerk)
+     */
+    fun isOnWiFi(): Boolean {
+        return try {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) 
+                as? ConnectivityManager ?: return false
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to check WiFi state", e)
+            false
+        }
+    }
+    
+    /**
+     * 🆕 v1.7.0: Zentrale Sync-Gate Prüfung
+     * Prüft ALLE Voraussetzungen bevor ein Sync gestartet wird.
+     * Diese Funktion sollte VOR jedem syncNotes() Aufruf verwendet werden.
+     * 
+     * @return SyncGateResult mit canSync flag und optionalem Blockierungsgrund
+     */
+    fun canSync(): SyncGateResult {
+        // 1. Offline Mode Check
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
+            return SyncGateResult(canSync = false, blockReason = null) // Silent skip
+        }
+        
+        // 2. Server configured?
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
+            return SyncGateResult(canSync = false, blockReason = null) // Silent skip
+        }
+        
+        // 3. WiFi-Only Check
+        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
+        if (wifiOnlySync && !isOnWiFi()) {
+            return SyncGateResult(canSync = false, blockReason = "wifi_only")
+        }
+        
+        return SyncGateResult(canSync = true, blockReason = null)
+    }
+    
+    /**
+     * 🆕 v1.7.0: Result-Klasse für canSync()
+     */
+    data class SyncGateResult(
+        val canSync: Boolean,
+        val blockReason: String? = null
+    ) {
+        val isBlockedByWifiOnly: Boolean get() = blockReason == "wifi_only"
     }
     
     suspend fun testConnection(): SyncResult = withContext(Dispatchers.IO) {
