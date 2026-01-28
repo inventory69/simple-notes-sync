@@ -125,6 +125,18 @@ cd android
 
 ➡️ **Build guide:** [DOCS.md](docs/DOCS.md#-build--deployment)
 
+## 💡 Feature Requests & Ideas
+
+Have an idea for a new feature or improvement? We'd love to hear it!
+
+➡️ **How to suggest features:**
+
+1. Check [existing discussions](https://github.com/inventory69/simple-notes-sync/discussions) to see if someone already suggested it
+2. If not, start a new discussion in the "Feature Requests / Ideas" category
+3. Upvote (👍) features you'd like to see
+
+Features with enough community support will be considered for implementation. Please keep in mind that this app is designed to stay simple and user-friendly.
+
 ## 🤝 Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
