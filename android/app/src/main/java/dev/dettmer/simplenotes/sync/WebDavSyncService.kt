@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.thegrizzlylabs.sardineandroid.Sardine
-import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
@@ -56,7 +55,7 @@ class WebDavSyncService(private val context: Context) {
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     
     // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
-    private var sessionSardine: Sardine? = null
+    private var sessionSardine: SafeSardineWrapper? = null
     private var sessionWifiAddress: InetAddress? = null
     private var sessionWifiAddressChecked = false  // Flag ob WiFi-Check bereits durchgeführt
     
@@ -235,12 +234,16 @@ class WebDavSyncService(private val context: Context) {
     
     /**
      * Erstellt einen neuen Sardine-Client (intern)
+     * 
+     * 🔧 v1.7.1: Verwendet SafeSardineWrapper statt OkHttpSardine
+     * - Verhindert Connection Leaks durch proper Response-Cleanup
+     * - Preemptive Authentication für weniger 401-Round-Trips
      */
-    private fun createSardineClient(): Sardine? {
+    private fun createSardineClient(): SafeSardineWrapper? {
         val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
         val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
         
-        Logger.d(TAG, "🔧 Creating OkHttpSardine with WiFi binding")
+        Logger.d(TAG, "🔧 Creating SafeSardineWrapper with WiFi binding")
         Logger.d(TAG, "    Context: ${context.javaClass.simpleName}")
         
         // ⚡ v1.3.1: Verwende gecachte WiFi-Adresse
@@ -256,9 +259,7 @@ class WebDavSyncService(private val context: Context) {
             OkHttpClient.Builder().build()
         }
         
-        return OkHttpSardine(okHttpClient).apply {
-            setCredentials(username, password)
-        }
+        return SafeSardineWrapper.create(okHttpClient, username, password)
     }
     
     /**
@@ -1030,9 +1031,7 @@ class WebDavSyncService(private val context: Context) {
             OkHttpClient.Builder().build()
         }
         
-        val sardine = OkHttpSardine(okHttpClient).apply {
-            setCredentials(username, password)
-        }
+        val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
         
         val mdUrl = getMarkdownUrl(serverUrl)
         
@@ -1544,8 +1543,8 @@ class WebDavSyncService(private val context: Context) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
-            val sardine = OkHttpSardine()
-            sardine.setCredentials(username, password)
+            val okHttpClient = OkHttpClient.Builder().build()
+            val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
             
             val mdUrl = getMarkdownUrl(serverUrl)
             

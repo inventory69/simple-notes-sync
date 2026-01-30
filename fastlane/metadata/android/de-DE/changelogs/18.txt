@@ -1,0 +1,3 @@
+• Behoben: App-Absturz auf Android 9 - Danke an @roughnecks
+• Verbessert: Stabilität der Sync-Sessions
+• Technisch: Optimierte Verbindungsverwaltung

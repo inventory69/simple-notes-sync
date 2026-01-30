@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.1] - 2026-01-30
+
+### 🐛 Critical Bug Fixes
+
+- **Fixed app crash on Android 9 after extended use** ([ref #15](https://github.com/inventory69/simple-notes-sync/issues/15))
+  - Fixed resource exhaustion caused by unclosed HTTP connections
+  - App could crash after ~30-45 minutes of use due to accumulated connection leaks
+  - Thanks to [@roughnecks] for the detailed bug report!
+
+### 🔧 Technical Changes
+
+- New `SafeSardineWrapper` class ensures proper HTTP connection cleanup
+- Reduced unnecessary 401 authentication challenges with preemptive auth headers
+- Added ProGuard rule to suppress harmless TextInclusionStrategy warnings on older Android versions
+
+---
+
 ## [1.7.0] - 2026-01-26
 
 ### 🎉 Major: Grid View, WiFi-Only Sync & VPN Support
