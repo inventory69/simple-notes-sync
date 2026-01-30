@@ -17,11 +17,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - App could crash after ~30-45 minutes of use due to accumulated connection leaks
   - Thanks to [@roughnecks] for the detailed bug report!
 
+- **Fixed VPN compatibility regression** ([ref #11](https://github.com/inventory69/simple-notes-sync/issues/11))
+  - WiFi socket binding now correctly detects Wireguard VPN interfaces (tun*, wg*, *-wg-*)
+  - Traffic routes through VPN tunnel instead of bypassing it directly to WiFi
+  - Fixes "Connection timeout" when syncing to external servers via VPN
+
 ### 🔧 Technical Changes
 
 - New `SafeSardineWrapper` class ensures proper HTTP connection cleanup
 - Reduced unnecessary 401 authentication challenges with preemptive auth headers
 - Added ProGuard rule to suppress harmless TextInclusionStrategy warnings on older Android versions
+- VPN interface detection via `NetworkInterface.getNetworkInterfaces()` pattern matching
+
+### 🌍 Localization
+
+- Fixed hardcoded German error messages - now uses string resources for proper localization
 
 ---
 

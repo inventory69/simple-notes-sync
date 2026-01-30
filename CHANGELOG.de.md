@@ -8,6 +8,33 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.1] - 2026-01-30
+
+### 🐛 Kritische Fehlerbehebungen
+
+- **App-Absturz auf Android 9 nach längerer Nutzung behoben** ([ref #15](https://github.com/inventory69/simple-notes-sync/issues/15))
+  - Ressourcenerschöpfung durch nicht geschlossene HTTP-Verbindungen behoben
+  - App konnte nach ~30-45 Minuten Nutzung durch angesammelte Connection-Leaks abstürzen
+  - Danke an [@roughnecks] für den detaillierten Fehlerbericht!
+
+- **VPN-Kompatibilitäts-Regression behoben** ([ref #11](https://github.com/inventory69/simple-notes-sync/issues/11))
+  - WiFi Socket-Binding erkennt jetzt korrekt Wireguard VPN-Interfaces (tun*, wg*, *-wg-*)
+  - Traffic wird korrekt durch VPN-Tunnel geleitet statt direkt über WiFi
+  - Behebt "Verbindungs-Timeout" beim Sync zu externen Servern über VPN
+
+### 🔧 Technische Änderungen
+
+- Neue `SafeSardineWrapper` Klasse stellt korrektes HTTP-Connection-Cleanup sicher
+- Weniger unnötige 401-Authentifizierungs-Challenges durch preemptive Auth-Header
+- ProGuard-Regel hinzugefügt um harmlose TextInclusionStrategy-Warnungen zu unterdrücken
+- VPN-Interface-Erkennung via `NetworkInterface.getNetworkInterfaces()` Pattern-Matching
+
+### 🌍 Lokalisierung
+
+- Hardcodierte deutsche Fehlermeldungen behoben - jetzt String-Resources für korrekte Lokalisierung
+
+---
+
 ## [1.7.0] - 2026-01-26
 
 ### 🎉 Major: Grid-Ansicht, Nur-WLAN Sync & VPN-Unterstützung

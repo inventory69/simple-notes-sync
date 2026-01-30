@@ -608,8 +608,8 @@ class SettingsActivity : AppCompatActivity() {
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in anderen Triggern)
                 if (!syncService.isServerReachable()) {
-                    showToast("⚠️ Server nicht erreichbar")
-                    SyncStateManager.markError("Server nicht erreichbar")
+                    showToast("⚠️ ${getString(R.string.snackbar_server_unreachable)}")
+                    SyncStateManager.markError(getString(R.string.snackbar_server_unreachable))
                     checkServerStatus() // Server-Status aktualisieren
                     return@launch
                 }
