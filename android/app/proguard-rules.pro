@@ -61,3 +61,7 @@
 
 # Keep your app's data classes
 -keep class dev.dettmer.simplenotes.** { *; }
+
+# v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
+# This class only exists on API 35+ but Compose handles the fallback gracefully
+-dontwarn android.text.Layout$TextInclusionStrategy
