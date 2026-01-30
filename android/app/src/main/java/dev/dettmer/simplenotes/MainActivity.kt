@@ -392,13 +392,13 @@ class MainActivity : AppCompatActivity() {
                     // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                     if (!syncService.hasUnsyncedChanges()) {
                         Logger.d(TAG, "⏭️ No unsynced changes, skipping server reachability check")
-                        SyncStateManager.markCompleted("Bereits synchronisiert")
+                        SyncStateManager.markCompleted(getString(R.string.snackbar_already_synced))
                         return@launch
                     }
                     
                     // Check if server is reachable
                     if (!syncService.isServerReachable()) {
-                        SyncStateManager.markError("Server nicht erreichbar")
+                        SyncStateManager.markError(getString(R.string.snackbar_server_unreachable))
                         return@launch
                     }
                     
@@ -406,7 +406,7 @@ class MainActivity : AppCompatActivity() {
                     val result = syncService.syncNotes()
                     
                     if (result.isSuccess) {
-                        SyncStateManager.markCompleted("${result.syncedCount} Notizen")
+                        SyncStateManager.markCompleted(getString(R.string.snackbar_synced_count, result.syncedCount))
                         loadNotes()
                     } else {
                         SyncStateManager.markError(result.errorMessage)
@@ -683,7 +683,7 @@ class MainActivity : AppCompatActivity() {
                 
                 if (!isReachable) {
                     Logger.d(TAG, "⏭️ Manual Sync: Server not reachable - aborting")
-                    SyncStateManager.markError("Server nicht erreichbar")
+                    SyncStateManager.markError(getString(R.string.snackbar_server_unreachable))
                     return@launch
                 }
                 

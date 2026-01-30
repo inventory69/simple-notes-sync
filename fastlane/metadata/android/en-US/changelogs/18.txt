@@ -1,3 +1,4 @@
 • Fixed: App crash on Android 9 - Thanks to @roughnecks
+• Fixed: Kernel-VPN compatibility (Wireguard)
 • Improved: Stability at sync sessions
 • Technical: Optimized connection management

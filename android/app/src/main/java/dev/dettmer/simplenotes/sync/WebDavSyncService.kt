@@ -105,7 +105,44 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
+     * 🔒 v1.7.1: Checks if any VPN/Wireguard interface is active.
+     * 
+     * Wireguard VPNs run as separate network interfaces (tun*, wg*, *-wg-*),
+     * and are NOT detected via NetworkCapabilities.TRANSPORT_VPN!
+     * 
+     * @return true if VPN interface is detected
+     */
+    private fun isVpnInterfaceActive(): Boolean {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces() ?: return false
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (!iface.isUp) continue
+                
+                val name = iface.name.lowercase()
+                // Check for VPN/Wireguard interface patterns:
+                // - tun0, tun1, etc. (OpenVPN, generic VPN)
+                // - wg0, wg1, etc. (Wireguard)
+                // - *-wg-* (Mullvad, ProtonVPN style: se-sto-wg-202)
+                if (name.startsWith("tun") || 
+                    name.startsWith("wg") || 
+                    name.contains("-wg-") ||
+                    name.startsWith("ppp")) {
+                    Logger.d(TAG, "🔒 VPN interface detected: ${iface.name}")
+                    return true
+                }
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ Failed to check VPN interfaces: ${e.message}")
+        }
+        return false
+    }
+    
+    /**
      * Findet WiFi Interface IP-Adresse (um VPN zu umgehen)
+     * 
+     * 🔒 v1.7.1 Fix: Now detects Wireguard VPN interfaces and skips WiFi binding
+     * when VPN is active, so traffic routes through VPN tunnel correctly.
      */
     @Suppress("ReturnCount") // Early returns for network validation checks
     private fun getWiFiInetAddressInternal(): InetAddress? {
@@ -129,10 +166,17 @@ class WebDavSyncService(private val context: Context) {
                 return null
             }
             
-            // 🔒 v1.7.0: VPN-Detection - Skip WiFi binding when VPN is active
+            // 🔒 v1.7.0: VPN-Detection via NetworkCapabilities (standard Android VPN)
             // When VPN is active, traffic should route through VPN, not directly via WiFi
             if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                Logger.d(TAG, "🔒 VPN detected - using default routing (traffic will go through VPN)")
+                Logger.d(TAG, "🔒 VPN detected (TRANSPORT_VPN) - using default routing")
+                return null
+            }
+            
+            // 🔒 v1.7.1: VPN-Detection via interface names (Wireguard, OpenVPN, etc.)
+            // Wireguard VPNs are NOT detected via TRANSPORT_VPN, they run as separate interfaces!
+            if (isVpnInterfaceActive()) {
+                Logger.d(TAG, "🔒 VPN interface detected - skip WiFi binding, use default routing")
                 return null
             }
             
@@ -142,7 +186,7 @@ class WebDavSyncService(private val context: Context) {
                 return null
             }
             
-            Logger.d(TAG, "✅ Network is WiFi, searching for interface...")
+            Logger.d(TAG, "✅ Network is WiFi (no VPN), searching for interface...")
             
             @Suppress("LoopWithTooManyJumpStatements") // Network interface filtering requires multiple conditions
             // Finde WiFi Interface
@@ -649,19 +693,19 @@ class WebDavSyncService(private val context: Context) {
             SyncResult(
                 isSuccess = false,
                 errorMessage = when (e) {
-                    is java.net.UnknownHostException -> "Server nicht erreichbar"
-                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout"
-                    is javax.net.ssl.SSLException -> "SSL-Fehler"
+                    is java.net.UnknownHostException -> context.getString(R.string.snackbar_server_unreachable)
+                    is java.net.SocketTimeoutException -> context.getString(R.string.snackbar_connection_timeout)
+                    is javax.net.ssl.SSLException -> context.getString(R.string.sync_error_ssl)
                     is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
                         when (e.statusCode) {
-                            401 -> "Authentifizierung fehlgeschlagen"
-                            403 -> "Zugriff verweigert"
-                            404 -> "Server-Pfad nicht gefunden"
-                            500 -> "Server-Fehler"
-                            else -> "HTTP-Fehler: ${e.statusCode}"
+                            401 -> context.getString(R.string.sync_error_auth_failed)
+                            403 -> context.getString(R.string.sync_error_access_denied)
+                            404 -> context.getString(R.string.sync_error_path_not_found)
+                            500 -> context.getString(R.string.sync_error_server)
+                            else -> context.getString(R.string.sync_error_http, e.statusCode)
                         }
                     }
-                    else -> e.message ?: "Unbekannter Fehler"
+                    else -> e.message ?: context.getString(R.string.sync_error_unknown)
                 }
             )
         }
@@ -824,19 +868,19 @@ class WebDavSyncService(private val context: Context) {
             SyncResult(
                 isSuccess = false,
                 errorMessage = when (e) {
-                    is java.net.UnknownHostException -> "Server nicht erreichbar: ${e.message}"
-                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout: ${e.message}"
-                    is javax.net.ssl.SSLException -> "SSL-Fehler"
+                    is java.net.UnknownHostException -> "${context.getString(R.string.snackbar_server_unreachable)}: ${e.message}"
+                    is java.net.SocketTimeoutException -> "${context.getString(R.string.snackbar_connection_timeout)}: ${e.message}"
+                    is javax.net.ssl.SSLException -> context.getString(R.string.sync_error_ssl)
                     is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
                         when (e.statusCode) {
-                            401 -> "Authentifizierung fehlgeschlagen"
-                            403 -> "Zugriff verweigert"
-                            404 -> "Server-Pfad nicht gefunden"
-                            500 -> "Server-Fehler"
-                            else -> "HTTP-Fehler: ${e.statusCode}"
+                            401 -> context.getString(R.string.sync_error_auth_failed)
+                            403 -> context.getString(R.string.sync_error_access_denied)
+                            404 -> context.getString(R.string.sync_error_path_not_found)
+                            500 -> context.getString(R.string.sync_error_server)
+                            else -> context.getString(R.string.sync_error_http, e.statusCode)
                         }
                     }
-                    else -> e.message ?: "Unbekannter Fehler"
+                    else -> e.message ?: context.getString(R.string.sync_error_unknown)
                 }
             )
         }
@@ -1145,9 +1189,32 @@ class WebDavSyncService(private val context: Context) {
                             "modified=$serverModified lastSync=$lastSyncTime"
                     )
                     
+                    // FIRST: Check deletion tracker - if locally deleted, skip unless re-created on server
+                    if (deletionTracker.isDeleted(noteId)) {
+                        val deletedAt = deletionTracker.getDeletionTimestamp(noteId)
+                        
+                        // Smart check: Was note re-created on server after deletion?
+                        if (deletedAt != null && serverModified > deletedAt) {
+                            Logger.d(TAG, "   📝 Note re-created on server after deletion: $noteId")
+                            deletionTracker.removeDeletion(noteId)
+                            trackerModified = true
+                            // Continue with download below
+                        } else {
+                            Logger.d(TAG, "   ⏭️ Skipping deleted note: $noteId")
+                            skippedDeleted++
+                            processedIds.add(noteId)
+                            continue
+                        }
+                    }
+                    
+                    // Check if file exists locally
+                    val localNote = storage.loadNote(noteId)
+                    val fileExistsLocally = localNote != null
+                    
                     // PRIMARY: Timestamp check (works on first sync!)
                     // Same logic as Markdown sync - skip if not modified since last sync
-                    if (!forceOverwrite && lastSyncTime > 0 && serverModified <= lastSyncTime) {
+                    // BUT: Always download if file doesn't exist locally!
+                    if (!forceOverwrite && fileExistsLocally && lastSyncTime > 0 && serverModified <= lastSyncTime) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: Not modified since last sync (timestamp)")
                         processedIds.add(noteId)
@@ -1156,11 +1223,17 @@ class WebDavSyncService(private val context: Context) {
                     
                     // SECONDARY: E-Tag check (for performance after first sync)
                     // Catches cases where file was re-uploaded with same content
-                    if (!forceOverwrite && serverETag != null && serverETag == cachedETag) {
+                    // BUT: Always download if file doesn't exist locally!
+                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
                         processedIds.add(noteId)
                         continue
+                    }
+                    
+                    // If file doesn't exist locally, always download
+                    if (!fileExistsLocally) {
+                        Logger.d(TAG, "   📥 File missing locally - forcing download")
                     }
                     
                     // 🐛 DEBUG: Log download reason
@@ -1179,28 +1252,9 @@ class WebDavSyncService(private val context: Context) {
                     val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
                     val remoteNote = Note.fromJson(jsonContent) ?: continue
                     
-                    // NEW: Check if note was deleted locally
-                    if (deletionTracker.isDeleted(remoteNote.id)) {
-                        val deletedAt = deletionTracker.getDeletionTimestamp(remoteNote.id)
-                        
-                        // Smart check: Was note re-created on server after deletion?
-                        if (deletedAt != null && remoteNote.updatedAt > deletedAt) {
-                            Logger.d(TAG, "   📝 Note re-created on server after deletion: ${remoteNote.id}")
-                            deletionTracker.removeDeletion(remoteNote.id)
-                            trackerModified = true
-                            // Continue with download below
-                        } else {
-                            Logger.d(TAG, "   ⏭️ Skipping deleted note: ${remoteNote.id}")
-                            skippedDeleted++
-                            processedIds.add(remoteNote.id)
-                            continue
-                        }
-                    }
-                    
                     processedIds.add(remoteNote.id)  // 🆕 Mark as processed
                     
-                    val localNote = storage.loadNote(remoteNote.id)
-                    
+                    // Note: localNote was already loaded above for existence check
                     when {
                         localNote == null -> {
                             // New note from server

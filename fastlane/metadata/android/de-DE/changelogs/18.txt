@@ -1,3 +1,4 @@
 • Behoben: App-Absturz auf Android 9 - Danke an @roughnecks
+• Behoben: Kernel-VPN-Kompatibilität (Wireguard)
 • Verbessert: Stabilität der Sync-Sessions
 • Technisch: Optimierte Verbindungsverwaltung
