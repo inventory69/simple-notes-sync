@@ -599,7 +599,7 @@ class SettingsActivity : AppCompatActivity() {
                 
                 // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                 if (!syncService.hasUnsyncedChanges()) {
-                    showToast("✅ Bereits synchronisiert")
+                    showToast(getString(R.string.toast_already_synced))
                     SyncStateManager.markCompleted()
                     return@launch
                 }
