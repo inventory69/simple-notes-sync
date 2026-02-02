@@ -1,4 +1,5 @@
-• Fixed: App crash on Android 9 - Thanks to @roughnecks
-• Fixed: Kernel-VPN compatibility (Wireguard)
-• Improved: Stability at sync sessions
-• Technical: Optimized connection management
+• Fixed: App crash on Android 9 (Issue #15) - Thanks to @roughnecks
+  - WorkManager expedited work compatibility (getForegroundInfo)
+  - Kernel-VPN compatibility (Wireguard tun/wg interfaces)
+• Improved: Stability and connection management
+• Technical: Optimized HTTP connection lifecycle

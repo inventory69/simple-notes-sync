@@ -438,6 +438,8 @@
     <!-- ============================= -->
     <string name="notification_channel_name">Notizen Synchronisierung</string>
     <string name="notification_channel_desc">Benachrichtigungen über Sync-Status</string>
+    <string name="sync_in_progress">Synchronisierung läuft</string>
+    <string name="sync_in_progress_text">Notizen werden synchronisiert…</string>
     <string name="notification_sync_success_title">Sync erfolgreich</string>
     <string name="notification_sync_success_message">%d Notiz(en) synchronisiert</string>
     <string name="notification_sync_failed_title">Sync fehlgeschlagen</string>

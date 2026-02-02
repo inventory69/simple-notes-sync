@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18  // 🔧 v1.7.1: Connection Leak Fix (Issue #15)
-        versionName = "1.7.1"  // 🔧 v1.7.1: Connection Leak Fix
+        versionCode = 18  // 🔧 v1.7.1: Android 9 getForegroundInfo Fix (Issue #15)
+        versionName = "1.7.1"  // 🔧 v1.7.1: Android 9 getForegroundInfo Fix
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
