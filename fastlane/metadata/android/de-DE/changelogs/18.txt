@@ -1,6 +1,5 @@
-• Behoben: App-Absturz auf Android 9 (Issue #15) - Danke an @roughnecks
-  - WorkManager Expedited Work Kompatibilität (getForegroundInfo)
-  - Kernel-VPN-Kompatibilität (Wireguard tun/wg Interfaces)
-• Verbessert: Stabilität und Verbindungsverwaltung
-• Technisch: Optimierter HTTP-Connection-Lebenszyklus
+• Behoben: App-Absturz auf Android 9  - Thanks to @roughnecks  
+• Behoben: Deutsche Texte trotz englischer App-Sprache
+• Verbessert: Sync-Verbindungsstabilität
+• Verbessert: Code-Qualität und Zuverlässigkeit
 
