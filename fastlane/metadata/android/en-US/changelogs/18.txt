@@ -1,0 +1,4 @@
+• Fixed: App crash on Android 9 - Thanks to @roughnecks  
+• Fixed: German text appearing despite English language setting
+• Improved: Sync connection stability (longer timeout)
+• Improved: Code quality and reliability

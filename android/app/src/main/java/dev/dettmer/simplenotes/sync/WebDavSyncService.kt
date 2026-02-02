@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.thegrizzlylabs.sardineandroid.Sardine
-import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
@@ -41,7 +40,7 @@ class WebDavSyncService(private val context: Context) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        private const val SOCKET_TIMEOUT_MS = 1000  // 🆕 v1.7.0: Reduziert von 2s auf 1s
+        private const val SOCKET_TIMEOUT_MS = 10000  // 🔧 v1.7.2: 10s für stabile Verbindungen (1s war zu kurz)
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
@@ -56,9 +55,7 @@ class WebDavSyncService(private val context: Context) {
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     
     // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
-    private var sessionSardine: Sardine? = null
-    private var sessionWifiAddress: InetAddress? = null
-    private var sessionWifiAddressChecked = false  // Flag ob WiFi-Check bereits durchgeführt
+    private var sessionSardine: SafeSardineWrapper? = null
     
     init {
         if (BuildConfig.DEBUG) {
@@ -91,129 +88,37 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
-     * ⚡ v1.3.1: Gecachte WiFi-Adresse zurückgeben oder berechnen
+     * 🔒 v1.7.1: Checks if any VPN/Wireguard interface is active.
+     * 
+     * Wireguard VPNs run as separate network interfaces (tun*, wg*, *-wg-*),
+     * and are NOT detected via NetworkCapabilities.TRANSPORT_VPN!
+     * 
+     * @return true if VPN interface is detected
      */
-    private fun getOrCacheWiFiAddress(): InetAddress? {
-        // Return cached if already checked this session
-        if (sessionWifiAddressChecked) {
-            return sessionWifiAddress
-        }
-        
-        // Calculate and cache
-        sessionWifiAddress = getWiFiInetAddressInternal()
-        sessionWifiAddressChecked = true
-        return sessionWifiAddress
-    }
-    
-    /**
-     * Findet WiFi Interface IP-Adresse (um VPN zu umgehen)
-     */
-    @Suppress("ReturnCount") // Early returns for network validation checks
-    private fun getWiFiInetAddressInternal(): InetAddress? {
+    private fun isVpnInterfaceActive(): Boolean {
         try {
-            Logger.d(TAG, "🔍 getWiFiInetAddress() called")
-            
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network = connectivityManager.activeNetwork
-            Logger.d(TAG, "    Active network: $network")
-            
-            if (network == null) {
-                Logger.d(TAG, "❌ No active network")
-                return null
-            }
-            
-            val capabilities = connectivityManager.getNetworkCapabilities(network)
-            Logger.d(TAG, "    Network capabilities: $capabilities")
-            
-            if (capabilities == null) {
-                Logger.d(TAG, "❌ No network capabilities")
-                return null
-            }
-            
-            // 🔒 v1.7.0: VPN-Detection - Skip WiFi binding when VPN is active
-            // When VPN is active, traffic should route through VPN, not directly via WiFi
-            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                Logger.d(TAG, "🔒 VPN detected - using default routing (traffic will go through VPN)")
-                return null
-            }
-            
-            // Nur wenn WiFi aktiv (und kein VPN)
-            if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                Logger.d(TAG, "⚠️ Not on WiFi, using default routing")
-                return null
-            }
-            
-            Logger.d(TAG, "✅ Network is WiFi, searching for interface...")
-            
-            @Suppress("LoopWithTooManyJumpStatements") // Network interface filtering requires multiple conditions
-            // Finde WiFi Interface
-            val interfaces = NetworkInterface.getNetworkInterfaces()
+            val interfaces = NetworkInterface.getNetworkInterfaces() ?: return false
             while (interfaces.hasMoreElements()) {
                 val iface = interfaces.nextElement()
-                
-                Logger.d(TAG, "    Checking interface: ${iface.name}, isUp=${iface.isUp}")
-                
-                // WiFi Interfaces: wlan0, wlan1, etc.
-                if (!iface.name.startsWith("wlan")) continue
                 if (!iface.isUp) continue
                 
-                val addresses = iface.inetAddresses
-                while (addresses.hasMoreElements()) {
-                    val addr = addresses.nextElement()
-                    
-                    Logger.d(
-                        TAG,
-                        "        Address: ${addr.hostAddress}, IPv4=${addr is Inet4Address}, " +
-                            "loopback=${addr.isLoopbackAddress}, linkLocal=${addr.isLinkLocalAddress}"
-                    )
-                    
-                    // Nur IPv4, nicht loopback, nicht link-local
-                    if (addr is Inet4Address && !addr.isLoopbackAddress && !addr.isLinkLocalAddress) {
-                        Logger.d(TAG, "✅ Found WiFi IP: ${addr.hostAddress} on ${iface.name}")
-                        return addr
-                    }
+                val name = iface.name.lowercase()
+                // Check for VPN/Wireguard interface patterns:
+                // - tun0, tun1, etc. (OpenVPN, generic VPN)
+                // - wg0, wg1, etc. (Wireguard)
+                // - *-wg-* (Mullvad, ProtonVPN style: se-sto-wg-202)
+                if (name.startsWith("tun") || 
+                    name.startsWith("wg") || 
+                    name.contains("-wg-") ||
+                    name.startsWith("ppp")) {
+                    Logger.d(TAG, "🔒 VPN interface detected: ${iface.name}")
+                    return true
                 }
             }
-            
-            Logger.w(TAG, "⚠️ No WiFi interface found, using default routing")
-            return null
-            
         } catch (e: Exception) {
-            Logger.e(TAG, "❌ Failed to get WiFi interface", e)
-            return null
+            Logger.w(TAG, "⚠️ Failed to check VPN interfaces: ${e.message}")
         }
-    }
-    
-    /**
-     * Custom SocketFactory die an WiFi-IP bindet (VPN Fix)
-     */
-    private inner class WiFiSocketFactory(private val wifiAddress: InetAddress) : SocketFactory() {
-        override fun createSocket(): Socket {
-            val socket = Socket()
-            socket.bind(InetSocketAddress(wifiAddress, 0))
-            Logger.d(TAG, "🔌 Socket bound to WiFi IP: ${wifiAddress.hostAddress}")
-            return socket
-        }
-        
-        override fun createSocket(host: String, port: Int): Socket {
-            val socket = createSocket()
-            socket.connect(InetSocketAddress(host, port))
-            return socket
-        }
-        
-        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket {
-            return createSocket(host, port)
-        }
-        
-        override fun createSocket(host: InetAddress, port: Int): Socket {
-            val socket = createSocket()
-            socket.connect(InetSocketAddress(host, port))
-            return socket
-        }
-        
-        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket {
-            return createSocket(address, port)
-        }
+        return false
     }
     
     /**
@@ -235,30 +140,26 @@ class WebDavSyncService(private val context: Context) {
     
     /**
      * Erstellt einen neuen Sardine-Client (intern)
+     * 
+     * 🆕 v1.7.2: Intelligentes Routing basierend auf Ziel-Adresse
+     * - Lokale Server: WiFi-Binding (bypass VPN)
+     * - Externe Server: Default-Routing (nutzt VPN wenn aktiv)
+     * 
+     * 🔧 v1.7.1: Verwendet SafeSardineWrapper statt OkHttpSardine
+     * - Verhindert Connection Leaks durch proper Response-Cleanup
+     * - Preemptive Authentication für weniger 401-Round-Trips
      */
-    private fun createSardineClient(): Sardine? {
+    private fun createSardineClient(): SafeSardineWrapper? {
         val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
         val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
         
-        Logger.d(TAG, "🔧 Creating OkHttpSardine with WiFi binding")
-        Logger.d(TAG, "    Context: ${context.javaClass.simpleName}")
+        Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
         
-        // ⚡ v1.3.1: Verwende gecachte WiFi-Adresse
-        val wifiAddress = getOrCacheWiFiAddress()
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
         
-        val okHttpClient = if (wifiAddress != null) {
-            Logger.d(TAG, "✅ Using WiFi-bound socket factory")
-            OkHttpClient.Builder()
-                .socketFactory(WiFiSocketFactory(wifiAddress))
-                .build()
-        } else {
-            Logger.d(TAG, "⚠️ Using default OkHttpClient (no WiFi binding)")
-            OkHttpClient.Builder().build()
-        }
-        
-        return OkHttpSardine(okHttpClient).apply {
-            setCredentials(username, password)
-        }
+        return SafeSardineWrapper.create(okHttpClient, username, password)
     }
     
     /**
@@ -266,8 +167,6 @@ class WebDavSyncService(private val context: Context) {
      */
     private fun clearSessionCache() {
         sessionSardine = null
-        sessionWifiAddress = null
-        sessionWifiAddressChecked = false
         notesDirEnsured = false
         markdownDirEnsured = false
         Logger.d(TAG, "🧹 Session caches cleared")
@@ -394,8 +293,10 @@ class WebDavSyncService(private val context: Context) {
             }
             
             val notesUrl = getNotesUrl(serverUrl)
+            // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
+            // Wenn sardine.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
             if (!sardine.exists(notesUrl)) {
-                Logger.d(TAG, "📁 /notes/ doesn't exist - no server changes")
+                Logger.d(TAG, "📁 /notes/ doesn't exist - assuming no server changes")
                 return false
             }
             
@@ -524,8 +425,11 @@ class WebDavSyncService(private val context: Context) {
             hasServerChanges
             
         } catch (e: Exception) {
-            Logger.e(TAG, "Failed to check for unsynced changes", e)
-            true  // Safe default
+            // 🔧 v1.7.2 KRITISCH: Bei Server-Fehler (Timeout, etc.) return TRUE!
+            // Grund: Besser fälschlich synchen als "Already synced" zeigen obwohl Server nicht erreichbar
+            Logger.e(TAG, "❌ Failed to check server for changes: ${e.message}")
+            Logger.d(TAG, "⚠️ Returning TRUE (will attempt sync) - server check failed")
+            true  // Sicherheitshalber TRUE → Sync wird versucht und gibt dann echte Fehlermeldung
         }
     }
     
@@ -648,19 +552,19 @@ class WebDavSyncService(private val context: Context) {
             SyncResult(
                 isSuccess = false,
                 errorMessage = when (e) {
-                    is java.net.UnknownHostException -> "Server nicht erreichbar"
-                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout"
-                    is javax.net.ssl.SSLException -> "SSL-Fehler"
+                    is java.net.UnknownHostException -> context.getString(R.string.snackbar_server_unreachable)
+                    is java.net.SocketTimeoutException -> context.getString(R.string.snackbar_connection_timeout)
+                    is javax.net.ssl.SSLException -> context.getString(R.string.sync_error_ssl)
                     is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
                         when (e.statusCode) {
-                            401 -> "Authentifizierung fehlgeschlagen"
-                            403 -> "Zugriff verweigert"
-                            404 -> "Server-Pfad nicht gefunden"
-                            500 -> "Server-Fehler"
-                            else -> "HTTP-Fehler: ${e.statusCode}"
+                            401 -> context.getString(R.string.sync_error_auth_failed)
+                            403 -> context.getString(R.string.sync_error_access_denied)
+                            404 -> context.getString(R.string.sync_error_path_not_found)
+                            500 -> context.getString(R.string.sync_error_server)
+                            else -> context.getString(R.string.sync_error_http, e.statusCode)
                         }
                     }
-                    else -> e.message ?: "Unbekannter Fehler"
+                    else -> e.message ?: context.getString(R.string.sync_error_unknown)
                 }
             )
         }
@@ -823,19 +727,19 @@ class WebDavSyncService(private val context: Context) {
             SyncResult(
                 isSuccess = false,
                 errorMessage = when (e) {
-                    is java.net.UnknownHostException -> "Server nicht erreichbar: ${e.message}"
-                    is java.net.SocketTimeoutException -> "Verbindungs-Timeout: ${e.message}"
-                    is javax.net.ssl.SSLException -> "SSL-Fehler"
+                    is java.net.UnknownHostException -> "${context.getString(R.string.snackbar_server_unreachable)}: ${e.message}"
+                    is java.net.SocketTimeoutException -> "${context.getString(R.string.snackbar_connection_timeout)}: ${e.message}"
+                    is javax.net.ssl.SSLException -> context.getString(R.string.sync_error_ssl)
                     is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
                         when (e.statusCode) {
-                            401 -> "Authentifizierung fehlgeschlagen"
-                            403 -> "Zugriff verweigert"
-                            404 -> "Server-Pfad nicht gefunden"
-                            500 -> "Server-Fehler"
-                            else -> "HTTP-Fehler: ${e.statusCode}"
+                            401 -> context.getString(R.string.sync_error_auth_failed)
+                            403 -> context.getString(R.string.sync_error_access_denied)
+                            404 -> context.getString(R.string.sync_error_path_not_found)
+                            500 -> context.getString(R.string.sync_error_server)
+                            else -> context.getString(R.string.sync_error_http, e.statusCode)
                         }
                     }
-                    else -> e.message ?: "Unbekannter Fehler"
+                    else -> e.message ?: context.getString(R.string.sync_error_unknown)
                 }
             )
         }
@@ -1017,22 +921,11 @@ class WebDavSyncService(private val context: Context) {
     ): Int = withContext(Dispatchers.IO) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
         
-        // ⚡ v1.3.1: Use cached WiFi address
-        val wifiAddress = getOrCacheWiFiAddress()
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
         
-        val okHttpClient = if (wifiAddress != null) {
-            Logger.d(TAG, "✅ Using WiFi-bound socket factory")
-            OkHttpClient.Builder()
-                .socketFactory(WiFiSocketFactory(wifiAddress))
-                .build()
-        } else {
-            Logger.d(TAG, "⚠️ Using default OkHttpClient (no WiFi binding)")
-            OkHttpClient.Builder().build()
-        }
-        
-        val sardine = OkHttpSardine(okHttpClient).apply {
-            setCredentials(username, password)
-        }
+        val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
         
         val mdUrl = getMarkdownUrl(serverUrl)
         
@@ -1146,9 +1039,32 @@ class WebDavSyncService(private val context: Context) {
                             "modified=$serverModified lastSync=$lastSyncTime"
                     )
                     
+                    // FIRST: Check deletion tracker - if locally deleted, skip unless re-created on server
+                    if (deletionTracker.isDeleted(noteId)) {
+                        val deletedAt = deletionTracker.getDeletionTimestamp(noteId)
+                        
+                        // Smart check: Was note re-created on server after deletion?
+                        if (deletedAt != null && serverModified > deletedAt) {
+                            Logger.d(TAG, "   📝 Note re-created on server after deletion: $noteId")
+                            deletionTracker.removeDeletion(noteId)
+                            trackerModified = true
+                            // Continue with download below
+                        } else {
+                            Logger.d(TAG, "   ⏭️ Skipping deleted note: $noteId")
+                            skippedDeleted++
+                            processedIds.add(noteId)
+                            continue
+                        }
+                    }
+                    
+                    // Check if file exists locally
+                    val localNote = storage.loadNote(noteId)
+                    val fileExistsLocally = localNote != null
+                    
                     // PRIMARY: Timestamp check (works on first sync!)
                     // Same logic as Markdown sync - skip if not modified since last sync
-                    if (!forceOverwrite && lastSyncTime > 0 && serverModified <= lastSyncTime) {
+                    // BUT: Always download if file doesn't exist locally!
+                    if (!forceOverwrite && fileExistsLocally && lastSyncTime > 0 && serverModified <= lastSyncTime) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: Not modified since last sync (timestamp)")
                         processedIds.add(noteId)
@@ -1157,11 +1073,17 @@ class WebDavSyncService(private val context: Context) {
                     
                     // SECONDARY: E-Tag check (for performance after first sync)
                     // Catches cases where file was re-uploaded with same content
-                    if (!forceOverwrite && serverETag != null && serverETag == cachedETag) {
+                    // BUT: Always download if file doesn't exist locally!
+                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
                         processedIds.add(noteId)
                         continue
+                    }
+                    
+                    // If file doesn't exist locally, always download
+                    if (!fileExistsLocally) {
+                        Logger.d(TAG, "   📥 File missing locally - forcing download")
                     }
                     
                     // 🐛 DEBUG: Log download reason
@@ -1180,28 +1102,9 @@ class WebDavSyncService(private val context: Context) {
                     val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
                     val remoteNote = Note.fromJson(jsonContent) ?: continue
                     
-                    // NEW: Check if note was deleted locally
-                    if (deletionTracker.isDeleted(remoteNote.id)) {
-                        val deletedAt = deletionTracker.getDeletionTimestamp(remoteNote.id)
-                        
-                        // Smart check: Was note re-created on server after deletion?
-                        if (deletedAt != null && remoteNote.updatedAt > deletedAt) {
-                            Logger.d(TAG, "   📝 Note re-created on server after deletion: ${remoteNote.id}")
-                            deletionTracker.removeDeletion(remoteNote.id)
-                            trackerModified = true
-                            // Continue with download below
-                        } else {
-                            Logger.d(TAG, "   ⏭️ Skipping deleted note: ${remoteNote.id}")
-                            skippedDeleted++
-                            processedIds.add(remoteNote.id)
-                            continue
-                        }
-                    }
-                    
                     processedIds.add(remoteNote.id)  // 🆕 Mark as processed
                     
-                    val localNote = storage.loadNote(remoteNote.id)
-                    
+                    // Note: localNote was already loaded above for existence check
                     when {
                         localNote == null -> {
                             // New note from server
@@ -1544,8 +1447,8 @@ class WebDavSyncService(private val context: Context) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
-            val sardine = OkHttpSardine()
-            sardine.setCredentials(username, password)
+            val okHttpClient = OkHttpClient.Builder().build()
+            val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
             
             val mdUrl = getMarkdownUrl(serverUrl)
             

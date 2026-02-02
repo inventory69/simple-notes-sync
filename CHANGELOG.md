@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.1] - 2026-02-02
+
+### 🐛 Critical Bug Fixes
+
+#### Android 9 App Crash Fix ([#15](https://github.com/inventory69/simple-notes-sync/issues/15))
+
+**Problem:** App crashed on Android 9 (API 28) when using WorkManager Expedited Work for background sync.
+
+**Root Cause:** When `setExpedited()` is used in WorkManager, the `CoroutineWorker` must implement `getForegroundInfo()` to return a Foreground Service notification. On Android 9-11, WorkManager calls this method, but the default implementation throws `IllegalStateException: Not implemented`.
+
+**Solution:** Implemented `getForegroundInfo()` in `SyncWorker` to return a proper `ForegroundInfo` with sync progress notification.
+
+**Details:**
+- Added `ForegroundInfo` with sync progress notification for Android 9-11
+- Android 10+: Sets `FOREGROUND_SERVICE_TYPE_DATA_SYNC` for proper service typing
+- Added Foreground Service permissions to AndroidManifest.xml
+- Notification shows sync progress with indeterminate progress bar
+- Thanks to [@roughnecks](https://github.com/roughnecks) for the detailed debugging!
+
+#### VPN Compatibility Fix ([#11](https://github.com/inventory69/simple-notes-sync/issues/11))
+
+- WiFi socket binding now correctly detects Wireguard VPN interfaces (tun*, wg*, *-wg-*)
+- Traffic routes through VPN tunnel instead of bypassing it directly to WiFi
+- Fixes "Connection timeout" when syncing to external servers via VPN
+
+### 🔧 Technical Changes
+
+- New `SafeSardineWrapper` class ensures proper HTTP connection cleanup
+- Reduced unnecessary 401 authentication challenges with preemptive auth headers
+- Added ProGuard rule to suppress harmless TextInclusionStrategy warnings on older Android versions
+- VPN interface detection via `NetworkInterface.getNetworkInterfaces()` pattern matching
+- Foreground Service detection and notification system for background sync tasks
+
+### 🌍 Localization
+
+- Fixed hardcoded German error messages - now uses string resources for proper localization
+- Added German and English strings for sync progress notifications
+
+---
+
 ## [1.7.0] - 2026-01-26
 
 ### 🎉 Major: Grid View, WiFi-Only Sync & VPN Support

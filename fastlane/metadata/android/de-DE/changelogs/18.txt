@@ -1,0 +1,5 @@
+• Behoben: App-Absturz auf Android 9  - Thanks to @roughnecks  
+• Behoben: Deutsche Texte trotz englischer App-Sprache
+• Verbessert: Sync-Verbindungsstabilität
+• Verbessert: Code-Qualität und Zuverlässigkeit
+

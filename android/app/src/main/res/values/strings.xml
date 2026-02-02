@@ -93,8 +93,20 @@
     <string name="snackbar_server_error">Server error: %s</string>
     <string name="snackbar_already_synced">Already synced</string>
     <string name="snackbar_server_unreachable">Server not reachable</string>
+    <string name="snackbar_connection_timeout">Connection timeout</string>
     <string name="snackbar_synced_count">✅ Synced: %d notes</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nothing to sync</string>
+    
+    <!-- ============================= -->
+    <!-- SYNC ERROR MESSAGES           -->
+    <!-- ============================= -->
+    <string name="sync_error_ssl">SSL error</string>
+    <string name="sync_error_auth_failed">Authentication failed</string>
+    <string name="sync_error_access_denied">Access denied</string>
+    <string name="sync_error_path_not_found">Server path not found</string>
+    <string name="sync_error_server">Server error</string>
+    <string name="sync_error_http">HTTP error: %d</string>
+    <string name="sync_error_unknown">Unknown error</string>
     
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
@@ -426,6 +438,8 @@
     <!-- ============================= -->
     <string name="notification_channel_name">Notes Synchronization</string>
     <string name="notification_channel_desc">Notifications about sync status</string>
+    <string name="sync_in_progress">Syncing</string>
+    <string name="sync_in_progress_text">Syncing notes…</string>
     <string name="notification_sync_success_title">Sync successful</string>
     <string name="notification_sync_success_message">%d note(s) synchronized</string>
     <string name="notification_sync_failed_title">Sync failed</string>
