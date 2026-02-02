@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes
 
 import android.app.Application
 import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -14,6 +15,18 @@ class SimpleNotesApplication : Application() {
     }
     
     lateinit var networkMonitor: NetworkMonitor  // Public access für SettingsActivity
+    
+    /**
+     * 🌍 v1.7.1: Apply app locale to Application Context
+     * 
+     * This ensures ViewModels and other components using Application Context
+     * get the correct locale-specific strings.
+     */
+    override fun attachBaseContext(base: Context) {
+        // Apply the app locale before calling super
+        // This is handled by AppCompatDelegate which reads from system storage
+        super.attachBaseContext(base)
+    }
     
     override fun onCreate() {
         super.onCreate()

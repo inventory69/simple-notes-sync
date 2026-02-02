@@ -599,7 +599,7 @@ class SettingsActivity : AppCompatActivity() {
                 
                 // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                 if (!syncService.hasUnsyncedChanges()) {
-                    showToast("✅ Bereits synchronisiert")
+                    showToast(getString(R.string.toast_already_synced))
                     SyncStateManager.markCompleted()
                     return@launch
                 }
@@ -608,8 +608,8 @@ class SettingsActivity : AppCompatActivity() {
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in anderen Triggern)
                 if (!syncService.isServerReachable()) {
-                    showToast("⚠️ Server nicht erreichbar")
-                    SyncStateManager.markError("Server nicht erreichbar")
+                    showToast("⚠️ ${getString(R.string.snackbar_server_unreachable)}")
+                    SyncStateManager.markError(getString(R.string.snackbar_server_unreachable))
                     checkServerStatus() // Server-Status aktualisieren
                     return@launch
                 }

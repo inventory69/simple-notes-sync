@@ -8,6 +8,46 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.1] - 2026-02-02
+
+### 🐛 Kritische Fehlerbehebungen
+
+#### Android 9 App-Absturz Fix ([#15](https://github.com/inventory69/simple-notes-sync/issues/15))
+
+**Problem:** App stürzte auf Android 9 (API 28) ab wenn WorkManager Expedited Work für Hintergrund-Sync verwendet wurde.
+
+**Root Cause:** Wenn `setExpedited()` in WorkManager verwendet wird, muss die `CoroutineWorker` die Methode `getForegroundInfo()` implementieren um eine Foreground Service Notification zurückzugeben. Auf Android 9-11 ruft WorkManager diese Methode auf, aber die Standard-Implementierung wirft `IllegalStateException: Not implemented`.
+
+**Lösung:** `getForegroundInfo()` in `SyncWorker` implementiert um eine korrekte `ForegroundInfo` mit Sync-Progress-Notification zurückzugeben.
+
+**Details:**
+- `ForegroundInfo` mit Sync-Progress-Notification für Android 9-11 hinzugefügt
+- Android 10+: Setzt `FOREGROUND_SERVICE_TYPE_DATA_SYNC` für korrekte Service-Typisierung
+- Foreground Service Permissions in AndroidManifest.xml hinzugefügt
+- Notification zeigt Sync-Progress mit indeterminiertem Progress Bar
+- Danke an [@roughnecks](https://github.com/roughnecks) für das detaillierte Debugging!
+
+#### VPN-Kompatibilitäts-Fix ([#11](https://github.com/inventory69/simple-notes-sync/issues/11))
+
+- WiFi Socket-Binding erkennt jetzt korrekt Wireguard VPN-Interfaces (tun*, wg*, *-wg-*)
+- Traffic wird korrekt durch VPN-Tunnel geleitet statt direkt über WiFi
+- Behebt "Verbindungs-Timeout" beim Sync zu externen Servern über VPN
+
+### 🔧 Technische Änderungen
+
+- Neue `SafeSardineWrapper` Klasse stellt korrektes HTTP-Connection-Cleanup sicher
+- Weniger unnötige 401-Authentifizierungs-Challenges durch preemptive Auth-Header
+- ProGuard-Regel hinzugefügt um harmlose TextInclusionStrategy-Warnungen zu unterdrücken
+- VPN-Interface-Erkennung via `NetworkInterface.getNetworkInterfaces()` Pattern-Matching
+- Foreground Service Erkennung und Notification-System für Hintergrund-Sync-Tasks
+
+### 🌍 Lokalisierung
+
+- Hardcodierte deutsche Fehlermeldungen behoben - jetzt String-Resources für korrekte Lokalisierung
+- Deutsche und englische Strings für Sync-Progress-Notifications hinzugefügt
+
+---
+
 ## [1.7.0] - 2026-01-26
 
 ### 🎉 Major: Grid-Ansicht, Nur-WLAN Sync & VPN-Unterstützung

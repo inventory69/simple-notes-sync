@@ -93,8 +93,20 @@
     <string name="snackbar_server_error">Server-Fehler: %s</string>
     <string name="snackbar_already_synced">Bereits synchronisiert</string>
     <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
+    <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
     <string name="snackbar_synced_count">✅ Gesynct: %d Notizen</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
+    
+    <!-- ============================= -->
+    <!-- SYNC ERROR MESSAGES           -->
+    <!-- ============================= -->
+    <string name="sync_error_ssl">SSL-Fehler</string>
+    <string name="sync_error_auth_failed">Authentifizierung fehlgeschlagen</string>
+    <string name="sync_error_access_denied">Zugriff verweigert</string>
+    <string name="sync_error_path_not_found">Server-Pfad nicht gefunden</string>
+    <string name="sync_error_server">Server-Fehler</string>
+    <string name="sync_error_http">HTTP-Fehler: %d</string>
+    <string name="sync_error_unknown">Unbekannter Fehler</string>
     
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
@@ -426,6 +438,8 @@
     <!-- ============================= -->
     <string name="notification_channel_name">Notizen Synchronisierung</string>
     <string name="notification_channel_desc">Benachrichtigungen über Sync-Status</string>
+    <string name="sync_in_progress">Synchronisierung läuft</string>
+    <string name="sync_in_progress_text">Notizen werden synchronisiert…</string>
     <string name="notification_sync_success_title">Sync erfolgreich</string>
     <string name="notification_sync_success_message">%d Notiz(en) synchronisiert</string>
     <string name="notification_sync_failed_title">Sync fehlgeschlagen</string>
