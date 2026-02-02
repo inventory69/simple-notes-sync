@@ -438,6 +438,8 @@
     <!-- ============================= -->
     <string name="notification_channel_name">Notes Synchronization</string>
     <string name="notification_channel_desc">Notifications about sync status</string>
+    <string name="sync_in_progress">Syncing</string>
+    <string name="sync_in_progress_text">Syncing notes…</string>
     <string name="notification_sync_success_title">Sync successful</string>
     <string name="notification_sync_success_message">%d note(s) synchronized</string>
     <string name="notification_sync_failed_title">Sync failed</string>

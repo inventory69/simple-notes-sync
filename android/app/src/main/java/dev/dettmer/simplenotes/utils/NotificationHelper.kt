@@ -19,6 +19,7 @@ object NotificationHelper {
     private const val CHANNEL_ID = "notes_sync_channel"
     private const val NOTIFICATION_ID = 1001
     private const val SYNC_NOTIFICATION_ID = 2
+    const val SYNC_PROGRESS_NOTIFICATION_ID = 1003  // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
     
     /**
@@ -52,6 +53,26 @@ object NotificationHelper {
             as NotificationManager
         manager.cancel(SYNC_NOTIFICATION_ID)
         Logger.d(TAG, "🗑️ Cleared old sync notifications")
+    }
+    
+    /**
+     * 🔧 v1.7.2: Erstellt Notification für Sync-Progress (Expedited Work)
+     * 
+     * Wird von SyncWorker.getForegroundInfo() aufgerufen auf Android 9-11.
+     * Muss eine gültige, sichtbare Notification zurückgeben.
+     * 
+     * @return Notification (nicht anzeigen, nur erstellen)
+     */
+    fun createSyncProgressNotification(context: Context): android.app.Notification {
+        return NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setContentTitle(context.getString(R.string.sync_in_progress))
+            .setContentText(context.getString(R.string.sync_in_progress_text))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setProgress(0, 0, true)  // Indeterminate progress
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .build()
     }
     
     /**

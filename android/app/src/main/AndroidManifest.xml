@@ -12,6 +12,11 @@
     <!-- Battery Optimization (for WorkManager background sync) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     
+    <!-- v1.7.2: Foreground Service for Expedited Work (Android 9-11) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- v1.7.2: Foreground Service Type for Android 10+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    
     <!-- BOOT Permission - CRITICAL für Auto-Sync nach Neustart! -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
