@@ -1,5 +1,4 @@
-• Fixed: App crash on Android 9 (Issue #15) - Thanks to @roughnecks
-  - WorkManager expedited work compatibility (getForegroundInfo)
-  - Kernel-VPN compatibility (Wireguard tun/wg interfaces)
-• Improved: Stability and connection management
-• Technical: Optimized HTTP connection lifecycle
+• Fixed: App crash on Android 9 - Thanks to @roughnecks  
+• Fixed: German text appearing despite English language setting
+• Improved: Sync connection stability (longer timeout)
+• Improved: Code quality and reliability
