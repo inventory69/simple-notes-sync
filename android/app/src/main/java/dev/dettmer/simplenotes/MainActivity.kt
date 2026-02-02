@@ -133,6 +133,9 @@ class MainActivity : AppCompatActivity() {
             requestNotificationPermission()
         }
         
+        // 🌍 v1.7.2: Debug Locale für Fehlersuche
+        logLocaleInfo()
+        
         findViews()
         setupToolbar()
         setupRecyclerView()
@@ -672,7 +675,8 @@ class MainActivity : AppCompatActivity() {
                 // 🔥 v1.1.2: Check if there are unsynced changes first (performance optimization)
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ Manual Sync: No unsynced changes - skipping")
-                    SyncStateManager.markCompleted("Bereits synchronisiert")
+                    val message = getString(R.string.toast_already_synced)
+                    SyncStateManager.markCompleted(message)
                     return@launch
                 }
                 
@@ -813,5 +817,40 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+    
+    /**
+     * 🌍 v1.7.2: Debug-Logging für Locale-Problem
+     * Hilft zu identifizieren warum deutsche Strings trotz englischer App angezeigt werden
+     */
+    private fun logLocaleInfo() {
+        if (!BuildConfig.DEBUG) return
+        
+        Logger.d(TAG, "╔═══════════════════════════════════════════════════")
+        Logger.d(TAG, "║ 🌍 LOCALE DEBUG INFO")
+        Logger.d(TAG, "╠═══════════════════════════════════════════════════")
+        
+        // System Locale
+        val systemLocale = java.util.Locale.getDefault()
+        Logger.d(TAG, "║ System Locale (Locale.getDefault()): $systemLocale")
+        
+        // Resources Locale
+        val resourcesLocale = resources.configuration.locales[0]
+        Logger.d(TAG, "║ Resources Locale: $resourcesLocale")
+        
+        // Context Locale (API 24+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val contextLocales = resources.configuration.locales
+            Logger.d(TAG, "║ Context Locales (all): $contextLocales")
+        }
+        
+        // Test String Loading
+        val testString = getString(R.string.toast_already_synced)
+        Logger.d(TAG, "║ Test: getString(R.string.toast_already_synced)")
+        Logger.d(TAG, "║ Result: '$testString'")
+        Logger.d(TAG, "║ Expected EN: '✅ Already synced'")
+        Logger.d(TAG, "║ Is German?: ${testString.contains("Bereits") || testString.contains("synchronisiert")}")
+        
+        Logger.d(TAG, "╚═══════════════════════════════════════════════════")
     }
 }

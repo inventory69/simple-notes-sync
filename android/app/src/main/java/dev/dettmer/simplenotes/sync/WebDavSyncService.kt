@@ -40,7 +40,7 @@ class WebDavSyncService(private val context: Context) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        private const val SOCKET_TIMEOUT_MS = 1000  // 🆕 v1.7.0: Reduziert von 2s auf 1s
+        private const val SOCKET_TIMEOUT_MS = 10000  // 🔧 v1.7.2: 10s für stabile Verbindungen (1s war zu kurz)
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
@@ -56,8 +56,6 @@ class WebDavSyncService(private val context: Context) {
     
     // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
     private var sessionSardine: SafeSardineWrapper? = null
-    private var sessionWifiAddress: InetAddress? = null
-    private var sessionWifiAddressChecked = false  // Flag ob WiFi-Check bereits durchgeführt
     
     init {
         if (BuildConfig.DEBUG) {
@@ -87,21 +85,6 @@ class WebDavSyncService(private val context: Context) {
             Logger.d(TAG, "✅ WebDavSyncService INIT complete")
             Logger.d(TAG, "═══════════════════════════════════════")
         }
-    }
-    
-    /**
-     * ⚡ v1.3.1: Gecachte WiFi-Adresse zurückgeben oder berechnen
-     */
-    private fun getOrCacheWiFiAddress(): InetAddress? {
-        // Return cached if already checked this session
-        if (sessionWifiAddressChecked) {
-            return sessionWifiAddress
-        }
-        
-        // Calculate and cache
-        sessionWifiAddress = getWiFiInetAddressInternal()
-        sessionWifiAddressChecked = true
-        return sessionWifiAddress
     }
     
     /**
@@ -139,127 +122,6 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
-     * Findet WiFi Interface IP-Adresse (um VPN zu umgehen)
-     * 
-     * 🔒 v1.7.1 Fix: Now detects Wireguard VPN interfaces and skips WiFi binding
-     * when VPN is active, so traffic routes through VPN tunnel correctly.
-     */
-    @Suppress("ReturnCount") // Early returns for network validation checks
-    private fun getWiFiInetAddressInternal(): InetAddress? {
-        try {
-            Logger.d(TAG, "🔍 getWiFiInetAddress() called")
-            
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network = connectivityManager.activeNetwork
-            Logger.d(TAG, "    Active network: $network")
-            
-            if (network == null) {
-                Logger.d(TAG, "❌ No active network")
-                return null
-            }
-            
-            val capabilities = connectivityManager.getNetworkCapabilities(network)
-            Logger.d(TAG, "    Network capabilities: $capabilities")
-            
-            if (capabilities == null) {
-                Logger.d(TAG, "❌ No network capabilities")
-                return null
-            }
-            
-            // 🔒 v1.7.0: VPN-Detection via NetworkCapabilities (standard Android VPN)
-            // When VPN is active, traffic should route through VPN, not directly via WiFi
-            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                Logger.d(TAG, "🔒 VPN detected (TRANSPORT_VPN) - using default routing")
-                return null
-            }
-            
-            // 🔒 v1.7.1: VPN-Detection via interface names (Wireguard, OpenVPN, etc.)
-            // Wireguard VPNs are NOT detected via TRANSPORT_VPN, they run as separate interfaces!
-            if (isVpnInterfaceActive()) {
-                Logger.d(TAG, "🔒 VPN interface detected - skip WiFi binding, use default routing")
-                return null
-            }
-            
-            // Nur wenn WiFi aktiv (und kein VPN)
-            if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                Logger.d(TAG, "⚠️ Not on WiFi, using default routing")
-                return null
-            }
-            
-            Logger.d(TAG, "✅ Network is WiFi (no VPN), searching for interface...")
-            
-            @Suppress("LoopWithTooManyJumpStatements") // Network interface filtering requires multiple conditions
-            // Finde WiFi Interface
-            val interfaces = NetworkInterface.getNetworkInterfaces()
-            while (interfaces.hasMoreElements()) {
-                val iface = interfaces.nextElement()
-                
-                Logger.d(TAG, "    Checking interface: ${iface.name}, isUp=${iface.isUp}")
-                
-                // WiFi Interfaces: wlan0, wlan1, etc.
-                if (!iface.name.startsWith("wlan")) continue
-                if (!iface.isUp) continue
-                
-                val addresses = iface.inetAddresses
-                while (addresses.hasMoreElements()) {
-                    val addr = addresses.nextElement()
-                    
-                    Logger.d(
-                        TAG,
-                        "        Address: ${addr.hostAddress}, IPv4=${addr is Inet4Address}, " +
-                            "loopback=${addr.isLoopbackAddress}, linkLocal=${addr.isLinkLocalAddress}"
-                    )
-                    
-                    // Nur IPv4, nicht loopback, nicht link-local
-                    if (addr is Inet4Address && !addr.isLoopbackAddress && !addr.isLinkLocalAddress) {
-                        Logger.d(TAG, "✅ Found WiFi IP: ${addr.hostAddress} on ${iface.name}")
-                        return addr
-                    }
-                }
-            }
-            
-            Logger.w(TAG, "⚠️ No WiFi interface found, using default routing")
-            return null
-            
-        } catch (e: Exception) {
-            Logger.e(TAG, "❌ Failed to get WiFi interface", e)
-            return null
-        }
-    }
-    
-    /**
-     * Custom SocketFactory die an WiFi-IP bindet (VPN Fix)
-     */
-    private inner class WiFiSocketFactory(private val wifiAddress: InetAddress) : SocketFactory() {
-        override fun createSocket(): Socket {
-            val socket = Socket()
-            socket.bind(InetSocketAddress(wifiAddress, 0))
-            Logger.d(TAG, "🔌 Socket bound to WiFi IP: ${wifiAddress.hostAddress}")
-            return socket
-        }
-        
-        override fun createSocket(host: String, port: Int): Socket {
-            val socket = createSocket()
-            socket.connect(InetSocketAddress(host, port))
-            return socket
-        }
-        
-        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket {
-            return createSocket(host, port)
-        }
-        
-        override fun createSocket(host: InetAddress, port: Int): Socket {
-            val socket = createSocket()
-            socket.connect(InetSocketAddress(host, port))
-            return socket
-        }
-        
-        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket {
-            return createSocket(address, port)
-        }
-    }
-    
-    /**
      * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
      * Spart ~100ms pro Aufruf durch Wiederverwendung
      */
@@ -279,6 +141,10 @@ class WebDavSyncService(private val context: Context) {
     /**
      * Erstellt einen neuen Sardine-Client (intern)
      * 
+     * 🆕 v1.7.2: Intelligentes Routing basierend auf Ziel-Adresse
+     * - Lokale Server: WiFi-Binding (bypass VPN)
+     * - Externe Server: Default-Routing (nutzt VPN wenn aktiv)
+     * 
      * 🔧 v1.7.1: Verwendet SafeSardineWrapper statt OkHttpSardine
      * - Verhindert Connection Leaks durch proper Response-Cleanup
      * - Preemptive Authentication für weniger 401-Round-Trips
@@ -287,21 +153,11 @@ class WebDavSyncService(private val context: Context) {
         val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
         val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
         
-        Logger.d(TAG, "🔧 Creating SafeSardineWrapper with WiFi binding")
-        Logger.d(TAG, "    Context: ${context.javaClass.simpleName}")
+        Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
         
-        // ⚡ v1.3.1: Verwende gecachte WiFi-Adresse
-        val wifiAddress = getOrCacheWiFiAddress()
-        
-        val okHttpClient = if (wifiAddress != null) {
-            Logger.d(TAG, "✅ Using WiFi-bound socket factory")
-            OkHttpClient.Builder()
-                .socketFactory(WiFiSocketFactory(wifiAddress))
-                .build()
-        } else {
-            Logger.d(TAG, "⚠️ Using default OkHttpClient (no WiFi binding)")
-            OkHttpClient.Builder().build()
-        }
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
         
         return SafeSardineWrapper.create(okHttpClient, username, password)
     }
@@ -311,8 +167,6 @@ class WebDavSyncService(private val context: Context) {
      */
     private fun clearSessionCache() {
         sessionSardine = null
-        sessionWifiAddress = null
-        sessionWifiAddressChecked = false
         notesDirEnsured = false
         markdownDirEnsured = false
         Logger.d(TAG, "🧹 Session caches cleared")
@@ -439,8 +293,10 @@ class WebDavSyncService(private val context: Context) {
             }
             
             val notesUrl = getNotesUrl(serverUrl)
+            // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
+            // Wenn sardine.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
             if (!sardine.exists(notesUrl)) {
-                Logger.d(TAG, "📁 /notes/ doesn't exist - no server changes")
+                Logger.d(TAG, "📁 /notes/ doesn't exist - assuming no server changes")
                 return false
             }
             
@@ -569,8 +425,11 @@ class WebDavSyncService(private val context: Context) {
             hasServerChanges
             
         } catch (e: Exception) {
-            Logger.e(TAG, "Failed to check for unsynced changes", e)
-            true  // Safe default
+            // 🔧 v1.7.2 KRITISCH: Bei Server-Fehler (Timeout, etc.) return TRUE!
+            // Grund: Besser fälschlich synchen als "Already synced" zeigen obwohl Server nicht erreichbar
+            Logger.e(TAG, "❌ Failed to check server for changes: ${e.message}")
+            Logger.d(TAG, "⚠️ Returning TRUE (will attempt sync) - server check failed")
+            true  // Sicherheitshalber TRUE → Sync wird versucht und gibt dann echte Fehlermeldung
         }
     }
     
@@ -1062,18 +921,9 @@ class WebDavSyncService(private val context: Context) {
     ): Int = withContext(Dispatchers.IO) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
         
-        // ⚡ v1.3.1: Use cached WiFi address
-        val wifiAddress = getOrCacheWiFiAddress()
-        
-        val okHttpClient = if (wifiAddress != null) {
-            Logger.d(TAG, "✅ Using WiFi-bound socket factory")
-            OkHttpClient.Builder()
-                .socketFactory(WiFiSocketFactory(wifiAddress))
-                .build()
-        } else {
-            Logger.d(TAG, "⚠️ Using default OkHttpClient (no WiFi binding)")
-            OkHttpClient.Builder().build()
-        }
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
         
         val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
         

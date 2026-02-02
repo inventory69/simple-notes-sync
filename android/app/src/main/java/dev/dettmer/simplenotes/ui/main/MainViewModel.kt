@@ -536,7 +536,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Check for unsynced changes
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
-                    SyncStateManager.markCompleted("Bereits synchronisiert")
+                    val message = getApplication<Application>().getString(R.string.toast_already_synced)
+                    SyncStateManager.markCompleted(message)
                     loadNotes()
                     return@launch
                 }

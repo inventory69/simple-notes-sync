@@ -780,10 +780,42 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                serverUrl != "https://"
     }
     
-    private fun getString(resId: Int): String = getApplication<android.app.Application>().getString(resId)
+    /**
+     * 🌍 v1.7.1: Get string resources with correct app locale
+     * 
+     * AndroidViewModel uses Application context which may not have the correct locale
+     * applied when using per-app language settings. We need to get a Context that
+     * respects AppCompatDelegate.getApplicationLocales().
+     */
+    private fun getString(resId: Int): String {
+        // Get context with correct locale configuration from AppCompatDelegate
+        val appLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val context = if (!appLocales.isEmpty) {
+            // Create configuration with app locale
+            val config = android.content.res.Configuration(getApplication<Application>().resources.configuration)
+            config.setLocale(appLocales.get(0))
+            getApplication<Application>().createConfigurationContext(config)
+        } else {
+            // Use system locale (default)
+            getApplication<Application>()
+        }
+        return context.getString(resId)
+    }
     
-    private fun getString(resId: Int, vararg formatArgs: Any): String = 
-        getApplication<android.app.Application>().getString(resId, *formatArgs)
+    private fun getString(resId: Int, vararg formatArgs: Any): String {
+        // Get context with correct locale configuration from AppCompatDelegate
+        val appLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val context = if (!appLocales.isEmpty) {
+            // Create configuration with app locale
+            val config = android.content.res.Configuration(getApplication<Application>().resources.configuration)
+            config.setLocale(appLocales.get(0))
+            getApplication<Application>().createConfigurationContext(config)
+        } else {
+            // Use system locale (default)
+            getApplication<Application>()
+        }
+        return context.getString(resId, *formatArgs)
+    }
     
     private suspend fun emitToast(message: String) {
         _showToast.emit(message)
