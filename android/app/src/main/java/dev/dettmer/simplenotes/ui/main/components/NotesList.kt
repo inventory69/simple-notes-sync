@@ -20,13 +20,16 @@ import dev.dettmer.simplenotes.models.Note
  * - NO caching tricks
  * - Selection state passed through as parameters
  * - Tap behavior changes based on selection mode
+ * - ⏱️ timestampTicker triggers recomposition for relative time updates
  */
+@Suppress("LongParameterList") // Composable with many UI state parameters
 @Composable
 fun NotesList(
     notes: List<Note>,
     showSyncStatus: Boolean,
     selectedNotes: Set<String> = emptySet(),
     isSelectionMode: Boolean = false,
+    timestampTicker: Long = 0L,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     onNoteClick: (Note) -> Unit,
@@ -50,6 +53,7 @@ fun NotesList(
                 showSyncStatus = showSyncStatus,
                 isSelected = isSelected,
                 isSelectionMode = isSelectionMode,
+                timestampTicker = timestampTicker,
                 // 🎨 v1.7.0: Padding hier in Liste (nicht in Card selbst)
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 onClick = {

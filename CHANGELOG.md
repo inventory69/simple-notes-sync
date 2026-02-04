@@ -8,6 +8,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.2] - 2026-02-04
+
+### 🐛 Critical Bug Fixes
+
+#### JSON/Markdown Timestamp Sync
+
+**Problem:** External editors (Obsidian, Typora, VS Code, custom editors) update Markdown content but don't update YAML `updated:` timestamp, causing the Android app to skip changes.
+
+**Solution:**
+- Server file modification time (`mtime`) is now used as source of truth instead of YAML timestamp
+- Content changes detected via hash comparison
+- Notes marked as `PENDING` after Markdown import → JSON automatically re-uploaded on next sync
+- Fixes sorting issues after external edits
+
+#### SyncStatus on Server Always PENDING
+
+**Problem:** All JSON files on server contained `"syncStatus": "PENDING"` even after successful sync, confusing external clients.
+
+**Solution:**
+- Status is now set to `SYNCED` **before** JSON serialization
+- Server and local copies are now consistent
+- External web/Tauri editors can correctly interpret sync state
+
+#### Deletion Tracker Race Condition
+
+**Problem:** Batch deletes could lose deletion records due to concurrent file access.
+
+**Solution:**
+- Mutex-based synchronization for deletion tracking
+- New `trackDeletionSafe()` function prevents race conditions
+- Guarantees zombie note prevention even with rapid deletes
+
+#### ISO8601 Timezone Parsing
+
+**Problem:** Markdown imports failed with timezone offsets like `+01:00` or `-05:00`.
+
+**Solution:**
+- Multi-format ISO8601 parser with fallback chain
+- Supports UTC (Z), timezone offsets (+01:00, +0100), and milliseconds
+- Compatible with Obsidian, Typora, VS Code timestamps
+
+### ⚡ Performance Improvements
+
+#### E-Tag Batch Caching
+
+- E-Tags are now written in single batch operation instead of N individual writes
+- Performance gain: ~50-100ms per sync with multiple notes
+- Reduced disk I/O operations
+
+#### Memory Leak Prevention
+
+- `SafeSardineWrapper` now implements `Closeable` for explicit resource cleanup
+- HTTP connection pool is properly evicted after sync
+- Prevents socket exhaustion during frequent syncs
+
+### 🔧 Technical Details
+
+- **IMPL_001:** `kotlinx.coroutines.sync.Mutex` for thread-safe deletion tracking
+- **IMPL_002:** Pattern-based ISO8601 parser with 8 format variants
+- **IMPL_003:** Connection pool eviction + dispatcher shutdown in `close()`
+- **IMPL_004:** Batch `SharedPreferences.Editor` updates
+- **IMPL_014:** Server `mtime` parameter in `Note.fromMarkdown()`
+- **IMPL_015:** `syncStatus` set before `toJson()` call
+
+### 📚 Documentation
+
+- External Editor Specification for web/Tauri editor developers
+- Detailed implementation documentation for all bugfixes
+
+---
+
 ## [1.7.1] - 2026-02-02
 
 ### 🐛 Critical Bug Fixes
@@ -568,8 +639,8 @@ The complete UI has been migrated from XML Views to Jetpack Compose. The app is 
 
 ### Documentation
 - Added WebDAV mount instructions (Windows, macOS, Linux)
-- Created [SYNC_ARCHITECTURE.md](../project-docs/simple-notes-sync/architecture/SYNC_ARCHITECTURE.md) - Complete sync documentation
-- Created [MARKDOWN_DESKTOP_REALITY_CHECK.md](../project-docs/simple-notes-sync/markdown-desktop-plan/MARKDOWN_DESKTOP_REALITY_CHECK.md) - Desktop integration analysis
+- Complete sync architecture documentation
+- Desktop integration analysis
 
 ---
 

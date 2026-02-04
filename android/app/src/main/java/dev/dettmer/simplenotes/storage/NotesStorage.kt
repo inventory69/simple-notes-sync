@@ -5,12 +5,16 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class NotesStorage(private val context: Context) {
     
     companion object {
         private const val TAG = "NotesStorage"
+        // 🔒 v1.7.2 (IMPL_001): Mutex für thread-sichere Deletion Tracker Operationen
+        private val deletionTrackerMutex = Mutex()
     }
     
     private val notesDir: File = File(context.filesDir, "notes").apply {
@@ -107,6 +111,30 @@ class NotesStorage(private val context: Context) {
         }
     }
     
+    /**
+     * 🔒 v1.7.2 (IMPL_001): Thread-sichere Deletion-Tracking mit Mutex
+     * 
+     * Verhindert Race Conditions bei Batch-Deletes durch exklusiven Zugriff
+     * auf den Deletion Tracker.
+     * 
+     * @param noteId ID der gelöschten Notiz
+     * @param deviceId Geräte-ID für Konflikt-Erkennung
+     */
+    suspend fun trackDeletionSafe(noteId: String, deviceId: String) {
+        deletionTrackerMutex.withLock {
+            val tracker = loadDeletionTracker()
+            tracker.addDeletion(noteId, deviceId)
+            saveDeletionTracker(tracker)
+            Logger.d(TAG, "📝 Tracked deletion (mutex-protected): $noteId")
+        }
+    }
+    
+    /**
+     * Legacy-Methode ohne Mutex-Schutz.
+     * Verwendet für synchrone Aufrufe wo Coroutines nicht verfügbar sind.
+     * 
+     * @deprecated Verwende trackDeletionSafe() für Thread-Safety wo möglich
+     */
     fun trackDeletion(noteId: String, deviceId: String) {
         val tracker = loadDeletionTracker()
         tracker.addDeletion(noteId, deviceId)

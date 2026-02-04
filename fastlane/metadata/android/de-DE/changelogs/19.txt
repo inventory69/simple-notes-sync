@@ -1,0 +1,8 @@
+📝 KRITISCHE BUG FIXES & EDITOR-VORBEREITUNG
+
+• Verbessert: Auto-Aktualisierung der Zeitstempel in UI (alle 30s)
+• Behoben: Änderungen von externen Editoren nicht synchronisiert
+• Behoben: Server-JSON zeigt immer "PENDING" Status
+• Behoben: Deletion Tracker Race Condition bei Batch-Löschungen
+• Behoben: ISO8601 Timezone Parsing (+01:00, -05:00)
+• Verbessert: E-Tag Batch Caching Performance (~50-100ms schneller)

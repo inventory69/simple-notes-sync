@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,11 +66,18 @@ fun NoteCardGrid(
     showSyncStatus: Boolean,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
+    timestampTicker: Long = 0L,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val noteSize = note.getSize()
+    
+    // 🚀 Performance: Cache noteSize - nur bei note-Änderung neu berechnen
+    val noteSize = remember(note.id, note.content, note.checklistItems) { note.getSize() }
+    
+    // ⏱️ Reading timestampTicker triggers recomposition only for visible cards
+    @Suppress("UNUSED_VARIABLE")
+    val ticker = timestampTicker
     
     // Dynamische maxLines basierend auf Größe
     val previewMaxLines = if (noteSize == NoteSize.LARGE) 6 else 3
