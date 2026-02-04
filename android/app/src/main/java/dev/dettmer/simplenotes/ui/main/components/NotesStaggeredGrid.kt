@@ -22,6 +22,7 @@ import dev.dettmer.simplenotes.utils.Constants
  * - Keine Lücken mehr durch FullLine-Items
  * - Selection mode support
  * - Efficient LazyVerticalStaggeredGrid
+ * - ⏱️ timestampTicker triggers recomposition for relative time updates
  */
 @Composable
 fun NotesStaggeredGrid(
@@ -30,11 +31,11 @@ fun NotesStaggeredGrid(
     showSyncStatus: Boolean,
     selectedNoteIds: Set<String>,
     isSelectionMode: Boolean,
+    timestampTicker: Long = 0L,
     modifier: Modifier = Modifier,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {
-    
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(Constants.GRID_COLUMNS),
         modifier = modifier.fillMaxSize(),
@@ -51,7 +52,8 @@ fun NotesStaggeredGrid(
     ) {
         items(
             items = notes,
-            key = { it.id }
+            key = { it.id },
+            contentType = { "NoteCardGrid" }
             // 🎨 v1.7.0: KEIN span mehr - alle Items sind SingleLane (halbe Breite)
         ) { note ->
             val isSelected = selectedNoteIds.contains(note.id)
@@ -62,6 +64,7 @@ fun NotesStaggeredGrid(
                 showSyncStatus = showSyncStatus,
                 isSelected = isSelected,
                 isSelectionMode = isSelectionMode,
+                timestampTicker = timestampTicker,
                 onClick = { onNoteClick(note) },
                 onLongClick = { onNoteLongClick(note) }
             )

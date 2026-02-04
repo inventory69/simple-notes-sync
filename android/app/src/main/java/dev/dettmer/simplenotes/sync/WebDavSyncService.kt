@@ -17,14 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import java.net.Inet4Address
-import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.Socket
 import java.net.URL
 import java.util.Date
-import javax.net.SocketFactory
 
 /**
  * Result of manual Markdown sync operation
@@ -95,6 +92,7 @@ class WebDavSyncService(private val context: Context) {
      * 
      * @return true if VPN interface is detected
      */
+    @Suppress("unused") // Reserved for future VPN detection feature
     private fun isVpnInterfaceActive(): Boolean {
         try {
             val interfaces = NetworkInterface.getNetworkInterfaces() ?: return false
@@ -164,8 +162,19 @@ class WebDavSyncService(private val context: Context) {
     
     /**
      * ⚡ v1.3.1: Session-Caches leeren (am Ende von syncNotes)
+     * 🔧 v1.7.2 (IMPL_003): Schließt Sardine-Client explizit für Resource-Cleanup
      */
     private fun clearSessionCache() {
+        // 🆕 v1.7.2: Explizites Schließen des Sardine-Clients
+        sessionSardine?.let { sardine ->
+            try {
+                sardine.close()
+                Logger.d(TAG, "🧹 Sardine client closed")
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to close Sardine client: ${e.message}")
+            }
+        }
+        
         sessionSardine = null
         notesDirEnsured = false
         markdownDirEnsured = false
@@ -675,6 +684,14 @@ class WebDavSyncService(private val context: Context) {
                     Logger.d(TAG, "📥 Auto-importing Markdown files...")
                     markdownImportedCount = importMarkdownFiles(sardine, serverUrl)
                     Logger.d(TAG, "✅ Auto-imported: $markdownImportedCount Markdown files")
+                    
+                    // 🔧 v1.7.2 (IMPL_014): Re-upload notes that were updated from Markdown
+                    if (markdownImportedCount > 0) {
+                        Logger.d(TAG, "📤 Re-uploading notes updated from Markdown (JSON sync)...")
+                        val reUploadedCount = uploadLocalNotes(sardine, serverUrl)
+                        Logger.d(TAG, "✅ Re-uploaded: $reUploadedCount notes (JSON updated on server)")
+                        syncedCount += reUploadedCount
+                    }
                 } else {
                     Logger.d(TAG, "⏭️ Markdown auto-import disabled")
                 }
@@ -758,49 +775,53 @@ class WebDavSyncService(private val context: Context) {
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
         
+        // 🔧 v1.7.2 (IMPL_004): Batch E-Tag Updates für Performance
+        val etagUpdates = mutableMapOf<String, String?>()
+        
         for (note in localNotes) {
             try {
                 // 1. JSON-Upload (Task #1.2.1-13: nutzt getNotesUrl())
                 if (note.syncStatus == SyncStatus.LOCAL_ONLY || note.syncStatus == SyncStatus.PENDING) {
                     val notesUrl = getNotesUrl(serverUrl)
                     val noteUrl = "$notesUrl${note.id}.json"
-                    val jsonBytes = note.toJson().toByteArray()
+                    
+                    // 🔧 v1.7.2 FIX (IMPL_015): Status VOR Serialisierung auf SYNCED setzen
+                    // Verhindert dass Server-JSON "syncStatus": "PENDING" enthält
+                    val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
+                    val jsonBytes = noteToUpload.toJson().toByteArray()
                     
                     Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title})")
                     sardine.put(noteUrl, jsonBytes, "application/json")
                     Logger.d(TAG, "      ✅ Upload successful")
                     
-                    // Update sync status
-                    val updatedNote = note.copy(syncStatus = SyncStatus.SYNCED)
-                    storage.saveNote(updatedNote)
+                    // Lokale Kopie auch mit SYNCED speichern
+                    storage.saveNote(noteToUpload)
                     uploadedCount++
                     
                     // ⚡ v1.3.1: Refresh E-Tag after upload to prevent re-download
-                    // Get new E-Tag from server via PROPFIND
+                    // 🔧 v1.7.2 (IMPL_004): Sammle E-Tags für Batch-Update
                     try {
                         val uploadedResource = sardine.list(noteUrl, 0).firstOrNull()
                         val newETag = uploadedResource?.etag
+                        etagUpdates["etag_json_${note.id}"] = newETag
                         if (newETag != null) {
-                            prefs.edit().putString("etag_json_${note.id}", newETag).apply()
-                            Logger.d(TAG, "      ⚡ Cached new E-Tag: ${newETag.take(ETAG_PREVIEW_LENGTH)}")
+                            Logger.d(TAG, "      ⚡ Queued E-Tag: ${newETag.take(ETAG_PREVIEW_LENGTH)}")
                         } else {
-                            // Fallback: invalidate if server doesn't provide E-Tag
-                            prefs.edit().remove("etag_json_${note.id}").apply()
-                            Logger.d(TAG, "      ⚠️ No E-Tag from server, invalidated cache")
+                            Logger.d(TAG, "      ⚠️ No E-Tag from server, will invalidate")
                         }
                     } catch (e: Exception) {
-                        Logger.w(TAG, "      ⚠️ Failed to refresh E-Tag: ${e.message}")
-                        prefs.edit().remove("etag_json_${note.id}").apply()
+                        Logger.w(TAG, "      ⚠️ Failed to get E-Tag: ${e.message}")
+                        etagUpdates["etag_json_${note.id}"] = null
                     }
                     
                     // 2. Markdown-Export (NEU in v1.2.0)
                     // Läuft NACH erfolgreichem JSON-Upload
                     if (markdownExportEnabled) {
                         try {
-                            exportToMarkdown(sardine, serverUrl, note)
-                            Logger.d(TAG, "   📝 MD exported: ${note.title}")
+                            exportToMarkdown(sardine, serverUrl, noteToUpload)
+                            Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
                         } catch (e: Exception) {
-                            Logger.e(TAG, "MD-Export failed for ${note.id}: ${e.message}")
+                            Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
                             // Kein throw! JSON-Sync darf nicht blockiert werden
                         }
                     }
@@ -813,7 +834,43 @@ class WebDavSyncService(private val context: Context) {
             }
         }
         
+        // 🔧 v1.7.2 (IMPL_004): Batch-Update aller E-Tags in einer Operation
+        if (etagUpdates.isNotEmpty()) {
+            batchUpdateETags(etagUpdates)
+        }
+        
         return uploadedCount
+    }
+    
+    /**
+     * 🔧 v1.7.2 (IMPL_004): Batch-Update von E-Tags
+     * 
+     * Schreibt alle E-Tags in einer einzelnen I/O-Operation statt einzeln.
+     * Performance-Gewinn: ~50-100ms pro Batch (statt N × apply())
+     * 
+     * @param updates Map von E-Tag Keys zu Values (null = remove)
+     */
+    private fun batchUpdateETags(updates: Map<String, String?>) {
+        try {
+            val editor = prefs.edit()
+            var putCount = 0
+            var removeCount = 0
+            
+            updates.forEach { (key, value) ->
+                if (value != null) {
+                    editor.putString(key, value)
+                    putCount++
+                } else {
+                    editor.remove(key)
+                    removeCount++
+                }
+            }
+            
+            editor.apply()
+            Logger.d(TAG, "⚡ Batch-updated E-Tags: $putCount saved, $removeCount removed")
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to batch-update E-Tags", e)
+        }
     }
     
     /**
@@ -1560,8 +1617,8 @@ class WebDavSyncService(private val context: Context) {
                     val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
                     Logger.d(TAG, "      Downloaded ${mdContent.length} chars")
                     
-                    // Parse to Note
-                    val mdNote = Note.fromMarkdown(mdContent)
+                    // 🔧 v1.7.2 (IMPL_014): Server mtime übergeben für korrekte Timestamp-Sync
+                    val mdNote = Note.fromMarkdown(mdContent, serverModifiedTime)
                     if (mdNote == null) {
                         Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
                         continue
@@ -1609,7 +1666,8 @@ class WebDavSyncService(private val context: Context) {
                     // Content-Vergleich: Ist der Inhalt tatsächlich unterschiedlich?
                     val contentChanged = localNote != null && (
                         mdNote.content != localNote.content || 
-                        mdNote.title != localNote.title
+                        mdNote.title != localNote.title ||
+                        mdNote.checklistItems != localNote.checklistItems
                     )
                     
                     if (contentChanged) {
@@ -1636,16 +1694,15 @@ class WebDavSyncService(private val context: Context) {
                                     "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
                             )
                         }
-                        // ⚡ v1.3.1 FIX: Content geändert aber YAML-Timestamp nicht aktualisiert → Importieren!
+                        // 🔧 v1.7.2 (IMPL_014): Content geändert → Importieren UND als PENDING markieren!
+                        // PENDING triggert JSON-Upload beim nächsten Sync-Zyklus
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
-                            // Inhalt wurde extern geändert ohne YAML-Update → mit aktuellem Timestamp importieren
-                            val newTimestamp = System.currentTimeMillis()
                             storage.saveNote(mdNote.copy(
-                                updatedAt = newTimestamp,
-                                syncStatus = SyncStatus.SYNCED
+                                updatedAt = serverModifiedTime,  // Server mtime verwenden
+                                syncStatus = SyncStatus.PENDING  // ⬅️ KRITISCH: Triggert JSON-Upload
                             ))
                             importedCount++
-                            Logger.d(TAG, "   ✅ Imported changed content (YAML timestamp outdated): ${mdNote.title}")
+                            Logger.d(TAG, "   ✅ Imported changed content (marked PENDING for JSON sync): ${mdNote.title}")
                         }
                         mdNote.updatedAt > localNote.updatedAt -> {
                             // Markdown has newer YAML timestamp

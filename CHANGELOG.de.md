@@ -8,6 +8,77 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.2] - 2026-02-04
+
+### 🐛 Kritische Fehlerbehebungen
+
+#### JSON/Markdown Timestamp-Synchronisation
+
+**Problem:** Externe Editoren (Obsidian, Typora, VS Code, eigene Editoren) aktualisieren Markdown-Inhalt, aber nicht den YAML `updated:` Timestamp, wodurch die Android-App Änderungen überspringt.
+
+**Lösung:**
+- Server-Datei Änderungszeit (`mtime`) wird jetzt als Source of Truth statt YAML-Timestamp verwendet
+- Inhaltsänderungen werden via Hash-Vergleich erkannt
+- Notizen nach Markdown-Import als `PENDING` markiert → JSON automatisch beim nächsten Sync hochgeladen
+- Behebt Sortierungsprobleme nach externen Bearbeitungen
+
+#### SyncStatus auf Server immer PENDING
+
+**Problem:** Alle JSON-Dateien auf dem Server enthielten `"syncStatus": "PENDING"` auch nach erfolgreichem Sync, was externe Clients verwirrte.
+
+**Lösung:**
+- Status wird jetzt auf `SYNCED` gesetzt **vor** JSON-Serialisierung
+- Server- und lokale Kopien sind jetzt konsistent
+- Externe Web/Tauri-Editoren können Sync-Status korrekt interpretieren
+
+#### Deletion Tracker Race Condition
+
+**Problem:** Batch-Löschungen konnten Lösch-Einträge verlieren durch konkurrierenden Dateizugriff.
+
+**Lösung:**
+- Mutex-basierte Synchronisation für Deletion Tracking
+- Neue `trackDeletionSafe()` Funktion verhindert Race Conditions
+- Garantiert Zombie-Note-Prevention auch bei schnellen Mehrfach-Löschungen
+
+#### ISO8601 Timezone-Parsing
+
+**Problem:** Markdown-Importe schlugen fehl mit Timezone-Offsets wie `+01:00` oder `-05:00`.
+
+**Lösung:**
+- Multi-Format ISO8601 Parser mit Fallback-Kette
+- Unterstützt UTC (Z), Timezone-Offsets (+01:00, +0100) und Millisekunden
+- Kompatibel mit Obsidian, Typora, VS Code Timestamps
+
+### ⚡ Performance-Verbesserungen
+
+#### E-Tag Batch Caching
+
+- E-Tags werden jetzt in einer einzigen Batch-Operation geschrieben statt N einzelner Schreibvorgänge
+- Performance-Gewinn: ~50-100ms pro Sync mit mehreren Notizen
+- Reduzierte Disk-I/O-Operationen
+
+#### Memory Leak Prevention
+
+- `SafeSardineWrapper` implementiert jetzt `Closeable` für explizites Resource-Cleanup
+- HTTP Connection Pool wird nach Sync korrekt aufgeräumt
+- Verhindert Socket-Exhaustion bei häufigen Syncs
+
+### 🔧 Technische Details
+
+- **IMPL_001:** `kotlinx.coroutines.sync.Mutex` für thread-sicheres Deletion Tracking
+- **IMPL_002:** Pattern-basierter ISO8601 Parser mit 8 Format-Varianten
+- **IMPL_003:** Connection Pool Eviction + Dispatcher Shutdown in `close()`
+- **IMPL_004:** Batch `SharedPreferences.Editor` Updates
+- **IMPL_014:** Server `mtime` Parameter in `Note.fromMarkdown()`
+- **IMPL_015:** `syncStatus` vor `toJson()` Aufruf gesetzt
+
+### 📚 Dokumentation
+
+- External Editor Specification für Web/Tauri-Editor-Entwickler
+- Detaillierte Implementierungs-Dokumentation für alle Bugfixes
+
+---
+
 ## [1.7.1] - 2026-02-02
 
 ### 🐛 Kritische Fehlerbehebungen
@@ -569,8 +640,8 @@ Das komplette UI wurde von XML-Views auf Jetpack Compose migriert. Die App ist j
 
 ### Documentation
 - Added WebDAV mount instructions (Windows, macOS, Linux)
-- Created [SYNC_ARCHITECTURE.md](../project-docs/simple-notes-sync/architecture/SYNC_ARCHITECTURE.md) - Complete sync documentation
-- Created [MARKDOWN_DESKTOP_REALITY_CHECK.md](../project-docs/simple-notes-sync/markdown-desktop-plan/MARKDOWN_DESKTOP_REALITY_CHECK.md) - Desktop integration analysis
+- Complete sync architecture documentation
+- Desktop integration analysis
 
 ---
 

@@ -210,11 +210,13 @@ type: ${noteType.name.lowercase()}
         /**
          * Parst Markdown zurück zu Note-Objekt (Task #1.2.0-09)
          * v1.4.0: Unterstützt jetzt auch Checklisten-Format
+         * 🔧 v1.7.2 (IMPL_014): Optional serverModifiedTime für korrekte Timestamp-Sync
          * 
          * @param md Markdown-String mit YAML Frontmatter
+         * @param serverModifiedTime Optionaler Server-Datei mtime (Priorität über YAML timestamp)
          * @return Note-Objekt oder null bei Parse-Fehler
          */
-        fun fromMarkdown(md: String): Note? {
+        fun fromMarkdown(md: String, serverModifiedTime: Long? = null): Note? {
             return try {
                 // Parse YAML Frontmatter + Markdown Content
                 val frontmatterRegex = Regex("^---\\n(.+?)\\n---\\n(.*)$", RegexOption.DOT_MATCHES_ALL)
@@ -279,12 +281,22 @@ type: ${noteType.name.lowercase()}
                     checklistItems = null
                 }
                 
+                // 🔧 v1.7.2 (IMPL_014): Server mtime hat Priorität über YAML timestamp
+                val yamlUpdatedAt = parseISO8601(metadata["updated"] ?: "")
+                val effectiveUpdatedAt = when {
+                    serverModifiedTime != null && serverModifiedTime > yamlUpdatedAt -> {
+                        Logger.d(TAG, "Using server mtime ($serverModifiedTime) over YAML ($yamlUpdatedAt)")
+                        serverModifiedTime
+                    }
+                    else -> yamlUpdatedAt
+                }
+                
                 Note(
                     id = metadata["id"] ?: UUID.randomUUID().toString(),
                     title = title,
                     content = content,
                     createdAt = parseISO8601(metadata["created"] ?: ""),
-                    updatedAt = parseISO8601(metadata["updated"] ?: ""),
+                    updatedAt = effectiveUpdatedAt,
                     deviceId = metadata["device"] ?: "desktop",
                     syncStatus = SyncStatus.SYNCED,  // Annahme: Vom Server importiert
                     noteType = noteType,
@@ -307,18 +319,71 @@ type: ${noteType.name.lowercase()}
         }
         
         /**
-         * Parst ISO8601 zurück zu Timestamp (Task #1.2.0-10)
+         * 🔧 v1.7.2 (IMPL_002): Robustes ISO8601 Parsing mit Multi-Format Unterstützung
+         * 
+         * Unterstützte Formate (in Prioritätsreihenfolge):
+         * 1. 2024-12-21T18:00:00Z (UTC mit Z)
+         * 2. 2024-12-21T18:00:00+01:00 (mit Offset)
+         * 3. 2024-12-21T18:00:00+0100 (Offset ohne Doppelpunkt)
+         * 4. 2024-12-21T18:00:00.123Z (mit Millisekunden)
+         * 5. 2024-12-21T18:00:00.123+01:00 (Millisekunden + Offset)
+         * 6. 2024-12-21 18:00:00 (Leerzeichen statt T)
+         * 
          * Fallback: Aktueller Timestamp bei Fehler
+         * 
+         * @param dateString ISO8601 Datum-String
+         * @return Unix Timestamp in Millisekunden
          */
         private fun parseISO8601(dateString: String): Long {
-            return try {
-                val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-                sdf.timeZone = TimeZone.getTimeZone("UTC")
-                sdf.parse(dateString)?.time ?: System.currentTimeMillis()
-            } catch (e: Exception) {
-                Logger.w(TAG, "Failed to parse ISO8601 date '$dateString': ${e.message}")
-                System.currentTimeMillis()  // Fallback
+            if (dateString.isBlank()) {
+                return System.currentTimeMillis()
             }
+            
+            // Normalisiere: Leerzeichen → T
+            val normalized = dateString.trim().replace(' ', 'T')
+            
+            // Format-Patterns in Prioritätsreihenfolge
+            val patterns = listOf(
+                // Mit Timezone Z
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                
+                // Mit Offset XXX (+01:00)
+                "yyyy-MM-dd'T'HH:mm:ssXXX",
+                "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+                
+                // Mit Offset ohne Doppelpunkt (+0100)
+                "yyyy-MM-dd'T'HH:mm:ssZ",
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+                
+                // Ohne Timezone (interpretiere als UTC)
+                "yyyy-MM-dd'T'HH:mm:ss",
+                "yyyy-MM-dd'T'HH:mm:ss.SSS"
+            )
+            
+            // Versuche alle Patterns nacheinander
+            for (pattern in patterns) {
+                @Suppress("SwallowedException") // Intentional: try all patterns before logging
+                try {
+                    val sdf = SimpleDateFormat(pattern, Locale.US)
+                    // Für Patterns ohne Timezone: UTC annehmen
+                    if (!pattern.contains("XXX") && !pattern.contains("Z")) {
+                        sdf.timeZone = TimeZone.getTimeZone("UTC")
+                    }
+                    val parsed = sdf.parse(normalized)
+                    if (parsed != null) {
+                        return parsed.time
+                    }
+                } catch (e: Exception) {
+                    // 🔇 Exception intentionally swallowed - try next pattern
+                    // Only log if no pattern matches (see fallback below)
+                    continue
+                }
+            }
+            
+            // Fallback wenn kein Pattern passt
+            Logger.w(TAG, "Failed to parse ISO8601 date '$dateString' with any pattern, using current time")
+            return System.currentTimeMillis()
         }
     }
 }

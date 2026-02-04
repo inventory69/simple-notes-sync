@@ -55,6 +55,8 @@ import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusBanner
 import kotlinx.coroutines.launch
 
+private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
+
 /**
  * Main screen displaying the notes list
  * v1.5.0: Jetpack Compose MainActivity Redesign
@@ -95,6 +97,15 @@ fun MainScreen(
     val listState = rememberLazyListState()
     // 🎨 v1.7.0: gridState für Staggered Grid Layout
     val gridState = rememberLazyStaggeredGridState()
+    
+    // ⏱️ Timestamp ticker - increments every 30 seconds to trigger recomposition of relative times
+    var timestampTicker by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(TIMESTAMP_UPDATE_INTERVAL_MS)
+            timestampTicker = System.currentTimeMillis()
+        }
+    }
     
     // Compute isSyncing once
     val isSyncing = syncState == SyncStateManager.SyncState.SYNCING
@@ -197,6 +208,7 @@ fun MainScreen(
                                 showSyncStatus = viewModel.isServerConfigured(),
                                 selectedNoteIds = selectedNotes,
                                 isSelectionMode = isSelectionMode,
+                                timestampTicker = timestampTicker,
                                 modifier = Modifier.weight(1f),
                                 onNoteClick = { note ->
                                     if (isSelectionMode) {
@@ -215,6 +227,7 @@ fun MainScreen(
                                 showSyncStatus = viewModel.isServerConfigured(),
                                 selectedNotes = selectedNotes,
                                 isSelectionMode = isSelectionMode,
+                                timestampTicker = timestampTicker,
                                 listState = listState,
                                 modifier = Modifier.weight(1f),
                                 onNoteClick = { note -> onOpenNote(note.id) },

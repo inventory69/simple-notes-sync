@@ -63,11 +63,16 @@ fun NoteCard(
     showSyncStatus: Boolean,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
+    timestampTicker: Long = 0L,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
+    
+    // ⏱️ Reading timestampTicker triggers recomposition only for visible cards
+    @Suppress("UNUSED_VARIABLE")
+    val ticker = timestampTicker
     
     Card(
         modifier = modifier
