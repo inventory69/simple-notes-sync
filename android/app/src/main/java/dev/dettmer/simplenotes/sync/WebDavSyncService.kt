@@ -655,6 +655,7 @@ class WebDavSyncService(private val context: Context) {
             
             Logger.d(TAG, "📍 Step 5: Downloading remote notes")
             // Download remote notes
+            var deletedOnServerCount = 0  // 🆕 v1.8.0
             try {
                 Logger.d(TAG, "⬇️ Downloading remote notes...")
                 val downloadResult = downloadRemoteNotes(
@@ -664,10 +665,12 @@ class WebDavSyncService(private val context: Context) {
                 )
                 syncedCount += downloadResult.downloadedCount
                 conflictCount += downloadResult.conflictCount
+                deletedOnServerCount = downloadResult.deletedOnServerCount  // 🆕 v1.8.0
                 Logger.d(
                     TAG,
                     "✅ Downloaded: ${downloadResult.downloadedCount} notes, " +
-                        "Conflicts: ${downloadResult.conflictCount}"
+                        "Conflicts: ${downloadResult.conflictCount}, " +
+                        "Deleted on server: ${downloadResult.deletedOnServerCount}"  // 🆕 v1.8.0
                 )
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 CRASH in downloadRemoteNotes()!", e)
@@ -724,12 +727,16 @@ class WebDavSyncService(private val context: Context) {
             if (markdownImportedCount > 0 && syncedCount > 0) {
                 Logger.d(TAG, "📝 Including $markdownImportedCount Markdown file updates")
             }
+            if (deletedOnServerCount > 0) {  // 🆕 v1.8.0
+                Logger.d(TAG, "🗑️ Detected $deletedOnServerCount notes deleted on server")
+            }
             Logger.d(TAG, "═══════════════════════════════════════")
             
             SyncResult(
                 isSuccess = true,
                 syncedCount = effectiveSyncedCount,
-                conflictCount = conflictCount
+                conflictCount = conflictCount,
+                deletedOnServerCount = deletedOnServerCount  // 🆕 v1.8.0
             )
             
         } catch (e: Exception) {
@@ -1038,8 +1045,44 @@ class WebDavSyncService(private val context: Context) {
     
     private data class DownloadResult(
         val downloadedCount: Int,
-        val conflictCount: Int
+        val conflictCount: Int,
+        val deletedOnServerCount: Int = 0  // 🆕 v1.8.0
     )
+    
+    /**
+     * 🆕 v1.8.0: Erkennt Notizen, die auf dem Server gelöscht wurden
+     * 
+     * Keine zusätzlichen HTTP-Requests! Nutzt die bereits geladene
+     * serverNoteIds-Liste aus dem PROPFIND-Request.
+     * 
+     * @param serverNoteIds Set aller Note-IDs auf dem Server (aus PROPFIND)
+     * @param localNotes Alle lokalen Notizen
+     * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
+     */
+    private fun detectServerDeletions(
+        serverNoteIds: Set<String>,
+        localNotes: List<Note>
+    ): Int {
+        var deletedCount = 0
+        
+        localNotes.forEach { note ->
+            // Nur SYNCED-Notizen prüfen:
+            // - LOCAL_ONLY: War nie auf Server → irrelevant
+            // - PENDING: Soll hochgeladen werden → nicht überschreiben
+            // - CONFLICT: Wird separat behandelt
+            // - DELETED_ON_SERVER: Bereits markiert
+            if (note.syncStatus == SyncStatus.SYNCED && note.id !in serverNoteIds) {
+                val updatedNote = note.copy(syncStatus = SyncStatus.DELETED_ON_SERVER)
+                storage.saveNote(updatedNote)
+                deletedCount++
+                
+                Logger.d(TAG, "Note '${note.title}' (${note.id}) " +
+                    "was deleted on server, marked as DELETED_ON_SERVER")
+            }
+        }
+        
+        return deletedCount
+    }
     
     @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
     // Sync logic requires nested conditions for comprehensive error handling and conflict resolution
@@ -1062,6 +1105,9 @@ class WebDavSyncService(private val context: Context) {
         // Use provided deletion tracker (allows fresh tracker from restore)
         var trackerModified = false
         
+        // 🆕 v1.8.0: Collect server note IDs for deletion detection
+        val serverNoteIds = mutableSetOf<String>()
+        
         try {
             // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
             val notesUrl = getNotesUrl(serverUrl)
@@ -1076,6 +1122,12 @@ class WebDavSyncService(private val context: Context) {
                 val resources = sardine.list(notesUrl)
                 val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
+                
+                // 🆕 v1.8.0: Extract server note IDs
+                jsonFiles.forEach { resource ->
+                    val noteId = resource.name.removeSuffix(".json")
+                    serverNoteIds.add(noteId)
+                }
                 
                 for (resource in jsonFiles) {
                     
@@ -1317,8 +1369,16 @@ class WebDavSyncService(private val context: Context) {
             Logger.d(TAG, "💾 Deletion tracker updated")
         }
         
+        // 🆕 v1.8.0: Server-Deletions erkennen (nach Downloads)
+        val allLocalNotes = storage.loadAllNotes()
+        val deletedOnServerCount = detectServerDeletions(serverNoteIds, allLocalNotes)
+        
+        if (deletedOnServerCount > 0) {
+            Logger.d(TAG, "$deletedOnServerCount note(s) detected as deleted on server")
+        }
+        
         Logger.d(TAG, "📊 Total: $downloadedCount downloaded, $conflictCount conflicts, $skippedDeleted deleted")
-        return DownloadResult(downloadedCount, conflictCount)
+        return DownloadResult(downloadedCount, conflictCount, deletedOnServerCount)
     }
     
     private fun saveLastSyncTimestamp() {
