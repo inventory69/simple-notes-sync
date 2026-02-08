@@ -58,6 +58,13 @@
     <string name="sync_status_error">Sync failed</string>
     <string name="sync_already_running">Sync already in progress</string>
     
+    <!-- 🆕 v1.8.0: SyncStatus enum values -->
+    <string name="sync_status_synced">Synced with server</string>
+    <string name="sync_status_pending">Waiting for sync</string>
+    <string name="sync_status_conflict">Sync conflict detected</string>
+    <string name="sync_status_local_only">Not yet synced</string>
+    <string name="sync_status_deleted_on_server">Deleted on server</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->

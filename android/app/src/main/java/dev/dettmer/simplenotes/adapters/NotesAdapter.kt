@@ -89,6 +89,7 @@ class NotesAdapter(
                     SyncStatus.PENDING -> android.R.drawable.ic_popup_sync
                     SyncStatus.CONFLICT -> android.R.drawable.ic_dialog_alert
                     SyncStatus.LOCAL_ONLY -> android.R.drawable.ic_menu_save
+                    SyncStatus.DELETED_ON_SERVER -> android.R.drawable.ic_menu_delete  // 🆕 v1.8.0
                 }
                 imageViewSyncStatus.setImageResource(syncIcon)
                 imageViewSyncStatus.visibility = View.VISIBLE

@@ -187,11 +187,13 @@ fun NoteCardCompact(
                                 SyncStatus.PENDING -> Icons.Outlined.CloudSync
                                 SyncStatus.CONFLICT -> Icons.Default.Warning
                                 SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
+                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff  // 🆕 v1.8.0
                             },
                             contentDescription = null,
                             tint = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
                                 SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
+                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)  // 🆕 v1.8.0
                                 else -> MaterialTheme.colorScheme.outline
                             },
                             modifier = Modifier.size(14.dp)

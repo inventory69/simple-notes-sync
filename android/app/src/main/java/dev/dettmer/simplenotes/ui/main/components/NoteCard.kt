@@ -186,11 +186,19 @@ fun NoteCard(
                                 SyncStatus.PENDING -> Icons.Outlined.CloudSync
                                 SyncStatus.CONFLICT -> Icons.Default.Warning
                                 SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
+                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff  // 🆕 v1.8.0
                             },
-                            contentDescription = null,
+                            contentDescription = when (note.syncStatus) {
+                                SyncStatus.SYNCED -> stringResource(R.string.sync_status_synced)
+                                SyncStatus.PENDING -> stringResource(R.string.sync_status_pending)
+                                SyncStatus.CONFLICT -> stringResource(R.string.sync_status_conflict)
+                                SyncStatus.LOCAL_ONLY -> stringResource(R.string.sync_status_local_only)
+                                SyncStatus.DELETED_ON_SERVER -> stringResource(R.string.sync_status_deleted_on_server)  // 🆕 v1.8.0
+                            },
                             tint = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
                                 SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
+                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)  // 🆕 v1.8.0
                                 else -> MaterialTheme.colorScheme.outline
                             },
                             modifier = Modifier.size(16.dp)
