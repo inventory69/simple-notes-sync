@@ -65,6 +65,21 @@
     <string name="sync_status_local_only">Not yet synced</string>
     <string name="sync_status_deleted_on_server">Deleted on server</string>
     
+    <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
+    <string name="sync_legend_button">Sync status help</string>
+    <string name="sync_legend_title">Sync Status Icons</string>
+    <string name="sync_legend_description">Each note shows a small icon indicating its sync status:</string>
+    <string name="sync_legend_synced_label">Synced</string>
+    <string name="sync_legend_synced_desc">This note is up to date on all devices.</string>
+    <string name="sync_legend_pending_label">Pending</string>
+    <string name="sync_legend_pending_desc">This note has local changes waiting to be synced.</string>
+    <string name="sync_legend_conflict_label">Conflict</string>
+    <string name="sync_legend_conflict_desc">This note was changed on multiple devices simultaneously. The latest version was kept.</string>
+    <string name="sync_legend_local_only_label">Local only</string>
+    <string name="sync_legend_local_only_desc">This note has never been synced to the server yet.</string>
+    <string name="sync_legend_deleted_label">Deleted on server</string>
+    <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->

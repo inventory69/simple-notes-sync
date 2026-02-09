@@ -58,6 +58,21 @@
     <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
     <string name="sync_already_running">Synchronisierung läuft bereits</string>
     
+    <!-- 🆕 v1.8.0: Sync-Status Legende Dialog -->
+    <string name="sync_legend_button">Sync-Status Hilfe</string>
+    <string name="sync_legend_title">Sync-Status Icons</string>
+    <string name="sync_legend_description">Jede Notiz zeigt ein kleines Icon, das den Sync-Status anzeigt:</string>
+    <string name="sync_legend_synced_label">Synchronisiert</string>
+    <string name="sync_legend_synced_desc">Diese Notiz ist auf allen Geräten aktuell.</string>
+    <string name="sync_legend_pending_label">Ausstehend</string>
+    <string name="sync_legend_pending_desc">Diese Notiz hat lokale Änderungen, die noch synchronisiert werden müssen.</string>
+    <string name="sync_legend_conflict_label">Konflikt</string>
+    <string name="sync_legend_conflict_desc">Diese Notiz wurde auf mehreren Geräten gleichzeitig geändert. Die neueste Version wurde beibehalten.</string>
+    <string name="sync_legend_local_only_label">Nur lokal</string>
+    <string name="sync_legend_local_only_desc">Diese Notiz wurde noch nie mit dem Server synchronisiert.</string>
+    <string name="sync_legend_deleted_label">Auf Server gelöscht</string>
+    <string name="sync_legend_deleted_desc">Diese Notiz wurde auf einem anderen Gerät oder direkt auf dem Server gelöscht. Sie existiert noch lokal.</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
