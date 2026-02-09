@@ -73,6 +73,9 @@
     <string name="sync_legend_deleted_label">Auf Server gelöscht</string>
     <string name="sync_legend_deleted_desc">Diese Notiz wurde auf einem anderen Gerät oder direkt auf dem Server gelöscht. Sie existiert noch lokal.</string>
     
+    <!-- 🆕 v1.8.0 (IMPL_022): Sync-Banner Löschungsanzahl -->
+    <string name="sync_deleted_on_server_count">%d auf Server gelöscht</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
