@@ -513,6 +513,12 @@
         <item quantity="other">%d notes synced</item>
     </plurals>
 
+    <!-- v1.8.0 (IMPL_017): Checklist separator -->
+    <plurals name="checked_items_count">
+        <item quantity="one">%d completed</item>
+        <item quantity="other">%d completed</item>
+    </plurals>
+
     <!-- ============================= -->
     <!-- PARALLEL DOWNLOADS v1.8.0     -->
     <!-- ============================= -->

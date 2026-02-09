@@ -104,7 +104,7 @@ class NoteEditorViewModel(
                 }
                 
                 if (note.noteType == NoteType.CHECKLIST) {
-                    val items = note.checklistItems?.sortedBy { it.order }?.map { 
+                    val items = note.checklistItems?.sortedBy { it.order }?.map {
                         ChecklistItemState(
                             id = it.id,
                             text = it.text,
@@ -112,7 +112,8 @@ class NoteEditorViewModel(
                             order = it.order
                         )
                     } ?: emptyList()
-                    _checklistItems.value = items
+                    // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
+                    _checklistItems.value = sortChecklistItems(items)
                 }
             }
         } else {
@@ -163,11 +164,26 @@ class NoteEditorViewModel(
         }
     }
     
+    /**
+     * 🆕 v1.8.0 (IMPL_017): Sortiert Checklist-Items mit Unchecked oben, Checked unten.
+     * Stabile Sortierung: Relative Reihenfolge innerhalb jeder Gruppe bleibt erhalten.
+     */
+    private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
+        val unchecked = items.filter { !it.isChecked }
+        val checked = items.filter { it.isChecked }
+
+        return (unchecked + checked).mapIndexed { index, item ->
+            item.copy(order = index)
+        }
+    }
+
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
         _checklistItems.update { items ->
-            items.map { item ->
+            val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
             }
+            // 🆕 v1.8.0 (IMPL_017): Nach Toggle sortieren
+            sortChecklistItems(updatedItems)
         }
     }
     
@@ -208,6 +224,15 @@ class NoteEditorViewModel(
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
         _checklistItems.update { items ->
+            val fromItem = items.getOrNull(fromIndex) ?: return@update items
+            val toItem = items.getOrNull(toIndex) ?: return@update items
+
+            // 🆕 v1.8.0 (IMPL_017): Drag nur innerhalb der gleichen Gruppe erlauben
+            // (checked ↔ checked, unchecked ↔ unchecked)
+            if (fromItem.isChecked != toItem.isChecked) {
+                return@update items  // Kein Move über Gruppen-Grenze
+            }
+
             val mutableList = items.toMutableList()
             val item = mutableList.removeAt(fromIndex)
             mutableList.add(toIndex, item)
