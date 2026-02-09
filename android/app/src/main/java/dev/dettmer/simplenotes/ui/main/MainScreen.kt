@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 // FabPosition nicht mehr benötigt - FAB wird manuell platziert
 import androidx.compose.material3.Icon
@@ -53,6 +54,7 @@ import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusBanner
+import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
 import kotlinx.coroutines.launch
 
 private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
@@ -91,6 +93,9 @@ fun MainScreen(
     
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    
+    // 🆕 v1.8.0: Sync status legend dialog
+    var showSyncLegend by remember { mutableStateOf(false) }
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -170,6 +175,8 @@ fun MainScreen(
             ) {
                 MainTopBar(
                     syncEnabled = canSync,
+                    showSyncLegend = isSyncAvailable,  // 🆕 v1.8.0: Nur wenn Sync verfügbar
+                    onSyncLegendClick = { showSyncLegend = true },  // 🆕 v1.8.0
                     onSyncClick = { viewModel.triggerManualSync("toolbar") },
                     onSettingsClick = onOpenSettings
                 )
@@ -276,6 +283,13 @@ fun MainScreen(
                 }
             )
         }
+        
+        // 🆕 v1.8.0: Sync Status Legend Dialog
+        if (showSyncLegend) {
+            SyncStatusLegendDialog(
+                onDismiss = { showSyncLegend = false }
+            )
+        }
     }
 }
 
@@ -283,6 +297,8 @@ fun MainScreen(
 @Composable
 private fun MainTopBar(
     syncEnabled: Boolean,
+    showSyncLegend: Boolean,  // 🆕 v1.8.0: Ob der Hilfe-Button sichtbar sein soll
+    onSyncLegendClick: () -> Unit,  // 🆕 v1.8.0
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -294,6 +310,15 @@ private fun MainTopBar(
             )
         },
         actions = {
+            // 🆕 v1.8.0: Sync Status Legend Button (nur wenn Sync verfügbar)
+            if (showSyncLegend) {
+                IconButton(onClick = onSyncLegendClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                        contentDescription = stringResource(R.string.sync_legend_button)
+                    )
+                }
+            }
             IconButton(
                 onClick = onSyncClick,
                 enabled = syncEnabled
