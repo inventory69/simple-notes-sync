@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.PhonelinkRing
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsInputAntenna
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -49,7 +50,10 @@ fun SyncSettingsScreen(
     val triggerPeriodic by viewModel.triggerPeriodic.collectAsState()
     val triggerBoot by viewModel.triggerBoot.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
-    
+
+    // 🆕 v1.8.0: Parallel Downloads
+    val maxParallelDownloads by viewModel.maxParallelDownloads.collectAsState()
+
     // 🆕 v1.7.0: WiFi-only sync
     val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
     
@@ -212,7 +216,45 @@ fun SyncSettingsScreen(
                 icon = Icons.Default.SettingsInputAntenna,
                 enabled = isServerConfigured
             )
-            
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🆕 v1.8.0: Max Parallel Downloads
+            val parallelOptions = listOf(
+                RadioOption(
+                    value = 1,
+                    title = "1 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_1)
+                ),
+                RadioOption(
+                    value = 3,
+                    title = "3 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_3)
+                ),
+                RadioOption(
+                    value = 5,
+                    title = "5 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_5)
+                ),
+                RadioOption(
+                    value = 7,
+                    title = "7 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_7)
+                ),
+                RadioOption(
+                    value = 10,
+                    title = "10 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_10)
+                )
+            )
+
+            SettingsRadioGroup(
+                title = stringResource(R.string.sync_parallel_downloads_title),
+                options = parallelOptions,
+                selectedValue = maxParallelDownloads,
+                onValueSelected = { viewModel.setMaxParallelDownloads(it) }
+            )
+
             SettingsDivider()
             
             // Manual Sync Info

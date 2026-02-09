@@ -10,10 +10,14 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.parallel.DownloadTask
+import dev.dettmer.simplenotes.sync.parallel.DownloadTaskResult
+import dev.dettmer.simplenotes.sync.parallel.ParallelDownloader
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -1194,23 +1198,27 @@ class WebDavSyncService(private val context: Context) {
                 val resources = sardine.list(notesUrl)
                 val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
-                
+
                 // 🆕 v1.8.0: Extract server note IDs
                 jsonFiles.forEach { resource ->
                     val noteId = resource.name.removeSuffix(".json")
                     serverNoteIds.add(noteId)
                 }
-                
-                for ((index, resource) in jsonFiles.withIndex()) {
-                    
+
+                // ════════════════════════════════════════════════════════════════
+                // 🆕 v1.8.0: PHASE 1A - Collect Download Tasks
+                // ════════════════════════════════════════════════════════════════
+                val downloadTasks = mutableListOf<DownloadTask>()
+
+                for (resource in jsonFiles) {
                     val noteId = resource.name.removeSuffix(".json")
                     val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
-                    
+
                     // ⚡ v1.3.1: HYBRID PERFORMANCE - Timestamp + E-Tag (like Markdown!)
                     val serverETag = resource.etag
                     val cachedETag = prefs.getString("etag_json_$noteId", null)
                     val serverModified = resource.modified?.time ?: 0L
-                    
+
                     // 🐛 DEBUG: Log every file check to diagnose performance
                     val serverETagPreview = serverETag?.take(ETAG_PREVIEW_LENGTH) ?: "null"
                     val cachedETagPreview = cachedETag?.take(ETAG_PREVIEW_LENGTH) ?: "null"
@@ -1219,11 +1227,11 @@ class WebDavSyncService(private val context: Context) {
                         "   🔍 [$noteId] etag=$serverETagPreview/$cachedETagPreview " +
                             "modified=$serverModified lastSync=$lastSyncTime"
                     )
-                    
+
                     // FIRST: Check deletion tracker - if locally deleted, skip unless re-created on server
                     if (deletionTracker.isDeleted(noteId)) {
                         val deletedAt = deletionTracker.getDeletionTimestamp(noteId)
-                        
+
                         // Smart check: Was note re-created on server after deletion?
                         if (deletedAt != null && serverModified > deletedAt) {
                             Logger.d(TAG, "   📝 Note re-created on server after deletion: $noteId")
@@ -1237,11 +1245,11 @@ class WebDavSyncService(private val context: Context) {
                             continue
                         }
                     }
-                    
+
                     // Check if file exists locally
                     val localNote = storage.loadNote(noteId)
                     val fileExistsLocally = localNote != null
-                    
+
                     // PRIMARY: Timestamp check (works on first sync!)
                     // Same logic as Markdown sync - skip if not modified since last sync
                     // BUT: Always download if file doesn't exist locally!
@@ -1251,7 +1259,7 @@ class WebDavSyncService(private val context: Context) {
                         processedIds.add(noteId)
                         continue
                     }
-                    
+
                     // SECONDARY: E-Tag check (for performance after first sync)
                     // Catches cases where file was re-uploaded with same content
                     // BUT: Always download if file doesn't exist locally!
@@ -1261,12 +1269,12 @@ class WebDavSyncService(private val context: Context) {
                         processedIds.add(noteId)
                         continue
                     }
-                    
+
                     // If file doesn't exist locally, always download
                     if (!fileExistsLocally) {
                         Logger.d(TAG, "   📥 File missing locally - forcing download")
                     }
-                    
+
                     // 🐛 DEBUG: Log download reason
                     val downloadReason = when {
                         lastSyncTime == 0L -> "First sync ever"
@@ -1278,67 +1286,131 @@ class WebDavSyncService(private val context: Context) {
                         else -> "E-Tag changed"
                     }
                     Logger.d(TAG, "   📥 Downloading $noteId: $downloadReason")
-                    
-                    // Download and process
-                    val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
-                    val remoteNote = Note.fromJson(jsonContent) ?: continue
-                    
-                    processedIds.add(remoteNote.id)  // 🆕 Mark as processed
-                    
-                    // Note: localNote was already loaded above for existence check
-                    when {
-                        localNote == null -> {
-                            // New note from server
-                            storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                            downloadedCount++
-                            // 🆕 v1.8.0: Progress mit Notiz-Titel (kein Total → kein irreführender Counter)
-                            onProgress(downloadedCount, 0, remoteNote.title)
-                            Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
-                            
-                            // ⚡ Cache E-Tag for next sync
-                            if (serverETag != null) {
-                                prefs.edit().putString("etag_json_$noteId", serverETag).apply()
-                            }
-                        }
-                        forceOverwrite -> {
-                            // OVERWRITE mode: Always replace regardless of timestamps
-                            storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                            downloadedCount++
-                            onProgress(downloadedCount, 0, remoteNote.title)
-                            Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
-                            
-                            // ⚡ Cache E-Tag for next sync
-                            if (serverETag != null) {
-                                prefs.edit().putString("etag_json_$noteId", serverETag).apply()
-                            }
-                        }
-                        localNote.updatedAt < remoteNote.updatedAt -> {
-                            // Remote is newer
-                            if (localNote.syncStatus == SyncStatus.PENDING) {
-                                // Conflict detected
-                                storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
-                                conflictCount++
-                                // 🆕 v1.8.0: Conflict zählt nicht als Download
-                            } else {
-                                // Safe to overwrite
-                                storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                                downloadedCount++
-                                onProgress(downloadedCount, 0, remoteNote.title)
-                                Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
-                                
-                                // ⚡ Cache E-Tag for next sync
-                                if (serverETag != null) {
-                                    prefs.edit().putString("etag_json_$noteId", serverETag).apply()
+
+                    // 🆕 v1.8.0: Add to download tasks
+                    downloadTasks.add(DownloadTask(
+                        noteId = noteId,
+                        url = noteUrl,
+                        resource = resource,
+                        serverETag = serverETag,
+                        serverModified = serverModified
+                    ))
+                }
+
+                Logger.d(TAG, "   📋 ${downloadTasks.size} files to download, $skippedDeleted skipped (deleted), " +
+                    "$skippedUnchanged skipped (unchanged)")
+
+                // ════════════════════════════════════════════════════════════════
+                // 🆕 v1.8.0: PHASE 1B - Parallel Download
+                // ════════════════════════════════════════════════════════════════
+                if (downloadTasks.isNotEmpty()) {
+                    // Konfigurierbare Parallelität aus Settings
+                    val maxParallel = prefs.getInt(
+                        Constants.KEY_MAX_PARALLEL_DOWNLOADS,
+                        Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS
+                    )
+
+                    val downloader = ParallelDownloader(
+                        sardine = sardine,
+                        maxParallelDownloads = maxParallel
+                    )
+
+                    downloader.onProgress = { completed, total, currentFile ->
+                        onProgress(completed, total, currentFile ?: "?")
+                    }
+
+                    val downloadResults = runBlocking {
+                        downloader.downloadAll(downloadTasks)
+                    }
+
+                    // ════════════════════════════════════════════════════════════════
+                    // 🆕 v1.8.0: PHASE 1C - Process Results
+                    // ════════════════════════════════════════════════════════════════
+                    Logger.d(TAG, "   🔄 Processing ${downloadResults.size} download results")
+
+                    // Batch-collect E-Tags for single write
+                    val etagUpdates = mutableMapOf<String, String>()
+
+                    for (result in downloadResults) {
+                        when (result) {
+                            is DownloadTaskResult.Success -> {
+                                val remoteNote = Note.fromJson(result.content)
+                                if (remoteNote == null) {
+                                    Logger.w(TAG, "   ⚠️ Failed to parse JSON: ${result.noteId}")
+                                    continue
+                                }
+
+                                processedIds.add(remoteNote.id)
+                                val localNote = storage.loadNote(remoteNote.id)
+
+                                when {
+                                    localNote == null -> {
+                                        // New note from server
+                                        storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                        downloadedCount++
+                                        Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
+
+                                        // ⚡ Batch E-Tag for later
+                                        if (result.etag != null) {
+                                            etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                        }
+                                    }
+                                    forceOverwrite -> {
+                                        // OVERWRITE mode: Always replace regardless of timestamps
+                                        storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                        downloadedCount++
+                                        Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
+
+                                        if (result.etag != null) {
+                                            etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                        }
+                                    }
+                                    localNote.updatedAt < remoteNote.updatedAt -> {
+                                        // Remote is newer
+                                        if (localNote.syncStatus == SyncStatus.PENDING) {
+                                            // Conflict detected
+                                            storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                            conflictCount++
+                                            Logger.w(TAG, "   ⚠️ Conflict: ${remoteNote.id}")
+                                        } else {
+                                            // Safe to overwrite
+                                            storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                            downloadedCount++
+                                            Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
+
+                                            if (result.etag != null) {
+                                                etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                            }
+                                        }
+                                    }
+                                    // else: Local is newer or same → skip silently
                                 }
                             }
+                            is DownloadTaskResult.Failure -> {
+                                Logger.e(TAG, "   ❌ Download failed: ${result.noteId} - ${result.error.message}")
+                                // Fehlerhafte Downloads nicht als verarbeitet markieren
+                                // → werden beim nächsten Sync erneut versucht
+                            }
+                            is DownloadTaskResult.Skipped -> {
+                                Logger.d(TAG, "   ⏭️ Skipped: ${result.noteId} - ${result.reason}")
+                                processedIds.add(result.noteId)
+                            }
                         }
-                        // else: Local is newer or same → skip silently
+                    }
+
+                    // ⚡ Batch-save E-Tags (IMPL_004 optimization)
+                    if (etagUpdates.isNotEmpty()) {
+                        prefs.edit().apply {
+                            etagUpdates.forEach { (key, value) -> putString(key, value) }
+                        }.apply()
+                        Logger.d(TAG, "   💾 Batch-saved ${etagUpdates.size} E-Tags")
                     }
                 }
+
                 Logger.d(
                     TAG,
-                    "   📊 Phase 1: $downloadedCount downloaded, $skippedDeleted skipped (deleted), " +
-                        "$skippedUnchanged skipped (unchanged)"
+                    "   📊 Phase 1: $downloadedCount downloaded, $conflictCount conflicts, " +
+                        "$skippedDeleted skipped (deleted), $skippedUnchanged skipped (unchanged)"
                 )
             } else {
                 Logger.w(TAG, "   ⚠️ /notes/ does not exist, skipping Phase 1")
