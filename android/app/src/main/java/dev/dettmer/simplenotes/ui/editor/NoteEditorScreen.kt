@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
@@ -351,14 +352,17 @@ private fun ChecklistEditor(
                     onDelete = { onDelete(item.id) },
                     onAddNewItem = { onAddNewItemAfter(item.id) },
                     requestFocus = shouldFocus,
+                    isDragging = isDragging,  // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
+                    isAnyItemDragging = dragDropState.draggingItemIndex != null,  // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
+                    dragModifier = Modifier.dragContainer(dragDropState, index),  // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
                     modifier = Modifier
-                        .dragContainer(dragDropState, index)
                         .offset {
                             IntOffset(
                                 0,
                                 if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
                             )
                         }
+                        .zIndex(if (isDragging) 10f else 0f)  // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
                         .shadow(elevation, shape = RoundedCornerShape(8.dp))
                         .background(
                             color = MaterialTheme.colorScheme.surface,
