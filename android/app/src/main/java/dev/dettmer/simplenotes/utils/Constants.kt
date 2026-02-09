@@ -67,4 +67,10 @@ object Constants {
     const val DEFAULT_DISPLAY_MODE = "list"
     const val GRID_COLUMNS = 2
     const val GRID_SPACING_DP = 8
+
+    // ⚡ v1.8.0: Parallel Downloads
+    const val KEY_MAX_PARALLEL_DOWNLOADS = "max_parallel_downloads"
+    const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 5
+    const val MIN_PARALLEL_DOWNLOADS = 1
+    const val MAX_PARALLEL_DOWNLOADS = 10
 }
