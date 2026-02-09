@@ -597,6 +597,8 @@ class WebDavSyncService(private val context: Context) {
             Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
         
         return@withContext try {
+            // 🆕 v1.8.0: Banner bleibt in PREPARING bis echte Arbeit (Upload/Download) anfällt
+            
             Logger.d(TAG, "📍 Step 1: Getting Sardine client")
             
             val sardine = try {
@@ -640,11 +642,23 @@ class WebDavSyncService(private val context: Context) {
             // Ensure notes-md/ directory exists (for Markdown export)
             ensureMarkdownDirectoryExists(sardine, serverUrl)
             
+            // 🆕 v1.8.0: Phase 2 - Uploading (Phase wird nur bei echten Uploads gesetzt)
             Logger.d(TAG, "📍 Step 4: Uploading local notes")
             // Upload local notes
             try {
                 Logger.d(TAG, "⬆️ Uploading local notes...")
-                val uploadedCount = uploadLocalNotes(sardine, serverUrl)
+                val uploadedCount = uploadLocalNotes(
+                    sardine,
+                    serverUrl,
+                    onProgress = { current, total, noteTitle ->
+                        SyncStateManager.updateProgress(
+                            phase = SyncPhase.UPLOADING,
+                            current = current,
+                            total = total,
+                            currentFileName = noteTitle
+                        )
+                    }
+                )
                 syncedCount += uploadedCount
                 Logger.d(TAG, "✅ Uploaded: $uploadedCount notes")
             } catch (e: Exception) {
@@ -653,6 +667,7 @@ class WebDavSyncService(private val context: Context) {
                 throw e
             }
             
+            // 🆕 v1.8.0: Phase 3 - Downloading (Phase wird nur bei echten Downloads gesetzt)
             Logger.d(TAG, "📍 Step 5: Downloading remote notes")
             // Download remote notes
             var deletedOnServerCount = 0  // 🆕 v1.8.0
@@ -661,7 +676,17 @@ class WebDavSyncService(private val context: Context) {
                 val downloadResult = downloadRemoteNotes(
                     sardine, 
                     serverUrl,
-                    includeRootFallback = true  // ✅ v1.3.0: Enable for v1.2.0 compatibility
+                    includeRootFallback = true,  // ✅ v1.3.0: Enable for v1.2.0 compatibility
+                    onProgress = { current, _, noteTitle ->
+                        // 🆕 v1.8.0: Phase wird erst beim ersten echten Download gesetzt
+                        // current = laufender Zähler (downloadedCount), kein Total → kein irreführender x/y Counter
+                        SyncStateManager.updateProgress(
+                            phase = SyncPhase.DOWNLOADING,
+                            current = current,
+                            total = 0,
+                            currentFileName = noteTitle
+                        )
+                    }
                 )
                 syncedCount += downloadResult.downloadedCount
                 conflictCount += downloadResult.conflictCount
@@ -679,11 +704,15 @@ class WebDavSyncService(private val context: Context) {
             }
             
             Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
+            
             // Auto-import Markdown files from server
             var markdownImportedCount = 0
             try {
                 val markdownAutoImportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
                 if (markdownAutoImportEnabled) {
+                    // 🆕 v1.8.0: Phase nur setzen wenn Feature aktiv
+                    SyncStateManager.updateProgress(phase = SyncPhase.IMPORTING_MARKDOWN)
+                    
                     Logger.d(TAG, "📥 Auto-importing Markdown files...")
                     markdownImportedCount = importMarkdownFiles(sardine, serverUrl)
                     Logger.d(TAG, "✅ Auto-imported: $markdownImportedCount Markdown files")
@@ -704,6 +733,7 @@ class WebDavSyncService(private val context: Context) {
             }
             
             Logger.d(TAG, "📍 Step 7: Saving sync timestamp")
+            
             // Update last sync timestamp
             try {
                 saveLastSyncTimestamp()
@@ -732,6 +762,13 @@ class WebDavSyncService(private val context: Context) {
             }
             Logger.d(TAG, "═══════════════════════════════════════")
             
+            // 🆕 v1.8.0: Phase 6 - Completed
+            SyncStateManager.updateProgress(
+                phase = SyncPhase.COMPLETED,
+                current = effectiveSyncedCount,
+                total = effectiveSyncedCount
+            )
+            
             SyncResult(
                 isSuccess = true,
                 syncedCount = effectiveSyncedCount,
@@ -747,6 +784,9 @@ class WebDavSyncService(private val context: Context) {
             Logger.e(TAG, "Stack trace:")
             e.printStackTrace()
             Logger.e(TAG, "═══════════════════════════════════════")
+            
+            // 🆕 v1.8.0: Phase ERROR
+            SyncStateManager.updateProgress(phase = SyncPhase.ERROR)
             
             SyncResult(
                 isSuccess = false,
@@ -770,6 +810,8 @@ class WebDavSyncService(private val context: Context) {
         } finally {
             // ⚡ v1.3.1: Session-Caches leeren
             clearSessionCache()
+            // 🆕 v1.8.0: Reset progress state
+            SyncStateManager.resetProgress()
             // 🔒 v1.3.1: Sync-Mutex freigeben
             syncMutex.unlock()
         }
@@ -777,10 +819,20 @@ class WebDavSyncService(private val context: Context) {
     
     @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
     // Sync logic requires nested conditions for comprehensive error handling and state management
-    private fun uploadLocalNotes(sardine: Sardine, serverUrl: String): Int {
+    private fun uploadLocalNotes(
+        sardine: Sardine,
+        serverUrl: String,
+        onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }  // 🆕 v1.8.0
+    ): Int {
         var uploadedCount = 0
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
+        
+        // 🆕 v1.8.0: Zähle zu uploadende Notizen für Progress
+        val pendingNotes = localNotes.filter { 
+            it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING 
+        }
+        val totalToUpload = pendingNotes.size
         
         // 🔧 v1.7.2 (IMPL_004): Batch E-Tag Updates für Performance
         val etagUpdates = mutableMapOf<String, String?>()
@@ -804,6 +856,9 @@ class WebDavSyncService(private val context: Context) {
                     // Lokale Kopie auch mit SYNCED speichern
                     storage.saveNote(noteToUpload)
                     uploadedCount++
+                    
+                    // 🆕 v1.8.0: Progress mit Notiz-Titel
+                    onProgress(uploadedCount, totalToUpload, note.title)
                     
                     // ⚡ v1.3.1: Refresh E-Tag after upload to prevent re-download
                     // 🔧 v1.7.2 (IMPL_004): Sammle E-Tags für Batch-Update
@@ -1107,7 +1162,8 @@ class WebDavSyncService(private val context: Context) {
         serverUrl: String,
         includeRootFallback: Boolean = false,  // 🆕 v1.2.2: Only for restore from server
         forceOverwrite: Boolean = false,  // 🆕 v1.3.0: For OVERWRITE_DUPLICATES mode
-        deletionTracker: DeletionTracker = storage.loadDeletionTracker()  // 🆕 v1.3.0: Allow passing fresh tracker
+        deletionTracker: DeletionTracker = storage.loadDeletionTracker(),  // 🆕 v1.3.0: Allow passing fresh tracker
+        onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }  // 🆕 v1.8.0
     ): DownloadResult {
         var downloadedCount = 0
         var conflictCount = 0
@@ -1145,7 +1201,7 @@ class WebDavSyncService(private val context: Context) {
                     serverNoteIds.add(noteId)
                 }
                 
-                for (resource in jsonFiles) {
+                for ((index, resource) in jsonFiles.withIndex()) {
                     
                     val noteId = resource.name.removeSuffix(".json")
                     val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
@@ -1235,6 +1291,8 @@ class WebDavSyncService(private val context: Context) {
                             // New note from server
                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                             downloadedCount++
+                            // 🆕 v1.8.0: Progress mit Notiz-Titel (kein Total → kein irreführender Counter)
+                            onProgress(downloadedCount, 0, remoteNote.title)
                             Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
                             
                             // ⚡ Cache E-Tag for next sync
@@ -1246,6 +1304,7 @@ class WebDavSyncService(private val context: Context) {
                             // OVERWRITE mode: Always replace regardless of timestamps
                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                             downloadedCount++
+                            onProgress(downloadedCount, 0, remoteNote.title)
                             Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
                             
                             // ⚡ Cache E-Tag for next sync
@@ -1259,10 +1318,12 @@ class WebDavSyncService(private val context: Context) {
                                 // Conflict detected
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 conflictCount++
+                                // 🆕 v1.8.0: Conflict zählt nicht als Download
                             } else {
                                 // Safe to overwrite
                                 storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                 downloadedCount++
+                                onProgress(downloadedCount, 0, remoteNote.title)
                                 Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
                                 
                                 // ⚡ Cache E-Tag for next sync
@@ -1271,6 +1332,7 @@ class WebDavSyncService(private val context: Context) {
                                 }
                             }
                         }
+                        // else: Local is newer or same → skip silently
                     }
                 }
                 Logger.d(

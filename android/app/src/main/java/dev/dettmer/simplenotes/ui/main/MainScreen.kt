@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
@@ -53,7 +54,7 @@ import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
-import dev.dettmer.simplenotes.ui.main.components.SyncStatusBanner
+import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
 import kotlinx.coroutines.launch
 
@@ -78,8 +79,10 @@ fun MainScreen(
 ) {
     val notes by viewModel.notes.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
-    val syncMessage by viewModel.syncMessage.collectAsState()
     val scrollToTop by viewModel.scrollToTop.collectAsState()
+    
+    // 🆕 v1.8.0: Einziges Banner-System
+    val syncProgress by viewModel.syncProgress.collectAsState()
     
     // Multi-Select State
     val selectedNotes by viewModel.selectedNotes.collectAsState()
@@ -197,10 +200,10 @@ fun MainScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 // Main content column
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Sync Status Banner (not affected by pull-to-refresh)
-                    SyncStatusBanner(
-                        syncState = syncState,
-                        message = syncMessage
+                    // 🆕 v1.8.0: Einziges Sync Banner (Progress + Ergebnis)
+                    SyncProgressBanner(
+                        progress = syncProgress,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     
                     // Content: Empty state or notes list

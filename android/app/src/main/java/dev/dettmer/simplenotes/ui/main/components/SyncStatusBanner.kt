@@ -25,6 +25,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
  * Sync status banner shown below the toolbar during sync
  * v1.5.0: Jetpack Compose MainActivity Redesign
  * v1.5.0: SYNCING_SILENT ignorieren - Banner nur bei manuellen Syncs oder Fehlern anzeigen
+ * v1.8.0: Nur noch COMPLETED/ERROR States - SYNCING wird von SyncProgressBanner übernommen
  */
 @Composable
 fun SyncStatusBanner(
@@ -32,10 +33,10 @@ fun SyncStatusBanner(
     message: String?,
     modifier: Modifier = Modifier
 ) {
-    // v1.5.0: Banner nicht anzeigen bei IDLE oder SYNCING_SILENT (Auto-Sync im Hintergrund)
-    // Fehler werden trotzdem angezeigt (ERROR state nach Silent-Sync wechselt zu ERROR, nicht SYNCING_SILENT)
-    val isVisible = syncState != SyncStateManager.SyncState.IDLE 
-                    && syncState != SyncStateManager.SyncState.SYNCING_SILENT
+    // v1.8.0: Nur COMPLETED/ERROR anzeigen (SYNCING wird von SyncProgressBanner übernommen)
+    // IDLE und SYNCING_SILENT werden ignoriert
+    val isVisible = syncState == SyncStateManager.SyncState.COMPLETED 
+                    || syncState == SyncStateManager.SyncState.ERROR
     
     AnimatedVisibility(
         visible = isVisible,
@@ -50,23 +51,13 @@ fun SyncStatusBanner(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (syncState == SyncStateManager.SyncState.SYNCING) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 3.dp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
+            // v1.8.0: Kein Loading-Icon mehr - wird von SyncProgressBanner übernommen
             
             Text(
                 text = when (syncState) {
-                    SyncStateManager.SyncState.SYNCING -> stringResource(R.string.sync_status_syncing)
-                    SyncStateManager.SyncState.SYNCING_SILENT -> "" // v1.5.0: Wird nicht angezeigt (isVisible = false)
                     SyncStateManager.SyncState.COMPLETED -> message ?: stringResource(R.string.sync_status_completed)
                     SyncStateManager.SyncState.ERROR -> message ?: stringResource(R.string.sync_status_error)
-                    SyncStateManager.SyncState.IDLE -> ""
+                    else -> "" // SYNCING/IDLE/SYNCING_SILENT nicht mehr relevant
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,

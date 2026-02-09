@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
@@ -102,14 +103,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     // ═══════════════════════════════════════════════════════════════════════
-    // Sync State (derived from SyncStateManager)
+    // Sync State
     // ═══════════════════════════════════════════════════════════════════════
     
+    // 🆕 v1.8.0: Einziges Banner-System - SyncProgress
+    val syncProgress: StateFlow<SyncProgress> = SyncStateManager.syncProgress
+    
+    // Intern: SyncState für PullToRefresh-Indikator
     private val _syncState = MutableStateFlow(SyncStateManager.SyncState.IDLE)
     val syncState: StateFlow<SyncStateManager.SyncState> = _syncState.asStateFlow()
-    
-    private val _syncMessage = MutableStateFlow<String?>(null)
-    val syncMessage: StateFlow<String?> = _syncMessage.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI Events
@@ -495,12 +497,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     fun updateSyncState(status: SyncStateManager.SyncStatus) {
         _syncState.value = status.state
-        _syncMessage.value = status.message
     }
     
     /**
      * Trigger manual sync (from toolbar button or pull-to-refresh)
      * v1.7.0: Uses central canSync() gate for WiFi-only check
+     * v1.8.0: Banner erscheint sofort beim Klick (PREPARING-Phase)
      */
     fun triggerManualSync(source: String = "manual") {
         // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
@@ -509,7 +511,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!gateResult.canSync) {
             if (gateResult.isBlockedByWifiOnly) {
                 Logger.d(TAG, "⏭️ $source Sync blocked: WiFi-only mode, not on WiFi")
-                SyncStateManager.markError(getString(R.string.sync_wifi_only_hint))
+                SyncStateManager.markError(getString(R.string.sync_wifi_only_error))
             } else {
                 Logger.d(TAG, "⏭️ $source Sync blocked: ${gateResult.blockReason ?: "offline/no server"}")
             }
@@ -517,6 +519,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         // 🆕 v1.7.0: Feedback wenn Sync bereits läuft
+        // 🆕 v1.8.0: tryStartSync setzt sofort PREPARING → Banner erscheint instant
         if (!SyncStateManager.tryStartSync(source)) {
             if (SyncStateManager.isSyncing) {
                 Logger.d(TAG, "⏭️ $source Sync blocked: Another sync in progress")
@@ -533,11 +536,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         viewModelScope.launch {
             try {
-                // Check for unsynced changes
+                // Check for unsynced changes (Banner zeigt bereits PREPARING)
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
-                    val message = getApplication<Application>().getString(R.string.toast_already_synced)
-                    SyncStateManager.markCompleted(message)
+                    SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
                     loadNotes()
                     return@launch
                 }
@@ -614,7 +616,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
-        // v1.5.0: silent=true - kein Banner bei Auto-Sync, aber Fehler werden trotzdem angezeigt
+        // v1.5.0: silent=true → kein Banner bei Auto-Sync
+        // 🆕 v1.8.0: tryStartSync mit silent=true → SyncProgress.silent=true → Banner unsichtbar
         if (!SyncStateManager.tryStartSync("auto-$source", silent = true)) {
             Logger.d(TAG, "⏭️ Auto-sync ($source): Another sync already in progress")
             return
@@ -630,7 +633,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Check for unsynced changes
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): No unsynced changes - skipping")
-                    SyncStateManager.reset()
+                    SyncStateManager.reset()  // Silent → geht direkt auf IDLE
                     return@launch
                 }
                 
@@ -641,7 +644,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 
                 if (!isReachable) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): Server not reachable - skipping silently")
-                    SyncStateManager.reset()
+                    SyncStateManager.reset()  // Silent → kein Error-Banner
                     return@launch
                 }
                 
@@ -652,14 +655,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 
                 if (result.isSuccess && result.syncedCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
+                    // Silent Sync mit echten Änderungen → trotzdem markCompleted (wird silent behandelt)
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
                     _showToast.emit(getString(R.string.snackbar_synced_count, result.syncedCount))
                     loadNotes()
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
-                    SyncStateManager.markCompleted(getString(R.string.snackbar_nothing_to_sync))
+                    SyncStateManager.markCompleted()  // Silent → geht direkt auf IDLE
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
+                    // Fehler werden IMMER angezeigt (auch bei Silent-Sync)
                     SyncStateManager.markError(result.errorMessage)
                 }
             } catch (e: Exception) {
