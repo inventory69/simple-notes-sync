@@ -231,6 +231,8 @@ class NoteEditorViewModel(
                     }
                     
                     val note = if (existingNote != null) {
+                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
+                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
                         existingNote!!.copy(
                             title = title,
                             content = content,
@@ -272,6 +274,8 @@ class NoteEditorViewModel(
                     }
                     
                     val note = if (existingNote != null) {
+                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
+                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
                         existingNote!!.copy(
                             title = title,
                             content = "", // Empty for checklists

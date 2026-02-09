@@ -559,10 +559,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (result.isSuccess) {
-                    val bannerMessage = if (result.syncedCount > 0) {
-                        getString(R.string.toast_sync_success, result.syncedCount)
-                    } else {
-                        getString(R.string.snackbar_nothing_to_sync)
+                    // 🆕 v1.8.0 (IMPL_022): Erweiterte Banner-Nachricht mit Löschungen
+                    val bannerMessage = buildString {
+                        if (result.syncedCount > 0) {
+                            append(getString(R.string.toast_sync_success, result.syncedCount))
+                        }
+                        if (result.deletedOnServerCount > 0) {
+                            if (isNotEmpty()) append(" · ")
+                            append(getString(R.string.sync_deleted_on_server_count, result.deletedOnServerCount))
+                        }
+                        if (isEmpty()) {
+                            append(getString(R.string.snackbar_nothing_to_sync))
+                        }
                     }
                     SyncStateManager.markCompleted(bannerMessage)
                     loadNotes()

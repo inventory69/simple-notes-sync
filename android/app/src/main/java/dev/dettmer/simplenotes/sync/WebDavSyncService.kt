@@ -1055,6 +1055,10 @@ class WebDavSyncService(private val context: Context) {
      * Keine zusätzlichen HTTP-Requests! Nutzt die bereits geladene
      * serverNoteIds-Liste aus dem PROPFIND-Request.
      * 
+     * Prüft ALLE Notizen (Notes + Checklists), da beide als
+     * JSON in /notes/{id}.json gespeichert werden.
+     * NoteType (NOTE vs CHECKLIST) spielt keine Rolle für die Detection.
+     * 
      * @param serverNoteIds Set aller Note-IDs auf dem Server (aus PROPFIND)
      * @param localNotes Alle lokalen Notizen
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
@@ -1064,21 +1068,33 @@ class WebDavSyncService(private val context: Context) {
         localNotes: List<Note>
     ): Int {
         var deletedCount = 0
+        val syncedNotes = localNotes.filter { it.syncStatus == SyncStatus.SYNCED }
         
-        localNotes.forEach { note ->
+        // 🆕 v1.8.0 (IMPL_022): Statistik-Log für Debugging
+        Logger.d(TAG, "🔍 detectServerDeletions: " +
+            "serverNotes=${serverNoteIds.size}, " +
+            "localSynced=${syncedNotes.size}, " +
+            "localTotal=${localNotes.size}")
+        
+        syncedNotes.forEach { note ->
             // Nur SYNCED-Notizen prüfen:
             // - LOCAL_ONLY: War nie auf Server → irrelevant
             // - PENDING: Soll hochgeladen werden → nicht überschreiben
             // - CONFLICT: Wird separat behandelt
             // - DELETED_ON_SERVER: Bereits markiert
-            if (note.syncStatus == SyncStatus.SYNCED && note.id !in serverNoteIds) {
+            if (note.id !in serverNoteIds) {
                 val updatedNote = note.copy(syncStatus = SyncStatus.DELETED_ON_SERVER)
                 storage.saveNote(updatedNote)
                 deletedCount++
                 
-                Logger.d(TAG, "Note '${note.title}' (${note.id}) " +
+                Logger.d(TAG, "🗑️ Note '${note.title}' (${note.id}) " +
                     "was deleted on server, marked as DELETED_ON_SERVER")
             }
+        }
+        
+        if (deletedCount > 0) {
+            Logger.d(TAG, "📊 Server deletion detection complete: " +
+                "$deletedCount of ${syncedNotes.size} synced notes deleted on server")
         }
         
         return deletedCount

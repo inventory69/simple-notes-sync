@@ -80,6 +80,9 @@
     <string name="sync_legend_deleted_label">Deleted on server</string>
     <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
     
+    <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
+    <string name="sync_deleted_on_server_count">%d deleted on server</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
