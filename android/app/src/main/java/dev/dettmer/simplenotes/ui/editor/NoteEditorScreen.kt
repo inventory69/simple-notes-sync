@@ -1,6 +1,11 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import kotlinx.coroutines.delay
@@ -318,7 +324,12 @@ private fun ChecklistEditor(
         scope = scope,
         onMove = onMove
     )
-    
+
+    // 🆕 v1.8.0 (IMPL_017): Separator-Position berechnen
+    val uncheckedCount = items.count { !it.isChecked }
+    val checkedCount = items.count { it.isChecked }
+    val showSeparator = uncheckedCount > 0 && checkedCount > 0
+
     Column(modifier = modifier) {
         LazyColumn(
             state = listState,
@@ -330,48 +341,61 @@ private fun ChecklistEditor(
                 items = items,
                 key = { _, item -> item.id }
             ) { index, item ->
+                // 🆕 v1.8.0 (IMPL_017): Separator vor dem ersten Checked-Item
+                if (showSeparator && index == uncheckedCount) {
+                    CheckedItemsSeparator(checkedCount = checkedCount)
+                }
+
                 val isDragging = dragDropState.draggingItemIndex == index
                 val elevation by animateDpAsState(
                     targetValue = if (isDragging) 8.dp else 0.dp,
                     label = "elevation"
                 )
-                
+
                 val shouldFocus = item.id == focusNewItemId
-                
+
                 // v1.5.0: Clear focus request after handling
                 LaunchedEffect(shouldFocus) {
                     if (shouldFocus) {
                         onFocusHandled()
                     }
                 }
-                
-                ChecklistItemRow(
-                    item = item,
-                    onTextChange = { onTextChange(item.id, it) },
-                    onCheckedChange = { onCheckedChange(item.id, it) },
-                    onDelete = { onDelete(item.id) },
-                    onAddNewItem = { onAddNewItemAfter(item.id) },
-                    requestFocus = shouldFocus,
-                    isDragging = isDragging,  // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
-                    isAnyItemDragging = dragDropState.draggingItemIndex != null,  // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
-                    dragModifier = Modifier.dragContainer(dragDropState, index),  // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
-                    modifier = Modifier
-                        .offset {
-                            IntOffset(
-                                0,
-                                if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
+
+                // 🆕 v1.8.0 (IMPL_017): AnimatedVisibility für sanfte Übergänge
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    ChecklistItemRow(
+                        item = item,
+                        onTextChange = { onTextChange(item.id, it) },
+                        onCheckedChange = { onCheckedChange(item.id, it) },
+                        onDelete = { onDelete(item.id) },
+                        onAddNewItem = { onAddNewItemAfter(item.id) },
+                        requestFocus = shouldFocus,
+                        isDragging = isDragging,  // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
+                        isAnyItemDragging = dragDropState.draggingItemIndex != null,  // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
+                        dragModifier = Modifier.dragContainer(dragDropState, index),  // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
+                        modifier = Modifier
+                            .animateItem()  // 🆕 v1.8.0 (IMPL_017): LazyColumn Item-Animation
+                            .offset {
+                                IntOffset(
+                                    0,
+                                    if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
+                                )
+                            }
+                            .zIndex(if (isDragging) 10f else 0f)  // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
+                            .shadow(elevation, shape = RoundedCornerShape(8.dp))
+                            .background(
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(8.dp)
                             )
-                        }
-                        .zIndex(if (isDragging) 10f else 0f)  // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
-                        .shadow(elevation, shape = RoundedCornerShape(8.dp))
-                        .background(
-                            color = MaterialTheme.colorScheme.surface,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                )
+                    )
+                }
             }
         }
-        
+
         // Add Item Button
         TextButton(
             onClick = onAddItemAtEnd,

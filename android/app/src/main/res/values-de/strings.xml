@@ -505,4 +505,10 @@
         <item quantity="one">%d Notiz synchronisiert</item>
         <item quantity="other">%d Notizen synchronisiert</item>
     </plurals>
+
+    <!-- v1.8.0 (IMPL_017): Checklist separator -->
+    <plurals name="checked_items_count">
+        <item quantity="one">%d erledigt</item>
+        <item quantity="other">%d erledigt</item>
+    </plurals>
 </resources>
