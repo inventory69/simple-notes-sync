@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +55,11 @@ import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
  * v1.5.0: Jetpack Compose NoteEditor Redesign
  * v1.8.0: Long text UX improvements (gradient fade, auto-expand on focus)
  * v1.8.0: IMPL_023 - Enlarged drag handle (48dp touch target) + drag modifier
+ *
+ * Note: Using 10 parameters for Composable is acceptable for complex UI components.
+ * @suppress LongParameterList - Composables naturally have many parameters
  */
+@Suppress("LongParameterList")
 @Composable
 fun ChecklistItemRow(
     item: ChecklistItemState,
@@ -92,8 +97,12 @@ fun ChecklistItemRow(
 
     // 🆕 v1.8.0: Dynamische Gradient-Sichtbarkeit basierend auf Scroll-Position
     val showGradient = useScrollClipping && !isFocused && !isAnyItemDragging
-    val showTopGradient = showGradient && scrollState.value > 0
-    val showBottomGradient = showGradient && scrollState.value < scrollState.maxValue
+    val showTopGradient by remember {
+        derivedStateOf { showGradient && scrollState.value > 0 }
+    }
+    val showBottomGradient by remember {
+        derivedStateOf { showGradient && scrollState.value < scrollState.maxValue }
+    }
 
     // v1.5.0: Auto-focus AND show keyboard when requestFocus is true (new items)
     LaunchedEffect(requestFocus) {
@@ -283,6 +292,7 @@ private const val COLLAPSED_MAX_LINES = 5
 // 🆕 v1.8.0: Preview Composables for Manual Testing
 // ════════════════════════════════════════════════════════════════
 
+@Suppress("UnusedPrivateMember")
 @Preview(showBackground = true)
 @Composable
 private fun ChecklistItemRowShortTextPreview() {
@@ -301,6 +311,7 @@ private fun ChecklistItemRowShortTextPreview() {
     )
 }
 
+@Suppress("UnusedPrivateMember")
 @Preview(showBackground = true)
 @Composable
 private fun ChecklistItemRowLongTextPreview() {
@@ -324,6 +335,7 @@ private fun ChecklistItemRowLongTextPreview() {
     )
 }
 
+@Suppress("UnusedPrivateMember")
 @Preview(showBackground = true)
 @Composable
 private fun ChecklistItemRowCheckedPreview() {
@@ -343,6 +355,7 @@ private fun ChecklistItemRowCheckedPreview() {
 }
 
 // 🆕 v1.8.0: IMPL_023 - Preview for dragging state
+@Suppress("UnusedPrivateMember")
 @Preview(showBackground = true)
 @Composable
 private fun ChecklistItemRowDraggingPreview() {

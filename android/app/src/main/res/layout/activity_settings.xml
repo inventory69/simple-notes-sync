@@ -56,7 +56,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Verbindungstyp"
+                        android:text="@string/server_connection_type"
                         android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                         android:layout_marginBottom="8dp" />
 
@@ -72,7 +72,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="🏠 Intern (HTTP)"
+                            android:text="@string/server_connection_http"
                             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:checked="false" />
 
@@ -81,7 +81,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="🌐 Extern (HTTPS)"
+                            android:text="@string/server_connection_https"
                             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:checked="true" />
 
@@ -92,7 +92,7 @@
                         android:id="@+id/protocolHintText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="HTTP nur für lokale Netzwerke (z.B. 192.168.x.x, 10.x.x.x)"
+                        android:text="@string/server_connection_http_hint"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"
@@ -104,12 +104,12 @@
                         android:id="@+id/textInputLayoutServerUrl"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Server-Adresse"
+                        android:hint="@string/server_address"
                         android:layout_marginBottom="12dp"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         app:startIconDrawable="@android:drawable/ic_menu_compass"
                         app:endIconMode="clear_text"
-                        app:helperText="z.B. http://192.168.0.188:8080/notes"
+                        app:helperText="@string/server_address_hint"
                         app:helperTextEnabled="true"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
@@ -298,7 +298,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Sync-Intervall"
+                        android:text="@string/sync_interval_section"
                         android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                         android:layout_marginBottom="12dp" />
 
@@ -315,7 +315,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:padding="16dp"
-                            android:text="Legt fest, wie oft die App im Hintergrund synchronisiert. Kürzere Intervalle bedeuten aktuellere Daten, verbrauchen aber etwas mehr Akku.\n\n⏱️ Hinweis: Wenn dein Smartphone im Standby ist, kann Android die Synchronisation verzögern (bis zu 60 Min.), um Akku zu sparen. Das ist normal und betrifft alle Hintergrund-Apps."
+                            android:text="@string/sync_interval_info"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                             android:lineSpacingMultiplier="1.3" />
 
@@ -333,14 +333,14 @@
                             android:id="@+id/radioInterval15"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="⚡ Alle 15 Minuten"
+                            android:text="@string/sync_interval_15min_title"
                             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                             android:paddingVertical="8dp" />
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Schnellste Synchronisation • ~0.8% Akku/Tag (~23 mAh)"
+                            android:text="@string/sync_interval_15min_subtitle"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                             android:textColor="?attr/colorOutline"
                             android:paddingStart="48dp"
@@ -351,14 +351,14 @@
                             android:id="@+id/radioInterval30"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="✓ Alle 30 Minuten (Empfohlen)"
+                            android:text="@string/sync_interval_30min_title"
                             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                             android:paddingVertical="8dp" />
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Ausgewogenes Verhältnis • ~0.4% Akku/Tag (~12 mAh)"
+                            android:text="@string/sync_interval_30min_subtitle"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                             android:textColor="?attr/colorOutline"
                             android:paddingStart="48dp"
@@ -369,14 +369,14 @@
                             android:id="@+id/radioInterval60"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="🔋 Alle 60 Minuten"
+                            android:text="@string/sync_interval_60min_title"
                             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                             android:paddingVertical="8dp" />
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Maximale Akkulaufzeit • ~0.2% Akku/Tag (~6 mAh geschätzt)"
+                            android:text="@string/sync_interval_60min_subtitle"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                             android:textColor="?attr/colorOutline"
                             android:paddingStart="48dp" />
@@ -405,7 +405,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Markdown Desktop-Integration"
+                        android:text="@string/settings_markdown"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_marginBottom="12dp" />
 
@@ -422,7 +422,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:padding="16dp"
-                            android:text="ℹ️ Exportiert Notizen zusätzlich als .md Dateien. Mounte WebDAV als Netzlaufwerk um mit VS Code, Typora oder jedem Markdown-Editor zu bearbeiten. JSON-Sync bleibt primäres Format."
+                            android:text="@string/markdown_info"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                             android:textColor="?attr/colorOnPrimaryContainer"
                             android:lineSpacingMultiplier="1.3" />
@@ -441,7 +441,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="🔄 Markdown Auto-Sync"
+                            android:text="@string/markdown_auto_sync_title"
                             android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                         <androidx.appcompat.widget.SwitchCompat
@@ -457,7 +457,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:text="Synchronisiert Notizen automatisch als .md Dateien (Upload + Download bei jedem Sync)"
+                        android:text="@string/markdown_auto_sync_subtitle"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -468,7 +468,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:layout_marginBottom="8dp"
-                        android:text="Oder synchronisiere Markdown-Dateien manuell:"
+                        android:text="@string/settings_markdown_manual_hint"
                         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                         android:textColor="?attr/colorOnSurface"
                         android:visibility="gone" />
@@ -478,7 +478,7 @@
                         android:id="@+id/buttonManualMarkdownSync"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Markdown synchronisieren"
+                        android:text="@string/settings_markdown_manual_button"
                         android:visibility="gone"
                         style="@style/Widget.Material3.Button.TonalButton" />
 
@@ -521,7 +521,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:padding="16dp"
-                            android:text="ℹ️ Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt."
+                            android:text="@string/settings_backup_info"
                             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                             android:textColor="?attr/colorOnPrimaryContainer"
                             android:lineSpacingMultiplier="1.3" />
@@ -532,7 +532,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Lokales Backup"
+                        android:text="@string/settings_backup_local_title"
                         android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                         android:layout_marginBottom="12dp" />
 
@@ -541,7 +541,7 @@
                         android:id="@+id/buttonCreateBackup"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="📥 Backup erstellen"
+                        android:text="@string/backup_create"
                         android:layout_marginBottom="8dp"
                         style="@style/Widget.Material3.Button.TonalButton" />
 
@@ -550,7 +550,7 @@
                         android:id="@+id/buttonRestoreFromFile"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="📤 Aus Datei wiederherstellen"
+                        android:text="@string/backup_restore_file"
                         android:layout_marginBottom="16dp"
                         style="@style/Widget.Material3.Button.TonalButton" />
 
@@ -566,7 +566,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Server-Backup"
+                        android:text="@string/settings_backup_server_title"
                         android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                         android:layout_marginBottom="12dp" />
 
@@ -575,7 +575,7 @@
                         android:id="@+id/buttonRestoreFromServer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🔄 Vom Server wiederherstellen"
+                        android:text="@string/backup_restore_server"
                         style="@style/Widget.Material3.Button.TonalButton" />
 
                 </LinearLayout>
@@ -600,7 +600,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Über diese App"
+                        android:text="@string/settings_about"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_marginBottom="16dp" />
 
@@ -622,7 +622,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="📱 App-Version"
+                                android:text="@string/settings_about_app_version"
                                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                                 android:textColor="?attr/colorPrimary"
                                 android:layout_marginBottom="4dp" />
@@ -631,7 +631,7 @@
                                 android:id="@+id/textViewAppVersion"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Version wird geladen..."
+                                android:text="@string/settings_about_app_version_loading"
                                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
                         </LinearLayout>
@@ -659,7 +659,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="🌐 GitHub Repository"
+                                android:text="@string/settings_about_github"
                                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                                 android:textColor="?attr/colorPrimary"
                                 android:layout_marginBottom="4dp" />
@@ -667,7 +667,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Quellcode, Issues &amp; Dokumentation"
+                                android:text="@string/about_github_subtitle"
                                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
                         </LinearLayout>
@@ -695,7 +695,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="👤 Entwickler"
+                                android:text="@string/settings_about_developer"
                                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                                 android:textColor="?attr/colorPrimary"
                                 android:layout_marginBottom="4dp" />
@@ -703,7 +703,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="GitHub Profil: @inventory69"
+                                android:text="@string/about_developer_subtitle"
                                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
                         </LinearLayout>
@@ -730,7 +730,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="⚖️ Lizenz"
+                                android:text="@string/settings_about_license"
                                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                                 android:textColor="?attr/colorPrimary"
                                 android:layout_marginBottom="4dp" />
@@ -738,7 +738,7 @@
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="MIT License - Open Source"
+                                android:text="@string/about_license_subtitle"
                                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
                         </LinearLayout>
@@ -767,7 +767,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Debug &amp; Diagnose"
+                        android:text="@string/settings_debug"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_marginBottom="16dp" />
 
@@ -796,7 +796,7 @@
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:text="📝 Datei-Logging"
+                                    android:text="@string/settings_debug_file_logging"
                                     android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                                     android:textColor="?attr/colorPrimary"
                                     android:layout_marginBottom="4dp" />
@@ -804,7 +804,7 @@
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:text="Sync-Logs in Datei speichern"
+                                    android:text="@string/settings_debug_file_logging_desc"
                                     android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
                             </LinearLayout>
@@ -834,7 +834,7 @@
                         android:id="@+id/buttonExportLogs"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="📤 Logs exportieren &amp; teilen"
+                        android:text="@string/settings_debug_export_logs"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_marginBottom="8dp" />
 
@@ -843,7 +843,7 @@
                         android:id="@+id/buttonClearLogs"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🗑️ Logs löschen"
+                        android:text="@string/settings_debug_delete_logs"
                         style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 </LinearLayout>

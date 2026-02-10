@@ -216,12 +216,26 @@
     <string name="settings_markdown">Markdown Desktop Integration</string>
     <string name="settings_markdown_auto_on">Auto-Sync: On</string>
     <string name="settings_markdown_auto_off">Auto-Sync: Off</string>
+    <string name="settings_markdown_manual_hint">Or sync markdown files manually:</string>
+    <string name="settings_markdown_manual_button">Sync Markdown</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
+    <string name="settings_backup_info">📦 A safety backup is automatically created before each restore.</string>
+    <string name="settings_backup_local_title">Local Backup</string>
+    <string name="settings_backup_server_title">Server Backup</string>
     <string name="settings_about">About this App</string>
+    <string name="settings_about_app_version">📱 App Version</string>
+    <string name="settings_about_app_version_loading">Loading version…</string>
+    <string name="settings_about_github">🌐 GitHub Repository</string>
+    <string name="settings_about_developer">👤 Developer</string>
+    <string name="settings_about_license">⚖️ License</string>
     <string name="settings_debug">Debug &amp; Diagnostics</string>
     <string name="settings_debug_logging_on">Logging: On</string>
     <string name="settings_debug_logging_off">Logging: Off</string>
+    <string name="settings_debug_file_logging">📝 File Logging</string>
+    <string name="settings_debug_file_logging_desc">Save sync logs to file</string>
+    <string name="settings_debug_export_logs">📤 Export &amp; share logs</string>
+    <string name="settings_debug_delete_logs">🗑️ Delete logs</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->

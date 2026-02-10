@@ -12,6 +12,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.Closeable
 import java.io.InputStream
 
+private const val HTTP_METHOD_NOT_ALLOWED = 405
+
 /**
  * 🔧 v1.7.1: Wrapper für Sardine der Connection Leaks verhindert
  * 🔧 v1.7.2 (IMPL_003): Implementiert Closeable für explizites Resource-Management
@@ -171,7 +173,7 @@ class SafeSardineWrapper private constructor(
             .build()
 
         okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful && response.code != 405) { // 405 = already exists
+            if (!response.isSuccessful && response.code != HTTP_METHOD_NOT_ALLOWED) { // 405 = already exists
                 throw java.io.IOException("MKCOL failed: ${response.code} ${response.message}")
             }
             Logger.d(TAG, "createDirectory($url) → ${response.code}")

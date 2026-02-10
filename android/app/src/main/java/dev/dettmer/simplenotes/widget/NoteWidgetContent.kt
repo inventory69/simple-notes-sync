@@ -35,7 +35,6 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
-import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
@@ -52,20 +51,18 @@ import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 
 // ── Size Classification ──
 
-enum class WidgetSizeClass {
-    SMALL,        // Nur Titel
-    NARROW_MED,   // Schmal, Vorschau
-    NARROW_TALL,  // Schmal, voller Inhalt
-    WIDE_MED,     // Breit, Vorschau
-    WIDE_TALL     // Breit, voller Inhalt
-}
+private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
+private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
+
+private const val TEXT_PREVIEW_COMPACT_LENGTH = 100
+private const val TEXT_PREVIEW_FULL_LENGTH = 200
 
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
-    height < 110.dp                    -> WidgetSizeClass.SMALL
-    width < 250.dp && height < 250.dp  -> WidgetSizeClass.NARROW_MED
-    width < 250.dp                     -> WidgetSizeClass.NARROW_TALL
-    height < 250.dp                    -> WidgetSizeClass.WIDE_MED
-    else                               -> WidgetSizeClass.WIDE_TALL
+    height < WIDGET_HEIGHT_SMALL_THRESHOLD                                        -> WidgetSizeClass.SMALL
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD -> WidgetSizeClass.NARROW_MED
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD                                          -> WidgetSizeClass.NARROW_TALL
+    height < WIDGET_SIZE_MEDIUM_THRESHOLD                                         -> WidgetSizeClass.WIDE_MED
+    else                                                                          -> WidgetSizeClass.WIDE_TALL
 }
 
 @Composable
@@ -316,7 +313,9 @@ private fun OptionsBar(
 @Composable
 private fun TextNotePreview(note: Note, compact: Boolean) {
     Text(
-        text = note.content.take(if (compact) 100 else 200),
+        text = note.content.take(
+            if (compact) TEXT_PREVIEW_COMPACT_LENGTH else TEXT_PREVIEW_FULL_LENGTH
+        ),
         style = TextStyle(
             color = GlanceTheme.colors.onSurface,
             fontSize = if (compact) 13.sp else 14.sp

@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -149,7 +150,12 @@ class ComposeSettingsActivity : AppCompatActivity() {
     /**
      * Open system battery optimization settings
      * v1.5.0: Ported from old SettingsActivity
+     * 
+     * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
+     * For Play Store builds, this would need to be changed to
+     * ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (shows list, doesn't request directly).
      */
+    @SuppressLint("BatteryLife")
     private fun openBatteryOptimizationSettings() {
         try {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
