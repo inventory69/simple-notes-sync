@@ -1,0 +1,12 @@
+🎉 v1.8.0 — WIDGETS, SORTING & SYNC IMPROVEMENTS
+
+• New: Home screen widgets with interactive checkboxes
+• New: Note sorting (date, title, type)
+• New: Checklist auto-sort (unchecked first/checked last)
+• New: Server deletion detection for multi-device sync
+• New: Sync status legend (help button explains all icons)
+• Improved: Live sync progress with phase indicators
+• Improved: Parallel downloads for faster sync
+• Improved: Checklist overflow gradient for long text
+• Fixed: Drag & drop flicker in checklists
+• Fixed: Widget text notes scrolling

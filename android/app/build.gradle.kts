@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 19  // 🔧 v1.7.2: Critical Bugfixes (Timestamp Sync, SyncStatus, etc.)
-        versionName = "1.7.2"  // 🔧 v1.7.2: Critical Bugfixes
+        versionCode = 20  // 🎉 v1.8.0: Widgets, Sorting, UI Polish, Post-Update Changelog
+        versionName = "1.8.0"  // 🎉 v1.8.0: Major Feature Release
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
