@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -27,10 +26,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.BuildConfig
@@ -107,19 +108,19 @@ fun UpdateChangelogSheet() {
                 lines.forEachIndexed { index, line ->
                     if (line.startsWith("http://") || line.startsWith("https://")) {
                         // Make URLs clickable
-                        pushStringAnnotation(
-                            tag = "URL",
-                            annotation = line.trim()
-                        )
-                        withStyle(
-                            style = SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                textDecoration = TextDecoration.Underline
+                        withLink(
+                            LinkAnnotation.Url(
+                                url = line.trim(),
+                                styles = androidx.compose.ui.text.TextLinkStyles(
+                                    style = SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textDecoration = TextDecoration.Underline
+                                    )
+                                )
                             )
                         ) {
                             append(line)
                         }
-                        pop()
                     } else {
                         append(line)
                     }
@@ -127,19 +128,12 @@ fun UpdateChangelogSheet() {
                 }
             }
             
-            ClickableText(
+            Text(
                 text = annotatedText,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { offset ->
-                    annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                        .firstOrNull()?.let { annotation ->
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
-                            context.startActivity(intent)
-                        }
-                }
+                modifier = Modifier.fillMaxWidth()
             )
             
             Spacer(modifier = Modifier.height(24.dp))

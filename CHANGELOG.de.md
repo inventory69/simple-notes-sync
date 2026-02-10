@@ -93,6 +93,23 @@ Komplettes Widget-System mit interaktiven Checklisten, Notiz-Sortierung und umfa
 - Sync-Einstellungen umstrukturiert in klare Sektionen: Auslöser & Performance ([eaac5a0](https://github.com/inventory69/simple-notes-sync/commit/eaac5a0))
 - Changelog-Link zum About-Screen hinzugefügt ([49810ff](https://github.com/inventory69/simple-notes-sync/commit/49810ff))
 
+**Post-Update Changelog-Dialog** ([661d9e0](https://github.com/inventory69/simple-notes-sync/commit/661d9e0))
+- Zeigt lokalisierten Changelog beim ersten Start nach Update
+- Material 3 ModalBottomSheet mit Slide-up-Animation
+- Lädt F-Droid Changelogs via Assets (Single Source of Truth)
+- Einmalige Anzeige pro versionCode (gespeichert in SharedPreferences)
+- Klickbarer GitHub-Link für vollständigen Changelog
+- Durch Button oder Swipe-Geste schließbar
+- Test-Modus in Debug-Einstellungen mit Reset-Option
+
+**Backup-Einstellungs-Verbesserungen** ([3e946ed](https://github.com/inventory69/simple-notes-sync/commit/3e946ed))
+- Neue BackupProgressCard mit LinearProgressIndicator
+- 3-Phasen-Status-System: In Progress → Abschluss → Löschen
+- Erfolgs-Status für 2s angezeigt, Fehler für 3s
+- Redundante Toast-Nachrichten entfernt
+- Buttons bleiben sichtbar und deaktiviert während Operationen
+- Exception-Logging für besseres Error-Tracking
+
 ### 🐛 Fehlerbehebungen
 
 **Widget-Text-Anzeige** ([d045d4d](https://github.com/inventory69/simple-notes-sync/commit/d045d4d))
