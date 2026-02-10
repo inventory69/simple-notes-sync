@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
-import android.app.Activity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +14,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
@@ -35,8 +33,6 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 fun LanguageSettingsScreen(
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    
     // Get current app locale - fresh value each time (no remember, always reads current state)
     val currentLocale = AppCompatDelegate.getApplicationLocales()
     val currentLanguageCode = if (currentLocale.isEmpty) {
@@ -92,7 +88,7 @@ fun LanguageSettingsScreen(
                 onValueSelected = { newLanguage ->
                     if (newLanguage != selectedLanguage) {
                         selectedLanguage = newLanguage
-                        setAppLanguage(newLanguage, context as Activity)
+                        setAppLanguage(newLanguage)
                     }
                 }
             )
@@ -102,19 +98,19 @@ fun LanguageSettingsScreen(
 
 /**
  * Set app language using AppCompatDelegate
- * Works on Android 13+ natively, falls back to AppCompat on older versions
+ * v1.8.0: Smooth language change without activity recreate
+ * 
+ * ComposeSettingsActivity handles locale changes via android:configChanges="locale"
+ * in AndroidManifest.xml, preventing full activity recreate and eliminating flicker.
+ * Compose automatically recomposes when the configuration changes.
  */
-private fun setAppLanguage(languageCode: String, activity: Activity) {
+private fun setAppLanguage(languageCode: String) {
     val localeList = if (languageCode.isEmpty()) {
         LocaleListCompat.getEmptyLocaleList()
     } else {
         LocaleListCompat.forLanguageTags(languageCode)
     }
     
+    // Sets the app locale - triggers onConfigurationChanged() instead of recreate()
     AppCompatDelegate.setApplicationLocales(localeList)
-    
-    // Restart the activity to apply the change
-    // On Android 13+ the system handles this automatically for some apps,
-    // but we need to recreate to ensure our Compose UI recomposes with new locale
-    activity.recreate()
 }
