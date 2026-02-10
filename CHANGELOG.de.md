@@ -8,6 +8,135 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.0] - 2026-02-10
+
+### 🎉 Major: Widgets, Sortierung & Erweiterte Sync-Features
+
+Komplettes Widget-System mit interaktiven Checklisten, Notiz-Sortierung und umfangreiche Sync-Verbesserungen!
+
+### 🆕 Homescreen-Widgets
+
+**Vollständiges Jetpack Glance Widget-Framework** ([539987f](https://github.com/inventory69/simple-notes-sync/commit/539987f))
+- 5 responsive Größenklassen (SMALL, NARROW_MED, NARROW_TALL, WIDE_MED, WIDE_TALL)
+- Interaktive Checklist-Checkboxen die sofort zum Server synchronisieren
+- Material You Dynamic Colors mit konfigurierbarer Hintergrund-Transparenz (0-100%)
+- Widget-Sperre-Toggle zum Verhindern versehentlicher Änderungen
+- Read-Only-Modus mit permanenter Options-Leiste für gesperrte Widgets
+- Widget-Konfigurations-Activity mit Notiz-Auswahl und Einstellungen
+- Auto-Refresh nach Sync-Abschluss
+- Tippen auf Inhalt öffnet Editor (entsperrt) oder zeigt Optionen (gesperrt)
+- Vollständige Resource-Cleanup-Fixes für Connection Leaks
+
+**Widget State Management:**
+- NoteWidgetState Keys für pro-Instanz-Persistierung via DataStore
+- Fünf Top-Level ActionCallbacks (Toggle Checkbox, Lock, Options, Refresh, Config)
+- Type-Safe Parameter-Übergabe mit NoteWidgetActionKeys
+
+### 📊 Notiz- & Checklisten-Sortierung
+
+**Notiz-Sortierung** ([96c819b](https://github.com/inventory69/simple-notes-sync/commit/96c819b))
+- Sortieren nach: Aktualisiert (neueste/älteste), Erstellt, Titel (A-Z/Z-A), Typ
+- Persistente Sortierungs-Präferenzen (gespeichert in SharedPreferences)
+- Sortierungs-Dialog im Hauptbildschirm mit Richtungs-Toggle
+- Kombinierte sortedNotes StateFlow im MainViewModel
+
+**Checklisten-Sortierung** ([96c819b](https://github.com/inventory69/simple-notes-sync/commit/96c819b), [900dad7](https://github.com/inventory69/simple-notes-sync/commit/900dad7))
+- Sortieren nach: Manual, Alphabetisch, Offen zuerst, Erledigt zuletzt
+- Visueller Separator zwischen offenen/erledigten Items mit Anzahl-Anzeige
+- Auto-Sort bei Item-Toggle und Neuordnung
+- Drag nur innerhalb gleicher Gruppe (offen/erledigt)
+- Sanfte Fade/Slide-Animationen für Item-Übergänge
+- Unit-getestet mit 9 Testfällen für Sortierungs-Logik-Validierung
+
+### 🔄 Sync-Verbesserungen
+
+**Server-Löschungs-Erkennung** ([40d7c83](https://github.com/inventory69/simple-notes-sync/commit/40d7c83), [bf7a74e](https://github.com/inventory69/simple-notes-sync/commit/bf7a74e))
+- Neuer `DELETED_ON_SERVER` Sync-Status für Multi-Device-Szenarien
+- Erkennt wenn Notizen auf anderen Clients gelöscht wurden
+- Zero Performance-Impact (nutzt existierende PROPFIND-Daten)
+- Löschungs-Anzahl im Sync-Banner: "3 synchronisiert · 2 auf Server gelöscht"
+- Bearbeitete gelöschte Notizen werden automatisch zum Server hochgeladen (Status → PENDING)
+
+**Sync-Status-Legende** ([07607fc](https://github.com/inventory69/simple-notes-sync/commit/07607fc))
+- Hilfe-Button (?) in Hauptbildschirm TopAppBar
+- Dialog erklärt alle 5 Sync-Status-Icons mit Beschreibungen
+- Nur sichtbar wenn Sync konfiguriert ist
+
+**Live-Sync-Fortschritts-UI** ([df37d2a](https://github.com/inventory69/simple-notes-sync/commit/df37d2a))
+- Echtzeit-Phasen-Indikatoren: PREPARING, UPLOADING, DOWNLOADING, IMPORTING_MARKDOWN
+- Upload-Fortschritt zeigt x/y Counter (bekannte Gesamtzahl)
+- Download-Fortschritt zeigt Anzahl (unbekannte Gesamtzahl)
+- Einheitliches SyncProgressBanner (ersetzt Dual-System)
+- Auto-Hide: COMPLETED (2s), ERROR (4s)
+- Keine irreführenden Counter wenn nichts zu synchronisieren ist
+- Stiller Auto-Sync bleibt still, Fehler werden immer angezeigt
+
+**Parallele Downloads** ([bdfc0bf](https://github.com/inventory69/simple-notes-sync/commit/bdfc0bf))
+- Konfigurierbare gleichzeitige Downloads (Standard: 3 simultan)
+- Kotlin Coroutines async/awaitAll Pattern
+- Individuelle Download-Timeout-Behandlung
+- Graceful sequentieller Fallback bei gleichzeitigen Fehlern
+- Optimierte Netzwerk-Auslastung für schnelleren Sync
+
+### ✨ UX-Verbesserungen
+
+**Checklisten-Verbesserungen:**
+- Überlauf-Verlauf für lange Text-Items ([3462f93](https://github.com/inventory69/simple-notes-sync/commit/3462f93))
+- Auto-Expand bei Fokus, Collapse auf 5 Zeilen bei Fokus-Verlust
+- Drag & Drop Flackern-Fix mit Straddle-Target-Center-Erkennung ([538a705](https://github.com/inventory69/simple-notes-sync/commit/538a705))
+- Adjacency-Filter verhindert Item-Sprünge bei schnellem Drag
+- Race-Condition-Fix für Scroll + Move-Operationen
+
+**Einstellungs-UI-Polish:**
+- Sanfter Sprachwechsel ohne Activity-Recreate ([881c0fd](https://github.com/inventory69/simple-notes-sync/commit/881c0fd))
+- Raster-Ansicht als Standard für Neu-Installationen ([6858446](https://github.com/inventory69/simple-notes-sync/commit/6858446))
+- Sync-Einstellungen umstrukturiert in klare Sektionen: Auslöser & Performance ([eaac5a0](https://github.com/inventory69/simple-notes-sync/commit/eaac5a0))
+- Changelog-Link zum About-Screen hinzugefügt ([49810ff](https://github.com/inventory69/simple-notes-sync/commit/49810ff))
+
+**Post-Update Changelog-Dialog** ([661d9e0](https://github.com/inventory69/simple-notes-sync/commit/661d9e0))
+- Zeigt lokalisierten Changelog beim ersten Start nach Update
+- Material 3 ModalBottomSheet mit Slide-up-Animation
+- Lädt F-Droid Changelogs via Assets (Single Source of Truth)
+- Einmalige Anzeige pro versionCode (gespeichert in SharedPreferences)
+- Klickbarer GitHub-Link für vollständigen Changelog
+- Durch Button oder Swipe-Geste schließbar
+- Test-Modus in Debug-Einstellungen mit Reset-Option
+
+**Backup-Einstellungs-Verbesserungen** ([3e946ed](https://github.com/inventory69/simple-notes-sync/commit/3e946ed))
+- Neue BackupProgressCard mit LinearProgressIndicator
+- 3-Phasen-Status-System: In Progress → Abschluss → Löschen
+- Erfolgs-Status für 2s angezeigt, Fehler für 3s
+- Redundante Toast-Nachrichten entfernt
+- Buttons bleiben sichtbar und deaktiviert während Operationen
+- Exception-Logging für besseres Error-Tracking
+
+### 🐛 Fehlerbehebungen
+
+**Widget-Text-Anzeige** ([d045d4d](https://github.com/inventory69/simple-notes-sync/commit/d045d4d))
+- Text-Notizen zeigen nicht mehr nur 3 Zeilen in Widgets
+- Von Absatz-basiert zu Zeilen-basiertem Rendering geändert
+- LazyColumn scrollt jetzt korrekt durch gesamten Inhalt
+- Leere Zeilen als 8dp Spacer beibehalten
+- Vorschau-Limits erhöht: compact 100→120, full 200→300 Zeichen
+
+### 🔧 Code-Qualität
+
+**Detekt-Cleanup** ([1da1a63](https://github.com/inventory69/simple-notes-sync/commit/1da1a63))
+- Alle 22 Detekt-Warnungen behoben
+- 7 ungenutzte Imports entfernt
+- Konstanten für 5 Magic Numbers definiert
+- State-Reads mit derivedStateOf optimiert
+- Build: 0 Lint-Fehler + 0 Detekt-Warnungen
+
+### 📚 Dokumentation
+
+- Vollständige Implementierungs-Pläne für alle 23 v1.8.0 Features
+- Widget-System-Architektur und State-Management-Docs
+- Sortierungs-Logik Unit-Tests mit Edge-Case-Coverage
+- F-Droid Changelogs (Englisch + Deutsch)
+
+---
+
 ## [1.7.2] - 2026-02-04
 
 ### 🐛 Kritische Fehlerbehebungen

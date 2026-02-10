@@ -58,6 +58,60 @@
     <string name="sync_status_error">Sync failed</string>
     <string name="sync_already_running">Sync already in progress</string>
     
+    <!-- 🆕 v1.8.0: SyncStatus enum values -->
+    <string name="sync_status_synced">Synced with server</string>
+    <string name="sync_status_pending">Waiting for sync</string>
+    <string name="sync_status_conflict">Sync conflict detected</string>
+    <string name="sync_status_local_only">Not yet synced</string>
+    <string name="sync_status_deleted_on_server">Deleted on server</string>
+    
+    <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
+    <string name="sync_legend_button">Sync status help</string>
+    <string name="sync_legend_title">Sync Status Icons</string>
+    <string name="sync_legend_description">Each note shows a small icon indicating its sync status:</string>
+    <string name="sync_legend_synced_label">Synced</string>
+    <string name="sync_legend_synced_desc">This note is up to date on all devices.</string>
+    <string name="sync_legend_pending_label">Pending</string>
+    <string name="sync_legend_pending_desc">This note has local changes waiting to be synced.</string>
+    <string name="sync_legend_conflict_label">Conflict</string>
+    <string name="sync_legend_conflict_desc">This note was changed on multiple devices simultaneously. The latest version was kept.</string>
+    <string name="sync_legend_local_only_label">Local only</string>
+    <string name="sync_legend_local_only_desc">This note has never been synced to the server yet.</string>
+    <string name="sync_legend_deleted_label">Deleted on server</string>
+    <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
+    
+    <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
+    <string name="sync_deleted_on_server_count">%d deleted on server</string>
+    
+    <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
+    <string name="sync_phase_preparing">Synchronizing…</string>
+    <string name="sync_phase_checking">Checking server…</string>
+    <string name="sync_phase_uploading">Uploading…</string>
+    <string name="sync_phase_downloading">Downloading…</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
+    <string name="sort_notes">Sort notes</string>
+    <string name="sort_ascending">Ascending</string>
+    <string name="sort_descending">Descending</string>
+    <string name="sort_by_updated">Last modified</string>
+    <string name="sort_by_created">Date created</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_type">Type</string>
+    <string name="close">Close</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->
+    <string name="sort_checklist">Sort checklist</string>
+    <string name="sort_checklist_manual">Manual</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_unchecked_first">Unchecked first</string>
+    <string name="sort_checklist_checked_first">Checked first</string>
+    <string name="apply">Apply</string>
+    <string name="sync_phase_importing_markdown">Importing Markdown…</string>
+    <string name="sync_phase_saving">Saving…</string>
+    <string name="sync_phase_completed">Sync complete</string>
+    <string name="sync_phase_error">Sync failed</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
@@ -162,12 +216,26 @@
     <string name="settings_markdown">Markdown Desktop Integration</string>
     <string name="settings_markdown_auto_on">Auto-Sync: On</string>
     <string name="settings_markdown_auto_off">Auto-Sync: Off</string>
+    <string name="settings_markdown_manual_hint">Or sync markdown files manually:</string>
+    <string name="settings_markdown_manual_button">Sync Markdown</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
+    <string name="settings_backup_info">📦 A safety backup is automatically created before each restore.</string>
+    <string name="settings_backup_local_title">Local Backup</string>
+    <string name="settings_backup_server_title">Server Backup</string>
     <string name="settings_about">About this App</string>
+    <string name="settings_about_app_version">📱 App Version</string>
+    <string name="settings_about_app_version_loading">Loading version…</string>
+    <string name="settings_about_github">🌐 GitHub Repository</string>
+    <string name="settings_about_developer">👤 Developer</string>
+    <string name="settings_about_license">⚖️ License</string>
     <string name="settings_debug">Debug &amp; Diagnostics</string>
     <string name="settings_debug_logging_on">Logging: On</string>
     <string name="settings_debug_logging_off">Logging: Off</string>
+    <string name="settings_debug_file_logging">📝 File Logging</string>
+    <string name="settings_debug_file_logging_desc">Save sync logs to file</string>
+    <string name="settings_debug_export_logs">📤 Export &amp; share logs</string>
+    <string name="settings_debug_delete_logs">🗑️ Delete logs</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
@@ -223,7 +291,12 @@
     <string name="sync_section_background">📡 Background Sync</string>
     <string name="sync_section_advanced">⚙️ Advanced</string>
     
+    <!-- 🆕 v1.8.0: Sync Settings Restructure -->
+    <string name="sync_section_triggers">Sync Triggers</string>
+    <string name="sync_section_network_performance">Network &amp; Performance</string>
+    
     <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
+    <string name="sync_wifi_only_error">Sync only works when WiFi is connected</string>
     
     <string name="sync_trigger_on_save_title">After Saving</string>
     <string name="sync_trigger_on_save_subtitle">Sync immediately after each change</string>
@@ -330,6 +403,10 @@
     <string name="debug_delete_logs">🗑️ Delete Logs</string>
     <string name="debug_delete_logs_title">Delete logs?</string>
     <string name="debug_delete_logs_message">All saved sync logs will be permanently deleted.</string>
+    <string name="debug_test_section">Test Mode</string>
+    <string name="debug_reset_changelog">Reset Changelog Dialog</string>
+    <string name="debug_reset_changelog_desc">Show changelog on next app start</string>
+    <string name="debug_changelog_reset">Changelog will show on next start</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
     
@@ -340,7 +417,7 @@
     <string name="language_system_default">System Default</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
-    <string name="language_info">ℹ️ Choose your preferred language. The app will restart to apply the change.</string>
+    <string name="language_info">ℹ️ Choose your preferred language. The view will briefly refresh to apply the change.</string>
     <string name="language_changed_restart">Language changed. Restarting…</string>
     
     <!-- ============================= -->
@@ -350,7 +427,7 @@
     <string name="display_mode_title">Note Display Mode</string>
     <string name="display_mode_list">📋 List View</string>
     <string name="display_mode_grid">🎨 Grid View</string>
-    <string name="display_mode_info">Grid view shows notes in a staggered Pinterest-style layout. Small notes appear side-by-side, large notes take full width.</string>
+    <string name="display_mode_info">Grid view shows notes in a two-column layout. All notes appear side-by-side in a clean, compact overview.</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
@@ -365,6 +442,30 @@
     <string name="about_developer_subtitle">GitHub Profile: @inventory69</string>
     <string name="about_license_title">License</string>
     <string name="about_license_subtitle">MIT License - Open Source</string>
+    
+    <!-- v1.8.0: Changelog Link in About -->
+    <string name="about_changelog_title">Changelog</string>
+    <string name="about_changelog_subtitle">Full version history</string>
+    
+    <!-- v1.8.0: Post-Update Changelog Dialog -->
+    <string name="update_changelog_title">What\'s New</string>
+    <string name="update_changelog_dismiss">Got it!</string>
+    
+    <!-- v1.8.0: Backup Progress -->
+    <string name="backup_progress_creating">Creating backup…</string>
+    <string name="backup_progress_restoring">Restoring backup…</string>
+    <string name="backup_progress_restoring_server">Downloading notes from server…</string>
+    
+    <!-- v1.8.0: Backup Progress - Completion -->
+    <string name="backup_progress_complete">Backup created!</string>
+    <string name="restore_progress_complete">Restore complete!</string>
+    <string name="restore_server_progress_complete">Download complete!</string>
+    
+    <!-- v1.8.0: Backup Progress - Error -->
+    <string name="backup_progress_failed">Backup failed</string>
+    <string name="restore_progress_failed">Restore failed</string>
+    <string name="restore_server_progress_failed">Download failed</string>
+    
     <string name="about_privacy_title">🔒 Privacy</string>
     <string name="about_privacy_text">This app collects no data. All notes are stored only locally on your device and on your own WebDAV server. No telemetry, no ads.</string>
     
@@ -476,4 +577,38 @@
         <item quantity="one">%d note synced</item>
         <item quantity="other">%d notes synced</item>
     </plurals>
+
+    <!-- v1.8.0 (IMPL_017): Checklist separator -->
+    <plurals name="checked_items_count">
+        <item quantity="one">%d completed</item>
+        <item quantity="other">%d completed</item>
+    </plurals>
+
+    <!-- ============================= -->
+    <!-- PARALLEL DOWNLOADS v1.8.0     -->
+    <!-- ============================= -->
+    <string name="sync_parallel_downloads_title">Parallel Downloads</string>
+    <string name="sync_parallel_downloads_unit">parallel</string>
+    <string name="sync_parallel_downloads_desc_1">Sequential (slowest, safest)</string>
+    <string name="sync_parallel_downloads_desc_3">Balanced (3x faster)</string>
+    <string name="sync_parallel_downloads_desc_5">Recommended (5x faster)</string>
+    <string name="sync_parallel_downloads_desc_7">Fast (7x faster)</string>
+    <string name="sync_parallel_downloads_desc_10">Maximum (10x faster, may stress server)</string>
+
+    <!-- ============================= -->
+    <!-- WIDGETS v1.8.0                -->
+    <!-- ============================= -->
+    <string name="widget_name">Simple Notes</string>
+    <string name="widget_description">Display a note or checklist on your home screen</string>
+    <string name="widget_config_title">Choose a Note</string>
+    <string name="widget_config_hint">Tap a note to add it as a widget</string>
+    <string name="widget_config_save">Save</string>
+    <string name="widget_lock_label">Lock widget</string>
+    <string name="widget_lock_description">Prevent accidental edits</string>
+    <string name="widget_note_not_found">Note not found</string>
+    <string name="widget_opacity_label">Background opacity</string>
+    <string name="widget_opacity_description">Adjust the transparency of the widget background</string>
+    <string name="widget_preview_title">Shopping List</string>
+    <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
+
 </resources>

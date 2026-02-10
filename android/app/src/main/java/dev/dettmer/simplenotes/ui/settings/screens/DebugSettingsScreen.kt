@@ -119,6 +119,31 @@ fun DebugSettingsScreen(
             )
             
             Spacer(modifier = Modifier.height(16.dp))
+            
+            SettingsDivider()
+            
+            // v1.8.0: Test Mode Section
+            SettingsSectionHeader(text = stringResource(R.string.debug_test_section))
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Info about test mode
+            SettingsInfoCard(
+                text = stringResource(R.string.debug_reset_changelog_desc)
+            )
+            
+            val changelogResetToast = stringResource(R.string.debug_changelog_reset)
+            
+            SettingsButton(
+                text = stringResource(R.string.debug_reset_changelog),
+                onClick = {
+                    viewModel.resetChangelogVersion()
+                    android.widget.Toast.makeText(context, changelogResetToast, android.widget.Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
     

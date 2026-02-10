@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 19  // 🔧 v1.7.2: Critical Bugfixes (Timestamp Sync, SyncStatus, etc.)
-        versionName = "1.7.2"  // 🔧 v1.7.2: Critical Bugfixes
+        versionCode = 20  // 🎉 v1.8.0: Widgets, Sorting, UI Polish, Post-Update Changelog
+        versionName = "1.8.0"  // 🎉 v1.8.0: Major Feature Release
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -162,6 +162,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.8.0: Homescreen Widgets
+    // ═══════════════════════════════════════════════════════════════════════
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+
     // Testing (bleiben so)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -193,4 +199,34 @@ detekt {
     
     // Parallel-Verarbeitung für schnellere Checks
     parallel = true
+}
+
+// 📋 v1.8.0: Copy F-Droid changelogs to assets for post-update dialog
+// Single source of truth: F-Droid changelogs are reused in the app
+tasks.register<Copy>("copyChangelogsToAssets") {
+    description = "Copies F-Droid changelogs to app assets for post-update dialog"
+    
+    from("$rootDir/../fastlane/metadata/android") {
+        include("*/changelogs/*.txt")
+    }
+    
+    into("$projectDir/src/main/assets/changelogs")
+    
+    // Preserve directory structure: en-US/20.txt, de-DE/20.txt
+    eachFile {
+        val parts = relativePath.segments
+        if (parts.size >= 3) {
+            // parts[0] = locale (en-US, de-DE)
+            // parts[1] = "changelogs"
+            // parts[2] = version file (20.txt)
+            relativePath = RelativePath(true, parts[0], parts[2])
+        }
+    }
+    
+    includeEmptyDirs = false
+}
+
+// Run before preBuild to ensure changelogs are available
+tasks.named("preBuild") {
+    dependsOn("copyChangelogsToAssets")
 }

@@ -64,7 +64,22 @@ object Constants {
     
     // 🎨 v1.7.0: Staggered Grid Layout
     const val KEY_DISPLAY_MODE = "display_mode" // "list" or "grid"
-    const val DEFAULT_DISPLAY_MODE = "list"
+    const val DEFAULT_DISPLAY_MODE = "grid"  // v1.8.0: Grid als Standard-Ansicht
     const val GRID_COLUMNS = 2
     const val GRID_SPACING_DP = 8
+
+    // ⚡ v1.8.0: Parallel Downloads
+    const val KEY_MAX_PARALLEL_DOWNLOADS = "max_parallel_downloads"
+    const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 5
+    const val MIN_PARALLEL_DOWNLOADS = 1
+    const val MAX_PARALLEL_DOWNLOADS = 10
+    
+    // 🔀 v1.8.0: Sortierung
+    const val KEY_SORT_OPTION = "sort_option"
+    const val KEY_SORT_DIRECTION = "sort_direction"
+    const val DEFAULT_SORT_OPTION = "updatedAt"
+    const val DEFAULT_SORT_DIRECTION = "desc"
+    
+    // 📋 v1.8.0: Post-Update Changelog
+    const val KEY_LAST_SHOWN_CHANGELOG_VERSION = "last_shown_changelog_version"
 }

@@ -1,10 +1,16 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +24,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
@@ -50,13 +57,21 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
+import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import kotlinx.coroutines.delay
 import dev.dettmer.simplenotes.utils.showToast
 import kotlin.math.roundToInt
+
+private const val LAYOUT_DELAY_MS = 100L
+private const val ITEM_CORNER_RADIUS_DP = 8
+private const val DRAGGING_ITEM_Z_INDEX = 10f
 
 /**
  * Main Composable for the Note Editor screen.
@@ -80,6 +95,8 @@ fun NoteEditorScreen(
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
+    val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
@@ -95,7 +112,7 @@ fun NoteEditorScreen(
     
     // v1.5.0: Auto-focus and show keyboard
     LaunchedEffect(uiState.isNewNote, uiState.noteType) {
-        delay(100) // Wait for layout
+        delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
             uiState.isNewNote -> {
                 // New note: focus title
@@ -215,6 +232,7 @@ fun NoteEditorScreen(
                         items = checklistItems,
                         scope = scope,
                         focusNewItemId = focusNewItemId,
+                        currentSortOption = lastChecklistSortOption,  // 🔀 v1.8.0
                         onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
                         onCheckedChange = { id, checked -> viewModel.updateChecklistItemChecked(id, checked) },
                         onDelete = { id -> viewModel.deleteChecklistItem(id) },
@@ -228,6 +246,7 @@ fun NoteEditorScreen(
                         },
                         onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
                         onFocusHandled = { focusNewItemId = null },
+                        onSortClick = { showChecklistSortDialog = true },  // 🔀 v1.8.0
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -251,6 +270,18 @@ fun NoteEditorScreen(
                 showDeleteDialog = false
                 viewModel.deleteNote(deleteOnServer = true)
             }
+        )
+    }
+    
+    // 🔀 v1.8.0: Checklist Sort Dialog
+    if (showChecklistSortDialog) {
+        ChecklistSortDialog(
+            currentOption = lastChecklistSortOption,
+            onOptionSelected = { option ->
+                viewModel.sortChecklistItems(option)
+                showChecklistSortDialog = false
+            },
+            onDismiss = { showChecklistSortDialog = false }
         )
     }
 }
@@ -302,6 +333,7 @@ private fun ChecklistEditor(
     items: List<ChecklistItemState>,
     scope: kotlinx.coroutines.CoroutineScope,
     focusNewItemId: String?,
+    currentSortOption: ChecklistSortOption,  // 🔀 v1.8.0: Aktuelle Sortierung
     onTextChange: (String, String) -> Unit,
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
@@ -309,6 +341,7 @@ private fun ChecklistEditor(
     onAddItemAtEnd: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onFocusHandled: () -> Unit,
+    onSortClick: () -> Unit,  // 🔀 v1.8.0
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -317,7 +350,14 @@ private fun ChecklistEditor(
         scope = scope,
         onMove = onMove
     )
-    
+
+    // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL und UNCHECKED_FIRST anzeigen
+    val uncheckedCount = items.count { !it.isChecked }
+    val checkedCount = items.count { it.isChecked }
+    val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL || 
+                              currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
+    val showSeparator = shouldShowSeparator && uncheckedCount > 0 && checkedCount > 0
+
     Column(modifier = modifier) {
         LazyColumn(
             state = listState,
@@ -329,56 +369,89 @@ private fun ChecklistEditor(
                 items = items,
                 key = { _, item -> item.id }
             ) { index, item ->
+                // 🆕 v1.8.0 (IMPL_017): Separator vor dem ersten Checked-Item
+                if (showSeparator && index == uncheckedCount) {
+                    CheckedItemsSeparator(checkedCount = checkedCount)
+                }
+
                 val isDragging = dragDropState.draggingItemIndex == index
                 val elevation by animateDpAsState(
                     targetValue = if (isDragging) 8.dp else 0.dp,
                     label = "elevation"
                 )
-                
+
                 val shouldFocus = item.id == focusNewItemId
-                
+
                 // v1.5.0: Clear focus request after handling
                 LaunchedEffect(shouldFocus) {
                     if (shouldFocus) {
                         onFocusHandled()
                     }
                 }
-                
-                ChecklistItemRow(
-                    item = item,
-                    onTextChange = { onTextChange(item.id, it) },
-                    onCheckedChange = { onCheckedChange(item.id, it) },
-                    onDelete = { onDelete(item.id) },
-                    onAddNewItem = { onAddNewItemAfter(item.id) },
-                    requestFocus = shouldFocus,
-                    modifier = Modifier
-                        .dragContainer(dragDropState, index)
-                        .offset {
-                            IntOffset(
-                                0,
-                                if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
+
+                // 🆕 v1.8.0 (IMPL_017): AnimatedVisibility für sanfte Übergänge
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    ChecklistItemRow(
+                        item = item,
+                        onTextChange = { onTextChange(item.id, it) },
+                        onCheckedChange = { onCheckedChange(item.id, it) },
+                        onDelete = { onDelete(item.id) },
+                        onAddNewItem = { onAddNewItemAfter(item.id) },
+                        requestFocus = shouldFocus,
+                        // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
+                        isDragging = isDragging,
+                        // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
+                        isAnyItemDragging = dragDropState.draggingItemIndex != null,
+                        // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
+                        dragModifier = Modifier.dragContainer(dragDropState, index),
+                        modifier = Modifier
+                            .animateItem()  // 🆕 v1.8.0 (IMPL_017): LazyColumn Item-Animation
+                            .offset {
+                                IntOffset(
+                                    0,
+                                    if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
+                                )
+                            }
+                            // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
+                            .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
+                            .shadow(elevation, shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp))
+                            .background(
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
                             )
-                        }
-                        .shadow(elevation, shape = RoundedCornerShape(8.dp))
-                        .background(
-                            color = MaterialTheme.colorScheme.surface,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                )
+                    )
+                }
             }
         }
-        
-        // Add Item Button
-        TextButton(
-            onClick = onAddItemAtEnd,
-            modifier = Modifier.padding(start = 8.dp)
+
+        // 🔀 v1.8.0: Add Item Button + Sort Button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(stringResource(R.string.add_item))
+            TextButton(onClick = onAddItemAtEnd) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(stringResource(R.string.add_item))
+            }
+            
+            IconButton(onClick = onSortClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Sort,
+                    contentDescription = stringResource(R.string.sort_checklist),
+                    modifier = androidx.compose.ui.Modifier.padding(4.dp)
+                )
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -149,7 +150,12 @@ class ComposeSettingsActivity : AppCompatActivity() {
     /**
      * Open system battery optimization settings
      * v1.5.0: Ported from old SettingsActivity
+     * 
+     * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
+     * For Play Store builds, this would need to be changed to
+     * ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (shows list, doesn't request directly).
      */
+    @SuppressLint("BatteryLife")
     private fun openBatteryOptimizationSettings() {
         try {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
@@ -182,5 +188,17 @@ class ComposeSettingsActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Logger.e(TAG, "❌ Failed to restart NetworkMonitor: ${e.message}")
         }
+    }
+    
+    /**
+     * Handle configuration changes (e.g., locale) without recreating activity
+     * v1.8.0: Prevents flickering during language changes by avoiding full recreate
+     * Compose automatically recomposes when configuration changes
+     */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Logger.d(TAG, "📱 Configuration changed (likely locale switch) - Compose will recompose")
+        // Compose handles UI updates automatically via recomposition
+        // No manual action needed - stringResource() etc. will pick up new locale
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material3.Card
@@ -56,6 +57,7 @@ fun AboutScreen(
     val githubRepoUrl = "https://github.com/inventory69/simple-notes-sync"
     val githubProfileUrl = "https://github.com/inventory69"
     val licenseUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
+    val changelogUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md"  // v1.8.0
     
     SettingsScaffold(
         title = stringResource(R.string.about_settings_title),
@@ -158,6 +160,17 @@ fun AboutScreen(
                 subtitle = stringResource(R.string.about_license_subtitle),
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(licenseUrl))
+                    context.startActivity(intent)
+                }
+            )
+            
+            // v1.8.0: Changelog
+            AboutLinkItem(
+                icon = Icons.Default.History,
+                title = stringResource(R.string.about_changelog_title),
+                subtitle = stringResource(R.string.about_changelog_subtitle),
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(changelogUrl))
                     context.startActivity(intent)
                 }
             )

@@ -8,6 +8,135 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.0] - 2026-02-10
+
+### 🎉 Major: Widgets, Sorting & Advanced Sync
+
+Complete widget system with interactive checklists, note sorting, and major sync improvements!
+
+### 🆕 Homescreen Widgets
+
+**Full Jetpack Glance Widget Framework** ([539987f](https://github.com/inventory69/simple-notes-sync/commit/539987f))
+- 5 responsive size classes (SMALL, NARROW_MED, NARROW_TALL, WIDE_MED, WIDE_TALL)
+- Interactive checklist checkboxes that sync immediately to server
+- Material You dynamic colors with configurable background opacity (0-100%)
+- Lock widget toggle to prevent accidental edits
+- Read-only mode with permanent options bar for locked widgets
+- Widget configuration activity with note selection and settings
+- Auto-refresh after sync completion
+- Tap content to open editor (unlocked) or show options (locked)
+- Complete resource cleanup fixes for connection leaks
+
+**Widget State Management:**
+- NoteWidgetState keys for per-instance persistence via DataStore
+- Five top-level ActionCallbacks (Toggle Checkbox, Lock, Options, Refresh, Config)
+- Type-safe parameter passing with NoteWidgetActionKeys
+
+### 📊 Note & Checklist Sorting
+
+**Note Sorting** ([96c819b](https://github.com/inventory69/simple-notes-sync/commit/96c819b))
+- Sort by: Updated (newest/oldest), Created, Title (A-Z/Z-A), Type
+- Persistent sort preferences (saved in SharedPreferences)
+- Sort dialog in main screen with direction toggle
+- Combined sortedNotes StateFlow in MainViewModel
+
+**Checklist Sorting** ([96c819b](https://github.com/inventory69/simple-notes-sync/commit/96c819b), [900dad7](https://github.com/inventory69/simple-notes-sync/commit/900dad7))
+- Sort by: Manual, Alphabetical, Unchecked First, Checked Last
+- Visual separator between unchecked/checked items with count display
+- Auto-sort on item toggle and reordering
+- Drag-only within same group (unchecked/checked)
+- Smooth fade/slide animations for item transitions
+- Unit tested with 9 test cases for sorting logic validation
+
+### 🔄 Sync Improvements
+
+**Server Deletion Detection** ([40d7c83](https://github.com/inventory69/simple-notes-sync/commit/40d7c83), [bf7a74e](https://github.com/inventory69/simple-notes-sync/commit/bf7a74e))
+- New `DELETED_ON_SERVER` sync status for multi-device scenarios
+- Detects when notes are deleted on other clients
+- Zero performance impact (uses existing PROPFIND data)
+- Deletion count shown in sync banner: "3 synced · 2 deleted on server"
+- Edited deleted notes automatically re-upload to server (status → PENDING)
+
+**Sync Status Legend** ([07607fc](https://github.com/inventory69/simple-notes-sync/commit/07607fc))
+- Help button (?) in main screen TopAppBar
+- Dialog explaining all 5 sync status icons with descriptions
+- Only visible when sync is configured
+
+**Live Sync Progress UI** ([df37d2a](https://github.com/inventory69/simple-notes-sync/commit/df37d2a))
+- Real-time phase indicators: PREPARING, UPLOADING, DOWNLOADING, IMPORTING_MARKDOWN
+- Upload progress shows x/y counter (known total)
+- Download progress shows count (unknown total)
+- Single unified SyncProgressBanner (replaces dual system)
+- Auto-hide: COMPLETED (2s), ERROR (4s)
+- No misleading counters when nothing to sync
+- Silent auto-sync stays silent, errors always shown
+
+**Parallel Downloads** ([bdfc0bf](https://github.com/inventory69/simple-notes-sync/commit/bdfc0bf))
+- Configurable concurrent downloads (default: 3 simultaneous)
+- Kotlin coroutines async/awaitAll pattern
+- Individual download timeout handling
+- Graceful sequential fallback on concurrent errors
+- Optimized network utilization for faster sync
+
+### ✨ UX Improvements
+
+**Checklist Enhancements:**
+- Overflow gradient for long text items ([3462f93](https://github.com/inventory69/simple-notes-sync/commit/3462f93))
+- Auto-expand on focus, collapse to 5 lines when unfocused
+- Drag & Drop flicker fix with straddle-target-center detection ([538a705](https://github.com/inventory69/simple-notes-sync/commit/538a705))
+- Adjacency filter prevents item jumps during fast drag
+- Race-condition fix for scroll + move operations
+
+**Settings UI Polish:**
+- Smooth language switching without activity recreate ([881c0fd](https://github.com/inventory69/simple-notes-sync/commit/881c0fd))
+- Grid view as default for new installations ([6858446](https://github.com/inventory69/simple-notes-sync/commit/6858446))
+- Sync settings restructured into clear sections: Triggers & Performance ([eaac5a0](https://github.com/inventory69/simple-notes-sync/commit/eaac5a0))
+- Changelog link added to About screen ([49810ff](https://github.com/inventory69/simple-notes-sync/commit/49810ff))
+
+**Post-Update Changelog Dialog** ([661d9e0](https://github.com/inventory69/simple-notes-sync/commit/661d9e0))
+- Shows localized changelog on first launch after update
+- Material 3 ModalBottomSheet with slide-up animation
+- Loads F-Droid changelogs via assets (single source of truth)
+- One-time display per versionCode (stored in SharedPreferences)
+- Clickable GitHub link for full changelog
+- Dismissable via button or swipe gesture
+- Test mode in Debug Settings with reset option
+
+**Backup Settings Improvements** ([3e946ed](https://github.com/inventory69/simple-notes-sync/commit/3e946ed))
+- New BackupProgressCard with LinearProgressIndicator
+- 3-phase status system: In Progress → Completion → Clear
+- Success status shown for 2s, errors for 3s
+- Removed redundant toast messages
+- Buttons stay visible and disabled during operations
+- Exception logging for better error tracking
+
+### 🐛 Bug Fixes
+
+**Widget Text Display** ([d045d4d](https://github.com/inventory69/simple-notes-sync/commit/d045d4d))
+- Fixed text notes showing only 3 lines in widgets
+- Changed from paragraph-based to line-based rendering
+- LazyColumn now properly scrolls through all content
+- Empty lines preserved as 8dp spacers
+- Preview limits increased: compact 100→120, full 200→300 chars
+
+### 🔧 Code Quality
+
+**Detekt Cleanup** ([1da1a63](https://github.com/inventory69/simple-notes-sync/commit/1da1a63))
+- Resolved all 22 Detekt warnings
+- Removed 7 unused imports
+- Defined constants for 5 magic numbers
+- Optimized state reads with derivedStateOf
+- Build: 0 Lint errors + 0 Detekt warnings
+
+### 📚 Documentation
+
+- Complete implementation plans for all 23 v1.8.0 features
+- Widget system architecture and state management docs
+- Sorting logic unit tests with edge case coverage
+- F-Droid changelogs (English + German)
+
+---
+
 ## [1.7.2] - 2026-02-04
 
 ### 🐛 Critical Bug Fixes

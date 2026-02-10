@@ -170,6 +170,9 @@ class ComposeMainActivity : ComponentActivity() {
                     onOpenSettings = { openSettings() },
                     onCreateNote = { noteType -> createNote(noteType) }
                 )
+                
+                // v1.8.0: Post-Update Changelog (shows once after update)
+                UpdateChangelogSheet()
             }
         }
     }
@@ -219,25 +222,26 @@ class ComposeMainActivity : ComponentActivity() {
     }
     
     private fun setupSyncStateObserver() {
+        // 🆕 v1.8.0: SyncStatus nur noch für PullToRefresh-Indikator (intern)
         SyncStateManager.syncStatus.observe(this) { status ->
             viewModel.updateSyncState(status)
-            
-            @Suppress("MagicNumber") // UI timing delays for banner visibility
-            // Hide banner after delay for completed/error states
-            when (status.state) {
-                SyncStateManager.SyncState.COMPLETED -> {
-                    lifecycleScope.launch {
-                        kotlinx.coroutines.delay(1500L)
+        }
+        
+        // 🆕 v1.8.0: Auto-Hide via SyncProgress (einziges Banner-System)
+        lifecycleScope.launch {
+            SyncStateManager.syncProgress.collect { progress ->
+                @Suppress("MagicNumber") // UI timing delays for banner visibility
+                when (progress.phase) {
+                    dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> {
+                        kotlinx.coroutines.delay(2000L)
                         SyncStateManager.reset()
                     }
-                }
-                SyncStateManager.SyncState.ERROR -> {
-                    lifecycleScope.launch {
-                        kotlinx.coroutines.delay(3000L)
+                    dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> {
+                        kotlinx.coroutines.delay(4000L)
                         SyncStateManager.reset()
                     }
+                    else -> { /* No action needed */ }
                 }
-                else -> { /* No action needed */ }
             }
         }
     }
