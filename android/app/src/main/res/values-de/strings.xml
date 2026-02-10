@@ -443,6 +443,21 @@
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Vollständige Versionshistorie</string>
     
+    <!-- v1.8.0: Backup Progress -->
+    <string name="backup_progress_creating">Backup wird erstellt…</string>
+    <string name="backup_progress_restoring">Backup wird wiederhergestellt…</string>
+    <string name="backup_progress_restoring_server">Notizen werden vom Server heruntergeladen…</string>
+    
+    <!-- v1.8.0: Backup Progress - Completion -->
+    <string name="backup_progress_complete">Backup erstellt!</string>
+    <string name="restore_progress_complete">Wiederherstellung abgeschlossen!</string>
+    <string name="restore_server_progress_complete">Download abgeschlossen!</string>
+    
+    <!-- v1.8.0: Backup Progress - Error -->
+    <string name="backup_progress_failed">Backup fehlgeschlagen</string>
+    <string name="restore_progress_failed">Wiederherstellung fehlgeschlagen</string>
+    <string name="restore_server_progress_failed">Download fehlgeschlagen</string>
+    
     <string name="about_privacy_title">🔒 Datenschutz</string>
     <string name="about_privacy_text">Diese App sammelt keine Daten. Alle Notizen werden nur lokal auf deinem Gerät und auf deinem eigenen WebDAV-Server gespeichert. Keine Telemetrie, keine Werbung.</string>
     
