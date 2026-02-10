@@ -438,6 +438,11 @@
     <string name="about_developer_subtitle">GitHub Profil: @inventory69</string>
     <string name="about_license_title">Lizenz</string>
     <string name="about_license_subtitle">MIT License - Open Source</string>
+    
+    <!-- v1.8.0: Changelog Link in About -->
+    <string name="about_changelog_title">Changelog</string>
+    <string name="about_changelog_subtitle">Vollständige Versionshistorie</string>
+    
     <string name="about_privacy_title">🔒 Datenschutz</string>
     <string name="about_privacy_text">Diese App sammelt keine Daten. Alle Notizen werden nur lokal auf deinem Gerät und auf deinem eigenen WebDAV-Server gespeichert. Keine Telemetrie, keine Werbung.</string>
     
