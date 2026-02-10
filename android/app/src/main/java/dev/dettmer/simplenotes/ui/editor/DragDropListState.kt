@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,9 +20,11 @@ import kotlinx.coroutines.launch
 
 /**
  * FOSS Drag & Drop State für LazyList
- * 
+ *
  * Native Compose-Implementierung ohne externe Dependencies
  * v1.5.0: NoteEditor Redesign
+ * v1.8.0: IMPL_023 - Drag & Drop Fix (pointerInput key + Handle-only drag)
+ * v1.8.0: IMPL_023b - Flicker-Fix (Straddle-Target-Center-Erkennung statt Mittelpunkt)
  */
 class DragDropListState(
     private val state: LazyListState,
@@ -64,11 +67,17 @@ class DragDropListState(
         val startOffset = draggingItem.offset + draggingItemOffset
         val endOffset = startOffset + draggingItem.size
 
-        val middleOffset = startOffset + (endOffset - startOffset) / 2f
-
-        val targetItem = state.layoutInfo.visibleItemsInfo.find { item ->
-            middleOffset.toInt() in item.offset..item.offsetEnd &&
-                draggingItem.index != item.index
+        // 🆕 v1.8.0: IMPL_023b — Straddle-Target-Center + Adjazenz-Filter
+        // Statt den Mittelpunkt des gezogenen Items zu prüfen ("liegt mein Zentrum im Target?"),
+        // wird geprüft ob das gezogene Item den MITTELPUNKT des Targets überspannt.
+        // Dies verhindert Oszillation bei Items unterschiedlicher Größe.
+        // Zusätzlich: Nur adjazente Items (Index ± 1) als Swap-Kandidaten.
+        val targetItem = state.layoutInfo.visibleItemsInfo.firstOrNull { item ->
+            (item.index == draggingItem.index - 1 || item.index == draggingItem.index + 1) &&
+                run {
+                    val targetCenter = item.offset + item.size / 2
+                    startOffset < targetCenter && endOffset > targetCenter
+                }
         }
 
         if (targetItem != null) {
@@ -84,12 +93,13 @@ class DragDropListState(
                 scope.launch {
                     state.scrollToItem(scrollToIndex, state.firstVisibleItemScrollOffset)
                     onMove(draggingItem.index, targetItem.index)
+                    // 🆕 v1.8.0: IMPL_023b — Index-Update NACH dem Move (verhindert Race-Condition)
+                    draggingItemIndex = targetItem.index
                 }
             } else {
                 onMove(draggingItem.index, targetItem.index)
+                draggingItemIndex = targetItem.index
             }
-            
-            draggingItemIndex = targetItem.index
         } else {
             val overscroll = when {
                 draggingItemDraggedDelta > 0 ->
@@ -111,6 +121,7 @@ class DragDropListState(
         }
     }
 
+    @Suppress("UnusedPrivateProperty")
     private val LazyListItemInfo.offsetEnd: Int
         get() = this.offset + this.size
 }
@@ -130,14 +141,16 @@ fun rememberDragDropListState(
     }
 }
 
+@Composable
 fun Modifier.dragContainer(
     dragDropState: DragDropListState,
     itemIndex: Int
 ): Modifier {
-    return this.pointerInput(dragDropState) {
+    val currentIndex = rememberUpdatedState(itemIndex)  // 🆕 v1.8.0: rememberUpdatedState statt Key
+    return this.pointerInput(dragDropState) {  // Nur dragDropState als Key - verhindert Gesture-Restart
         detectDragGesturesAfterLongPress(
             onDragStart = { offset ->
-                dragDropState.onDragStart(offset, itemIndex)
+                dragDropState.onDragStart(offset, currentIndex.value)  // Aktuellen Wert lesen
             },
             onDragEnd = {
                 dragDropState.onDragInterrupted()

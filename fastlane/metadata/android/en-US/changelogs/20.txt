@@ -1,0 +1,13 @@
+🎉 v1.8.0 — WIDGETS & UI POLISH
+
+• New: Home screen widgets with interactive checkboxes
+• New: Widget opacity & lock settings
+• New: Note sorting (date, title, type)
+• New: Parallel downloads (1-10 simultaneous)
+• Improved: Grid view as default layout
+• Improved: Sync settings reorganized into clear sections
+• Improved: Live sync progress with status indicators
+• More UI/UX improvements
+
+Full changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

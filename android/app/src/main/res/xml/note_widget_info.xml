@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 🆕 v1.8.0: Widget metadata for homescreen note/checklist widget -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="80dp"
+    android:maxResizeWidth="530dp"
+    android:maxResizeHeight="530dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:updatePeriodMillis="1800000"
+    android:configure="dev.dettmer.simplenotes.widget.NoteWidgetConfigActivity"
+    android:previewImage="@layout/widget_preview"
+    android:previewLayout="@layout/widget_preview"
+    android:widgetFeatures="reconfigurable" />

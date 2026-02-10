@@ -35,11 +35,16 @@ class NotesStorage(private val context: Context) {
         }
     }
     
+    /**
+     * Lädt alle Notizen aus dem lokalen Speicher.
+     * 
+     * 🔀 v1.8.0: Sortierung entfernt — wird jetzt im ViewModel durchgeführt,
+     * damit der User die Sortierung konfigurieren kann.
+     */
     fun loadAllNotes(): List<Note> {
         return notesDir.listFiles()
             ?.filter { it.extension == "json" }
             ?.mapNotNull { Note.fromJson(it.readText()) }
-            ?.sortedByDescending { it.updatedAt }
             ?: emptyList()
     }
     

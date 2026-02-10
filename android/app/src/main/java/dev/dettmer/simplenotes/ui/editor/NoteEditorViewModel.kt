@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
+import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -65,6 +66,10 @@ class NoteEditorViewModel(
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
     
+    // 🔀 v1.8.0 (IMPL_020): Letzte Checklist-Sortierung (Session-Scope)
+    private val _lastChecklistSortOption = MutableStateFlow(ChecklistSortOption.MANUAL)
+    val lastChecklistSortOption: StateFlow<ChecklistSortOption> = _lastChecklistSortOption.asStateFlow()
+    
     // ═══════════════════════════════════════════════════════════════════════
     // Events
     // ═══════════════════════════════════════════════════════════════════════
@@ -104,7 +109,7 @@ class NoteEditorViewModel(
                 }
                 
                 if (note.noteType == NoteType.CHECKLIST) {
-                    val items = note.checklistItems?.sortedBy { it.order }?.map { 
+                    val items = note.checklistItems?.sortedBy { it.order }?.map {
                         ChecklistItemState(
                             id = it.id,
                             text = it.text,
@@ -112,7 +117,8 @@ class NoteEditorViewModel(
                             order = it.order
                         )
                     } ?: emptyList()
-                    _checklistItems.value = items
+                    // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
+                    _checklistItems.value = sortChecklistItems(items)
                 }
             }
         } else {
@@ -163,10 +169,31 @@ class NoteEditorViewModel(
         }
     }
     
+    /**
+     * 🆕 v1.8.0 (IMPL_017): Sortiert Checklist-Items mit Unchecked oben, Checked unten.
+     * Stabile Sortierung: Relative Reihenfolge innerhalb jeder Gruppe bleibt erhalten.
+     */
+    private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
+        val unchecked = items.filter { !it.isChecked }
+        val checked = items.filter { it.isChecked }
+
+        return (unchecked + checked).mapIndexed { index, item ->
+            item.copy(order = index)
+        }
+    }
+
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
         _checklistItems.update { items ->
-            items.map { item ->
+            val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
+            }
+            // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Auto-Sort nur bei MANUAL und UNCHECKED_FIRST
+            val currentSort = _lastChecklistSortOption.value
+            if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
+                sortChecklistItems(updatedItems)
+            } else {
+                // Bei anderen Sortierungen (alphabetisch, checked first) nicht auto-sortieren
+                updatedItems.mapIndexed { index, item -> item.copy(order = index) }
             }
         }
     }
@@ -208,11 +235,51 @@ class NoteEditorViewModel(
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
         _checklistItems.update { items ->
+            val fromItem = items.getOrNull(fromIndex) ?: return@update items
+            val toItem = items.getOrNull(toIndex) ?: return@update items
+
+            // 🆕 v1.8.0 (IMPL_017): Drag nur innerhalb der gleichen Gruppe erlauben
+            // (checked ↔ checked, unchecked ↔ unchecked)
+            if (fromItem.isChecked != toItem.isChecked) {
+                return@update items  // Kein Move über Gruppen-Grenze
+            }
+
             val mutableList = items.toMutableList()
             val item = mutableList.removeAt(fromIndex)
             mutableList.add(toIndex, item)
             // Update order values
             mutableList.mapIndexed { index, i -> i.copy(order = index) }
+        }
+    }
+    
+    /**
+     * 🔀 v1.8.0 (IMPL_020): Sortiert Checklist-Items nach gewählter Option.
+     * Einmalige Aktion (nicht persistiert) — User kann danach per Drag & Drop feinjustieren.
+     */
+    fun sortChecklistItems(option: ChecklistSortOption) {
+        // Merke die Auswahl für diesen Editor-Session
+        _lastChecklistSortOption.value = option
+        
+        _checklistItems.update { items ->
+            val sorted = when (option) {
+                // Bei MANUAL: Sortiere nach checked/unchecked, damit Separator korrekt platziert wird
+                ChecklistSortOption.MANUAL -> items.sortedBy { it.isChecked }
+                
+                ChecklistSortOption.ALPHABETICAL_ASC -> 
+                    items.sortedBy { it.text.lowercase() }
+                
+                ChecklistSortOption.ALPHABETICAL_DESC -> 
+                    items.sortedByDescending { it.text.lowercase() }
+                
+                ChecklistSortOption.UNCHECKED_FIRST -> 
+                    items.sortedBy { it.isChecked }
+                
+                ChecklistSortOption.CHECKED_FIRST -> 
+                    items.sortedByDescending { it.isChecked }
+            }
+            
+            // Order-Werte neu zuweisen
+            sorted.mapIndexed { index, item -> item.copy(order = index) }
         }
     }
     
@@ -231,6 +298,8 @@ class NoteEditorViewModel(
                     }
                     
                     val note = if (existingNote != null) {
+                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
+                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
                         existingNote!!.copy(
                             title = title,
                             content = content,
@@ -272,6 +341,8 @@ class NoteEditorViewModel(
                     }
                     
                     val note = if (existingNote != null) {
+                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
+                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
                         existingNote!!.copy(
                             title = title,
                             content = "", // Empty for checklists
@@ -296,10 +367,21 @@ class NoteEditorViewModel(
             }
             
             _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_SAVED))
-            
+
             // 🌟 v1.6.0: Trigger onSave Sync
             triggerOnSaveSync()
-            
+
+            // 🆕 v1.8.0: Betroffene Widgets aktualisieren
+            try {
+                val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
+                val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
+                glanceIds.forEach { id ->
+                    dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to update widgets: ${e.message}")
+            }
+
             _events.emit(NoteEditorEvent.NavigateBack)
         }
     }
@@ -347,6 +429,41 @@ class NoteEditorViewModel(
     }
     
     fun canDelete(): Boolean = existingNote != null
+
+    /**
+     * 🆕 v1.8.0 (IMPL_025): Reload Note aus Storage nach Resume
+     *
+     * Wird aufgerufen wenn die Activity aus dem Hintergrund zurückkehrt.
+     * Liest den aktuellen Note-Stand von Disk und aktualisiert den ViewModel-State.
+     *
+     * Wird nur für existierende Checklist-Notes benötigt (neue Notes haben keinen
+     * externen Schreiber). Relevant für Widget-Checklist-Toggles.
+     *
+     * Nur checklistItems werden aktualisiert — nicht title oder content,
+     * damit ungespeicherte Text-Änderungen im Editor nicht verloren gehen.
+     */
+    fun reloadFromStorage() {
+        val noteId = savedStateHandle.get<String>(ARG_NOTE_ID) ?: return
+
+        val freshNote = storage.loadNote(noteId) ?: return
+
+        // Nur Checklist-Items aktualisieren
+        if (freshNote.noteType == NoteType.CHECKLIST) {
+            val freshItems = freshNote.checklistItems?.sortedBy { it.order }?.map {
+                ChecklistItemState(
+                    id = it.id,
+                    text = it.text,
+                    isChecked = it.isChecked,
+                    order = it.order
+                )
+            } ?: return
+
+            _checklistItems.value = sortChecklistItems(freshItems)
+            // existingNote aktualisieren damit beim Speichern der richtige
+            // Basis-State verwendet wird
+            existingNote = freshNote
+        }
+    }
     
     // ═══════════════════════════════════════════════════════════════════════════
     // 🌟 v1.6.0: Sync Trigger - onSave

@@ -1,0 +1,11 @@
+🎉 v1.8.0 — WIDGETS & UI-VERBESSERUNGEN
+
+• Neu: Homescreen-Widgets mit interaktiven Checkboxen
+• Neu: Widget-Transparenz & Sperr-Einstellungen
+• Neu: Notiz-Sortierung (Datum, Titel, Typ)
+• Neu: Parallele Downloads (1-10 gleichzeitig)
+• Verbessert: Raster-Standard, Sync-Struktur, Live-Fortschritt
+• Weitere UI/UX-Verbesserungen
+
+Vollständiger Changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

@@ -2,6 +2,7 @@
 
 package dev.dettmer.simplenotes
 
+import android.annotation.SuppressLint
 import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
@@ -186,10 +187,12 @@ class SettingsActivity : AppCompatActivity() {
             }
             
             // Set URL with protocol prefix in the text field
+            @Suppress("SetTextI18n") // Technical URL, not UI text
             editTextServerUrl.setText("$protocol://$hostPath")
         } else {
             // Default: HTTP selected (lokale Server sind häufiger), empty URL with prefix
             radioHttp.isChecked = true
+            @Suppress("SetTextI18n") // Technical URL, not UI text
             editTextServerUrl.setText("http://")
         }
         
@@ -252,6 +255,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         
         // Set new URL with correct protocol
+        @Suppress("SetTextI18n") // Technical URL, not UI text
         editTextServerUrl.setText("$newProtocol://$hostPath")
         
         // Move cursor to end
@@ -379,7 +383,7 @@ class SettingsActivity : AppCompatActivity() {
             val versionName = BuildConfig.VERSION_NAME
             val versionCode = BuildConfig.VERSION_CODE
             
-            textViewAppVersion.text = "Version $versionName ($versionCode)"
+            textViewAppVersion.text = getString(R.string.about_version, versionName, versionCode)
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to load version info", e)
             textViewAppVersion.text = getString(R.string.version_not_available)
@@ -644,7 +648,7 @@ class SettingsActivity : AppCompatActivity() {
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
         
         if (serverUrl.isNullOrEmpty()) {
-            textViewServerStatus.text = "❌ Nicht konfiguriert"
+            textViewServerStatus.text = getString(R.string.server_status_not_configured)
             textViewServerStatus.setTextColor(getColor(android.R.color.holo_red_dark))
             return
         }
@@ -669,10 +673,10 @@ class SettingsActivity : AppCompatActivity() {
             }
             
             if (isReachable) {
-                textViewServerStatus.text = "✅ Erreichbar"
+                textViewServerStatus.text = getString(R.string.server_status_reachable)
                 textViewServerStatus.setTextColor(getColor(android.R.color.holo_green_dark))
             } else {
-                textViewServerStatus.text = "❌ Nicht erreichbar"
+                textViewServerStatus.text = getString(R.string.server_status_unreachable)
                 textViewServerStatus.setTextColor(getColor(android.R.color.holo_red_dark))
             }
         }
@@ -818,6 +822,12 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
     
+    /**
+     * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
+     * For Play Store builds, this would need to be changed to
+     * ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (shows list, doesn't request directly).
+     */
+    @SuppressLint("BatteryLife")
     private fun openBatteryOptimizationSettings() {
         try {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
@@ -947,6 +957,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         
         // Info Text
+        @Suppress("SetTextI18n") // Programmatically generated dialog text
         val infoText = android.widget.TextView(this).apply {
             text = "Quelle: $sourceText\n\nWiederherstellungs-Modus:"
             textSize = 16f
@@ -955,7 +966,7 @@ class SettingsActivity : AppCompatActivity() {
         
         // Hinweis Text
         val hintText = android.widget.TextView(this).apply {
-            text = "\nℹ️ Ein Sicherheits-Backup wird vor dem Wiederherstellen automatisch erstellt."
+            text = getString(R.string.backup_restore_info)
             textSize = 14f
             setTypeface(null, android.graphics.Typeface.ITALIC)
             setPadding(0, 20, 0, 0)

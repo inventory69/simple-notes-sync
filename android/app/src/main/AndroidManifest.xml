@@ -69,8 +69,10 @@
             android:parentActivityName=".ui.main.ComposeMainActivity" />
 
         <!-- Settings Activity v1.5.0 (Jetpack Compose) -->
+        <!-- v1.8.0: Handle locale changes without recreate for smooth language switching -->
         <activity
             android:name=".ui.settings.ComposeSettingsActivity"
+            android:configChanges="locale|layoutDirection"
             android:parentActivityName=".ui.main.ComposeMainActivity"
             android:theme="@style/Theme.SimpleNotes" />
 
@@ -101,6 +103,25 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+
+        <!-- 🆕 v1.8.0: Widget Receiver -->
+        <receiver
+            android:name=".widget.NoteWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/note_widget_info" />
+        </receiver>
+
+        <!-- 🆕 v1.8.0: Widget Config Activity -->
+        <activity
+            android:name=".widget.NoteWidgetConfigActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SimpleNotes" />
 
     </application>
 

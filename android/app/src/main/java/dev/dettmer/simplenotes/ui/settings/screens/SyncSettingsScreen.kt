@@ -32,9 +32,11 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 
 /**
- * Sync settings screen - Configurable Sync Triggers
- * v1.5.0: Jetpack Compose Settings Redesign
- * v1.6.0: Individual toggle for each sync trigger (onSave, onResume, WiFi-Connect, Periodic, Boot)
+ * Sync settings screen — Restructured for v1.8.0
+ * 
+ * Two clear sections:
+ * 1. Sync Triggers (all 5 triggers grouped logically)
+ * 2. Network & Performance (WiFi-only + Parallel Downloads)
  */
 @Composable
 fun SyncSettingsScreen(
@@ -49,11 +51,10 @@ fun SyncSettingsScreen(
     val triggerPeriodic by viewModel.triggerPeriodic.collectAsState()
     val triggerBoot by viewModel.triggerBoot.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
-    
-    // 🆕 v1.7.0: WiFi-only sync
+
+    val maxParallelDownloads by viewModel.maxParallelDownloads.collectAsState()
     val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
     
-    // Check if server is configured
     val isServerConfigured = viewModel.isServerConfigured()
     
     SettingsScaffold(
@@ -68,7 +69,7 @@ fun SyncSettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             
-            // 🌟 v1.6.0: Offline Mode Warning if server not configured
+            // ── Offline Mode Warning ──
             if (!isServerConfigured) {
                 SettingsInfoCard(
                     text = stringResource(R.string.sync_offline_mode_message),
@@ -86,37 +87,14 @@ fun SyncSettingsScreen(
             }
             
             // ═══════════════════════════════════════════════════════════════
-            // 🆕 v1.7.0: NETZWERK-EINSCHRÄNKUNG Section (Global für alle Trigger)
+            // SECTION 1: SYNC TRIGGERS
             // ═══════════════════════════════════════════════════════════════
             
-            SettingsSectionHeader(text = stringResource(R.string.sync_section_network))
+            SettingsSectionHeader(text = stringResource(R.string.sync_section_triggers))
             
-            // WiFi-Only Sync Toggle - Gilt für ALLE Trigger außer WiFi-Connect
-            SettingsSwitch(
-                title = stringResource(R.string.sync_wifi_only_title),
-                subtitle = stringResource(R.string.sync_wifi_only_subtitle),
-                checked = wifiOnlySync,
-                onCheckedChange = { viewModel.setWifiOnlySync(it) },
-                icon = Icons.Default.Wifi,
-                enabled = isServerConfigured
-            )
-            
-            // Info-Hinweis dass WiFi-Connect davon ausgenommen ist
-            if (wifiOnlySync && isServerConfigured) {
-                SettingsInfoCard(
-                    text = stringResource(R.string.sync_wifi_only_hint)
-                )
-            }
-            
-            SettingsDivider()
-            
-            // ═══════════════════════════════════════════════════════════════
-            // SOFORT-SYNC Section
-            // ═══════════════════════════════════════════════════════════════
-            
+            // ── Sofort-Sync ──
             SettingsSectionHeader(text = stringResource(R.string.sync_section_instant))
             
-            // onSave Trigger
             SettingsSwitch(
                 title = stringResource(R.string.sync_trigger_on_save_title),
                 subtitle = stringResource(R.string.sync_trigger_on_save_subtitle),
@@ -126,7 +104,6 @@ fun SyncSettingsScreen(
                 enabled = isServerConfigured
             )
             
-            // onResume Trigger
             SettingsSwitch(
                 title = stringResource(R.string.sync_trigger_on_resume_title),
                 subtitle = stringResource(R.string.sync_trigger_on_resume_subtitle),
@@ -136,15 +113,11 @@ fun SyncSettingsScreen(
                 enabled = isServerConfigured
             )
             
-            SettingsDivider()
+            Spacer(modifier = Modifier.height(4.dp))
             
-            // ═══════════════════════════════════════════════════════════════
-            // HINTERGRUND-SYNC Section
-            // ═══════════════════════════════════════════════════════════════
-            
+            // ── Hintergrund-Sync ──
             SettingsSectionHeader(text = stringResource(R.string.sync_section_background))
             
-            // WiFi-Connect Trigger
             SettingsSwitch(
                 title = stringResource(R.string.sync_trigger_wifi_connect_title),
                 subtitle = stringResource(R.string.sync_trigger_wifi_connect_subtitle),
@@ -154,7 +127,6 @@ fun SyncSettingsScreen(
                 enabled = isServerConfigured
             )
             
-            // Periodic Trigger
             SettingsSwitch(
                 title = stringResource(R.string.sync_trigger_periodic_title),
                 subtitle = stringResource(R.string.sync_trigger_periodic_subtitle),
@@ -164,7 +136,7 @@ fun SyncSettingsScreen(
                 enabled = isServerConfigured
             )
             
-            // Periodic Interval Selection (only visible if periodic trigger is enabled)
+            // Interval-Auswahl (nur sichtbar wenn Periodic aktiv)
             if (triggerPeriodic && isServerConfigured) {
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -195,15 +167,6 @@ fun SyncSettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
             
-            SettingsDivider()
-            
-            // ═══════════════════════════════════════════════════════════════
-            // ADVANCED Section (Boot Sync)
-            // ═══════════════════════════════════════════════════════════════
-            
-            SettingsSectionHeader(text = stringResource(R.string.sync_section_advanced))
-            
-            // Boot Trigger
             SettingsSwitch(
                 title = stringResource(R.string.sync_trigger_boot_title),
                 subtitle = stringResource(R.string.sync_trigger_boot_subtitle),
@@ -213,9 +176,9 @@ fun SyncSettingsScreen(
                 enabled = isServerConfigured
             )
             
-            SettingsDivider()
+            Spacer(modifier = Modifier.height(8.dp))
             
-            // Manual Sync Info
+            // ── Info Card ──
             val manualHintText = if (isServerConfigured) {
                 stringResource(R.string.sync_manual_hint)
             } else {
@@ -224,6 +187,68 @@ fun SyncSettingsScreen(
             
             SettingsInfoCard(
                 text = manualHintText
+            )
+            
+            SettingsDivider()
+            
+            // ═══════════════════════════════════════════════════════════════
+            // SECTION 2: NETZWERK & PERFORMANCE
+            // ═══════════════════════════════════════════════════════════════
+            
+            SettingsSectionHeader(text = stringResource(R.string.sync_section_network_performance))
+            
+            // WiFi-Only Toggle
+            SettingsSwitch(
+                title = stringResource(R.string.sync_wifi_only_title),
+                subtitle = stringResource(R.string.sync_wifi_only_subtitle),
+                checked = wifiOnlySync,
+                onCheckedChange = { viewModel.setWifiOnlySync(it) },
+                icon = Icons.Default.Wifi,
+                enabled = isServerConfigured
+            )
+            
+            if (wifiOnlySync && isServerConfigured) {
+                SettingsInfoCard(
+                    text = stringResource(R.string.sync_wifi_only_hint)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Parallel Downloads
+            val parallelOptions = listOf(
+                RadioOption(
+                    value = 1,
+                    title = "1 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_1)
+                ),
+                RadioOption(
+                    value = 3,
+                    title = "3 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_3)
+                ),
+                RadioOption(
+                    value = 5,
+                    title = "5 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_5)
+                ),
+                RadioOption(
+                    value = 7,
+                    title = "7 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_7)
+                ),
+                RadioOption(
+                    value = 10,
+                    title = "10 ${stringResource(R.string.sync_parallel_downloads_unit)}",
+                    subtitle = stringResource(R.string.sync_parallel_downloads_desc_10)
+                )
+            )
+
+            SettingsRadioGroup(
+                title = stringResource(R.string.sync_parallel_downloads_title),
+                options = parallelOptions,
+                selectedValue = maxParallelDownloads,
+                onValueSelected = { viewModel.setMaxParallelDownloads(it) }
             )
             
             Spacer(modifier = Modifier.height(16.dp))

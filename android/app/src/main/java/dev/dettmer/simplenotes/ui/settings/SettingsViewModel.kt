@@ -14,6 +14,7 @@ import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,6 +41,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     companion object {
         private const val TAG = "SettingsViewModel"
         private const val CONNECTION_TIMEOUT_MS = 3000
+        private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L  // 2s for successful operations
+        private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L    // 3s for errors (more important)
     }
     
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -134,7 +137,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
     )
     val syncInterval: StateFlow<Long> = _syncInterval.asStateFlow()
-    
+
+    // 🆕 v1.8.0: Max Parallel Downloads
+    private val _maxParallelDownloads = MutableStateFlow(
+        prefs.getInt(Constants.KEY_MAX_PARALLEL_DOWNLOADS, Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS)
+    )
+    val maxParallelDownloads: StateFlow<Int> = _maxParallelDownloads.asStateFlow()
+
     // 🌟 v1.6.0: Configurable Sync Triggers
     private val _triggerOnSave = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)
@@ -204,6 +213,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     private val _isBackupInProgress = MutableStateFlow(false)
     val isBackupInProgress: StateFlow<Boolean> = _isBackupInProgress.asStateFlow()
+    
+    // v1.8.0: Descriptive backup status text
+    private val _backupStatusText = MutableStateFlow("")
+    val backupStatusText: StateFlow<String> = _backupStatusText.asStateFlow()
     
     private val _showToast = MutableSharedFlow<String>()
     val showToast: SharedFlow<String> = _showToast.asSharedFlow()
@@ -496,7 +509,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             emitToast(getString(R.string.toast_sync_interval, text))
         }
     }
-    
+
+    // 🆕 v1.8.0: Max Parallel Downloads Setter
+    fun setMaxParallelDownloads(count: Int) {
+        val validCount = count.coerceIn(
+            Constants.MIN_PARALLEL_DOWNLOADS,
+            Constants.MAX_PARALLEL_DOWNLOADS
+        )
+        _maxParallelDownloads.value = validCount
+        prefs.edit().putInt(Constants.KEY_MAX_PARALLEL_DOWNLOADS, validCount).apply()
+    }
+
     // 🌟 v1.6.0: Configurable Sync Triggers Setters
     
     fun setTriggerOnSave(enabled: Boolean) {
@@ -655,18 +678,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun createBackup(uri: Uri, password: String? = null) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
+            _backupStatusText.value = getString(R.string.backup_progress_creating)
             try {
                 val result = backupManager.createBackup(uri, password)
-                val message = if (result.success) {
-                    getString(R.string.toast_backup_success, result.message ?: "")
+                
+                // Phase 2: Show completion status
+                _backupStatusText.value = if (result.success) {
+                    getString(R.string.backup_progress_complete)
                 } else {
-                    getString(R.string.toast_backup_failed, result.error ?: "")
+                    getString(R.string.backup_progress_failed)
                 }
-                emitToast(message)
+                
+                // Phase 3: Clear after delay
+                delay(if (result.success) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
+                
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_backup_failed, e.message ?: ""))
+                Logger.e(TAG, "Failed to create backup", e)
+                _backupStatusText.value = getString(R.string.backup_progress_failed)
+                delay(STATUS_CLEAR_DELAY_ERROR_MS)
             } finally {
                 _isBackupInProgress.value = false
+                _backupStatusText.value = ""
             }
         }
     }
@@ -674,18 +706,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun restoreFromFile(uri: Uri, mode: RestoreMode, password: String? = null) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
+            _backupStatusText.value = getString(R.string.backup_progress_restoring)
             try {
                 val result = backupManager.restoreBackup(uri, mode, password)
-                val message = if (result.success) {
-                    getString(R.string.toast_restore_success, result.importedNotes)
+                
+                // Phase 2: Show completion status
+                _backupStatusText.value = if (result.success) {
+                    getString(R.string.restore_progress_complete)
                 } else {
-                    getString(R.string.toast_restore_failed, result.error ?: "")
+                    getString(R.string.restore_progress_failed)
                 }
-                emitToast(message)
+                
+                // Phase 3: Clear after delay
+                delay(if (result.success) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
+                
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_restore_failed, e.message ?: ""))
+                Logger.e(TAG, "Failed to restore backup from file", e)
+                _backupStatusText.value = getString(R.string.restore_progress_failed)
+                delay(STATUS_CLEAR_DELAY_ERROR_MS)
             } finally {
                 _isBackupInProgress.value = false
+                _backupStatusText.value = ""
             }
         }
     }
@@ -716,22 +757,30 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun restoreFromServer(mode: RestoreMode) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
+            _backupStatusText.value = getString(R.string.backup_progress_restoring_server)
             try {
-                emitToast(getString(R.string.restore_progress))
                 val syncService = WebDavSyncService(getApplication())
                 val result = withContext(Dispatchers.IO) {
                     syncService.restoreFromServer(mode)
                 }
-                val message = if (result.isSuccess) {
-                    getString(R.string.toast_restore_success, result.restoredCount)
+                
+                // Phase 2: Show completion status
+                _backupStatusText.value = if (result.isSuccess) {
+                    getString(R.string.restore_server_progress_complete)
                 } else {
-                    getString(R.string.toast_restore_failed, result.errorMessage ?: "")
+                    getString(R.string.restore_server_progress_failed)
                 }
-                emitToast(message)
+                
+                // Phase 3: Clear after delay
+                delay(if (result.isSuccess) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
+                
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                Logger.e(TAG, "Failed to restore from server", e)
+                _backupStatusText.value = getString(R.string.restore_server_progress_failed)
+                delay(STATUS_CLEAR_DELAY_ERROR_MS)
             } finally {
                 _isBackupInProgress.value = false
+                _backupStatusText.value = ""
             }
         }
     }
@@ -761,6 +810,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     
     fun getLogFile() = Logger.getLogFile(getApplication())
+    
+    /**
+     * v1.8.0: Reset changelog version to force showing the changelog dialog on next start
+     * Used for testing the post-update changelog feature
+     */
+    fun resetChangelogVersion() {
+        prefs.edit()
+            .putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, 0)
+            .apply()
+    }
     
     // ═══════════════════════════════════════════════════════════════════════
     // Helper

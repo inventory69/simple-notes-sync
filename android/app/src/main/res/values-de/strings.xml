@@ -58,6 +58,60 @@
     <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
     <string name="sync_already_running">Synchronisierung läuft bereits</string>
     
+    <!-- 🆕 v1.8.0: SyncStatus enum values -->
+    <string name="sync_status_synced">Mit Server synchronisiert</string>
+    <string name="sync_status_pending">Warte auf Synchronisierung</string>
+    <string name="sync_status_conflict">Synchronisierungskonflikt erkannt</string>
+    <string name="sync_status_local_only">Noch nicht synchronisiert</string>
+    <string name="sync_status_deleted_on_server">Auf Server gelöscht</string>
+    
+    <!-- 🆕 v1.8.0: Sync-Status Legende Dialog -->
+    <string name="sync_legend_button">Sync-Status Hilfe</string>
+    <string name="sync_legend_title">Sync-Status Icons</string>
+    <string name="sync_legend_description">Jede Notiz zeigt ein kleines Icon, das den Sync-Status anzeigt:</string>
+    <string name="sync_legend_synced_label">Synchronisiert</string>
+    <string name="sync_legend_synced_desc">Diese Notiz ist auf allen Geräten aktuell.</string>
+    <string name="sync_legend_pending_label">Ausstehend</string>
+    <string name="sync_legend_pending_desc">Diese Notiz hat lokale Änderungen, die noch synchronisiert werden müssen.</string>
+    <string name="sync_legend_conflict_label">Konflikt</string>
+    <string name="sync_legend_conflict_desc">Diese Notiz wurde auf mehreren Geräten gleichzeitig geändert. Die neueste Version wurde beibehalten.</string>
+    <string name="sync_legend_local_only_label">Nur lokal</string>
+    <string name="sync_legend_local_only_desc">Diese Notiz wurde noch nie mit dem Server synchronisiert.</string>
+    <string name="sync_legend_deleted_label">Auf Server gelöscht</string>
+    <string name="sync_legend_deleted_desc">Diese Notiz wurde auf einem anderen Gerät oder direkt auf dem Server gelöscht. Sie existiert noch lokal.</string>
+    
+    <!-- 🆕 v1.8.0 (IMPL_022): Sync-Banner Löschungsanzahl -->
+    <string name="sync_deleted_on_server_count">%d auf Server gelöscht</string>
+    
+    <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
+    <string name="sync_phase_preparing">Synchronisiere…</string>
+    <string name="sync_phase_checking">Prüfe Server…</string>
+    <string name="sync_phase_uploading">Hochladen…</string>
+    <string name="sync_phase_downloading">Herunterladen…</string>
+    <string name="sync_phase_importing_markdown">Markdown importieren…</string>
+    <string name="sync_phase_saving">Speichern…</string>
+    <string name="sync_phase_completed">Sync abgeschlossen</string>
+    <string name="sync_phase_error">Sync fehlgeschlagen</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Notizliste -->
+    <string name="sort_notes">Notizen sortieren</string>
+    <string name="sort_ascending">Aufsteigend</string>
+    <string name="sort_descending">Absteigend</string>
+    <string name="sort_by_updated">Zuletzt bearbeitet</string>
+    <string name="sort_by_created">Erstelldatum</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_type">Typ</string>
+    <string name="close">Schließen</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Checkliste -->
+    <string name="sort_checklist">Checkliste sortieren</string>
+    <string name="sort_checklist_manual">Manuell</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_unchecked_first">Unerledigte zuerst</string>
+    <string name="sort_checklist_checked_first">Erledigte zuerst</string>
+    <string name="apply">Anwenden</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
@@ -162,12 +216,26 @@
     <string name="settings_markdown">Markdown Desktop-Integration</string>
     <string name="settings_markdown_auto_on">Auto-Sync: An</string>
     <string name="settings_markdown_auto_off">Auto-Sync: Aus</string>
+    <string name="settings_markdown_manual_hint">Oder synchronisiere Markdown-Dateien manuell:</string>
+    <string name="settings_markdown_manual_button">Markdown synchronisieren</string>
     <string name="settings_backup">Backup &amp; Wiederherstellung</string>
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
+    <string name="settings_backup_info">📦 Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
+    <string name="settings_backup_local_title">Lokales Backup</string>
+    <string name="settings_backup_server_title">Server-Backup</string>
     <string name="settings_about">Über diese App</string>
+    <string name="settings_about_app_version">📱 App-Version</string>
+    <string name="settings_about_app_version_loading">Version wird geladen…</string>
+    <string name="settings_about_github">🌐 GitHub Repository</string>
+    <string name="settings_about_developer">👤 Entwickler</string>
+    <string name="settings_about_license">⚖️ Lizenz</string>
     <string name="settings_debug">Debug &amp; Diagnose</string>
     <string name="settings_debug_logging_on">Logging: An</string>
     <string name="settings_debug_logging_off">Logging: Aus</string>
+    <string name="settings_debug_file_logging">📝 Datei-Logging</string>
+    <string name="settings_debug_file_logging_desc">Sync-Logs in Datei speichern</string>
+    <string name="settings_debug_export_logs">📤 Logs exportieren &amp; teilen</string>
+    <string name="settings_debug_delete_logs">🗑️ Logs löschen</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
@@ -223,7 +291,12 @@
     <string name="sync_section_background">📡 Hintergrund-Sync</string>
     <string name="sync_section_advanced">⚙️ Erweitert</string>
     
+    <!-- 🆕 v1.8.0: Sync Settings Restructure -->
+    <string name="sync_section_triggers">Sync-Auslöser</string>
+    <string name="sync_section_network_performance">Netzwerk &amp; Performance</string>
+    
     <string name="sync_wifi_only_hint">💡 Der WiFi-Connect Trigger ist davon nicht betroffen \u2013 er synchronisiert immer wenn WiFi verbunden wird.</string>
+    <string name="sync_wifi_only_error">Sync funktioniert nur wenn WLAN verbunden ist</string>
     
     <string name="sync_trigger_on_save_title">Nach dem Speichern</string>
     <string name="sync_trigger_on_save_subtitle">Sync sofort nach jeder Änderung</string>
@@ -330,6 +403,10 @@
     <string name="debug_delete_logs">🗑️ Logs löschen</string>
     <string name="debug_delete_logs_title">Logs löschen?</string>
     <string name="debug_delete_logs_message">Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.</string>
+    <string name="debug_test_section">Test-Modus</string>
+    <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
+    <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>
+    <string name="debug_changelog_reset">Changelog wird beim nächsten Start angezeigt</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
     
@@ -340,7 +417,7 @@
     <string name="language_system_default">Systemstandard</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
-    <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die App wird neu gestartet, um die Änderung anzuwenden.</string>
+    <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
     <string name="language_changed_restart">Sprache geändert. Neustart…</string>
     
     <!-- ============================= -->
@@ -350,7 +427,7 @@
     <string name="display_mode_title">Notizen-Ansicht</string>
     <string name="display_mode_list">📋 Listen-Ansicht</string>
     <string name="display_mode_grid">🎨 Raster-Ansicht</string>
-    <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen im Pinterest-Stil. Kurze Notizen erscheinen nebeneinander, lange Notizen nehmen die volle Breite ein.</string>
+    <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
@@ -365,6 +442,30 @@
     <string name="about_developer_subtitle">GitHub Profil: @inventory69</string>
     <string name="about_license_title">Lizenz</string>
     <string name="about_license_subtitle">MIT License - Open Source</string>
+    
+    <!-- v1.8.0: Changelog Link in About -->
+    <string name="about_changelog_title">Changelog</string>
+    <string name="about_changelog_subtitle">Vollständige Versionshistorie</string>
+    
+    <!-- v1.8.0: Post-Update Changelog Dialog -->
+    <string name="update_changelog_title">Was ist neu</string>
+    <string name="update_changelog_dismiss">Alles klar!</string>
+    
+    <!-- v1.8.0: Backup Progress -->
+    <string name="backup_progress_creating">Backup wird erstellt…</string>
+    <string name="backup_progress_restoring">Backup wird wiederhergestellt…</string>
+    <string name="backup_progress_restoring_server">Notizen werden vom Server heruntergeladen…</string>
+    
+    <!-- v1.8.0: Backup Progress - Completion -->
+    <string name="backup_progress_complete">Backup erstellt!</string>
+    <string name="restore_progress_complete">Wiederherstellung abgeschlossen!</string>
+    <string name="restore_server_progress_complete">Download abgeschlossen!</string>
+    
+    <!-- v1.8.0: Backup Progress - Error -->
+    <string name="backup_progress_failed">Backup fehlgeschlagen</string>
+    <string name="restore_progress_failed">Wiederherstellung fehlgeschlagen</string>
+    <string name="restore_server_progress_failed">Download fehlgeschlagen</string>
+    
     <string name="about_privacy_title">🔒 Datenschutz</string>
     <string name="about_privacy_text">Diese App sammelt keine Daten. Alle Notizen werden nur lokal auf deinem Gerät und auf deinem eigenen WebDAV-Server gespeichert. Keine Telemetrie, keine Werbung.</string>
     
@@ -476,4 +577,37 @@
         <item quantity="one">%d Notiz synchronisiert</item>
         <item quantity="other">%d Notizen synchronisiert</item>
     </plurals>
+
+    <!-- v1.8.0 (IMPL_017): Checklist separator -->
+    <plurals name="checked_items_count">
+        <item quantity="one">%d erledigt</item>
+        <item quantity="other">%d erledigt</item>
+    </plurals>
+
+    <!-- ============================= -->
+    <!-- PARALLEL DOWNLOADS v1.8.0     -->
+    <!-- ============================= -->
+    <string name="sync_parallel_downloads_title">Parallele Downloads</string>
+    <string name="sync_parallel_downloads_unit">parallel</string>
+    <string name="sync_parallel_downloads_desc_1">Sequentiell (langsam, sicher)</string>
+    <string name="sync_parallel_downloads_desc_3">Ausgewogen (3x schneller)</string>
+    <string name="sync_parallel_downloads_desc_5">Empfohlen (5x schneller)</string>
+    <string name="sync_parallel_downloads_desc_7">Schnell (7x schneller)</string>
+    <string name="sync_parallel_downloads_desc_10">Maximum (10x schneller, kann Server belasten)</string>
+
+    <!-- ============================= -->
+    <!-- WIDGETS v1.8.0                -->
+    <!-- ============================= -->
+    <string name="widget_name">Simple Notes</string>
+    <string name="widget_description">Zeige eine Notiz oder Checkliste auf dem Startbildschirm</string>
+    <string name="widget_config_title">Notiz auswählen</string>
+    <string name="widget_config_hint">Tippe auf eine Notiz, um sie als Widget hinzuzufügen</string>
+    <string name="widget_config_save">Speichern</string>
+    <string name="widget_lock_label">Widget sperren</string>
+    <string name="widget_lock_description">Versehentliches Bearbeiten verhindern</string>
+    <string name="widget_note_not_found">Notiz nicht gefunden</string>
+    <string name="widget_opacity_label">Hintergrund-Transparenz</string>
+    <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
+    <string name="widget_preview_title">Einkaufsliste</string>
+    <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
 </resources>

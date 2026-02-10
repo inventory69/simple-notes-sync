@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
 // FabPosition nicht mehr benötigt - FAB wird manuell platziert
 import androidx.compose.material3.Icon
@@ -46,13 +49,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.ui.main.components.SortDialog
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
-import dev.dettmer.simplenotes.ui.main.components.SyncStatusBanner
+import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
+import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
 import kotlinx.coroutines.launch
 
 private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
@@ -74,10 +79,12 @@ fun MainScreen(
     onOpenSettings: () -> Unit,
     onCreateNote: (NoteType) -> Unit
 ) {
-    val notes by viewModel.notes.collectAsState()
+    val notes by viewModel.sortedNotes.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
-    val syncMessage by viewModel.syncMessage.collectAsState()
     val scrollToTop by viewModel.scrollToTop.collectAsState()
+    
+    // 🆕 v1.8.0: Einziges Banner-System
+    val syncProgress by viewModel.syncProgress.collectAsState()
     
     // Multi-Select State
     val selectedNotes by viewModel.selectedNotes.collectAsState()
@@ -91,6 +98,14 @@ fun MainScreen(
     
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    
+    // 🆕 v1.8.0: Sync status legend dialog
+    var showSyncLegend by remember { mutableStateOf(false) }
+    
+    // 🔀 v1.8.0: Sort dialog state
+    var showSortDialog by remember { mutableStateOf(false) }
+    val sortOption by viewModel.sortOption.collectAsState()
+    val sortDirection by viewModel.sortDirection.collectAsState()
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -170,6 +185,9 @@ fun MainScreen(
             ) {
                 MainTopBar(
                     syncEnabled = canSync,
+                    showSyncLegend = isSyncAvailable,  // 🆕 v1.8.0: Nur wenn Sync verfügbar
+                    onSyncLegendClick = { showSyncLegend = true },  // 🆕 v1.8.0
+                    onSortClick = { showSortDialog = true },  // 🔀 v1.8.0
                     onSyncClick = { viewModel.triggerManualSync("toolbar") },
                     onSettingsClick = onOpenSettings
                 )
@@ -190,10 +208,10 @@ fun MainScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 // Main content column
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Sync Status Banner (not affected by pull-to-refresh)
-                    SyncStatusBanner(
-                        syncState = syncState,
-                        message = syncMessage
+                    // 🆕 v1.8.0: Einziges Sync Banner (Progress + Ergebnis)
+                    SyncProgressBanner(
+                        progress = syncProgress,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     
                     // Content: Empty state or notes list
@@ -276,6 +294,28 @@ fun MainScreen(
                 }
             )
         }
+        
+        // 🆕 v1.8.0: Sync Status Legend Dialog
+        if (showSyncLegend) {
+            SyncStatusLegendDialog(
+                onDismiss = { showSyncLegend = false }
+            )
+        }
+        
+        // 🔀 v1.8.0: Sort Dialog
+        if (showSortDialog) {
+            SortDialog(
+                currentOption = sortOption,
+                currentDirection = sortDirection,
+                onOptionSelected = { option ->
+                    viewModel.setSortOption(option)
+                },
+                onDirectionToggled = {
+                    viewModel.toggleSortDirection()
+                },
+                onDismiss = { showSortDialog = false }
+            )
+        }
     }
 }
 
@@ -283,6 +323,9 @@ fun MainScreen(
 @Composable
 private fun MainTopBar(
     syncEnabled: Boolean,
+    showSyncLegend: Boolean,  // 🆕 v1.8.0: Ob der Hilfe-Button sichtbar sein soll
+    onSyncLegendClick: () -> Unit,  // 🆕 v1.8.0
+    onSortClick: () -> Unit,  // 🔀 v1.8.0: Sort-Button
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -294,6 +337,23 @@ private fun MainTopBar(
             )
         },
         actions = {
+            // 🔀 v1.8.0: Sort Button
+            IconButton(onClick = onSortClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Sort,
+                    contentDescription = stringResource(R.string.sort_notes)
+                )
+            }
+            
+            // 🆕 v1.8.0: Sync Status Legend Button (nur wenn Sync verfügbar)
+            if (showSyncLegend) {
+                IconButton(onClick = onSyncLegendClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                        contentDescription = stringResource(R.string.sync_legend_button)
+                    )
+                }
+            }
             IconButton(
                 onClick = onSyncClick,
                 enabled = syncEnabled

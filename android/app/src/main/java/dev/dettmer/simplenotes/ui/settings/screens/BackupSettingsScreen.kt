@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.BackupPasswordDialog
+import dev.dettmer.simplenotes.ui.settings.components.BackupProgressCard
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
@@ -39,6 +41,10 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
+
+// v1.8.0: Delay for dialog close animation before starting restore
+private const val DIALOG_CLOSE_DELAY_MS = 200L
 
 /**
  * Backup and restore settings screen
@@ -59,6 +65,10 @@ fun BackupSettingsScreen(
     var restoreSource by remember { mutableStateOf<RestoreSource>(RestoreSource.LocalFile) }
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
     var selectedRestoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
+    
+    // v1.8.0: Trigger for delayed restore execution (after dialog closes)
+    var triggerRestore by remember { mutableStateOf(0) }
+    var pendingRestoreAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     
     // 🔐 v1.7.0: Encryption state
     var encryptBackup by remember { mutableStateOf(false) }
@@ -91,6 +101,15 @@ fun BackupSettingsScreen(
         }
     }
     
+    // v1.8.0: Delayed restore execution after dialog closes
+    LaunchedEffect(triggerRestore) {
+        if (triggerRestore > 0) {
+            delay(DIALOG_CLOSE_DELAY_MS) // Wait for dialog close animation
+            pendingRestoreAction?.invoke()
+            pendingRestoreAction = null
+        }
+    }
+    
     SettingsScaffold(
         title = stringResource(R.string.backup_settings_title),
         onBack = onBack
@@ -107,6 +126,16 @@ fun BackupSettingsScreen(
             SettingsInfoCard(
                 text = stringResource(R.string.backup_auto_info)
             )
+            
+            // v1.8.0: Progress indicator (visible during backup/restore)
+            if (isBackupInProgress) {
+                val backupStatus by viewModel.backupStatusText.collectAsState()
+                BackupProgressCard(
+                    statusText = backupStatus.ifEmpty { 
+                        stringResource(R.string.backup_progress_creating) 
+                    }
+                )
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -234,21 +263,29 @@ fun BackupSettingsScreen(
                 when (restoreSource) {
                     RestoreSource.LocalFile -> {
                         pendingRestoreUri?.let { uri ->
-                            // 🔐 v1.7.0: Check if backup is encrypted
-                            viewModel.checkBackupEncryption(
-                                uri = uri,
-                                onEncrypted = {
-                                    showDecryptionPasswordDialog = true
-                                },
-                                onPlaintext = {
-                                    viewModel.restoreFromFile(uri, selectedRestoreMode, password = null)
-                                    pendingRestoreUri = null
-                                }
-                            )
+                            // v1.8.0: Schedule restore with delay for dialog close
+                            pendingRestoreAction = {
+                                // 🔐 v1.7.0: Check if backup is encrypted
+                                viewModel.checkBackupEncryption(
+                                    uri = uri,
+                                    onEncrypted = {
+                                        showDecryptionPasswordDialog = true
+                                    },
+                                    onPlaintext = {
+                                        viewModel.restoreFromFile(uri, selectedRestoreMode, password = null)
+                                        pendingRestoreUri = null
+                                    }
+                                )
+                            }
+                            triggerRestore++
                         }
                     }
                     RestoreSource.Server -> {
-                        viewModel.restoreFromServer(selectedRestoreMode)
+                        // v1.8.0: Schedule restore with delay for dialog close
+                        pendingRestoreAction = {
+                            viewModel.restoreFromServer(selectedRestoreMode)
+                        }
+                        triggerRestore++
                     }
                 }
             },

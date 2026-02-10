@@ -1,18 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config>
-    <!-- Allow HTTP for all connections during development/testing -->
-    <!-- Production validation happens in UrlValidator.kt to restrict HTTP to:
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- Allow HTTP for local network connections (192.168.x.x, 10.x.x.x, etc.)
+         
+         ⚠️ Security Note:
+         We intentionally allow cleartext traffic because this app is designed for
+         self-hosted WebDAV servers, which often run on local networks via HTTP.
+         
+         HTTP connections are restricted at the application level by UrlValidator.kt to:
          - Private IP ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x, 127.x.x.x
          - .local domains (mDNS/Bonjour)
          
-         This permissive config is necessary because Android's Network Security Config
-         doesn't support IP-based rules, only domain patterns.
-         We handle security through application-level validation instead. -->
-    <base-config cleartextTrafficPermitted="true">
+         Android's Network Security Config doesn't support IP-based domain rules,
+         so we must allow cleartext globally but validate URLs in the app.
+         Public servers MUST use HTTPS. -->
+    <base-config cleartextTrafficPermitted="true"
+                 tools:ignore="InsecureBaseConfiguration">
         <trust-anchors>
             <certificates src="system" />
-            <!-- 🔐 v1.7.0: Trust user-installed CA certificates for self-signed SSL support -->
-            <certificates src="user" />
         </trust-anchors>
     </base-config>
+    
+    <!-- Allow user-installed CA certificates only in debug builds for testing
+         self-signed certificates during development -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
 </network-security-config>
