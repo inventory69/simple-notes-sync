@@ -200,3 +200,33 @@ detekt {
     // Parallel-Verarbeitung für schnellere Checks
     parallel = true
 }
+
+// 📋 v1.8.0: Copy F-Droid changelogs to assets for post-update dialog
+// Single source of truth: F-Droid changelogs are reused in the app
+tasks.register<Copy>("copyChangelogsToAssets") {
+    description = "Copies F-Droid changelogs to app assets for post-update dialog"
+    
+    from("$rootDir/../fastlane/metadata/android") {
+        include("*/changelogs/*.txt")
+    }
+    
+    into("$projectDir/src/main/assets/changelogs")
+    
+    // Preserve directory structure: en-US/20.txt, de-DE/20.txt
+    eachFile {
+        val parts = relativePath.segments
+        if (parts.size >= 3) {
+            // parts[0] = locale (en-US, de-DE)
+            // parts[1] = "changelogs"
+            // parts[2] = version file (20.txt)
+            relativePath = RelativePath(true, parts[0], parts[2])
+        }
+    }
+    
+    includeEmptyDirs = false
+}
+
+// Run before preBuild to ensure changelogs are available
+tasks.named("preBuild") {
+    dependsOn("copyChangelogsToAssets")
+}

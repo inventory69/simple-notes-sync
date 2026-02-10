@@ -18,3 +18,4 @@ local.properties
 key.properties
 *.jks
 *.keystore
+/app/src/main/assets/changelogs/
