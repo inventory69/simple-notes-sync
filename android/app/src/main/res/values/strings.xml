@@ -291,6 +291,10 @@
     <string name="sync_section_background">📡 Background Sync</string>
     <string name="sync_section_advanced">⚙️ Advanced</string>
     
+    <!-- 🆕 v1.8.0: Sync Settings Restructure -->
+    <string name="sync_section_triggers">Sync Triggers</string>
+    <string name="sync_section_network_performance">Network &amp; Performance</string>
+    
     <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
     <string name="sync_wifi_only_error">Sync only works when WiFi is connected</string>
     

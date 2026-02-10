@@ -291,6 +291,10 @@
     <string name="sync_section_background">📡 Hintergrund-Sync</string>
     <string name="sync_section_advanced">⚙️ Erweitert</string>
     
+    <!-- 🆕 v1.8.0: Sync Settings Restructure -->
+    <string name="sync_section_triggers">Sync-Auslöser</string>
+    <string name="sync_section_network_performance">Netzwerk &amp; Performance</string>
+    
     <string name="sync_wifi_only_hint">💡 Der WiFi-Connect Trigger ist davon nicht betroffen \u2013 er synchronisiert immer wenn WiFi verbunden wird.</string>
     <string name="sync_wifi_only_error">Sync funktioniert nur wenn WLAN verbunden ist</string>
     
