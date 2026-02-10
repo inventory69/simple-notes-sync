@@ -82,3 +82,23 @@
 # v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
 # This class only exists on API 35+ but Compose handles the fallback gracefully
 -dontwarn android.text.Layout$TextInclusionStrategy
+
+# ═══════════════════════════════════════════════════════════════════════
+# v1.8.1: Widget & Compose Fixes
+# ═══════════════════════════════════════════════════════════════════════
+
+# Glance Widget ActionCallbacks (instanziiert via Reflection durch actionRunCallback<T>())
+# Ohne diese Rule findet R8 die Klassen nicht zur Laufzeit → Widget-Crash
+-keep class dev.dettmer.simplenotes.widget.*Action { *; }
+-keep class dev.dettmer.simplenotes.widget.*Receiver { *; }
+
+# Glance Widget State (Preferences-basiert, intern via Reflection)
+-keep class androidx.glance.appwidget.state.** { *; }
+-keep class androidx.datastore.preferences.** { *; }
+
+# Compose Text Layout: Verhindert dass R8 onTextLayout-Callbacks
+# als Side-Effect-Free optimiert (behebt Gradient-Regression)
+-keepclassmembers class androidx.compose.foundation.text.** {
+    <methods>;
+}
+-keep class androidx.compose.ui.text.TextLayoutResult { *; }
