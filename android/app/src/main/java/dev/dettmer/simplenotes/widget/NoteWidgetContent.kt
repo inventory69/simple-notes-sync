@@ -54,8 +54,9 @@ import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
 private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
 
-private const val TEXT_PREVIEW_COMPACT_LENGTH = 100
-private const val TEXT_PREVIEW_FULL_LENGTH = 200
+// 🆕 v1.8.0: Increased preview lengths for better text visibility
+private const val TEXT_PREVIEW_COMPACT_LENGTH = 120
+private const val TEXT_PREVIEW_FULL_LENGTH = 300
 
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
     height < WIDGET_HEIGHT_SMALL_THRESHOLD                                        -> WidgetSizeClass.SMALL
@@ -320,7 +321,7 @@ private fun TextNotePreview(note: Note, compact: Boolean) {
             color = GlanceTheme.colors.onSurface,
             fontSize = if (compact) 13.sp else 14.sp
         ),
-        maxLines = if (compact) 2 else 3,
+        maxLines = if (compact) 3 else 5,  // 🆕 v1.8.0: Increased for better preview
         modifier = GlanceModifier.padding(horizontal = 12.dp, vertical = 4.dp)
     )
 }
@@ -332,16 +333,26 @@ private fun TextNoteFullView(note: Note) {
             .fillMaxSize()
             .padding(horizontal = 12.dp)
     ) {
-        val paragraphs = note.content.split("\n").filter { it.isNotBlank() }
-        items(paragraphs.size) { index ->
-            Text(
-                text = paragraphs[index],
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 14.sp
-                ),
-                modifier = GlanceModifier.padding(bottom = 4.dp)
-            )
+        // 🆕 v1.8.0 Fix: Split text into individual lines instead of paragraphs.
+        // This ensures each line is a separate LazyColumn item that can scroll properly.
+        // Empty lines are preserved as small spacers for visual paragraph separation.
+        val lines = note.content.split("\n")
+        items(lines.size) { index ->
+            val line = lines[index]
+            if (line.isBlank()) {
+                // Preserve empty lines as spacing (paragraph separator)
+                Spacer(modifier = GlanceModifier.height(8.dp))
+            } else {
+                Text(
+                    text = line,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = 14.sp
+                    ),
+                    maxLines = 5,  // Allow wrapping but prevent single-item overflow
+                    modifier = GlanceModifier.padding(bottom = 2.dp)
+                )
+            }
         }
     }
 }
