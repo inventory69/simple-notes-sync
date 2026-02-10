@@ -69,6 +69,10 @@ import kotlinx.coroutines.delay
 import dev.dettmer.simplenotes.utils.showToast
 import kotlin.math.roundToInt
 
+private const val LAYOUT_DELAY_MS = 100L
+private const val ITEM_CORNER_RADIUS_DP = 8
+private const val DRAGGING_ITEM_Z_INDEX = 10f
+
 /**
  * Main Composable for the Note Editor screen.
  * 
@@ -108,7 +112,7 @@ fun NoteEditorScreen(
     
     // v1.5.0: Auto-focus and show keyboard
     LaunchedEffect(uiState.isNewNote, uiState.noteType) {
-        delay(100) // Wait for layout
+        delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
             uiState.isNewNote -> {
                 // New note: focus title
@@ -398,9 +402,12 @@ private fun ChecklistEditor(
                         onDelete = { onDelete(item.id) },
                         onAddNewItem = { onAddNewItemAfter(item.id) },
                         requestFocus = shouldFocus,
-                        isDragging = isDragging,  // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
-                        isAnyItemDragging = dragDropState.draggingItemIndex != null,  // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
-                        dragModifier = Modifier.dragContainer(dragDropState, index),  // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
+                        // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
+                        isDragging = isDragging,
+                        // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
+                        isAnyItemDragging = dragDropState.draggingItemIndex != null,
+                        // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
+                        dragModifier = Modifier.dragContainer(dragDropState, index),
                         modifier = Modifier
                             .animateItem()  // 🆕 v1.8.0 (IMPL_017): LazyColumn Item-Animation
                             .offset {
@@ -409,11 +416,12 @@ private fun ChecklistEditor(
                                     if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
                                 )
                             }
-                            .zIndex(if (isDragging) 10f else 0f)  // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
-                            .shadow(elevation, shape = RoundedCornerShape(8.dp))
+                            // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
+                            .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
+                            .shadow(elevation, shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp))
                             .background(
                                 color = MaterialTheme.colorScheme.surface,
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
                             )
                     )
                 }

@@ -1164,8 +1164,14 @@ class WebDavSyncService(private val context: Context) {
         return deletedCount
     }
     
-    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
+    @Suppress(
+        "NestedBlockDepth",
+        "LoopWithTooManyJumpStatements",
+        "LongMethod",
+        "ComplexMethod"
+    )
     // Sync logic requires nested conditions for comprehensive error handling and conflict resolution
+    // TODO: Refactor into smaller functions in v1.9.0/v2.0.0 (see LINT_DETEKT_FEHLER_BEHEBUNG_PLAN.md)
     private fun downloadRemoteNotes(
         sardine: Sardine, 
         serverUrl: String,

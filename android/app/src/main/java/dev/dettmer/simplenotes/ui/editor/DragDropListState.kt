@@ -121,6 +121,7 @@ class DragDropListState(
         }
     }
 
+    @Suppress("UnusedPrivateProperty")
     private val LazyListItemInfo.offsetEnd: Int
         get() = this.offset + this.size
 }

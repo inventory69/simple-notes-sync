@@ -53,6 +53,9 @@ import kotlin.math.roundToInt
  *
  * 🆕 v1.8.0 (IMPL_025): Save-FAB + onSettingsChanged für Reconfigure-Flow
  */
+
+private const val NOTE_PREVIEW_MAX_LENGTH = 50
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteWidgetConfigScreen(
@@ -63,7 +66,7 @@ fun NoteWidgetConfigScreen(
     onNoteSelected: (noteId: String, isLocked: Boolean, opacity: Float) -> Unit,
     onSave: ((noteId: String, isLocked: Boolean, opacity: Float) -> Unit)? = null,
     onSettingsChanged: ((noteId: String?, isLocked: Boolean, opacity: Float) -> Unit)? = null,
-    onCancel: () -> Unit
+    @Suppress("UNUSED_PARAMETER") onCancel: () -> Unit  // Reserved for future use
 ) {
     val allNotes = remember { storage.loadAllNotes().sortedByDescending { it.updatedAt } }
     var lockWidget by remember { mutableStateOf(initialLock) }
@@ -248,7 +251,7 @@ private fun NoteSelectionCard(
                 )
                 Text(
                     text = when (note.noteType) {
-                        NoteType.TEXT -> note.content.take(50).replace("\n", " ")
+                        NoteType.TEXT -> note.content.take(NOTE_PREVIEW_MAX_LENGTH).replace("\n", " ")
                         NoteType.CHECKLIST -> {
                             val items = note.checklistItems ?: emptyList()
                             val checked = items.count { it.isChecked }
