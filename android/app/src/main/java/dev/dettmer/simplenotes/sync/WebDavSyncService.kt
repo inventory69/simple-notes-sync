@@ -1115,6 +1115,7 @@ class WebDavSyncService(private val context: Context) {
     
     /**
      * 🆕 v1.8.0: Erkennt Notizen, die auf dem Server gelöscht wurden
+     * 🔧 v1.8.1: Safety-Guard gegen leere serverNoteIds (verhindert Massenlöschung)
      * 
      * Keine zusätzlichen HTTP-Requests! Nutzt die bereits geladene
      * serverNoteIds-Liste aus dem PROPFIND-Request.
@@ -1131,8 +1132,28 @@ class WebDavSyncService(private val context: Context) {
         serverNoteIds: Set<String>,
         localNotes: List<Note>
     ): Int {
-        var deletedCount = 0
         val syncedNotes = localNotes.filter { it.syncStatus == SyncStatus.SYNCED }
+        
+        // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
+        // Ein leeres Set bedeutet wahrscheinlich: PROPFIND fehlgeschlagen, /notes/ nicht gefunden,
+        // oder Netzwerkfehler — NICHT dass alle Notizen gelöscht wurden.
+        if (serverNoteIds.isEmpty()) {
+            Logger.w(TAG, "⚠️ detectServerDeletions: serverNoteIds is EMPTY! " +
+                "Skipping deletion detection to prevent data loss. " +
+                "localSynced=${syncedNotes.size}, localTotal=${localNotes.size}")
+            return 0
+        }
+        
+        // 🔧 v1.8.1 SAFETY: Wenn ALLE lokalen SYNCED-Notizen als gelöscht erkannt werden,
+        // ist das fast sicher ein Fehler (z.B. falsche Server-URL oder partieller PROPFIND).
+        // Maximal 50% der Notizen dürfen als gelöscht markiert werden.
+        val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
+        if (syncedNotes.size > 1 && potentialDeletions == syncedNotes.size) {
+            Logger.e(TAG, "🚨 detectServerDeletions: ALL ${syncedNotes.size} synced notes " +
+                "would be marked as deleted! This is almost certainly a bug. " +
+                "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection.")
+            return 0
+        }
         
         // 🆕 v1.8.0 (IMPL_022): Statistik-Log für Debugging
         Logger.d(TAG, "🔍 detectServerDeletions: " +
@@ -1140,6 +1161,7 @@ class WebDavSyncService(private val context: Context) {
             "localSynced=${syncedNotes.size}, " +
             "localTotal=${localNotes.size}")
         
+        var deletedCount = 0
         syncedNotes.forEach { note ->
             // Nur SYNCED-Notizen prüfen:
             // - LOCAL_ONLY: War nie auf Server → irrelevant
