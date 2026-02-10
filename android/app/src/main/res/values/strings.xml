@@ -88,6 +88,25 @@
     <string name="sync_phase_checking">Checking server…</string>
     <string name="sync_phase_uploading">Uploading…</string>
     <string name="sync_phase_downloading">Downloading…</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
+    <string name="sort_notes">Sort notes</string>
+    <string name="sort_ascending">Ascending</string>
+    <string name="sort_descending">Descending</string>
+    <string name="sort_by_updated">Last modified</string>
+    <string name="sort_by_created">Date created</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_type">Type</string>
+    <string name="close">Close</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->
+    <string name="sort_checklist">Sort checklist</string>
+    <string name="sort_checklist_manual">Manual</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_unchecked_first">Unchecked first</string>
+    <string name="sort_checklist_checked_first">Checked first</string>
+    <string name="apply">Apply</string>
     <string name="sync_phase_importing_markdown">Importing Markdown…</string>
     <string name="sync_phase_saving">Saving…</string>
     <string name="sync_phase_completed">Sync complete</string>

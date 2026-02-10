@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.SortDirection
+import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncProgress
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -101,6 +104,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _displayMode.value = newValue
         Logger.d(TAG, "🔄 refreshDisplayMode: displayMode=${_displayMode.value} → $newValue")
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🔀 v1.8.0: Sort State
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    private val _sortOption = MutableStateFlow(
+        SortOption.fromPrefsValue(
+            prefs.getString(Constants.KEY_SORT_OPTION, Constants.DEFAULT_SORT_OPTION) ?: Constants.DEFAULT_SORT_OPTION
+        )
+    )
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
+    
+    private val _sortDirection = MutableStateFlow(
+        SortDirection.fromPrefsValue(
+            prefs.getString(Constants.KEY_SORT_DIRECTION, Constants.DEFAULT_SORT_DIRECTION) ?: Constants.DEFAULT_SORT_DIRECTION
+        )
+    )
+    val sortDirection: StateFlow<SortDirection> = _sortDirection.asStateFlow()
+    
+    /**
+     * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
+     * Reagiert automatisch auf Änderungen in allen drei Flows.
+     */
+    val sortedNotes: StateFlow<List<Note>> = combine(
+        _notes,
+        _sortOption,
+        _sortDirection
+    ) { notes, option, direction ->
+        sortNotes(notes, option, direction)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
     
     // ═══════════════════════════════════════════════════════════════════════
     // Sync State
@@ -686,6 +723,58 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         return true
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🔀 v1.8.0: Sortierung
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * 🔀 v1.8.0: Sortiert Notizen nach gewählter Option und Richtung.
+     */
+    private fun sortNotes(
+        notes: List<Note>,
+        option: SortOption,
+        direction: SortDirection
+    ): List<Note> {
+        val comparator: Comparator<Note> = when (option) {
+            SortOption.UPDATED_AT -> compareBy { it.updatedAt }
+            SortOption.CREATED_AT -> compareBy { it.createdAt }
+            SortOption.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+            SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }
+                .thenByDescending { it.updatedAt }  // Sekundär: Datum innerhalb gleicher Typen
+        }
+        
+        return when (direction) {
+            SortDirection.ASCENDING -> notes.sortedWith(comparator)
+            SortDirection.DESCENDING -> notes.sortedWith(comparator.reversed())
+        }
+    }
+    
+    /**
+     * 🔀 v1.8.0: Setzt die Sortieroption und speichert in SharedPreferences.
+     */
+    fun setSortOption(option: SortOption) {
+        _sortOption.value = option
+        prefs.edit().putString(Constants.KEY_SORT_OPTION, option.prefsValue).apply()
+        Logger.d(TAG, "🔀 Sort option changed to: ${option.prefsValue}")
+    }
+    
+    /**
+     * 🔀 v1.8.0: Setzt die Sortierrichtung und speichert in SharedPreferences.
+     */
+    fun setSortDirection(direction: SortDirection) {
+        _sortDirection.value = direction
+        prefs.edit().putString(Constants.KEY_SORT_DIRECTION, direction.prefsValue).apply()
+        Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue}")
+    }
+    
+    /**
+     * 🔀 v1.8.0: Toggelt die Sortierrichtung.
+     */
+    fun toggleSortDirection() {
+        val newDirection = _sortDirection.value.toggle()
+        setSortDirection(newDirection)
     }
     
     // ═══════════════════════════════════════════════════════════════════════
