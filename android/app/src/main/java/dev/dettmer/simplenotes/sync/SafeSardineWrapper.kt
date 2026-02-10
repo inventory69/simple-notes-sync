@@ -5,8 +5,10 @@ import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.utils.Logger
 import okhttp3.Credentials
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.Closeable
 import java.io.InputStream
 
@@ -107,6 +109,73 @@ class SafeSardineWrapper private constructor(
     override fun list(url: String, depth: Int): List<DavResource> {
         Logger.d(TAG, "list($url, depth=$depth)")
         return delegate.list(url, depth)
+    }
+
+    /**
+     * ✅ Sichere put()-Implementation mit Response Cleanup
+     *
+     * Im Gegensatz zu OkHttpSardine.put() wird hier der Response-Body garantiert geschlossen.
+     * Verhindert "connection leaked" Warnungen.
+     */
+    override fun put(url: String, data: ByteArray, contentType: String?) {
+        val mediaType = contentType?.toMediaTypeOrNull()
+        val body = data.toRequestBody(mediaType)
+        
+        val request = Request.Builder()
+            .url(url)
+            .put(body)
+            .header("Authorization", authHeader)
+            .build()
+
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw java.io.IOException("PUT failed: ${response.code} ${response.message}")
+            }
+            Logger.d(TAG, "put($url) → ${response.code}")
+        }
+    }
+
+    /**
+     * ✅ Sichere delete()-Implementation mit Response Cleanup
+     *
+     * Im Gegensatz zu OkHttpSardine.delete() wird hier der Response-Body garantiert geschlossen.
+     * Verhindert "connection leaked" Warnungen.
+     */
+    override fun delete(url: String) {
+        val request = Request.Builder()
+            .url(url)
+            .delete()
+            .header("Authorization", authHeader)
+            .build()
+
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw java.io.IOException("DELETE failed: ${response.code} ${response.message}")
+            }
+            Logger.d(TAG, "delete($url) → ${response.code}")
+        }
+    }
+
+    /**
+     * ✅ Sichere createDirectory()-Implementation mit Response Cleanup
+     *
+     * Im Gegensatz zu OkHttpSardine.createDirectory() wird hier der Response-Body garantiert geschlossen.
+     * Verhindert "connection leaked" Warnungen.
+     * 405 (Method Not Allowed) wird toleriert da dies bedeutet, dass der Ordner bereits existiert.
+     */
+    override fun createDirectory(url: String) {
+        val request = Request.Builder()
+            .url(url)
+            .method("MKCOL", null)
+            .header("Authorization", authHeader)
+            .build()
+
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful && response.code != 405) { // 405 = already exists
+                throw java.io.IOException("MKCOL failed: ${response.code} ${response.message}")
+            }
+            Logger.d(TAG, "createDirectory($url) → ${response.code}")
+        }
     }
     
     /**

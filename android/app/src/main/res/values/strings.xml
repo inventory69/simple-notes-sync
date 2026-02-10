@@ -530,4 +530,20 @@
     <string name="sync_parallel_downloads_desc_7">Fast (7x faster)</string>
     <string name="sync_parallel_downloads_desc_10">Maximum (10x faster, may stress server)</string>
 
+    <!-- ============================= -->
+    <!-- WIDGETS v1.8.0                -->
+    <!-- ============================= -->
+    <string name="widget_name">Simple Notes</string>
+    <string name="widget_description">Display a note or checklist on your home screen</string>
+    <string name="widget_config_title">Choose a Note</string>
+    <string name="widget_config_hint">Tap a note to add it as a widget</string>
+    <string name="widget_config_save">Save</string>
+    <string name="widget_lock_label">Lock widget</string>
+    <string name="widget_lock_description">Prevent accidental edits</string>
+    <string name="widget_note_not_found">Note not found</string>
+    <string name="widget_opacity_label">Background opacity</string>
+    <string name="widget_opacity_description">Adjust the transparency of the widget background</string>
+    <string name="widget_preview_title">Shopping List</string>
+    <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
+
 </resources>

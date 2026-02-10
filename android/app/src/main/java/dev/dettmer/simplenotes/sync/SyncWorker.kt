@@ -226,7 +226,21 @@ class SyncWorker(
                     Logger.d(TAG, "    Broadcasting sync completed...")
                 }
                 broadcastSyncCompleted(true, result.syncedCount)
-                
+
+                // 🆕 v1.8.0: Alle Widgets aktualisieren nach Sync
+                try {
+                    if (BuildConfig.DEBUG) {
+                        Logger.d(TAG, "    Updating widgets...")
+                    }
+                    val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(applicationContext)
+                    val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
+                    glanceIds.forEach { id ->
+                        dev.dettmer.simplenotes.widget.NoteWidget().update(applicationContext, id)
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "Failed to update widgets: ${e.message}")
+                }
+
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS")
                     Logger.d(TAG, "═══════════════════════════════════════")

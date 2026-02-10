@@ -79,6 +79,18 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             }
         }
     }
+
+    /**
+     * 🆕 v1.8.0 (IMPL_025): Reload Checklist-State falls Widget Änderungen gemacht hat.
+     *
+     * Wenn die Activity aus dem Hintergrund zurückkehrt (z.B. nach Widget-Toggle),
+     * wird der aktuelle Note-Stand von Disk geladen und der ViewModel-State
+     * für Checklist-Items aktualisiert.
+     */
+    override fun onResume() {
+        super.onResume()
+        viewModel.reloadFromStorage()
+    }
 }
 
 /**

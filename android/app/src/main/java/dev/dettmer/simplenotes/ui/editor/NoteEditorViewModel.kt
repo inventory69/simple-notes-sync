@@ -325,10 +325,21 @@ class NoteEditorViewModel(
             }
             
             _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_SAVED))
-            
+
             // 🌟 v1.6.0: Trigger onSave Sync
             triggerOnSaveSync()
-            
+
+            // 🆕 v1.8.0: Betroffene Widgets aktualisieren
+            try {
+                val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
+                val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
+                glanceIds.forEach { id ->
+                    dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to update widgets: ${e.message}")
+            }
+
             _events.emit(NoteEditorEvent.NavigateBack)
         }
     }
@@ -376,6 +387,41 @@ class NoteEditorViewModel(
     }
     
     fun canDelete(): Boolean = existingNote != null
+
+    /**
+     * 🆕 v1.8.0 (IMPL_025): Reload Note aus Storage nach Resume
+     *
+     * Wird aufgerufen wenn die Activity aus dem Hintergrund zurückkehrt.
+     * Liest den aktuellen Note-Stand von Disk und aktualisiert den ViewModel-State.
+     *
+     * Wird nur für existierende Checklist-Notes benötigt (neue Notes haben keinen
+     * externen Schreiber). Relevant für Widget-Checklist-Toggles.
+     *
+     * Nur checklistItems werden aktualisiert — nicht title oder content,
+     * damit ungespeicherte Text-Änderungen im Editor nicht verloren gehen.
+     */
+    fun reloadFromStorage() {
+        val noteId = savedStateHandle.get<String>(ARG_NOTE_ID) ?: return
+
+        val freshNote = storage.loadNote(noteId) ?: return
+
+        // Nur Checklist-Items aktualisieren
+        if (freshNote.noteType == NoteType.CHECKLIST) {
+            val freshItems = freshNote.checklistItems?.sortedBy { it.order }?.map {
+                ChecklistItemState(
+                    id = it.id,
+                    text = it.text,
+                    isChecked = it.isChecked,
+                    order = it.order
+                )
+            } ?: return
+
+            _checklistItems.value = sortChecklistItems(freshItems)
+            // existingNote aktualisieren damit beim Speichern der richtige
+            // Basis-State verwendet wird
+            existingNote = freshNote
+        }
+    }
     
     // ═══════════════════════════════════════════════════════════════════════════
     // 🌟 v1.6.0: Sync Trigger - onSave

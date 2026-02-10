@@ -511,4 +511,20 @@
         <item quantity="one">%d erledigt</item>
         <item quantity="other">%d erledigt</item>
     </plurals>
+
+    <!-- ============================= -->
+    <!-- WIDGETS v1.8.0                -->
+    <!-- ============================= -->
+    <string name="widget_name">Simple Notes</string>
+    <string name="widget_description">Zeige eine Notiz oder Checkliste auf dem Startbildschirm</string>
+    <string name="widget_config_title">Notiz auswählen</string>
+    <string name="widget_config_hint">Tippe auf eine Notiz, um sie als Widget hinzuzufügen</string>
+    <string name="widget_config_save">Speichern</string>
+    <string name="widget_lock_label">Widget sperren</string>
+    <string name="widget_lock_description">Versehentliches Bearbeiten verhindern</string>
+    <string name="widget_note_not_found">Notiz nicht gefunden</string>
+    <string name="widget_opacity_label">Hintergrund-Transparenz</string>
+    <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
+    <string name="widget_preview_title">Einkaufsliste</string>
+    <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
 </resources>
