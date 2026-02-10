@@ -59,8 +59,25 @@
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
 
-# Keep your app's data classes
--keep class dev.dettmer.simplenotes.** { *; }
+# ═══════════════════════════════════════════════════════════════════════
+# App-specific rules: Only keep what Gson/reflection needs
+# ═══════════════════════════════════════════════════════════════════════
+
+# Gson data models (serialized/deserialized via reflection)
+-keep class dev.dettmer.simplenotes.models.Note { *; }
+-keep class dev.dettmer.simplenotes.models.Note$NoteRaw { *; }
+-keep class dev.dettmer.simplenotes.models.ChecklistItem { *; }
+-keep class dev.dettmer.simplenotes.models.DeletionRecord { *; }
+-keep class dev.dettmer.simplenotes.models.DeletionTracker { *; }
+-keep class dev.dettmer.simplenotes.backup.BackupData { *; }
+-keep class dev.dettmer.simplenotes.backup.BackupResult { *; }
+
+# Keep enum values (used in serialization and widget state)
+-keepclassmembers enum dev.dettmer.simplenotes.** {
+    <fields>;
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
 # v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
 # This class only exists on API 35+ but Compose handles the fallback gracefully
