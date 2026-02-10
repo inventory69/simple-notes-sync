@@ -170,6 +170,9 @@ class ComposeMainActivity : ComponentActivity() {
                     onOpenSettings = { openSettings() },
                     onCreateNote = { noteType -> createNote(noteType) }
                 )
+                
+                // v1.8.0: Post-Update Changelog (shows once after update)
+                UpdateChangelogSheet()
             }
         }
     }

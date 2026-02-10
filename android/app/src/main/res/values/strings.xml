@@ -403,6 +403,10 @@
     <string name="debug_delete_logs">🗑️ Delete Logs</string>
     <string name="debug_delete_logs_title">Delete logs?</string>
     <string name="debug_delete_logs_message">All saved sync logs will be permanently deleted.</string>
+    <string name="debug_test_section">Test Mode</string>
+    <string name="debug_reset_changelog">Reset Changelog Dialog</string>
+    <string name="debug_reset_changelog_desc">Show changelog on next app start</string>
+    <string name="debug_changelog_reset">Changelog will show on next start</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
     
@@ -442,6 +446,10 @@
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Full version history</string>
+    
+    <!-- v1.8.0: Post-Update Changelog Dialog -->
+    <string name="update_changelog_title">What\'s New</string>
+    <string name="update_changelog_dismiss">Got it!</string>
     
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Creating backup…</string>
