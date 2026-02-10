@@ -86,6 +86,25 @@
     <string name="sync_phase_completed">Sync abgeschlossen</string>
     <string name="sync_phase_error">Sync fehlgeschlagen</string>
     
+    <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Notizliste -->
+    <string name="sort_notes">Notizen sortieren</string>
+    <string name="sort_ascending">Aufsteigend</string>
+    <string name="sort_descending">Absteigend</string>
+    <string name="sort_by_updated">Zuletzt bearbeitet</string>
+    <string name="sort_by_created">Erstelldatum</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_type">Typ</string>
+    <string name="close">Schließen</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Checkliste -->
+    <string name="sort_checklist">Checkliste sortieren</string>
+    <string name="sort_checklist_manual">Manuell</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_unchecked_first">Unerledigte zuerst</string>
+    <string name="sort_checklist_checked_first">Erledigte zuerst</string>
+    <string name="apply">Anwenden</string>
+    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->

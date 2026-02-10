@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
+import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -64,6 +65,10 @@ class NoteEditorViewModel(
         prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
+    
+    // 🔀 v1.8.0 (IMPL_020): Letzte Checklist-Sortierung (Session-Scope)
+    private val _lastChecklistSortOption = MutableStateFlow(ChecklistSortOption.MANUAL)
+    val lastChecklistSortOption: StateFlow<ChecklistSortOption> = _lastChecklistSortOption.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // Events
@@ -182,8 +187,14 @@ class NoteEditorViewModel(
             val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
             }
-            // 🆕 v1.8.0 (IMPL_017): Nach Toggle sortieren
-            sortChecklistItems(updatedItems)
+            // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Auto-Sort nur bei MANUAL und UNCHECKED_FIRST
+            val currentSort = _lastChecklistSortOption.value
+            if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
+                sortChecklistItems(updatedItems)
+            } else {
+                // Bei anderen Sortierungen (alphabetisch, checked first) nicht auto-sortieren
+                updatedItems.mapIndexed { index, item -> item.copy(order = index) }
+            }
         }
     }
     
@@ -238,6 +249,37 @@ class NoteEditorViewModel(
             mutableList.add(toIndex, item)
             // Update order values
             mutableList.mapIndexed { index, i -> i.copy(order = index) }
+        }
+    }
+    
+    /**
+     * 🔀 v1.8.0 (IMPL_020): Sortiert Checklist-Items nach gewählter Option.
+     * Einmalige Aktion (nicht persistiert) — User kann danach per Drag & Drop feinjustieren.
+     */
+    fun sortChecklistItems(option: ChecklistSortOption) {
+        // Merke die Auswahl für diesen Editor-Session
+        _lastChecklistSortOption.value = option
+        
+        _checklistItems.update { items ->
+            val sorted = when (option) {
+                // Bei MANUAL: Sortiere nach checked/unchecked, damit Separator korrekt platziert wird
+                ChecklistSortOption.MANUAL -> items.sortedBy { it.isChecked }
+                
+                ChecklistSortOption.ALPHABETICAL_ASC -> 
+                    items.sortedBy { it.text.lowercase() }
+                
+                ChecklistSortOption.ALPHABETICAL_DESC -> 
+                    items.sortedByDescending { it.text.lowercase() }
+                
+                ChecklistSortOption.UNCHECKED_FIRST -> 
+                    items.sortedBy { it.isChecked }
+                
+                ChecklistSortOption.CHECKED_FIRST -> 
+                    items.sortedByDescending { it.isChecked }
+            }
+            
+            // Order-Werte neu zuweisen
+            sorted.mapIndexed { index, item -> item.copy(order = index) }
         }
     }
     
