@@ -10,6 +10,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.8.0] - 2026-02-10
 
+### 🚨 CRITICAL BUGFIX (Tag recreated)
+
+**R8/ProGuard Obfuscation Fix - Prevents Data Loss**
+- 🔧 **CRITICAL:** Fixed incorrect ProGuard class path for `Note$Companion$NoteRaw`
+  - Original v1.8.0 had specific `-keep` rules that didn't match
+  - R8 obfuscated all NoteRaw fields (id→a, title→b, ...)
+  - Gson couldn't parse JSON anymore → **ALL notes appeared lost**
+  - Reverted to safe broad rule: `-keep class dev.dettmer.simplenotes.** { *; }`
+- 🛡️ Added safety-guards in `detectServerDeletions()`
+  - Prevents mass deletion when `serverNoteIds` is empty (network errors)
+  - Aborts if ALL local notes would be marked as deleted
+- ✅ Notes were never actually lost (JSON files intact on disk + server)
+- ✅ Downgrade to v1.7.2 restored all notes
+
+**⚠️ If you installed original v1.8.0:** Your notes are safe! Just update.
+
 ### 🎉 Major: Widgets, Sorting & Advanced Sync
 
 Complete widget system with interactive checklists, note sorting, and major sync improvements!
