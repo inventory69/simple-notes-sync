@@ -162,6 +162,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.8.0: Homescreen Widgets
+    // ═══════════════════════════════════════════════════════════════════════
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+
     // Testing (bleiben so)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

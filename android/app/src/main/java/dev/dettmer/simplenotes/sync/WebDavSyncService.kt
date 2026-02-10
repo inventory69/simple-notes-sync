@@ -1050,56 +1050,61 @@ class WebDavSyncService(private val context: Context) {
         
         val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
         
-        val mdUrl = getMarkdownUrl(serverUrl)
-        
-        // Ordner sollte bereits existieren (durch #1.2.1-00), aber Sicherheitscheck
-        ensureMarkdownDirectoryExists(sardine, serverUrl)
-        
-        // Hole ALLE lokalen Notizen (inklusive SYNCED)
-        val allNotes = storage.loadAllNotes()
-        val totalCount = allNotes.size
-        var exportedCount = 0
-        
-        // Track used filenames to handle duplicates
-        val usedFilenames = mutableSetOf<String>()
-        
-        Logger.d(TAG, "📝 Found $totalCount notes to export")
-        
-        allNotes.forEachIndexed { index, note ->
-            try {
-                // Progress-Callback
-                onProgress(index + 1, totalCount)
-                
-                // Eindeutiger Filename (mit Duplikat-Handling)
-                val filename = getUniqueMarkdownFilename(note, usedFilenames) + ".md"
-                val noteUrl = "$mdUrl/$filename"
-                
-                // Konvertiere zu Markdown
-                val mdContent = note.toMarkdown().toByteArray()
-                
-                // Upload (überschreibt falls vorhanden)
-                sardine.put(noteUrl, mdContent, "text/markdown")
-                
-                exportedCount++
-                Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
-                
-            } catch (e: Exception) {
-                Logger.e(TAG, "❌ Failed to export ${note.title}: ${e.message}")
-                // Continue mit nächster Note (keine Abbruch bei Einzelfehlern)
+        try {
+            val mdUrl = getMarkdownUrl(serverUrl)
+            
+            // Ordner sollte bereits existieren (durch #1.2.1-00), aber Sicherheitscheck
+            ensureMarkdownDirectoryExists(sardine, serverUrl)
+            
+            // Hole ALLE lokalen Notizen (inklusive SYNCED)
+            val allNotes = storage.loadAllNotes()
+            val totalCount = allNotes.size
+            var exportedCount = 0
+            
+            // Track used filenames to handle duplicates
+            val usedFilenames = mutableSetOf<String>()
+            
+            Logger.d(TAG, "📝 Found $totalCount notes to export")
+            
+            allNotes.forEachIndexed { index, note ->
+                try {
+                    // Progress-Callback
+                    onProgress(index + 1, totalCount)
+                    
+                    // Eindeutiger Filename (mit Duplikat-Handling)
+                    val filename = getUniqueMarkdownFilename(note, usedFilenames) + ".md"
+                    val noteUrl = "$mdUrl/$filename"
+                    
+                    // Konvertiere zu Markdown
+                    val mdContent = note.toMarkdown().toByteArray()
+                    
+                    // Upload (überschreibt falls vorhanden)
+                    sardine.put(noteUrl, mdContent, "text/markdown")
+                    
+                    exportedCount++
+                    Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
+                    
+                } catch (e: Exception) {
+                    Logger.e(TAG, "❌ Failed to export ${note.title}: ${e.message}")
+                    // Continue mit nächster Note (keine Abbruch bei Einzelfehlern)
+                }
             }
+            
+            Logger.d(TAG, "✅ Initial export completed: $exportedCount/$totalCount notes")
+            
+            // ⚡ v1.3.1: Set lastSyncTimestamp to enable timestamp-based skip on next sync
+            // This prevents re-downloading all MD files on the first manual sync after initial export
+            if (exportedCount > 0) {
+                val timestamp = System.currentTimeMillis()
+                prefs.edit().putLong("last_sync_timestamp", timestamp).apply()
+                Logger.d(TAG, "💾 Set lastSyncTimestamp after initial export (enables fast next sync)")
+            }
+            
+            return@withContext exportedCount
+        } finally {
+            // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
+            sardine.close()
         }
-        
-        Logger.d(TAG, "✅ Initial export completed: $exportedCount/$totalCount notes")
-        
-        // ⚡ v1.3.1: Set lastSyncTimestamp to enable timestamp-based skip on next sync
-        // This prevents re-downloading all MD files on the first manual sync after initial export
-        if (exportedCount > 0) {
-            val timestamp = System.currentTimeMillis()
-            prefs.edit().putLong("last_sync_timestamp", timestamp).apply()
-            Logger.d(TAG, "💾 Set lastSyncTimestamp after initial export (enables fast next sync)")
-        }
-        
-        return@withContext exportedCount
     }
     
     private data class DownloadResult(
@@ -1717,58 +1722,63 @@ class WebDavSyncService(private val context: Context) {
             val okHttpClient = OkHttpClient.Builder().build()
             val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
             
-            val mdUrl = getMarkdownUrl(serverUrl)
-            
-            // Check if notes-md/ exists
-            if (!sardine.exists(mdUrl)) {
-                Logger.d(TAG, "⚠️ notes-md/ directory not found - skipping MD import")
-                return@withContext 0
-            }
-            
-            val localNotes = storage.loadAllNotes()
-            val mdResources = sardine.list(mdUrl).filter { it.name.endsWith(".md") }
-            var importedCount = 0
-            
-            Logger.d(TAG, "📂 Found ${mdResources.size} markdown files")
-            
-            for (resource in mdResources) {
-                try {
-                    // Download MD-File
-                    val mdContent = sardine.get(resource.href.toString())
-                        .bufferedReader().use { it.readText() }
-                    
-                    // Parse zu Note
-                    val mdNote = Note.fromMarkdown(mdContent) ?: continue
-                    
-                    val localNote = localNotes.find { it.id == mdNote.id }
-                    
-                    // Konfliktauflösung: Last-Write-Wins
-                    when {
-                        localNote == null -> {
-                            // Neue Notiz vom Desktop
-                            storage.saveNote(mdNote)
-                            importedCount++
-                            Logger.d(TAG, "   ✅ Imported new: ${mdNote.title}")
-                        }
-                        mdNote.updatedAt > localNote.updatedAt -> {
-                            // Desktop-Version ist neuer (Last-Write-Wins)
-                            storage.saveNote(mdNote)
-                            importedCount++
-                            Logger.d(TAG, "   ✅ Updated from MD: ${mdNote.title}")
-                        }
-                        // Sonst: Lokale Version behalten
-                        else -> {
-                            Logger.d(TAG, "   ⏭️ Local newer, skipping: ${mdNote.title}")
-                        }
-                    }
-                } catch (e: Exception) {
-                    Logger.e(TAG, "Failed to import ${resource.name}", e)
-                    // Continue with other files
+            try {
+                val mdUrl = getMarkdownUrl(serverUrl)
+                
+                // Check if notes-md/ exists
+                if (!sardine.exists(mdUrl)) {
+                    Logger.d(TAG, "⚠️ notes-md/ directory not found - skipping MD import")
+                    return@withContext 0
                 }
+                
+                val localNotes = storage.loadAllNotes()
+                val mdResources = sardine.list(mdUrl).filter { it.name.endsWith(".md") }
+                var importedCount = 0
+                
+                Logger.d(TAG, "📂 Found ${mdResources.size} markdown files")
+                
+                for (resource in mdResources) {
+                    try {
+                        // Download MD-File
+                        val mdContent = sardine.get(resource.href.toString())
+                            .bufferedReader().use { it.readText() }
+                        
+                        // Parse zu Note
+                        val mdNote = Note.fromMarkdown(mdContent) ?: continue
+                        
+                        val localNote = localNotes.find { it.id == mdNote.id }
+                        
+                        // Konfliktauflösung: Last-Write-Wins
+                        when {
+                            localNote == null -> {
+                                // Neue Notiz vom Desktop
+                                storage.saveNote(mdNote)
+                                importedCount++
+                                Logger.d(TAG, "   ✅ Imported new: ${mdNote.title}")
+                            }
+                            mdNote.updatedAt > localNote.updatedAt -> {
+                                // Desktop-Version ist neuer (Last-Write-Wins)
+                                storage.saveNote(mdNote)
+                                importedCount++
+                                Logger.d(TAG, "   ✅ Updated from MD: ${mdNote.title}")
+                            }
+                            // Sonst: Lokale Version behalten
+                            else -> {
+                                Logger.d(TAG, "   ⏭️ Local newer, skipping: ${mdNote.title}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Logger.e(TAG, "Failed to import ${resource.name}", e)
+                        // Continue with other files
+                    }
+                }
+                
+                Logger.d(TAG, "✅ Markdown sync completed: $importedCount imported")
+                importedCount
+            } finally {
+                // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
+                sardine.close()
             }
-            
-            Logger.d(TAG, "✅ Markdown sync completed: $importedCount imported")
-            importedCount
             
         } catch (e: Exception) {
             Logger.e(TAG, "Markdown sync failed", e)
