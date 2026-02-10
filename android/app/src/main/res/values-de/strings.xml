@@ -409,7 +409,7 @@
     <string name="language_system_default">Systemstandard</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
-    <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die App wird neu gestartet, um die Änderung anzuwenden.</string>
+    <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
     <string name="language_changed_restart">Sprache geändert. Neustart…</string>
     
     <!-- ============================= -->

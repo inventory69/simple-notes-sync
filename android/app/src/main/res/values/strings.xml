@@ -409,7 +409,7 @@
     <string name="language_system_default">System Default</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
-    <string name="language_info">ℹ️ Choose your preferred language. The app will restart to apply the change.</string>
+    <string name="language_info">ℹ️ Choose your preferred language. The view will briefly refresh to apply the change.</string>
     <string name="language_changed_restart">Language changed. Restarting…</string>
     
     <!-- ============================= -->

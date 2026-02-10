@@ -189,4 +189,16 @@ class ComposeSettingsActivity : AppCompatActivity() {
             Logger.e(TAG, "❌ Failed to restart NetworkMonitor: ${e.message}")
         }
     }
+    
+    /**
+     * Handle configuration changes (e.g., locale) without recreating activity
+     * v1.8.0: Prevents flickering during language changes by avoiding full recreate
+     * Compose automatically recomposes when configuration changes
+     */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Logger.d(TAG, "📱 Configuration changed (likely locale switch) - Compose will recompose")
+        // Compose handles UI updates automatically via recomposition
+        // No manual action needed - stringResource() etc. will pick up new locale
+    }
 }
