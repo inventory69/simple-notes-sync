@@ -1,0 +1,12 @@
+🎉 v1.8.0 — WIDGETS, SORTIERUNG & SYNC-VERBESSERUNGEN
+
+• Neu: Homescreen-Widgets mit interaktiven Checkboxen
+• Neu: Notiz-Sortierung (Datum, Titel, Typ)
+• Neu: Checklisten Auto-Sort (Offen zuerst/Erledigt zuletzt)
+• Neu: Server-Löschungs-Erkennung für Multi-Device-Sync
+• Neu: Sync-Status-Legende (Hilfe erklärt alle Icons)
+• Verbessert: Live Sync-Fortschritt mit Phasen-Anzeige
+• Verbessert: Parallele Downloads für schnelleren Sync
+• Verbessert: Checklisten-Überlauf-Verlauf bei langem Text
+• Behoben: Drag & Drop Flackern in Checklisten
+• Behoben: Widget-Textnotizen Scrolling
