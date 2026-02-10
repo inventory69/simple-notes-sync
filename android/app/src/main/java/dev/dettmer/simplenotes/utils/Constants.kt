@@ -64,7 +64,7 @@ object Constants {
     
     // 🎨 v1.7.0: Staggered Grid Layout
     const val KEY_DISPLAY_MODE = "display_mode" // "list" or "grid"
-    const val DEFAULT_DISPLAY_MODE = "list"
+    const val DEFAULT_DISPLAY_MODE = "grid"  // v1.8.0: Grid als Standard-Ansicht
     const val GRID_COLUMNS = 2
     const val GRID_SPACING_DP = 8
 

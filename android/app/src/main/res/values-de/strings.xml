@@ -419,7 +419,7 @@
     <string name="display_mode_title">Notizen-Ansicht</string>
     <string name="display_mode_list">📋 Listen-Ansicht</string>
     <string name="display_mode_grid">🎨 Raster-Ansicht</string>
-    <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen im Pinterest-Stil. Kurze Notizen erscheinen nebeneinander, lange Notizen nehmen die volle Breite ein.</string>
+    <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->

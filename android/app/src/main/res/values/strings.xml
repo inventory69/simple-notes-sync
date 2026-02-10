@@ -419,7 +419,7 @@
     <string name="display_mode_title">Note Display Mode</string>
     <string name="display_mode_list">📋 List View</string>
     <string name="display_mode_grid">🎨 Grid View</string>
-    <string name="display_mode_info">Grid view shows notes in a staggered Pinterest-style layout. Small notes appear side-by-side, large notes take full width.</string>
+    <string name="display_mode_info">Grid view shows notes in a two-column layout. All notes appear side-by-side in a clean, compact overview.</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
