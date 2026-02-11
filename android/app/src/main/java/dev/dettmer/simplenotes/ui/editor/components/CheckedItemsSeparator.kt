@@ -15,6 +15,7 @@ import dev.dettmer.simplenotes.R
 
 /**
  * 🆕 v1.8.0 (IMPL_017): Visueller Separator zwischen unchecked und checked Items
+ * 🆕 v1.8.1 (IMPL_14): Drag-Awareness — Primary-Farbe während Drag als visueller Hinweis
  *
  * Zeigt eine dezente Linie mit Anzahl der erledigten Items:
  * ── 3 completed ──
@@ -22,7 +23,8 @@ import dev.dettmer.simplenotes.R
 @Composable
 fun CheckedItemsSeparator(
     checkedCount: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDragActive: Boolean = false  // 🆕 v1.8.1 IMPL_14
 ) {
     Row(
         modifier = modifier
@@ -32,7 +34,10 @@ fun CheckedItemsSeparator(
     ) {
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.outlineVariant
+            color = if (isDragActive)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            else
+                MaterialTheme.colorScheme.outlineVariant
         )
 
         Text(
@@ -42,13 +47,19 @@ fun CheckedItemsSeparator(
                 checkedCount
             ),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline,
+            color = if (isDragActive)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.outline,
             modifier = Modifier.padding(horizontal = 12.dp)
         )
 
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.outlineVariant
+            color = if (isDragActive)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            else
+                MaterialTheme.colorScheme.outlineVariant
         )
     }
 }

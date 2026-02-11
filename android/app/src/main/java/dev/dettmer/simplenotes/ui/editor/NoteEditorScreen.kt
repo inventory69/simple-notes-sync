@@ -1,11 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,6 +14,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -327,6 +323,63 @@ private fun TextNoteContent(
     )
 }
 
+/**
+ * 🆕 v1.8.1 IMPL_14: Extrahiertes Composable für ein einzelnes draggbares Checklist-Item.
+ * Entkoppelt von der Separator-Logik — wiederverwendbar für unchecked und checked Items.
+ */
+@Composable
+private fun LazyItemScope.DraggableChecklistItem(
+    item: ChecklistItemState,
+    visualIndex: Int,
+    dragDropState: DragDropListState,
+    focusNewItemId: String?,
+    onTextChange: (String, String) -> Unit,
+    onCheckedChange: (String, Boolean) -> Unit,
+    onDelete: (String) -> Unit,
+    onAddNewItemAfter: (String) -> Unit,
+    onFocusHandled: () -> Unit,
+) {
+    val isDragging = dragDropState.draggingItemIndex == visualIndex
+    val elevation by animateDpAsState(
+        targetValue = if (isDragging) 8.dp else 0.dp,
+        label = "elevation"
+    )
+
+    val shouldFocus = item.id == focusNewItemId
+
+    LaunchedEffect(shouldFocus) {
+        if (shouldFocus) {
+            onFocusHandled()
+        }
+    }
+
+    ChecklistItemRow(
+        item = item,
+        onTextChange = { onTextChange(item.id, it) },
+        onCheckedChange = { onCheckedChange(item.id, it) },
+        onDelete = { onDelete(item.id) },
+        onAddNewItem = { onAddNewItemAfter(item.id) },
+        requestFocus = shouldFocus,
+        isDragging = isDragging,
+        isAnyItemDragging = dragDropState.draggingItemIndex != null,
+        dragModifier = Modifier.dragContainer(dragDropState, visualIndex),
+        modifier = Modifier
+            .then(if (!isDragging) Modifier.animateItem() else Modifier)
+            .offset {
+                IntOffset(
+                    0,
+                    if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
+                )
+            }
+            .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
+            .shadow(elevation, shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp))
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
+            )
+    )
+}
+
 @Suppress("LongParameterList") // Compose functions commonly have many callback parameters
 @Composable
 private fun ChecklistEditor(
@@ -359,75 +412,61 @@ private fun ChecklistEditor(
     val showSeparator = shouldShowSeparator && uncheckedCount > 0 && checkedCount > 0
 
     Column(modifier = modifier) {
+        // 🆕 v1.8.1 IMPL_14: Separator-Position für DragDropState aktualisieren
+        val separatorVisualIndex = if (showSeparator) uncheckedCount else -1
+        LaunchedEffect(separatorVisualIndex) {
+            dragDropState.separatorVisualIndex = separatorVisualIndex
+        }
+
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
+            // 🆕 v1.8.1 IMPL_14: Unchecked Items (Visual Index 0..uncheckedCount-1)
             itemsIndexed(
-                items = items,
+                items = if (showSeparator) items.subList(0, uncheckedCount) else items,
                 key = { _, item -> item.id }
             ) { index, item ->
-                // 🆕 v1.8.0 (IMPL_017): Separator vor dem ersten Checked-Item
-                // 🆕 v1.8.1: Separator während Drag ausblenden — verhindert Flächenveränderung
-                // am Separator-Item die Swap-Erkennung destabilisiert
-                if (showSeparator && index == uncheckedCount && dragDropState.draggingItemIndex == null) {
-                    CheckedItemsSeparator(checkedCount = checkedCount)
-                }
-
-                val isDragging = dragDropState.draggingItemIndex == index
-                val elevation by animateDpAsState(
-                    targetValue = if (isDragging) 8.dp else 0.dp,
-                    label = "elevation"
+                DraggableChecklistItem(
+                    item = item,
+                    visualIndex = index,
+                    dragDropState = dragDropState,
+                    focusNewItemId = focusNewItemId,
+                    onTextChange = onTextChange,
+                    onCheckedChange = onCheckedChange,
+                    onDelete = onDelete,
+                    onAddNewItemAfter = onAddNewItemAfter,
+                    onFocusHandled = onFocusHandled
                 )
+            }
 
-                val shouldFocus = item.id == focusNewItemId
-
-                // v1.5.0: Clear focus request after handling
-                LaunchedEffect(shouldFocus) {
-                    if (shouldFocus) {
-                        onFocusHandled()
-                    }
+            // 🆕 v1.8.1 IMPL_14: Separator als eigenes LazyColumn-Item
+            if (showSeparator) {
+                item(key = "separator") {
+                    CheckedItemsSeparator(
+                        checkedCount = checkedCount,
+                        isDragActive = dragDropState.draggingItemIndex != null
+                    )
                 }
 
-                // 🆕 v1.8.0 (IMPL_017): AnimatedVisibility für sanfte Übergänge
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + slideInVertically(),
-                    exit = fadeOut() + slideOutVertically()
-                ) {
-                    ChecklistItemRow(
+                // 🆕 v1.8.1 IMPL_14: Checked Items (Visual Index uncheckedCount+1..)
+                itemsIndexed(
+                    items = items.subList(uncheckedCount, items.size),
+                    key = { _, item -> item.id }
+                ) { index, item ->
+                    val visualIndex = uncheckedCount + 1 + index  // +1 für Separator
+                    DraggableChecklistItem(
                         item = item,
-                        onTextChange = { onTextChange(item.id, it) },
-                        onCheckedChange = { onCheckedChange(item.id, it) },
-                        onDelete = { onDelete(item.id) },
-                        onAddNewItem = { onAddNewItemAfter(item.id) },
-                        requestFocus = shouldFocus,
-                        // 🆕 v1.8.0: IMPL_023 - Drag state übergeben
-                        isDragging = isDragging,
-                        // 🆕 v1.8.0: IMPL_023 - Gradient während Drag ausblenden
-                        isAnyItemDragging = dragDropState.draggingItemIndex != null,
-                        // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
-                        dragModifier = Modifier.dragContainer(dragDropState, index),
-                        modifier = Modifier
-                            // 🆕 v1.8.1: animateItem NUR für nicht-gedraggte Items
-                            // Bei gedraggten Items kämpft animateItem (Layout-Animation)
-                            // gegen den manuellen offset (Finger-Position) → Flackern
-                            .then(if (!isDragging) Modifier.animateItem() else Modifier)
-                            .offset {
-                                IntOffset(
-                                    0,
-                                    if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
-                                )
-                            }
-                            // 🆕 v1.8.0: IMPL_023 - Gedraggtes Item liegt über anderen
-                            .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
-                            .shadow(elevation, shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp))
-                            .background(
-                                color = MaterialTheme.colorScheme.surface,
-                                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
-                            )
+                        visualIndex = visualIndex,
+                        dragDropState = dragDropState,
+                        focusNewItemId = focusNewItemId,
+                        onTextChange = onTextChange,
+                        onCheckedChange = onCheckedChange,
+                        onDelete = onDelete,
+                        onAddNewItemAfter = onAddNewItemAfter,
+                        onFocusHandled = onFocusHandled
                     )
                 }
             }

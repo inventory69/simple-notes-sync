@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
  * v1.5.0: NoteEditor Redesign
  * v1.8.0: IMPL_023 - Drag & Drop Fix (pointerInput key + Handle-only drag)
  * v1.8.0: IMPL_023b - Flicker-Fix (Straddle-Target-Center-Erkennung statt Mittelpunkt)
+ * v1.8.1: IMPL_14 - Separator als eigenes Item, Cross-Boundary-Drag mit Auto-Toggle
  */
 class DragDropListState(
     private val state: LazyListState,
@@ -41,6 +42,9 @@ class DragDropListState(
     private var draggingItemSize by mutableStateOf(0)
     private var overscrollJob by mutableStateOf<Job?>(null)
 
+    // 🆕 v1.8.1 IMPL_14: Visual-Index des Separators (-1 = kein Separator)
+    var separatorVisualIndex by mutableStateOf(-1)
+
     val draggingItemOffset: Float
         get() = draggingItemLayoutInfo?.let { item ->
             draggingItemInitialOffset + draggingItemDraggedDelta - item.offset
@@ -49,6 +53,23 @@ class DragDropListState(
     private val draggingItemLayoutInfo: LazyListItemInfo?
         get() = state.layoutInfo.visibleItemsInfo
             .firstOrNull { it.index == draggingItemIndex }
+
+    /**
+     * 🆕 v1.8.1 IMPL_14: Visual-Index → Data-Index Konvertierung.
+     * Wenn ein Separator existiert, sind alle Items nach dem Separator um 1 verschoben.
+     */
+    fun visualToDataIndex(visualIndex: Int): Int {
+        if (separatorVisualIndex < 0) return visualIndex
+        return if (visualIndex > separatorVisualIndex) visualIndex - 1 else visualIndex
+    }
+
+    /**
+     * 🆕 v1.8.1 IMPL_14: Data-Index → Visual-Index Konvertierung.
+     */
+    fun dataToVisualIndex(dataIndex: Int): Int {
+        if (separatorVisualIndex < 0) return dataIndex
+        return if (dataIndex >= separatorVisualIndex) dataIndex + 1 else dataIndex
+    }
 
     fun onDragStart(offset: Offset, itemIndex: Int) {
         draggingItemIndex = itemIndex
@@ -78,9 +99,12 @@ class DragDropListState(
         // Statt den Mittelpunkt des gezogenen Items zu prüfen ("liegt mein Zentrum im Target?"),
         // wird geprüft ob das gezogene Item den MITTELPUNKT des Targets überspannt.
         // Dies verhindert Oszillation bei Items unterschiedlicher Größe.
-        // Zusätzlich: Nur adjazente Items (Index ± 1) als Swap-Kandidaten.
+        // 🆕 v1.8.1 IMPL_14: Separator überspringen, Adjazenz berücksichtigt Separator-Lücke
         val targetItem = state.layoutInfo.visibleItemsInfo.firstOrNull { item ->
-            (item.index == draggingItem.index - 1 || item.index == draggingItem.index + 1) &&
+            // Separator überspringen
+            item.index != separatorVisualIndex &&
+            // Nur adjazente Items (Separator-Lücke wird übersprungen)
+            isAdjacentSkippingSeparator(draggingItem.index, item.index) &&
                 run {
                     val targetCenter = item.offset + item.size / 2
                     startOffset < targetCenter && endOffset > targetCenter
@@ -95,16 +119,20 @@ class DragDropListState(
             } else {
                 null
             }
+
+            // 🆕 v1.8.1 IMPL_14: Visual-Indizes zu Data-Indizes konvertieren für onMove
+            val fromDataIndex = visualToDataIndex(draggingItem.index)
+            val toDataIndex = visualToDataIndex(targetItem.index)
             
             if (scrollToIndex != null) {
                 scope.launch {
                     state.scrollToItem(scrollToIndex, state.firstVisibleItemScrollOffset)
-                    onMove(draggingItem.index, targetItem.index)
+                    onMove(fromDataIndex, toDataIndex)
                     // 🆕 v1.8.0: IMPL_023b — Index-Update NACH dem Move (verhindert Race-Condition)
                     draggingItemIndex = targetItem.index
                 }
             } else {
-                onMove(draggingItem.index, targetItem.index)
+                onMove(fromDataIndex, toDataIndex)
                 draggingItemIndex = targetItem.index
             }
         } else {
@@ -126,6 +154,26 @@ class DragDropListState(
                 overscrollJob?.cancel()
             }
         }
+    }
+
+    /**
+     * 🆕 v1.8.1 IMPL_14: Prüft ob zwei Visual-Indizes adjazent sind,
+     * wobei der Separator übersprungen wird.
+     * Beispiel: Items bei Visual 1 und Visual 3 sind adjazent wenn Separator bei Visual 2 liegt.
+     */
+    private fun isAdjacentSkippingSeparator(indexA: Int, indexB: Int): Boolean {
+        val diff = kotlin.math.abs(indexA - indexB)
+        if (diff == 1) {
+            // Direkt benachbart — aber NICHT wenn der Separator dazwischen liegt
+            val between = minOf(indexA, indexB) + 1
+            return between != separatorVisualIndex || separatorVisualIndex < 0
+        }
+        if (diff == 2 && separatorVisualIndex >= 0) {
+            // 2 Positionen entfernt — adjazent wenn Separator dazwischen
+            val between = minOf(indexA, indexB) + 1
+            return between == separatorVisualIndex
+        }
+        return false
     }
 
     @Suppress("UnusedPrivateProperty")
