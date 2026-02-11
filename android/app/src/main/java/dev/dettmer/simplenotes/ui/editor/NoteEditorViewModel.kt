@@ -91,72 +91,90 @@ class NoteEditorViewModel(
         val noteTypeString = savedStateHandle.get<String>(ARG_NOTE_TYPE) ?: NoteType.TEXT.name
         
         if (noteId != null) {
-            // Load existing note
-            existingNote = storage.loadNote(noteId)
-            existingNote?.let { note ->
-                currentNoteType = note.noteType
-                _uiState.update { state ->
-                    state.copy(
-                        title = note.title,
-                        content = note.content,
-                        noteType = note.noteType,
-                        isNewNote = false,
-                        toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
-                            ToolbarTitle.EDIT_CHECKLIST
-                        } else {
-                            ToolbarTitle.EDIT_NOTE
-                        }
-                    )
-                }
-                
-                if (note.noteType == NoteType.CHECKLIST) {
-                    // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
-                    note.checklistSortOption?.let { sortName ->
-                        try {
-                            _lastChecklistSortOption.value = ChecklistSortOption.valueOf(sortName)
-                        } catch (e: IllegalArgumentException) {
-                            Logger.w(TAG, "Unknown sort option '$sortName', using MANUAL")
-                            _lastChecklistSortOption.value = ChecklistSortOption.MANUAL
-                        }
-                    }
-                    
-                    val items = note.checklistItems?.sortedBy { it.order }?.map {
-                        ChecklistItemState(
-                            id = it.id,
-                            text = it.text,
-                            isChecked = it.isChecked,
-                            order = it.order
-                        )
-                    } ?: emptyList()
-                    // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
-                    _checklistItems.value = sortChecklistItems(items)
-                }
-            }
+            loadExistingNote(noteId)
         } else {
-            // New note
-            currentNoteType = try {
-                NoteType.valueOf(noteTypeString)
-            } catch (e: IllegalArgumentException) {
-                Logger.w(TAG, "Invalid note type '$noteTypeString', defaulting to TEXT: ${e.message}")
-                NoteType.TEXT
-            }
-            
+            initNewNote(noteTypeString)
+        }
+    }
+
+    private fun loadExistingNote(noteId: String) {
+        existingNote = storage.loadNote(noteId)
+        existingNote?.let { note ->
+            currentNoteType = note.noteType
             _uiState.update { state ->
                 state.copy(
-                    noteType = currentNoteType,
-                    isNewNote = true,
-                    toolbarTitle = if (currentNoteType == NoteType.CHECKLIST) {
-                        ToolbarTitle.NEW_CHECKLIST
+                    title = note.title,
+                    content = note.content,
+                    noteType = note.noteType,
+                    isNewNote = false,
+                    toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
+                        ToolbarTitle.EDIT_CHECKLIST
                     } else {
-                        ToolbarTitle.NEW_NOTE
+                        ToolbarTitle.EDIT_NOTE
                     }
                 )
             }
             
-            // Add first empty item for new checklists
-            if (currentNoteType == NoteType.CHECKLIST) {
-                _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
+            if (note.noteType == NoteType.CHECKLIST) {
+                loadChecklistData(note)
             }
+        }
+    }
+
+    private fun loadChecklistData(note: Note) {
+        // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
+        note.checklistSortOption?.let { sortName ->
+            _lastChecklistSortOption.value = parseSortOption(sortName)
+        }
+        
+        val items = note.checklistItems?.sortedBy { it.order }?.map {
+            ChecklistItemState(
+                id = it.id,
+                text = it.text,
+                isChecked = it.isChecked,
+                order = it.order
+            )
+        } ?: emptyList()
+        // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
+        _checklistItems.value = sortChecklistItems(items)
+    }
+
+    private fun initNewNote(noteTypeString: String) {
+        currentNoteType = try {
+            NoteType.valueOf(noteTypeString)
+        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+            Logger.w(TAG, "Invalid note type '$noteTypeString', defaulting to TEXT")
+            NoteType.TEXT
+        }
+        
+        _uiState.update { state ->
+            state.copy(
+                noteType = currentNoteType,
+                isNewNote = true,
+                toolbarTitle = if (currentNoteType == NoteType.CHECKLIST) {
+                    ToolbarTitle.NEW_CHECKLIST
+                } else {
+                    ToolbarTitle.NEW_NOTE
+                }
+            )
+        }
+        
+        // Add first empty item for new checklists
+        if (currentNoteType == NoteType.CHECKLIST) {
+            _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
+        }
+    }
+
+    /**
+     * Safely parse a ChecklistSortOption from its string name.
+     * Falls back to MANUAL if the name is unknown (e.g., from older app versions).
+     */
+    private fun parseSortOption(sortName: String): ChecklistSortOption {
+        return try {
+            ChecklistSortOption.valueOf(sortName)
+        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+            Logger.w(TAG, "Unknown sort option '$sortName', using MANUAL")
+            ChecklistSortOption.MANUAL
         }
     }
     

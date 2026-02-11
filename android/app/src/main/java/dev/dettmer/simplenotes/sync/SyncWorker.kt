@@ -73,6 +73,7 @@ class SyncWorker(
         }
     }
     
+    @Suppress("LongMethod") // Linear sync flow with debug logging — splitting would hurt readability
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "═══════════════════════════════════════")

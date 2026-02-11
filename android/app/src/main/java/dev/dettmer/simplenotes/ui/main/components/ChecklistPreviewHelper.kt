@@ -21,7 +21,7 @@ fun sortChecklistItemsForPreview(
 ): List<ChecklistItem> {
     val sortOption = try {
         sortOptionName?.let { ChecklistSortOption.valueOf(it) }
-    } catch (e: IllegalArgumentException) {
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
         null
     } ?: ChecklistSortOption.MANUAL
 

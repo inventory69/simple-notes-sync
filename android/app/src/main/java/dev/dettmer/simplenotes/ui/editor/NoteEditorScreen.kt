@@ -66,8 +66,10 @@ import dev.dettmer.simplenotes.utils.showToast
 import kotlin.math.roundToInt
 
 private const val LAYOUT_DELAY_MS = 100L
+private const val AUTO_SCROLL_DELAY_MS = 50L
 private const val ITEM_CORNER_RADIUS_DP = 8
 private const val DRAGGING_ITEM_Z_INDEX = 10f
+private val DRAGGING_ELEVATION_DP = 8.dp
 
 /**
  * Main Composable for the Note Editor screen.
@@ -327,6 +329,7 @@ private fun TextNoteContent(
  * 🆕 v1.8.1 IMPL_14: Extrahiertes Composable für ein einzelnes draggbares Checklist-Item.
  * Entkoppelt von der Separator-Logik — wiederverwendbar für unchecked und checked Items.
  */
+@Suppress("LongParameterList") // Compose callbacks — cannot be reduced without wrapper class
 @Composable
 private fun LazyItemScope.DraggableChecklistItem(
     item: ChecklistItemState,
@@ -342,7 +345,7 @@ private fun LazyItemScope.DraggableChecklistItem(
 ) {
     val isDragging = dragDropState.draggingItemIndex == visualIndex
     val elevation by animateDpAsState(
-        targetValue = if (isDragging) 8.dp else 0.dp,
+        targetValue = if (isDragging) DRAGGING_ELEVATION_DP else 0.dp,
         label = "elevation"
     )
 
@@ -426,7 +429,7 @@ private fun ChecklistEditor(
         // 🆕 v1.8.1 (IMPL_05): Auto-Scroll wenn ein Item durch Zeilenumbruch wächst
         LaunchedEffect(scrollToItemIndex) {
             scrollToItemIndex?.let { index ->
-                delay(50)  // Warten bis Layout-Pass abgeschlossen
+                delay(AUTO_SCROLL_DELAY_MS)  // Warten bis Layout-Pass abgeschlossen
                 val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
                 if (index >= lastVisibleIndex - 1) {
                     listState.animateScrollToItem(
