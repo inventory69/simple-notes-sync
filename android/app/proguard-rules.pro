@@ -63,21 +63,16 @@
 # App-specific rules: Only keep what Gson/reflection needs
 # ═══════════════════════════════════════════════════════════════════════
 
-# Gson data models (serialized/deserialized via reflection)
--keep class dev.dettmer.simplenotes.models.Note { *; }
--keep class dev.dettmer.simplenotes.models.Note$NoteRaw { *; }
--keep class dev.dettmer.simplenotes.models.ChecklistItem { *; }
--keep class dev.dettmer.simplenotes.models.DeletionRecord { *; }
--keep class dev.dettmer.simplenotes.models.DeletionTracker { *; }
--keep class dev.dettmer.simplenotes.backup.BackupData { *; }
--keep class dev.dettmer.simplenotes.backup.BackupResult { *; }
-
-# Keep enum values (used in serialization and widget state)
--keepclassmembers enum dev.dettmer.simplenotes.** {
-    <fields>;
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
+# 🔧 v1.8.1 FIX: Breite Regel verwenden statt spezifischer Klassen
+# 
+# GRUND: NoteRaw ist eine private data class innerhalb von Note.Companion.
+# Der JVM-Klassenname ist Note$Companion$NoteRaw, NICHT Note$NoteRaw.
+# Die spezifische Regel griff nicht → R8 obfuskierte NoteRaw-Felder
+# → Gson konnte keine JSON-Felder matchen → ALLE Notizen unlesbar!
+#
+# Sichere Lösung: Alle App-Klassen behalten (wie in v1.7.2).
+# APK-Größenoptimierung kann in v1.9.0 sicher evaluiert werden.
+-keep class dev.dettmer.simplenotes.** { *; }
 
 # v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
 # This class only exists on API 35+ but Compose handles the fallback gracefully
