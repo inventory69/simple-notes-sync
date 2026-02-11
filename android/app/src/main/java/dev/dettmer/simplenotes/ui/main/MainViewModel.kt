@@ -692,9 +692,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 
                 if (result.isSuccess && result.syncedCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
-                    // Silent Sync mit echten Änderungen → trotzdem markCompleted (wird silent behandelt)
+                    // 🆕 v1.8.1 (IMPL_11): Kein Toast bei Silent-Sync
+                    // Das Banner-System respektiert silent=true korrekt (markCompleted → IDLE)
+                    // Toast wurde fälschlicherweise trotzdem angezeigt
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
-                    _showToast.emit(getString(R.string.snackbar_synced_count, result.syncedCount))
                     loadNotes()
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
