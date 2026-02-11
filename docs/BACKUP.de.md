@@ -276,8 +276,9 @@ Schritt-für-Schritt:
 
 ### Daten-Schutz
 - ✅ **Lokal gespeichert** - Kein Cloud-Upload ohne deine Aktion
-- ✅ **Keine Verschlüsselung** - Klartextformat für Lesbarkeit
-- ⚠️ **Sensible Daten?** - Backup-Datei selbst verschlüsseln (z.B. 7-Zip mit Passwort)
+- ✅ **Optionale Verschlüsselung** _(v1.7.0+)_ - Backup-Dateien mit Passwort schützen
+- ✅ **Menschenlesbar** - Klartextformat (JSON) wenn unverschlüsselt
+- ⚠️ **Sensible Daten?** - Verschlüsselung aktivieren oder externe Tools nutzen (z.B. 7-Zip)
 
 ### Empfehlungen
 - 🔐 Backup-Dateien in verschlüsseltem Container speichern
@@ -321,4 +322,4 @@ Schritt-für-Schritt:
 - [FEATURES.md](FEATURES.md) - Vollständige Feature-Liste
 - [DESKTOP.md](DESKTOP.md) - Desktop-Integration mit Markdown
 
-**Letzte Aktualisierung:** v1.2.1 (2026-01-05)
+**Letzte Aktualisierung:** v1.8.1 (2026-02-11)

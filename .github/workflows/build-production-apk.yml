@@ -61,11 +61,11 @@ jobs:
         run: |
           mkdir -p apk-output
           
-          # Standard Flavor - Universal APK
+          # Standard Flavor
           cp android/app/build/outputs/apk/standard/release/app-standard-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-standard.apk
           
-          # F-Droid Flavor - Universal APK
+          # F-Droid Flavor
           cp android/app/build/outputs/apk/fdroid/release/app-fdroid-release.apk \
              apk-output/simple-notes-sync-v${{ env.VERSION_NAME }}-fdroid.apk
           

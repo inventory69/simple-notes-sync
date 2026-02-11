@@ -276,8 +276,9 @@ Step-by-step:
 
 ### Data Protection
 - ✅ **Locally stored** - No cloud upload without your action
-- ✅ **No encryption** - Plain text format for readability
-- ⚠️ **Sensitive data?** - Encrypt backup file yourself (e.g., 7-Zip with password)
+- ✅ **Optional encryption** _(v1.7.0+)_ - Password-protect backup files
+- ✅ **Human-readable** - Plain JSON format when unencrypted
+- ⚠️ **Sensitive data?** - Enable encryption or use external tools (e.g., 7-Zip)
 
 ### Recommendations
 - 🔐 Store backup files in encrypted container
@@ -317,8 +318,8 @@ Step-by-step:
 ---
 
 **📚 See also:**
-- [QUICKSTART.en.md](../QUICKSTART.en.md) - App installation and setup
-- [FEATURES.en.md](FEATURES.en.md) - Complete feature list
-- [DESKTOP.en.md](DESKTOP.en.md) - Desktop integration with Markdown
+- [QUICKSTART.md](../QUICKSTART.md) - App installation and setup
+- [FEATURES.md](FEATURES.md) - Complete feature list
+- [DESKTOP.md](DESKTOP.md) - Desktop integration with Markdown
 
-**Last update:** v1.2.1 (2026-01-05)
+**Last update:** v1.8.1 (2026-02-11)
