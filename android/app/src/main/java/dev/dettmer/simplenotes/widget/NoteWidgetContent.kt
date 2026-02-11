@@ -52,6 +52,7 @@ import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 // ── Size Classification ──
 
 private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
+private val WIDGET_HEIGHT_SCROLL_THRESHOLD = 150.dp   // 🆕 v1.8.1: Scrollbare Ansicht
 private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
 
 // 🆕 v1.8.0: Increased preview lengths for better text visibility
@@ -59,11 +60,16 @@ private const val TEXT_PREVIEW_COMPACT_LENGTH = 120
 private const val TEXT_PREVIEW_FULL_LENGTH = 300
 
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
-    height < WIDGET_HEIGHT_SMALL_THRESHOLD                                        -> WidgetSizeClass.SMALL
-    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD -> WidgetSizeClass.NARROW_MED
-    width < WIDGET_SIZE_MEDIUM_THRESHOLD                                          -> WidgetSizeClass.NARROW_TALL
-    height < WIDGET_SIZE_MEDIUM_THRESHOLD                                         -> WidgetSizeClass.WIDE_MED
-    else                                                                          -> WidgetSizeClass.WIDE_TALL
+    height < WIDGET_HEIGHT_SMALL_THRESHOLD -> WidgetSizeClass.SMALL
+    
+    // 🆕 v1.8.1: Neue ScrollView-Schwelle bei 150dp Höhe
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_HEIGHT_SCROLL_THRESHOLD -> WidgetSizeClass.NARROW_MED
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD   -> WidgetSizeClass.NARROW_SCROLL
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD                                             -> WidgetSizeClass.NARROW_TALL
+    
+    height < WIDGET_HEIGHT_SCROLL_THRESHOLD -> WidgetSizeClass.WIDE_MED
+    height < WIDGET_SIZE_MEDIUM_THRESHOLD   -> WidgetSizeClass.WIDE_SCROLL
+    else                                    -> WidgetSizeClass.WIDE_TALL
 }
 
 @Composable
@@ -177,14 +183,28 @@ fun NoteWidgetContent(
                     }
                 }
 
-                WidgetSizeClass.NARROW_TALL -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.1 (IMPL_09): Scrollbare Größe (150dp+ Höhe)
+                WidgetSizeClass.NARROW_SCROLL,
+                WidgetSizeClass.NARROW_TALL -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNoteFullView(note)
-                        NoteType.CHECKLIST -> ChecklistFullView(
-                            note = note,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> {
+                            // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
+                            val checklistBoxModifier = if (isLocked) {
+                                contentClickModifier
+                            } else {
+                                GlanceModifier.fillMaxSize()
+                            }
+                            Box(modifier = checklistBoxModifier) {
+                                ChecklistFullView(
+                                    note = note,
+                                    isLocked = isLocked,
+                                    glanceId = glanceId
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -200,14 +220,28 @@ fun NoteWidgetContent(
                     }
                 }
 
-                WidgetSizeClass.WIDE_TALL -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.1 (IMPL_09): Scrollbare Größe (150dp+ Höhe)
+                WidgetSizeClass.WIDE_SCROLL,
+                WidgetSizeClass.WIDE_TALL -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNoteFullView(note)
-                        NoteType.CHECKLIST -> ChecklistFullView(
-                            note = note,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> {
+                            // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
+                            val checklistBoxModifier = if (isLocked) {
+                                contentClickModifier
+                            } else {
+                                GlanceModifier.fillMaxSize()
+                            }
+                            Box(modifier = checklistBoxModifier) {
+                                ChecklistFullView(
+                                    note = note,
+                                    isLocked = isLocked,
+                                    glanceId = glanceId
+                                )
+                            }
+                        }
                     }
                 }
             }
