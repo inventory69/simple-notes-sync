@@ -555,6 +555,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
+        // 🆕 v1.8.1 (IMPL_08): Globalen Cooldown markieren (verhindert Auto-Sync direkt danach)
+        // Manueller Sync prüft NICHT den globalen Cooldown (User will explizit synchronisieren)
+        val prefs = getApplication<android.app.Application>().getSharedPreferences(
+            Constants.PREFS_NAME,
+            android.content.Context.MODE_PRIVATE
+        )
+        
         // 🆕 v1.7.0: Feedback wenn Sync bereits läuft
         // 🆕 v1.8.0: tryStartSync setzt sofort PREPARING → Banner erscheint instant
         if (!SyncStateManager.tryStartSync(source)) {
@@ -570,6 +577,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             return
         }
+        
+        // 🆕 v1.8.1 (IMPL_08): Globalen Cooldown markieren (nach tryStartSync, vor Launch)
+        SyncStateManager.markGlobalSyncStarted(prefs)
         
         viewModelScope.launch {
             try {
@@ -636,7 +646,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
-        // Throttling check
+        // 🆕 v1.8.1 (IMPL_08): Globaler Sync-Cooldown (alle Trigger teilen sich diesen)
+        if (!SyncStateManager.canSyncGlobally(prefs)) {
+            return
+        }
+        
+        // Throttling check (eigener 60s-Cooldown für onResume)
         if (!canTriggerAutoSync()) {
             return
         }
@@ -664,6 +679,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         // Update last sync timestamp
         prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()
+        
+        // 🆕 v1.8.1 (IMPL_08): Globalen Sync-Cooldown markieren
+        SyncStateManager.markGlobalSyncStarted(prefs)
         
         viewModelScope.launch {
             try {
