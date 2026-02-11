@@ -238,15 +238,18 @@ class NoteEditorViewModel(
             val fromItem = items.getOrNull(fromIndex) ?: return@update items
             val toItem = items.getOrNull(toIndex) ?: return@update items
 
-            // 🆕 v1.8.0 (IMPL_017): Drag nur innerhalb der gleichen Gruppe erlauben
-            // (checked ↔ checked, unchecked ↔ unchecked)
-            if (fromItem.isChecked != toItem.isChecked) {
-                return@update items  // Kein Move über Gruppen-Grenze
-            }
-
             val mutableList = items.toMutableList()
             val item = mutableList.removeAt(fromIndex)
-            mutableList.add(toIndex, item)
+
+            // 🆕 v1.8.1 IMPL_14: Cross-Boundary Move mit Auto-Toggle
+            // Wenn ein Item die Grenze überschreitet, wird es automatisch checked/unchecked.
+            val movedItem = if (fromItem.isChecked != toItem.isChecked) {
+                item.copy(isChecked = toItem.isChecked)
+            } else {
+                item
+            }
+
+            mutableList.add(toIndex, movedItem)
             // Update order values
             mutableList.mapIndexed { index, i -> i.copy(order = index) }
         }
