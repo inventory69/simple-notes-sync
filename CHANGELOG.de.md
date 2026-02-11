@@ -10,6 +10,22 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.8.0] - 2026-02-10
 
+### 🚨 CRITICAL BUGFIX (Tag neu erstellt)
+
+**R8/ProGuard Obfuscation Fix - Verhindert Datenverlust**
+- 🔧 **KRITISCH:** Falscher ProGuard-Klassenpfad für `Note$Companion$NoteRaw` korrigiert
+  - Original v1.8.0 hatte spezifische `-keep` Regeln die nicht griffen
+  - R8 obfuskierte alle NoteRaw-Felder (id→a, title→b, ...)
+  - Gson konnte JSON nicht mehr parsen → **ALLE Notizen erschienen verschwunden**
+  - Zurück zur sicheren breiten Regel: `-keep class dev.dettmer.simplenotes.** { *; }`
+- 🛡️ Safety-Guards in `detectServerDeletions()` hinzugefügt
+  - Verhindert Massenlöschung bei leeren `serverNoteIds` (Netzwerkfehler)
+  - Abort wenn ALLE lokalen Notizen als gelöscht erkannt würden
+- ✅ Notizen waren nie wirklich verloren (JSON-Dateien intakt auf Disk + Server)
+- ✅ Downgrade auf v1.7.2 holte alle Notizen zurück
+
+**⚠️ Falls du v1.8.0 erste Version installiert hattest:** Deine Notizen sind sicher! Einfach updaten.
+
 ### 🎉 Major: Widgets, Sortierung & Erweiterte Sync-Features
 
 Komplettes Widget-System mit interaktiven Checklisten, Notiz-Sortierung und umfangreiche Sync-Verbesserungen!
