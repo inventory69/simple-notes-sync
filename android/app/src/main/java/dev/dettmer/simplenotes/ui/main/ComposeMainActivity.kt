@@ -236,6 +236,11 @@ class ComposeMainActivity : ComponentActivity() {
                         kotlinx.coroutines.delay(2000L)
                         SyncStateManager.reset()
                     }
+                    // 🆕 v1.8.1 (IMPL_12): INFO-Meldungen nach 2.5s ausblenden
+                    dev.dettmer.simplenotes.sync.SyncPhase.INFO -> {
+                        kotlinx.coroutines.delay(2500L)
+                        SyncStateManager.reset()
+                    }
                     dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> {
                         kotlinx.coroutines.delay(4000L)
                         SyncStateManager.reset()

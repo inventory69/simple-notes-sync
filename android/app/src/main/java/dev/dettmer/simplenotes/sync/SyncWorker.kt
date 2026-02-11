@@ -73,6 +73,7 @@ class SyncWorker(
         }
     }
     
+    @Suppress("LongMethod") // Linear sync flow with debug logging — splitting would hurt readability
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "═══════════════════════════════════════")
@@ -104,7 +105,42 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 2: Checking for unsynced changes (Performance Pre-Check)")
+                Logger.d(TAG, "📍 Step 2: SyncStateManager coordination & global cooldown (v1.8.1)")
+            }
+            
+            // 🆕 v1.8.1 (IMPL_08): SyncStateManager-Koordination
+            // Verhindert dass Foreground und Background gleichzeitig syncing-State haben
+            val prefs = applicationContext.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            
+            // 🆕 v1.8.1 (IMPL_08B): onSave-Syncs bypassen den globalen Cooldown
+            // Grund: User hat explizit gespeichert → erwartet zeitnahen Sync
+            // Der eigene 5s-Throttle + isSyncing-Mutex reichen als Schutz
+            val isOnSaveSync = tags.contains(Constants.SYNC_ONSAVE_TAG)
+            
+            // Globaler Cooldown-Check (nicht für onSave-Syncs)
+            if (!isOnSaveSync && !SyncStateManager.canSyncGlobally(prefs)) {
+                Logger.d(TAG, "⏭️ SyncWorker: Global sync cooldown active - skipping")
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (cooldown)")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
+                return@withContext Result.success()
+            }
+            
+            if (!SyncStateManager.tryStartSync("worker-${tags.firstOrNull() ?: "unknown"}", silent = true)) {
+                Logger.d(TAG, "⏭️ SyncWorker: Another sync already in progress - skipping")
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (already syncing)")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
+                return@withContext Result.success()
+            }
+            
+            // Globalen Cooldown markieren
+            SyncStateManager.markGlobalSyncStarted(prefs)
+            
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 3: Checking for unsynced changes (Performance Pre-Check)")
             }
             
             // 🔥 v1.1.2: Performance-Optimierung - Skip Sync wenn keine lokalen Änderungen
@@ -122,7 +158,7 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 2.5: Checking sync gate (canSync)")
+                Logger.d(TAG, "📍 Step 4: Checking sync gate (canSync)")
             }
             
             // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (WiFi-Only, Offline Mode, Server Config)
@@ -143,7 +179,7 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 3: Checking server reachability (Pre-Check)")
+                Logger.d(TAG, "📍 Step 5: Checking server reachability (Pre-Check)")
             }
             
             // ⭐ KRITISCH: Server-Erreichbarkeits-Check VOR Sync
@@ -167,7 +203,7 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 3: Server reachable - proceeding with sync")
+                Logger.d(TAG, "📍 Step 6: Server reachable - proceeding with sync")
                 Logger.d(TAG, "    SyncService: $syncService")
             }
             
@@ -188,7 +224,7 @@ class SyncWorker(
             }
             
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 4: Processing result")
+                Logger.d(TAG, "📍 Step 7: Processing result")
                 Logger.d(
                     TAG,
                     "📦 Sync result: success=${result.isSuccess}, " +
@@ -198,9 +234,12 @@ class SyncWorker(
             
             if (result.isSuccess) {
                 if (BuildConfig.DEBUG) {
-                    Logger.d(TAG, "📍 Step 5: Success path")
+                    Logger.d(TAG, "📍 Step 8: Success path")
                 }
                 Logger.i(TAG, "✅ Sync successful: ${result.syncedCount} notes")
+                
+                // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
+                SyncStateManager.markCompleted()
                 
                 // Nur Notification zeigen wenn tatsächlich etwas gesynct wurde
                 // UND die App nicht im Vordergrund ist (sonst sieht User die Änderungen direkt)
@@ -248,9 +287,13 @@ class SyncWorker(
                 Result.success()
             } else {
                 if (BuildConfig.DEBUG) {
-                    Logger.d(TAG, "📍 Step 5: Failure path")
+                    Logger.d(TAG, "📍 Step 8: Failure path")
                 }
                 Logger.e(TAG, "❌ Sync failed: ${result.errorMessage}")
+                
+                // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
+                SyncStateManager.markError(result.errorMessage)
+                
                 NotificationHelper.showSyncError(
                     applicationContext,
                     result.errorMessage ?: "Unbekannter Fehler"

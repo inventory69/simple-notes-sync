@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -51,11 +52,13 @@ fun SyncProgressBanner(
     // Farbe animiert wechseln je nach State
     val isError = progress.phase == SyncPhase.ERROR
     val isCompleted = progress.phase == SyncPhase.COMPLETED
-    val isResult = isError || isCompleted
+    val isInfo = progress.phase == SyncPhase.INFO  // 🆕 v1.8.1 (IMPL_12)
+    val isResult = isError || isCompleted || isInfo
     
     val backgroundColor by animateColorAsState(
         targetValue = when {
             isError -> MaterialTheme.colorScheme.errorContainer
+            isInfo -> MaterialTheme.colorScheme.secondaryContainer  // 🆕 v1.8.1 (IMPL_12)
             else -> MaterialTheme.colorScheme.primaryContainer
         },
         label = "bannerColor"
@@ -64,6 +67,7 @@ fun SyncProgressBanner(
     val contentColor by animateColorAsState(
         targetValue = when {
             isError -> MaterialTheme.colorScheme.onErrorContainer
+            isInfo -> MaterialTheme.colorScheme.onSecondaryContainer  // 🆕 v1.8.1 (IMPL_12)
             else -> MaterialTheme.colorScheme.onPrimaryContainer
         },
         label = "bannerContentColor"
@@ -89,11 +93,19 @@ fun SyncProgressBanner(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Icon: Spinner (aktiv), Checkmark (completed), Error (error)
+                    // Icon: Spinner (aktiv), Checkmark (completed), Error (error), Info (info)
                     when {
                         isCompleted -> {
                             Icon(
                                 imageVector = Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = contentColor
+                            )
+                        }
+                        isInfo -> {  // 🆕 v1.8.1 (IMPL_12)
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                                 tint = contentColor
@@ -187,5 +199,6 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.IMPORTING_MARKDOWN -> stringResource(R.string.sync_phase_importing_markdown)
         SyncPhase.COMPLETED -> stringResource(R.string.sync_phase_completed)
         SyncPhase.ERROR -> stringResource(R.string.sync_phase_error)
+        SyncPhase.INFO -> ""  // 🆕 v1.8.1 (IMPL_12): INFO nutzt immer resultMessage
     }
 }

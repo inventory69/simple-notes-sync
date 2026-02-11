@@ -1,29 +1,31 @@
 Simple Notes Sync ist eine minimalistische Notizen-App mit WebDAV-Synchronisation und modernen Features.
 
 Hauptfunktionen:
-• Text-Notizen und Checklisten (Tap-to-Check, Drag & Drop)
-• NEU: Raster-Ansicht (Grid View) für Notizen
+• Text-Notizen und Checklisten (Tap-to-Check, Drag & Drop, Sortierung)
+• Raster- und Listen-Ansicht mit Notizfarben
+• Homescreen-Widgets (Quick-Note, Checkliste mit interaktiven Checkboxen)
 • Multi-Device Sync (Handy, Tablet, Desktop)
 • WebDAV-Synchronisation mit eigenem Server (Nextcloud, ownCloud, etc.)
 • Markdown-Export und Import für Desktop-Editoren (Obsidian, VS Code)
-• NEU: WiFi-only Sync, VPN-Unterstützung, Verschlüsselung für lokale Backups
+• WiFi-only Sync, VPN-Unterstützung, parallele Downloads
 • Konfigurierbare Sync-Trigger: onSave, onResume, WiFi, periodisch, Boot
-• Komplett offline nutzbar
-• Keine Werbung, keine Tracker
+• Komplett offline nutzbar – keine Werbung, keine Tracker
 
 Datenschutz & Sicherheit:
 • Alle Daten bleiben bei dir – keine Cloud, keine Tracking-Bibliotheken
-• Unterstützung für selbstsignierte SSL-Zertifikate (Self-signed SSL)
-• SHA-256 Hash des Signaturzertifikats in App und Releases sichtbar
+• Unterstützung für selbstsignierte SSL-Zertifikate
+• Verschlüsselte lokale Backups
 
 Synchronisation:
-• Automatisch oder manuell, optimierte Performance, periodischer Sync optional
-• Intelligente Konfliktlösung, Lösch-Tracking, Batch-Aktionen
+• Parallele Downloads (bis zu 5 gleichzeitig)
+• Live Sync-Fortschritt mit Phasen-Anzeige
+• Intelligente Konfliktlösung, Server-Löschungs-Erkennung
+• Post-Update Changelog-Dialog
 
 UI & Design:
 • Moderne Jetpack Compose Oberfläche
 • Material Design 3, Dynamic Colors, Dark Mode
-• Animationen und Live Sync-Status
+• Notiz- und Checklisten-Sortierung (Titel, Datum, Farbe, alphabetisch)
 
 Mehrsprachig:
 • Deutsch und Englisch, automatische Erkennung, App-Sprachauswahl

@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Gradle Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -69,14 +69,14 @@ jobs:
         continue-on-error: true
       - name: Build-Ergebnis pruefen
         run: |
-          if [ -f "android/app/build/outputs/apk/standard/debug/app-standard-universal-debug.apk" ]; then
+          if [ -f "android/app/build/outputs/apk/standard/debug/app-standard-debug.apk" ]; then
             echo "✅ Standard Debug APK erfolgreich gebaut"
             ls -lh android/app/build/outputs/apk/standard/debug/*.apk
           else
             echo "❌ Standard Debug APK Build fehlgeschlagen"
             exit 1
           fi
-          if [ -f "android/app/build/outputs/apk/fdroid/debug/app-fdroid-universal-debug.apk" ]; then
+          if [ -f "android/app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk" ]; then
             echo "✅ F-Droid Debug APK erfolgreich gebaut"
             ls -lh android/app/build/outputs/apk/fdroid/debug/*.apk
           else

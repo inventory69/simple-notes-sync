@@ -38,9 +38,11 @@ import androidx.glance.layout.width
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
+import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 
 /**
  * 🆕 v1.8.0: Glance Composable Content für das Notiz-Widget
@@ -52,6 +54,7 @@ import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 // ── Size Classification ──
 
 private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
+private val WIDGET_HEIGHT_SCROLL_THRESHOLD = 150.dp   // 🆕 v1.8.1: Scrollbare Ansicht
 private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
 
 // 🆕 v1.8.0: Increased preview lengths for better text visibility
@@ -59,11 +62,39 @@ private const val TEXT_PREVIEW_COMPACT_LENGTH = 120
 private const val TEXT_PREVIEW_FULL_LENGTH = 300
 
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
-    height < WIDGET_HEIGHT_SMALL_THRESHOLD                                        -> WidgetSizeClass.SMALL
-    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD -> WidgetSizeClass.NARROW_MED
-    width < WIDGET_SIZE_MEDIUM_THRESHOLD                                          -> WidgetSizeClass.NARROW_TALL
-    height < WIDGET_SIZE_MEDIUM_THRESHOLD                                         -> WidgetSizeClass.WIDE_MED
-    else                                                                          -> WidgetSizeClass.WIDE_TALL
+    height < WIDGET_HEIGHT_SMALL_THRESHOLD -> WidgetSizeClass.SMALL
+    
+    // 🆕 v1.8.1: Neue ScrollView-Schwelle bei 150dp Höhe
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_HEIGHT_SCROLL_THRESHOLD -> WidgetSizeClass.NARROW_MED
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD   -> WidgetSizeClass.NARROW_SCROLL
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD                                             -> WidgetSizeClass.NARROW_TALL
+    
+    height < WIDGET_HEIGHT_SCROLL_THRESHOLD -> WidgetSizeClass.WIDE_MED
+    height < WIDGET_SIZE_MEDIUM_THRESHOLD   -> WidgetSizeClass.WIDE_SCROLL
+    else                                    -> WidgetSizeClass.WIDE_TALL
+}
+
+/**
+ * 🆕 v1.8.1 (IMPL_04): Separator zwischen erledigten und unerledigten Items im Widget.
+ * Glance-kompatible Version von CheckedItemsSeparator.
+ */
+@Composable
+private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "── $checkedCount ✔ ──",
+            style = TextStyle(
+                color = GlanceTheme.colors.outline,
+                fontSize = 11.sp
+            )
+        )
+    }
 }
 
 @Composable
@@ -177,14 +208,28 @@ fun NoteWidgetContent(
                     }
                 }
 
-                WidgetSizeClass.NARROW_TALL -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.1 (IMPL_09): Scrollbare Größe (150dp+ Höhe)
+                WidgetSizeClass.NARROW_SCROLL,
+                WidgetSizeClass.NARROW_TALL -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNoteFullView(note)
-                        NoteType.CHECKLIST -> ChecklistFullView(
-                            note = note,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> {
+                            // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
+                            val checklistBoxModifier = if (isLocked) {
+                                contentClickModifier
+                            } else {
+                                GlanceModifier.fillMaxSize()
+                            }
+                            Box(modifier = checklistBoxModifier) {
+                                ChecklistFullView(
+                                    note = note,
+                                    isLocked = isLocked,
+                                    glanceId = glanceId
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -200,14 +245,28 @@ fun NoteWidgetContent(
                     }
                 }
 
-                WidgetSizeClass.WIDE_TALL -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.1 (IMPL_09): Scrollbare Größe (150dp+ Höhe)
+                WidgetSizeClass.WIDE_SCROLL,
+                WidgetSizeClass.WIDE_TALL -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNoteFullView(note)
-                        NoteType.CHECKLIST -> ChecklistFullView(
-                            note = note,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> {
+                            // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
+                            val checklistBoxModifier = if (isLocked) {
+                                contentClickModifier
+                            } else {
+                                GlanceModifier.fillMaxSize()
+                            }
+                            Box(modifier = checklistBoxModifier) {
+                                ChecklistFullView(
+                                    note = note,
+                                    isLocked = isLocked,
+                                    glanceId = glanceId
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -370,13 +429,35 @@ private fun ChecklistCompactView(
     isLocked: Boolean,
     glanceId: GlanceId
 ) {
-    val items = note.checklistItems?.sortedBy { it.order } ?: return
+    // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
+    val items = note.checklistItems?.let { rawItems ->
+        sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
+    } ?: return
+    
+    // 🆕 v1.8.1 (IMPL_04): Separator-Logik
+    val uncheckedCount = items.count { !it.isChecked }
+    val checkedCount = items.count { it.isChecked }
+    val sortOption = try {
+        note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
+        ?: ChecklistSortOption.MANUAL
+    
+    val showSeparator = (sortOption == ChecklistSortOption.MANUAL ||
+                         sortOption == ChecklistSortOption.UNCHECKED_FIRST) &&
+                        uncheckedCount > 0 && checkedCount > 0
+    
     val visibleItems = items.take(maxItems)
     val remainingCount = items.size - visibleItems.size
-    val checkedCount = items.count { it.isChecked }
 
     Column(modifier = GlanceModifier.padding(horizontal = 8.dp, vertical = 2.dp)) {
+        var separatorShown = false
         visibleItems.forEach { item ->
+            // 🆕 v1.8.1: Separator vor dem ersten checked Item anzeigen
+            if (showSeparator && !separatorShown && item.isChecked) {
+                WidgetCheckedItemsSeparator(checkedCount = checkedCount)
+                separatorShown = true
+            }
+            
             if (isLocked) {
                 Row(
                     modifier = GlanceModifier
@@ -385,7 +466,7 @@ private fun ChecklistCompactView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (item.isChecked) "✅" else "☐",
+                        text = if (item.isChecked) "☑️" else "☐",  // 🆕 v1.8.1 (IMPL_06)
                         style = TextStyle(fontSize = 14.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
@@ -443,15 +524,41 @@ private fun ChecklistFullView(
     isLocked: Boolean,
     glanceId: GlanceId
 ) {
-    val items = note.checklistItems?.sortedBy { it.order } ?: return
+    // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
+    val items = note.checklistItems?.let { rawItems ->
+        sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
+    } ?: return
+    
+    // 🆕 v1.8.1 (IMPL_04): Separator-Logik
+    val uncheckedCount = items.count { !it.isChecked }
+    val checkedCount = items.count { it.isChecked }
+    val sortOption = try {
+        note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
+        ?: ChecklistSortOption.MANUAL
+
+    val showSeparator = (sortOption == ChecklistSortOption.MANUAL ||
+                         sortOption == ChecklistSortOption.UNCHECKED_FIRST) &&
+                        uncheckedCount > 0 && checkedCount > 0
+
+    // 🆕 v1.8.1: Berechne die Gesamtanzahl der Elemente inklusive Separator
+    val totalItems = items.size + if (showSeparator) 1 else 0
 
     LazyColumn(
         modifier = GlanceModifier
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
-        items(items.size) { index ->
-            val item = items[index]
+        items(totalItems) { index ->
+            // 🆕 v1.8.1: Separator an Position uncheckedCount einfügen
+            if (showSeparator && index == uncheckedCount) {
+                WidgetCheckedItemsSeparator(checkedCount = checkedCount)
+                return@items
+            }
+
+            // Tatsächlichen Item-Index berechnen (nach Separator um 1 verschoben)
+            val itemIndex = if (showSeparator && index > uncheckedCount) index - 1 else index
+            val item = items.getOrNull(itemIndex) ?: return@items
 
             if (isLocked) {
                 Row(
@@ -461,7 +568,7 @@ private fun ChecklistFullView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (item.isChecked) "✅" else "☐",
+                        text = if (item.isChecked) "☑️" else "☐",  // 🆕 v1.8.1 (IMPL_06)
                         style = TextStyle(fontSize = 16.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))

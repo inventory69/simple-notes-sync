@@ -1,5 +1,5 @@
-Unter der Haube haben wir ordentlich aufgeraumt:
+Unter der Haube haben wir ordentlich aufgeräumt:
 - Verbesserte Sync-Performance durch optimierten Code
 - Stabilere Fehlerbehandlung bei Verbindungsproblemen
 - Speichereffizientere Datenverarbeitung
-- Datenschutz-Hinweis fur Datei-Logging hinzugefugt
+- Datenschutz-Hinweis für Datei-Logging hinzugefügt

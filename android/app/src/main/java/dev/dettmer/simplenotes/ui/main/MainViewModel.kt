@@ -470,12 +470,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (success) {
-                    _showToast.emit(getString(R.string.snackbar_deleted_from_server))
+                    // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO
+                    SyncStateManager.showInfo(getString(R.string.snackbar_deleted_from_server))
                 } else {
-                    _showToast.emit(getString(R.string.snackbar_server_delete_failed))
+                    SyncStateManager.showError(getString(R.string.snackbar_server_delete_failed))
                 }
             } catch (e: Exception) {
-                _showToast.emit(getString(R.string.snackbar_server_error, e.message ?: ""))
+                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message ?: ""))
             } finally {
                 // Remove from pending deletions
                 _pendingDeletions.value = _pendingDeletions.value - noteId
@@ -507,7 +508,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             
-            // Show aggregated toast
+            // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO/ERROR
             val message = when {
                 failCount == 0 -> getString(R.string.snackbar_notes_deleted_from_server, successCount)
                 successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
@@ -517,7 +518,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     successCount + failCount
                 )
             }
-            _showToast.emit(message)
+            if (failCount > 0) {
+                SyncStateManager.showError(message)
+            } else {
+                SyncStateManager.showInfo(message)
+            }
         }
     }
     
@@ -555,6 +560,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
+        // 🆕 v1.8.1 (IMPL_08): Globalen Cooldown markieren (verhindert Auto-Sync direkt danach)
+        // Manueller Sync prüft NICHT den globalen Cooldown (User will explizit synchronisieren)
+        val prefs = getApplication<android.app.Application>().getSharedPreferences(
+            Constants.PREFS_NAME,
+            android.content.Context.MODE_PRIVATE
+        )
+        
         // 🆕 v1.7.0: Feedback wenn Sync bereits läuft
         // 🆕 v1.8.0: tryStartSync setzt sofort PREPARING → Banner erscheint instant
         if (!SyncStateManager.tryStartSync(source)) {
@@ -570,6 +582,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             return
         }
+        
+        // 🆕 v1.8.1 (IMPL_08): Globalen Cooldown markieren (nach tryStartSync, vor Launch)
+        SyncStateManager.markGlobalSyncStarted(prefs)
         
         viewModelScope.launch {
             try {
@@ -636,7 +651,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
-        // Throttling check
+        // 🆕 v1.8.1 (IMPL_08): Globaler Sync-Cooldown (alle Trigger teilen sich diesen)
+        if (!SyncStateManager.canSyncGlobally(prefs)) {
+            return
+        }
+        
+        // Throttling check (eigener 60s-Cooldown für onResume)
         if (!canTriggerAutoSync()) {
             return
         }
@@ -665,6 +685,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Update last sync timestamp
         prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()
         
+        // 🆕 v1.8.1 (IMPL_08): Globalen Sync-Cooldown markieren
+        SyncStateManager.markGlobalSyncStarted(prefs)
+        
         viewModelScope.launch {
             try {
                 // Check for unsynced changes
@@ -692,9 +715,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 
                 if (result.isSuccess && result.syncedCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
-                    // Silent Sync mit echten Änderungen → trotzdem markCompleted (wird silent behandelt)
+                    // 🆕 v1.8.1 (IMPL_11): Kein Toast bei Silent-Sync
+                    // Das Banner-System respektiert silent=true korrekt (markCompleted → IDLE)
+                    // Toast wurde fälschlicherweise trotzdem angezeigt
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
-                    _showToast.emit(getString(R.string.snackbar_synced_count, result.syncedCount))
                     loadNotes()
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")

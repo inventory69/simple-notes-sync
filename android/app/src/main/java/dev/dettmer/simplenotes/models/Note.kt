@@ -24,7 +24,9 @@ data class Note(
     val syncStatus: SyncStatus = SyncStatus.LOCAL_ONLY,
     // v1.4.0: Checklisten-Felder
     val noteType: NoteType = NoteType.TEXT,
-    val checklistItems: List<ChecklistItem>? = null
+    val checklistItems: List<ChecklistItem>? = null,
+    // 🆕 v1.8.1 (IMPL_03): Persistierte Sortierung
+    val checklistSortOption: String? = null
 ) {
     /**
      * Serialisiert Note zu JSON
@@ -71,13 +73,20 @@ data class Note(
      * v1.4.0: Unterstützt jetzt auch Checklisten-Format
      */
     fun toMarkdown(): String {
+        // 🆕 v1.8.1 (IMPL_03): Sortierung im Frontmatter
+        val sortLine = if (noteType == NoteType.CHECKLIST && checklistSortOption != null) {
+            "\nsort: $checklistSortOption"
+        } else {
+            ""
+        }
+        
         val header = """
 ---
 id: $id
 created: ${formatISO8601(createdAt)}
 updated: ${formatISO8601(updatedAt)}
 device: $deviceId
-type: ${noteType.name.lowercase()}
+type: ${noteType.name.lowercase()}$sortLine
 ---
 
 # $title
@@ -119,6 +128,14 @@ type: ${noteType.name.lowercase()}
                     NoteType.TEXT
                 }
                 
+                // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
+                val checklistSortOption = if (jsonObject.has("checklistSortOption") && 
+                    !jsonObject.get("checklistSortOption").isJsonNull) {
+                    jsonObject.get("checklistSortOption").asString
+                } else {
+                    null
+                }
+                
                 // Parsen der Basis-Note
                 val rawNote = gson.fromJson(json, NoteRaw::class.java)
                 
@@ -158,7 +175,8 @@ type: ${noteType.name.lowercase()}
                     deviceId = rawNote.deviceId,
                     syncStatus = rawNote.syncStatus ?: SyncStatus.LOCAL_ONLY,
                     noteType = noteType,
-                    checklistItems = checklistItems
+                    checklistItems = checklistItems,
+                    checklistSortOption = checklistSortOption  // 🆕 v1.8.1 (IMPL_03)
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -246,6 +264,9 @@ type: ${noteType.name.lowercase()}
                     else -> NoteType.TEXT
                 }
                 
+                // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung aus YAML laden
+                val checklistSortOption = metadata["sort"]
+                
                 // v1.4.0: Parse Content basierend auf Typ
                 // FIX: Robusteres Parsing - suche nach dem Titel-Header und extrahiere den Rest
                 val titleLineIndex = contentBlock.lines().indexOfFirst { it.startsWith("# ") }
@@ -300,7 +321,8 @@ type: ${noteType.name.lowercase()}
                     deviceId = metadata["device"] ?: "desktop",
                     syncStatus = SyncStatus.SYNCED,  // Annahme: Vom Server importiert
                     noteType = noteType,
-                    checklistItems = checklistItems
+                    checklistItems = checklistItems,
+                    checklistSortOption = checklistSortOption  // 🆕 v1.8.1 (IMPL_03)
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse Markdown: ${e.message}")

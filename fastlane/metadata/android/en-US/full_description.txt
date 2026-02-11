@@ -1,29 +1,31 @@
 Simple Notes Sync is a minimalist note-taking app with WebDAV sync and modern features.
 
 Key Features:
-• Text notes and checklists (tap-to-check, drag & drop)
-• NEW: Grid view for notes
+• Text notes and checklists (tap-to-check, drag & drop, sorting)
+• Grid and list view with note color support
+• Homescreen widgets (quick-note, checklist with interactive checkboxes)
 • Multi-device sync (phone, tablet, desktop)
 • WebDAV sync with your own server (Nextcloud, ownCloud, etc.)
 • Markdown export/import for desktop editors (Obsidian, VS Code)
-• NEW: WiFi-only sync, VPN support, encryption for local backups
+• WiFi-only sync, VPN support, parallel downloads
 • Configurable sync triggers: onSave, onResume, WiFi, periodic, boot
-• Fully usable offline
-• No ads, no trackers
+• Fully usable offline – no ads, no trackers
 
 Privacy & Security:
 • Your data stays with you – no cloud, no tracking libraries
 • Support for self-signed SSL certificates
-• SHA-256 hash of signing certificate shown in app and releases
+• Encrypted local backups
 
 Synchronization:
-• Automatic or manual, optimized performance, optional periodic sync
-• Smart conflict resolution, deletion tracking, batch actions
+• Parallel downloads (up to 5 simultaneous)
+• Live sync progress with phase indicators
+• Smart conflict resolution, server deletion detection
+• Post-update changelog dialog
 
 UI & Design:
 • Modern Jetpack Compose interface
 • Material Design 3, dynamic colors, dark mode
-• Animations and live sync status
+• Note & checklist sorting (title, date, color, alphabetical)
 
 Multilingual:
 • English and German, automatic detection, in-app language selector

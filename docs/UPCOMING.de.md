@@ -60,28 +60,91 @@
 
 ---
 
-## v1.7.0 - Staggered Grid Layout
+## v1.7.0 - Grid View, WiFi-Only & VPN ✅
 
-> **Status:** Geplant 📝
+> **Status:** Released 🎉 (Januar 2026)
 
-### 🎨 Adaptives Layout
+### 🎨 Grid Layout
 
-- **Staggered Grid** - Pinterest-artiges Layout mit `LazyVerticalStaggeredGrid`
-- **Intelligente Größen** - Kleine Notizen (kurzer Text, wenige Checklist-Items) kompakt dargestellt
-- **Layout-Umschalter** - Zwischen Listen- und Grid-Ansicht in Einstellungen wechseln
-- **Adaptive Spalten** - 2-3 Spalten basierend auf Bildschirmgröße
-- **120 FPS optimiert** - Lazy Loading für flüssiges Scrollen bei vielen Notizen
+- ✅ **Pinterest-artiges Staggered Grid** - Lückenfreies Layout mit dynamischen Vorschauzeilen
+- ✅ **Layout-Umschalter** - Zwischen Listen- und Grid-Ansicht wechseln
+- ✅ **Adaptive Spalten** - 2-3 Spalten basierend auf Bildschirmgröße
 
-### 🔧 Server-Ordner Prüfung
+### 📡 Sync-Verbesserungen
 
-- **WebDAV Folder Check** - Prüft ob der Ordner auf dem Server existiert und beschreibbar ist
-- **Bessere Fehlermeldungen** - Hilfreiche Hinweise bei Server-Problemen
-- **Connection-Test Verbesserung** - Prüft Read/Write Permissions
+- ✅ **WiFi-Only Sync Toggle** - Nur über WiFi synchronisieren
+- ✅ **VPN-Unterstützung** - Sync funktioniert korrekt über VPN-Tunnels
+- ✅ **Self-Signed SSL** - Dokumentation und Unterstützung für selbstsignierte Zertifikate
+- ✅ **Server-Wechsel-Erkennung** - Alle Notizen auf PENDING zurückgesetzt bei URL-Änderung
 
-### 🔧 Technische Verbesserungen
+---
 
-- **Code-Refactoring** - LargeClass Komponenten aufteilen (WebDavSyncService, SettingsActivity)
-- **Verbesserte Progress-Dialoge** - Material Design 3 konform
+## v1.7.1 - Android 9 Fix & VPN ✅
+
+> **Status:** Released 🎉 (Februar 2026)
+
+- ✅ **Android 9 Crash Fix** - `getForegroundInfo()` für WorkManager auf API 28 implementiert
+- ✅ **VPN-Kompatibilität** - WiFi Socket-Binding erkennt Wireguard VPN-Interfaces
+- ✅ **SafeSardineWrapper** - Saubere HTTP-Verbindungs-Bereinigung
+
+---
+
+## v1.7.2 - Timestamp & Löschungs-Fixes ✅
+
+> **Status:** Released 🎉 (Februar 2026)
+
+- ✅ **Server-mtime als Wahrheitsquelle** - Behebt Timestamp-Probleme mit externen Editoren
+- ✅ **Deletion Tracker Mutex** - Thread-sichere Batch-Löschungen
+- ✅ **ISO8601 Timezone-Parsing** - Multi-Format-Unterstützung
+- ✅ **E-Tag Batch-Caching** - Performance-Verbesserung
+- ✅ **Memory Leak Prävention** - SafeSardineWrapper mit Closeable
+
+---
+
+## v1.8.0 - Widgets, Sortierung & Erweiterter Sync ✅
+
+> **Status:** Released 🎉 (Februar 2026)
+
+### 📌 Homescreen-Widgets
+
+- ✅ **Volles Jetpack Glance Framework** - 5 responsive Größenklassen
+- ✅ **Interaktive Checklisten** - Checkboxen die zum Server synchronisieren
+- ✅ **Material You Farben** - Dynamische Farben mit einstellbarer Opazität
+- ✅ **Sperr-Umschalter** - Versehentliche Bearbeitungen verhindern
+- ✅ **Konfigurations-Activity** - Notiz-Auswahl und Einstellungen
+
+### 📊 Sortierung
+
+- ✅ **Notiz-Sortierung** - Nach Titel, Änderungsdatum, Erstelldatum, Typ
+- ✅ **Checklisten-Sortierung** - Manuell, alphabetisch, offene zuerst, erledigte zuletzt
+- ✅ **Visuelle Trenner** - Zwischen offenen/erledigten Gruppen
+- ✅ **Drag über Grenzen** - Auto-Toggle beim Überqueren des Trenners
+
+### 🔄 Sync-Verbesserungen
+
+- ✅ **Parallele Downloads** - Bis zu 5 gleichzeitig (konfigurierbar)
+- ✅ **Server-Löschungs-Erkennung** - Erkennt auf anderen Clients gelöschte Notizen
+- ✅ **Live Sync-Fortschritt** - Phasen-Anzeige mit Zählern
+- ✅ **Sync-Status Legende** - Hilfe-Dialog für alle Sync-Icons
+
+### ✨ UX
+
+- ✅ **Post-Update Changelog** - Zeigt lokalisierten Changelog nach Update
+- ✅ **Grid als Standard** - Neue Installationen starten im Grid-Modus
+- ✅ **Toast → Banner Migration** - Einheitliches Benachrichtigungssystem
+
+---
+
+## v1.8.1 - Bugfix & Polish ✅
+
+> **Status:** Released 🎉 (Februar 2026)
+
+- ✅ **Checklisten-Sortierung Persistenz** - Sortier-Option korrekt wiederhergestellt
+- ✅ **Widget Scroll Fix** - Scroll funktioniert auf Standard 3×2 Widget-Größe
+- ✅ **Widget Checklisten-Sortierung** - Widgets übernehmen gespeicherte Sortier-Option
+- ✅ **Drag Cross-Boundary** - Drag & Drop über Checked/Unchecked-Trenner
+- ✅ **Sync Rate-Limiting** - Globaler 30s Cooldown zwischen Auto-Syncs
+- ✅ **Detekt: 0 Issues** - Alle 12 Findings behoben
 
 ---
 
@@ -110,7 +173,6 @@
 
 ### 🎨 UI Features
 
-- **Widget** - Schnellzugriff vom Homescreen
 - **Kategorien/Tags** - Notizen organisieren
 - **Suche** - Volltextsuche in Notizen
 

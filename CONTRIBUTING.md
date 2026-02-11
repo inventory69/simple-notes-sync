@@ -94,10 +94,10 @@ Nutze die [Feature Request Template](https://github.com/inventory69/simple-notes
 Dokumentations-Verbesserungen sind auch Contributions! 
 
 **Dateien:**
-- `README.md` / `README.en.md` - Übersicht
-- `QUICKSTART.md` / `QUICKSTART.en.md` - Schritt-für-Schritt Anleitung
-- `DOCS.md` / `DOCS.en.md` - Technische Details
-- `server/README.md` / `server/README.en.md` - Server Setup
+- `README.de.md` / `README.md` - Übersicht
+- `QUICKSTART.de.md` / `QUICKSTART.md` - Schritt-für-Schritt Anleitung
+- `docs/DOCS.de.md` / `docs/DOCS.md` - Technische Details
+- `server/README.de.md` / `server/README.md` - Server Setup
 
 **Bitte:** Halte beide Sprachen (DE/EN) synchron!
 
@@ -219,10 +219,10 @@ Use the [Feature Request Template](https://github.com/inventory69/simple-notes-s
 Documentation improvements are also contributions!
 
 **Files:**
-- `README.md` / `README.en.md` - Overview
-- `QUICKSTART.md` / `QUICKSTART.en.md` - Step-by-step guide
-- `DOCS.md` / `DOCS.en.md` - Technical details
-- `server/README.md` / `server/README.en.md` - Server setup
+- `README.de.md` / `README.md` - Overview
+- `QUICKSTART.de.md` / `QUICKSTART.md` - Step-by-step guide
+- `docs/DOCS.de.md` / `docs/DOCS.md` - Technical details
+- `server/README.de.md` / `server/README.md` - Server setup
 
 **Please:** Keep both languages (DE/EN) in sync!
 
@@ -260,4 +260,4 @@ By contributing, you agree that your code will be published under the [MIT Licen
 
 Öffne ein [Issue](https://github.com/inventory69/simple-notes-sync/issues) oder nutze die [Question Template](https://github.com/inventory69/simple-notes-sync/issues/new/choose).
 
-**Frohe Weihnachten & Happy Coding! 🎄**
+**Happy Coding! 🚀**
