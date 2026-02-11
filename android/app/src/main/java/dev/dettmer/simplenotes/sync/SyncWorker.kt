@@ -111,8 +111,13 @@ class SyncWorker(
             // Verhindert dass Foreground und Background gleichzeitig syncing-State haben
             val prefs = applicationContext.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             
-            // Globaler Cooldown-Check (verhindert unnötige Server-Checks)
-            if (!SyncStateManager.canSyncGlobally(prefs)) {
+            // 🆕 v1.8.1 (IMPL_08B): onSave-Syncs bypassen den globalen Cooldown
+            // Grund: User hat explizit gespeichert → erwartet zeitnahen Sync
+            // Der eigene 5s-Throttle + isSyncing-Mutex reichen als Schutz
+            val isOnSaveSync = tags.contains(Constants.SYNC_ONSAVE_TAG)
+            
+            // Globaler Cooldown-Check (nicht für onSave-Syncs)
+            if (!isOnSaveSync && !SyncStateManager.canSyncGlobally(prefs)) {
                 Logger.d(TAG, "⏭️ SyncWorker: Global sync cooldown active - skipping")
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (cooldown)")

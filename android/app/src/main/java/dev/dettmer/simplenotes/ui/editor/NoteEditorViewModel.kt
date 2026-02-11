@@ -545,6 +545,7 @@ class NoteEditorViewModel(
         Logger.d(TAG, "📤 Triggering onSave sync")
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
             .addTag(Constants.SYNC_WORK_TAG)
+            .addTag(Constants.SYNC_ONSAVE_TAG)  // 🆕 v1.8.1 (IMPL_08B): Bypassed globalen Cooldown
             .build()
         WorkManager.getInstance(getApplication()).enqueue(syncRequest)
     }

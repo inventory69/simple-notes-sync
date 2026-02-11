@@ -86,4 +86,7 @@ object Constants {
     // 🆕 v1.8.1 (IMPL_08): Globaler Sync-Cooldown (über alle Trigger hinweg)
     const val KEY_LAST_GLOBAL_SYNC_TIME = "last_global_sync_timestamp"
     const val MIN_GLOBAL_SYNC_INTERVAL_MS = 30_000L  // 30 Sekunden
+    
+    // 🆕 v1.8.1 (IMPL_08B): onSave-Sync Worker-Tag (bypassed globalen Cooldown)
+    const val SYNC_ONSAVE_TAG = "onsave"
 }
