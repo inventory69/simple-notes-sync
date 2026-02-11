@@ -8,7 +8,7 @@
 
 <div align="center">
   
-[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
 [![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
@@ -66,12 +66,14 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 - 📝 **Offline-first** - Works without internet
 - 📊 **Flexible views** - Switch between list and grid layout
 - ✅ **Checklists** - Tap-to-check, drag & drop
-- 🌍 **Multilingual** - English/German with language selector
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
+- 📌 **Widgets** - Home screen quick-note and note list widgets
+- 🔀 **Smart sorting** - By title, date modified, date created, color
+- ⚡ **Parallel sync** - Downloads up to 5 notes simultaneously
+- 🌍 **Multilingual** - English/German with language selector
 - 🔒 **Self-hosted** - Your data stays with you (WebDAV)
 - 💾 **Local backup** - Export/Import as JSON file (encryption available)
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
-- 🔋 **Battery-friendly** - ~0.2% with defaults, up to ~1.0% with periodic sync
 - 🎨 **Material Design 3** - Dynamic dark/light mode & colors based on system settings
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
@@ -148,6 +150,6 @@ MIT License - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.7.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.8.1** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

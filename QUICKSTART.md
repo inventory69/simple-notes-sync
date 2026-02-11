@@ -8,7 +8,7 @@
 
 ## Prerequisites
 
-- ✅ Android 8.0+ smartphone/tablet
+- ✅ Android 7.0+ smartphone/tablet
 - ✅ WiFi connection
 - ✅ Own server with Docker (optional - for self-hosting)
 
@@ -52,7 +52,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 ### Step 2: Install App
 
 1. **Download APK:** [Latest version](https://github.com/inventory69/simple-notes-sync/releases/latest)
-   - Choose: `simple-notes-sync-vX.X.X-standard-universal.apk`
+   - Choose: `simple-notes-sync-vX.X.X-standard.apk`
    
 2. **Allow installation:**
    - Android: Settings → Security → Enable "Unknown sources" for your browser
@@ -77,7 +77,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
    > **💡 Note:** Enter only the base URL (without `/notes`). The app automatically creates `/notes/` for JSON files and `/notes-md/` for Markdown export.
 
-4. **Press "Test connection"****
+4. **Press "Test connection"**
    - ✅ Success? → Continue to step 4
    - ❌ Error? → See [Troubleshooting](#troubleshooting)
 
@@ -261,8 +261,8 @@ For reliable auto-sync:
 ## 🆘 Further Help
 
 - **GitHub Issues:** [Report problem](https://github.com/inventory69/simple-notes-sync/issues)
-- **Complete docs:** [DOCS.en.md](DOCS.en.md)
-- **Server setup details:** [server/README.en.md](server/README.en.md)
+- **Complete docs:** [DOCS.md](docs/DOCS.md)
+- **Server setup details:** [server/README.md](server/README.md)
 
 ---
 
