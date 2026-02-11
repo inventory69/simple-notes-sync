@@ -183,11 +183,28 @@ class NoteEditorViewModel(
      * 🆕 v1.8.0 (IMPL_017): Sortiert Checklist-Items mit Unchecked oben, Checked unten.
      * Stabile Sortierung: Relative Reihenfolge innerhalb jeder Gruppe bleibt erhalten.
      */
+    /**
+     * Sortiert Checklist-Items basierend auf der aktuellen Sortier-Option.
+     * 🆕 v1.8.1 (IMPL_03-FIX): Berücksichtigt jetzt _lastChecklistSortOption
+     * anstatt immer unchecked-first zu sortieren.
+     */
     private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
-        val unchecked = items.filter { !it.isChecked }
-        val checked = items.filter { it.isChecked }
+        val sorted = when (_lastChecklistSortOption.value) {
+            ChecklistSortOption.MANUAL,
+            ChecklistSortOption.UNCHECKED_FIRST -> {
+                val unchecked = items.filter { !it.isChecked }
+                val checked = items.filter { it.isChecked }
+                unchecked + checked
+            }
+            ChecklistSortOption.CHECKED_FIRST ->
+                items.sortedByDescending { it.isChecked }
+            ChecklistSortOption.ALPHABETICAL_ASC ->
+                items.sortedBy { it.text.lowercase() }
+            ChecklistSortOption.ALPHABETICAL_DESC ->
+                items.sortedByDescending { it.text.lowercase() }
+        }
 
-        return (unchecked + checked).mapIndexed { index, item ->
+        return sorted.mapIndexed { index, item ->
             item.copy(order = index)
         }
     }
