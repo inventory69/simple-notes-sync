@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
@@ -398,7 +399,7 @@ class NoteEditorViewModel(
                 }
             }
             
-            _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_SAVED))
+            // 🆕 v1.8.1 (IMPL_12): NOTE_SAVED Toast entfernt — NavigateBack ist ausreichend
 
             // 🌟 v1.6.0: Trigger onSave Sync
             triggerOnSaveSync()
@@ -438,17 +439,33 @@ class NoteEditorViewModel(
                         val success = withContext(Dispatchers.IO) {
                             webdavService.deleteNoteFromServer(noteId)
                         }
+                        // 🆕 v1.8.1 (IMPL_12): Banner-Feedback statt stiller Log-Einträge
                         if (success) {
                             Logger.d(TAG, "Note $noteId deleted from server")
+                            SyncStateManager.showInfo(
+                                getApplication<Application>().getString(
+                                    dev.dettmer.simplenotes.R.string.snackbar_deleted_from_server
+                                )
+                            )
                         } else {
                             Logger.w(TAG, "Failed to delete note $noteId from server")
+                            SyncStateManager.showError(
+                                getApplication<Application>().getString(
+                                    dev.dettmer.simplenotes.R.string.snackbar_server_delete_failed
+                                )
+                            )
                         }
                     } catch (e: Exception) {
                         Logger.e(TAG, "Error deleting note from server: ${e.message}")
+                        SyncStateManager.showError(
+                            getApplication<Application>().getString(
+                                dev.dettmer.simplenotes.R.string.snackbar_server_error,
+                                e.message ?: ""
+                            )
+                        )
                     }
                 }
                 
-                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_DELETED))
                 _events.emit(NoteEditorEvent.NavigateBack)
             }
         }

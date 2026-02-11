@@ -52,9 +52,10 @@ data class SyncProgress(
     /**
      * Ob das Banner sichtbar sein soll
      * Silent syncs zeigen nie ein Banner
+     * 🆕 v1.8.1 (IMPL_12): INFO ist immer sichtbar (nicht vom silent-Flag betroffen)
      */
     val isVisible: Boolean
-        get() = !silent && phase != SyncPhase.IDLE
+        get() = phase == SyncPhase.INFO || (!silent && phase != SyncPhase.IDLE)
     
     /**
      * Ob gerade ein aktiver Sync läuft (mit Spinner)
@@ -95,5 +96,8 @@ enum class SyncPhase {
     COMPLETED,
     
     /** Sync mit Fehler abgebrochen */
-    ERROR
+    ERROR,
+    
+    /** 🆕 v1.8.1 (IMPL_12): Kurzfristige Info-Meldung (nicht sync-bezogen) */
+    INFO
 }

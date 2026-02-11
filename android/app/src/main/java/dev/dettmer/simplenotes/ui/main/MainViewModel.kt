@@ -470,12 +470,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (success) {
-                    _showToast.emit(getString(R.string.snackbar_deleted_from_server))
+                    // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO
+                    SyncStateManager.showInfo(getString(R.string.snackbar_deleted_from_server))
                 } else {
-                    _showToast.emit(getString(R.string.snackbar_server_delete_failed))
+                    SyncStateManager.showError(getString(R.string.snackbar_server_delete_failed))
                 }
             } catch (e: Exception) {
-                _showToast.emit(getString(R.string.snackbar_server_error, e.message ?: ""))
+                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message ?: ""))
             } finally {
                 // Remove from pending deletions
                 _pendingDeletions.value = _pendingDeletions.value - noteId
@@ -507,7 +508,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             
-            // Show aggregated toast
+            // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO/ERROR
             val message = when {
                 failCount == 0 -> getString(R.string.snackbar_notes_deleted_from_server, successCount)
                 successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
@@ -517,7 +518,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     successCount + failCount
                 )
             }
-            _showToast.emit(message)
+            if (failCount > 0) {
+                SyncStateManager.showError(message)
+            } else {
+                SyncStateManager.showInfo(message)
+            }
         }
     }
     

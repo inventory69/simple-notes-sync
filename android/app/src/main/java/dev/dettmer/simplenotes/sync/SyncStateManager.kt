@@ -245,4 +245,60 @@ object SyncStateManager {
     fun markGlobalSyncStarted(prefs: android.content.SharedPreferences) {
         prefs.edit().putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_GLOBAL_SYNC_TIME, System.currentTimeMillis()).apply()
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.8.1 (IMPL_12): Info-Meldungen über das Banner-System
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Zeigt eine kurzfristige Info-Meldung im Banner an.
+     * Wird für nicht-sync-bezogene Benachrichtigungen verwendet
+     * (z.B. Server-Delete-Ergebnisse).
+     * 
+     * ACHTUNG: Wenn gerade ein Sync läuft (isSyncing), wird die Meldung
+     * ignoriert — der Sync-Progress hat Vorrang.
+     * 
+     * Auto-Hide erfolgt über ComposeMainActivity (2.5s).
+     */
+    fun showInfo(message: String) {
+        synchronized(lock) {
+            // Nicht während aktivem Sync anzeigen — Sync-Fortschritt hat Vorrang
+            if (isSyncing) {
+                Logger.d(TAG, "ℹ️ Info suppressed during sync: $message")
+                return
+            }
+            
+            _syncProgress.value = SyncProgress(
+                phase = SyncPhase.INFO,
+                resultMessage = message,
+                silent = false  // INFO ist nie silent
+            )
+            
+            Logger.d(TAG, "ℹ️ Showing info: $message")
+        }
+    }
+    
+    /**
+     * Zeigt eine Fehlermeldung im Banner an, auch außerhalb eines Syncs.
+     * Für nicht-sync-bezogene Fehler (z.B. Server-Delete fehlgeschlagen).
+     * 
+     * Auto-Hide erfolgt über ComposeMainActivity (4s).
+     */
+    fun showError(message: String?) {
+        synchronized(lock) {
+            // Nicht während aktivem Sync anzeigen
+            if (isSyncing) {
+                Logger.d(TAG, "❌ Error suppressed during sync: $message")
+                return
+            }
+            
+            _syncProgress.value = SyncProgress(
+                phase = SyncPhase.ERROR,
+                resultMessage = message,
+                silent = false
+            )
+            
+            Logger.e(TAG, "❌ Showing error: $message")
+        }
+    }
 }
