@@ -36,6 +36,9 @@ class DragDropListState(
 
     private var draggingItemDraggedDelta by mutableFloatStateOf(0f)
     private var draggingItemInitialOffset by mutableFloatStateOf(0f)
+    // 🆕 v1.8.1: Item-Größe beim Drag-Start fixieren
+    // Verhindert dass Höhenänderungen die Swap-Erkennung destabilisieren
+    private var draggingItemSize by mutableStateOf(0)
     private var overscrollJob by mutableStateOf<Job?>(null)
 
     val draggingItemOffset: Float
@@ -49,7 +52,9 @@ class DragDropListState(
 
     fun onDragStart(offset: Offset, itemIndex: Int) {
         draggingItemIndex = itemIndex
-        draggingItemInitialOffset = draggingItemLayoutInfo?.offset?.toFloat() ?: 0f
+        val info = draggingItemLayoutInfo
+        draggingItemInitialOffset = info?.offset?.toFloat() ?: 0f
+        draggingItemSize = info?.size ?: 0
         draggingItemDraggedDelta = 0f
     }
 
@@ -57,6 +62,7 @@ class DragDropListState(
         draggingItemDraggedDelta = 0f
         draggingItemIndex = null
         draggingItemInitialOffset = 0f
+        draggingItemSize = 0
         overscrollJob?.cancel()
     }
 
@@ -65,7 +71,8 @@ class DragDropListState(
 
         val draggingItem = draggingItemLayoutInfo ?: return
         val startOffset = draggingItem.offset + draggingItemOffset
-        val endOffset = startOffset + draggingItem.size
+        // 🆕 v1.8.1: Fixierte Item-Größe für stabile Swap-Erkennung
+        val endOffset = startOffset + draggingItemSize
 
         // 🆕 v1.8.0: IMPL_023b — Straddle-Target-Center + Adjazenz-Filter
         // Statt den Mittelpunkt des gezogenen Items zu prüfen ("liegt mein Zentrum im Target?"),
