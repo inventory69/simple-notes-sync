@@ -370,7 +370,9 @@ private fun ChecklistEditor(
                 key = { _, item -> item.id }
             ) { index, item ->
                 // 🆕 v1.8.0 (IMPL_017): Separator vor dem ersten Checked-Item
-                if (showSeparator && index == uncheckedCount) {
+                // 🆕 v1.8.1: Separator während Drag ausblenden — verhindert Flächenveränderung
+                // am Separator-Item die Swap-Erkennung destabilisiert
+                if (showSeparator && index == uncheckedCount && dragDropState.draggingItemIndex == null) {
                     CheckedItemsSeparator(checkedCount = checkedCount)
                 }
 
@@ -409,7 +411,10 @@ private fun ChecklistEditor(
                         // 🆕 v1.8.0: IMPL_023 - Drag nur auf Handle
                         dragModifier = Modifier.dragContainer(dragDropState, index),
                         modifier = Modifier
-                            .animateItem()  // 🆕 v1.8.0 (IMPL_017): LazyColumn Item-Animation
+                            // 🆕 v1.8.1: animateItem NUR für nicht-gedraggte Items
+                            // Bei gedraggten Items kämpft animateItem (Layout-Animation)
+                            // gegen den manuellen offset (Finger-Position) → Flackern
+                            .then(if (!isDragging) Modifier.animateItem() else Modifier)
                             .offset {
                                 IntOffset(
                                     0,
