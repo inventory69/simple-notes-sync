@@ -8,6 +8,83 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.1] - 2026-02-11
+
+### 🛠️ Bugfix & Polish Release
+
+Checklisten-Fixes, Widget-Verbesserungen, Sync-Härtung und Code-Qualität.
+
+### 🐛 Fehlerbehebungen
+
+**Checklisten-Sortierung Persistenz** ([7dbc06d](https://github.com/inventory69/simple-notes-sync/commit/7dbc06d))
+- Sortier-Option wurde beim erneuten Öffnen einer Checkliste nicht angewendet
+- Ursache: `sortChecklistItems()` sortierte immer unchecked-first statt `_lastChecklistSortOption` zu lesen
+- Alle Sortier-Modi werden nun korrekt wiederhergestellt (Manuell, Alphabetisch, Unchecked/Checked First)
+
+**Widget-Scroll bei Standard-Größe** ([c72b3fe](https://github.com/inventory69/simple-notes-sync/commit/c72b3fe))
+- Scrollen funktionierte nicht bei Standard-3×2-Widget-Größe (110–150dp Höhe)
+- Neue Größenklassen `NARROW_SCROLL` und `WIDE_SCROLL` mit 150dp-Schwelle
+- `clickable`-Modifier bei entsperrten Checklisten entfernt, um Scrollen zu ermöglichen
+
+**Auto-Sync Toast entfernt** ([fe6935a](https://github.com/inventory69/simple-notes-sync/commit/fe6935a))
+- Unerwartete Toast-Benachrichtigung bei automatischem Hintergrund-Sync entfernt
+- Stiller Auto-Sync bleibt still; nur Fehler werden angezeigt
+
+**Gradient- & Drag-Regression** ([24fe32a](https://github.com/inventory69/simple-notes-sync/commit/24fe32a))
+- Gradient-Overlay-Regression bei langen Checklisten-Items behoben
+- Drag-and-Drop-Flackern beim Verschieben zwischen Bereichen behoben
+
+### 🆕 Neue Funktionen
+
+**Widget-Checklisten: Sortierung & Trennlinien** ([66d98c0](https://github.com/inventory69/simple-notes-sync/commit/66d98c0))
+- Widgets übernehmen die gespeicherte Sortier-Option aus dem Editor
+- Visuelle Trennlinie zwischen unerledigten/erledigten Items (MANUAL & UNCHECKED_FIRST)
+- Auto-Sortierung beim Abhaken von Checkboxen im Widget
+- Emoji-Änderung: ✅ → ☑️ für erledigte Items
+
+**Checklisten-Vorschau-Sortierung** ([2c43b47](https://github.com/inventory69/simple-notes-sync/commit/2c43b47))
+- Hauptbildschirm-Vorschau (NoteCard, NoteCardCompact, NoteCardGrid) zeigt gespeicherte Sortierung
+- Neuer `ChecklistPreviewHelper` mit geteilter Sortier-Logik
+
+**Auto-Scroll bei Zeilenumbruch** ([3e4b1bd](https://github.com/inventory69/simple-notes-sync/commit/3e4b1bd))
+- Checklisten-Editor scrollt automatisch wenn Text in eine neue Zeile umbricht
+- Cursor bleibt am unteren Rand sichtbar während der Eingabe
+
+**Separator Drag Cross-Boundary** ([7b55811](https://github.com/inventory69/simple-notes-sync/commit/7b55811))
+- Drag-and-Drop funktioniert nun über die Checked/Unchecked-Trennlinie hinweg
+- Items wechseln automatisch ihren Status beim Verschieben über die Grenze
+- Extrahiertes `DraggableChecklistItem`-Composable für Wiederverwendbarkeit
+
+### 🔄 Verbesserungen
+
+**Sync-Ratenlimit & Akkuschutz** ([ffe0e46](https://github.com/inventory69/simple-notes-sync/commit/ffe0e46), [a1a574a](https://github.com/inventory69/simple-notes-sync/commit/a1a574a))
+- Globaler 30-Sekunden-Cooldown zwischen Sync-Operationen (Auto/WiFi/Periodisch)
+- onSave-Syncs umgehen den globalen Cooldown (behalten eigenen 5s-Throttle)
+- Neuer `SyncStateManager`-Singleton für zentrales State-Tracking
+- Verhindert Akkuverbrauch durch schnelle aufeinanderfolgende Syncs
+
+**Toast → Banner-Migration** ([27e6b9d](https://github.com/inventory69/simple-notes-sync/commit/27e6b9d))
+- Alle nicht-interaktiven Benachrichtigungen auf einheitliches Banner-System migriert
+- Server-Lösch-Ergebnisse als INFO/ERROR-Banner angezeigt
+- INFO-Phase zu SyncPhase-Enum mit Auto-Hide (2,5s) hinzugefügt
+- Snackbars mit Undo-Aktionen bleiben unverändert
+
+**ProGuard-Regeln Audit** ([6356173](https://github.com/inventory69/simple-notes-sync/commit/6356173))
+- Fehlende Keep-Regeln für Widget-ActionCallback-Klassen hinzugefügt
+- Compose-spezifische ProGuard-Regeln hinzugefügt
+- Verhindert ClassNotFoundException in Release-Builds
+
+### 🧹 Code-Qualität
+
+**Detekt-Compliance** ([1a6617a](https://github.com/inventory69/simple-notes-sync/commit/1a6617a))
+- Alle 12 Detekt-Findings behoben (0 Issues verbleibend)
+- `NoteEditorViewModel.loadNote()` refactored um Verschachtelungstiefe zu reduzieren
+- Konstanten für Magic Numbers im Editor extrahiert
+- Unbenutzte Imports aus `UpdateChangelogSheet` entfernt
+- `maxIssues: 0` in Detekt-Konfiguration gesetzt
+
+---
+
 ## [1.8.0] - 2026-02-10
 
 ### 🚨 CRITICAL BUGFIX (Tag neu erstellt)
@@ -891,6 +968,21 @@ Das komplette UI wurde von XML-Views auf Jetpack Compose migriert. Die App ist j
 
 ---
 
+[1.8.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.8.1
+[1.8.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.8.0
+[1.7.2]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.7.2
+[1.7.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.7.1
+[1.7.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.7.0
+[1.6.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.6.1
+[1.6.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.6.0
+[1.5.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.5.0
+[1.4.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.4.1
+[1.4.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.4.0
+[1.3.2]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.3.2
+[1.3.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.3.1
+[1.3.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.3.0
+[1.2.2]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.2.2
+[1.2.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.2.1
 [1.2.0]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.2.0
 [1.1.2]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.1.2
 [1.1.1]: https://github.com/inventory69/simple-notes-sync/releases/tag/v1.1.1

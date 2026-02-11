@@ -37,6 +37,50 @@
 
 ---
 
+## 📊 Views & Layout _(NEW in v1.7.0+)_
+
+### Display Modes
+- ✅ **List View** - Classic list layout
+- ✅ **Grid View** _(NEW in v1.7.0)_ - Pinterest-style staggered grid with dynamic preview lines
+- ✅ **Layout toggle** - Switch between list and grid in settings
+- ✅ **Adaptive columns** - 2-3 columns based on screen size
+- ✅ **Grid as default** _(v1.8.0)_ - New installations default to grid view
+
+### Note Sorting _(NEW in v1.8.0)_
+- ✅ **Sort by Updated** - Newest or oldest first
+- ✅ **Sort by Created** - By creation date
+- ✅ **Sort by Title** - A-Z or Z-A
+- ✅ **Sort by Type** - Text notes vs checklists
+- ✅ **Persistent preferences** - Sort option saved across app restarts
+- ✅ **Sort dialog** - Direction toggle in main screen
+
+### Checklist Sorting _(NEW in v1.8.0)_
+- ✅ **Manual** - Custom drag & drop order
+- ✅ **Alphabetical** - A-Z sorting
+- ✅ **Unchecked First** - Unchecked items on top
+- ✅ **Checked Last** - Checked items at bottom
+- ✅ **Visual separator** - Between unchecked/checked groups with count
+- ✅ **Auto-sort on toggle** - Re-sorts when checking/unchecking items
+- ✅ **Drag across boundaries** - Items auto-toggle state when crossing separator
+
+---
+
+## 📌 Homescreen Widgets _(NEW in v1.8.0)_
+
+### Widget Features
+- ✅ **Text note widget** - Display any note on homescreen
+- ✅ **Checklist widget** - Interactive checkboxes that sync to server
+- ✅ **5 size classes** - SMALL, NARROW_MED, NARROW_TALL, WIDE_MED, WIDE_TALL
+- ✅ **Material You colors** - Dynamic colors matching system theme
+- ✅ **Configurable opacity** - Background transparency (0-100%)
+- ✅ **Lock toggle** - Prevent accidental edits
+- ✅ **Auto-refresh** - Updates after sync completion
+- ✅ **Configuration activity** - Note selection and settings
+- ✅ **Checklist sorting** _(v1.8.1)_ - Widgets respect saved sort option
+- ✅ **Visual separators** _(v1.8.1)_ - Between unchecked/checked items
+
+---
+
 ## 🌍 Multilingual Support _(NEW in v1.5.0)_
 
 ### Supported Languages
@@ -129,9 +173,12 @@
 ### Sync Mechanism
 - ✅ **Upload** - Local changes to server
 - ✅ **Download** - Server changes to app
+- ✅ **Parallel downloads** _(NEW in v1.8.0)_ - Up to 5 simultaneous downloads
 - ✅ **Conflict detection** - On simultaneous changes
 - ✅ **Conflict-free merging** - Last-Write-Wins via timestamp
-- ✅ **Sync status tracking** - LOCAL_ONLY, PENDING, SYNCED, CONFLICT
+- ✅ **Server deletion detection** _(NEW in v1.8.0)_ - Detects notes deleted on other devices
+- ✅ **Sync status tracking** - LOCAL_ONLY, PENDING, SYNCED, CONFLICT, DELETED_ON_SERVER
+- ✅ **Live progress UI** _(NEW in v1.8.0)_ - Phase indicators with upload/download counters
 - ✅ **Error handling** - Retry on network issues
 - ✅ **Offline-first** - App works without server
 
@@ -140,6 +187,9 @@
 - ✅ **HTTP/HTTPS** - HTTP only local, HTTPS for external
 - ✅ **Username/password** - Basic authentication
 - ✅ **Connection test** - Test in settings
+- ✅ **WiFi-only sync** _(NEW in v1.7.0)_ - Option to sync only on WiFi
+- ✅ **VPN support** _(NEW in v1.7.0)_ - Sync works correctly through VPN tunnels
+- ✅ **Self-signed SSL** _(NEW in v1.7.0)_ - Support for self-signed certificates
 - ✅ **Server URL normalization** - Automatic `/notes/` and `/notes-md/` _(NEW in v1.2.1)_
 - ✅ **Flexible URL input** - Both variants work: `http://server/` and `http://server/notes/`
 
@@ -196,11 +246,12 @@
 ## 🛠️ Technical Details
 
 ### Platform
-- ✅ **Android 8.0+** (API 26+)
+- ✅ **Android 7.0+** (API 24+)
 - ✅ **Target SDK 36** (Android 15)
 - ✅ **Kotlin** - Modern programming language
+- ✅ **Jetpack Compose** - Declarative UI framework
 - ✅ **Material Design 3** - Latest design guidelines
-- ✅ **ViewBinding** - Type-safe view references
+- ✅ **Jetpack Glance** _(v1.8.0)_ - Widget framework
 
 ### Architecture
 - ✅ **MVVM-Light** - Simple architecture
@@ -218,6 +269,7 @@
 - ✅ **Gson** - JSON serialization
 - ✅ **WorkManager** - Background tasks
 - ✅ **OkHttp** - HTTP client (via Sardine)
+- ✅ **Glance** _(v1.8.0)_ - Widget framework
 
 ### Build Variants
 - ✅ **Standard** - Universal APK (100% FOSS, no Google dependencies)
@@ -247,22 +299,12 @@
 
 ## 🔮 Future Features
 
-Planned for upcoming versions:
+Planned for upcoming versions – see [UPCOMING.md](UPCOMING.md) for the full roadmap.
 
-### v1.4.0 - Checklists
-- ⏳ **Checklist notes** - New note type with checkboxes
-- ⏳ **Completed items** - Strike-through/check off
-- ⏳ **Drag & drop** - Reorder items
-
-### v1.5.0 - Internationalization
-- ⏳ **Multi-language** - German + English UI
-- ⏳ **Language selection** - Selectable in settings
-- ⏳ **Full translation** - All strings in both languages
-
-### v1.6.0 - Modern APIs
-- ⏳ **Replace LocalBroadcastManager** - Use SharedFlow instead
-- ⏳ **PackageInfo Flags** - Use PackageInfoFlags.of()
-- ⏳ **Complexity refactoring** - Split long functions
+### v2.0.0 - Legacy Cleanup
+- ⏳ **Remove deprecated Activities** - Replace with Compose equivalents
+- ⏳ **LocalBroadcastManager → SharedFlow** - Modern event architecture
+- ⏳ **WebDavSyncService split** - SyncOrchestrator, NoteUploader, NoteDownloader
 
 ---
 
@@ -305,4 +347,4 @@ A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Last update:** v1.3.2 (2026-01-10)
+**Last update:** v1.8.1 (2026-02-11)

@@ -541,17 +541,7 @@ androidx.localbroadcastmanager:localbroadcastmanager:1.1.0
 
 ## 🔮 Roadmap
 
-### v1.1
-- [ ] Suche & Filter
-- [ ] Dark Mode
-- [ ] Tags/Kategorien
-- [ ] Markdown Preview
-
-### v2.0
-- [ ] Desktop Client (Flutter)
-- [ ] End-to-End Verschlüsselung
-- [ ] Shared Notes (Collaboration)
-- [ ] Attachment Support
+Siehe [UPCOMING.md](UPCOMING.md) für die vollständige Roadmap und geplante Features.
 
 ---
 
@@ -564,4 +554,4 @@ androidx.localbroadcastmanager:localbroadcastmanager:1.1.0
 
 ---
 
-**Letzte Aktualisierung:** 25. Dezember 2025
+**Letzte Aktualisierung:** Februar 2026

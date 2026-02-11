@@ -48,8 +48,6 @@ git push origin fix/my-bug
 
 ## 📱 Installation auf Gerät
 
-## 📱 Installation auf Gerät
-
 ### Mit ADB (Empfohlen - sauberes Testing)
 ```bash
 # Gerät verbinden

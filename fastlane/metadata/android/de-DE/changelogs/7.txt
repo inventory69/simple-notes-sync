@@ -1,12 +1,12 @@
 v1.2.2 - Rückwärtskompatibilität für v1.2.0 User
 
 Kritische Fehlerbehebung
-• Server-Wiederherstellung findet jetzt ALLE Notizen (Root + /notes/)
-• User die von v1.2.0 upgraden verlieren keine Daten mehr
-• Alte Notizen aus Root-Ordner werden beim Restore gefunden
+• Server-Restore findet jetzt ALLE Notizen (Root + /notes/)
+• Upgrade von v1.2.0 ohne Datenverlust
+• Alte Notizen aus Root-Ordner werden gefunden
 
 Technische Details
 • Dual-Mode Download nur bei Server-Restore aktiv
-• Normale Syncs bleiben schnell (scannen nur /notes/)
+• Normale Syncs bleiben schnell (nur /notes/)
 • Automatische Deduplication verhindert Duplikate
-• Sanfte Migration: Neue Uploads gehen in /notes/, alte bleiben lesbar
+• Sanfte Migration: Uploads → /notes/, alte bleiben lesbar

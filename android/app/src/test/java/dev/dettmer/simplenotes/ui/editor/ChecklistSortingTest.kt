@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import dev.dettmer.simplenotes.models.ChecklistSortOption
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -173,5 +174,205 @@ class ChecklistSortingTest {
         assertEquals(0, sorted[0].order)
         assertEquals(1, sorted[1].order)
         assertEquals(2, sorted[2].order)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.8.1 (IMPL_15): Tests für Add-Item Insert-Position
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Simulates calculateInsertIndexForNewItem() from NoteEditorViewModel.
+     * Tests the insert position logic for new unchecked items.
+     */
+    private fun calculateInsertIndexForNewItem(
+        items: List<ChecklistItemState>,
+        sortOption: ChecklistSortOption
+    ): Int {
+        return when (sortOption) {
+            ChecklistSortOption.MANUAL,
+            ChecklistSortOption.UNCHECKED_FIRST -> {
+                val firstCheckedIndex = items.indexOfFirst { it.isChecked }
+                if (firstCheckedIndex >= 0) firstCheckedIndex else items.size
+            }
+            else -> items.size
+        }
+    }
+
+    /**
+     * Simulates the full addChecklistItemAtEnd() logic:
+     * 1. Calculate insert index
+     * 2. Insert new item
+     * 3. Reassign order values
+     */
+    private fun simulateAddItemAtEnd(
+        items: List<ChecklistItemState>,
+        sortOption: ChecklistSortOption
+    ): List<ChecklistItemState> {
+        val newItem = ChecklistItemState(id = "new", text = "", isChecked = false, order = 0)
+        val insertIndex = calculateInsertIndexForNewItem(items, sortOption)
+        val newList = items.toMutableList()
+        newList.add(insertIndex, newItem)
+        return newList.mapIndexed { i, item -> item.copy(order = i) }
+    }
+
+    @Test
+    fun `IMPL_15 - add item at end inserts before separator in MANUAL mode`() {
+        // Ausgangslage: 2 unchecked, 1 checked (sortiert)
+        val items = listOf(
+            item("a", checked = false, order = 0),
+            item("b", checked = false, order = 1),
+            item("c", checked = true,  order = 2)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.MANUAL)
+
+        // Neues Item muss an Index 2 stehen (vor dem checked Item)
+        assertEquals(4, result.size)
+        assertEquals("a",   result[0].id)
+        assertEquals("b",   result[1].id)
+        assertEquals("new", result[2].id)  // ← Neues Item VOR Separator
+        assertFalse(result[2].isChecked)
+        assertEquals("c",   result[3].id)  // ← Checked Item bleibt UNTER Separator
+        assertTrue(result[3].isChecked)
+    }
+
+    @Test
+    fun `IMPL_15 - add item at end inserts before separator in UNCHECKED_FIRST mode`() {
+        val items = listOf(
+            item("a", checked = false, order = 0),
+            item("b", checked = true,  order = 1),
+            item("c", checked = true,  order = 2)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.UNCHECKED_FIRST)
+
+        assertEquals(4, result.size)
+        assertEquals("a",   result[0].id)
+        assertEquals("new", result[1].id)  // ← Neues Item direkt nach letztem unchecked
+        assertFalse(result[1].isChecked)
+        assertEquals("b",   result[2].id)
+        assertEquals("c",   result[3].id)
+    }
+
+    @Test
+    fun `IMPL_15 - add item at end appends at end in CHECKED_FIRST mode`() {
+        val items = listOf(
+            item("a", checked = true,  order = 0),
+            item("b", checked = false, order = 1)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.CHECKED_FIRST)
+
+        assertEquals(3, result.size)
+        assertEquals("a",   result[0].id)
+        assertEquals("b",   result[1].id)
+        assertEquals("new", result[2].id)  // ← Am Ende (kein Separator)
+    }
+
+    @Test
+    fun `IMPL_15 - add item at end appends at end in ALPHABETICAL_ASC mode`() {
+        val items = listOf(
+            item("a", checked = false, order = 0),
+            item("b", checked = true,  order = 1)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.ALPHABETICAL_ASC)
+
+        assertEquals(3, result.size)
+        assertEquals("new", result[2].id)  // ← Am Ende
+    }
+
+    @Test
+    fun `IMPL_15 - add item at end appends at end in ALPHABETICAL_DESC mode`() {
+        val items = listOf(
+            item("a", checked = true,  order = 0),
+            item("b", checked = false, order = 1)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.ALPHABETICAL_DESC)
+
+        assertEquals(3, result.size)
+        assertEquals("new", result[2].id)  // ← Am Ende
+    }
+
+    @Test
+    fun `IMPL_15 - add item with no checked items appends at end`() {
+        val items = listOf(
+            item("a", checked = false, order = 0),
+            item("b", checked = false, order = 1)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.MANUAL)
+
+        assertEquals(3, result.size)
+        assertEquals("new", result[2].id)  // Kein checked Item → ans Ende
+    }
+
+    @Test
+    fun `IMPL_15 - add item with all checked items inserts at position 0`() {
+        val items = listOf(
+            item("a", checked = true, order = 0),
+            item("b", checked = true, order = 1)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.MANUAL)
+
+        assertEquals(3, result.size)
+        assertEquals("new", result[0].id)  // ← Ganz oben (vor allen checked Items)
+        assertFalse(result[0].isChecked)
+        assertEquals("a",   result[1].id)
+        assertEquals("b",   result[2].id)
+    }
+
+    @Test
+    fun `IMPL_15 - add item to empty list in MANUAL mode`() {
+        val items = emptyList<ChecklistItemState>()
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.MANUAL)
+
+        assertEquals(1, result.size)
+        assertEquals("new", result[0].id)
+        assertEquals(0, result[0].order)
+    }
+
+    @Test
+    fun `IMPL_15 - order values are sequential after add item`() {
+        val items = listOf(
+            item("a", checked = false, order = 0),
+            item("b", checked = false, order = 1),
+            item("c", checked = true,  order = 2)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.MANUAL)
+
+        result.forEachIndexed { index, item ->
+            assertEquals("Order at index $index should be $index", index, item.order)
+        }
+    }
+
+    @Test
+    fun `IMPL_15 - existing items do not change position after add item`() {
+        // Kernforderung: Kein Item darf sich verschieben
+        val items = listOf(
+            item("cashews",  checked = false, order = 0),
+            item("noodles",  checked = false, order = 1),
+            item("coffee",   checked = true,  order = 2)
+        )
+
+        val result = simulateAddItemAtEnd(items, ChecklistSortOption.MANUAL)
+
+        // Relative Reihenfolge der bestehenden Items prüfen
+        val existingIds = result.filter { it.id != "new" }.map { it.id }
+        assertEquals(listOf("cashews", "noodles", "coffee"), existingIds)
+
+        // Cashews und Noodles müssen VOR dem neuen Item sein
+        val cashewsIdx = result.indexOfFirst { it.id == "cashews" }
+        val noodlesIdx = result.indexOfFirst { it.id == "noodles" }
+        val newIdx     = result.indexOfFirst { it.id == "new" }
+        val coffeeIdx  = result.indexOfFirst { it.id == "coffee" }
+
+        assertTrue("Cashews before new", cashewsIdx < newIdx)
+        assertTrue("Noodles before new", noodlesIdx < newIdx)
+        assertTrue("New before Coffee",  newIdx < coffeeIdx)
     }
 }

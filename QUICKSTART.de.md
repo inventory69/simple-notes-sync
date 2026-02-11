@@ -8,7 +8,7 @@
 
 ## Voraussetzungen
 
-- ✅ Android 8.0+ Smartphone/Tablet
+- ✅ Android 7.0+ Smartphone/Tablet
 - ✅ WLAN-Verbindung
 - ✅ Eigener Server mit Docker (optional - für Self-Hosting)
 
@@ -52,7 +52,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 ### Schritt 2: App installieren
 
 1. **APK herunterladen:** [Neueste Version](https://github.com/inventory69/simple-notes-sync/releases/latest)
-   - Wähle: `simple-notes-sync-vX.X.X-standard-universal.apk`
+   - Wähle: `simple-notes-sync-vX.X.X-standard.apk`
    
 2. **Installation erlauben:**
    - Android: Einstellungen → Sicherheit → "Unbekannte Quellen" für deinen Browser aktivieren
@@ -261,7 +261,7 @@ Für zuverlässigen Auto-Sync:
 ## 🆘 Weitere Hilfe
 
 - **GitHub Issues:** [Problem melden](https://github.com/inventory69/simple-notes-sync/issues)
-- **Vollständige Docs:** [DOCS.md](DOCS.md)
+- **Vollständige Docs:** [DOCS.md](docs/DOCS.md)
 - **Server Setup Details:** [server/README.md](server/README.md)
 
 ---

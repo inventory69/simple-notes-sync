@@ -60,28 +60,91 @@
 
 ---
 
-## v1.7.0 - Staggered Grid Layout
+## v1.7.0 - Grid View, WiFi-Only & VPN ✅
 
-> **Status:** Planned 📝
+> **Status:** Released 🎉 (January 2026)
 
-### 🎨 Adaptive Layout
+### 🎨 Grid Layout
 
-- **Staggered Grid** - Pinterest-style layout using `LazyVerticalStaggeredGrid`
-- **Smart sizing** - Small notes (short text, few checklist items) displayed compactly
-- **Layout toggle** - Switch between List and Grid view in settings
-- **Adaptive columns** - 2-3 columns based on screen size
-- **120 FPS optimized** - Lazy loading for smooth scrolling with many notes
+- ✅ **Pinterest-style staggered grid** - Gapless layout with dynamic preview lines
+- ✅ **Layout toggle** - Switch between list and grid in settings
+- ✅ **Adaptive columns** - 2-3 columns based on screen size
 
-### 🔧 Server Folder Check
+### 📡 Sync Improvements
 
-- **WebDAV folder check** - Checks if folder exists and is writable on server
-- **Better error messages** - Helpful hints for server problems
-- **Connection test improvement** - Checks read/write permissions
+- ✅ **WiFi-only sync toggle** - Sync only when connected to WiFi
+- ✅ **VPN support** - Sync works correctly through VPN tunnels
+- ✅ **Self-signed SSL** - Documentation and support for self-signed certificates
+- ✅ **Server change detection** - All notes reset to PENDING when server URL changes
 
-### 🔧 Technical Improvements
+---
 
-- **Code refactoring** - Split LargeClass components (WebDavSyncService, SettingsActivity)
-- **Improved progress dialogs** - Material Design 3 compliant
+## v1.7.1 - Android 9 Fix & VPN ✅
+
+> **Status:** Released 🎉 (February 2026)
+
+- ✅ **Android 9 crash fix** - Implemented `getForegroundInfo()` for WorkManager on API 28
+- ✅ **VPN compatibility** - WiFi socket binding detects Wireguard VPN interfaces
+- ✅ **SafeSardineWrapper** - Proper HTTP connection cleanup
+
+---
+
+## v1.7.2 - Timestamp & Deletion Fixes ✅
+
+> **Status:** Released 🎉 (February 2026)
+
+- ✅ **Server mtime as source of truth** - Fixes external editor timestamp issues
+- ✅ **Deletion tracker mutex** - Thread-safe batch deletes
+- ✅ **ISO8601 timezone parsing** - Multi-format support
+- ✅ **E-Tag batch caching** - Performance improvement
+- ✅ **Memory leak prevention** - SafeSardineWrapper with Closeable
+
+---
+
+## v1.8.0 - Widgets, Sorting & Advanced Sync ✅
+
+> **Status:** Released 🎉 (February 2026)
+
+### 📌 Homescreen Widgets
+
+- ✅ **Full Jetpack Glance framework** - 5 responsive size classes
+- ✅ **Interactive checklists** - Checkboxes that sync to server
+- ✅ **Material You colors** - Dynamic colors with configurable opacity
+- ✅ **Lock toggle** - Prevent accidental edits
+- ✅ **Configuration activity** - Note selection and settings
+
+### 📊 Sorting
+
+- ✅ **Note sorting** - By title, date modified, date created, type
+- ✅ **Checklist sorting** - Manual, alphabetical, unchecked first, checked last
+- ✅ **Visual separators** - Between unchecked/checked groups
+- ✅ **Drag across boundaries** - Auto-toggle state on cross-boundary drag
+
+### 🔄 Sync Improvements
+
+- ✅ **Parallel downloads** - Up to 5 simultaneous (configurable)
+- ✅ **Server deletion detection** - Detects notes deleted on other clients
+- ✅ **Live sync progress** - Phase indicators with counters
+- ✅ **Sync status legend** - Help dialog explaining all sync icons
+
+### ✨ UX
+
+- ✅ **Post-update changelog** - Shows localized changelog on first launch after update
+- ✅ **Grid as default** - New installations default to grid view
+- ✅ **Toast → Banner migration** - Unified notification system
+
+---
+
+## v1.8.1 - Bugfix & Polish ✅
+
+> **Status:** Released 🎉 (February 2026)
+
+- ✅ **Checklist sort persistence** - Sort option correctly restored when reopening
+- ✅ **Widget scroll fix** - Scroll works on standard 3×2 widget size
+- ✅ **Widget checklist sorting** - Widgets apply saved sort option
+- ✅ **Drag cross-boundary** - Drag & drop across checked/unchecked separator
+- ✅ **Sync rate-limiting** - Global 30s cooldown between auto-syncs
+- ✅ **Detekt: 0 issues** - All 12 findings resolved
 
 ---
 
@@ -110,7 +173,6 @@
 
 ### 🎨 UI Features
 
-- **Widget** - Quick access from homescreen
 - **Categories/Tags** - Organize notes
 - **Search** - Full-text search in notes
 

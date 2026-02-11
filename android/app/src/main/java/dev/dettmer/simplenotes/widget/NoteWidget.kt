@@ -36,15 +36,20 @@ class NoteWidget : GlanceAppWidget() {
 
     companion object {
         // Responsive Breakpoints — schmale + breite Spalten
-        val SIZE_SMALL = DpSize(110.dp, 80.dp)          // Schmal+kurz: nur Titel
-        val SIZE_NARROW_MEDIUM = DpSize(110.dp, 110.dp)  // Schmal+mittel: Vorschau
-        val SIZE_NARROW_LARGE = DpSize(110.dp, 250.dp)   // Schmal+groß: voller Inhalt
-        val SIZE_WIDE_MEDIUM = DpSize(250.dp, 110.dp)    // Breit+mittel: Vorschau
-        val SIZE_WIDE_LARGE = DpSize(250.dp, 250.dp)     // Breit+groß: voller Inhalt
+        val SIZE_SMALL = DpSize(110.dp, 80.dp)           // Schmal+kurz: nur Titel
+        val SIZE_NARROW_MEDIUM = DpSize(110.dp, 110.dp)   // Schmal+mittel: Vorschau
+        val SIZE_NARROW_SCROLL = DpSize(110.dp, 150.dp)   // 🆕 v1.8.1: Schmal+scroll (Standard 3x2)
+        val SIZE_NARROW_LARGE = DpSize(110.dp, 250.dp)    // Schmal+groß: voller Inhalt
+        val SIZE_WIDE_MEDIUM = DpSize(250.dp, 110.dp)     // Breit+mittel: Vorschau
+        val SIZE_WIDE_SCROLL = DpSize(250.dp, 150.dp)     // 🆕 v1.8.1: Breit+scroll (Standard 3x2 breit)
+        val SIZE_WIDE_LARGE = DpSize(250.dp, 250.dp)      // Breit+groß: voller Inhalt
     }
 
     override val sizeMode = SizeMode.Responsive(
-        setOf(SIZE_SMALL, SIZE_NARROW_MEDIUM, SIZE_NARROW_LARGE, SIZE_WIDE_MEDIUM, SIZE_WIDE_LARGE)
+        setOf(
+            SIZE_SMALL, SIZE_NARROW_MEDIUM, SIZE_NARROW_SCROLL, SIZE_NARROW_LARGE,
+            SIZE_WIDE_MEDIUM, SIZE_WIDE_SCROLL, SIZE_WIDE_LARGE
+        )
     )
 
     override val stateDefinition = PreferencesGlanceStateDefinition
