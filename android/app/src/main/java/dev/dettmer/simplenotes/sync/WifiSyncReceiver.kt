@@ -27,6 +27,16 @@ class WifiSyncReceiver : BroadcastReceiver() {
             return
         }
         
+        // 🆕 v1.8.1 (IMPL_08): Globaler Cooldown (verhindert Doppel-Trigger mit NetworkMonitor)
+        if (!SyncStateManager.canSyncGlobally(prefs)) {
+            return
+        }
+        
+        // 🆕 v1.8.1 (IMPL_08): Auch KEY_SYNC_TRIGGER_WIFI_CONNECT prüfen (Konsistenz mit NetworkMonitor)
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)) {
+            return
+        }
+        
         // Check if connected to any WiFi (SSID-Prüfung entfernt in v1.4.0)
         if (isConnectedToWifi(context)) {
             scheduleSyncWork(context)

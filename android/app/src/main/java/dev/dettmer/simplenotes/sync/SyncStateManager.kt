@@ -214,4 +214,35 @@ object SyncStateManager {
             }
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.8.1 (IMPL_08): Globaler Sync-Cooldown
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Prüft ob seit dem letzten erfolgreichen Sync-Start genügend Zeit vergangen ist.
+     * Wird von ALLEN Sync-Triggern als erste Prüfung aufgerufen.
+     * 
+     * @return true wenn ein neuer Sync erlaubt ist
+     */
+    fun canSyncGlobally(prefs: android.content.SharedPreferences): Boolean {
+        val lastGlobalSync = prefs.getLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_GLOBAL_SYNC_TIME, 0)
+        val now = System.currentTimeMillis()
+        val elapsed = now - lastGlobalSync
+        
+        if (elapsed < dev.dettmer.simplenotes.utils.Constants.MIN_GLOBAL_SYNC_INTERVAL_MS) {
+            val remainingSec = (dev.dettmer.simplenotes.utils.Constants.MIN_GLOBAL_SYNC_INTERVAL_MS - elapsed) / 1000
+            dev.dettmer.simplenotes.utils.Logger.d(TAG, "⏳ Global sync cooldown active - wait ${remainingSec}s")
+            return false
+        }
+        return true
+    }
+    
+    /**
+     * Markiert den aktuellen Zeitpunkt als letzten Sync-Start (global).
+     * Aufzurufen wenn ein Sync tatsächlich startet (nach allen Checks).
+     */
+    fun markGlobalSyncStarted(prefs: android.content.SharedPreferences) {
+        prefs.edit().putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_GLOBAL_SYNC_TIME, System.currentTimeMillis()).apply()
+    }
 }
