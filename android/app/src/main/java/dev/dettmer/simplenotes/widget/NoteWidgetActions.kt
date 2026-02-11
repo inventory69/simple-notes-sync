@@ -5,6 +5,7 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
+import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Logger
@@ -51,14 +52,32 @@ class ToggleChecklistItemAction : ActionCallback {
             } else item
         } ?: return
 
+        // 🆕 v1.8.1 (IMPL_04): Auto-Sort nach Toggle
+        // Konsistent mit NoteEditorViewModel.updateChecklistItemChecked
+        val sortOption = try {
+            note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
+        } catch (e: IllegalArgumentException) { null }
+            ?: ChecklistSortOption.MANUAL
+
+        val sortedItems = if (sortOption == ChecklistSortOption.MANUAL ||
+                             sortOption == ChecklistSortOption.UNCHECKED_FIRST) {
+            val unchecked = updatedItems.filter { !it.isChecked }
+            val checked = updatedItems.filter { it.isChecked }
+            (unchecked + checked).mapIndexed { index, item ->
+                item.copy(order = index)
+            }
+        } else {
+            updatedItems.mapIndexed { index, item -> item.copy(order = index) }
+        }
+
         val updatedNote = note.copy(
-            checklistItems = updatedItems,
+            checklistItems = sortedItems,
             updatedAt = System.currentTimeMillis(),
             syncStatus = SyncStatus.PENDING
         )
 
         storage.saveNote(updatedNote)
-        Logger.d(TAG, "Toggled checklist item '$itemId' in widget")
+        Logger.d(TAG, "Toggled + auto-sorted checklist item '$itemId' in widget")
 
         // 🐛 FIX: Glance-State ändern um Re-Render zu erzwingen
         updateAppWidgetState(context, glanceId) { prefs ->
