@@ -1,0 +1,13 @@
+🛠️ v1.8.1 — CHECKLIST & SYNC FIXES
+
+• Fixed: Sort lost when reopening checklists
+• Fixed: Widget scroll on 3x2 size
+• Fixed: Toast on auto-sync & drag flicker
+• New: Widget checklists with sorting & separator
+• New: Checklist sorting in main preview
+• New: Auto-scroll on line wrap in editor
+• Improved: Sync rate-limiting & battery save
+• Improved: Toasts → unified Banner system
+• Improved: ProGuard for Widgets & Compose
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
