@@ -163,11 +163,10 @@ fun NoteCardGrid(
                     text = when (note.noteType) {
                         NoteType.TEXT -> note.content
                         NoteType.CHECKLIST -> {
-                            note.checklistItems
-                                ?.joinToString("\n") { item ->
-                                    val prefix = if (item.isChecked) "✅" else "☐"
-                                    "$prefix ${item.text}"
-                                } ?: ""
+                            // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
+                            note.checklistItems?.let { items ->
+                                generateChecklistPreview(items, note.checklistSortOption)
+                            } ?: ""
                         }
                     },
                     style = MaterialTheme.typography.bodySmall,
