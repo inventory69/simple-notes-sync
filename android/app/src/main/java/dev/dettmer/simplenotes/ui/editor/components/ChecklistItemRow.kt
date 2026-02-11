@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,6 +71,7 @@ fun ChecklistItemRow(
     isDragging: Boolean = false,          // 🆕 v1.8.0: IMPL_023 - Drag state
     isAnyItemDragging: Boolean = false,   // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
     dragModifier: Modifier = Modifier,    // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
+    onHeightChanged: (() -> Unit)? = null,  // 🆕 v1.8.1: IMPL_05 - Auto-scroll callback
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -90,6 +92,9 @@ fun ChecklistItemRow(
 
     // 🆕 v1.8.0: ScrollState für dynamischen Gradient
     val scrollState = rememberScrollState()
+
+    // 🆕 v1.8.1: IMPL_05 - Letzte Zeilenanzahl tracken für Auto-Scroll
+    var lastLineCount by remember { mutableIntStateOf(0) }
 
     // 🆕 v1.8.1: Gradient-Sichtbarkeit direkt berechnet (kein derivedStateOf)
     // derivedStateOf mit remember{} fängt showGradient als stale val — nie aktualisiert.
@@ -216,8 +221,9 @@ fun ChecklistItemRow(
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     onTextLayout = { textLayoutResult ->
                         // 🆕 v1.8.1: lineCount ist jetzt akkurat (maxLines=MAX_VALUE deckelt nicht)
+                        val lineCount = textLayoutResult.lineCount
                         if (!isAnyItemDragging) {
-                            val overflow = textLayoutResult.lineCount > COLLAPSED_MAX_LINES
+                            val overflow = lineCount > COLLAPSED_MAX_LINES
                             hasOverflow = overflow
                             // Höhe der ersten 5 Zeilen berechnen (einmalig)
                             if (overflow && collapsedHeightDp == null) {
@@ -230,6 +236,11 @@ fun ChecklistItemRow(
                                 collapsedHeightDp = null
                             }
                         }
+                        // 🆕 v1.8.1 (IMPL_05): Höhenänderung bei Zeilenumbruch melden
+                        if (isFocused && lineCount > lastLineCount && lastLineCount > 0) {
+                            onHeightChanged?.invoke()
+                        }
+                        lastLineCount = lineCount
                     },
                     decorationBox = { innerTextField ->
                         Box {

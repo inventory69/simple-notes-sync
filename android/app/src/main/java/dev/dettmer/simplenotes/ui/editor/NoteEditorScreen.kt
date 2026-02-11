@@ -338,6 +338,7 @@ private fun LazyItemScope.DraggableChecklistItem(
     onDelete: (String) -> Unit,
     onAddNewItemAfter: (String) -> Unit,
     onFocusHandled: () -> Unit,
+    onHeightChanged: () -> Unit,  // 🆕 v1.8.1 (IMPL_05)
 ) {
     val isDragging = dragDropState.draggingItemIndex == visualIndex
     val elevation by animateDpAsState(
@@ -363,6 +364,7 @@ private fun LazyItemScope.DraggableChecklistItem(
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.draggingItemIndex != null,
         dragModifier = Modifier.dragContainer(dragDropState, visualIndex),
+        onHeightChanged = onHeightChanged,  // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
             .then(if (!isDragging) Modifier.animateItem() else Modifier)
             .offset {
@@ -404,6 +406,9 @@ private fun ChecklistEditor(
         onMove = onMove
     )
 
+    // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
+    var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
+
     // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL und UNCHECKED_FIRST anzeigen
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
@@ -416,6 +421,21 @@ private fun ChecklistEditor(
         val separatorVisualIndex = if (showSeparator) uncheckedCount else -1
         LaunchedEffect(separatorVisualIndex) {
             dragDropState.separatorVisualIndex = separatorVisualIndex
+        }
+
+        // 🆕 v1.8.1 (IMPL_05): Auto-Scroll wenn ein Item durch Zeilenumbruch wächst
+        LaunchedEffect(scrollToItemIndex) {
+            scrollToItemIndex?.let { index ->
+                delay(50)  // Warten bis Layout-Pass abgeschlossen
+                val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                if (index >= lastVisibleIndex - 1) {
+                    listState.animateScrollToItem(
+                        index = minOf(index + 1, items.size + if (showSeparator) 1 else 0),
+                        scrollOffset = 0
+                    )
+                }
+                scrollToItemIndex = null
+            }
         }
 
         LazyColumn(
@@ -438,7 +458,8 @@ private fun ChecklistEditor(
                     onCheckedChange = onCheckedChange,
                     onDelete = onDelete,
                     onAddNewItemAfter = onAddNewItemAfter,
-                    onFocusHandled = onFocusHandled
+                    onFocusHandled = onFocusHandled,
+                    onHeightChanged = { scrollToItemIndex = index }  // 🆕 v1.8.1 (IMPL_05)
                 )
             }
 
@@ -466,7 +487,8 @@ private fun ChecklistEditor(
                         onCheckedChange = onCheckedChange,
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
-                        onFocusHandled = onFocusHandled
+                        onFocusHandled = onFocusHandled,
+                        onHeightChanged = { scrollToItemIndex = visualIndex }  // 🆕 v1.8.1 (IMPL_05)
                     )
                 }
             }
