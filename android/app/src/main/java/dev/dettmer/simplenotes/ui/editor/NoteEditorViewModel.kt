@@ -109,6 +109,16 @@ class NoteEditorViewModel(
                 }
                 
                 if (note.noteType == NoteType.CHECKLIST) {
+                    // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
+                    note.checklistSortOption?.let { sortName ->
+                        try {
+                            _lastChecklistSortOption.value = ChecklistSortOption.valueOf(sortName)
+                        } catch (e: IllegalArgumentException) {
+                            Logger.w(TAG, "Unknown sort option '$sortName', using MANUAL")
+                            _lastChecklistSortOption.value = ChecklistSortOption.MANUAL
+                        }
+                    }
+                    
                     val items = note.checklistItems?.sortedBy { it.order }?.map {
                         ChecklistItemState(
                             id = it.id,
@@ -351,6 +361,7 @@ class NoteEditorViewModel(
                             content = "", // Empty for checklists
                             noteType = NoteType.CHECKLIST,
                             checklistItems = validItems,
+                            checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
                             updatedAt = System.currentTimeMillis(),
                             syncStatus = SyncStatus.PENDING
                         )
@@ -360,6 +371,7 @@ class NoteEditorViewModel(
                             content = "",
                             noteType = NoteType.CHECKLIST,
                             checklistItems = validItems,
+                            checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
                             deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                             syncStatus = SyncStatus.LOCAL_ONLY
                         )
