@@ -244,13 +244,34 @@ class NoteEditorViewModel(
         }
     }
     
+    /**
+     * 🆕 v1.8.1 (IMPL_15): Fügt ein neues Item nach dem angegebenen Item ein.
+     *
+     * Guard: Bei MANUAL/UNCHECKED_FIRST wird sichergestellt, dass das neue (unchecked)
+     * Item nicht innerhalb der checked-Sektion eingefügt wird. Falls das Trigger-Item
+     * checked ist, wird stattdessen vor dem ersten checked Item eingefügt.
+     */
     fun addChecklistItemAfter(afterItemId: String): String {
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
             val index = items.indexOfFirst { it.id == afterItemId }
             if (index >= 0) {
+                val currentSort = _lastChecklistSortOption.value
+                val hasSeparator = currentSort == ChecklistSortOption.MANUAL ||
+                        currentSort == ChecklistSortOption.UNCHECKED_FIRST
+
+                // 🆕 v1.8.1 (IMPL_15): Wenn das Trigger-Item checked ist und ein Separator
+                // existiert, darf das neue unchecked Item nicht in die checked-Sektion.
+                // → Stattdessen vor dem ersten checked Item einfügen.
+                val effectiveIndex = if (hasSeparator && items[index].isChecked) {
+                    val firstCheckedIndex = items.indexOfFirst { it.isChecked }
+                    if (firstCheckedIndex >= 0) firstCheckedIndex else index + 1
+                } else {
+                    index + 1
+                }
+
                 val newList = items.toMutableList()
-                newList.add(index + 1, newItem)
+                newList.add(effectiveIndex, newItem)
                 // Update order values
                 newList.mapIndexed { i, item -> item.copy(order = i) }
             } else {
@@ -259,11 +280,45 @@ class NoteEditorViewModel(
         }
         return newItem.id
     }
-    
+
+    /**
+     * 🆕 v1.8.1 (IMPL_15): Fügt ein neues Item an der semantisch korrekten Position ein.
+     *
+     * Bei MANUAL/UNCHECKED_FIRST: Vor dem ersten checked Item (= direkt über dem Separator).
+     * Bei allen anderen Modi: Am Ende der Liste (kein Separator sichtbar).
+     *
+     * Verhindert, dass checked Items über den Separator springen oder das neue Item
+     * unter dem Separator erscheint.
+     */
     fun addChecklistItemAtEnd(): String {
-        val newItem = ChecklistItemState.createEmpty(_checklistItems.value.size)
-        _checklistItems.update { items -> items + newItem }
+        val newItem = ChecklistItemState.createEmpty(0)
+        _checklistItems.update { items ->
+            val insertIndex = calculateInsertIndexForNewItem(items)
+            val newList = items.toMutableList()
+            newList.add(insertIndex, newItem)
+            newList.mapIndexed { i, item -> item.copy(order = i) }
+        }
         return newItem.id
+    }
+
+    /**
+     * 🆕 v1.8.1 (IMPL_15): Berechnet die korrekte Insert-Position für ein neues unchecked Item.
+     *
+     * - MANUAL / UNCHECKED_FIRST: Vor dem ersten checked Item (direkt über dem Separator)
+     * - Alle anderen Modi: Am Ende der Liste (kein Separator, kein visuelles Problem)
+     *
+     * Falls keine checked Items existieren, wird am Ende eingefügt.
+     */
+    private fun calculateInsertIndexForNewItem(items: List<ChecklistItemState>): Int {
+        val currentSort = _lastChecklistSortOption.value
+        return when (currentSort) {
+            ChecklistSortOption.MANUAL,
+            ChecklistSortOption.UNCHECKED_FIRST -> {
+                val firstCheckedIndex = items.indexOfFirst { it.isChecked }
+                if (firstCheckedIndex >= 0) firstCheckedIndex else items.size
+            }
+            else -> items.size
+        }
     }
     
     fun deleteChecklistItem(itemId: String) {
