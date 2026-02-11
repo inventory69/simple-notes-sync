@@ -1,8 +1,8 @@
-# ⚡ v1.3.1: detekt Configuration
+# ⚡ v1.8.1: detekt Configuration
 # Pragmatic rules for simple-notes-sync
 
 build:
-  maxIssues: 100  # Allow existing issues for v1.3.1 release, fix in v1.4.0
+  maxIssues: 0  # v1.8.1: All issues resolved
   excludeCorrectable: false
 
 config:

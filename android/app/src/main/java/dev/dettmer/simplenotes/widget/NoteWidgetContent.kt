@@ -439,7 +439,7 @@ private fun ChecklistCompactView(
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (e: IllegalArgumentException) { null }
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
         ?: ChecklistSortOption.MANUAL
     
     val showSeparator = (sortOption == ChecklistSortOption.MANUAL ||
@@ -534,7 +534,7 @@ private fun ChecklistFullView(
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (e: IllegalArgumentException) { null }
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
         ?: ChecklistSortOption.MANUAL
 
     val showSeparator = (sortOption == ChecklistSortOption.MANUAL ||
