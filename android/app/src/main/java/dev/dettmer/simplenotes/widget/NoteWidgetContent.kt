@@ -196,15 +196,20 @@ fun NoteWidgetContent(
                     Box(modifier = contentClickModifier) {}
                 }
 
-                WidgetSizeClass.NARROW_MED -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.2: Text-Notizen scrollbar auch in NARROW_MED (2x1 Widgets)
+                WidgetSizeClass.NARROW_MED -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNotePreview(note, compact = true)
-                        NoteType.CHECKLIST -> ChecklistCompactView(
-                            note = note,
-                            maxItems = 2,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
+                            ChecklistCompactView(
+                                note = note,
+                                maxItems = 2,
+                                isLocked = isLocked,
+                                glanceId = glanceId
+                            )
+                        }
                     }
                 }
 
@@ -233,15 +238,20 @@ fun NoteWidgetContent(
                     }
                 }
 
-                WidgetSizeClass.WIDE_MED -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.2: Text-Notizen scrollbar auch in WIDE_MED
+                WidgetSizeClass.WIDE_MED -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNotePreview(note, compact = false)
-                        NoteType.CHECKLIST -> ChecklistCompactView(
-                            note = note,
-                            maxItems = 3,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
+                            ChecklistCompactView(
+                                note = note,
+                                maxItems = 3,
+                                isLocked = isLocked,
+                                glanceId = glanceId
+                            )
+                        }
                     }
                 }
 
