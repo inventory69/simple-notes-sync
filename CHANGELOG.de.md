@@ -8,6 +8,64 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.2] - 2026-02-15
+
+### 🔧 Stabilität & Polish Release
+
+Sync-Deadlock-Fix, SSL-Zertifikate, Widget-Scrolling, Tastatur-Großschreibung und APK-Größenoptimierung.
+
+### 🐛 Fehlerbehebungen
+
+**Sync blockiert dauerhaft bei "Bereits aktiv"**
+- 5 Code-Pfade in SyncWorker behoben, bei denen `tryStartSync()` aufgerufen wurde, aber der State nie zurückgesetzt wurde
+- Early Returns (keine Änderungen, Gate blockiert, Server nicht erreichbar) rufen nun `SyncStateManager.reset()` auf
+- CancellationException-Handler setzt State jetzt zurück statt ihn im SYNCING-Zustand zu belassen
+- Generischer Exception-Handler ruft nun `markError()` für korrekte State-Übergänge auf
+- Ursache: SyncStateManager blieb dauerhaft im SYNCING-State, blockierte alle weiteren Syncs
+
+**Selbstsignierte SSL-Zertifikate in Release-Builds**
+- `<certificates src="user" />` zur Netzwerk-Sicherheitskonfiguration hinzugefügt
+- User-installierte CA-Zertifikate funktionieren jetzt auch in Release-Builds (vorher nur Debug)
+- Erforderlich für selbstgehostete WebDAV-Server mit selbstsignierten SSL-Zertifikaten
+
+**Text-Notizen nicht scrollbar in mittleren Widgets**
+- NARROW_MED und WIDE_MED Widget-Größenklassen nutzen jetzt `TextNoteFullView` (scrollbar)
+- Vorher wurde `TextNotePreview` verwendet (abgeschnitten, nicht scrollbar)
+- 2x1- und 4x1-Widgets zeigen jetzt scrollbaren Textinhalt
+- Unbenutzte `TextNotePreview`-Funktion und zugehörige Konstanten entfernt
+
+**Tastatur Auto-Großschreibung**
+- Titel-Feld nutzt jetzt `KeyboardCapitalization.Words`
+- Inhalts-Feld nutzt jetzt `KeyboardCapitalization.Sentences`
+- Checklisten-Items nutzen jetzt `KeyboardCapitalization.Sentences`
+
+**Dokumentation: Sortieroption-Benennung**
+- "color"/"Farbe" zu "type"/"Typ" in README-Dateien geändert
+- F-Droid-Metadaten-Beschreibungen aktualisiert (de-DE und en-US)
+- App sortiert nach Notiztyp (Text/Checkliste), nicht nach Farbe
+
+### 🔄 Verbesserungen
+
+**Sync-State-Timeout**
+- 5-Minuten-Timeout für verwaiste Sync-States in `SyncStateManager` hinzugefügt
+- `tryStartSync()` setzt automatisch zurück wenn bestehender Sync älter als 5 Minuten
+- Verhindert dauerhaften Deadlock selbst wenn alle anderen Schutzmaßnahmen versagen
+
+**Kaltstart State-Cleanup**
+- `SimpleNotesApplication.onCreate()` setzt jetzt verwaiste SYNCING-States zurück
+- Nach Prozess-Neustart kann kein Sync aktiv sein, verwaister State wird bereinigt
+
+**APK-Größenoptimierung**
+- Breite ProGuard-Regel (`-keep class dev.dettmer.simplenotes.** { *; }`) durch granulare Regeln ersetzt
+- Behält nur was Reflection wirklich braucht: Datenmodelle, SyncWorker, BroadcastReceivers, Activities
+- Behält `Note$Companion$NoteRaw` für Gson-Serialisierung
+
+**Versionsanhebung**
+- versionCode: 21 → 22
+- versionName: 1.8.1 → 1.8.2
+
+---
+
 ## [1.8.1] - 2026-02-11
 
 ### 🛠️ Bugfix & Polish Release

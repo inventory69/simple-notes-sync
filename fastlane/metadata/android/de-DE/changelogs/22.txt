@@ -1,0 +1,11 @@
+🔧 v1.8.2 — Stabilität & Polish
+
+• Behoben: Sync blockierte dauerhaft bei "bereits aktiv"
+• Behoben: Selbstsignierte SSL-Zertifikate in Release-Builds
+• Behoben: Text-Notizen nicht scrollbar in 2x1/4x1-Widgets
+• Behoben: Tastatur ohne Auto-Großschreibung
+• Verbessert: APK-Größe durch granulare ProGuard-Regeln
+• Verbessert: 5-Min-Timeout für Sync-States
+• Verbessert: State-Cleanup beim App-Start
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
