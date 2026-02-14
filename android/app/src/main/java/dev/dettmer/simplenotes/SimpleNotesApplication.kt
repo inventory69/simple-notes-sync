@@ -5,7 +5,6 @@ import android.content.Context
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
-import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.Constants
 

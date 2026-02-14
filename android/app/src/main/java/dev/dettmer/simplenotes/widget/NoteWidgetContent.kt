@@ -57,10 +57,6 @@ private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
 private val WIDGET_HEIGHT_SCROLL_THRESHOLD = 150.dp   // 🆕 v1.8.1: Scrollbare Ansicht
 private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
 
-// 🆕 v1.8.0: Increased preview lengths for better text visibility
-private const val TEXT_PREVIEW_COMPACT_LENGTH = 120
-private const val TEXT_PREVIEW_FULL_LENGTH = 300
-
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
     height < WIDGET_HEIGHT_SMALL_THRESHOLD -> WidgetSizeClass.SMALL
     
@@ -379,21 +375,6 @@ private fun OptionsBar(
 }
 
 // ── Text Note Views ──
-
-@Composable
-private fun TextNotePreview(note: Note, compact: Boolean) {
-    Text(
-        text = note.content.take(
-            if (compact) TEXT_PREVIEW_COMPACT_LENGTH else TEXT_PREVIEW_FULL_LENGTH
-        ),
-        style = TextStyle(
-            color = GlanceTheme.colors.onSurface,
-            fontSize = if (compact) 13.sp else 14.sp
-        ),
-        maxLines = if (compact) 3 else 5,  // 🆕 v1.8.0: Increased for better preview
-        modifier = GlanceModifier.padding(horizontal = 12.dp, vertical = 4.dp)
-    )
-}
 
 @Composable
 private fun TextNoteFullView(note: Note) {

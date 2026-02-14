@@ -23,9 +23,6 @@ object SyncStateManager {
     /** 🆕 v1.8.2: Maximale Dauer eines Syncs bevor er als "stuck" gilt (5 Minuten) */
     private const val SYNC_TIMEOUT_MS = 5 * 60 * 1000L
     
-    /** 🆕 v1.8.2: Maximale Dauer eines Syncs bevor er als "stuck" gilt (5 Minuten) */
-    private const val SYNC_TIMEOUT_MS = 5 * 60 * 1000L
-    
     /**
      * Mögliche Sync-Zustände (intern für Mutex + PullToRefresh)
      */
@@ -72,19 +69,8 @@ object SyncStateManager {
      * Bei silent=false: Setzt sofort PREPARING-Phase → Banner erscheint instant
      * Bei silent=true: Setzt silent-Flag → kein Banner wird angezeigt
      */
-    fun tryStart// 🆕 v1.8.2: Timeout-Check für verwaiste Sync-States
-                val syncStartTime = _syncProgress.value.startTime
-                val elapsed = System.currentTimeMillis() - syncStartTime
-                
-                if (syncStartTime > 0 && elapsed > SYNC_TIMEOUT_MS) {
-                    Logger.e(TAG, "⏰ Stale sync detected (${elapsed / 1000}s old from: ${_syncStatus.value?.source}) - force-resetting")
-                    _syncStatus.postValue(SyncStatus())
-                    _syncProgress.value = SyncProgress.IDLE
-                    // Fall-through: Neuer Sync wird unten gestartet
-                } else {
-                    Logger.d(TAG, "⚠️ Sync already in progress, rejecting from: $source")
-                    return false
-                }
+    fun tryStartSync(source: String, silent: Boolean = false): Boolean {
+        synchronized(lock) {
             if (isSyncing) {
                 // 🆕 v1.8.2: Timeout-Check für verwaiste Sync-States
                 val syncStartTime = _syncProgress.value.startTime
