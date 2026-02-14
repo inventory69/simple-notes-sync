@@ -149,6 +149,12 @@ class SyncWorker(
                 Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
                 Logger.d(TAG, "   Saves battery, network traffic, and server load")
                 
+                // 🆕 v1.8.2: State cleanup — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
+                
+                // 🆕 v1.8.2: State cleanup — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
+                
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
                     Logger.d(TAG, "═══════════════════════════════════════")
@@ -167,8 +173,14 @@ class SyncWorker(
                 if (gateResult.isBlockedByWifiOnly) {
                     Logger.d(TAG, "⏭️ WiFi-only mode enabled, but not on WiFi - skipping sync")
                 } else {
+                // 🆕 v1.8.2: State cleanup — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
+                
                     Logger.d(TAG, "⏭️ Sync blocked by gate: ${gateResult.blockReason ?: "offline/no server"}")
                 }
+                
+                // 🆕 v1.8.2: State cleanup — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (gate blocked)")
@@ -187,11 +199,17 @@ class SyncWorker(
             // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway)
             if (!syncService.isServerReachable()) {
                 Logger.d(TAG, "⏭️ Server not reachable - skipping sync (no error)")
+                // 🆕 v1.8.2: State cleanup — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
+                
                 Logger.d(TAG, "   Reason: Server offline/wrong network/network not ready/not configured")
                 Logger.d(TAG, "   This is normal in foreign WiFi or during network initialization")
                 
                 // 🔥 v1.1.2: Check if we should show warning (server unreachable for >24h)
                 checkAndShowSyncWarning(syncService)
+                
+                // 🆕 v1.8.2: State cleanup — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (silent skip)")
@@ -309,6 +327,9 @@ class SyncWorker(
                 Result.failure()
             }
         } catch (e: CancellationException) {
+            // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
+            SyncStateManager.reset()
+            
             // ⭐ Job wurde gecancelt - KEIN FEHLER!
             // Gründe: App-Update, Doze Mode, Battery Optimization, Network Constraint, etc.
             if (BuildConfig.DEBUG) {
@@ -317,6 +338,9 @@ class SyncWorker(
             Logger.d(TAG, "⏹️ Job was cancelled (normal - update/doze/constraints)")
             Logger.d(TAG, "   Reason could be: App update, Doze mode, Battery opt, Network disconnect")
             Logger.d(TAG, "   This is expected Android behavior - not an error!")
+            
+            // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
+            SyncStateManager.reset()
             
             try {
                 // UI-Refresh trotzdem triggern (falls MainActivity geöffnet)
@@ -331,6 +355,9 @@ class SyncWorker(
             }
             
             // ⚠️ WICHTIG: Result.success() zurückgeben!
+            // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
+            SyncStateManager.markError(e.message)
+            
             // Cancellation ist KEIN Fehler, WorkManager soll nicht retries machen
             Result.success()
             
@@ -342,6 +369,9 @@ class SyncWorker(
             Logger.e(TAG, "Exception type: ${e.javaClass.name}")
             Logger.e(TAG, "Exception message: ${e.message}")
             Logger.e(TAG, "Stack trace:", e)
+            
+            // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
+            SyncStateManager.markError(e.message)
             
             try {
                 NotificationHelper.showSyncError(
