@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 21  // 🐛 v1.8.1: Checklist Fixes, Widget Sorting, ProGuard Audit
-        versionName = "1.8.1"  // 🐛 v1.8.1: Bugfix & Polish Release
+        versionCode = 22  // 🔧 v1.8.2: Sync-Stuck Fix, SSL Certs, APK Size, Widget Scroll, Keyboard
+        versionName = "1.8.2"  // 🔧 v1.8.2: Stability & Polish Release
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
