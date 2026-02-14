@@ -1,0 +1,11 @@
+🔧 v1.8.2 — Stability & Polish
+
+• Fixed: Sync stuck permanently in "already in progress"
+• Fixed: Self-signed SSL certificates in release builds
+• Fixed: Text notes not scrollable in 2x1/4x1 widgets
+• Fixed: Keyboard not auto-capitalizing
+• Improved: APK size reduced with granular ProGuard rules
+• Improved: 5-min timeout for sync states
+• Improved: State cleanup on app start
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

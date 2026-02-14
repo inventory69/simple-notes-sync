@@ -8,6 +8,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.2] - 2026-02-15
+
+### 🔧 Stability & Polish Release
+
+Sync deadlock fix, SSL certificate support, widget scrolling, keyboard capitalization, and APK size optimization.
+
+### 🐛 Bug Fixes
+
+**Sync Stuck in "Already in Progress"**
+- Fixed 5 code paths in SyncWorker where `tryStartSync()` was called but state was never reset
+- Early returns (no changes, gate blocked, server unreachable) now call `SyncStateManager.reset()`
+- CancellationException handler now resets state instead of leaving it in SYNCING
+- Generic Exception handler now calls `markError()` to properly transition state
+- Root cause: SyncStateManager stayed in SYNCING state permanently, blocking all future syncs
+
+**Self-Signed SSL Certificates in Release Builds**
+- Added `<certificates src="user" />` to network security base config
+- User-installed CA certificates now work in release builds (previously debug-only)
+- Required for self-hosted WebDAV servers with self-signed SSL certificates
+
+**Text Notes Not Scrollable in Medium Widgets**
+- Changed NARROW_MED and WIDE_MED widget size classes to use `TextNoteFullView` (scrollable)
+- Previously used `TextNotePreview` which was truncated and non-scrollable
+- 2x1 and 4x1 widgets now show scrollable text content
+- Removed unused `TextNotePreview` function and related constants
+
+**Keyboard Auto-Capitalization**
+- Title field now uses `KeyboardCapitalization.Words`
+- Content field now uses `KeyboardCapitalization.Sentences`
+- Checklist items now use `KeyboardCapitalization.Sentences`
+
+**Documentation: Sort Option Naming**
+- Changed "color"/"Farbe" to "type"/"Typ" in README files
+- Updated F-Droid metadata descriptions (de-DE and en-US)
+- App sorts by note type (text/checklist), not by color
+
+### 🔄 Improvements
+
+**Sync State Timeout**
+- Added 5-minute timeout for stale sync states in `SyncStateManager`
+- `tryStartSync()` auto-resets if existing sync is older than 5 minutes
+- Prevents permanent deadlock even if all other safeguards fail
+
+**Cold Start State Cleanup**
+- `SimpleNotesApplication.onCreate()` now resets orphaned SYNCING state
+- After process restart, no sync can be active, so stale state is cleared
+
+**APK Size Optimization**
+- Replaced broad ProGuard rule (`-keep class dev.dettmer.simplenotes.** { *; }`) with granular rules
+- Keeps only what reflection actually needs: data models, SyncWorker, BroadcastReceivers, Activities
+- Preserves `Note$Companion$NoteRaw` for Gson serialization
+
+**Version Bump**
+- versionCode: 21 → 22
+- versionName: 1.8.1 → 1.8.2
+
+---
+
 ## [1.8.1] - 2026-02-11
 
 ### 🛠️ Bugfix & Polish Release
