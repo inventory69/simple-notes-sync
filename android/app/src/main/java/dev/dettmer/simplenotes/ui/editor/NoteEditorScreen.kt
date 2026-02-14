@@ -46,7 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -206,6 +208,10 @@ fun NoteEditorScreen(
                 label = { Text(stringResource(R.string.title)) },
                 singleLine = false,
                 maxLines = 2,
+                // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words
+                ),
                 shape = RoundedCornerShape(16.dp)
             )
             
@@ -321,6 +327,10 @@ private fun TextNoteContent(
         },
         modifier = modifier.focusRequester(focusRequester),
         label = { Text(stringResource(R.string.content)) },
+        // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences
+        ),
         shape = RoundedCornerShape(16.dp)
     )
 }
