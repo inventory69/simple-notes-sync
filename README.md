@@ -68,7 +68,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 - ✅ **Checklists** - Tap-to-check, drag & drop
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
 - 📌 **Widgets** - Home screen quick-note and note list widgets
-- 🔀 **Smart sorting** - By title, date modified, date created, color
+- 🔀 **Smart sorting** - By title, date modified, date created, type
 - ⚡ **Parallel sync** - Downloads up to 5 notes simultaneously
 - 🌍 **Multilingual** - English/German with language selector
 - 🔒 **Self-hosted** - Your data stays with you (WebDAV)
@@ -150,6 +150,6 @@ MIT License - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.8.1** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.8.2** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
