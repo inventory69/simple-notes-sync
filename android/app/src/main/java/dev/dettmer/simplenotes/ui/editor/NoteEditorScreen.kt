@@ -50,7 +50,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
@@ -209,11 +211,29 @@ fun NoteEditorScreen(
                     .fillMaxWidth()
                     .focusRequester(titleFocusRequester),
                 label = { Text(stringResource(R.string.title)) },
-                singleLine = false,
-                maxLines = 2,
+                singleLine = true,  // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
                 // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
                 keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Next  // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
+                ),
+                // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        when (uiState.noteType) {
+                            NoteType.TEXT -> {
+                                // Text-Notiz: Fokus direkt ins Content-Feld
+                                contentFocusRequester.requestFocus()
+                            }
+                            NoteType.CHECKLIST -> {
+                                // Checkliste: Fokus auf erstes Item
+                                val firstItemId = checklistItems.firstOrNull()?.id
+                                if (firstItemId != null) {
+                                    focusNewItemId = firstItemId
+                                }
+                            }
+                        }
+                    }
                 ),
                 shape = RoundedCornerShape(16.dp)
             )
