@@ -35,6 +35,12 @@ class DragDropListState(
     var draggingItemIndex by mutableStateOf<Int?>(null)
         private set
 
+    // 🆕 v1.8.2 (IMPL_11): Drag gilt erst als bestätigt nach erstem onDrag-Callback.
+    // Verhindert visuellen Glitch beim schnellen Scrollen (onDragStart → onDragCancel
+    // ohne onDrag dazwischen → kurzzeitiger Drag-State sichtbar).
+    var isDragConfirmed by mutableStateOf(false)
+        private set
+
     private var draggingItemDraggedDelta by mutableFloatStateOf(0f)
     private var draggingItemInitialOffset by mutableFloatStateOf(0f)
     // 🆕 v1.8.1: Item-Größe beim Drag-Start fixieren
@@ -73,6 +79,7 @@ class DragDropListState(
 
     fun onDragStart(offset: Offset, itemIndex: Int) {
         draggingItemIndex = itemIndex
+        isDragConfirmed = false  // 🆕 v1.8.2 (IMPL_11): Noch nicht bestätigt
         val info = draggingItemLayoutInfo
         draggingItemInitialOffset = info?.offset?.toFloat() ?: 0f
         draggingItemSize = info?.size ?: 0
@@ -82,12 +89,14 @@ class DragDropListState(
     fun onDragInterrupted() {
         draggingItemDraggedDelta = 0f
         draggingItemIndex = null
+        isDragConfirmed = false  // 🆕 v1.8.2 (IMPL_11): Reset
         draggingItemInitialOffset = 0f
         draggingItemSize = 0
         overscrollJob?.cancel()
     }
 
     fun onDrag(offset: Offset) {
+        isDragConfirmed = true  // 🆕 v1.8.2 (IMPL_11): Erster Drag-Callback → bestätigt
         draggingItemDraggedDelta += offset.y
 
         val draggingItem = draggingItemLayoutInfo ?: return

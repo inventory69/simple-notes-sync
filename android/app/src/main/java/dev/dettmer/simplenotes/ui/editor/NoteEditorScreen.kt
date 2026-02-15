@@ -387,7 +387,9 @@ private fun LazyItemScope.DraggableChecklistItem(
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit,  // 🆕 v1.8.1 (IMPL_05)
 ) {
-    val isDragging = dragDropState.draggingItemIndex == visualIndex
+    // 🆕 v1.8.2 (IMPL_11): Drag nur visuell anzeigen wenn tatsächlich bestätigt.
+    // Verhindert Glitch beim schnellen Scrollen (kurzzeitiges onDragStart ohne onDrag).
+    val isDragging = dragDropState.draggingItemIndex == visualIndex && dragDropState.isDragConfirmed
     val elevation by animateDpAsState(
         targetValue = if (isDragging) DRAGGING_ELEVATION_DP else 0.dp,
         label = "elevation"
@@ -413,7 +415,16 @@ private fun LazyItemScope.DraggableChecklistItem(
         dragModifier = Modifier.dragContainer(dragDropState, visualIndex),
         onHeightChanged = onHeightChanged,  // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
-            .then(if (!isDragging) Modifier.animateItem() else Modifier)
+            // 🆕 v1.8.2 (IMPL_11): animateItem() NUR während bestätigtem Drag anwenden.
+            // Vorher: animateItem() auf ALLEN Items permanent → Fade-In/Out-Animationen
+            // verursachten visuelles Flackern bei langen Items beim schnellen Scrollen.
+            // Jetzt: Nur placement-Animation für nicht-gedraggte Items während Reorder.
+            .then(
+                if (dragDropState.isDragConfirmed && !isDragging)
+                    Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+                else
+                    Modifier
+            )
             .offset {
                 IntOffset(
                     0,
