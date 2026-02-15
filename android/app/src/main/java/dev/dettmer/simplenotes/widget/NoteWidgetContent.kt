@@ -400,7 +400,7 @@ private fun TextNoteFullView(note: Note) {
                         fontSize = 14.sp
                     ),
                     maxLines = 5,  // Allow wrapping but prevent single-item overflow
-                    modifier = GlanceModifier.padding(bottom = 2.dp)
+                    modifier = GlanceModifier.padding(bottom = 4.dp)  // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
                 )
             }
         }
@@ -557,7 +557,7 @@ private fun ChecklistFullView(
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 4.dp),  // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -591,7 +591,7 @@ private fun ChecklistFullView(
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 1.dp)
+                        .padding(vertical = 3.dp)  // 🆕 v1.8.2 (IMPL_12): 1dp → 3dp
                 )
             }
         }
