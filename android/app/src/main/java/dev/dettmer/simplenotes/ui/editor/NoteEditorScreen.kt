@@ -17,7 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.placeCursorAtEnd
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Sort
@@ -42,12 +45,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
@@ -297,41 +300,52 @@ private fun TextNoteContent(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
-    // v1.5.0: Use TextFieldValue to control cursor position
-    // Track if initial cursor position has been set (only set to end once on first load)
-    var initialCursorSet by remember { mutableStateOf(false) }
+    // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
+    val textFieldState = rememberTextFieldState(initialText = content)
+    val scrollState = rememberScrollState()
     
-    var textFieldValue by remember {
-        mutableStateOf(TextFieldValue(
-            text = content,
-            selection = TextRange(content.length)
-        ))
+    // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
+    var isFocused by remember { mutableStateOf(false) }
+    
+    // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
+    LaunchedEffect(Unit) {
+        if (content.isNotEmpty()) {
+            textFieldState.edit { placeCursorAtEnd() }
+        }
     }
     
-    // Set initial cursor position only once when content first loads
-    LaunchedEffect(Unit) {
-        if (!initialCursorSet && content.isNotEmpty()) {
-            textFieldValue = TextFieldValue(
-                text = content,
-                selection = TextRange(content.length)
-            )
-            initialCursorSet = true
+    // Text-Änderungen an ViewModel propagieren
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { newText ->
+                onContentChange(newText)
+            }
+    }
+    
+    // 🆕 v1.8.2 (IMPL_07): Auto-Scroll zum Ende wenn Fokus erhalten (Tastatur öffnet sich)
+    // Delay gibt dem Layout Zeit, sich nach imePadding-Resize zu stabilisieren
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            delay(LAYOUT_DELAY_MS)
+            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
     
     OutlinedTextField(
-        value = textFieldValue,
-        onValueChange = { newValue ->
-            textFieldValue = newValue
-            onContentChange(newValue.text)
-        },
-        modifier = modifier.focusRequester(focusRequester),
+        state = textFieldState,
+        modifier = modifier
+            .focusRequester(focusRequester)
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            },
         label = { Text(stringResource(R.string.content)) },
         // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Sentences
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        // 🆕 v1.8.2 (IMPL_07): Externer ScrollState für programmatisches Auto-Scroll
+        scrollState = scrollState
     )
 }
 
