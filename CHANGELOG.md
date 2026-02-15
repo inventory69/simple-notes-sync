@@ -10,41 +10,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.8.2] - 2026-02-15
 
-### 🔧 Stability & Polish Release
+### 🔧 Stability, Editor & Widget Improvements
 
-Sync deadlock fix, SSL certificate support, widget scrolling, keyboard capitalization, and APK size optimization.
+Sync deadlock fix, SSL certificates, editor UX improvements (auto-scroll, keyboard navigation, scroll fix), widget polish (padding, spacing), drag & drop glitch fix, and APK size optimization.
 
 ### 🐛 Bug Fixes
 
-**Sync Stuck in "Already in Progress"**
+**Sync Stuck in "Already in Progress"** ([a62ab78](https://github.com/inventory69/simple-notes-sync/commit/a62ab78))
 - Fixed 5 code paths in SyncWorker where `tryStartSync()` was called but state was never reset
 - Early returns (no changes, gate blocked, server unreachable) now call `SyncStateManager.reset()`
 - CancellationException handler now resets state instead of leaving it in SYNCING
 - Generic Exception handler now calls `markError()` to properly transition state
 - Root cause: SyncStateManager stayed in SYNCING state permanently, blocking all future syncs
 
-**Self-Signed SSL Certificates in Release Builds**
+**Keyboard Auto-Scroll for Text Notes** *(IMPL_07)* ([bc266b9](https://github.com/inventory69/simple-notes-sync/commit/bc266b9))
+- Migrated TextNoteContent from `TextFieldValue` API to `TextFieldState` API
+- Added external `scrollState` parameter to `OutlinedTextField`
+- Auto-scrolls to cursor position when keyboard opens
+- Fixes issue where keyboard covers text at bottom of note
+
+**Checklist Scroll Jump When Typing** *(IMPL_10)* ([974ef13](https://github.com/inventory69/simple-notes-sync/commit/974ef13))
+- Replaced faulty auto-scroll logic from v1.8.1 with viewport-aware scroll
+- Old: `animateScrollToItem(index+1)` scrolled NEXT item to top, hiding current item
+- New: `scroll { scrollBy(overshoot) }` scrolls pixel-precise by exact difference
+- Only scrolls if item actually extends below viewport
+
+**Checklist Visual Glitch During Fast Scrolling** *(IMPL_11)* ([82e8972](https://github.com/inventory69/simple-notes-sync/commit/82e8972))
+- Added `isDragConfirmed` state to prevent accidental drag activation during scroll
+- Scoped `animateItem()` to confirmed drag operations only (previously active on ALL items permanently)
+- Removed fade animations (`fadeInSpec`/`fadeOutSpec = null`) — only placement animation during reorder
+- Root cause: `Modifier.animateItem()` caused fade-in/out animations when items entered/left viewport, highly visible on long items (>5 lines)
+
+**Self-Signed SSL Certificates in Release Builds** ([b3f4915](https://github.com/inventory69/simple-notes-sync/commit/b3f4915))
 - Added `<certificates src="user" />` to network security base config
 - User-installed CA certificates now work in release builds (previously debug-only)
 - Required for self-hosted WebDAV servers with self-signed SSL certificates
 
-**Text Notes Not Scrollable in Medium Widgets**
+**Text Notes Not Scrollable in Medium Widgets** ([8429306](https://github.com/inventory69/simple-notes-sync/commit/8429306))
 - Changed NARROW_MED and WIDE_MED widget size classes to use `TextNoteFullView` (scrollable)
 - Previously used `TextNotePreview` which was truncated and non-scrollable
 - 2x1 and 4x1 widgets now show scrollable text content
 - Removed unused `TextNotePreview` function and related constants
 
-**Keyboard Auto-Capitalization**
+**Keyboard Auto-Capitalization** ([d93b439](https://github.com/inventory69/simple-notes-sync/commit/d93b439))
 - Title field now uses `KeyboardCapitalization.Words`
 - Content field now uses `KeyboardCapitalization.Sentences`
 - Checklist items now use `KeyboardCapitalization.Sentences`
 
-**Documentation: Sort Option Naming**
+**Documentation: Sort Option Naming** ([465bd9c](https://github.com/inventory69/simple-notes-sync/commit/465bd9c))
 - Changed "color"/"Farbe" to "type"/"Typ" in README files
 - Updated F-Droid metadata descriptions (de-DE and en-US)
 - App sorts by note type (text/checklist), not by color
 
+### ✨ New Features
+
+**Enter-Key Navigation from Title to Content** *(IMPL_09)* ([81b9aca](https://github.com/inventory69/simple-notes-sync/commit/81b9aca))
+- Title field is now single-line with `ImeAction.Next`
+- Pressing Enter/Next jumps to content field (text notes) or first checklist item
+- Prevents accidental newlines in titles
+
 ### 🔄 Improvements
+
+**Widget Content Padding** *(IMPL_08)* ([2ae5ce5](https://github.com/inventory69/simple-notes-sync/commit/2ae5ce5))
+- Unified padding for all widget views: 12dp horizontal, 4dp top, 12dp bottom
+- Increased checklist item spacing for better readability
+- TextNoteFullView now has bottom padding to prevent text cutoff
+- ChecklistCompactView and ChecklistFullView aligned with same margins
+
+**Widget Entry Spacing** *(IMPL_12)* ([c3d4b33](https://github.com/inventory69/simple-notes-sync/commit/c3d4b33))
+- ChecklistFullView: vertical padding 2dp → 4dp (locked), 1dp → 3dp (unlocked)
+- TextNoteFullView: line spacing 2dp → 4dp bottom padding
+- Matches app proportions (~60–80% of app spacing)
 
 **Sync State Timeout**
 - Added 5-minute timeout for stale sync states in `SyncStateManager`
@@ -55,7 +91,7 @@ Sync deadlock fix, SSL certificate support, widget scrolling, keyboard capitaliz
 - `SimpleNotesApplication.onCreate()` now resets orphaned SYNCING state
 - After process restart, no sync can be active, so stale state is cleared
 
-**APK Size Optimization**
+**APK Size Optimization** ([7867894](https://github.com/inventory69/simple-notes-sync/commit/7867894))
 - Replaced broad ProGuard rule (`-keep class dev.dettmer.simplenotes.** { *; }`) with granular rules
 - Keeps only what reflection actually needs: data models, SyncWorker, BroadcastReceivers, Activities
 - Preserves `Note$Companion$NoteRaw` for Gson serialization

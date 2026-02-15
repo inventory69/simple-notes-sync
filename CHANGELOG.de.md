@@ -10,9 +10,9 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.8.2] - 2026-02-15
 
-### 🔧 Stabilität & Polish Release
+### 🔧 Stabilität, Editor- & Widget-Verbesserungen
 
-Sync-Deadlock-Fix, SSL-Zertifikate, Widget-Scrolling, Tastatur-Großschreibung und APK-Größenoptimierung.
+Sync-Deadlock-Fix, SSL-Zertifikate, Editor-UX-Verbesserungen (Auto-Scroll, Tastatur-Navigation, Scroll-Fix), Widget-Polish (Padding, Abstände), Drag-&-Drop-Glitch-Fix und APK-Größenoptimierung.
 
 ### 🐛 Fehlerbehebungen
 
@@ -22,6 +22,24 @@ Sync-Deadlock-Fix, SSL-Zertifikate, Widget-Scrolling, Tastatur-Großschreibung u
 - CancellationException-Handler setzt State jetzt zurück statt ihn im SYNCING-Zustand zu belassen
 - Generischer Exception-Handler ruft nun `markError()` für korrekte State-Übergänge auf
 - Ursache: SyncStateManager blieb dauerhaft im SYNCING-State, blockierte alle weiteren Syncs
+
+**Tastatur-Auto-Scroll für Text-Notizen** *(IMPL_07)*
+- TextNoteContent von `TextFieldValue`-API zu `TextFieldState`-API migriert
+- Externen `scrollState`-Parameter zu `OutlinedTextField` hinzugefügt
+- Scrollt automatisch zur Cursor-Position wenn Tastatur öffnet
+- Behebt Problem, dass Tastatur den Text am Ende der Notiz verdeckt
+
+**Checklisten-Scroll-Sprung beim Tippen** *(IMPL_10)*
+- Fehlerhafte Auto-Scroll-Logik aus v1.8.1 durch Viewport-aware Scroll ersetzt
+- Vorher: `animateScrollToItem(index+1)` scrollte NÄCHSTES Item nach oben, verbarg aktuelles Item
+- Jetzt: `scroll { scrollBy(overshoot) }` scrollt pixel-genau um die exakte Differenz
+- Scrollt nur wenn Item tatsächlich unter den sichtbaren Bereich ragt
+
+**Visueller Glitch beim schnellen Scrollen in Checklisten** *(IMPL_11)*
+- `isDragConfirmed`-State verhindert versehentliche Drag-Aktivierung beim Scrollen
+- `animateItem()` nur noch während bestätigtem Drag aktiv (vorher permanent auf ALLEN Items)
+- Fade-Animationen entfernt (`fadeInSpec`/`fadeOutSpec = null`) — nur Placement-Animation beim Reorder
+- Ursache: `Modifier.animateItem()` verursachte Fade-In/Out-Animationen beim Erscheinen/Verlassen der Ansicht, besonders sichtbar bei langen Items (>5 Zeilen)
 
 **Selbstsignierte SSL-Zertifikate in Release-Builds**
 - `<certificates src="user" />` zur Netzwerk-Sicherheitskonfiguration hinzugefügt
@@ -44,7 +62,25 @@ Sync-Deadlock-Fix, SSL-Zertifikate, Widget-Scrolling, Tastatur-Großschreibung u
 - F-Droid-Metadaten-Beschreibungen aktualisiert (de-DE und en-US)
 - App sortiert nach Notiztyp (Text/Checkliste), nicht nach Farbe
 
+### ✨ Neue Features
+
+**Enter-Taste: Navigation von Titel zu Inhalt** *(IMPL_09)*
+- Titel-Feld ist jetzt einzeilig mit `ImeAction.Next`
+- Enter/Weiter springt zum Inhaltsfeld (Text-Notizen) oder erstem Checklisten-Item
+- Verhindert versehentliche Zeilenumbrüche im Titel
+
 ### 🔄 Verbesserungen
+
+**Widget-Inhalts-Padding** *(IMPL_08)*
+- Einheitliches Padding für alle Widget-Ansichten: 12dp horizontal, 4dp oben, 12dp unten
+- Erhöhter Abstand zwischen Checklisten-Items für bessere Lesbarkeit
+- TextNoteFullView hat jetzt unteren Abstand gegen Text-Abschnitt
+- ChecklistCompactView und ChecklistFullView mit gleichen Rändern
+
+**Widget-Eintrags-Abstände** *(IMPL_12)*
+- ChecklistFullView: Vertikaler Abstand 2dp → 4dp (gesperrt), 1dp → 3dp (entsperrt)
+- TextNoteFullView: Zeilenabstand 2dp → 4dp unterer Abstand
+- Passt an App-Proportionen an (~60–80% der App-Abstände)
 
 **Sync-State-Timeout**
 - 5-Minuten-Timeout für verwaiste Sync-States in `SyncStateManager` hinzugefügt
