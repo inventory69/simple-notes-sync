@@ -381,7 +381,7 @@ private fun TextNoteFullView(note: Note) {
     LazyColumn(
         modifier = GlanceModifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp)
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
     ) {
         // 🆕 v1.8.0 Fix: Split text into individual lines instead of paragraphs.
         // This ensures each line is a separate LazyColumn item that can scroll properly.
@@ -440,7 +440,8 @@ private fun ChecklistCompactView(
     val visibleItems = items.take(maxItems)
     val remainingCount = items.size - visibleItems.size
 
-    Column(modifier = GlanceModifier.padding(horizontal = 8.dp, vertical = 2.dp)) {
+    // 🆕 v1.8.2 (IMPL_08): Konsistente Randabstände
+    Column(modifier = GlanceModifier.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)) {
         var separatorShown = false
         visibleItems.forEach { item ->
             // 🆕 v1.8.1: Separator vor dem ersten checked Item anzeigen
@@ -453,7 +454,7 @@ private fun ChecklistCompactView(
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 4.dp),  // 🆕 v1.8.2 (IMPL_08): 2dp → 4dp
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -488,7 +489,7 @@ private fun ChecklistCompactView(
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 1.dp)
+                        .padding(vertical = 3.dp)  // 🆕 v1.8.2 (IMPL_08): 1dp → 3dp
                 )
             }
         }
@@ -535,10 +536,11 @@ private fun ChecklistFullView(
     // 🆕 v1.8.1: Berechne die Gesamtanzahl der Elemente inklusive Separator
     val totalItems = items.size + if (showSeparator) 1 else 0
 
+    // 🆕 v1.8.2 (IMPL_08): Konsistente Randabstände
     LazyColumn(
         modifier = GlanceModifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp)
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
     ) {
         items(totalItems) { index ->
             // 🆕 v1.8.1: Separator an Position uncheckedCount einfügen
