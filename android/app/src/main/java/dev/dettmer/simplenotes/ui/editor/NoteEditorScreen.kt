@@ -456,6 +456,39 @@ private fun ChecklistEditor(
     // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
     var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
 
+    // 🆕 v1.8.2 (IMPL_10): Kontrollierter Scroll zum neuen Item (verhindert Sprung ans Ende)
+    var scrollToNewItemIndex by remember { mutableStateOf<Int?>(null) }
+
+    // 🆕 v1.8.2 (IMPL_10): Scroll vor Fokus — Item muss sichtbar sein bevor fokussiert wird
+    LaunchedEffect(scrollToNewItemIndex) {
+        scrollToNewItemIndex?.let { index ->
+            // Scroll zum neuen Item (nicht zum nächsten — item soll oben/mittig sichtbar sein)
+            listState.animateScrollToItem(
+                index = index,
+                scrollOffset = 0
+            )
+            scrollToNewItemIndex = null
+        }
+    }
+
+    // 🆕 v1.8.2 (IMPL_10): Berechne Visual-Index für neues Item bei focusNewItemId
+    LaunchedEffect(focusNewItemId) {
+        focusNewItemId?.let { itemId ->
+            val dataIndex = items.indexOfFirst { it.id == itemId }
+            if (dataIndex >= 0) {
+                val hasSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
+                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
+                val unchecked = items.count { !it.isChecked }
+                val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
+                    dataIndex + 1  // +1 für Separator
+                } else {
+                    dataIndex
+                }
+                scrollToNewItemIndex = visualIndex
+            }
+        }
+    }
+
     // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL und UNCHECKED_FIRST anzeigen
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
@@ -470,16 +503,20 @@ private fun ChecklistEditor(
             dragDropState.separatorVisualIndex = separatorVisualIndex
         }
 
-        // 🆕 v1.8.1 (IMPL_05): Auto-Scroll wenn ein Item durch Zeilenumbruch wächst
+        // 🆕 v1.8.1 + v1.8.2 (IMPL_10): Viewport-aware Auto-Scroll bei Zeilenwachstum
+        // Scrollt pixel-genau um die Differenz, statt zum nächsten Item zu springen
         LaunchedEffect(scrollToItemIndex) {
             scrollToItemIndex?.let { index ->
                 delay(AUTO_SCROLL_DELAY_MS)  // Warten bis Layout-Pass abgeschlossen
-                val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                if (index >= lastVisibleIndex - 1) {
-                    listState.animateScrollToItem(
-                        index = minOf(index + 1, items.size + if (showSeparator) 1 else 0),
-                        scrollOffset = 0
-                    )
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                val itemInfo = visibleItems.find { it.index == index }
+                if (itemInfo != null) {
+                    val viewportEnd = listState.layoutInfo.viewportEndOffset
+                    val itemBottom = itemInfo.offset + itemInfo.size
+                    if (itemBottom > viewportEnd) {
+                        // Item ragt unter den sichtbaren Bereich — genau um die Differenz scrollen
+                        listState.scroll { scrollBy((itemBottom - viewportEnd).toFloat()) }
+                    }
                 }
                 scrollToItemIndex = null
             }
