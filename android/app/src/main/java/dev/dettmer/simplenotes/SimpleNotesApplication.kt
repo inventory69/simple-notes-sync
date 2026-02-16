@@ -68,15 +68,6 @@ class SimpleNotesApplication : Application() {
             SyncStateManager.reset()
         }
         Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
-        
-        // 🆕 v1.8.2: Stale Sync-State cleanup beim App-Kaltstart
-        // Nach einem Prozess-Neustart kann kein Sync mehr aktiv sein.
-        // SyncStateManager ist ein Kotlin object — bei Activity-Recreate ohne
-        // Prozess-Kill kann ein verwaister SYNCING-State dauerhaft blockieren.
-        if (SyncStateManager.isSyncing) {
-            Logger.e(TAG, "⚠️ Stale sync state detected on cold start - resetting")
-            SyncStateManager.reset()
-        }
     }
     
     override fun onTerminate() {
