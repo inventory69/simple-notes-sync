@@ -158,8 +158,10 @@ class WebDavSyncService(private val context: Context) {
         
         Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
         
+        // 🛡️ v1.8.2: readTimeout ergänzt (SNS-182-19c) — verhindert endloses Warten bei hängenden Servern
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .readTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
             .build()
         
         return SafeSardineWrapper.create(okHttpClient, username, password)
@@ -1782,7 +1784,11 @@ class WebDavSyncService(private val context: Context) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
-            val okHttpClient = OkHttpClient.Builder().build()
+            // 🛡️ v1.8.2: Timeout setzen wie bei createSardineClient() (SNS-182-19c)
+            val okHttpClient = OkHttpClient.Builder()
+                .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+                .readTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+                .build()
             val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
             
             try {
