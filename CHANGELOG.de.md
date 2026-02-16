@@ -48,7 +48,7 @@ Großes Stabilitäts-Release mit 26 behobenen Problemen — Sync-Deadlocks, Date
 - `isDragConfirmed`-State verhindert versehentliche Drag-Aktivierung beim Scrollen
 - Ursache: `Modifier.animateItem()` verursachte Fade-Animationen beim Scrolling
 
-**Checklisten-Drag am Separator unterbrochen** *(IMPL_26)*
+**Checklisten-Drag am Separator unterbrochen** *(IMPL_26)* ([8828391](https://github.com/inventory69/simple-notes-sync/commit/8828391))
 - Drag über die Erledigt/Offen-Trennlinie hinaus bricht nicht mehr ab
 - Item bleibt im aktiven Drag während der Haken nahtlos gesetzt/entfernt wird
 - Ursache: Getrennte `itemsIndexed`-Blöcke zerstörten die Composition beim Grenzübertritt — zu einheitlichem `items`-Block zusammengeführt

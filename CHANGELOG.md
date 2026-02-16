@@ -57,7 +57,7 @@ Major stability release fixing 26 issues — sync deadlocks, data loss preventio
 - Scoped `animateItem()` to confirmed drag operations only
 - Root cause: `Modifier.animateItem()` caused fade-in/out animations when items entered/left viewport
 
-**Checklist Drag Interrupted at Separator** *(IMPL_26)*
+**Checklist Drag Interrupted at Separator** *(IMPL_26)* ([8828391](https://github.com/inventory69/simple-notes-sync/commit/8828391))
 - Dragging a checklist item across the checked/unchecked separator no longer drops the item
 - Item stays in active drag while its checked state toggles seamlessly
 - Root cause: Separate `itemsIndexed` blocks destroyed Composition on boundary crossing — unified into single `items` block
