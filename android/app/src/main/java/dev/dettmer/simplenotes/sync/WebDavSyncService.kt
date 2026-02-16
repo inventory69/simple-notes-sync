@@ -21,6 +21,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.Socket
@@ -705,6 +706,14 @@ class WebDavSyncService(private val context: Context) {
                         "Conflicts: ${downloadResult.conflictCount}, " +
                         "Deleted on server: ${downloadResult.deletedOnServerCount}"  // 🆕 v1.8.0
                 )
+                
+                // 🛡️ v1.8.2 (IMPL_21): Download-Fehler nicht verschlucken
+                if (downloadResult.downloadFailed) {
+                    Logger.e(TAG, "⚠️ Download hatte Fehler — Sync wird als fehlgeschlagen gemeldet")
+                    throw IOException(
+                        "Download failed: ${downloadResult.downloadError ?: "Unknown error"}"
+                    )
+                }
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 CRASH in downloadRemoteNotes()!", e)
                 e.printStackTrace()
@@ -1120,7 +1129,9 @@ class WebDavSyncService(private val context: Context) {
     private data class DownloadResult(
         val downloadedCount: Int,
         val conflictCount: Int,
-        val deletedOnServerCount: Int = 0  // 🆕 v1.8.0
+        val deletedOnServerCount: Int = 0,  // 🆕 v1.8.0
+        val downloadFailed: Boolean = false,  // 🛡️ v1.8.2 (IMPL_21)
+        val downloadError: String? = null  // 🛡️ v1.8.2 (IMPL_21)
     )
     
     /**
@@ -1226,6 +1237,8 @@ class WebDavSyncService(private val context: Context) {
         
         // 🆕 v1.8.0: Collect server note IDs for deletion detection
         val serverNoteIds = mutableSetOf<String>()
+        // 🛡️ v1.8.2 (IMPL_21): Track download errors statt sie zu verschlucken
+        var downloadException: Exception? = null
         
         try {
             // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
@@ -1556,6 +1569,9 @@ class WebDavSyncService(private val context: Context) {
             
         } catch (e: Exception) {
             Logger.e(TAG, "❌ downloadRemoteNotes failed", e)
+            // 🛡️ v1.8.2 (IMPL_21): Exception merken statt verschlucken —
+            // Deletion-Detection + Tracker-Save laufen trotzdem (Safety-Guards greifen)
+            downloadException = e
         }
         
         // NEW: Save deletion tracker if modified
@@ -1573,7 +1589,13 @@ class WebDavSyncService(private val context: Context) {
         }
         
         Logger.d(TAG, "📊 Total: $downloadedCount downloaded, $conflictCount conflicts, $skippedDeleted deleted")
-        return DownloadResult(downloadedCount, conflictCount, deletedOnServerCount)
+        return DownloadResult(
+            downloadedCount = downloadedCount,
+            conflictCount = conflictCount,
+            deletedOnServerCount = deletedOnServerCount,
+            downloadFailed = downloadException != null,
+            downloadError = downloadException?.message
+        )
     }
     
     private fun saveLastSyncTimestamp() {
