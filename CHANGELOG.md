@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🔧 Stability, Editor & Widget Improvements
 
-Major stability release fixing 25 issues — sync deadlocks, data loss prevention, SSL certificates, markdown sync loop, silent download failures, editor UX improvements, widget polish, and APK size optimization.
+Major stability release fixing 26 issues — sync deadlocks, data loss prevention, SSL certificates, markdown sync loop, silent download failures, editor UX improvements, widget polish, and APK size optimization.
 
 ### 🐛 Bug Fixes
 
@@ -56,6 +56,11 @@ Major stability release fixing 25 issues — sync deadlocks, data loss preventio
 - Added `isDragConfirmed` state to prevent accidental drag activation during scroll
 - Scoped `animateItem()` to confirmed drag operations only
 - Root cause: `Modifier.animateItem()` caused fade-in/out animations when items entered/left viewport
+
+**Checklist Drag Interrupted at Separator** *(IMPL_26)*
+- Dragging a checklist item across the checked/unchecked separator no longer drops the item
+- Item stays in active drag while its checked state toggles seamlessly
+- Root cause: Separate `itemsIndexed` blocks destroyed Composition on boundary crossing — unified into single `items` block
 
 **SyncMutex Deadlock via clearSessionCache() Exception** *(IMPL_13)* ([99f451b](https://github.com/inventory69/simple-notes-sync/commit/99f451b))
 - Wrapped `clearSessionCache()` in try-catch inside `finally` block

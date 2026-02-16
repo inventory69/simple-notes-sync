@@ -1,18 +1,13 @@
-🔧 v1.8.2 — Stability & Polish (25 improvements)
-
-Sync:
-• Improved reliability and error handling
+🔧 v1.8.2 — Stability & Polish (26 improvements)
+• Improved sync reliability and error handling
 • Fixed rare sync lock when interrupted
 • Markdown sync now stable
 • Better cross-device detection
 • SSL certificates in release builds
-
-Editor:
 • Checklists keep edits on app switch
 • Smoother scrolling & drag
+• Drag across separator stays active
 • Auto-scroll, capitalization, Enter nav
-
-Widgets:
-• Better spacing and text scrolling
+• Better widget spacing
 
 https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
