@@ -302,14 +302,23 @@ type: ${noteType.name.lowercase()}$sortLine
                     checklistItems = null
                 }
                 
-                // 🔧 v1.7.2 (IMPL_014): Server mtime hat Priorität über YAML timestamp
+                // 🔧 v1.8.2 (IMPL_025): YAML-Timestamp ist autoritativ
+                // Server mtime nur verwenden wenn YAML-Timestamp fehlt/ungültig (= 0)
+                // IMPL_014-Logik entfernt: Server mtime nach eigenem Export ist immer "jetzt",
+                // was zu Feedback Loop führt (IMPL_025). Externe Editoren (Obsidian etc.)
+                // aktualisieren den YAML-Header zuverlässig.
                 val yamlUpdatedAt = parseISO8601(metadata["updated"] ?: "")
                 val effectiveUpdatedAt = when {
-                    serverModifiedTime != null && serverModifiedTime > yamlUpdatedAt -> {
-                        Logger.d(TAG, "Using server mtime ($serverModifiedTime) over YAML ($yamlUpdatedAt)")
+                    yamlUpdatedAt <= 0L && serverModifiedTime != null && serverModifiedTime > 0L -> {
+                        Logger.d(TAG, "YAML timestamp missing/invalid, using server mtime: $serverModifiedTime")
                         serverModifiedTime
                     }
-                    else -> yamlUpdatedAt
+                    else -> {
+                        if (serverModifiedTime != null && serverModifiedTime > yamlUpdatedAt) {
+                            Logger.d(TAG, "Ignoring server mtime ($serverModifiedTime) — using YAML ($yamlUpdatedAt) to prevent loop")
+                        }
+                        yamlUpdatedAt
+                    }
                 }
                 
                 Note(
@@ -388,8 +397,13 @@ type: ${noteType.name.lowercase()}$sortLine
                 @Suppress("SwallowedException") // Intentional: try all patterns before logging
                 try {
                     val sdf = SimpleDateFormat(pattern, Locale.US)
-                    // Für Patterns ohne Timezone: UTC annehmen
-                    if (!pattern.contains("XXX") && !pattern.contains("Z")) {
+                    // 🔧 v1.8.2 (IMPL_025): UTC für alle Patterns OHNE echtes Timezone-Token
+                    // 'Z' (literal/quoted) ist KEIN Timezone-Token — nur unquoted Z und XXX sind es.
+                    // Bug: pattern.contains("Z") matchte auch 'Z' (literal),
+                    // wodurch UTC nicht gesetzt wurde → 1h Drift pro Sync-Zyklus (CET=UTC+1)
+                    val hasRealTimezoneToken = pattern.contains("XXX") ||
+                        (pattern.contains("Z") && !pattern.contains("'Z'"))
+                    if (!hasRealTimezoneToken) {
                         sdf.timeZone = TimeZone.getTimeZone("UTC")
                     }
                     val parsed = sdf.parse(normalized)
