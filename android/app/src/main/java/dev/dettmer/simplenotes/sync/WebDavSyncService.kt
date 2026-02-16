@@ -813,7 +813,13 @@ class WebDavSyncService(private val context: Context) {
         }
         } finally {
             // ⚡ v1.3.1: Session-Caches leeren
-            clearSessionCache()
+            // 🛡️ v1.8.2 (IMPL_13): try-catch verhindert dass eine Exception in
+            // clearSessionCache() den syncMutex.unlock() blockiert → permanenter Deadlock
+            try {
+                clearSessionCache()
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ clearSessionCache() failed (non-fatal): ${e.message}")
+            }
             // 🆕 v1.8.0: Reset progress state
             SyncStateManager.resetProgress()
             // 🔒 v1.3.1: Sync-Mutex freigeben
