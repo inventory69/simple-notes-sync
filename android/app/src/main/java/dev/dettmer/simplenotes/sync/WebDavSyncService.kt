@@ -402,16 +402,20 @@ class WebDavSyncService(private val context: Context) {
                 return@withContext true
             }
             
-            // Check 2: Local changes
+            // Check 2: Local changes (Timestamp ODER SyncStatus)
             val storage = NotesStorage(context)
             val allNotes = storage.loadAllNotes()
+            // 🛡️ v1.8.2 (IMPL_22): Auch PENDING-Status prüfen —
+            // nach Server-Wechsel wird syncStatus auf PENDING gesetzt, aber updatedAt bleibt gleich
             val hasLocalChanges = allNotes.any { note ->
-                note.updatedAt > lastSyncTime
+                note.updatedAt > lastSyncTime ||
+                note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING
             }
             
             if (hasLocalChanges) {
-                val unsyncedCount = allNotes.count { it.updatedAt > lastSyncTime }
-                Logger.d(TAG, "📝 Local changes: $unsyncedCount notes modified")
+                val unsyncedByTime = allNotes.count { it.updatedAt > lastSyncTime }
+                val unsyncedByStatus = allNotes.count { it.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING }
+                Logger.d(TAG, "📝 Local changes: $unsyncedByTime by timestamp, $unsyncedByStatus PENDING")
                 return@withContext true
             }
             
