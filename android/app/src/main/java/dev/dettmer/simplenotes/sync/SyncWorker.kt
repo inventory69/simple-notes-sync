@@ -149,6 +149,9 @@ class SyncWorker(
                 Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
                 Logger.d(TAG, "   Saves battery, network traffic, and server load")
                 
+                // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
+                
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
                     Logger.d(TAG, "═══════════════════════════════════════")
@@ -169,6 +172,9 @@ class SyncWorker(
                 } else {
                     Logger.d(TAG, "⏭️ Sync blocked by gate: ${gateResult.blockReason ?: "offline/no server"}")
                 }
+                
+                // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (gate blocked)")
@@ -192,6 +198,9 @@ class SyncWorker(
                 
                 // 🔥 v1.1.2: Check if we should show warning (server unreachable for >24h)
                 checkAndShowSyncWarning(syncService)
+                
+                // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
+                SyncStateManager.reset()
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (silent skip)")
@@ -309,6 +318,9 @@ class SyncWorker(
                 Result.failure()
             }
         } catch (e: CancellationException) {
+            // 🛡️ v1.8.2 (IMPL_14): State reset — verhindert "Sync already in progress" Deadlock
+            SyncStateManager.reset()
+            
             // ⭐ Job wurde gecancelt - KEIN FEHLER!
             // Gründe: App-Update, Doze Mode, Battery Optimization, Network Constraint, etc.
             if (BuildConfig.DEBUG) {
@@ -330,8 +342,8 @@ class SyncWorker(
                 Logger.d(TAG, "═══════════════════════════════════════")
             }
             
-            // ⚠️ WICHTIG: Result.success() zurückgeben!
-            // Cancellation ist KEIN Fehler, WorkManager soll nicht retries machen
+            // ⚠️ Cancellation ist KEIN Fehler → kein markError(), kein Error-Banner
+            // Result.success() damit WorkManager kein exponentielles Backoff auslöst
             Result.success()
             
         } catch (e: Exception) {
@@ -342,6 +354,9 @@ class SyncWorker(
             Logger.e(TAG, "Exception type: ${e.javaClass.name}")
             Logger.e(TAG, "Exception message: ${e.message}")
             Logger.e(TAG, "Stack trace:", e)
+            
+            // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
+            SyncStateManager.markError(e.message)
             
             try {
                 NotificationHelper.showSyncError(

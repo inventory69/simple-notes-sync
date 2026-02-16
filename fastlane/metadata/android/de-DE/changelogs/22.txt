@@ -1,0 +1,12 @@
+🔧 v1.8.2 — Stabilität & Polish (26 Fixes)
+• Sync-Zuverlässigkeit verbessert
+• Seltene Sync-Blockade behoben
+• Markdown-Sync jetzt stabil
+• Bessere Cross-Device-Erkennung
+• Checklisten behalten Änderungen bei App-Wechsel
+• Flüssigeres Scrollen & Drag
+• Drag über Trennlinie bleibt aktiv
+• Auto-Scroll, Großschreibung, Enter-Nav
+• Bessere Widget-Abstände und Scrolling
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

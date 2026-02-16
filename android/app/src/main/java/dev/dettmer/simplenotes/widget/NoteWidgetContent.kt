@@ -57,10 +57,6 @@ private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
 private val WIDGET_HEIGHT_SCROLL_THRESHOLD = 150.dp   // 🆕 v1.8.1: Scrollbare Ansicht
 private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
 
-// 🆕 v1.8.0: Increased preview lengths for better text visibility
-private const val TEXT_PREVIEW_COMPACT_LENGTH = 120
-private const val TEXT_PREVIEW_FULL_LENGTH = 300
-
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
     height < WIDGET_HEIGHT_SMALL_THRESHOLD -> WidgetSizeClass.SMALL
     
@@ -196,15 +192,20 @@ fun NoteWidgetContent(
                     Box(modifier = contentClickModifier) {}
                 }
 
-                WidgetSizeClass.NARROW_MED -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.2: Text-Notizen scrollbar auch in NARROW_MED (2x1 Widgets)
+                WidgetSizeClass.NARROW_MED -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNotePreview(note, compact = true)
-                        NoteType.CHECKLIST -> ChecklistCompactView(
-                            note = note,
-                            maxItems = 2,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
+                            ChecklistCompactView(
+                                note = note,
+                                maxItems = 2,
+                                isLocked = isLocked,
+                                glanceId = glanceId
+                            )
+                        }
                     }
                 }
 
@@ -233,15 +234,20 @@ fun NoteWidgetContent(
                     }
                 }
 
-                WidgetSizeClass.WIDE_MED -> Box(modifier = contentClickModifier) {
+                // 🆕 v1.8.2: Text-Notizen scrollbar auch in WIDE_MED
+                WidgetSizeClass.WIDE_MED -> {
                     when (note.noteType) {
-                        NoteType.TEXT -> TextNotePreview(note, compact = false)
-                        NoteType.CHECKLIST -> ChecklistCompactView(
-                            note = note,
-                            maxItems = 3,
-                            isLocked = isLocked,
-                            glanceId = glanceId
-                        )
+                        NoteType.TEXT -> Box(modifier = contentClickModifier) {
+                            TextNoteFullView(note)
+                        }
+                        NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
+                            ChecklistCompactView(
+                                note = note,
+                                maxItems = 3,
+                                isLocked = isLocked,
+                                glanceId = glanceId
+                            )
+                        }
                     }
                 }
 
@@ -371,26 +377,11 @@ private fun OptionsBar(
 // ── Text Note Views ──
 
 @Composable
-private fun TextNotePreview(note: Note, compact: Boolean) {
-    Text(
-        text = note.content.take(
-            if (compact) TEXT_PREVIEW_COMPACT_LENGTH else TEXT_PREVIEW_FULL_LENGTH
-        ),
-        style = TextStyle(
-            color = GlanceTheme.colors.onSurface,
-            fontSize = if (compact) 13.sp else 14.sp
-        ),
-        maxLines = if (compact) 3 else 5,  // 🆕 v1.8.0: Increased for better preview
-        modifier = GlanceModifier.padding(horizontal = 12.dp, vertical = 4.dp)
-    )
-}
-
-@Composable
 private fun TextNoteFullView(note: Note) {
     LazyColumn(
         modifier = GlanceModifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp)
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
     ) {
         // 🆕 v1.8.0 Fix: Split text into individual lines instead of paragraphs.
         // This ensures each line is a separate LazyColumn item that can scroll properly.
@@ -409,7 +400,7 @@ private fun TextNoteFullView(note: Note) {
                         fontSize = 14.sp
                     ),
                     maxLines = 5,  // Allow wrapping but prevent single-item overflow
-                    modifier = GlanceModifier.padding(bottom = 2.dp)
+                    modifier = GlanceModifier.padding(bottom = 4.dp)  // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
                 )
             }
         }
@@ -449,7 +440,8 @@ private fun ChecklistCompactView(
     val visibleItems = items.take(maxItems)
     val remainingCount = items.size - visibleItems.size
 
-    Column(modifier = GlanceModifier.padding(horizontal = 8.dp, vertical = 2.dp)) {
+    // 🆕 v1.8.2 (IMPL_08): Konsistente Randabstände
+    Column(modifier = GlanceModifier.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)) {
         var separatorShown = false
         visibleItems.forEach { item ->
             // 🆕 v1.8.1: Separator vor dem ersten checked Item anzeigen
@@ -462,7 +454,7 @@ private fun ChecklistCompactView(
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 4.dp),  // 🆕 v1.8.2 (IMPL_08): 2dp → 4dp
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -497,7 +489,7 @@ private fun ChecklistCompactView(
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 1.dp)
+                        .padding(vertical = 3.dp)  // 🆕 v1.8.2 (IMPL_08): 1dp → 3dp
                 )
             }
         }
@@ -544,10 +536,11 @@ private fun ChecklistFullView(
     // 🆕 v1.8.1: Berechne die Gesamtanzahl der Elemente inklusive Separator
     val totalItems = items.size + if (showSeparator) 1 else 0
 
+    // 🆕 v1.8.2 (IMPL_08): Konsistente Randabstände
     LazyColumn(
         modifier = GlanceModifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp)
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
     ) {
         items(totalItems) { index ->
             // 🆕 v1.8.1: Separator an Position uncheckedCount einfügen
@@ -564,7 +557,7 @@ private fun ChecklistFullView(
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 4.dp),  // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -598,7 +591,7 @@ private fun ChecklistFullView(
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 1.dp)
+                        .padding(vertical = 3.dp)  // 🆕 v1.8.2 (IMPL_12): 1dp → 3dp
                 )
             }
         }

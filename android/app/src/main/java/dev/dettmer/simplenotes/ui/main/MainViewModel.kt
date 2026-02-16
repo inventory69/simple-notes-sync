@@ -571,13 +571,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // 🆕 v1.8.0: tryStartSync setzt sofort PREPARING → Banner erscheint instant
         if (!SyncStateManager.tryStartSync(source)) {
             if (SyncStateManager.isSyncing) {
-                Logger.d(TAG, "⏭️ $source Sync blocked: Another sync in progress")
-                viewModelScope.launch {
-                    _showSnackbar.emit(SnackbarData(
-                        message = getString(R.string.sync_already_running),
-                        actionLabel = "",
-                        onAction = {}
-                    ))
+                // 🛡️ v1.8.2 (IMPL_24): Wenn ein Silent-Sync läuft, einfach sichtbar machen
+                // statt den User mit "already in progress" abzulehnen
+                if (SyncStateManager.promoteToVisible()) {
+                    Logger.d(TAG, "📢 $source: Promoted silent sync to visible")
+                    // Kein return — User sieht jetzt das Banner des laufenden Syncs
+                } else {
+                    Logger.d(TAG, "⏭️ $source Sync blocked: Another sync in progress")
+                    viewModelScope.launch {
+                        _showSnackbar.emit(SnackbarData(
+                            message = getString(R.string.sync_already_running),
+                            actionLabel = "",
+                            onAction = {}
+                        ))
+                    }
                 }
             }
             return

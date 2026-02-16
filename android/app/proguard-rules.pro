@@ -45,7 +45,7 @@
 # Coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
--keepclassmembers class kotlinx.** {
+-keepclassmembers class kotlinx.coroutines.** {
     volatile <fields>;
 }
 
@@ -63,16 +63,26 @@
 # App-specific rules: Only keep what Gson/reflection needs
 # ═══════════════════════════════════════════════════════════════════════
 
-# 🔧 v1.8.1 FIX: Breite Regel verwenden statt spezifischer Klassen
-# 
-# GRUND: NoteRaw ist eine private data class innerhalb von Note.Companion.
-# Der JVM-Klassenname ist Note$Companion$NoteRaw, NICHT Note$NoteRaw.
-# Die spezifische Regel griff nicht → R8 obfuskierte NoteRaw-Felder
-# → Gson konnte keine JSON-Felder matchen → ALLE Notizen unlesbar!
-#
-# Sichere Lösung: Alle App-Klassen behalten (wie in v1.7.2).
-# APK-Größenoptimierung kann in v1.9.0 sicher evaluiert werden.
--keep class dev.dettmer.simplenotes.** { *; }
+# 🔧 v1.8.2: Granulare Regeln statt breiter Wildcard
+# Ersetzt die v1.8.1-Notlösung (-keep class dev.dettmer.simplenotes.** { *; })
+# die JEGLICHES Tree-Shaking verhinderte → APK > 5MB.
+
+# 1) DATA MODELS — Gson braucht Feldnamen + Konstruktoren
+#    NoteRaw ist Note$Companion$NoteRaw (Companion-verschachtelt!)
+-keep class dev.dettmer.simplenotes.models.** { *; }
+-keep class dev.dettmer.simplenotes.data.** { *; }
+
+# 2) WORKMANAGER — instanziiert SyncWorker via Reflection
+-keep class dev.dettmer.simplenotes.sync.SyncWorker { *; }
+
+# 3) BROADCAST RECEIVERS — via AndroidManifest registriert
+-keep class dev.dettmer.simplenotes.widget.NoteWidgetReceiver { *; }
+-keep class dev.dettmer.simplenotes.** extends android.content.BroadcastReceiver { *; }
+
+# 4) ACTIVITIES & APPLICATION — Android-Framework instanziiert via Reflection
+-keep class dev.dettmer.simplenotes.SimpleNotesApplication { *; }
+-keep class dev.dettmer.simplenotes.** extends android.app.Activity { *; }
+-keep class dev.dettmer.simplenotes.** extends androidx.fragment.app.Fragment { *; }
 
 # v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
 # This class only exists on API 35+ but Compose handles the fallback gracefully
@@ -86,10 +96,6 @@
 # Ohne diese Rule findet R8 die Klassen nicht zur Laufzeit → Widget-Crash
 -keep class dev.dettmer.simplenotes.widget.*Action { *; }
 -keep class dev.dettmer.simplenotes.widget.*Receiver { *; }
-
-# Glance Widget State (Preferences-basiert, intern via Reflection)
--keep class androidx.glance.appwidget.state.** { *; }
--keep class androidx.datastore.preferences.** { *; }
 
 # Compose Text Layout: Verhindert dass R8 onTextLayout-Callbacks
 # als Side-Effect-Free optimiert (behebt Gradient-Regression)

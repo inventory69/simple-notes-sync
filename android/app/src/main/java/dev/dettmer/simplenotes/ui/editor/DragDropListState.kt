@@ -35,6 +35,12 @@ class DragDropListState(
     var draggingItemIndex by mutableStateOf<Int?>(null)
         private set
 
+    // 🆕 v1.8.2 (IMPL_11): Drag gilt erst als bestätigt nach erstem onDrag-Callback.
+    // Verhindert visuellen Glitch beim schnellen Scrollen (onDragStart → onDragCancel
+    // ohne onDrag dazwischen → kurzzeitiger Drag-State sichtbar).
+    var isDragConfirmed by mutableStateOf(false)
+        private set
+
     private var draggingItemDraggedDelta by mutableFloatStateOf(0f)
     private var draggingItemInitialOffset by mutableFloatStateOf(0f)
     // 🆕 v1.8.1: Item-Größe beim Drag-Start fixieren
@@ -73,6 +79,7 @@ class DragDropListState(
 
     fun onDragStart(offset: Offset, itemIndex: Int) {
         draggingItemIndex = itemIndex
+        isDragConfirmed = false  // 🆕 v1.8.2 (IMPL_11): Noch nicht bestätigt
         val info = draggingItemLayoutInfo
         draggingItemInitialOffset = info?.offset?.toFloat() ?: 0f
         draggingItemSize = info?.size ?: 0
@@ -82,12 +89,14 @@ class DragDropListState(
     fun onDragInterrupted() {
         draggingItemDraggedDelta = 0f
         draggingItemIndex = null
+        isDragConfirmed = false  // 🆕 v1.8.2 (IMPL_11): Reset
         draggingItemInitialOffset = 0f
         draggingItemSize = 0
         overscrollJob?.cancel()
     }
 
     fun onDrag(offset: Offset) {
+        isDragConfirmed = true  // 🆕 v1.8.2 (IMPL_11): Erster Drag-Callback → bestätigt
         draggingItemDraggedDelta += offset.y
 
         val draggingItem = draggingItemLayoutInfo ?: return
@@ -112,7 +121,18 @@ class DragDropListState(
         }
 
         if (targetItem != null) {
-            val scrollToIndex = if (targetItem.index == state.firstVisibleItemIndex) {
+            // 🆕 v1.8.2 (IMPL_26): Kein Scroll bei Cross-Separator-Swap.
+            // Wenn ein Item über den Separator gezogen wird, ändert sich das Layout erheblich
+            // (Separator-Position verschiebt sich, Items werden umgeordnet). Der asynchrone
+            // scrollToItem-Pfad verzögert onMove/draggingItemIndex-Update und scrollt den
+            // Viewport weg vom Drag-Punkt → Drag bricht ab (draggingItemLayoutInfo = null).
+            val crossesSeparator = separatorVisualIndex >= 0 &&
+                (draggingItem.index < separatorVisualIndex) !=
+                (targetItem.index < separatorVisualIndex)
+
+            val scrollToIndex = if (crossesSeparator) {
+                null
+            } else if (targetItem.index == state.firstVisibleItemIndex) {
                 draggingItem.index
             } else if (draggingItem.index == state.firstVisibleItemIndex) {
                 targetItem.index

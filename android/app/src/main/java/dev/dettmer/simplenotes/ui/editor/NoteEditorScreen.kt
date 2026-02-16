@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.placeCursorAtEnd
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Sort
@@ -36,17 +38,22 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -204,8 +211,30 @@ fun NoteEditorScreen(
                     .fillMaxWidth()
                     .focusRequester(titleFocusRequester),
                 label = { Text(stringResource(R.string.title)) },
-                singleLine = false,
-                maxLines = 2,
+                singleLine = true,  // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
+                // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Next  // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
+                ),
+                // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        when (uiState.noteType) {
+                            NoteType.TEXT -> {
+                                // Text-Notiz: Fokus direkt ins Content-Feld
+                                contentFocusRequester.requestFocus()
+                            }
+                            NoteType.CHECKLIST -> {
+                                // Checkliste: Fokus auf erstes Item
+                                val firstItemId = checklistItems.firstOrNull()?.id
+                                if (firstItemId != null) {
+                                    focusNewItemId = firstItemId
+                                }
+                            }
+                        }
+                    }
+                ),
                 shape = RoundedCornerShape(16.dp)
             )
             
@@ -291,37 +320,52 @@ private fun TextNoteContent(
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
-    // v1.5.0: Use TextFieldValue to control cursor position
-    // Track if initial cursor position has been set (only set to end once on first load)
-    var initialCursorSet by remember { mutableStateOf(false) }
+    // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
+    val textFieldState = rememberTextFieldState(initialText = content)
+    val scrollState = rememberScrollState()
     
-    var textFieldValue by remember {
-        mutableStateOf(TextFieldValue(
-            text = content,
-            selection = TextRange(content.length)
-        ))
+    // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
+    var isFocused by remember { mutableStateOf(false) }
+    
+    // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
+    LaunchedEffect(Unit) {
+        if (content.isNotEmpty()) {
+            textFieldState.edit { placeCursorAtEnd() }
+        }
     }
     
-    // Set initial cursor position only once when content first loads
-    LaunchedEffect(Unit) {
-        if (!initialCursorSet && content.isNotEmpty()) {
-            textFieldValue = TextFieldValue(
-                text = content,
-                selection = TextRange(content.length)
-            )
-            initialCursorSet = true
+    // Text-Änderungen an ViewModel propagieren
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { newText ->
+                onContentChange(newText)
+            }
+    }
+    
+    // 🆕 v1.8.2 (IMPL_07): Auto-Scroll zum Ende wenn Fokus erhalten (Tastatur öffnet sich)
+    // Delay gibt dem Layout Zeit, sich nach imePadding-Resize zu stabilisieren
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            delay(LAYOUT_DELAY_MS)
+            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
     
     OutlinedTextField(
-        value = textFieldValue,
-        onValueChange = { newValue ->
-            textFieldValue = newValue
-            onContentChange(newValue.text)
-        },
-        modifier = modifier.focusRequester(focusRequester),
+        state = textFieldState,
+        modifier = modifier
+            .focusRequester(focusRequester)
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            },
         label = { Text(stringResource(R.string.content)) },
-        shape = RoundedCornerShape(16.dp)
+        // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences
+        ),
+        shape = RoundedCornerShape(16.dp),
+        // 🆕 v1.8.2 (IMPL_07): Externer ScrollState für programmatisches Auto-Scroll
+        scrollState = scrollState
     )
 }
 
@@ -343,7 +387,9 @@ private fun LazyItemScope.DraggableChecklistItem(
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit,  // 🆕 v1.8.1 (IMPL_05)
 ) {
-    val isDragging = dragDropState.draggingItemIndex == visualIndex
+    // 🆕 v1.8.2 (IMPL_11): Drag nur visuell anzeigen wenn tatsächlich bestätigt.
+    // Verhindert Glitch beim schnellen Scrollen (kurzzeitiges onDragStart ohne onDrag).
+    val isDragging = dragDropState.draggingItemIndex == visualIndex && dragDropState.isDragConfirmed
     val elevation by animateDpAsState(
         targetValue = if (isDragging) DRAGGING_ELEVATION_DP else 0.dp,
         label = "elevation"
@@ -369,7 +415,16 @@ private fun LazyItemScope.DraggableChecklistItem(
         dragModifier = Modifier.dragContainer(dragDropState, visualIndex),
         onHeightChanged = onHeightChanged,  // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
-            .then(if (!isDragging) Modifier.animateItem() else Modifier)
+            // 🆕 v1.8.2 (IMPL_11): animateItem() NUR während bestätigtem Drag anwenden.
+            // Vorher: animateItem() auf ALLEN Items permanent → Fade-In/Out-Animationen
+            // verursachten visuelles Flackern bei langen Items beim schnellen Scrollen.
+            // Jetzt: Nur placement-Animation für nicht-gedraggte Items während Reorder.
+            .then(
+                if (dragDropState.isDragConfirmed && !isDragging)
+                    Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+                else
+                    Modifier
+            )
             .offset {
                 IntOffset(
                     0,
@@ -412,30 +467,78 @@ private fun ChecklistEditor(
     // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
     var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
 
+    // 🆕 v1.8.2 (IMPL_10): Kontrollierter Scroll zum neuen Item (verhindert Sprung ans Ende)
+    var scrollToNewItemIndex by remember { mutableStateOf<Int?>(null) }
+
+    // 🆕 v1.8.2 (IMPL_10): Scroll vor Fokus — Item muss sichtbar sein bevor fokussiert wird
+    LaunchedEffect(scrollToNewItemIndex) {
+        scrollToNewItemIndex?.let { index ->
+            // Scroll zum neuen Item (nicht zum nächsten — item soll oben/mittig sichtbar sein)
+            listState.animateScrollToItem(
+                index = index,
+                scrollOffset = 0
+            )
+            scrollToNewItemIndex = null
+        }
+    }
+
+    // 🆕 v1.8.2 (IMPL_10): Berechne Visual-Index für neues Item bei focusNewItemId
+    LaunchedEffect(focusNewItemId) {
+        focusNewItemId?.let { itemId ->
+            val dataIndex = items.indexOfFirst { it.id == itemId }
+            if (dataIndex >= 0) {
+                val hasSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
+                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
+                val unchecked = items.count { !it.isChecked }
+                val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
+                    dataIndex + 1  // +1 für Separator
+                } else {
+                    dataIndex
+                }
+                scrollToNewItemIndex = visualIndex
+            }
+        }
+    }
+
     // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL und UNCHECKED_FIRST anzeigen
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
     val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL || 
                               currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
-    val showSeparator = shouldShowSeparator && uncheckedCount > 0 && checkedCount > 0
+    val showSeparator = shouldShowSeparator && (
+        (uncheckedCount > 0 && checkedCount > 0) ||
+        // 🆕 v1.8.2 (IMPL_26): Separator während Drag beibehalten wenn er vorher sichtbar war.
+        // Wenn das letzte Item einer Seite über den Separator gezogen wird, wird ein Count 0.
+        // Ohne diesen Guard verschwindet der Separator → visualItemCount ändert sich →
+        // draggingItemIndex zeigt auf falschen Slot → Drag bricht ab.
+        // dragDropState.separatorVisualIndex hat noch den Wert der VORHERIGEN Composition
+        // (SideEffect läuft erst nach Composition) → >= 0 = Separator war vorher sichtbar.
+        (dragDropState.draggingItemIndex != null && dragDropState.separatorVisualIndex >= 0)
+    )
 
     Column(modifier = modifier) {
         // 🆕 v1.8.1 IMPL_14: Separator-Position für DragDropState aktualisieren
+        // 🆕 v1.8.2 (IMPL_26): SideEffect statt LaunchedEffect — synchron nach Composition,
+        // damit separatorVisualIndex sofort aktuell ist für den nächsten onDrag-Event
         val separatorVisualIndex = if (showSeparator) uncheckedCount else -1
-        LaunchedEffect(separatorVisualIndex) {
+        SideEffect {
             dragDropState.separatorVisualIndex = separatorVisualIndex
         }
 
-        // 🆕 v1.8.1 (IMPL_05): Auto-Scroll wenn ein Item durch Zeilenumbruch wächst
+        // 🆕 v1.8.1 + v1.8.2 (IMPL_10): Viewport-aware Auto-Scroll bei Zeilenwachstum
+        // Scrollt pixel-genau um die Differenz, statt zum nächsten Item zu springen
         LaunchedEffect(scrollToItemIndex) {
             scrollToItemIndex?.let { index ->
                 delay(AUTO_SCROLL_DELAY_MS)  // Warten bis Layout-Pass abgeschlossen
-                val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                if (index >= lastVisibleIndex - 1) {
-                    listState.animateScrollToItem(
-                        index = minOf(index + 1, items.size + if (showSeparator) 1 else 0),
-                        scrollOffset = 0
-                    )
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                val itemInfo = visibleItems.find { it.index == index }
+                if (itemInfo != null) {
+                    val viewportEnd = listState.layoutInfo.viewportEndOffset
+                    val itemBottom = itemInfo.offset + itemInfo.size
+                    if (itemBottom > viewportEnd) {
+                        // Item ragt unter den sichtbaren Bereich — genau um die Differenz scrollen
+                        listState.scroll { scrollBy((itemBottom - viewportEnd).toFloat()) }
+                    }
                 }
                 scrollToItemIndex = null
             }
@@ -447,40 +550,43 @@ private fun ChecklistEditor(
             contentPadding = PaddingValues(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            // 🆕 v1.8.1 IMPL_14: Unchecked Items (Visual Index 0..uncheckedCount-1)
-            itemsIndexed(
-                items = if (showSeparator) items.subList(0, uncheckedCount) else items,
-                key = { _, item -> item.id }
-            ) { index, item ->
-                DraggableChecklistItem(
-                    item = item,
-                    visualIndex = index,
-                    dragDropState = dragDropState,
-                    focusNewItemId = focusNewItemId,
-                    onTextChange = onTextChange,
-                    onCheckedChange = onCheckedChange,
-                    onDelete = onDelete,
-                    onAddNewItemAfter = onAddNewItemAfter,
-                    onFocusHandled = onFocusHandled,
-                    onHeightChanged = { scrollToItemIndex = index }  // 🆕 v1.8.1 (IMPL_05)
-                )
+            // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
+            // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
+            // Composition zerstört wenn ein Item den Separator überschreitet (anderer
+            // Content-Provider) → PointerInput wird destroyed → Drag abgebrochen.
+            // Ein einziger items-Block bewahrt die Composition bei Key-Erhalt → Drag bleibt aktiv.
+            val visualItemCount = if (showSeparator) items.size + 1 else items.size
+
+            // Lokale Konvertierung mit aktuellem separatorVisualIndex (nicht vom dragDropState,
+            // der hat ggf. noch den alten Wert bis SideEffect läuft)
+            val localVisualToDataIndex = { visualIndex: Int ->
+                if (!showSeparator || separatorVisualIndex < 0) visualIndex
+                else if (visualIndex > separatorVisualIndex) visualIndex - 1
+                else visualIndex
             }
 
-            // 🆕 v1.8.1 IMPL_14: Separator als eigenes LazyColumn-Item
-            if (showSeparator) {
-                item(key = "separator") {
+            items(
+                count = visualItemCount,
+                key = { visualIndex ->
+                    if (showSeparator && visualIndex == separatorVisualIndex) {
+                        "separator"
+                    } else {
+                        items[localVisualToDataIndex(visualIndex)].id
+                    }
+                },
+                contentType = { visualIndex ->
+                    if (showSeparator && visualIndex == separatorVisualIndex) "separator"
+                    else "checklist_item"
+                }
+            ) { visualIndex ->
+                if (showSeparator && visualIndex == separatorVisualIndex) {
                     CheckedItemsSeparator(
                         checkedCount = checkedCount,
                         isDragActive = dragDropState.draggingItemIndex != null
                     )
-                }
-
-                // 🆕 v1.8.1 IMPL_14: Checked Items (Visual Index uncheckedCount+1..)
-                itemsIndexed(
-                    items = items.subList(uncheckedCount, items.size),
-                    key = { _, item -> item.id }
-                ) { index, item ->
-                    val visualIndex = uncheckedCount + 1 + index  // +1 für Separator
+                } else {
+                    val dataIndex = localVisualToDataIndex(visualIndex)
+                    val item = items[dataIndex]
                     DraggableChecklistItem(
                         item = item,
                         visualIndex = visualIndex,
@@ -491,7 +597,7 @@ private fun ChecklistEditor(
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
                         onFocusHandled = onFocusHandled,
-                        onHeightChanged = { scrollToItemIndex = visualIndex }  // 🆕 v1.8.1 (IMPL_05)
+                        onHeightChanged = { scrollToItemIndex = visualIndex }
                     )
                 }
             }
