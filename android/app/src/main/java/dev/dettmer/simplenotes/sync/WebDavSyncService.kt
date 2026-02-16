@@ -1293,22 +1293,24 @@ class WebDavSyncService(private val context: Context) {
                     val localNote = storage.loadNote(noteId)
                     val fileExistsLocally = localNote != null
 
-                    // PRIMARY: Timestamp check (works on first sync!)
-                    // Same logic as Markdown sync - skip if not modified since last sync
-                    // BUT: Always download if file doesn't exist locally!
-                    if (!forceOverwrite && fileExistsLocally && lastSyncTime > 0 && serverModified <= lastSyncTime) {
+                    // 🛡️ v1.8.2 (IMPL_23): E-Tag ist PRIMARY — Timestamp nur Fallback
+                    // E-Tag ist die einzige zuverlässige Methode um Inhaltsänderungen zu erkennen.
+                    // Timestamp-Check kann Änderungen von anderen Geräten verpassen wenn
+                    // serverModified < lastSyncTime (Uhren-Drift, Granularität).
+
+                    // PRIMARY: E-Tag check — erkennt Inhaltsänderungen zuverlässig
+                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: Not modified since last sync (timestamp)")
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
                         processedIds.add(noteId)
                         continue
                     }
 
-                    // SECONDARY: E-Tag check (for performance after first sync)
-                    // Catches cases where file was re-uploaded with same content
-                    // BUT: Always download if file doesn't exist locally!
-                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
+                    // SECONDARY: Timestamp fallback — nur wenn kein E-Tag vorhanden
+                    // (Erster Sync oder Server liefert keine E-Tags)
+                    if (!forceOverwrite && fileExistsLocally && serverETag == null && lastSyncTime > 0 && serverModified <= lastSyncTime) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)")
                         processedIds.add(noteId)
                         continue
                     }
