@@ -2,7 +2,7 @@ Simple Notes Sync is a minimalist note-taking app with WebDAV sync and modern fe
 
 Key Features:
 • Text notes and checklists (tap-to-check, drag & drop, sorting)
-• Grid and list view with note color support
+• Grid and list view with note type indicators
 • Homescreen widgets (quick-note, checklist with interactive checkboxes)
 • Multi-device sync (phone, tablet, desktop)
 • WebDAV sync with your own server (Nextcloud, ownCloud, etc.)
@@ -25,7 +25,7 @@ Synchronization:
 UI & Design:
 • Modern Jetpack Compose interface
 • Material Design 3, dynamic colors, dark mode
-• Note & checklist sorting (title, date, color, alphabetical)
+• Note & checklist sorting (title, date, type, alphabetical)
 
 Multilingual:
 • English and German, automatic detection, in-app language selector

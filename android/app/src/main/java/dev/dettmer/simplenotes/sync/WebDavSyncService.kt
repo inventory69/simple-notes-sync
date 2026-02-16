@@ -8,6 +8,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
@@ -17,10 +18,11 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.Socket
@@ -157,8 +159,10 @@ class WebDavSyncService(private val context: Context) {
         
         Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
         
+        // 🛡️ v1.8.2: readTimeout ergänzt (SNS-182-19c) — verhindert endloses Warten bei hängenden Servern
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .readTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
             .build()
         
         return SafeSardineWrapper.create(okHttpClient, username, password)
@@ -402,16 +406,20 @@ class WebDavSyncService(private val context: Context) {
                 return@withContext true
             }
             
-            // Check 2: Local changes
-            val storage = NotesStorage(context)
+            // Check 2: Local changes (Timestamp ODER SyncStatus)
+            // 🛡️ v1.8.2 (IMPL_19a): Klassen-Feld nutzen statt neue Instanz
             val allNotes = storage.loadAllNotes()
+            // 🛡️ v1.8.2 (IMPL_22): Auch PENDING-Status prüfen —
+            // nach Server-Wechsel wird syncStatus auf PENDING gesetzt, aber updatedAt bleibt gleich
             val hasLocalChanges = allNotes.any { note ->
-                note.updatedAt > lastSyncTime
+                note.updatedAt > lastSyncTime ||
+                note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING
             }
             
             if (hasLocalChanges) {
-                val unsyncedCount = allNotes.count { it.updatedAt > lastSyncTime }
-                Logger.d(TAG, "📝 Local changes: $unsyncedCount notes modified")
+                val unsyncedByTime = allNotes.count { it.updatedAt > lastSyncTime }
+                val unsyncedByStatus = allNotes.count { it.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING }
+                Logger.d(TAG, "📝 Local changes: $unsyncedByTime by timestamp, $unsyncedByStatus PENDING")
                 return@withContext true
             }
             
@@ -468,9 +476,10 @@ class WebDavSyncService(private val context: Context) {
             
             // Socket-Check mit Timeout
             // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
-            val socket = Socket()
-            socket.connect(InetSocketAddress(host, port), SOCKET_TIMEOUT_MS)
-            socket.close()
+            // 🛡️ v1.8.2: Socket.use{} garantiert close() auch bei connect-Fehler (SNS-182-15)
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress(host, port), SOCKET_TIMEOUT_MS)
+            }
             
             Logger.d(TAG, "✅ Server is reachable")
             true
@@ -701,6 +710,14 @@ class WebDavSyncService(private val context: Context) {
                         "Conflicts: ${downloadResult.conflictCount}, " +
                         "Deleted on server: ${downloadResult.deletedOnServerCount}"  // 🆕 v1.8.0
                 )
+                
+                // 🛡️ v1.8.2 (IMPL_21): Download-Fehler nicht verschlucken
+                if (downloadResult.downloadFailed) {
+                    Logger.e(TAG, "⚠️ Download hatte Fehler — Sync wird als fehlgeschlagen gemeldet")
+                    throw IOException(
+                        "Download failed: ${downloadResult.downloadError ?: "Unknown error"}"
+                    )
+                }
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 CRASH in downloadRemoteNotes()!", e)
                 e.printStackTrace()
@@ -813,7 +830,13 @@ class WebDavSyncService(private val context: Context) {
         }
         } finally {
             // ⚡ v1.3.1: Session-Caches leeren
-            clearSessionCache()
+            // 🛡️ v1.8.2 (IMPL_13): try-catch verhindert dass eine Exception in
+            // clearSessionCache() den syncMutex.unlock() blockiert → permanenter Deadlock
+            try {
+                clearSessionCache()
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ clearSessionCache() failed (non-fatal): ${e.message}")
+            }
             // 🆕 v1.8.0: Reset progress state
             SyncStateManager.resetProgress()
             // 🔒 v1.3.1: Sync-Mutex freigeben
@@ -958,7 +981,9 @@ class WebDavSyncService(private val context: Context) {
         // Sanitize Filename (Task #1.2.0-12)
         val baseFilename = sanitizeFilename(note.title)
         var filename = "$baseFilename.md"
-        var noteUrl = "$mdUrl/$filename"
+        // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
+        // getMarkdownUrl() gibt immer trailing / zurück → "notes-md/" + "/" + file = "notes-md//file"
+        var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
         
         // Prüfe ob Datei bereits existiert und von anderer Note stammt
         try {
@@ -973,7 +998,7 @@ class WebDavSyncService(private val context: Context) {
                     // Andere Note hat gleichen Titel - verwende ID-Suffix
                     val shortId = note.id.take(8)
                     filename = "${baseFilename}_$shortId.md"
-                    noteUrl = "$mdUrl/$filename"
+                    noteUrl = "${mdUrl.trimEnd('/')}/$filename"
                     Logger.d(TAG, "📝 Duplicate title, using: $filename")
                 }
             }
@@ -1073,7 +1098,8 @@ class WebDavSyncService(private val context: Context) {
                     
                     // Eindeutiger Filename (mit Duplikat-Handling)
                     val filename = getUniqueMarkdownFilename(note, usedFilenames) + ".md"
-                    val noteUrl = "$mdUrl/$filename"
+                    // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
+                    val noteUrl = "${mdUrl.trimEnd('/')}/$filename"
                     
                     // Konvertiere zu Markdown
                     val mdContent = note.toMarkdown().toByteArray()
@@ -1110,7 +1136,9 @@ class WebDavSyncService(private val context: Context) {
     private data class DownloadResult(
         val downloadedCount: Int,
         val conflictCount: Int,
-        val deletedOnServerCount: Int = 0  // 🆕 v1.8.0
+        val deletedOnServerCount: Int = 0,  // 🆕 v1.8.0
+        val downloadFailed: Boolean = false,  // 🛡️ v1.8.2 (IMPL_21)
+        val downloadError: String? = null  // 🛡️ v1.8.2 (IMPL_21)
     )
     
     /**
@@ -1194,7 +1222,8 @@ class WebDavSyncService(private val context: Context) {
     )
     // Sync logic requires nested conditions for comprehensive error handling and conflict resolution
     // TODO: Refactor into smaller functions in v1.9.0/v2.0.0 (see LINT_DETEKT_FEHLER_BEHEBUNG_PLAN.md)
-    private fun downloadRemoteNotes(
+    // 🛡️ v1.8.2 (IMPL_19b): suspend fun ermöglicht coroutineScope statt runBlocking
+    private suspend fun downloadRemoteNotes(
         sardine: Sardine, 
         serverUrl: String,
         includeRootFallback: Boolean = false,  // 🆕 v1.2.2: Only for restore from server
@@ -1216,6 +1245,8 @@ class WebDavSyncService(private val context: Context) {
         
         // 🆕 v1.8.0: Collect server note IDs for deletion detection
         val serverNoteIds = mutableSetOf<String>()
+        // 🛡️ v1.8.2 (IMPL_21): Track download errors statt sie zu verschlucken
+        var downloadException: Exception? = null
         
         try {
             // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
@@ -1283,22 +1314,25 @@ class WebDavSyncService(private val context: Context) {
                     val localNote = storage.loadNote(noteId)
                     val fileExistsLocally = localNote != null
 
-                    // PRIMARY: Timestamp check (works on first sync!)
-                    // Same logic as Markdown sync - skip if not modified since last sync
-                    // BUT: Always download if file doesn't exist locally!
-                    if (!forceOverwrite && fileExistsLocally && lastSyncTime > 0 && serverModified <= lastSyncTime) {
+                    // 🛡️ v1.8.2 (IMPL_23): E-Tag ist PRIMARY — Timestamp nur Fallback
+                    // E-Tag ist die einzige zuverlässige Methode um Inhaltsänderungen zu erkennen.
+                    // Timestamp-Check kann Änderungen von anderen Geräten verpassen wenn
+                    // serverModified < lastSyncTime (Uhren-Drift, Granularität).
+
+                    // PRIMARY: E-Tag check — erkennt Inhaltsänderungen zuverlässig
+                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: Not modified since last sync (timestamp)")
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
                         processedIds.add(noteId)
                         continue
                     }
 
-                    // SECONDARY: E-Tag check (for performance after first sync)
-                    // Catches cases where file was re-uploaded with same content
-                    // BUT: Always download if file doesn't exist locally!
-                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
+                    // SECONDARY: Timestamp fallback — nur wenn kein E-Tag vorhanden
+                    // (Erster Sync oder Server liefert keine E-Tags)
+                    @Suppress("ComplexCondition") // 5 conditions at threshold, clear intent
+                    if (!forceOverwrite && fileExistsLocally && serverETag == null && lastSyncTime > 0 && serverModified <= lastSyncTime) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)")
                         processedIds.add(noteId)
                         continue
                     }
@@ -1352,7 +1386,8 @@ class WebDavSyncService(private val context: Context) {
                         onProgress(completed, total, currentFile ?: "?")
                     }
 
-                    val downloadResults = runBlocking {
+                    // 🛡️ v1.8.2 (IMPL_19b): coroutineScope statt runBlocking — ermöglicht Cancellation-Propagation
+                    val downloadResults: List<DownloadTaskResult> = coroutineScope {
                         downloader.downloadAll(downloadTasks)
                     }
 
@@ -1544,6 +1579,9 @@ class WebDavSyncService(private val context: Context) {
             
         } catch (e: Exception) {
             Logger.e(TAG, "❌ downloadRemoteNotes failed", e)
+            // 🛡️ v1.8.2 (IMPL_21): Exception merken statt verschlucken —
+            // Deletion-Detection + Tracker-Save laufen trotzdem (Safety-Guards greifen)
+            downloadException = e
         }
         
         // NEW: Save deletion tracker if modified
@@ -1561,7 +1599,13 @@ class WebDavSyncService(private val context: Context) {
         }
         
         Logger.d(TAG, "📊 Total: $downloadedCount downloaded, $conflictCount conflicts, $skippedDeleted deleted")
-        return DownloadResult(downloadedCount, conflictCount, deletedOnServerCount)
+        return DownloadResult(
+            downloadedCount = downloadedCount,
+            conflictCount = conflictCount,
+            deletedOnServerCount = deletedOnServerCount,
+            downloadFailed = downloadException != null,
+            downloadError = downloadException?.message
+        )
     }
     
     private fun saveLastSyncTimestamp() {
@@ -1747,7 +1791,11 @@ class WebDavSyncService(private val context: Context) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
-            val okHttpClient = OkHttpClient.Builder().build()
+            // 🛡️ v1.8.2: Timeout setzen wie bei createSardineClient() (SNS-182-19c)
+            val okHttpClient = OkHttpClient.Builder()
+                .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+                .readTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+                .build()
             val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
             
             try {
@@ -1834,6 +1882,43 @@ class WebDavSyncService(private val context: Context) {
                 return 0
             }
             
+            // 🔧 v1.8.2 (IMPL_025 Edit 25.9): One-time cleanup of stale "/" directory at WebDAV root.
+            // The double-slash bug (Edit 25.6/25.7) could create a "/" folder artifact at root level
+            // (sibling of notes/ and notes-md/). It contains only duplicates and should not exist.
+            // Safe: Only targets a directory literally named "/" — no legitimate folder uses this name.
+            try {
+                val rootUrl = serverUrl.trimEnd('/')
+                Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
+                val rootResources = sardine.list(rootUrl)
+                Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
+                for ((index, res) in rootResources.withIndex()) {
+                    Logger.d(
+                        TAG, 
+                        "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
+                        "isDir=${res.isDirectory}, href=${res.href}"
+                    )
+                }
+                
+                val staleSlashDir = rootResources.find { res ->
+                    res.isDirectory && res.name == "/"
+                }
+                if (staleSlashDir != null) {
+                    val staleHref = staleSlashDir.href?.toString() ?: "(unknown)"
+                    Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
+                    try {
+                        val deleteUrl = rootUrl + staleSlashDir.href.path
+                        sardine.delete(deleteUrl)
+                        Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
+                    } catch (e: Exception) {
+                        Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")
+                    }
+                } else {
+                    Logger.d(TAG, "   ℹ️ No stale '/' directory found at root (checked name field)")
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "   ⚠️ Root cleanup check failed: ${e.message}")
+            }
+            
             val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
             var importedCount = 0
             var skippedCount = 0  // ⚡ v1.3.1: Zähle übersprungene Dateien
@@ -1902,21 +1987,41 @@ class WebDavSyncService(private val context: Context) {
                         }
                     )
                     
-                    // ⚡ v1.3.1: Content-basierte Erkennung
-                    // Wichtig: Vergleiche IMMER den Inhalt, wenn die Datei seit letztem Sync geändert wurde!
-                    // Der YAML-Timestamp kann veraltet sein (z.B. bei externer Bearbeitung ohne Obsidian)
+                    // ⚡ v1.3.1 / 🔧 v1.8.2 (IMPL_025): Content-basierte Erkennung
+                    // YAML-Timestamp ist autoritativ (siehe Edit 25.2).
+                    // Content-Vergleich dient als zusätzliche Sicherheit bei echten externen Änderungen.
                     Logger.d(
                         TAG,
                         "      Comparison: mdUpdatedAt=${mdNote.updatedAt}, " +
                             "localUpdated=${localNote?.updatedAt ?: 0L}"
                     )
                     
+                    // 🔧 v1.8.2 (IMPL_025): Semantischer Content-Vergleich
+                    // ChecklistItems haben bei jedem fromMarkdown() neue UUIDs,
+                    // daher nur Text + isChecked + order vergleichen (nicht die ID)
+                    val checklistContentEqual = when {
+                        mdNote.checklistItems == null && localNote?.checklistItems == null -> true
+                        mdNote.checklistItems == null || localNote?.checklistItems == null -> false
+                        mdNote.checklistItems.size != localNote.checklistItems.size -> false
+                        else -> mdNote.checklistItems.zip(localNote.checklistItems).all { (md, local) ->
+                            md.text == local.text && md.isChecked == local.isChecked && md.order == local.order
+                        }
+                    }
+                    
                     // Content-Vergleich: Ist der Inhalt tatsächlich unterschiedlich?
-                    val contentChanged = localNote != null && (
-                        mdNote.content != localNote.content || 
-                        mdNote.title != localNote.title ||
-                        mdNote.checklistItems != localNote.checklistItems
-                    )
+                    // 🔧 v1.8.2 (IMPL_025 Edit 25.8): Für Checklisten NUR checklistItems vergleichen!
+                    // fromMarkdown() setzt content="" für Checklisten, aber toJson() generiert einen
+                    // Fallback-Content (z.B. "[x] Item1\n[ ] Item2"). Dieser Unterschied ist KEIN
+                    // echter Content-Change, sondern ein Serialisierungs-Artefakt.
+                    val contentChanged = localNote != null && when (mdNote.noteType) {
+                        NoteType.CHECKLIST -> {
+                            mdNote.title != localNote.title || !checklistContentEqual
+                        }
+                        else -> {
+                            mdNote.content.trim() != localNote.content.trim() ||
+                                mdNote.title != localNote.title
+                        }
+                    }
                     
                     if (contentChanged) {
                         Logger.d(TAG, "      📝 Content differs from local!")
@@ -1942,11 +2047,11 @@ class WebDavSyncService(private val context: Context) {
                                     "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
                             )
                         }
-                        // 🔧 v1.7.2 (IMPL_014): Content geändert → Importieren UND als PENDING markieren!
+                        // 🔧 v1.8.2 (IMPL_025): Content geändert → Importieren UND als PENDING markieren!
                         // PENDING triggert JSON-Upload beim nächsten Sync-Zyklus
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
                             storage.saveNote(mdNote.copy(
-                                updatedAt = serverModifiedTime,  // Server mtime verwenden
+                                // updatedAt kommt bereits korrekt aus fromMarkdown() (YAML-basiert, siehe Edit 25.2)
                                 syncStatus = SyncStatus.PENDING  // ⬅️ KRITISCH: Triggert JSON-Upload
                             ))
                             importedCount++

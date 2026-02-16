@@ -82,6 +82,11 @@ class NoteEditorViewModel(
     private var existingNote: Note? = null
     private var currentNoteType: NoteType = NoteType.TEXT
     
+    // 🛡️ v1.8.2 (IMPL_17): Trackt ob User ungespeicherte Checklist-Edits hat.
+    // Wenn true, überspringt reloadFromStorage() das Neuladen, damit onResume()
+    // (Notification Shade, App-Switcher etc.) keine User-Änderungen überschreibt.
+    private var hasUnsavedChecklistEdits = false
+    
     init {
         loadNote()
     }
@@ -191,6 +196,7 @@ class NoteEditorViewModel(
     }
     
     fun updateChecklistItemText(itemId: String, newText: String) {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             items.map { item ->
                 if (item.id == itemId) item.copy(text = newText) else item
@@ -229,6 +235,7 @@ class NoteEditorViewModel(
     }
 
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
@@ -252,6 +259,7 @@ class NoteEditorViewModel(
      * checked ist, wird stattdessen vor dem ersten checked Item eingefügt.
      */
     fun addChecklistItemAfter(afterItemId: String): String {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
             val index = items.indexOfFirst { it.id == afterItemId }
@@ -291,6 +299,7 @@ class NoteEditorViewModel(
      * unter dem Separator erscheint.
      */
     fun addChecklistItemAtEnd(): String {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
             val insertIndex = calculateInsertIndexForNewItem(items)
@@ -322,6 +331,7 @@ class NoteEditorViewModel(
     }
     
     fun deleteChecklistItem(itemId: String) {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val filtered = items.filter { it.id != itemId }
             // Ensure at least one item exists
@@ -335,6 +345,7 @@ class NoteEditorViewModel(
     }
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val fromItem = items.getOrNull(fromIndex) ?: return@update items
             val toItem = items.getOrNull(toIndex) ?: return@update items
@@ -361,6 +372,7 @@ class NoteEditorViewModel(
      * Einmalige Aktion (nicht persistiert) — User kann danach per Drag & Drop feinjustieren.
      */
     fun sortChecklistItems(option: ChecklistSortOption) {
+        hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         // Merke die Auswahl für diesen Editor-Session
         _lastChecklistSortOption.value = option
         
@@ -427,6 +439,8 @@ class NoteEditorViewModel(
                 }
                 
                 NoteType.CHECKLIST -> {
+                    // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
+                    hasUnsavedChecklistEdits = false
                     // Filter empty items
                     val validItems = _checklistItems.value
                         .filter { it.text.isNotBlank() }
@@ -565,6 +579,10 @@ class NoteEditorViewModel(
      * damit ungespeicherte Text-Änderungen im Editor nicht verloren gehen.
      */
     fun reloadFromStorage() {
+        // 🛡️ v1.8.2 (IMPL_17): Nicht neuladen wenn User ungespeicherte Checklist-Edits hat.
+        // Verhindert Datenverlust bei onResume() (Notification Shade, App-Switcher etc.)
+        if (hasUnsavedChecklistEdits) return
+        
         val noteId = savedStateHandle.get<String>(ARG_NOTE_ID) ?: return
 
         val freshNote = storage.loadNote(noteId) ?: return

@@ -20,6 +20,9 @@ object SyncStateManager {
     
     private const val TAG = "SyncStateManager"
     
+    /** 🆕 v1.8.2: Maximale Dauer eines Syncs bevor er als "stuck" gilt (5 Minuten) */
+    private const val SYNC_TIMEOUT_MS = 5 * 60 * 1000L
+    
     /**
      * Mögliche Sync-Zustände (intern für Mutex + PullToRefresh)
      */
@@ -69,8 +72,19 @@ object SyncStateManager {
     fun tryStartSync(source: String, silent: Boolean = false): Boolean {
         synchronized(lock) {
             if (isSyncing) {
-                Logger.d(TAG, "⚠️ Sync already in progress, rejecting from: $source")
-                return false
+                // 🆕 v1.8.2: Timeout-Check für verwaiste Sync-States
+                val syncStartTime = _syncProgress.value.startTime
+                val elapsed = System.currentTimeMillis() - syncStartTime
+                
+                if (syncStartTime > 0 && elapsed > SYNC_TIMEOUT_MS) {
+                    Logger.e(TAG, "⏰ Stale sync detected (${elapsed / 1000}s old from: ${_syncStatus.value?.source}) - force-resetting")
+                    _syncStatus.postValue(SyncStatus())
+                    _syncProgress.value = SyncProgress.IDLE
+                    // Fall-through: Neuer Sync wird unten gestartet
+                } else {
+                    Logger.d(TAG, "⚠️ Sync already in progress, rejecting from: $source")
+                    return false
+                }
             }
             
             val syncState = if (silent) SyncState.SYNCING_SILENT else SyncState.SYNCING
@@ -122,6 +136,34 @@ object SyncStateManager {
                     resultMessage = message
                 )
             }
+        }
+    }
+    
+    /**
+     * 🛡️ v1.8.2 (IMPL_24): Silent-Sync auf sichtbar promoten
+     * Wird aufgerufen wenn User Pull-to-Refresh macht während ein Silent-Sync läuft.
+     * Zeigt dem User das Sync-Banner mit aktuellem Progress.
+     * 
+     * @return true wenn ein Silent-Sync promoted wurde, false wenn kein Sync läuft
+     */
+    fun promoteToVisible(): Boolean {
+        synchronized(lock) {
+            val current = _syncStatus.value ?: return false
+            
+            if (current.state != SyncState.SYNCING_SILENT) return false
+            
+            Logger.d(TAG, "📢 Promoting silent sync to visible (user pulled to refresh)")
+            
+            _syncStatus.postValue(current.copy(
+                state = SyncState.SYNCING,
+                silent = false
+            ))
+            
+            // Progress-Banner sichtbar machen
+            val currentProgress = _syncProgress.value
+            _syncProgress.value = currentProgress.copy(silent = false)
+            
+            return true
         }
     }
     

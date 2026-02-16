@@ -121,6 +121,9 @@ class ParallelDownloader(
                     etag = task.serverETag
                 )
 
+            } catch (e: CancellationException) {
+                // 🛡️ v1.8.2: Cancellation nie verschlucken — sofort propagieren (SNS-182-16)
+                throw e
             } catch (e: Exception) {
                 lastError = e
                 Logger.w(TAG, "⚠️ Download failed ${task.noteId} (attempt ${attempt + 1}): ${e.message}")

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.sync.NetworkMonitor
+import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.Constants
 
@@ -57,6 +58,15 @@ class SimpleNotesApplication : Application() {
         // Dies läuft im Hintergrund auch wenn App geschlossen ist
         networkMonitor.startMonitoring()
         
+        
+        // 🆕 v1.8.2: Stale Sync-State cleanup beim App-Kaltstart
+        // Nach einem Prozess-Neustart kann kein Sync mehr aktiv sein.
+        // SyncStateManager ist ein Kotlin object — bei Activity-Recreate ohne
+        // Prozess-Kill kann ein verwaister SYNCING-State dauerhaft blockieren.
+        if (SyncStateManager.isSyncing) {
+            Logger.e(TAG, "⚠️ Stale sync state detected on cold start - resetting")
+            SyncStateManager.reset()
+        }
         Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
     }
     

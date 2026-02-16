@@ -13,10 +13,14 @@
          Android's Network Security Config doesn't support IP-based domain rules,
          so we must allow cleartext globally but validate URLs in the app.
          Public servers MUST use HTTPS. -->
+    <!-- 🆕 v1.8.2: User-installierte CA-Zertifikate auch in Release-Builds erlauben.
+         Notwendig für self-hosted WebDAV-Server mit selbstsignierten SSL-Zertifikaten.
+         Nutzer müssen das CA-Zertifikat manuell im Android-System installieren. -->
     <base-config cleartextTrafficPermitted="true"
                  tools:ignore="InsecureBaseConfiguration">
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="user" />
         </trust-anchors>
     </base-config>
     
