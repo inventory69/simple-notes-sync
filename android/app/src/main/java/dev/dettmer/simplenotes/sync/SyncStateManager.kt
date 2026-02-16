@@ -140,6 +140,34 @@ object SyncStateManager {
     }
     
     /**
+     * 🛡️ v1.8.2 (IMPL_24): Silent-Sync auf sichtbar promoten
+     * Wird aufgerufen wenn User Pull-to-Refresh macht während ein Silent-Sync läuft.
+     * Zeigt dem User das Sync-Banner mit aktuellem Progress.
+     * 
+     * @return true wenn ein Silent-Sync promoted wurde, false wenn kein Sync läuft
+     */
+    fun promoteToVisible(): Boolean {
+        synchronized(lock) {
+            val current = _syncStatus.value ?: return false
+            
+            if (current.state != SyncState.SYNCING_SILENT) return false
+            
+            Logger.d(TAG, "📢 Promoting silent sync to visible (user pulled to refresh)")
+            
+            _syncStatus.postValue(current.copy(
+                state = SyncState.SYNCING,
+                silent = false
+            ))
+            
+            // Progress-Banner sichtbar machen
+            val currentProgress = _syncProgress.value
+            _syncProgress.value = currentProgress.copy(silent = false)
+            
+            return true
+        }
+    }
+    
+    /**
      * Markiert Sync als fehlgeschlagen
      * Bei Silent-Sync: Fehler trotzdem anzeigen (wichtig für User)
      */
