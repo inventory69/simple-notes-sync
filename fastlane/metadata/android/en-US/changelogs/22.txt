@@ -1,18 +1,18 @@
-🔧 v1.8.2 — Stability Release (25 fixes)
+🔧 v1.8.2 — Stability & Polish (25 improvements)
 
-Critical:
-• Sync deadlock ("already in progress")
-• Checklist data loss on app switch
-• Markdown sync loop
-• Silent download failures
-• Notes lost after server change
-• Cross-device sync missing changes
+Sync:
+• Improved reliability and error handling
+• Fixed rare sync lock when interrupted
+• Markdown sync now stable
+• Better cross-device detection
+• SSL certificates in release builds
 
-More:
-• Mutex deadlock, socket leak, retry loop
-• SSL certs in release builds
-• Checklist scroll & drag glitches
+Editor:
+• Checklists keep edits on app switch
+• Smoother scrolling & drag
 • Auto-scroll, capitalization, Enter nav
-• Widget spacing
 
-https://github.com/inventory69/simple-notes-sync
+Widgets:
+• Better spacing and text scrolling
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
