@@ -18,7 +18,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -407,7 +407,7 @@ class WebDavSyncService(private val context: Context) {
             }
             
             // Check 2: Local changes (Timestamp ODER SyncStatus)
-            val storage = NotesStorage(context)
+            // 🛡️ v1.8.2 (IMPL_19a): Klassen-Feld nutzen statt neue Instanz
             val allNotes = storage.loadAllNotes()
             // 🛡️ v1.8.2 (IMPL_22): Auch PENDING-Status prüfen —
             // nach Server-Wechsel wird syncStatus auf PENDING gesetzt, aber updatedAt bleibt gleich
@@ -1222,7 +1222,8 @@ class WebDavSyncService(private val context: Context) {
     )
     // Sync logic requires nested conditions for comprehensive error handling and conflict resolution
     // TODO: Refactor into smaller functions in v1.9.0/v2.0.0 (see LINT_DETEKT_FEHLER_BEHEBUNG_PLAN.md)
-    private fun downloadRemoteNotes(
+    // 🛡️ v1.8.2 (IMPL_19b): suspend fun ermöglicht coroutineScope statt runBlocking
+    private suspend fun downloadRemoteNotes(
         sardine: Sardine, 
         serverUrl: String,
         includeRootFallback: Boolean = false,  // 🆕 v1.2.2: Only for restore from server
@@ -1328,6 +1329,7 @@ class WebDavSyncService(private val context: Context) {
 
                     // SECONDARY: Timestamp fallback — nur wenn kein E-Tag vorhanden
                     // (Erster Sync oder Server liefert keine E-Tags)
+                    @Suppress("ComplexCondition") // 5 conditions at threshold, clear intent
                     if (!forceOverwrite && fileExistsLocally && serverETag == null && lastSyncTime > 0 && serverModified <= lastSyncTime) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)")
@@ -1384,7 +1386,8 @@ class WebDavSyncService(private val context: Context) {
                         onProgress(completed, total, currentFile ?: "?")
                     }
 
-                    val downloadResults = runBlocking {
+                    // 🛡️ v1.8.2 (IMPL_19b): coroutineScope statt runBlocking — ermöglicht Cancellation-Propagation
+                    val downloadResults: List<DownloadTaskResult> = coroutineScope {
                         downloader.downloadAll(downloadTasks)
                     }
 
@@ -1889,7 +1892,11 @@ class WebDavSyncService(private val context: Context) {
                 val rootResources = sardine.list(rootUrl)
                 Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
                 for ((index, res) in rootResources.withIndex()) {
-                    Logger.d(TAG, "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', isDir=${res.isDirectory}, href=${res.href}")
+                    Logger.d(
+                        TAG, 
+                        "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
+                        "isDir=${res.isDirectory}, href=${res.href}"
+                    )
                 }
                 
                 val staleSlashDir = rootResources.find { res ->
