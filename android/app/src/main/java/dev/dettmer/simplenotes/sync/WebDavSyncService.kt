@@ -8,6 +8,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
@@ -980,7 +981,9 @@ class WebDavSyncService(private val context: Context) {
         // Sanitize Filename (Task #1.2.0-12)
         val baseFilename = sanitizeFilename(note.title)
         var filename = "$baseFilename.md"
-        var noteUrl = "$mdUrl/$filename"
+        // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
+        // getMarkdownUrl() gibt immer trailing / zurück → "notes-md/" + "/" + file = "notes-md//file"
+        var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
         
         // Prüfe ob Datei bereits existiert und von anderer Note stammt
         try {
@@ -995,7 +998,7 @@ class WebDavSyncService(private val context: Context) {
                     // Andere Note hat gleichen Titel - verwende ID-Suffix
                     val shortId = note.id.take(8)
                     filename = "${baseFilename}_$shortId.md"
-                    noteUrl = "$mdUrl/$filename"
+                    noteUrl = "${mdUrl.trimEnd('/')}/$filename"
                     Logger.d(TAG, "📝 Duplicate title, using: $filename")
                 }
             }
@@ -1095,7 +1098,8 @@ class WebDavSyncService(private val context: Context) {
                     
                     // Eindeutiger Filename (mit Duplikat-Handling)
                     val filename = getUniqueMarkdownFilename(note, usedFilenames) + ".md"
-                    val noteUrl = "$mdUrl/$filename"
+                    // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
+                    val noteUrl = "${mdUrl.trimEnd('/')}/$filename"
                     
                     // Konvertiere zu Markdown
                     val mdContent = note.toMarkdown().toByteArray()
@@ -1875,6 +1879,39 @@ class WebDavSyncService(private val context: Context) {
                 return 0
             }
             
+            // 🔧 v1.8.2 (IMPL_025 Edit 25.9): One-time cleanup of stale "/" directory at WebDAV root.
+            // The double-slash bug (Edit 25.6/25.7) could create a "/" folder artifact at root level
+            // (sibling of notes/ and notes-md/). It contains only duplicates and should not exist.
+            // Safe: Only targets a directory literally named "/" — no legitimate folder uses this name.
+            try {
+                val rootUrl = serverUrl.trimEnd('/')
+                Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
+                val rootResources = sardine.list(rootUrl)
+                Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
+                for ((index, res) in rootResources.withIndex()) {
+                    Logger.d(TAG, "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', isDir=${res.isDirectory}, href=${res.href}")
+                }
+                
+                val staleSlashDir = rootResources.find { res ->
+                    res.isDirectory && res.name == "/"
+                }
+                if (staleSlashDir != null) {
+                    val staleHref = staleSlashDir.href?.toString() ?: "(unknown)"
+                    Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
+                    try {
+                        val deleteUrl = rootUrl + staleSlashDir.href.path
+                        sardine.delete(deleteUrl)
+                        Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
+                    } catch (e: Exception) {
+                        Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")
+                    }
+                } else {
+                    Logger.d(TAG, "   ℹ️ No stale '/' directory found at root (checked name field)")
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "   ⚠️ Root cleanup check failed: ${e.message}")
+            }
+            
             val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
             var importedCount = 0
             var skippedCount = 0  // ⚡ v1.3.1: Zähle übersprungene Dateien
@@ -1943,21 +1980,41 @@ class WebDavSyncService(private val context: Context) {
                         }
                     )
                     
-                    // ⚡ v1.3.1: Content-basierte Erkennung
-                    // Wichtig: Vergleiche IMMER den Inhalt, wenn die Datei seit letztem Sync geändert wurde!
-                    // Der YAML-Timestamp kann veraltet sein (z.B. bei externer Bearbeitung ohne Obsidian)
+                    // ⚡ v1.3.1 / 🔧 v1.8.2 (IMPL_025): Content-basierte Erkennung
+                    // YAML-Timestamp ist autoritativ (siehe Edit 25.2).
+                    // Content-Vergleich dient als zusätzliche Sicherheit bei echten externen Änderungen.
                     Logger.d(
                         TAG,
                         "      Comparison: mdUpdatedAt=${mdNote.updatedAt}, " +
                             "localUpdated=${localNote?.updatedAt ?: 0L}"
                     )
                     
+                    // 🔧 v1.8.2 (IMPL_025): Semantischer Content-Vergleich
+                    // ChecklistItems haben bei jedem fromMarkdown() neue UUIDs,
+                    // daher nur Text + isChecked + order vergleichen (nicht die ID)
+                    val checklistContentEqual = when {
+                        mdNote.checklistItems == null && localNote?.checklistItems == null -> true
+                        mdNote.checklistItems == null || localNote?.checklistItems == null -> false
+                        mdNote.checklistItems.size != localNote.checklistItems.size -> false
+                        else -> mdNote.checklistItems.zip(localNote.checklistItems).all { (md, local) ->
+                            md.text == local.text && md.isChecked == local.isChecked && md.order == local.order
+                        }
+                    }
+                    
                     // Content-Vergleich: Ist der Inhalt tatsächlich unterschiedlich?
-                    val contentChanged = localNote != null && (
-                        mdNote.content != localNote.content || 
-                        mdNote.title != localNote.title ||
-                        mdNote.checklistItems != localNote.checklistItems
-                    )
+                    // 🔧 v1.8.2 (IMPL_025 Edit 25.8): Für Checklisten NUR checklistItems vergleichen!
+                    // fromMarkdown() setzt content="" für Checklisten, aber toJson() generiert einen
+                    // Fallback-Content (z.B. "[x] Item1\n[ ] Item2"). Dieser Unterschied ist KEIN
+                    // echter Content-Change, sondern ein Serialisierungs-Artefakt.
+                    val contentChanged = localNote != null && when (mdNote.noteType) {
+                        NoteType.CHECKLIST -> {
+                            mdNote.title != localNote.title || !checklistContentEqual
+                        }
+                        else -> {
+                            mdNote.content.trim() != localNote.content.trim() ||
+                                mdNote.title != localNote.title
+                        }
+                    }
                     
                     if (contentChanged) {
                         Logger.d(TAG, "      📝 Content differs from local!")
@@ -1983,11 +2040,11 @@ class WebDavSyncService(private val context: Context) {
                                     "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
                             )
                         }
-                        // 🔧 v1.7.2 (IMPL_014): Content geändert → Importieren UND als PENDING markieren!
+                        // 🔧 v1.8.2 (IMPL_025): Content geändert → Importieren UND als PENDING markieren!
                         // PENDING triggert JSON-Upload beim nächsten Sync-Zyklus
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
                             storage.saveNote(mdNote.copy(
-                                updatedAt = serverModifiedTime,  // Server mtime verwenden
+                                // updatedAt kommt bereits korrekt aus fromMarkdown() (YAML-basiert, siehe Edit 25.2)
                                 syncStatus = SyncStatus.PENDING  // ⬅️ KRITISCH: Triggert JSON-Upload
                             ))
                             importedCount++
