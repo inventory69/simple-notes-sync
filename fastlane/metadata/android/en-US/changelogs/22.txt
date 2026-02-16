@@ -1,12 +1,18 @@
-🔧 v1.8.2 — Stability, Editor & Widgets
+🔧 v1.8.2 — Stability Release (25 fixes)
 
-• Fixed: Sync stuck permanently
-• Fixed: Keyboard hiding text at bottom of note
-• Fixed: Checklist jumping when typing
-• Fixed: Visual glitch when fast-scrolling checklists
-• Fixed: SSL certificates in release builds
-• New: Enter in title jumps to content field
-• Improved: Widget spacing and padding
-• Improved: APK size, auto-capitalization
+Critical:
+• Sync deadlock ("already in progress")
+• Checklist data loss on app switch
+• Markdown sync loop
+• Silent download failures
+• Notes lost after server change
+• Cross-device sync missing changes
 
-https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
+More:
+• Mutex deadlock, socket leak, retry loop
+• SSL certs in release builds
+• Checklist scroll & drag glitches
+• Auto-scroll, capitalization, Enter nav
+• Widget spacing
+
+https://github.com/inventory69/simple-notes-sync

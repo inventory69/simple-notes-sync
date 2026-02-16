@@ -94,7 +94,7 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
+        viewBinding = false
         buildConfig = true  // Enable BuildConfig generation
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }
@@ -123,7 +123,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
 
     // Splash Screen API (Android 12+)
     implementation("androidx.core:core-splashscreen:1.0.1")

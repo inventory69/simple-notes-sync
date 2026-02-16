@@ -45,7 +45,7 @@
 # Coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
--keepclassmembers class kotlinx.** {
+-keepclassmembers class kotlinx.coroutines.** {
     volatile <fields>;
 }
 
@@ -71,9 +71,6 @@
 #    NoteRaw ist Note$Companion$NoteRaw (Companion-verschachtelt!)
 -keep class dev.dettmer.simplenotes.models.** { *; }
 -keep class dev.dettmer.simplenotes.data.** { *; }
--keepclassmembers class dev.dettmer.simplenotes.sync.Note$Companion$NoteRaw { *; }
--keepclassmembers class dev.dettmer.simplenotes.sync.Note$Companion { *; }
--keep class dev.dettmer.simplenotes.sync.Note { *; }
 
 # 2) WORKMANAGER — instanziiert SyncWorker via Reflection
 -keep class dev.dettmer.simplenotes.sync.SyncWorker { *; }
@@ -99,10 +96,6 @@
 # Ohne diese Rule findet R8 die Klassen nicht zur Laufzeit → Widget-Crash
 -keep class dev.dettmer.simplenotes.widget.*Action { *; }
 -keep class dev.dettmer.simplenotes.widget.*Receiver { *; }
-
-# Glance Widget State (Preferences-basiert, intern via Reflection)
--keep class androidx.glance.appwidget.state.** { *; }
--keep class androidx.datastore.preferences.** { *; }
 
 # Compose Text Layout: Verhindert dass R8 onTextLayout-Callbacks
 # als Side-Effect-Free optimiert (behebt Gradient-Regression)

@@ -8,93 +8,115 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.8.2] - 2026-02-15
+## [1.8.2] - 2026-02-16
 
 ### 🔧 Stabilität, Editor- & Widget-Verbesserungen
 
-Sync-Deadlock-Fix, SSL-Zertifikate, Editor-UX-Verbesserungen (Auto-Scroll, Tastatur-Navigation, Scroll-Fix), Widget-Polish (Padding, Abstände), Drag-&-Drop-Glitch-Fix und APK-Größenoptimierung.
+Großes Stabilitäts-Release mit 25 behobenen Problemen — Sync-Deadlocks, Datenverlust-Prävention, SSL-Zertifikate, Markdown-Sync-Loop, stille Download-Fehler, Editor-UX-Verbesserungen, Widget-Polish und APK-Größenoptimierung.
 
 ### 🐛 Fehlerbehebungen
 
-**Sync blockiert dauerhaft bei "Bereits aktiv"**
+**Sync blockiert dauerhaft bei "Bereits aktiv"** *(IMPL_01)* ([a62ab78](https://github.com/inventory69/simple-notes-sync/commit/a62ab78))
 - 5 Code-Pfade in SyncWorker behoben, bei denen `tryStartSync()` aufgerufen wurde, aber der State nie zurückgesetzt wurde
-- Early Returns (keine Änderungen, Gate blockiert, Server nicht erreichbar) rufen nun `SyncStateManager.reset()` auf
+- Early Returns rufen nun `SyncStateManager.reset()` auf
 - CancellationException-Handler setzt State jetzt zurück statt ihn im SYNCING-Zustand zu belassen
-- Generischer Exception-Handler ruft nun `markError()` für korrekte State-Übergänge auf
-- Ursache: SyncStateManager blieb dauerhaft im SYNCING-State, blockierte alle weiteren Syncs
+- Ursache: SyncStateManager blieb dauerhaft im SYNCING-State
 
-**Tastatur-Auto-Scroll für Text-Notizen** *(IMPL_07)*
+**Selbstsignierte SSL-Zertifikate in Release-Builds** *(IMPL_02)* ([b3f4915](https://github.com/inventory69/simple-notes-sync/commit/b3f4915))
+- `<certificates src="user" />` zur Netzwerk-Sicherheitskonfiguration hinzugefügt
+- User-installierte CA-Zertifikate funktionieren jetzt auch in Release-Builds
+
+**Text-Notizen nicht scrollbar in mittleren Widgets** *(IMPL_04)* ([8429306](https://github.com/inventory69/simple-notes-sync/commit/8429306))
+- NARROW_MED und WIDE_MED Widget-Größenklassen nutzen jetzt `TextNoteFullView` (scrollbar)
+- 2x1- und 4x1-Widgets zeigen jetzt scrollbaren Textinhalt
+
+**Tastatur Auto-Großschreibung** *(IMPL_05)* ([d93b439](https://github.com/inventory69/simple-notes-sync/commit/d93b439))
+- Titel: `KeyboardCapitalization.Words`, Inhalt/Checklisten: `KeyboardCapitalization.Sentences`
+
+**Dokumentation: Sortieroption-Benennung** *(IMPL_06)* ([465bd9c](https://github.com/inventory69/simple-notes-sync/commit/465bd9c))
+- "color"/"Farbe" zu "type"/"Typ" in README-Dateien und F-Droid-Metadaten geändert
+
+**Tastatur-Auto-Scroll für Text-Notizen** *(IMPL_07)* ([bc266b9](https://github.com/inventory69/simple-notes-sync/commit/bc266b9))
 - TextNoteContent von `TextFieldValue`-API zu `TextFieldState`-API migriert
-- Externen `scrollState`-Parameter zu `OutlinedTextField` hinzugefügt
 - Scrollt automatisch zur Cursor-Position wenn Tastatur öffnet
-- Behebt Problem, dass Tastatur den Text am Ende der Notiz verdeckt
 
-**Checklisten-Scroll-Sprung beim Tippen** *(IMPL_10)*
+**Checklisten-Scroll-Sprung beim Tippen** *(IMPL_10)* ([974ef13](https://github.com/inventory69/simple-notes-sync/commit/974ef13))
 - Fehlerhafte Auto-Scroll-Logik aus v1.8.1 durch Viewport-aware Scroll ersetzt
-- Vorher: `animateScrollToItem(index+1)` scrollte NÄCHSTES Item nach oben, verbarg aktuelles Item
-- Jetzt: `scroll { scrollBy(overshoot) }` scrollt pixel-genau um die exakte Differenz
 - Scrollt nur wenn Item tatsächlich unter den sichtbaren Bereich ragt
 
-**Visueller Glitch beim schnellen Scrollen in Checklisten** *(IMPL_11)*
+**Visueller Glitch beim schnellen Scrollen in Checklisten** *(IMPL_11)* ([82e8972](https://github.com/inventory69/simple-notes-sync/commit/82e8972))
 - `isDragConfirmed`-State verhindert versehentliche Drag-Aktivierung beim Scrollen
-- `animateItem()` nur noch während bestätigtem Drag aktiv (vorher permanent auf ALLEN Items)
-- Fade-Animationen entfernt (`fadeInSpec`/`fadeOutSpec = null`) — nur Placement-Animation beim Reorder
-- Ursache: `Modifier.animateItem()` verursachte Fade-In/Out-Animationen beim Erscheinen/Verlassen der Ansicht, besonders sichtbar bei langen Items (>5 Zeilen)
+- Ursache: `Modifier.animateItem()` verursachte Fade-Animationen beim Scrolling
 
-**Selbstsignierte SSL-Zertifikate in Release-Builds**
-- `<certificates src="user" />` zur Netzwerk-Sicherheitskonfiguration hinzugefügt
-- User-installierte CA-Zertifikate funktionieren jetzt auch in Release-Builds (vorher nur Debug)
-- Erforderlich für selbstgehostete WebDAV-Server mit selbstsignierten SSL-Zertifikaten
+**SyncMutex-Deadlock durch clearSessionCache()-Exception** *(IMPL_13)* ([99f451b](https://github.com/inventory69/simple-notes-sync/commit/99f451b))
+- `clearSessionCache()` in try-catch gewrappt im `finally`-Block
+- Verhindert, dass Mutex dauerhaft gesperrt bleibt
 
-**Text-Notizen nicht scrollbar in mittleren Widgets**
-- NARROW_MED und WIDE_MED Widget-Größenklassen nutzen jetzt `TextNoteFullView` (scrollbar)
-- Vorher wurde `TextNotePreview` verwendet (abgeschnitten, nicht scrollbar)
-- 2x1- und 4x1-Widgets zeigen jetzt scrollbaren Textinhalt
-- Unbenutzte `TextNotePreview`-Funktion und zugehörige Konstanten entfernt
+**Falscher Error-Banner bei Sync-Abbruch** *(IMPL_14)* ([1c45680](https://github.com/inventory69/simple-notes-sync/commit/1c45680))
+- CancellationException zeigt keinen Error-Banner mehr
+- Doppelte State-Resets in SyncWorker catch-Blöcken entfernt
 
-**Tastatur Auto-Großschreibung**
-- Titel-Feld nutzt jetzt `KeyboardCapitalization.Words`
-- Inhalts-Feld nutzt jetzt `KeyboardCapitalization.Sentences`
-- Checklisten-Items nutzen jetzt `KeyboardCapitalization.Sentences`
+**Socket-Leak in isServerReachable()** *(IMPL_15)* ([fac54d7](https://github.com/inventory69/simple-notes-sync/commit/fac54d7))
+- Socket wird jetzt in allen Code-Pfaden korrekt geschlossen
 
-**Dokumentation: Sortieroption-Benennung**
-- "color"/"Farbe" zu "type"/"Typ" in README-Dateien geändert
-- F-Droid-Metadaten-Beschreibungen aktualisiert (de-DE und en-US)
-- App sortiert nach Notiztyp (Text/Checkliste), nicht nach Farbe
+**CancellationException in ParallelDownloader verschluckt** *(IMPL_16)* ([4c34746](https://github.com/inventory69/simple-notes-sync/commit/4c34746))
+- CancellationException wird jetzt weitergeworfen statt gefangen und erneut versucht
+- Verhindert Endlosschleife wenn WorkManager Sync abbricht
+
+**Checklisten-Datenverlust bei onResume** *(IMPL_17)* ([b436623](https://github.com/inventory69/simple-notes-sync/commit/b436623))
+- Checklisten-Änderungen bleiben erhalten beim Zurückkehren aus Benachrichtigungsleiste
+- Ursache: `onResume()` lud Notiz aus Datenbank neu, verwarf ungespeicherte Änderungen
+
+**Doppelter Stale-Sync Cleanup** *(IMPL_18)* ([71ae747](https://github.com/inventory69/simple-notes-sync/commit/71ae747))
+- Copy-Paste-Duplikat in `SimpleNotesApplication.onCreate()` entfernt
+
+**NotesStorage-Shadow + Download-Abbruch** *(IMPL_19)* ([ede429c](https://github.com/inventory69/simple-notes-sync/commit/ede429c), [50ae9d8](https://github.com/inventory69/simple-notes-sync/commit/50ae9d8))
+- Shadow-`NotesStorage`-Instanz in `hasUnsyncedChanges()` entfernt (19a)
+- `runBlocking` durch `coroutineScope` ersetzt für korrekte Abbruch-Propagation (19b)
+- Read-Timeout zu OkHttpClient-Instanzen hinzugefügt (19c)
+
+**Stille Download-Fehler als Erfolg gemeldet** *(IMPL_21)* ([371d5e3](https://github.com/inventory69/simple-notes-sync/commit/371d5e3))
+- Download-Exceptions werden jetzt propagiert statt still verschluckt
+- Sync meldet korrekt Fehler wenn Downloads fehlschlagen
+
+**PENDING-Notizen nicht erkannt** *(IMPL_22)* ([20de019](https://github.com/inventory69/simple-notes-sync/commit/20de019))
+- `hasUnsyncedChanges()` prüft jetzt auf Notizen mit PENDING-Sync-Status
+- Behebt Problem beim Server-Wechsel
+
+**E-Tag/Timestamp Download-Reihenfolge** *(IMPL_23)* ([68dbb4e](https://github.com/inventory69/simple-notes-sync/commit/68dbb4e))
+- E-Tag-Vergleich läuft jetzt vor Timestamp-Check (übersprang geänderte Notizen)
+- Behebt Cross-Device-Sync wo Timestamps stimmten aber Inhalt sich unterschied
+
+**Silent Sync zu sichtbarem Sync** *(IMPL_24)* ([940a494](https://github.com/inventory69/simple-notes-sync/commit/940a494))
+- Pull-to-Refresh während Hintergrund-Sync zeigt jetzt Sync-Banner statt "bereits aktiv"-Fehler
+
+**Markdown-Sync Feedback-Loop** *(IMPL_25)* ([74194d4](https://github.com/inventory69/simple-notes-sync/commit/74194d4))
+- 5 Ursachen behoben die einen endlosen Export→Import→Re-Export-Zyklus verursachten
+- UUID-Normalisierung, Server-mtime-Erhaltung, Zeitzonen-Vergleich, Pfad-Sanitierung, Inhaltstyp-Vergleich
 
 ### ✨ Neue Features
 
-**Enter-Taste: Navigation von Titel zu Inhalt** *(IMPL_09)*
+**Enter-Taste: Navigation von Titel zu Inhalt** *(IMPL_09)* ([81b9aca](https://github.com/inventory69/simple-notes-sync/commit/81b9aca))
 - Titel-Feld ist jetzt einzeilig mit `ImeAction.Next`
-- Enter/Weiter springt zum Inhaltsfeld (Text-Notizen) oder erstem Checklisten-Item
-- Verhindert versehentliche Zeilenumbrüche im Titel
+- Enter/Weiter springt zum Inhaltsfeld oder erstem Checklisten-Item
 
 ### 🔄 Verbesserungen
 
-**Widget-Inhalts-Padding** *(IMPL_08)*
+**Widget-Inhalts-Padding** *(IMPL_08)* ([2ae5ce5](https://github.com/inventory69/simple-notes-sync/commit/2ae5ce5))
 - Einheitliches Padding für alle Widget-Ansichten: 12dp horizontal, 4dp oben, 12dp unten
-- Erhöhter Abstand zwischen Checklisten-Items für bessere Lesbarkeit
-- TextNoteFullView hat jetzt unteren Abstand gegen Text-Abschnitt
-- ChecklistCompactView und ChecklistFullView mit gleichen Rändern
 
-**Widget-Eintrags-Abstände** *(IMPL_12)*
-- ChecklistFullView: Vertikaler Abstand 2dp → 4dp (gesperrt), 1dp → 3dp (entsperrt)
-- TextNoteFullView: Zeilenabstand 2dp → 4dp unterer Abstand
-- Passt an App-Proportionen an (~60–80% der App-Abstände)
+**Widget-Eintrags-Abstände** *(IMPL_12)* ([c3d4b33](https://github.com/inventory69/simple-notes-sync/commit/c3d4b33))
+- Erhöhte Abstände in Checklisten- und Text-Widgets für bessere Lesbarkeit
 
 **Sync-State-Timeout**
-- 5-Minuten-Timeout für verwaiste Sync-States in `SyncStateManager` hinzugefügt
-- `tryStartSync()` setzt automatisch zurück wenn bestehender Sync älter als 5 Minuten
+- 5-Minuten-Timeout für verwaiste Sync-States in `SyncStateManager`
 - Verhindert dauerhaften Deadlock selbst wenn alle anderen Schutzmaßnahmen versagen
 
 **Kaltstart State-Cleanup**
 - `SimpleNotesApplication.onCreate()` setzt jetzt verwaiste SYNCING-States zurück
-- Nach Prozess-Neustart kann kein Sync aktiv sein, verwaister State wird bereinigt
 
-**APK-Größenoptimierung**
-- Breite ProGuard-Regel (`-keep class dev.dettmer.simplenotes.** { *; }`) durch granulare Regeln ersetzt
-- Behält nur was Reflection wirklich braucht: Datenmodelle, SyncWorker, BroadcastReceivers, Activities
-- Behält `Note$Companion$NoteRaw` für Gson-Serialisierung
+**APK-Größenoptimierung** *(IMPL_03)* ([7867894](https://github.com/inventory69/simple-notes-sync/commit/7867894))
+- Breite ProGuard-Regel durch granulare Regeln ersetzt — behält nur was Reflection braucht
 
 **Versionsanhebung**
 - versionCode: 21 → 22

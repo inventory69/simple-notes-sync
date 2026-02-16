@@ -1,12 +1,17 @@
-🔧 v1.8.2 — Stabilität, Editor & Widgets
+🔧 v1.8.2 — Stabilitäts-Release (25 Fixes)
 
-• Behoben: Sync blockierte dauerhaft
-• Behoben: Tastatur verdeckte Text am Notizende
-• Behoben: Checkliste sprang beim Tippen
-• Behoben: Visueller Glitch beim schnellen Scrollen
-• Behoben: SSL-Zertifikate in Release-Builds
-• Neu: Enter im Titel springt zum Inhalt
-• Verbessert: Widget-Abstände und Padding
-• Verbessert: APK-Größe, Auto-Großschreibung
+Kritisch:
+• Sync-Deadlock ("bereits aktiv")
+• Checklisten-Datenverlust bei App-Wechsel
+• Markdown-Sync Endlosschleife
+• Stille Download-Fehler
+• Notizen nach Serverwechsel verloren
+• Cross-Device Sync verpasste Änderungen
 
-https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
+Weitere:
+• Mutex-Deadlock, Socket-Leak, Retry-Loop
+• SSL-Zertifikate in Release-Builds
+• Checklisten Scroll- & Drag-Glitches
+• Auto-Scroll, Großschreibung
+
+https://github.com/inventory69/simple-notes-sync
