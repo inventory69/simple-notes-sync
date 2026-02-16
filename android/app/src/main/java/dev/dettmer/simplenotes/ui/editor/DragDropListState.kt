@@ -121,7 +121,18 @@ class DragDropListState(
         }
 
         if (targetItem != null) {
-            val scrollToIndex = if (targetItem.index == state.firstVisibleItemIndex) {
+            // 🆕 v1.8.2 (IMPL_26): Kein Scroll bei Cross-Separator-Swap.
+            // Wenn ein Item über den Separator gezogen wird, ändert sich das Layout erheblich
+            // (Separator-Position verschiebt sich, Items werden umgeordnet). Der asynchrone
+            // scrollToItem-Pfad verzögert onMove/draggingItemIndex-Update und scrollt den
+            // Viewport weg vom Drag-Punkt → Drag bricht ab (draggingItemLayoutInfo = null).
+            val crossesSeparator = separatorVisualIndex >= 0 &&
+                (draggingItem.index < separatorVisualIndex) !=
+                (targetItem.index < separatorVisualIndex)
+
+            val scrollToIndex = if (crossesSeparator) {
+                null
+            } else if (targetItem.index == state.firstVisibleItemIndex) {
                 draggingItem.index
             } else if (draggingItem.index == state.firstVisibleItemIndex) {
                 targetItem.index

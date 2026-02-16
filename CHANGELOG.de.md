@@ -12,7 +12,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🔧 Stabilität, Editor- & Widget-Verbesserungen
 
-Großes Stabilitäts-Release mit 25 behobenen Problemen — Sync-Deadlocks, Datenverlust-Prävention, SSL-Zertifikate, Markdown-Sync-Loop, stille Download-Fehler, Editor-UX-Verbesserungen, Widget-Polish und APK-Größenoptimierung.
+Großes Stabilitäts-Release mit 26 behobenen Problemen — Sync-Deadlocks, Datenverlust-Prävention, SSL-Zertifikate, Markdown-Sync-Loop, stille Download-Fehler, Editor-UX-Verbesserungen, Widget-Polish und APK-Größenoptimierung.
 
 ### 🐛 Fehlerbehebungen
 
@@ -47,6 +47,11 @@ Großes Stabilitäts-Release mit 25 behobenen Problemen — Sync-Deadlocks, Date
 **Visueller Glitch beim schnellen Scrollen in Checklisten** *(IMPL_11)* ([82e8972](https://github.com/inventory69/simple-notes-sync/commit/82e8972))
 - `isDragConfirmed`-State verhindert versehentliche Drag-Aktivierung beim Scrollen
 - Ursache: `Modifier.animateItem()` verursachte Fade-Animationen beim Scrolling
+
+**Checklisten-Drag am Separator unterbrochen** *(IMPL_26)*
+- Drag über die Erledigt/Offen-Trennlinie hinaus bricht nicht mehr ab
+- Item bleibt im aktiven Drag während der Haken nahtlos gesetzt/entfernt wird
+- Ursache: Getrennte `itemsIndexed`-Blöcke zerstörten die Composition beim Grenzübertritt — zu einheitlichem `items`-Block zusammengeführt
 
 **SyncMutex-Deadlock durch clearSessionCache()-Exception** *(IMPL_13)* ([99f451b](https://github.com/inventory69/simple-notes-sync/commit/99f451b))
 - `clearSessionCache()` in try-catch gewrappt im `finally`-Block

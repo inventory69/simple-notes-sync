@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -505,12 +505,23 @@ private fun ChecklistEditor(
     val checkedCount = items.count { it.isChecked }
     val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL || 
                               currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
-    val showSeparator = shouldShowSeparator && uncheckedCount > 0 && checkedCount > 0
+    val showSeparator = shouldShowSeparator && (
+        (uncheckedCount > 0 && checkedCount > 0) ||
+        // 🆕 v1.8.2 (IMPL_26): Separator während Drag beibehalten wenn er vorher sichtbar war.
+        // Wenn das letzte Item einer Seite über den Separator gezogen wird, wird ein Count 0.
+        // Ohne diesen Guard verschwindet der Separator → visualItemCount ändert sich →
+        // draggingItemIndex zeigt auf falschen Slot → Drag bricht ab.
+        // dragDropState.separatorVisualIndex hat noch den Wert der VORHERIGEN Composition
+        // (SideEffect läuft erst nach Composition) → >= 0 = Separator war vorher sichtbar.
+        (dragDropState.draggingItemIndex != null && dragDropState.separatorVisualIndex >= 0)
+    )
 
     Column(modifier = modifier) {
         // 🆕 v1.8.1 IMPL_14: Separator-Position für DragDropState aktualisieren
+        // 🆕 v1.8.2 (IMPL_26): SideEffect statt LaunchedEffect — synchron nach Composition,
+        // damit separatorVisualIndex sofort aktuell ist für den nächsten onDrag-Event
         val separatorVisualIndex = if (showSeparator) uncheckedCount else -1
-        LaunchedEffect(separatorVisualIndex) {
+        SideEffect {
             dragDropState.separatorVisualIndex = separatorVisualIndex
         }
 
@@ -539,40 +550,43 @@ private fun ChecklistEditor(
             contentPadding = PaddingValues(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            // 🆕 v1.8.1 IMPL_14: Unchecked Items (Visual Index 0..uncheckedCount-1)
-            itemsIndexed(
-                items = if (showSeparator) items.subList(0, uncheckedCount) else items,
-                key = { _, item -> item.id }
-            ) { index, item ->
-                DraggableChecklistItem(
-                    item = item,
-                    visualIndex = index,
-                    dragDropState = dragDropState,
-                    focusNewItemId = focusNewItemId,
-                    onTextChange = onTextChange,
-                    onCheckedChange = onCheckedChange,
-                    onDelete = onDelete,
-                    onAddNewItemAfter = onAddNewItemAfter,
-                    onFocusHandled = onFocusHandled,
-                    onHeightChanged = { scrollToItemIndex = index }  // 🆕 v1.8.1 (IMPL_05)
-                )
+            // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
+            // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
+            // Composition zerstört wenn ein Item den Separator überschreitet (anderer
+            // Content-Provider) → PointerInput wird destroyed → Drag abgebrochen.
+            // Ein einziger items-Block bewahrt die Composition bei Key-Erhalt → Drag bleibt aktiv.
+            val visualItemCount = if (showSeparator) items.size + 1 else items.size
+
+            // Lokale Konvertierung mit aktuellem separatorVisualIndex (nicht vom dragDropState,
+            // der hat ggf. noch den alten Wert bis SideEffect läuft)
+            val localVisualToDataIndex = { visualIndex: Int ->
+                if (!showSeparator || separatorVisualIndex < 0) visualIndex
+                else if (visualIndex > separatorVisualIndex) visualIndex - 1
+                else visualIndex
             }
 
-            // 🆕 v1.8.1 IMPL_14: Separator als eigenes LazyColumn-Item
-            if (showSeparator) {
-                item(key = "separator") {
+            items(
+                count = visualItemCount,
+                key = { visualIndex ->
+                    if (showSeparator && visualIndex == separatorVisualIndex) {
+                        "separator"
+                    } else {
+                        items[localVisualToDataIndex(visualIndex)].id
+                    }
+                },
+                contentType = { visualIndex ->
+                    if (showSeparator && visualIndex == separatorVisualIndex) "separator"
+                    else "checklist_item"
+                }
+            ) { visualIndex ->
+                if (showSeparator && visualIndex == separatorVisualIndex) {
                     CheckedItemsSeparator(
                         checkedCount = checkedCount,
                         isDragActive = dragDropState.draggingItemIndex != null
                     )
-                }
-
-                // 🆕 v1.8.1 IMPL_14: Checked Items (Visual Index uncheckedCount+1..)
-                itemsIndexed(
-                    items = items.subList(uncheckedCount, items.size),
-                    key = { _, item -> item.id }
-                ) { index, item ->
-                    val visualIndex = uncheckedCount + 1 + index  // +1 für Separator
+                } else {
+                    val dataIndex = localVisualToDataIndex(visualIndex)
+                    val item = items[dataIndex]
                     DraggableChecklistItem(
                         item = item,
                         visualIndex = visualIndex,
@@ -583,7 +597,7 @@ private fun ChecklistEditor(
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
                         onFocusHandled = onFocusHandled,
-                        onHeightChanged = { scrollToItemIndex = visualIndex }  // 🆕 v1.8.1 (IMPL_05)
+                        onHeightChanged = { scrollToItemIndex = visualIndex }
                     )
                 }
             }
