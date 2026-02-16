@@ -473,9 +473,10 @@ class WebDavSyncService(private val context: Context) {
             
             // Socket-Check mit Timeout
             // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
-            val socket = Socket()
-            socket.connect(InetSocketAddress(host, port), SOCKET_TIMEOUT_MS)
-            socket.close()
+            // 🛡️ v1.8.2: Socket.use{} garantiert close() auch bei connect-Fehler (SNS-182-15)
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress(host, port), SOCKET_TIMEOUT_MS)
+            }
             
             Logger.d(TAG, "✅ Server is reachable")
             true
