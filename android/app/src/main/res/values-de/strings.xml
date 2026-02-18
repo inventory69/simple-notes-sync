@@ -220,6 +220,24 @@
     <string name="settings_markdown_manual_button">Markdown synchronisieren</string>
     <string name="settings_backup">Backup &amp; Wiederherstellung</string>
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
+
+    <!-- Issue #21: Notizen importieren -->
+    <string name="settings_import_title">Notizen importieren</string>
+    <string name="settings_import_subtitle">Notizen aus Dateien oder vom Server importieren</string>
+    <string name="import_section_server">Vom WebDAV-Server</string>
+    <string name="import_section_local">Vom Gerät</string>
+    <string name="import_info_text">Importiere .md-, .json- oder .txt-Dateien als Simple Notes. Importierte Notizen werden bei der nächsten Synchronisation übertragen. Originaldateien bleiben unverändert.</string>
+    <string name="settings_import_from_server">WebDAV-Server scannen</string>
+    <string name="settings_import_from_file">Dateien vom Gerät auswählen</string>
+    <string name="import_dialog_scanning">Wird gescannt…</string>
+    <string name="import_dialog_found">%d importierbare Dateien gefunden</string>
+    <string name="import_button_import">%d Dateien importieren</string>
+    <string name="import_no_files_found">Keine importierbaren Dateien gefunden</string>
+    <string name="import_summary_title">Import-Ergebnis</string>
+    <string name="import_dialog_complete">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen</string>
+    <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
+    <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
+    <string name="import_cancel">Abbrechen</string>
     <string name="settings_backup_info">📦 Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
     <string name="settings_backup_local_title">Lokales Backup</string>
     <string name="settings_backup_server_title">Server-Backup</string>
@@ -472,6 +490,9 @@
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
+    <!-- Issue #21: Verbindungstest-Info mit /notes/-Status -->
+    <string name="test_connection_success_with_notes">✅ Server erreichbar. Notizen-Ordner gefunden.</string>
+    <string name="test_connection_success_first_sync">✅ Server erreichbar. Notizen-Ordner wird beim ersten Sync erstellt.</string>
     <string name="toast_connection_success">✅ Verbindung erfolgreich!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Fehler: %s</string>

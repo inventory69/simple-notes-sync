@@ -1,0 +1,499 @@
+package dev.dettmer.simplenotes.noteimport
+
+import android.content.Context
+import android.net.Uri
+import com.thegrizzlylabs.sardineandroid.Sardine
+import dev.dettmer.simplenotes.models.ChecklistItem
+import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.utils.DeviceIdGenerator
+import dev.dettmer.simplenotes.utils.Logger
+import java.util.UUID
+
+/**
+ * Universeller Import-Wizard für Notizen aus externen Quellen.
+ *
+ * Unterstützt:
+ * - Markdown-Dateien (.md) — mit und ohne YAML-Frontmatter
+ * - JSON-Dateien (.json) — Simple-Notes-Format und generische Formate
+ * - Plain-Text-Dateien (.txt)
+ * - Import von WebDAV-Server oder lokalem Dateisystem
+ *
+ * Design: Einmaliger, unidirektionaler Import. Importierte Notizen werden als
+ * reguläre Simple-Notes-Notizen gespeichert (JSON in /notes/) und ab dann
+ * normal synchronisiert. Die Originaldateien bleiben unverändert.
+ *
+ * v1.9.0: Issue #21
+ */
+class NotesImportWizard(
+    private val storage: NotesStorage,
+    private val context: Context
+) {
+    companion object {
+        private const val TAG = "NotesImportWizard"
+
+        /** Maximale Dateigröße für Import (5 MB) */
+        const val MAX_FILE_SIZE = 5 * 1024 * 1024L
+
+        /** Unterstützte Dateiendungen */
+        val SUPPORTED_EXTENSIONS = setOf(".md", ".json", ".txt")
+
+        /** Schwellenwert für Unix-Timestamp-Heuristik (< 1e12 → Sekunden, sonst Millisekunden) */
+        private const val UNIX_SECONDS_THRESHOLD = 1_000_000_000_000L
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Data Classes
+    // ══════════════════════════════════════════════════════════════
+
+    data class ImportCandidate(
+        val name: String,
+        val source: ImportSource,
+        val size: Long,
+        val modified: Long,
+        val fileType: FileType
+    )
+
+    enum class FileType {
+        MARKDOWN, JSON, PLAINTEXT
+    }
+
+    sealed class ImportSource {
+        data class WebDav(val url: String, val sardine: Sardine) : ImportSource()
+        data class LocalFile(val uri: Uri) : ImportSource()
+    }
+
+    sealed class ImportResult {
+        data class Success(val note: Note, val sourceName: String) : ImportResult()
+        data class Skipped(val sourceName: String, val reason: String) : ImportResult()
+        data class Failed(val sourceName: String, val error: String) : ImportResult()
+    }
+
+    data class ImportSummary(
+        val totalScanned: Int,
+        val imported: Int,
+        val skipped: Int,
+        val failed: Int,
+        val results: List<ImportResult>
+    )
+
+    // ══════════════════════════════════════════════════════════════
+    // Scanning — WebDAV-Ordner nach importierbaren Dateien durchsuchen
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Scannt einen WebDAV-Ordner nach importierbaren Dateien.
+     * Scannt NUR den angegebenen Ordner (depth=1), NICHT /notes/ oder /notes-md/.
+     *
+     * @param sardine Authentifizierter Sardine-Client
+     * @param folderUrl WebDAV-URL des zu scannenden Ordners
+     * @return Liste der importierbaren Dateien
+     */
+    fun scanWebDavFolder(sardine: Sardine, folderUrl: String): List<ImportCandidate> {
+        val baseUrl = folderUrl.trimEnd('/')
+        val results = mutableListOf<ImportCandidate>()
+
+        try {
+            val resources = sardine.list(baseUrl, 1)
+
+            // Dateien im aktuellen Ordner sammeln
+            resources
+                .filter { res ->
+                    !res.isDirectory &&
+                    res.contentLength <= MAX_FILE_SIZE &&
+                    SUPPORTED_EXTENSIONS.any { ext -> res.name.endsWith(ext, ignoreCase = true) }
+                }
+                .mapTo(results) { resource ->
+                    ImportCandidate(
+                        name = resource.name,
+                        source = ImportSource.WebDav(
+                            url = "$baseUrl/${resource.name}",
+                            sardine = sardine
+                        ),
+                        size = resource.contentLength,
+                        modified = resource.modified?.time ?: System.currentTimeMillis(),
+                        fileType = detectFileType(resource.name)
+                    )
+                }
+
+            // Unterordner rekursiv scannen (eine Ebene tief, außer /notes/ — bereits synchronisiert)
+            // baseName ausschließen: WebDAV list() gibt den Ordner selbst als erstes Element zurück
+            val baseName = baseUrl.substringAfterLast('/')
+            resources
+                .filter { res -> res.isDirectory && res.name != "notes" && res.name != baseName }
+                .forEach { subDir ->
+                    val subUrl = "$baseUrl/${subDir.name}"
+                    try {
+                        val subResources = sardine.list(subUrl, 1)
+                        subResources
+                            .filter { res ->
+                                !res.isDirectory &&
+                                res.contentLength <= MAX_FILE_SIZE &&
+                                SUPPORTED_EXTENSIONS.any { ext -> res.name.endsWith(ext, ignoreCase = true) }
+                            }
+                            .mapTo(results) { resource ->
+                                ImportCandidate(
+                                    name = "${subDir.name}/${resource.name}",
+                                    source = ImportSource.WebDav(
+                                        url = "$subUrl/${resource.name}",
+                                        sardine = sardine
+                                    ),
+                                    size = resource.contentLength,
+                                    modified = resource.modified?.time ?: System.currentTimeMillis(),
+                                    fileType = detectFileType(resource.name)
+                                )
+                            }
+                        Logger.d(TAG, "📂 Scanned $subUrl: ${subResources.size} resources")
+                    } catch (e: Exception) {
+                        Logger.e(TAG, "Scan failed for subfolder $subUrl: ${e.message}")
+                    }
+                }
+
+            Logger.d(TAG, "📂 Total scan of $baseUrl: ${results.size} importable files found")
+        } catch (e: Exception) {
+            Logger.e(TAG, "Scan failed for $baseUrl: ${e.message}")
+        }
+
+        return results
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Import — Einzelne Datei importieren
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Importiert eine einzelne Datei als Simple-Notes-Notiz.
+     * Erkennt automatisch das Format und wählt den passenden Parser.
+     */
+    fun importFile(candidate: ImportCandidate): ImportResult {
+        return try {
+            val content = readContent(candidate.source)
+
+            if (content.isBlank()) {
+                return ImportResult.Skipped(candidate.name, "File is empty")
+            }
+
+            val note = when (candidate.fileType) {
+                FileType.MARKDOWN -> parseMarkdown(content, candidate)
+                FileType.JSON -> parseJson(content, candidate)
+                FileType.PLAINTEXT -> parsePlainText(content, candidate)
+            }
+
+            if (note == null) {
+                return ImportResult.Failed(candidate.name, "Could not parse file")
+            }
+
+            // Duplikat-Check: Existiert bereits eine Notiz mit dieser ID?
+            val existingNote = storage.loadNote(note.id)
+            if (existingNote != null) {
+                return ImportResult.Skipped(
+                    candidate.name,
+                    "Note with ID ${note.id} already exists (title: '${existingNote.title}')"
+                )
+            }
+
+            // SyncStatus-Logik:
+            // - Lokale Datei → immer PENDING (muss noch hochgeladen werden)
+            // - WebDAV JSON → SYNCED (Simple-Notes-JSON kommt aus /notes/, ID ist bereits registriert)
+            // - WebDAV Markdown MIT Frontmatter → SYNCED (UUID stammt aus /notes/, bereits synced)
+            // - WebDAV Markdown OHNE Frontmatter → PENDING (neue Notiz, kein /notes/<uuid>.json vorhanden)
+            val syncStatus = when {
+                candidate.source is ImportSource.LocalFile -> SyncStatus.PENDING
+                candidate.fileType == FileType.MARKDOWN -> {
+                    val normalizedContent = content.replace("\\n", "\n")
+                    if (Note.fromMarkdown(normalizedContent) != null) SyncStatus.SYNCED else SyncStatus.PENDING
+                }
+                else -> SyncStatus.SYNCED
+            }
+            val noteToSave = note.copy(syncStatus = syncStatus)
+            storage.saveNote(noteToSave)
+
+            // Falls die Notiz vorher gelöscht wurde, aus dem DeletionTracker entfernen
+            // (sonst überspringt der Sync sie als "lokal gelöscht")
+            val tracker = storage.loadDeletionTracker()
+            if (tracker.isDeleted(noteToSave.id)) {
+                tracker.removeDeletion(noteToSave.id)
+                storage.saveDeletionTracker(tracker)
+                Logger.d(TAG, "🗑️ Removed ${noteToSave.id} from deletion tracker (re-import)")
+            }
+
+            Logger.d(TAG, "✅ Imported: ${candidate.name} → ${noteToSave.id} ('${noteToSave.title}')")
+            ImportResult.Success(noteToSave, candidate.name)
+
+        } catch (e: Exception) {
+            Logger.e(TAG, "Import failed for ${candidate.name}: ${e.message}")
+            ImportResult.Failed(candidate.name, e.message ?: "Unknown error")
+        }
+    }
+
+    /**
+     * Batch-Import: Importiert mehrere Dateien und gibt eine Zusammenfassung zurück.
+     */
+    fun importFiles(
+        candidates: List<ImportCandidate>,
+        onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }
+    ): ImportSummary {
+        val results = mutableListOf<ImportResult>()
+
+        for ((index, candidate) in candidates.withIndex()) {
+            onProgress(index + 1, candidates.size, candidate.name)
+            results.add(importFile(candidate))
+        }
+
+        return ImportSummary(
+            totalScanned = candidates.size,
+            imported = results.count { it is ImportResult.Success },
+            skipped = results.count { it is ImportResult.Skipped },
+            failed = results.count { it is ImportResult.Failed },
+            results = results
+        ).also {
+            Logger.d(TAG, "📊 Import complete: ${it.imported} imported, " +
+                "${it.skipped} skipped, ${it.failed} failed")
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Parser — Format-spezifisches Parsing
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Markdown-Parser: Unterstützt Plain-MD und MD mit Simple-Notes-Frontmatter.
+     */
+    internal fun parseMarkdown(content: String, candidate: ImportCandidate): Note? {
+        // Literal \n normalisieren (z.B. von echo ohne -e erstellt)
+        val normalizedContent = content.replace("\\n", "\n")
+
+        // Versuch 1: Simple-Notes-Frontmatter vorhanden → Standard-Parser
+        Note.fromMarkdown(normalizedContent)?.let { note ->
+            Logger.d(TAG, "   📝 ${candidate.name}: Parsed with frontmatter (id=${note.id})")
+            return note
+        }
+
+        // Versuch 2: Plain Markdown ohne Frontmatter → Neue Notiz erstellen
+        val title = extractMarkdownTitle(normalizedContent, candidate.name)
+        val body = extractMarkdownBody(normalizedContent)
+
+        // Checklist-Erkennung: Enthält der Content Checkbox-Syntax?
+        val checklistRegex = Regex("^- \\[([ xX])\\] (.*)$", RegexOption.MULTILINE)
+        val checklistMatches = checklistRegex.findAll(body).toList()
+
+        return if (checklistMatches.size >= 2) {
+            // Checklist erkannt (mindestens 2 Items)
+            val items = checklistMatches.mapIndexed { index, match ->
+                ChecklistItem(
+                    id = UUID.randomUUID().toString(),
+                    text = match.groupValues[2].trim(),
+                    isChecked = match.groupValues[1].lowercase() == "x",
+                    order = index
+                )
+            }
+            Logger.d(TAG, "   ☑️ ${candidate.name}: Detected as checklist (${items.size} items)")
+
+            Note(
+                id = UUID.randomUUID().toString(),
+                title = title,
+                content = "",
+                checklistItems = items,
+                createdAt = candidate.modified,
+                updatedAt = candidate.modified,
+                deviceId = DeviceIdGenerator.getDeviceId(context),
+                syncStatus = SyncStatus.PENDING,
+                noteType = NoteType.CHECKLIST
+            )
+        } else {
+            // Normaler Text-Notiz
+            Logger.d(TAG, "   📄 ${candidate.name}: Parsed as plain markdown")
+            Note(
+                id = UUID.randomUUID().toString(),
+                title = title,
+                content = body,
+                createdAt = candidate.modified,
+                updatedAt = candidate.modified,
+                deviceId = DeviceIdGenerator.getDeviceId(context),
+                syncStatus = SyncStatus.PENDING,
+                noteType = NoteType.TEXT
+            )
+        }
+    }
+
+    /**
+     * JSON-Parser: Unterstützt Simple-Notes-JSON und generische Formate.
+     */
+    @Suppress("ReturnCount")
+    internal fun parseJson(content: String, candidate: ImportCandidate): Note? {
+        val jsonElement = try {
+            com.google.gson.JsonParser.parseString(content)
+        } catch (e: Exception) {
+            Logger.w(TAG, "   ⚠️ ${candidate.name}: Invalid JSON: ${e.message}")
+            return null
+        }
+
+        if (jsonElement.isJsonObject) {
+            val obj = jsonElement.asJsonObject
+
+            // Simple Notes JSON?
+            if (obj.has("id") && obj.has("title") && obj.has("createdAt")) {
+                try {
+                    val note = Note.fromJson(content)
+                    if (note != null) {
+                        Logger.d(TAG, "   📋 ${candidate.name}: Simple Notes JSON (id=${note.id})")
+                        return note
+                    }
+                } catch (_: Exception) { /* Fallthrough to generic parsing */ }
+            }
+
+            return parseGenericJsonObject(obj, candidate)
+        }
+
+        if (jsonElement.isJsonArray) {
+            val array = jsonElement.asJsonArray
+            if (array.size() == 0) return null
+
+            Logger.d(TAG, "   📋 ${candidate.name}: JSON array with ${array.size()} entries")
+
+            val firstElement = array[0]
+            if (firstElement.isJsonObject) {
+                return parseGenericJsonObject(firstElement.asJsonObject, candidate)
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * Versucht ein generisches JSON-Objekt als Notiz zu interpretieren.
+     */
+    internal fun parseGenericJsonObject(
+        obj: com.google.gson.JsonObject,
+        candidate: ImportCandidate
+    ): Note? {
+        val title = listOf("title", "name", "subject", "header", "Title", "Name")
+            .firstNotNullOfOrNull { key -> obj.get(key)?.asString?.takeIf { it.isNotBlank() } }
+            ?: candidate.name.removeSuffix(".json")
+
+        val content = listOf("content", "body", "text", "note", "description",
+                             "Content", "Body", "Text", "markdown")
+            .firstNotNullOfOrNull { key -> obj.get(key)?.asString?.takeIf { it.isNotBlank() } }
+            .orEmpty()
+
+        if (title.isBlank() && content.isBlank()) {
+            Logger.w(TAG, "   ⚠️ ${candidate.name}: No title or content found in JSON")
+            return null
+        }
+
+        val createdAt = extractTimestamp(obj, "createdAt", "created", "created_at",
+                                         "dateCreated", "createTime")
+            ?: candidate.modified
+        val updatedAt = extractTimestamp(obj, "updatedAt", "updated", "updated_at",
+                                         "dateModified", "modifyTime", "modified")
+            ?: candidate.modified
+
+        val id = obj.get("id")?.asString?.takeIf { it.isNotBlank() }
+            ?: obj.get("uuid")?.asString?.takeIf { it.isNotBlank() }
+            ?: UUID.randomUUID().toString()
+
+        Logger.d(TAG, "   📋 ${candidate.name}: Generic JSON → title='$title', content=${content.length} chars")
+
+        return Note(
+            id = id,
+            title = title,
+            content = content,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            deviceId = DeviceIdGenerator.getDeviceId(context),
+            syncStatus = SyncStatus.PENDING,
+            noteType = NoteType.TEXT
+        )
+    }
+
+    /**
+     * Plain-Text-Parser.
+     */
+    internal fun parsePlainText(content: String, candidate: ImportCandidate): Note {
+        val title = candidate.name.removeSuffix(".txt").replace("-", " ").replace("_", " ")
+
+        Logger.d(TAG, "   📄 ${candidate.name}: Plain text (${content.length} chars)")
+
+        return Note(
+            id = UUID.randomUUID().toString(),
+            title = title,
+            content = content.trim(),
+            createdAt = candidate.modified,
+            updatedAt = candidate.modified,
+            deviceId = DeviceIdGenerator.getDeviceId(context),
+            syncStatus = SyncStatus.PENDING,
+            noteType = NoteType.TEXT
+        )
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Helpers
+    // ══════════════════════════════════════════════════════════════
+
+    private fun readContent(source: ImportSource): String {
+        return when (source) {
+            is ImportSource.WebDav -> {
+                source.sardine.get(source.url).bufferedReader().use { it.readText() }
+            }
+            is ImportSource.LocalFile -> {
+                context.contentResolver.openInputStream(source.uri)
+                    ?.bufferedReader()?.use { it.readText() }
+                    ?: error("Cannot open file: ${source.uri}")
+            }
+        }
+    }
+
+    internal fun detectFileType(fileName: String): FileType {
+        return when {
+            fileName.endsWith(".md", ignoreCase = true) -> FileType.MARKDOWN
+            fileName.endsWith(".json", ignoreCase = true) -> FileType.JSON
+            else -> FileType.PLAINTEXT
+        }
+    }
+
+    internal fun extractMarkdownTitle(content: String, fileName: String): String {
+        val headingMatch = Regex("^#\\s+(.+)$", RegexOption.MULTILINE).find(content)
+        if (headingMatch != null) return headingMatch.groupValues[1].trim()
+        return fileName.removeSuffix(".md").replace("-", " ").replace("_", " ")
+    }
+
+    internal fun extractMarkdownBody(content: String): String {
+        val lines = content.lines()
+        val firstHeadingIndex = lines.indexOfFirst { it.startsWith("# ") }
+        return if (firstHeadingIndex >= 0) {
+            lines.drop(firstHeadingIndex + 1)
+                .dropWhile { it.isBlank() }
+                .joinToString("\n")
+                .trim()
+        } else {
+            content.trim()
+        }
+    }
+
+    /**
+     * Extrahiert einen Timestamp aus einem JSON-Objekt.
+     * Unterstützt: Unix-Millis (Long), Unix-Sekunden (Long), ISO-8601 (String).
+     */
+    @Suppress("LoopWithTooManyJumpStatements")
+    internal fun extractTimestamp(obj: com.google.gson.JsonObject, vararg keys: String): Long? {
+        for (key in keys) {
+            val element = obj.get(key) ?: continue
+            try {
+                if (element.isJsonPrimitive) {
+                    val prim = element.asJsonPrimitive
+                    if (prim.isNumber) {
+                        val value = prim.asLong
+                        // Heuristik: Wenn < UNIX_SECONDS_THRESHOLD → Sekunden, sonst Millisekunden
+                        return if (value < UNIX_SECONDS_THRESHOLD) value * 1000 else value
+                    }
+                    if (prim.isString) {
+                        return Note.parseISO8601(prim.asString).takeIf { it > 0L }
+                    }
+                }
+            } catch (_: Exception) { continue }
+        }
+        return null
+    }
+}

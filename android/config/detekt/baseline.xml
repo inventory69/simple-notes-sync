@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>LargeClass:SettingsViewModel.kt$SettingsViewModel : AndroidViewModel</ID>
+    <ID>LongMethod:ImportSettingsScreen.kt$@Composable fun ImportSettingsScreen( viewModel: SettingsViewModel, onBack: () -&gt; Unit )</ID>
+    <ID>LoopWithTooManyJumpStatements:NotesImportWizardTest.kt$NotesImportWizardTest$for</ID>
+    <ID>NestedBlockDepth:NotesImportWizard.kt$NotesImportWizard$@Suppress("LoopWithTooManyJumpStatements") internal fun extractTimestamp(obj: com.google.gson.JsonObject, vararg keys: String): Long?</ID>
+    <ID>NestedBlockDepth:NotesImportWizardTest.kt$NotesImportWizardTest$private fun extractTimestampHelper( obj: com.google.gson.JsonObject, vararg keys: String ): Long?</ID>
+  </CurrentIssues>
+</SmellBaseline>

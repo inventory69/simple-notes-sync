@@ -220,6 +220,24 @@
     <string name="settings_markdown_manual_button">Sync Markdown</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
+
+    <!-- Issue #21: Notes Import -->
+    <string name="settings_import_title">Import Notes</string>
+    <string name="settings_import_subtitle">Import notes from files or server</string>
+    <string name="import_section_server">From WebDAV Server</string>
+    <string name="import_section_local">From Device</string>
+    <string name="import_info_text">Import .md, .json, or .txt files as Simple Notes. Imported notes will be synced on next synchronization. Original files remain unchanged.</string>
+    <string name="settings_import_from_server">Scan WebDAV Server</string>
+    <string name="settings_import_from_file">Select Files from Device</string>
+    <string name="import_dialog_scanning">Scanning…</string>
+    <string name="import_dialog_found">%d importable files found</string>
+    <string name="import_button_import">Import %d files</string>
+    <string name="import_no_files_found">No importable files found</string>
+    <string name="import_summary_title">Import Result</string>
+    <string name="import_dialog_complete">%1$d imported, %2$d skipped, %3$d failed</string>
+    <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
+    <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
+    <string name="import_cancel">Cancel</string>
     <string name="settings_backup_info">📦 A safety backup is automatically created before each restore.</string>
     <string name="settings_backup_local_title">Local Backup</string>
     <string name="settings_backup_server_title">Server Backup</string>
@@ -472,6 +490,9 @@
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
+    <!-- Issue #21: Connection test info with /notes/ status -->
+    <string name="test_connection_success_with_notes">✅ Server reachable. Notes folder found.</string>
+    <string name="test_connection_success_first_sync">✅ Server reachable. Notes folder will be created on first sync.</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Error: %s</string>
