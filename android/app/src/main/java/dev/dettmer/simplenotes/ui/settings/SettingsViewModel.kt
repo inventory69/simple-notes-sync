@@ -387,7 +387,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     ServerStatus.Unreachable(result.errorMessage)
                 }
                 val message = if (result.isSuccess) {
-                    getString(R.string.toast_connection_success)
+                    // 🆕 Issue #21: infoMessage anzeigen wenn vorhanden (z.B. /notes/-Status)
+                    result.infoMessage ?: getString(R.string.toast_connection_success)
                 } else {
                     getString(R.string.toast_connection_failed, result.errorMessage ?: "")
                 }
@@ -923,5 +924,83 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _displayMode.value = mode
         prefs.edit().putString(Constants.KEY_DISPLAY_MODE, mode).apply()
         Logger.d(TAG, "Display mode changed to: $mode")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 Issue #21: Notes Import Wizard
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Scannt den konfigurierten WebDAV-Ordner nach importierbaren Dateien.
+     * Scannt die Base-URL (NICHT /notes/), da dort die externen Dateien liegen.
+     */
+    suspend fun scanWebDavForImport(): List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate> =
+        withContext(Dispatchers.IO) {
+            try {
+                val syncService = WebDavSyncService(getApplication())
+                val sardine = syncService.getOrCreateSardine() ?: return@withContext emptyList()
+                val serverUrl = syncService.getServerUrl() ?: return@withContext emptyList()
+
+                val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+                wizard.scanWebDavFolder(sardine, serverUrl)
+            } catch (e: Exception) {
+                Logger.e(TAG, "Import scan failed: ${e.message}")
+                emptyList()
+            }
+        }
+
+    /**
+     * Importiert ausgewählte Import-Kandidaten.
+     */
+    suspend fun importCandidates(
+        candidates: List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate>
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(Dispatchers.IO) {
+        val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+        wizard.importFiles(candidates)
+    }
+
+    /**
+     * Importiert lokale Dateien via Android Content-URI.
+     */
+    suspend fun importLocalFiles(
+        uris: List<Uri>
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(Dispatchers.IO) {
+        val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+        val candidates = uris.mapNotNull { uri ->
+            try {
+                val name = getFileName(uri) ?: "unknown.txt"
+                val size = getFileSize(uri)
+                val fileType = wizard.detectFileType(name)
+                dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate(
+                    name = name,
+                    source = dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSource.LocalFile(uri),
+                    size = size,
+                    modified = System.currentTimeMillis(),
+                    fileType = fileType
+                )
+            } catch (e: Exception) {
+                Logger.w(TAG, "Cannot process URI $uri: ${e.message}")
+                null
+            }
+        }
+        wizard.importFiles(candidates)
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        val cursor = getApplication<android.app.Application>()
+            .contentResolver.query(uri, null, null, null, null)
+        return cursor?.use {
+            val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (it.moveToFirst() && nameIndex >= 0) it.getString(nameIndex) else null
+        }
+    }
+
+    private fun getFileSize(uri: Uri): Long {
+        val cursor = getApplication<android.app.Application>()
+            .contentResolver.query(uri, null, null, null, null)
+        return cursor?.use {
+            val sizeIndex = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+            if (it.moveToFirst() && sizeIndex >= 0) it.getLong(sizeIndex) else 0L
+        } ?: 0L
     }
 }

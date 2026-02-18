@@ -128,8 +128,9 @@ class WebDavSyncService(private val context: Context) {
     /**
      * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
      * Spart ~100ms pro Aufruf durch Wiederverwendung
+     * 🆕 Issue #21: internal für NotesImportWizard-Zugriff
      */
-    private fun getOrCreateSardine(): Sardine? {
+    internal fun getOrCreateSardine(): Sardine? {
         // Return cached if available
         sessionSardine?.let { 
             Logger.d(TAG, "⚡ Reusing cached Sardine client")
@@ -189,7 +190,7 @@ class WebDavSyncService(private val context: Context) {
         Logger.d(TAG, "🧹 Session caches cleared")
     }
     
-    private fun getServerUrl(): String? {
+    internal fun getServerUrl(): String? {
         return prefs.getString(Constants.KEY_SERVER_URL, null)
     }
     
@@ -312,9 +313,12 @@ class WebDavSyncService(private val context: Context) {
             val notesUrl = getNotesUrl(serverUrl)
             // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
             // Wenn sardine.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
+            // 🐛 Fix #21: Wenn /notes/ nicht existiert → true zurückgeben, damit syncNotes()
+            // aufgerufen wird und ensureNotesDirectoryExists() das Verzeichnis anlegen kann.
+            // Vorher: return false → Deadlock (Verzeichnis wird nie erstellt, Sync nie gestartet)
             if (!sardine.exists(notesUrl)) {
-                Logger.d(TAG, "📁 /notes/ doesn't exist - assuming no server changes")
-                return false
+                Logger.d(TAG, "📁 /notes/ doesn't exist yet - will create on sync")
+                return true
             }
             
             // ====== JSON FILES CHECK (/notes/) ======
@@ -325,7 +329,7 @@ class WebDavSyncService(private val context: Context) {
             
             // For hasUnsyncedChanges(): Conservative approach - assume changes may exist
             // Actual file-level E-Tag checks in downloadRemoteNotes() will skip unchanged files (0ms each)
-            var hasJsonChanges = true  // Assume yes, let file E-Tags optimize
+            val hasJsonChanges = true  // Assume yes, let file E-Tags optimize
             
             // ====== MARKDOWN FILES CHECK (/notes-md/) ======
             // IMPORTANT: E-Tag for collections does NOT work for content changes!
@@ -563,11 +567,21 @@ class WebDavSyncService(private val context: Context) {
             if (!exists) {
                 sardine.createDirectory(serverUrl)
             }
-            
+
+            // 🆕 Issue #21: Zusätzlich /notes/ prüfen und Status kommunizieren
+            val notesUrl = getNotesUrl(serverUrl)
+            val notesExist = try { sardine.exists(notesUrl) } catch (_: Exception) { false }
+            val infoMessage = if (notesExist) {
+                context.getString(R.string.test_connection_success_with_notes)
+            } else {
+                context.getString(R.string.test_connection_success_first_sync)
+            }
+
             SyncResult(
                 isSuccess = true,
                 syncedCount = 0,
-                errorMessage = null
+                errorMessage = null,
+                infoMessage = infoMessage
             )
             
         } catch (e: Exception) {
@@ -2243,8 +2257,8 @@ class WebDavSyncService(private val context: Context) {
             val serverUrl = getServerUrl()
                 ?: throw SyncException(context.getString(R.string.error_server_url_not_configured))
             
-            val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
-            val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+            val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
+            val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
             
             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                 throw SyncException(context.getString(R.string.error_server_not_configured))

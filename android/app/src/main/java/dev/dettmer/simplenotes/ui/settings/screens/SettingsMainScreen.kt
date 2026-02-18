@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -208,7 +209,17 @@ fun SettingsMainScreen(
                     onClick = { onNavigate(SettingsRoute.Backup) }
                 )
             }
-            
+
+            // 🆕 Issue #21: Notizen importieren
+            item {
+                SettingsCard(
+                    icon = Icons.Default.FileOpen,
+                    title = stringResource(R.string.settings_import_title),
+                    subtitle = stringResource(R.string.settings_import_subtitle),
+                    onClick = { onNavigate(SettingsRoute.Import) }
+                )
+            }
+
             // Über diese App
             item {
                 SettingsCard(

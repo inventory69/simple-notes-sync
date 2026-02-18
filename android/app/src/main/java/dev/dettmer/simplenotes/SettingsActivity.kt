@@ -575,7 +575,8 @@ class SettingsActivity : AppCompatActivity() {
                 val result = syncService.testConnection()
                 
                 if (result.isSuccess) {
-                    showToast("Verbindung erfolgreich!")
+                    // 🆕 Issue #21: infoMessage anzeigen wenn vorhanden (z.B. /notes/-Status)
+                    showToast(result.infoMessage ?: "Verbindung erfolgreich!")
                     checkServerStatus() // ✅ Server-Status sofort aktualisieren
                 } else {
                     showToast("Verbindung fehlgeschlagen: ${result.errorMessage}")

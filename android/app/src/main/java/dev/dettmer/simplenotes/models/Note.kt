@@ -365,7 +365,7 @@ type: ${noteType.name.lowercase()}$sortLine
          * @param dateString ISO8601 Datum-String
          * @return Unix Timestamp in Millisekunden
          */
-        private fun parseISO8601(dateString: String): Long {
+        internal fun parseISO8601(dateString: String): Long {
             if (dateString.isBlank()) {
                 return System.currentTimeMillis()
             }
