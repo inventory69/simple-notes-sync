@@ -166,7 +166,11 @@ class NotesStorage(private val context: Context) {
         var updatedCount = 0
         
         notes.forEach { note ->
-            if (note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.SYNCED) {
+            // 🔧 v1.9.0: Auch DELETED_ON_SERVER → PENDING zurücksetzen
+            // Notizen die auf dem alten Server gelöscht wurden, müssen auf den neuen Server
+            // hochgeladen werden — der neue Server hat keine Kenntnis der alten Löschung.
+            if (note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.SYNCED ||
+                note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.DELETED_ON_SERVER) {
                 val updatedNote = note.copy(syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING)
                 saveNote(updatedNote)
                 updatedCount++

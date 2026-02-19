@@ -312,6 +312,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // Reset sync status if server actually changed
         if (serverChanged) {
             viewModelScope.launch {
+                // 🔧 v1.9.0: E-Tag/Content-Hash-Caches und Sync-Timestamp löschen
+                // Verhindert Upload-Skip durch veraltete Cache-Einträge des alten Servers
+                clearServerCaches()
                 val count = notesStorage.resetAllSyncStatusToPending()
                 Logger.d(TAG, "🔄 Server changed from '$confirmedServerUrl' to '$fullUrl': Reset $count notes to PENDING")
                 emitToast(getString(R.string.toast_server_changed_sync_reset, count))
@@ -321,6 +324,36 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         } else {
             Logger.d(TAG, "💾 Server settings check complete (no server change detected)")
         }
+    }
+
+    /**
+     * 🔧 v1.9.0: Löscht alle server-spezifischen Caches beim Server-Wechsel.
+     *
+     * Ohne diesen Clear greift die Content-Hash-Skip-Logik in uploadSingleNoteParallel():
+     * Hash matcht (Inhalt gleich) + E-Tag vom alten Server noch vorhanden → Upload übersprungen,
+     * Note auf SYNCED gesetzt ohne je auf neuen Server hochgeladen zu werden.
+     *
+     * Gelöscht werden:
+     * - etag_json_*       (JSON-Datei E-Tags)
+     * - etag_md_*         (Markdown-Datei E-Tags)
+     * - content_hash_*    (JSON-Content-Hashes)
+     * - content_hash_md_* (Markdown-Content-Hashes)
+     * - lastSyncTimestamp (damit hasUnsyncedChanges() korrekt funktioniert)
+     * - DeletionTracker   (alte Lösch-Historie ist für neuen Server irrelevant)
+     */
+    private fun clearServerCaches() {
+        val editor = prefs.edit()
+        prefs.all.keys.filter {
+            it.startsWith("etag_json_") ||
+            it.startsWith("etag_md_") ||
+            it.startsWith("content_hash_") ||
+            it.startsWith("content_hash_md_")
+        }.forEach { key -> editor.remove(key) }
+        editor.remove(Constants.KEY_LAST_SYNC)
+        editor.remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
+        editor.apply()
+        notesStorage.clearDeletionTracker()
+        Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamp, deletion tracker)")
     }
     
     /**
