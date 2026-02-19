@@ -73,6 +73,11 @@ object Constants {
     const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 5
     const val MIN_PARALLEL_DOWNLOADS = 1
     const val MAX_PARALLEL_DOWNLOADS = 10
+
+    // 🆕 v1.9.0: Parallel Uploads
+    const val KEY_MAX_PARALLEL_UPLOADS = "max_parallel_uploads"
+    const val DEFAULT_MAX_PARALLEL_UPLOADS = 3
+    const val MAX_PARALLEL_UPLOADS = 6
     
     // 🔀 v1.8.0: Sortierung
     const val KEY_SORT_OPTION = "sort_option"

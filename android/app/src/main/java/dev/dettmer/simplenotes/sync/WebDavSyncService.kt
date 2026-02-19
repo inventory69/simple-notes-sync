@@ -14,14 +14,23 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
 import dev.dettmer.simplenotes.sync.parallel.DownloadTaskResult
 import dev.dettmer.simplenotes.sync.parallel.ParallelDownloader
+import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -37,7 +46,7 @@ data class ManualMarkdownSyncResult(
     val importedCount: Int
 )
 
-@Suppress("LargeClass") 
+@Suppress("LargeClass", "TooManyFunctions")
 // TODO v2.0.0: Split into SyncOrchestrator, NoteUploader, NoteDownloader, ConflictResolver
 class WebDavSyncService(
     private val context: Context,
@@ -50,6 +59,7 @@ class WebDavSyncService(
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
+        private const val LOG_PREVIEW_IDS_MAX = 3
         
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
@@ -826,96 +836,269 @@ class WebDavSyncService(
         }
     }
     
-    private fun uploadLocalNotes(
+    /**
+     * 🔧 v1.9.0: Parallele Uploads mit bounded concurrency
+     * Analog zu ParallelDownloader-Pattern, aber für Uploads.
+     *
+     * Optimierungen:
+     * - Opt 1: Einmalige notes-md/ Exists-Prüfung statt N × exists()
+     * - Opt 3: Parallelisierung mit Semaphore über alle Notizen
+     * - Opt 4: Batch-E-Tag-Fetch per list(depth=1) nach allen Uploads
+     * - Opt 5: Upload-Skip per Content-Hash
+     */
+    @Suppress("NestedBlockDepth")
+    private suspend fun uploadLocalNotes(
         sardine: Sardine,
         serverUrl: String,
-        onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }  // 🆕 v1.8.0
+        onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }
     ): Int {
-        var uploadedCount = 0
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
 
-        // 🆕 v1.8.0: Zähle zu uploadende Notizen für Progress
+        // 🆕 v1.9.0 (Opt 1): Einmalige Prüfung statt N × exists(notes-md/)
+        val markdownDirExists: Boolean = if (markdownExportEnabled) {
+            try {
+                val mdUrl = getMarkdownUrl(serverUrl)
+                val exists = sardine.exists(mdUrl)
+                if (!exists) {
+                    sardine.createDirectory(mdUrl)
+                    Logger.d(TAG, "📁 Created notes-md/ directory (one-time check)")
+                }
+                true
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ notes-md/ check failed, falling back to per-note check: ${e.message}")
+                false
+            }
+        } else {
+            true
+        }
+
         val pendingNotes = localNotes.filter {
             it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING
         }
         val totalToUpload = pendingNotes.size
 
-        // 🔧 v1.7.2 (IMPL_004): Batch E-Tag Updates für Performance
-        val etagUpdates = mutableMapOf<String, String?>()
+        if (totalToUpload == 0) {
+            Logger.d(TAG, "⏭️ No notes to upload")
+            return 0
+        }
 
-        for (note in localNotes) {
-            if (note.syncStatus == SyncStatus.LOCAL_ONLY || note.syncStatus == SyncStatus.PENDING) {
-                val uploaded = uploadSingleNote(sardine, serverUrl, note, markdownExportEnabled, etagUpdates)
-                if (uploaded) {
-                    uploadedCount++
-                    onProgress(uploadedCount, totalToUpload, note.title)
+        Logger.d(TAG, "🚀 Starting parallel upload: $totalToUpload notes")
+
+        // 🆕 v1.9.0 (Opt 3): Bounded parallelism via Semaphore
+        val maxParallel = prefs.getInt(
+            Constants.KEY_MAX_PARALLEL_UPLOADS,
+            Constants.DEFAULT_MAX_PARALLEL_UPLOADS
+        )
+        val semaphore = Semaphore(maxParallel)
+        val completedCount = AtomicInteger(0)
+
+        // 🔒 v1.9.0: Mutex für thread-sichere storage.saveNote()-Aufrufe
+        val storageMutex = Mutex()
+
+        val results: List<UploadTaskResult> = coroutineScope {
+            val jobs = pendingNotes.map { note ->
+                async(ioDispatcher) {
+                    semaphore.withPermit {
+                        val result = uploadSingleNoteParallel(
+                            sardine = sardine,
+                            serverUrl = serverUrl,
+                            note = note,
+                            markdownExportEnabled = markdownExportEnabled,
+                            markdownDirExists = markdownDirExists,
+                            storageMutex = storageMutex
+                        )
+
+                        // Progress-Update thread-safe via AtomicInteger
+                        val completed = completedCount.incrementAndGet()
+                        onProgress(completed, totalToUpload, note.title)
+
+                        result
+                    }
                 }
+            }
+
+            jobs.awaitAll()
+        }
+
+        // Statistiken
+        val successCount = results.count { it is UploadTaskResult.Success }
+        val failureCount = results.count { it is UploadTaskResult.Failure }
+        val skippedCount = results.count { it is UploadTaskResult.Skipped }
+        Logger.d(TAG, "📊 Upload complete: $successCount success, $failureCount failed, $skippedCount skipped")
+
+        // 🆕 v1.9.0 (Opt 4): Batch-E-Tag-Fetch per list(depth=1)
+        val successfulNoteIds = results
+            .filterIsInstance<UploadTaskResult.Success>()
+            .map { it.noteId }
+            .toSet()
+
+        if (successfulNoteIds.isNotEmpty()) {
+            try {
+                val notesUrl = getNotesUrl(serverUrl)
+                Logger.d(TAG, "⚡ Batch-fetching E-Tags via list(depth=1) for ${successfulNoteIds.size} notes")
+                val allResources = sardine.list(notesUrl, 1)
+
+                val batchEtagUpdates = mutableMapOf<String, String?>()
+                for (resource in allResources) {
+                    val filename = resource.name
+                    if (!filename.endsWith(".json")) continue
+
+                    val noteId = filename.removeSuffix(".json")
+                    if (noteId in successfulNoteIds) {
+                        val etag = resource.etag
+                        batchEtagUpdates["etag_json_$noteId"] = etag
+                        if (etag != null) {
+                            Logger.d(TAG, "   ⚡ E-Tag: $noteId → ${etag.take(ETAG_PREVIEW_LENGTH)}")
+                        }
+                    }
+                }
+
+                // Fehlende E-Tags invalidieren
+                val foundIds = batchEtagUpdates.keys.map { it.removePrefix("etag_json_") }.toSet()
+                val missingEtags = successfulNoteIds - foundIds
+                if (missingEtags.isNotEmpty()) {
+                    Logger.w(TAG, "⚠️ No E-Tag found for ${missingEtags.size} notes: ${missingEtags.take(LOG_PREVIEW_IDS_MAX)}")
+                    for (noteId in missingEtags) {
+                        batchEtagUpdates["etag_json_$noteId"] = null
+                    }
+                }
+
+                // 🆕 v1.9.0 (Opt 5): Content-Hashes für erfolgreiche Uploads speichern
+                for (noteId in successfulNoteIds) {
+                    val note = pendingNotes.find { it.id == noteId }
+                    if (note != null) {
+                        batchEtagUpdates["content_hash_$noteId"] = computeNoteContentHash(note)
+                    }
+                }
+
+                batchUpdateETags(batchEtagUpdates)
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ Batch E-Tag fetch failed: ${e.message}")
+                // Fallback: Invalidiere alle E-Tags → nächster Sync holt sie einzeln
+                val invalidationMap = successfulNoteIds.associate { "etag_json_$it" to null as String? }
+                batchUpdateETags(invalidationMap)
             }
         }
 
-        // 🔧 v1.7.2 (IMPL_004): Batch-Update aller E-Tags in einer Operation
-        if (etagUpdates.isNotEmpty()) {
-            batchUpdateETags(etagUpdates)
-        }
-
-        return uploadedCount
+        return successCount
     }
 
     /**
-     * Uploads a single note to the server and queues its E-Tag for batch update.
-     * @return true if upload succeeded
+     * 🆕 v1.9.0: Upload einer einzelnen Notiz für parallele Ausführung.
+     *
+     * Optimierungen:
+     * - Opt 3: Thread-sichere storage.saveNote() via Mutex
+     * - Opt 3: Retry mit Exponential Backoff
+     * - Opt 5: Upload-Skip per Content-Hash
+     * - Opt 6: MD-Upload-Skip per Content-Hash (in exportToMarkdown)
+     *
+     * @return UploadTaskResult mit Erfolgs-/Fehler-Info
      */
-    private fun uploadSingleNote(
+    private suspend fun uploadSingleNoteParallel(
         sardine: Sardine,
         serverUrl: String,
         note: Note,
         markdownExportEnabled: Boolean,
-        etagUpdates: MutableMap<String, String?>
-    ): Boolean {
-        return try {
-            val notesUrl = getNotesUrl(serverUrl)
-            val noteUrl = "$notesUrl${note.id}.json"
+        markdownDirExists: Boolean,
+        storageMutex: Mutex
+    ): UploadTaskResult {
+        val maxRetries = 2
+        val retryDelayMs = 500L
+        var lastError: Throwable? = null
 
-            // 🔧 v1.7.2 FIX (IMPL_015): Status VOR Serialisierung auf SYNCED setzen
-            val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
-            val jsonBytes = noteToUpload.toJson().toByteArray()
-
-            Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title})")
-            sardine.put(noteUrl, jsonBytes, "application/json")
-            Logger.d(TAG, "      ✅ Upload successful")
-
-            storage.saveNote(noteToUpload)
-
-            // ⚡ v1.3.1: Refresh E-Tag after upload to prevent re-download
+        repeat(maxRetries + 1) { attempt ->
             try {
-                val uploadedResource = sardine.list(noteUrl, 0).firstOrNull()
-                val newETag = uploadedResource?.etag
-                etagUpdates["etag_json_${note.id}"] = newETag
-                if (newETag != null) {
-                    Logger.d(TAG, "      ⚡ Queued E-Tag: ${newETag.take(ETAG_PREVIEW_LENGTH)}")
-                } else {
-                    Logger.d(TAG, "      ⚠️ No E-Tag from server, will invalidate")
-                }
-            } catch (e: Exception) {
-                Logger.w(TAG, "      ⚠️ Failed to get E-Tag: ${e.message}")
-                etagUpdates["etag_json_${note.id}"] = null
-            }
+                val notesUrl = getNotesUrl(serverUrl)
+                val noteUrl = "$notesUrl${note.id}.json"
 
-            if (markdownExportEnabled) {
-                try {
-                    exportToMarkdown(sardine, serverUrl, noteToUpload)
-                    Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
-                } catch (e: Exception) {
-                    Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
+                // 🆕 v1.9.0 (Opt 5): Skip-Logik per Content-Hash
+                val currentHash = computeNoteContentHash(note)
+                val cachedHash = prefs.getString("content_hash_${note.id}", null)
+                val cachedETag = prefs.getString("etag_json_${note.id}", null)
+
+                if (currentHash == cachedHash && cachedETag != null) {
+                    Logger.d(TAG, "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})")
+                    // Status trotzdem auf SYNCED setzen (war evtl. fälschlich PENDING)
+                    if (note.syncStatus != SyncStatus.SYNCED) {
+                        storageMutex.withLock {
+                            storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
+                        }
+                    }
+                    return UploadTaskResult.Skipped(
+                        noteId = note.id,
+                        reason = "Content unchanged (hash match)"
+                    )
+                }
+
+                val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
+                val jsonBytes = noteToUpload.toJson().toByteArray()
+
+                Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title}) [attempt ${attempt + 1}]")
+                sardine.put(noteUrl, jsonBytes, "application/json")
+                Logger.d(TAG, "      ✅ Upload successful")
+
+                // 🔒 Thread-sicherer Storage-Write via Mutex
+                storageMutex.withLock {
+                    storage.saveNote(noteToUpload)
+                }
+
+                // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
+                if (markdownExportEnabled) {
+                    try {
+                        exportToMarkdown(sardine, serverUrl, noteToUpload, markdownDirExists)
+                        Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
+                    } catch (e: Exception) {
+                        Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
+                    }
+                }
+
+                return UploadTaskResult.Success(noteId = note.id, etag = null)
+
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // 🛡️ Cancellation nie verschlucken — sofort propagieren
+                throw e
+            } catch (e: Exception) {
+                lastError = e
+                Logger.w(TAG, "⚠️ Upload failed ${note.id} (attempt ${attempt + 1}): ${e.message}")
+
+                if (attempt < maxRetries) {
+                    delay(retryDelayMs * (attempt + 1))
                 }
             }
-            true
-        } catch (e: Exception) {
-            Logger.w(TAG, "Upload failed for note ${note.id}, marking as pending: ${e.message}")
-            storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
-            false
         }
+
+        // Alle Retries fehlgeschlagen → Note als PENDING markieren
+        Logger.e(TAG, "❌ Upload failed after ${maxRetries + 1} attempts: ${note.id}")
+        try {
+            val storageMutexLocal = storageMutex
+            storageMutexLocal.withLock {
+                storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "Failed to mark note as PENDING: ${e.message}")
+        }
+        return UploadTaskResult.Failure(note.id, lastError ?: Exception("Unknown upload error"))
+    }
+
+    /**
+     * 🆕 v1.9.0 (Opt 5): Berechnet SHA-256-Hash des JSON-Inhalts einer Notiz.
+     *
+     * Verwendet den serialisierten JSON-String (nicht den Rohinhalt),
+     * damit Strukturänderungen (z.B. neues Feld) erkannt werden.
+     * SyncStatus wird auf SYNCED normalisiert, damit der Hash unabhängig
+     * vom aktuellen syncStatus ist.
+     *
+     * Sichtbarkeit `internal` für Testbarkeit aus dem test-Source-Set.
+     *
+     * @param note Die Notiz
+     * @return Hex-String des SHA-256-Hash (64 Zeichen)
+     */
+    internal fun computeNoteContentHash(note: Note): String {
+        val normalizedNote = note.copy(syncStatus = SyncStatus.SYNCED)
+        val jsonBytes = normalizedNote.toJson().toByteArray()
+        val digest = MessageDigest.getInstance("SHA-256").digest(jsonBytes)
+        return digest.joinToString("") { "%02x".format(it) }
     }
     
     /**
@@ -951,27 +1134,49 @@ class WebDavSyncService(
     
     /**
      * Exportiert einzelne Note als Markdown (Task #1.2.0-11)
-     * 
+     * 🔧 v1.9.0 (Opt 1): markdownDirExists-Parameter eliminiert redundanten exists()-Call
+     * 🔧 v1.9.0 (Opt 6): MD-Content-Hash-Cache für Skip bei unverändertem Inhalt
+     *
      * @param sardine Sardine-Client
      * @param serverUrl Server-URL (notes/ Ordner)
      * @param note Note zum Exportieren
+     * @param markdownDirExists true wenn notes-md/ Ordner bereits existiert
      */
-    private fun exportToMarkdown(sardine: Sardine, serverUrl: String, note: Note) {
+    private fun exportToMarkdown(
+        sardine: Sardine,
+        serverUrl: String,
+        note: Note,
+        markdownDirExists: Boolean = true
+    ) {
         val mdUrl = getMarkdownUrl(serverUrl)
-        
-        // Erstelle notes-md/ Ordner falls nicht vorhanden
-        if (!sardine.exists(mdUrl)) {
-            sardine.createDirectory(mdUrl)
-            Logger.d(TAG, "📁 Created notes-md/ directory")
+
+        // 🔧 v1.9.0 (Opt 1): Nur prüfen/erstellen wenn Caller nicht bereits bestätigt hat
+        if (!markdownDirExists) {
+            if (!sardine.exists(mdUrl)) {
+                sardine.createDirectory(mdUrl)
+                Logger.d(TAG, "📁 Created notes-md/ directory")
+            }
         }
-        
-        // Sanitize Filename (Task #1.2.0-12)
+
         val baseFilename = sanitizeFilename(note.title)
         var filename = "$baseFilename.md"
         // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
-        // getMarkdownUrl() gibt immer trailing / zurück → "notes-md/" + "/" + file = "notes-md//file"
         var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
-        
+
+        // 🆕 v1.9.0 (Opt 6): MD-Content-Hash berechnen und mit Cache vergleichen
+        val mdContentStr = note.toMarkdown()
+        val mdContentBytes = mdContentStr.toByteArray()
+        val mdHash = MessageDigest.getInstance("SHA-256")
+            .digest(mdContentBytes)
+            .joinToString("") { "%02x".format(it) }
+        val cachedMdHash = prefs.getString("content_hash_md_${note.id}", null)
+        val cachedMdETag = prefs.getString("etag_md_${note.id}", null)
+
+        if (mdHash == cachedMdHash && cachedMdETag != null) {
+            Logger.d(TAG, "   ⏭️ MD skip: ${note.title} (content unchanged)")
+            return
+        }
+
         // Prüfe ob Datei bereits existiert und von anderer Note stammt
         try {
             if (sardine.exists(noteUrl)) {
@@ -980,7 +1185,7 @@ class WebDavSyncService(
                 val existingIdMatch = Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
                     .find(existingContent)
                 val existingId = existingIdMatch?.groupValues?.get(1)
-                
+
                 if (existingId != null && existingId != note.id) {
                     // Andere Note hat gleichen Titel - verwende ID-Suffix
                     val shortId = note.id.take(8)
@@ -993,12 +1198,25 @@ class WebDavSyncService(
             Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
             // Continue with default filename
         }
-        
-        // Konvertiere zu Markdown
-        val mdContent = note.toMarkdown().toByteArray()
-        
+
         // Upload
-        sardine.put(noteUrl, mdContent, "text/markdown")
+        sardine.put(noteUrl, mdContentBytes, "text/markdown")
+
+        // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
+        try {
+            val mdResource = sardine.list(noteUrl, 0).firstOrNull()
+            val mdETag = mdResource?.etag
+            val editor = prefs.edit().putString("content_hash_md_${note.id}", mdHash)
+            if (mdETag != null) {
+                editor.putString("etag_md_${note.id}", mdETag)
+            }
+            editor.apply()
+            Logger.d(TAG, "   ⚡ MD E-Tag cached: ${mdETag?.take(ETAG_PREVIEW_LENGTH)}")
+        } catch (e: Exception) {
+            // Non-fatal: Hash trotzdem cachen für nächsten Content-Vergleich
+            prefs.edit().putString("content_hash_md_${note.id}", mdHash).apply()
+            Logger.w(TAG, "   ⚠️ MD E-Tag fetch failed: ${e.message}")
+        }
     }
     
     /**
@@ -1660,8 +1878,15 @@ class WebDavSyncService(
             prefs.all.keys.filter { it.startsWith("etag_json_") }.forEach { key ->
                 editor.remove(key)
             }
+            // 🆕 v1.9.0: Auch Content-Hashes löschen (damit alle Notizen neu hochgeladen werden)
+            prefs.all.keys.filter { it.startsWith("content_hash_") }.forEach { key ->
+                editor.remove(key)
+            }
+            prefs.all.keys.filter { it.startsWith("etag_md_") }.forEach { key ->
+                editor.remove(key)
+            }
             editor.apply()
-            Logger.d(TAG, "🔄 Cleared E-Tag caches - will re-download all files")
+            Logger.d(TAG, "🔄 Cleared E-Tag + content hash caches - will re-download all files")
             
             // Determine forceOverwrite flag
             val forceOverwrite = (mode == dev.dettmer.simplenotes.backup.RestoreMode.OVERWRITE_DUPLICATES)
@@ -2210,6 +2435,15 @@ class WebDavSyncService(
                 storage.saveDeletionTracker(deletionTracker)
                 Logger.d(TAG, "🔓 Removed from deletion tracker: $noteId")
             }
+
+            // 🆕 v1.9.0 (Opt 5): Content-Hash und E-Tag bei Deletion invalidieren
+            prefs.edit()
+                .remove("etag_json_$noteId")
+                .remove("content_hash_$noteId")
+                .remove("etag_md_$noteId")
+                .remove("content_hash_md_$noteId")
+                .apply()
+            Logger.d(TAG, "🗑️ Cleared E-Tag + content hash for deleted note: $noteId")
             
             true
         } catch (e: Exception) {
