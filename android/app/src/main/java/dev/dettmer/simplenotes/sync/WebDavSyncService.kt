@@ -60,7 +60,10 @@ class WebDavSyncService(
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
         private const val LOG_PREVIEW_IDS_MAX = 3
-        
+
+        // 🔧 v1.9.0 (Plan 04): Detekt MagicNumber compliance
+        private const val ALL_DELETED_GUARD_THRESHOLD = 10
+
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
     }
@@ -1394,7 +1397,7 @@ class WebDavSyncService(
         // User mit wenigen Notizen, die alle über Nextcloud-Web-UI löschen, bekamen nie
         // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
         val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
-        if (syncedNotes.size >= 10 && potentialDeletions == syncedNotes.size) {
+        if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
             Logger.e(TAG, "🚨 detectServerDeletions: ALL ${syncedNotes.size} synced notes " +
                 "would be marked as deleted! This is almost certainly a bug. " +
                 "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection.")
