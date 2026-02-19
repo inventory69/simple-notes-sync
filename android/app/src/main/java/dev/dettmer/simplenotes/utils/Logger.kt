@@ -109,8 +109,8 @@ object Logger {
         if (!fileLoggingEnabled) return
         
         // Lazy-init logFile mit appContext
-        if (logFile == null && appContext != null) {
-            logFile = File(appContext!!.filesDir, "simplenotes_debug.log")
+        if (logFile == null) {
+            appContext?.let { ctx -> logFile = File(ctx.filesDir, "simplenotes_debug.log") }
         }
         
         if (logFile == null) return

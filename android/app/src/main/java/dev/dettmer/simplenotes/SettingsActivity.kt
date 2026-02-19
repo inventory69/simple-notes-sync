@@ -28,6 +28,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.DynamicColors
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import dev.dettmer.simplenotes.backup.BackupManager
@@ -47,7 +48,9 @@ import java.util.Locale
 
 @Suppress("LargeClass", "DEPRECATION") // Legacy code using ProgressDialog & LocalBroadcastManager, will be removed in v2.0.0
 class SettingsActivity : AppCompatActivity() {
-    
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     companion object {
         private const val TAG = "SettingsActivity"
         private const val GITHUB_REPO_URL = "https://github.com/inventory69/simple-notes-sync"
@@ -173,7 +176,7 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun loadSettings() {
-        val savedUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+        val savedUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
         
         // Parse existing URL to extract protocol and host/path
         if (savedUrl.isNotEmpty()) {
@@ -345,8 +348,8 @@ class SettingsActivity : AppCompatActivity() {
         radioGroupSyncInterval.check(checkedId)
         
         // Listen for interval changes
-        radioGroupSyncInterval.setOnCheckedChangeListener { _, checkedId ->
-            val newInterval = when (checkedId) {
+        radioGroupSyncInterval.setOnCheckedChangeListener { _, selectedId ->
+            val newInterval = when (selectedId) {
                 R.id.radioInterval15 -> 15L
                 R.id.radioInterval60 -> 60L
                 else -> 30L // R.id.radioInterval30 or fallback
@@ -504,7 +507,7 @@ class SettingsActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to clear logs", e)
-            showToast(getString(R.string.toast_logs_delete_error, e.message ?: ""))
+            showToast(getString(R.string.toast_logs_delete_error, e.message.orEmpty()))
         }
     }
     
@@ -658,7 +661,7 @@ class SettingsActivity : AppCompatActivity() {
         textViewServerStatus.setTextColor(getColor(android.R.color.darker_gray))
         
         lifecycleScope.launch {
-            val isReachable = withContext(Dispatchers.IO) {
+            val isReachable = withContext(ioDispatcher) {
                 try {
                     val url = URL(serverUrl)
                     val connection = url.openConnection() as HttpURLConnection
@@ -718,9 +721,9 @@ class SettingsActivity : AppCompatActivity() {
                         
                         try {
                             // Hole Server-Daten
-                            val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
-                            val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
-                            val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+                            val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+                            val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
+                            val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
                             
                             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                                 progressDialog.dismiss()
@@ -1054,7 +1057,7 @@ class SettingsActivity : AppCompatActivity() {
                 
                 // Server-Restore durchführen
                 val webdavService = WebDavSyncService(this@SettingsActivity)
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     webdavService.restoreFromServer(mode)  // ✅ Pass mode parameter
                 }
                 

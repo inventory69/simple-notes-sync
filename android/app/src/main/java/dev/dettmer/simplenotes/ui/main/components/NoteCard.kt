@@ -155,7 +155,7 @@ fun NoteCard(
                     text = when (note.noteType) {
                         NoteType.TEXT -> note.content.take(100)
                         NoteType.CHECKLIST -> {
-                            val items = note.checklistItems ?: emptyList()
+                            val items = note.checklistItems.orEmpty()
                             stringResource(R.string.checklist_progress, items.count { it.isChecked }, items.size)
                         }
                     },

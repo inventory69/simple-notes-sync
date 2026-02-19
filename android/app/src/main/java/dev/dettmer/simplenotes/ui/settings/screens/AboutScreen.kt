@@ -87,7 +87,6 @@ fun AboutScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // v1.5.0: App icon foreground loaded directly for better quality
-                    val context = LocalContext.current
                     val appIcon = remember {
                         val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher_foreground)
                         drawable?.let {

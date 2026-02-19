@@ -172,13 +172,11 @@ fun ChecklistItemRow(
         Box(modifier = Modifier.weight(1f)) {
             // Scrollbarer Wrapper: begrenzt Höhe auf ~5 Zeilen wenn collapsed
             Box(
-                modifier = if (!isFocused && hasOverflow && collapsedHeightDp != null) {
+                modifier = collapsedHeightDp?.takeIf { !isFocused && hasOverflow }?.let { height ->
                     Modifier
-                        .heightIn(max = collapsedHeightDp!!)
+                        .heightIn(max = height)
                         .verticalScroll(scrollState)
-                } else {
-                    Modifier
-                }
+                } ?: Modifier
             ) {
                 BasicTextField(
                     value = textFieldValue,

@@ -253,7 +253,7 @@ private fun NoteSelectionCard(
                     text = when (note.noteType) {
                         NoteType.TEXT -> note.content.take(NOTE_PREVIEW_MAX_LENGTH).replace("\n", " ")
                         NoteType.CHECKLIST -> {
-                            val items = note.checklistItems ?: emptyList()
+                            val items = note.checklistItems.orEmpty()
                             val checked = items.count { it.isChecked }
                             "✔ $checked/${items.size}"
                         }

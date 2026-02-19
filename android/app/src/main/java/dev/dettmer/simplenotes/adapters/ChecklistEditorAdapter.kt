@@ -37,8 +37,8 @@ class ChecklistEditorAdapter(
         
         private var textWatcher: TextWatcher? = null
         
-        @Suppress("NestedBlockDepth", "UNUSED_PARAMETER")
-        fun bind(item: ChecklistItem, position: Int) {
+        @Suppress("NestedBlockDepth")
+        fun bind(item: ChecklistItem, @Suppress("UNUSED_PARAMETER") position: Int) {
             // Vorherigen TextWatcher entfernen um Loops zu vermeiden
             textWatcher?.let { editText.removeTextChangedListener(it) }
             
@@ -61,7 +61,7 @@ class ChecklistEditorAdapter(
                     val pos = bindingAdapterPosition
                     if (pos == RecyclerView.NO_POSITION) return
                     
-                    val text = s?.toString() ?: ""
+                    val text = s?.toString().orEmpty()
                     
                     // Prüfe ob ein Newline eingegeben wurde
                     if (text.contains("\n")) {

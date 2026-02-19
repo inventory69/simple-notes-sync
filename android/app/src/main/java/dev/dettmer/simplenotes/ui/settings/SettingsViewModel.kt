@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,12 +38,15 @@ import java.net.URL
  */
 @Suppress("TooManyFunctions") // v1.7.0: 35 Funktionen durch viele kleine Setter (setTrigger*, set*)
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     companion object {
         private const val TAG = "SettingsViewModel"
         private const val CONNECTION_TIMEOUT_MS = 3000
         private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L  // 2s for successful operations
         private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L    // 3s for errors (more important)
+        private const val PROGRESS_CLEAR_DELAY_MS = 500L
     }
     
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -51,14 +55,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
     // This prevents false-positive "server changed" toasts during text input
-    private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+    private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
     
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings State
     // ═══════════════════════════════════════════════════════════════════════
     
     // v1.5.0 Fix: Initialize URL with protocol prefix if empty
-    private val storedUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+    private val storedUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
     
     // 🌟 v1.6.0: Separate host from prefix for better UX
     // isHttps determines the prefix, serverHost is the editable part
@@ -84,10 +88,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         if (host.isEmpty()) "" else prefix + host
     }.stateIn(viewModelScope, SharingStarted.Eagerly, storedUrl)
     
-    private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "") ?: "")
+    private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "").orEmpty())
     val username: StateFlow<String> = _username.asStateFlow()
     
-    private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "") ?: "")
+    private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "").orEmpty())
     val password: StateFlow<String> = _password.asStateFlow()
     
     private val _serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Unknown)
@@ -390,12 +394,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     // 🆕 Issue #21: infoMessage anzeigen wenn vorhanden (z.B. /notes/-Status)
                     result.infoMessage ?: getString(R.string.toast_connection_success)
                 } else {
-                    getString(R.string.toast_connection_failed, result.errorMessage ?: "")
+                    getString(R.string.toast_connection_failed, result.errorMessage.orEmpty())
                 }
                 emitToast(message)
             } catch (e: Exception) {
                 _serverStatus.value = ServerStatus.Unreachable(e.message)
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
@@ -420,7 +424,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         
         viewModelScope.launch {
             _serverStatus.value = ServerStatus.Checking
-            val isReachable = withContext(Dispatchers.IO) {
+            val isReachable = withContext(ioDispatcher) {
                 try {
                     val url = URL(serverUrl)
                     val connection = url.openConnection() as HttpURLConnection
@@ -467,10 +471,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
                 } else {
-                    emitToast(getString(R.string.toast_sync_failed, result.errorMessage ?: ""))
+                    emitToast(getString(R.string.toast_sync_failed, result.errorMessage.orEmpty()))
                 }
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             } finally {
                 _isSyncing.value = false
             }
@@ -579,9 +583,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             viewModelScope.launch {
                 try {
                     // Check server configuration first
-                    val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
-                    val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
-                    val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+                    val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+                    val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
+                    val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
                     
                     if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                         emitToast(getString(R.string.toast_configure_server_first))
@@ -598,7 +602,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         _markdownExportProgress.value = MarkdownExportProgress(0, noteCount)
                         
                         val syncService = WebDavSyncService(getApplication())
-                        val exportedCount = withContext(Dispatchers.IO) {
+                        val exportedCount = withContext(ioDispatcher) {
                             syncService.exportAllNotesToMarkdown(
                                 serverUrl = serverUrl,
                                 username = username,
@@ -619,9 +623,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
                         emitToast(getString(R.string.toast_markdown_exported, exportedCount))
                         
-                        @Suppress("MagicNumber") // UI progress delay
                         // Clear progress after short delay
-                        kotlinx.coroutines.delay(500)
+                        kotlinx.coroutines.delay(PROGRESS_CLEAR_DELAY_MS)
                         _markdownExportProgress.value = null
                         
                     } else {
@@ -636,7 +639,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     
                 } catch (e: Exception) {
                     _markdownExportProgress.value = null
-                    emitToast(getString(R.string.toast_export_failed, e.message ?: ""))
+                    emitToast(getString(R.string.toast_export_failed, e.message.orEmpty()))
                     // Don't enable on error
                 }
             }
@@ -667,7 +670,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = syncService.manualMarkdownSync()
                 emitToast(getString(R.string.toast_markdown_result, result.exportedCount, result.importedCount))
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
@@ -761,7 +764,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _backupStatusText.value = getString(R.string.backup_progress_restoring_server)
             try {
                 val syncService = WebDavSyncService(getApplication())
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.restoreFromServer(mode)
                 }
                 
@@ -805,7 +808,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val cleared = Logger.clearLogFile(getApplication())
                 emitToast(if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted))
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
@@ -935,7 +938,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Scannt die Base-URL (NICHT /notes/), da dort die externen Dateien liegen.
      */
     suspend fun scanWebDavForImport(): List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             try {
                 val syncService = WebDavSyncService(getApplication())
                 val sardine = syncService.getOrCreateSardine() ?: return@withContext emptyList()
@@ -954,7 +957,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     suspend fun importCandidates(
         candidates: List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate>
-    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(Dispatchers.IO) {
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(ioDispatcher) {
         val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
         wizard.importFiles(candidates)
     }
@@ -964,7 +967,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     suspend fun importLocalFiles(
         uris: List<Uri>
-    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(Dispatchers.IO) {
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(ioDispatcher) {
         val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
         val candidates = uris.mapNotNull { uri ->
             try {

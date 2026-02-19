@@ -38,6 +38,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -56,7 +57,9 @@ import dev.dettmer.simplenotes.models.NoteType
  */
 @Suppress("DEPRECATION") // Legacy code using LocalBroadcastManager, will be removed in v2.0.0
 class MainActivity : AppCompatActivity() {
-    
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private lateinit var recyclerViewNotes: RecyclerView
     private lateinit var emptyStateCard: MaterialCardView
     private lateinit var fabAddNote: FloatingActionButton
@@ -269,7 +272,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
-                val isReachable = withContext(Dispatchers.IO) {
+                val isReachable = withContext(ioDispatcher) {
                     syncService.isServerReachable()
                 }
                 
@@ -280,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 // Server ist erreichbar → Sync durchführen
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.syncNotes()
                 }
                 
@@ -681,7 +684,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 // ⭐ WICHTIG: Server-Erreichbarkeits-Check VOR Sync (wie in SyncWorker)
-                val isReachable = withContext(Dispatchers.IO) {
+                val isReachable = withContext(ioDispatcher) {
                     syncService.isServerReachable()
                 }
                 
@@ -692,7 +695,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 // Server ist erreichbar → Sync durchführen
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.syncNotes()
                 }
                 

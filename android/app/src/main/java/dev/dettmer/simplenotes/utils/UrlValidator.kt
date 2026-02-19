@@ -117,7 +117,7 @@ object UrlValidator {
             // Anderes Protokoll
             Pair(false, context.getString(R.string.error_invalid_protocol, parsedUrl.protocol))
         } catch (e: Exception) {
-            Pair(false, context.getString(R.string.error_invalid_url, e.message ?: ""))
+            Pair(false, context.getString(R.string.error_invalid_url, e.message.orEmpty()))
         }
     }
 }

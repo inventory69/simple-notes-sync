@@ -2,55 +2,14 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>InjectDispatcher:BackupManager.kt$BackupManager$IO</ID>
     <ID>InjectDispatcher:MainActivity.kt$MainActivity$IO</ID>
     <ID>InjectDispatcher:MainViewModel.kt$MainViewModel$IO</ID>
     <ID>InjectDispatcher:NoteEditorViewModel.kt$NoteEditorViewModel$IO</ID>
-    <ID>InjectDispatcher:ParallelDownloader.kt$ParallelDownloader$IO</ID>
     <ID>InjectDispatcher:SettingsActivity.kt$SettingsActivity$IO</ID>
     <ID>InjectDispatcher:SettingsViewModel.kt$SettingsViewModel$IO</ID>
     <ID>InjectDispatcher:SyncWorker.kt$SyncWorker$IO</ID>
-    <ID>InjectDispatcher:WebDavSyncService.kt$WebDavSyncService$IO</ID>
     <ID>LargeClass:SettingsViewModel.kt$SettingsViewModel : AndroidViewModel</ID>
-    <ID>LongMethod:ImportSettingsScreen.kt$@Composable fun ImportSettingsScreen( viewModel: SettingsViewModel, onBack: () -&gt; Unit )</ID>
-    <ID>NestedBlockDepth:NotesImportWizard.kt$NotesImportWizard$@Suppress("LoopWithTooManyJumpStatements") internal fun extractTimestamp(obj: com.google.gson.JsonObject, vararg keys: String): Long?</ID>
-    <ID>NoNameShadowing:AboutScreen.kt$context</ID>
-    <ID>NoNameShadowing:SettingsActivity.kt$SettingsActivity$checkedId</ID>
-    <ID>RedundantSuspendModifier:WebDavSyncService.kt$WebDavSyncService$suspend</ID>
-    <ID>UnsafeCallOnNullableType:BackupPasswordDialog.kt$errorMessage!!</ID>
-    <ID>UnsafeCallOnNullableType:ChecklistItemRow.kt$collapsedHeightDp!!</ID>
-    <ID>UnsafeCallOnNullableType:Logger.kt$Logger$appContext!!</ID>
-    <ID>UnsafeCallOnNullableType:NoteEditorActivity.kt$NoteEditorActivity$existingNote!!</ID>
-    <ID>UnsafeCallOnNullableType:NoteEditorViewModel.kt$NoteEditorViewModel$existingNote!!</ID>
-    <ID>UnsafeCallOnNullableType:NoteWidgetConfigActivity.kt$NoteWidgetConfigActivity.&lt;no name provided&gt;$currentSelectedNoteId!!</ID>
-    <ID>UseIsNullOrEmpty:Note.kt$Note.Companion$checklistItems == null || checklistItems.isEmpty()</ID>
-    <ID>UseOrEmpty:BackupManager.kt$BackupManager$e.message ?: ""</ID>
-    <ID>UseOrEmpty:ChecklistEditorAdapter.kt$ChecklistEditorAdapter.ViewHolder.&lt;no name provided&gt;$s?.toString() ?: ""</ID>
-    <ID>UseOrEmpty:LanguageSettingsScreen.kt$currentLocale.get(0)?.language ?: ""</ID>
-    <ID>UseOrEmpty:MainViewModel.kt$MainViewModel$e.message ?: ""</ID>
-    <ID>UseOrEmpty:Note.kt$Note$checklistItems?.sortedBy { it.order }?.joinToString("\n") { item -&gt; val checkbox = if (item.isChecked) "[x]" else "[ ]" "$checkbox ${item.text}" } ?: ""</ID>
-    <ID>UseOrEmpty:Note.kt$Note$checklistItems?.sortedBy { it.order }?.joinToString("\n") { item -&gt; val checkbox = if (item.isChecked) "[x]" else "[ ]" "- $checkbox ${item.text}" } ?: ""</ID>
-    <ID>UseOrEmpty:Note.kt$Note.Companion$metadata["created"] ?: ""</ID>
-    <ID>UseOrEmpty:Note.kt$Note.Companion$metadata["updated"] ?: ""</ID>
-    <ID>UseOrEmpty:NoteCard.kt$note.checklistItems ?: emptyList()</ID>
-    <ID>UseOrEmpty:NoteCardCompact.kt$note.checklistItems?.let { items -&gt; generateChecklistPreview(items, note.checklistSortOption) } ?: ""</ID>
-    <ID>UseOrEmpty:NoteCardGrid.kt$note.checklistItems?.let { items -&gt; generateChecklistPreview(items, note.checklistSortOption) } ?: ""</ID>
-    <ID>UseOrEmpty:NoteEditorActivity.kt$NoteEditorActivity$editTextContent.text?.toString()?.trim() ?: ""</ID>
-    <ID>UseOrEmpty:NoteEditorActivity.kt$NoteEditorActivity$editTextTitle.text?.toString()?.trim() ?: ""</ID>
-    <ID>UseOrEmpty:NoteEditorViewModel.kt$NoteEditorViewModel$e.message ?: ""</ID>
-    <ID>UseOrEmpty:NoteEditorViewModel.kt$NoteEditorViewModel$note.checklistItems?.sortedBy { it.order }?.map { ChecklistItemState( id = it.id, text = it.text, isChecked = it.isChecked, order = it.order ) } ?: emptyList()</ID>
-    <ID>UseOrEmpty:NoteWidgetConfigScreen.kt$note.checklistItems ?: emptyList()</ID>
-    <ID>UseOrEmpty:NotesAdapter.kt$NotesAdapter.NoteViewHolder$note.checklistItems ?: emptyList()</ID>
-    <ID>UseOrEmpty:NotesStorage.kt$NotesStorage$notesDir.listFiles() ?.filter { it.extension == "json" } ?.mapNotNull { Note.fromJson(it.readText()) } ?: emptyList()</ID>
-    <ID>UseOrEmpty:SettingsActivity.kt$SettingsActivity$e.message ?: ""</ID>
-    <ID>UseOrEmpty:SettingsActivity.kt$SettingsActivity$prefs.getString(Constants.KEY_PASSWORD, "") ?: ""</ID>
-    <ID>UseOrEmpty:SettingsActivity.kt$SettingsActivity$prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""</ID>
-    <ID>UseOrEmpty:SettingsActivity.kt$SettingsActivity$prefs.getString(Constants.KEY_USERNAME, "") ?: ""</ID>
-    <ID>UseOrEmpty:SettingsViewModel.kt$SettingsViewModel$e.message ?: ""</ID>
-    <ID>UseOrEmpty:SettingsViewModel.kt$SettingsViewModel$prefs.getString(Constants.KEY_PASSWORD, "") ?: ""</ID>
-    <ID>UseOrEmpty:SettingsViewModel.kt$SettingsViewModel$prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""</ID>
-    <ID>UseOrEmpty:SettingsViewModel.kt$SettingsViewModel$prefs.getString(Constants.KEY_USERNAME, "") ?: ""</ID>
-    <ID>UseOrEmpty:SettingsViewModel.kt$SettingsViewModel$result.errorMessage ?: ""</ID>
-    <ID>UseOrEmpty:UrlValidator.kt$UrlValidator$e.message ?: ""</ID>
+    <ID>LongParameterList:ImportSettingsScreen.kt$( isServerConfigured: Boolean, isScanning: Boolean, isImporting: Boolean, showScanResults: Boolean, scanResults: List&lt;NotesImportWizard.ImportCandidate&gt;, selectedCandidates: Set&lt;Int&gt;, onScanClick: () -&gt; Unit, onSelectionChange: (Int, Boolean) -&gt; Unit, onCancelScan: () -&gt; Unit, onImportSelected: () -&gt; Unit, )</ID>
+    <ID>UnusedImports:ServerSettingsScreen.kt$import androidx.compose.ui.graphics.Color</ID>
   </CurrentIssues>
 </SmellBaseline>

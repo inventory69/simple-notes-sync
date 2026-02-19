@@ -19,6 +19,7 @@ import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,8 @@ class NoteEditorViewModel(
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
     }
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
     
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -139,7 +142,7 @@ class NoteEditorViewModel(
                 isChecked = it.isChecked,
                 order = it.order
             )
-        } ?: emptyList()
+        }.orEmpty()
         // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
         _checklistItems.value = sortChecklistItems(items)
     }
@@ -413,19 +416,14 @@ class NoteEditorViewModel(
                         return@launch
                     }
                     
-                    val note = if (existingNote != null) {
-                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
-                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
-                        existingNote!!.copy(
+                    val note = existingNote?.copy(
                             title = title,
                             content = content,
                             noteType = NoteType.TEXT,
                             checklistItems = null,
                             updatedAt = System.currentTimeMillis(),
                             syncStatus = SyncStatus.PENDING
-                        )
-                    } else {
-                        Note(
+                        ) ?: Note(
                             title = title,
                             content = content,
                             noteType = NoteType.TEXT,
@@ -433,7 +431,6 @@ class NoteEditorViewModel(
                             deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                             syncStatus = SyncStatus.LOCAL_ONLY
                         )
-                    }
                     
                     storage.saveNote(note)
                 }
@@ -458,10 +455,7 @@ class NoteEditorViewModel(
                         return@launch
                     }
                     
-                    val note = if (existingNote != null) {
-                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
-                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
-                        existingNote!!.copy(
+                    val note = existingNote?.copy(
                             title = title,
                             content = "", // Empty for checklists
                             noteType = NoteType.CHECKLIST,
@@ -469,9 +463,7 @@ class NoteEditorViewModel(
                             checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
                             updatedAt = System.currentTimeMillis(),
                             syncStatus = SyncStatus.PENDING
-                        )
-                    } else {
-                        Note(
+                        ) ?: Note(
                             title = title,
                             content = "",
                             noteType = NoteType.CHECKLIST,
@@ -480,7 +472,6 @@ class NoteEditorViewModel(
                             deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                             syncStatus = SyncStatus.LOCAL_ONLY
                         )
-                    }
                     
                     storage.saveNote(note)
                 }
@@ -523,7 +514,7 @@ class NoteEditorViewModel(
                 if (deleteOnServer) {
                     try {
                         val webdavService = WebDavSyncService(getApplication())
-                        val success = withContext(Dispatchers.IO) {
+                        val success = withContext(ioDispatcher) {
                             webdavService.deleteNoteFromServer(noteId)
                         }
                         // 🆕 v1.8.1 (IMPL_12): Banner-Feedback statt stiller Log-Einträge
@@ -547,7 +538,7 @@ class NoteEditorViewModel(
                         SyncStateManager.showError(
                             getApplication<Application>().getString(
                                 dev.dettmer.simplenotes.R.string.snackbar_server_error,
-                                e.message ?: ""
+                                e.message.orEmpty()
                             )
                         )
                     }

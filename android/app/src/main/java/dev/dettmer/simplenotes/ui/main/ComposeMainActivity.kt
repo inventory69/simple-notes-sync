@@ -63,6 +63,9 @@ class ComposeMainActivity : ComponentActivity() {
         private const val TAG = "ComposeMainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
         private const val REQUEST_SETTINGS = 1002
+        private const val BANNER_DELAY_COMPLETED_MS = 2000L
+        private const val BANNER_DELAY_INFO_MS = 2500L
+        private const val BANNER_DELAY_ERROR_MS = 4000L
     }
     
     private val viewModel: MainViewModel by viewModels()
@@ -230,19 +233,18 @@ class ComposeMainActivity : ComponentActivity() {
         // 🆕 v1.8.0: Auto-Hide via SyncProgress (einziges Banner-System)
         lifecycleScope.launch {
             SyncStateManager.syncProgress.collect { progress ->
-                @Suppress("MagicNumber") // UI timing delays for banner visibility
                 when (progress.phase) {
                     dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> {
-                        kotlinx.coroutines.delay(2000L)
+                        kotlinx.coroutines.delay(BANNER_DELAY_COMPLETED_MS)
                         SyncStateManager.reset()
                     }
                     // 🆕 v1.8.1 (IMPL_12): INFO-Meldungen nach 2.5s ausblenden
                     dev.dettmer.simplenotes.sync.SyncPhase.INFO -> {
-                        kotlinx.coroutines.delay(2500L)
+                        kotlinx.coroutines.delay(BANNER_DELAY_INFO_MS)
                         SyncStateManager.reset()
                     }
                     dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> {
-                        kotlinx.coroutines.delay(4000L)
+                        kotlinx.coroutines.delay(BANNER_DELAY_ERROR_MS)
                         SyncStateManager.reset()
                     }
                     else -> { /* No action needed */ }
