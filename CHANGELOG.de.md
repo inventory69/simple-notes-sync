@@ -8,6 +8,68 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.0] - 2026-02-19
+
+### 🔄 Sync-Qualität & Performance
+
+Fokussiertes Release zur Verbesserung der Sync-Korrektheit, Performance und Zuverlässigkeit — Server-Wechsel-Datenverlust behoben, parallele Upload/Download-Einstellungen vereinheitlicht, drei Sync-Edge-Cases gelöst.
+
+### 🐛 Fehlerbehebungen
+
+**Erster Sync schlägt fehl wenn /notes/-Ordner auf Server fehlt** *(e012d17)*
+- Der erste Sync schlägt nicht mehr still fehl, wenn das Verzeichnis `/notes/` noch nicht auf dem Server angelegt wurde
+- Ursache: `checkServerForChanges()` lieferte `false` (keine Änderungen) statt `true` (fortfahren), wenn `lastSyncTime > 0` und der Ordner fehlte
+- Fix: gibt `true` zurück, damit der initiale Upload startet — der Server legt den Ordner beim ersten PUT automatisch an
+
+**Server-Wechsel verursacht falschen "Auf Server gelöscht"-Status** *(Plan 01)*
+- Der Wechsel zu einem neuen Server markiert lokale Notizen nicht mehr fälschlich als gelöscht
+- Ursache: E-Tag- und Content-Hash-Caches des alten Servers wurden nicht geleert — Upload-Skip feuerte fälschlich, Notizen erschienen als SYNCED ohne tatsächlich hochgeladen zu sein
+- Fix: `clearServerCaches()` leert alle E-Tag-, Content-Hash-, Sync-Timestamp- und Deletion-Tracker-Einträge bei Server-Wechsel
+- `resetAllSyncStatusToPending()` setzt jetzt auch DELETED_ON_SERVER auf PENDING zurück
+
+**Server-Löscherkennung zu aggressiv bei wenigen Notizen** *(Plan 03, Bug A)*
+- Nutzer mit 2–9 Notizen, die alle über die Nextcloud-Web-UI löschten, bekamen nie den DELETED_ON_SERVER-Status
+- Guard-Schwellenwert von >1 auf ≥10 angehoben
+
+**Race Condition bei parallelem Markdown-Export mit gleichen Titeln** *(Plan 03, Bug B)*
+- Zwei Notizen mit identischem Titel konnten sich gegenseitig die Markdown-Datei überschreiben
+- Ursache: gleichzeitige `exists()` → `put()`-Sequenz ohne Synchronisation
+- Fix: Markdown-Export wird per Mutex serialisiert (JSON-Uploads bleiben parallel)
+
+**E-Tag nicht gecacht bei "Lokal neuer"-Download-Skip** *(Plan 03, Bug C)*
+- Wenn eine lokale Notiz neuer war als die Server-Version, wurde der Server-E-Tag nicht gespeichert
+- Verursachte unnötige Re-Downloads bei jedem folgenden Sync
+- Fix: E-Tag wird jetzt auch im else-Branch der Download-Ergebnis-Verarbeitung gespeichert
+
+### ✨ Verbesserungen
+
+**Notizen-Import-Assistent** *(e012d17)*
+- Neuer Import-Screen in den Einstellungen — Notizen von WebDAV-Server oder lokalem Speicher importieren
+- Unterstützte Formate: `.md` (mit/ohne YAML-Frontmatter), `.json` (Simple Notes Format oder generisch), `.txt` (Klartext)
+- WebDAV-Scan: rekursiver Unterordner-Scan (Tiefe 1), berücksichtigt bestehende DeletionTracker-Einträge
+- Notizen mit YAML-Frontmatter oder Simple Notes JSON werden als SYNCED importiert; andere als PENDING
+- Erreichbar über Einstellungen → Import
+
+**Parallele Uploads** *(187d338)*
+- Notizen werden parallel statt sequentiell hochgeladen — ~2× schneller bei mehreren geänderten Notizen
+- Upload-Zeit für 4 Notizen von ~11,5 s auf ~6 s reduziert (auf Gerät gemessen)
+- Zweiter Sync mit unveränderten Notizen: Upload-Phase ~0 ms (alle per Content-Hash übersprungen)
+- Begrenzte Parallelität via Semaphore; Datei-I/O-Schreibzugriffe via Mutex serialisiert
+- Neu: `/notes-md/`-Existenzprüfung pro Sync-Lauf gecacht (spart ~480 ms × N exists()-Aufrufe)
+
+**Vereinheitlichte Parallele-Verbindungen-Einstellung** *(Plan 02)*
+- Parallele Downloads (1/3/5/7/10) und Uploads (versteckt, max 6) zu einer einzelnen "Parallele Verbindungen"-Einstellung zusammengeführt
+- Neue Optionen: 1, 3, 5 (reduziert von 5 Optionen — 7 und 10 entfernt da Uploads auf 6 begrenzt)
+- Nutzer mit 7 oder 10 werden automatisch auf 5 migriert
+- Uploads zur Laufzeit auf `min(Einstellung, 6)` begrenzt
+
+### 🛠️ Intern
+
+- Detekt-MagicNumber-Compliance: `ALL_DELETED_GUARD_THRESHOLD`-Konstante extrahiert
+- ProGuard/R8-Release-Build-Verifikation (keine Regeländerungen nötig)
+
+---
+
 ## [1.8.2] - 2026-02-16
 
 ### 🔧 Stabilität, Editor- & Widget-Verbesserungen
