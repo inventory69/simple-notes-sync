@@ -48,14 +48,19 @@ class SyncConstantsTest {
     }
 
     @Test
-    fun `default parallel downloads is 5`() {
-        assertEquals(5, Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS)
+    fun `default parallel connections is 5`() {
+        assertEquals(5, Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS)
     }
 
     @Test
-    fun `parallel downloads range is 1-10`() {
-        assertEquals(1, Constants.MIN_PARALLEL_DOWNLOADS)
-        assertEquals(10, Constants.MAX_PARALLEL_DOWNLOADS)
+    fun `parallel connections range is 1-5`() {
+        assertEquals(1, Constants.MIN_PARALLEL_CONNECTIONS)
+        assertEquals(5, Constants.MAX_PARALLEL_CONNECTIONS)
+    }
+
+    @Test
+    fun `parallel uploads cap is 6`() {
+        assertEquals(6, Constants.MAX_PARALLEL_UPLOADS_CAP)
     }
 
     @Test

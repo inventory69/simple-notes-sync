@@ -142,11 +142,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val syncInterval: StateFlow<Long> = _syncInterval.asStateFlow()
 
-    // 🆕 v1.8.0: Max Parallel Downloads
-    private val _maxParallelDownloads = MutableStateFlow(
-        prefs.getInt(Constants.KEY_MAX_PARALLEL_DOWNLOADS, Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS)
+    // 🔧 v1.9.0: Unified parallel connections setting (downloads + uploads)
+    private val _maxParallelConnections = MutableStateFlow(
+        prefs.getInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS)
+            .coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
     )
-    val maxParallelDownloads: StateFlow<Int> = _maxParallelDownloads.asStateFlow()
+    val maxParallelConnections: StateFlow<Int> = _maxParallelConnections.asStateFlow()
 
     // 🌟 v1.6.0: Configurable Sync Triggers
     private val _triggerOnSave = MutableStateFlow(
@@ -548,14 +549,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 🆕 v1.8.0: Max Parallel Downloads Setter
-    fun setMaxParallelDownloads(count: Int) {
+    // 🔧 v1.9.0: Unified parallel connections setter
+    fun setMaxParallelConnections(count: Int) {
         val validCount = count.coerceIn(
-            Constants.MIN_PARALLEL_DOWNLOADS,
-            Constants.MAX_PARALLEL_DOWNLOADS
+            Constants.MIN_PARALLEL_CONNECTIONS,
+            Constants.MAX_PARALLEL_CONNECTIONS
         )
-        _maxParallelDownloads.value = validCount
-        prefs.edit().putInt(Constants.KEY_MAX_PARALLEL_DOWNLOADS, validCount).apply()
+        _maxParallelConnections.value = validCount
+        prefs.edit().putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, validCount).apply()
     }
 
     // 🌟 v1.6.0: Configurable Sync Triggers Setters

@@ -885,11 +885,12 @@ class WebDavSyncService(
 
         Logger.d(TAG, "🚀 Starting parallel upload: $totalToUpload notes")
 
-        // 🆕 v1.9.0 (Opt 3): Bounded parallelism via Semaphore
-        val maxParallel = prefs.getInt(
-            Constants.KEY_MAX_PARALLEL_UPLOADS,
-            Constants.DEFAULT_MAX_PARALLEL_UPLOADS
+        // 🔧 v1.9.0: Unified parallel setting, capped for uploads
+        val maxParallelSetting = prefs.getInt(
+            Constants.KEY_MAX_PARALLEL_CONNECTIONS,
+            Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
         )
+        val maxParallel = maxParallelSetting.coerceAtMost(Constants.MAX_PARALLEL_UPLOADS_CAP)
         val semaphore = Semaphore(maxParallel)
         val completedCount = AtomicInteger(0)
 
@@ -1577,10 +1578,10 @@ class WebDavSyncService(
                 // 🆕 v1.8.0: PHASE 1B - Parallel Download
                 // ════════════════════════════════════════════════════════════════
                 if (downloadTasks.isNotEmpty()) {
-                    // Konfigurierbare Parallelität aus Settings
+                    // 🔧 v1.9.0: Unified parallel setting
                     val maxParallel = prefs.getInt(
-                        Constants.KEY_MAX_PARALLEL_DOWNLOADS,
-                        Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS
+                        Constants.KEY_MAX_PARALLEL_CONNECTIONS,
+                        Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
                     )
 
                     val downloader = ParallelDownloader(

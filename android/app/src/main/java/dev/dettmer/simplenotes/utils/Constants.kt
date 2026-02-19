@@ -68,16 +68,13 @@ object Constants {
     const val GRID_COLUMNS = 2
     const val GRID_SPACING_DP = 8
 
-    // ⚡ v1.8.0: Parallel Downloads
-    const val KEY_MAX_PARALLEL_DOWNLOADS = "max_parallel_downloads"
-    const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 5
-    const val MIN_PARALLEL_DOWNLOADS = 1
-    const val MAX_PARALLEL_DOWNLOADS = 10
-
-    // 🆕 v1.9.0: Parallel Uploads
-    const val KEY_MAX_PARALLEL_UPLOADS = "max_parallel_uploads"
-    const val DEFAULT_MAX_PARALLEL_UPLOADS = 3
-    const val MAX_PARALLEL_UPLOADS = 6
+    // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
+    // 🔧 v1.9.0: Unified setting for both downloads and uploads
+    const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration
+    const val DEFAULT_MAX_PARALLEL_CONNECTIONS = 5
+    const val MIN_PARALLEL_CONNECTIONS = 1
+    const val MAX_PARALLEL_CONNECTIONS = 5  // v1.9.0: Reduced from 10 (uploads cap at 6)
+    const val MAX_PARALLEL_UPLOADS_CAP = 6  // Hard cap for upload concurrency
     
     // 🔀 v1.8.0: Sortierung
     const val KEY_SORT_OPTION = "sort_option"
