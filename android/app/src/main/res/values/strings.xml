@@ -605,16 +605,15 @@
         <item quantity="other">%d completed</item>
     </plurals>
 
-    <!-- ============================= -->
-    <!-- PARALLEL DOWNLOADS v1.8.0     -->
-    <!-- ============================= -->
-    <string name="sync_parallel_downloads_title">Parallel Downloads</string>
-    <string name="sync_parallel_downloads_unit">parallel</string>
-    <string name="sync_parallel_downloads_desc_1">Sequential (slowest, safest)</string>
-    <string name="sync_parallel_downloads_desc_3">Balanced (3x faster)</string>
-    <string name="sync_parallel_downloads_desc_5">Recommended (5x faster)</string>
-    <string name="sync_parallel_downloads_desc_7">Fast (7x faster)</string>
-    <string name="sync_parallel_downloads_desc_10">Maximum (10x faster, may stress server)</string>
+    <!-- ===================================== -->
+    <!-- PARALLEL CONNECTIONS v1.9.0           -->
+    <!-- (unified downloads + uploads setting) -->
+    <!-- ===================================== -->
+    <string name="sync_parallel_connections_title">Parallel Connections</string>
+    <string name="sync_parallel_connections_unit">parallel</string>
+    <string name="sync_parallel_connections_desc_1">Sequential (slowest, safest)</string>
+    <string name="sync_parallel_connections_desc_3">Balanced (3x faster)</string>
+    <string name="sync_parallel_connections_desc_5">Maximum (5x faster)</string>
 
     <!-- ============================= -->
     <!-- WIDGETS v1.8.0                -->
