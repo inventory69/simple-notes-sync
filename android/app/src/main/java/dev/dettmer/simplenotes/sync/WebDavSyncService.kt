@@ -897,6 +897,11 @@ class WebDavSyncService(
         // 🔒 v1.9.0: Mutex für thread-sichere storage.saveNote()-Aufrufe
         val storageMutex = Mutex()
 
+        // 🔒 v1.9.0 (Bug B): Mutex für thread-sicheren MD-Export
+        // Verhindert Race Condition wenn 2+ Notizen denselben Titel haben:
+        // Ohne Mutex: beide prüfen exists() → false → beide schreiben → Überschreibung
+        val mdExportMutex = Mutex()
+
         val results: List<UploadTaskResult> = coroutineScope {
             val jobs = pendingNotes.map { note ->
                 async(ioDispatcher) {
@@ -907,7 +912,8 @@ class WebDavSyncService(
                             note = note,
                             markdownExportEnabled = markdownExportEnabled,
                             markdownDirExists = markdownDirExists,
-                            storageMutex = storageMutex
+                            storageMutex = storageMutex,
+                            mdExportMutex = mdExportMutex
                         )
 
                         // Progress-Update thread-safe via AtomicInteger
@@ -1002,7 +1008,8 @@ class WebDavSyncService(
         note: Note,
         markdownExportEnabled: Boolean,
         markdownDirExists: Boolean,
-        storageMutex: Mutex
+        storageMutex: Mutex,
+        mdExportMutex: Mutex
     ): UploadTaskResult {
         val maxRetries = 2
         val retryDelayMs = 500L
@@ -1045,12 +1052,16 @@ class WebDavSyncService(
                 }
 
                 // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
+                // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
+                // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
                 if (markdownExportEnabled) {
-                    try {
-                        exportToMarkdown(sardine, serverUrl, noteToUpload, markdownDirExists)
-                        Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
-                    } catch (e: Exception) {
-                        Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
+                    mdExportMutex.withLock {
+                        try {
+                            exportToMarkdown(sardine, serverUrl, noteToUpload, markdownDirExists)
+                            Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
+                        } catch (e: Exception) {
+                            Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
+                        }
                     }
                 }
 
@@ -1378,11 +1389,12 @@ class WebDavSyncService(
             return 0
         }
         
-        // 🔧 v1.8.1 SAFETY: Wenn ALLE lokalen SYNCED-Notizen als gelöscht erkannt werden,
-        // ist das fast sicher ein Fehler (z.B. falsche Server-URL oder partieller PROPFIND).
-        // Maximal 50% der Notizen dürfen als gelöscht markiert werden.
+        // 🔧 v1.9.0: Guard-Schwellenwert auf ≥10 angehoben
+        // Vorher: syncedNotes.size > 1 — blockierte legitime Massenlöschung bei 2–5 Notizen
+        // User mit wenigen Notizen, die alle über Nextcloud-Web-UI löschen, bekamen nie
+        // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
         val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
-        if (syncedNotes.size > 1 && potentialDeletions == syncedNotes.size) {
+        if (syncedNotes.size >= 10 && potentialDeletions == syncedNotes.size) {
             Logger.e(TAG, "🚨 detectServerDeletions: ALL ${syncedNotes.size} synced notes " +
                 "would be marked as deleted! This is almost certainly a bug. " +
                 "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection.")
@@ -1658,7 +1670,14 @@ class WebDavSyncService(
                                             }
                                         }
                                     }
-                                    // else: Local is newer or same → skip silently
+                                    else -> {
+                                        // 🔧 v1.9.0 (Bug C): E-Tag auch bei "local newer"-Skip cachen
+                                        // Verhindert erneutes Herunterladen beim nächsten Sync,
+                                        // wenn Server-Inhalt sich nicht geändert hat
+                                        if (result.etag != null) {
+                                            etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                        }
+                                    }
                                 }
                             }
                             is DownloadTaskResult.Failure -> {
