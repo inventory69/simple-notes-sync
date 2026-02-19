@@ -130,6 +130,7 @@ class DeletionTrackerTest {
     // JSON Serialization/Deserialization
     // ═══════════════════════════════════════════════
 
+    @Suppress("MaxLineLength")
     @Ignore("org.json.JSONObject is Android-stubbed: toString(2) returns null, triggering Kotlin null-safety NPE. Covered by instrumentation tests.")
     @Test
     fun `toJson produces valid JSON structure`() {
@@ -180,6 +181,7 @@ class DeletionTrackerTest {
         assertEquals(0, tracker!!.deletedNotes.size)
     }
 
+    @Suppress("MaxLineLength")
     @Ignore("org.json.JSONObject is Android-stubbed: toString(2) returns null, triggering Kotlin null-safety NPE. Covered by instrumentation tests.")
     @Test
     fun `toJson empty tracker does not crash`() {

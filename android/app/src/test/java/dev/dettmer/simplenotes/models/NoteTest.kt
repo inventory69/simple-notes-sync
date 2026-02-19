@@ -2,7 +2,6 @@ package dev.dettmer.simplenotes.models
 
 import org.junit.Assert.*
 import org.junit.Test
-import java.util.TimeZone
 
 /**
  * Vollständige Unit-Tests für die Note-Klasse.
@@ -15,6 +14,7 @@ import java.util.TimeZone
  * - Backward Compatibility
  * - Edge Cases
  */
+@Suppress("LargeClass")
 class NoteTest {
 
     // ═══════════════════════════════════════════════
