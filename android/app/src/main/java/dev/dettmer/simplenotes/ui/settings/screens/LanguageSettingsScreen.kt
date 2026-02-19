@@ -38,7 +38,7 @@ fun LanguageSettingsScreen(
     val currentLanguageCode = if (currentLocale.isEmpty) {
         "" // System default
     } else {
-        currentLocale.get(0)?.language ?: ""
+        currentLocale.get(0)?.language.orEmpty()
     }
     
     var selectedLanguage by remember(currentLanguageCode) { mutableStateOf(currentLanguageCode) }

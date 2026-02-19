@@ -49,6 +49,9 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import kotlinx.coroutines.launch
 
+private const val BYTES_PER_KB = 1024L
+private const val BYTES_PER_MB = 1024L * 1024L
+
 /**
  * Import Notes Settings Screen
  *
@@ -113,223 +116,61 @@ fun ImportSettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ════════════════════════════════════════
-            // Sektion 1: Vom WebDAV-Server importieren
-            // ════════════════════════════════════════
-            SettingsSectionHeader(text = stringResource(R.string.import_section_server))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(text = stringResource(R.string.import_server_info))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsButton(
-                text = stringResource(R.string.settings_import_from_server),
-                onClick = {
+            WebDavImportSection(
+                isServerConfigured = isServerConfigured,
+                isScanning = isScanning,
+                isImporting = isImporting,
+                showScanResults = showScanResults,
+                scanResults = scanResults,
+                selectedCandidates = selectedCandidates,
+                onScanClick = {
                     scope.launch {
                         isScanning = true
                         scanResults = viewModel.scanWebDavForImport()
                         selectedCandidates = scanResults.indices.toSet()
                         showScanResults = scanResults.isNotEmpty()
                         isScanning = false
-
                         if (scanResults.isEmpty()) {
-                            Toast.makeText(
-                                context,
-                                noFilesFoundText,
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, noFilesFoundText, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
-                enabled = !isScanning && !isImporting && isServerConfigured,
-                isLoading = isScanning,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            // Hinweis wenn kein Server konfiguriert
-            if (!isServerConfigured) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.settings_sync_offline_mode),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-
-            // Scan-Ergebnisse
-            if (showScanResults && scanResults.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(R.string.import_dialog_found, scanResults.size),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                            items(scanResults.indices.toList()) { index ->
-                                val candidate = scanResults[index]
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp)
-                                ) {
-                                    Checkbox(
-                                        checked = selectedCandidates.contains(index),
-                                        onCheckedChange = { checked ->
-                                            selectedCandidates = if (checked) {
-                                                selectedCandidates + index
-                                            } else {
-                                                selectedCandidates - index
-                                            }
-                                        }
-                                    )
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = candidate.name,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                        Text(
-                                            text = "${candidate.fileType.name} · ${formatFileSize(candidate.size)}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            SettingsOutlinedButton(
-                                text = stringResource(R.string.import_cancel),
-                                onClick = {
-                                    showScanResults = false
-                                    scanResults = emptyList()
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            SettingsButton(
-                                text = stringResource(R.string.import_button_import, selectedCandidates.size),
-                                onClick = {
-                                    scope.launch {
-                                        isImporting = true
-                                        showScanResults = false
-                                        val selected = selectedCandidates.map { scanResults[it] }
-                                        val summary = viewModel.importCandidates(selected)
-                                        importSummary = summary
-                                        scanResults = emptyList()
-                                        isImporting = false
-                                    }
-                                },
-                                enabled = selectedCandidates.isNotEmpty(),
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                onSelectionChange = { index, checked ->
+                    selectedCandidates = if (checked) selectedCandidates + index else selectedCandidates - index
+                },
+                onCancelScan = {
+                    showScanResults = false
+                    scanResults = emptyList()
+                },
+                onImportSelected = {
+                    scope.launch {
+                        isImporting = true
+                        showScanResults = false
+                        val selected = selectedCandidates.map { scanResults[it] }
+                        importSummary = viewModel.importCandidates(selected)
+                        scanResults = emptyList()
+                        isImporting = false
                     }
                 }
-            }
+            )
 
             SettingsDivider()
 
-            // ════════════════════════════════════════
-            // Sektion 2: Lokale Datei importieren
-            // ════════════════════════════════════════
-            SettingsSectionHeader(text = stringResource(R.string.import_section_local))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(text = stringResource(R.string.import_local_info))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsOutlinedButton(
-                text = stringResource(R.string.settings_import_from_file),
-                onClick = {
+            LocalImportSection(
+                isImporting = isImporting,
+                onPickFiles = {
                     filePickerLauncher.launch(arrayOf(
                         "text/markdown",
                         "text/plain",
                         "application/json",
-                        "application/octet-stream" // Fallback für .md auf manchen Geräten
+                        "application/octet-stream"
                     ))
-                },
-                enabled = !isImporting,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                }
             )
 
-            // ════════════════════════════════════════
-            // Import-Zusammenfassung
-            // ════════════════════════════════════════
             importSummary?.let { summary ->
                 SettingsDivider()
-
-                SettingsSectionHeader(text = stringResource(R.string.import_summary_title))
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (summary.failed > 0)
-                            MaterialTheme.colorScheme.errorContainer
-                        else
-                            MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(
-                                R.string.import_dialog_complete,
-                                summary.imported, summary.skipped, summary.failed
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (summary.failed > 0)
-                                MaterialTheme.colorScheme.onErrorContainer
-                            else
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-
-                        if (summary.failed > 0) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            summary.results
-                                .filterIsInstance<NotesImportWizard.ImportResult.Failed>()
-                                .forEach { failed ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            Icons.Default.Error,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "${failed.sourceName}: ${failed.error}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onErrorContainer
-                                        )
-                                    }
-                                }
-                        }
-                    }
-                }
+                ImportSummarySection(summary = summary)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -337,12 +178,178 @@ fun ImportSettingsScreen(
     }
 }
 
+@Composable
+private fun WebDavImportSection(
+    isServerConfigured: Boolean,
+    isScanning: Boolean,
+    isImporting: Boolean,
+    showScanResults: Boolean,
+    scanResults: List<NotesImportWizard.ImportCandidate>,
+    selectedCandidates: Set<Int>,
+    onScanClick: () -> Unit,
+    onSelectionChange: (Int, Boolean) -> Unit,
+    onCancelScan: () -> Unit,
+    onImportSelected: () -> Unit,
+) {
+    SettingsSectionHeader(text = stringResource(R.string.import_section_server))
+    Spacer(modifier = Modifier.height(8.dp))
+    SettingsInfoCard(text = stringResource(R.string.import_server_info))
+    Spacer(modifier = Modifier.height(8.dp))
+    SettingsButton(
+        text = stringResource(R.string.settings_import_from_server),
+        onClick = onScanClick,
+        enabled = !isScanning && !isImporting && isServerConfigured,
+        isLoading = isScanning,
+        modifier = Modifier.padding(horizontal = 16.dp)
+    )
+    if (!isServerConfigured) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.settings_sync_offline_mode),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+    if (showScanResults && scanResults.isNotEmpty()) {
+        Spacer(modifier = Modifier.height(8.dp))
+        ScanResultsCard(
+            scanResults = scanResults,
+            selectedCandidates = selectedCandidates,
+            onSelectionChange = onSelectionChange,
+            onCancelScan = onCancelScan,
+            onImportSelected = onImportSelected,
+        )
+    }
+}
+
+@Composable
+private fun ScanResultsCard(
+    scanResults: List<NotesImportWizard.ImportCandidate>,
+    selectedCandidates: Set<Int>,
+    onSelectionChange: (Int, Boolean) -> Unit,
+    onCancelScan: () -> Unit,
+    onImportSelected: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.import_dialog_found, scanResults.size),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                items(scanResults.indices.toList()) { index ->
+                    val candidate = scanResults[index]
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                    ) {
+                        Checkbox(
+                            checked = selectedCandidates.contains(index),
+                            onCheckedChange = { checked -> onSelectionChange(index, checked) }
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = candidate.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = "${candidate.fileType.name} · ${formatFileSize(candidate.size)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                SettingsOutlinedButton(
+                    text = stringResource(R.string.import_cancel),
+                    onClick = onCancelScan,
+                    modifier = Modifier.weight(1f)
+                )
+                SettingsButton(
+                    text = stringResource(R.string.import_button_import, selectedCandidates.size),
+                    onClick = onImportSelected,
+                    enabled = selectedCandidates.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocalImportSection(
+    isImporting: Boolean,
+    onPickFiles: () -> Unit,
+) {
+    SettingsSectionHeader(text = stringResource(R.string.import_section_local))
+    Spacer(modifier = Modifier.height(8.dp))
+    SettingsInfoCard(text = stringResource(R.string.import_local_info))
+    Spacer(modifier = Modifier.height(8.dp))
+    SettingsOutlinedButton(
+        text = stringResource(R.string.settings_import_from_file),
+        onClick = onPickFiles,
+        enabled = !isImporting,
+        modifier = Modifier.padding(horizontal = 16.dp)
+    )
+}
+
+@Composable
+private fun ImportSummarySection(summary: NotesImportWizard.ImportSummary) {
+    SettingsSectionHeader(text = stringResource(R.string.import_summary_title))
+    Spacer(modifier = Modifier.height(8.dp))
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (summary.failed > 0)
+                MaterialTheme.colorScheme.errorContainer
+            else
+                MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(
+                    R.string.import_dialog_complete,
+                    summary.imported, summary.skipped, summary.failed
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (summary.failed > 0) MaterialTheme.colorScheme.onErrorContainer
+                else MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            if (summary.failed > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                summary.results.filterIsInstance<NotesImportWizard.ImportResult.Failed>().forEach { failed ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${failed.sourceName}: ${failed.error}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 private fun formatFileSize(bytes: Long): String {
-    val kilobyte = 1024L
-    val megabyte = 1024L * 1024L
     return when {
-        bytes < kilobyte -> "$bytes B"
-        bytes < megabyte -> "${bytes / kilobyte} KB"
-        else -> "${"%.1f".format(bytes.toDouble() / megabyte.toDouble())} MB"
+        bytes < BYTES_PER_KB -> "$bytes B"
+        bytes < BYTES_PER_MB -> "${bytes / BYTES_PER_KB} KB"
+        else -> "${"%.1f".format(bytes.toDouble() / BYTES_PER_MB.toDouble())} MB"
     }
 }

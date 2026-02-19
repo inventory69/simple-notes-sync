@@ -65,7 +65,7 @@ class NotesAdapter(
                     textViewChecklistPreview.visibility = View.VISIBLE
                     
                     // Fortschritt berechnen
-                    val items = note.checklistItems ?: emptyList()
+                    val items = note.checklistItems.orEmpty()
                     val checkedCount = items.count { it.isChecked }
                     val totalCount = items.size
                     

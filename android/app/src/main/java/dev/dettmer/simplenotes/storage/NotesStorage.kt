@@ -45,7 +45,7 @@ class NotesStorage(private val context: Context) {
         return notesDir.listFiles()
             ?.filter { it.extension == "json" }
             ?.mapNotNull { Note.fromJson(it.readText()) }
-            ?: emptyList()
+            .orEmpty()
     }
     
     fun deleteNote(id: String): Boolean {

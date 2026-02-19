@@ -14,6 +14,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,11 +36,14 @@ import kotlinx.coroutines.withContext
  * Manages notes list, sync state, and deletion with undo.
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     companion object {
         private const val TAG = "MainViewModel"
         private const val MIN_AUTO_SYNC_INTERVAL_MS = 60_000L // 1 Minute
         private const val PREF_LAST_AUTO_SYNC_TIME = "last_auto_sync_timestamp"
+        private const val SNACKBAR_UNDO_DELAY_MS = 3500L
     }
     
     private val storage = NotesStorage(application)
@@ -191,7 +195,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     init {
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
         }
     }
@@ -229,7 +233,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Public loadNotes - delegates to async version
      */
     fun loadNotes() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
         }
     }
@@ -329,11 +333,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             ))
             
-            @Suppress("MagicNumber") // Snackbar timing coordination
             // If delete from server, actually delete after a short delay
             // (to allow undo action before server deletion)
             if (deleteFromServer) {
-                kotlinx.coroutines.delay(3500) // Snackbar shows for ~3s
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
                 // Only delete if not restored (check if still in pending)
                 val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
                 if (idsToDelete.isNotEmpty()) {
@@ -429,10 +432,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             ))
             
-            @Suppress("MagicNumber") // Snackbar timing
             // If delete from server, actually delete after snackbar timeout
             if (deleteFromServer) {
-                kotlinx.coroutines.delay(3500) // Snackbar shows for ~3s
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
                 // Only delete if not restored (check if still in pending)
                 if (note.id in _pendingDeletions.value) {
                     deleteNoteFromServer(note.id)
@@ -465,7 +467,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val webdavService = WebDavSyncService(getApplication())
-                val success = withContext(Dispatchers.IO) {
+                val success = withContext(ioDispatcher) {
                     webdavService.deleteNoteFromServer(noteId)
                 }
                 
@@ -476,7 +478,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     SyncStateManager.showError(getString(R.string.snackbar_server_delete_failed))
                 }
             } catch (e: Exception) {
-                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message ?: ""))
+                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message.orEmpty()))
             } finally {
                 // Remove from pending deletions
                 _pendingDeletions.value = _pendingDeletions.value - noteId
@@ -496,7 +498,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             noteIds.forEach { noteId ->
                 try {
-                    val success = withContext(Dispatchers.IO) {
+                    val success = withContext(ioDispatcher) {
                         webdavService.deleteNoteFromServer(noteId)
                     }
                     if (success) successCount++ else failCount++
@@ -604,7 +606,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Check server reachability
-                val isReachable = withContext(Dispatchers.IO) {
+                val isReachable = withContext(ioDispatcher) {
                     syncService.isServerReachable()
                 }
                 
@@ -615,7 +617,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Perform sync
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.syncNotes()
                 }
                 
@@ -705,7 +707,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Check server reachability
-                val isReachable = withContext(Dispatchers.IO) {
+                val isReachable = withContext(ioDispatcher) {
                     syncService.isServerReachable()
                 }
                 
@@ -716,7 +718,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Perform sync
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.syncNotes()
                 }
                 

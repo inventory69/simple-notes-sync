@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -28,6 +29,8 @@ class SyncWorker(
         private const val TAG = "SyncWorker"
         const val ACTION_SYNC_COMPLETED = "dev.dettmer.simplenotes.SYNC_COMPLETED"
     }
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
     
     /**
      * 🔧 v1.7.2: Required for expedited work on Android 9-11
@@ -74,7 +77,7 @@ class SyncWorker(
     }
     
     @Suppress("LongMethod") // Linear sync flow with debug logging — splitting would hurt readability
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "═══════════════════════════════════════")
             Logger.d(TAG, "🔄 SyncWorker.doWork() ENTRY")

@@ -42,6 +42,9 @@ class NotesImportWizard(
 
         /** Schwellenwert für Unix-Timestamp-Heuristik (< 1e12 → Sekunden, sonst Millisekunden) */
         private const val UNIX_SECONDS_THRESHOLD = 1_000_000_000_000L
+
+        /** Millisekunden pro Sekunde (für Unix-Timestamp-Konvertierung) */
+        private const val MILLIS_PER_SECOND = 1000L
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -321,7 +324,6 @@ class NotesImportWizard(
     /**
      * JSON-Parser: Unterstützt Simple-Notes-JSON und generische Formate.
      */
-    @Suppress("ReturnCount")
     internal fun parseJson(content: String, candidate: ImportCandidate): Note? {
         val jsonElement = try {
             com.google.gson.JsonParser.parseString(content)
@@ -329,37 +331,37 @@ class NotesImportWizard(
             Logger.w(TAG, "   ⚠️ ${candidate.name}: Invalid JSON: ${e.message}")
             return null
         }
-
-        if (jsonElement.isJsonObject) {
-            val obj = jsonElement.asJsonObject
-
-            // Simple Notes JSON?
-            if (obj.has("id") && obj.has("title") && obj.has("createdAt")) {
-                try {
-                    val note = Note.fromJson(content)
-                    if (note != null) {
-                        Logger.d(TAG, "   📋 ${candidate.name}: Simple Notes JSON (id=${note.id})")
-                        return note
-                    }
-                } catch (_: Exception) { /* Fallthrough to generic parsing */ }
-            }
-
-            return parseGenericJsonObject(obj, candidate)
+        return when {
+            jsonElement.isJsonObject -> parseJsonObject(jsonElement.asJsonObject, candidate)
+            jsonElement.isJsonArray  -> parseJsonArray(jsonElement.asJsonArray, candidate)
+            else -> null
         }
+    }
 
-        if (jsonElement.isJsonArray) {
-            val array = jsonElement.asJsonArray
-            if (array.size() == 0) return null
-
-            Logger.d(TAG, "   📋 ${candidate.name}: JSON array with ${array.size()} entries")
-
-            val firstElement = array[0]
-            if (firstElement.isJsonObject) {
-                return parseGenericJsonObject(firstElement.asJsonObject, candidate)
-            }
+    private fun parseJsonObject(
+        obj: com.google.gson.JsonObject,
+        candidate: ImportCandidate
+    ): Note? {
+        if (obj.has("id") && obj.has("title") && obj.has("createdAt")) {
+            try {
+                val note = Note.fromJson(com.google.gson.Gson().toJson(obj))
+                if (note != null) {
+                    Logger.d(TAG, "   📋 ${candidate.name}: Simple Notes JSON (id=${note.id})")
+                    return note
+                }
+            } catch (_: Exception) { /* Fallthrough to generic parsing */ }
         }
+        return parseGenericJsonObject(obj, candidate)
+    }
 
-        return null
+    private fun parseJsonArray(
+        array: com.google.gson.JsonArray,
+        candidate: ImportCandidate
+    ): Note? {
+        if (array.size() == 0) return null
+        Logger.d(TAG, "   📋 ${candidate.name}: JSON array with ${array.size()} entries")
+        val firstElement = array[0]
+        return if (firstElement.isJsonObject) parseGenericJsonObject(firstElement.asJsonObject, candidate) else null
     }
 
     /**
@@ -438,9 +440,9 @@ class NotesImportWizard(
                 source.sardine.get(source.url).bufferedReader().use { it.readText() }
             }
             is ImportSource.LocalFile -> {
-                context.contentResolver.openInputStream(source.uri)
-                    ?.bufferedReader()?.use { it.readText() }
-                    ?: error("Cannot open file: ${source.uri}")
+                checkNotNull(context.contentResolver.openInputStream(source.uri)) {
+                    "Cannot open file: ${source.uri}"
+                }.bufferedReader().use { it.readText() }
             }
         }
     }
@@ -476,24 +478,23 @@ class NotesImportWizard(
      * Extrahiert einen Timestamp aus einem JSON-Objekt.
      * Unterstützt: Unix-Millis (Long), Unix-Sekunden (Long), ISO-8601 (String).
      */
-    @Suppress("LoopWithTooManyJumpStatements")
     internal fun extractTimestamp(obj: com.google.gson.JsonObject, vararg keys: String): Long? {
-        for (key in keys) {
-            val element = obj.get(key) ?: continue
-            try {
-                if (element.isJsonPrimitive) {
-                    val prim = element.asJsonPrimitive
-                    if (prim.isNumber) {
-                        val value = prim.asLong
-                        // Heuristik: Wenn < UNIX_SECONDS_THRESHOLD → Sekunden, sonst Millisekunden
-                        return if (value < UNIX_SECONDS_THRESHOLD) value * 1000 else value
-                    }
-                    if (prim.isString) {
-                        return Note.parseISO8601(prim.asString).takeIf { it > 0L }
-                    }
+        return keys.firstNotNullOfOrNull { key -> parseTimestampElement(obj.get(key)) }
+    }
+
+    private fun parseTimestampElement(element: com.google.gson.JsonElement?): Long? {
+        element ?: return null
+        return try {
+            if (!element.isJsonPrimitive) return null
+            val prim = element.asJsonPrimitive
+            when {
+                prim.isNumber -> {
+                    val value = prim.asLong
+                    if (value < UNIX_SECONDS_THRESHOLD) value * MILLIS_PER_SECOND else value
                 }
-            } catch (_: Exception) { continue }
-        }
-        return null
+                prim.isString -> Note.parseISO8601(prim.asString).takeIf { it > 0L }
+                else -> null
+            }
+        } catch (_: Exception) { null }
     }
 }

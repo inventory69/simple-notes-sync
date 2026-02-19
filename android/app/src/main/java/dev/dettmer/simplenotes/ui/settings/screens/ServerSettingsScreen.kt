@@ -293,8 +293,8 @@ fun ServerSettingsScreen(
                         },
                         color = when (serverStatus) {
                             is SettingsViewModel.ServerStatus.OfflineMode -> MaterialTheme.colorScheme.tertiary
-                            is SettingsViewModel.ServerStatus.Reachable -> Color(0xFF4CAF50)
-                            is SettingsViewModel.ServerStatus.Unreachable -> Color(0xFFF44336)
+                            is SettingsViewModel.ServerStatus.Reachable -> ServerReachableColor
+                            is SettingsViewModel.ServerStatus.Unreachable -> ServerUnreachableColor
                             is SettingsViewModel.ServerStatus.NotConfigured -> MaterialTheme.colorScheme.tertiary
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }

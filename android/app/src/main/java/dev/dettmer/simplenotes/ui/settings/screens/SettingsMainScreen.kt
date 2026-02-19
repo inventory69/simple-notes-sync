@@ -137,9 +137,9 @@ fun SettingsMainScreen(
                         serverStatus is SettingsViewModel.ServerStatus.OfflineMode -> 
                             MaterialTheme.colorScheme.tertiary
                         serverStatus is SettingsViewModel.ServerStatus.Reachable -> 
-                            Color(0xFF4CAF50)
+                            ServerReachableColor
                         serverStatus is SettingsViewModel.ServerStatus.Unreachable -> 
-                            Color(0xFFF44336)
+                            ServerUnreachableColor
                         serverStatus is SettingsViewModel.ServerStatus.NotConfigured -> 
                             MaterialTheme.colorScheme.tertiary
                         else -> Color.Gray
