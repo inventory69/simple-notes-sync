@@ -8,6 +8,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.0] - 2026-02-19
+
+### 🔄 Sync Quality, Performance & Import
+
+Focused release adding note import, significantly faster parallel uploads, and fixing sync correctness issues — server switch data loss, parallel MD export race condition, deletion detection, and E-Tag caching.
+
+### 🐛 Bug Fixes
+
+**First Sync Fails if /notes/ Folder Doesn't Exist on Server** *(e012d17)*
+- First sync no longer fails silently when the `/notes/` directory hasn't been created on the server yet
+- Root cause: `checkServerForChanges()` returned `false` (no changes) instead of `true` (proceed) when `lastSyncTime > 0` and folder was missing
+- Fix: returns `true` to allow initial upload — server will create the folder on first PUT
+
+**Server Switch Causes False "Deleted on Server" Status** *(Plan 01)*
+- Switching to a new server no longer causes local notes to be falsely marked as deleted
+- Root cause: E-Tag and content hash caches from the old server were not cleared, causing upload-skip to fire incorrectly — notes appeared SYNCED without being uploaded to the new server
+- Fix: `clearServerCaches()` clears all E-Tag, content hash, last sync timestamp, and deletion tracker entries on server change
+- `resetAllSyncStatusToPending()` now also resets DELETED_ON_SERVER status to PENDING
+
+**Server Deletion Detection Guard Too Aggressive** *(Plan 03, Bug A)*
+- Users with 2–9 notes who deleted all from the Nextcloud web UI never got DELETED_ON_SERVER status
+- Guard threshold raised from >1 to ≥10 to allow legitimate mass-deletion for small portfolios
+
+**Parallel Markdown Export Race Condition** *(Plan 03, Bug B)*
+- Two notes with identical titles could overwrite each other's Markdown file during parallel upload
+- Root cause: concurrent `exists()` → `put()` sequence without synchronization
+- Fix: Markdown export serialized via Mutex (JSON uploads remain parallel)
+
+**E-Tag Not Cached for "Local Newer" Download Skip** *(Plan 03, Bug C)*
+- When local note was newer than server version, the server E-Tag was not cached
+- Caused unnecessary re-downloads on every subsequent sync
+- Fix: E-Tag now saved in the else-branch of download result processing
+
+### ✨ Improvements
+
+**Notes Import Wizard** *(e012d17)*
+- New import screen in Settings — import notes from WebDAV server or local storage
+- Supported formats: `.md` (with/without YAML frontmatter), `.json` (Simple Notes format or generic), `.txt` (plain text)
+- WebDAV scan: recursive subfolder scan (depth 1), respects existing DeletionTracker entries
+- Imported notes from YAML frontmatter or Simple Notes JSON are imported as SYNCED; others as PENDING
+- Accessible via Settings → Import
+
+**Parallel Uploads** *(187d338)*
+- Notes are uploaded in parallel instead of sequentially — ~2× faster for multi-note changes
+- Upload time for 4 notes reduced from ~11.5 s to ~6 s (measured on device)
+- Second sync with unchanged notes: upload phase ~0 ms (all skipped via content hash)
+- Bounded concurrency via Semaphore; file I/O writes serialized via Mutex
+- New: `/notes-md/` existence check cached per sync run (saves ~480 ms × N exists() calls)
+
+**Unified Parallel Connections Setting** *(Plan 02)*
+- Parallel downloads (1/3/5/7/10) and uploads (hidden, max 6) merged into single "Parallel Connections" setting
+- New options: 1, 3, 5 (reduced from 5 options — 7 and 10 removed since uploads cap at 6)
+- Users with 7 or 10 selected are automatically migrated to 5
+- Uploads capped at `min(setting, 6)` at runtime
+
+### 🛠️ Internal
+
+- Detekt magic number compliance: extraction of `ALL_DELETED_GUARD_THRESHOLD` constant
+- ProGuard/R8 release build verification (no rule changes needed)
+
+---
+
 ## [1.8.2] - 2026-02-16
 
 ### 🔧 Stability, Editor & Widget Improvements
