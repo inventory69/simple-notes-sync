@@ -16,7 +16,24 @@ Wir freuen uns über neue Übersetzungen!
 
 ---
 
-## 🚀 Schnellstart
+## 🌐 Über Weblate übersetzen (Empfohlen)
+
+Der einfachste Weg, Übersetzungen beizutragen, ist über **Weblate** — kein Programmieren nötig:
+
+👉 **[Auf Weblate übersetzen](https://hosted.weblate.org/projects/simple-notes-sync/)**
+
+1. Kostenloses Weblate-Konto erstellen
+2. Zum Simple Notes Sync Projekt navigieren
+3. Deine Sprache auswählen (oder eine neue anfordern)
+4. Direkt im Browser übersetzen
+
+Weblate erstellt automatisch Pull Requests mit deinen Übersetzungen.
+
+---
+
+## 🚀 Manuelle Übersetzung (Alternative)
+
+Wenn du lieber direkt mit den Quelldateien arbeitest:
 
 ### 1. Repository forken
 
@@ -42,18 +59,20 @@ cp values/strings.xml values-fr/strings.xml
 
 ```xml
 <!-- Original (Englisch) -->
-<string name="app_name">Simple Notes</string>
+<string name="settings">Settings</string>
 <string name="notes_title">Notes</string>
 
 <!-- Übersetzt (Französisch) -->
-<string name="app_name">Notes Simples</string>
+<string name="settings">Paramètres</string>
 <string name="notes_title">Notes</string>
 ```
 
 **Wichtig:**
 - Übersetze nur den Text zwischen `>` und `</string>`
 - Ändere NICHT die `name="..."` Attribute
+- Übersetze NICHT `app_name` — behalte es als "Simple Notes"
 - Behalte `%s`, `%d`, `%1$s` etc. als Platzhalter
+- Behalte Emoji-Zeichen (📝, ✅, etc.) unverändert
 
 ### 4. locales_config.xml aktualisieren
 
@@ -93,24 +112,26 @@ android/app/src/main/res/
 
 ## 📝 String-Kategorien
 
-Die `strings.xml` enthält etwa 400+ Strings, aufgeteilt in:
+Die `strings.xml` enthält etwa 440+ Strings (inklusive 5 Plurale), aufgeteilt in:
 
 | Kategorie | Beschreibung | Anzahl |
 |-----------|--------------|--------|
-| UI Texte | Buttons, Labels, Titel | ~100 |
-| Settings | Alle 7 Einstellungs-Screens | ~150 |
+| UI Texte | Buttons, Labels, Titel | ~120 |
+| Settings | Alle Einstellungs-Screens | ~150 |
 | Dialoge | Bestätigungen, Fehler | ~80 |
 | Sync | Synchronisations-Meldungen | ~50 |
-| Sonstige | Tooltips, Accessibility | ~30 |
+| Sonstige | Tooltips, Accessibility, Widgets | ~40 |
 
 ---
 
 ## ✅ Qualitätscheckliste
 
-Vor dem Pull Request:
+Vor dem Pull Request (nicht nötig für Weblate-Beiträge):
 
 - [ ] Alle Strings übersetzt (keine englischen Reste)
+- [ ] `app_name` als "Simple Notes" beibehalten
 - [ ] Platzhalter (`%s`, `%d`) beibehalten
+- [ ] Emoji-Zeichen unverändert
 - [ ] Keine XML-Syntaxfehler
 - [ ] App startet ohne Crashes
 - [ ] Text passt in UI-Elemente (nicht zu lang)
