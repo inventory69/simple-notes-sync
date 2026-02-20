@@ -4,7 +4,6 @@
     <!-- APP IDENTITY                  -->
     <!-- ============================= -->
     <string name="app_name">Simple Notes</string>
-    
     <!-- ============================= -->
     <!-- MAIN SCREEN                   -->
     <!-- ============================= -->
@@ -19,14 +18,12 @@
     <string name="action_select_all">Alle auswählen</string>
     <string name="action_delete_selected">Ausgewählte löschen</string>
     <string name="selection_count">%d ausgewählt</string>
-    
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
     <string name="empty_state_emoji">📝</string>
     <string name="empty_state_title">Noch keine Notizen</string>
     <string name="empty_state_message">Tippe + um eine neue Notiz zu erstellen</string>
-    
     <!-- ============================= -->
     <!-- FAB MENU                      -->
     <!-- ============================= -->
@@ -35,7 +32,6 @@
     <string name="fab_checklist">Checkliste</string>
     <string name="create_text_note">Notiz</string>
     <string name="create_checklist">Liste</string>
-    
     <!-- ============================= -->
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
@@ -45,7 +41,6 @@
     <string name="untitled">Ohne Titel</string>
     <string name="checklist_progress">%1$d/%2$d erledigt</string>
     <string name="empty_checklist">Keine Einträge</string>
-    
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
@@ -57,14 +52,12 @@
     <string name="sync_status_completed">Synchronisierung abgeschlossen</string>
     <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
     <string name="sync_already_running">Synchronisierung läuft bereits</string>
-    
     <!-- 🆕 v1.8.0: SyncStatus enum values -->
     <string name="sync_status_synced">Mit Server synchronisiert</string>
     <string name="sync_status_pending">Warte auf Synchronisierung</string>
     <string name="sync_status_conflict">Synchronisierungskonflikt erkannt</string>
     <string name="sync_status_local_only">Noch nicht synchronisiert</string>
     <string name="sync_status_deleted_on_server">Auf Server gelöscht</string>
-    
     <!-- 🆕 v1.8.0: Sync-Status Legende Dialog -->
     <string name="sync_legend_button">Sync-Status Hilfe</string>
     <string name="sync_legend_title">Sync-Status Icons</string>
@@ -79,10 +72,8 @@
     <string name="sync_legend_local_only_desc">Diese Notiz wurde noch nie mit dem Server synchronisiert.</string>
     <string name="sync_legend_deleted_label">Auf Server gelöscht</string>
     <string name="sync_legend_deleted_desc">Diese Notiz wurde auf einem anderen Gerät oder direkt auf dem Server gelöscht. Sie existiert noch lokal.</string>
-    
     <!-- 🆕 v1.8.0 (IMPL_022): Sync-Banner Löschungsanzahl -->
     <string name="sync_deleted_on_server_count">%d auf Server gelöscht</string>
-    
     <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
     <string name="sync_phase_preparing">Synchronisiere…</string>
     <string name="sync_phase_checking">Prüfe Server…</string>
@@ -92,7 +83,6 @@
     <string name="sync_phase_saving">Speichern…</string>
     <string name="sync_phase_completed">Sync abgeschlossen</string>
     <string name="sync_phase_error">Sync fehlgeschlagen</string>
-    
     <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Notizliste -->
     <string name="sort_notes">Notizen sortieren</string>
     <string name="sort_ascending">Aufsteigend</string>
@@ -102,7 +92,6 @@
     <string name="sort_by_name">Name</string>
     <string name="sort_by_type">Typ</string>
     <string name="close">Schließen</string>
-    
     <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Checkliste -->
     <string name="sort_checklist">Checkliste sortieren</string>
     <string name="sort_checklist_manual">Manuell</string>
@@ -111,7 +100,6 @@
     <string name="sort_checklist_unchecked_first">Unerledigte zuerst</string>
     <string name="sort_checklist_checked_first">Erledigte zuerst</string>
     <string name="apply">Anwenden</string>
-    
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
@@ -131,7 +119,6 @@
     <string name="legacy_delete_from_server">Vom Server löschen</string>
     <string name="legacy_delete_with_server">\"%s\" wird lokal und vom Server gelöscht</string>
     <string name="legacy_delete_local_only">\"%s\" lokal gelöscht (Server bleibt)</string>
-    
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
@@ -150,7 +137,6 @@
     <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
     <string name="snackbar_synced_count">✅ Gesynct: %d Notizen</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
-    
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
@@ -161,7 +147,6 @@
     <string name="sync_error_server">Server-Fehler</string>
     <string name="sync_error_http">HTTP-Fehler: %d</string>
     <string name="sync_error_unknown">Unbekannter Fehler</string>
-    
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
@@ -171,7 +156,6 @@
     <string name="error_server_not_configured">WebDAV-Server nicht vollständig konfiguriert</string>
     <string name="error_sardine_client_failed">Sardine Client konnte nicht erstellt werden</string>
     <string name="error_server_url_not_configured">Server-URL nicht konfiguriert</string>
-    
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
     <!-- ============================= -->
@@ -191,7 +175,6 @@
     <string name="note_is_empty">Notiz ist leer</string>
     <string name="note_saved">Notiz gespeichert</string>
     <string name="note_deleted">Notiz gelöscht</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->
     <!-- ============================= -->
@@ -236,7 +219,6 @@
     <string name="settings_debug_file_logging_desc">Sync-Logs in Datei speichern</string>
     <string name="settings_debug_export_logs">📤 Logs exportieren &amp; teilen</string>
     <string name="settings_debug_delete_logs">🗑️ Logs löschen</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
     <!-- ============================= -->
@@ -265,7 +247,6 @@
     <string name="server_offline_mode_subtitle">Alle Netzwerkfunktionen deaktivieren</string>
     <string name="test_connection">Verbindung testen</string>
     <string name="sync_now">Jetzt synchronisieren</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
@@ -284,47 +265,35 @@
     <string name="sync_interval_60min_subtitle">Maximale Akkulaufzeit • ~0.2%% Akku/Tag (~6 mAh geschätzt)</string>
     <!-- Legacy -->
     <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%%/Tag)</string>
-    
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
     <string name="sync_section_network">📶 Netzwerk-Einschränkung</string>
     <string name="sync_section_instant">📲 Sofort-Sync</string>
     <string name="sync_section_background">📡 Hintergrund-Sync</string>
     <string name="sync_section_advanced">⚙️ Erweitert</string>
-    
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">Sync-Auslöser</string>
     <string name="sync_section_network_performance">Netzwerk &amp; Performance</string>
-    
     <string name="sync_wifi_only_hint">💡 Der WiFi-Connect Trigger ist davon nicht betroffen \u2013 er synchronisiert immer wenn WiFi verbunden wird.</string>
     <string name="sync_wifi_only_error">Sync funktioniert nur wenn WLAN verbunden ist</string>
-    
     <string name="sync_trigger_on_save_title">Nach dem Speichern</string>
     <string name="sync_trigger_on_save_subtitle">Sync sofort nach jeder Änderung</string>
-    
     <string name="sync_trigger_on_resume_title">Beim App-Start</string>
     <string name="sync_trigger_on_resume_subtitle">Sync wenn die App geöffnet wird</string>
-    
     <string name="sync_trigger_wifi_connect_title">Bei WiFi-Verbindung</string>
     <string name="sync_trigger_wifi_connect_subtitle">Sync wenn WiFi verbunden wird</string>
-    
     <string name="sync_trigger_periodic_title">Automatisch alle X Minuten</string>
     <string name="sync_trigger_periodic_subtitle">Regelmäßiger Hintergrund-Sync</string>
-    
     <string name="sync_trigger_boot_title">Nach Gerät-Neustart</string>
     <string name="sync_trigger_boot_subtitle">Startet Hintergrund-Sync nach Reboot</string>
-    
     <!-- 🆕 v1.7.0: WiFi-Only Sync -->
     <string name="sync_wifi_only_title">Sync nur im WLAN</string>
     <string name="sync_wifi_only_subtitle">Sync wird nur durchgeführt wenn WLAN verbunden ist. Spart mobiles Datenvolumen und verhindert lange Wartezeit.</string>
     <string name="sync_wifi_only_blocked">Sync nur im WLAN möglich</string>
-    
     <string name="sync_manual_hint">Manueller Sync (Toolbar/Pull-to-Refresh) ist ebenfalls verfügbar.</string>
     <string name="sync_manual_hint_disabled">Sync ist im Offline-Modus nicht verfügbar.</string>
-    
     <string name="sync_offline_mode_title">Offline-Modus</string>
     <string name="sync_offline_mode_message">Du nutzt die App im Offline-Modus. Richte einen Server ein, um Notizen zu synchronisieren.</string>
     <string name="sync_offline_mode_button">Server einrichten</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
@@ -337,7 +306,6 @@
     <string name="markdown_auto_sync_subtitle">Synchronisiert Notizen automatisch als .md-Dateien (Upload + Download bei jedem Sync)</string>
     <string name="markdown_manual_sync_info">Manueller Sync exportiert alle Notizen als .md-Dateien und importiert .md-Dateien vom Server. Nützlich für einmalige Synchronisation.</string>
     <string name="markdown_manual_sync_button">📝 Manueller Markdown-Sync</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
@@ -347,7 +315,6 @@
     <string name="backup_local_section">Lokales Backup</string>
     <string name="backup_create">💾 Backup erstellen</string>
     <string name="backup_restore_file">📂 Aus Datei wiederherstellen</string>
-    
     <!-- 🔐 v1.7.0: Verschlüsselung -->
     <string name="backup_encryption_title">Backup verschlüsseln</string>
     <string name="backup_encryption_subtitle">Schütze deine Backup-Datei mit Passwort</string>
@@ -360,7 +327,6 @@
     <string name="backup_decryption_required">🔒 Verschlüsseltes Backup</string>
     <string name="backup_decryption_password">Passwort zum Entschlüsseln eingeben</string>
     <string name="backup_decryption_error">❌ Entschlüsselung fehlgeschlagen. Falsches Passwort?</string>
-    
     <string name="backup_server_section">Server-Backup</string>
     <string name="backup_restore_server">☁️ Vom Server wiederherstellen</string>
     <string name="backup_restore_dialog_title">⚠️ Backup wiederherstellen?</string>
@@ -388,7 +354,6 @@
     <string name="restore_progress">Stelle Notizen wieder her…</string>
     <string name="restore_success">✓ %d Notizen wiederhergestellt</string>
     <string name="restore_error">Fehler: %s</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - DEBUG              -->
     <!-- ============================= -->
@@ -409,7 +374,6 @@
     <string name="debug_changelog_reset">Changelog wird beim nächsten Start angezeigt</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - LANGUAGE           -->
     <!-- ============================= -->
@@ -419,7 +383,6 @@
     <string name="language_german">Deutsch</string>
     <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
     <string name="language_changed_restart">Sprache geändert. Neustart…</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -428,7 +391,6 @@
     <string name="display_mode_list">📋 Listen-Ansicht</string>
     <string name="display_mode_grid">🎨 Raster-Ansicht</string>
     <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
-    
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
@@ -442,33 +404,26 @@
     <string name="about_developer_subtitle">GitHub Profil: @inventory69</string>
     <string name="about_license_title">Lizenz</string>
     <string name="about_license_subtitle">MIT License - Open Source</string>
-    
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Vollständige Versionshistorie</string>
-    
     <!-- v1.8.0: Post-Update Changelog Dialog -->
     <string name="update_changelog_title">Was ist neu</string>
     <string name="update_changelog_dismiss">Alles klar!</string>
-    
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Backup wird erstellt…</string>
     <string name="backup_progress_restoring">Backup wird wiederhergestellt…</string>
     <string name="backup_progress_restoring_server">Notizen werden vom Server heruntergeladen…</string>
-    
     <!-- v1.8.0: Backup Progress - Completion -->
     <string name="backup_progress_complete">Backup erstellt!</string>
     <string name="restore_progress_complete">Wiederherstellung abgeschlossen!</string>
     <string name="restore_server_progress_complete">Download abgeschlossen!</string>
-    
     <!-- v1.8.0: Backup Progress - Error -->
     <string name="backup_progress_failed">Backup fehlgeschlagen</string>
     <string name="restore_progress_failed">Wiederherstellung fehlgeschlagen</string>
     <string name="restore_server_progress_failed">Download fehlgeschlagen</string>
-    
     <string name="about_privacy_title">🔒 Datenschutz</string>
     <string name="about_privacy_text">Diese App sammelt keine Daten. Alle Notizen werden nur lokal auf deinem Gerät und auf deinem eigenen WebDAV-Server gespeichert. Keine Telemetrie, keine Werbung.</string>
-    
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
@@ -525,7 +480,6 @@
     <string name="restore_merge_result">%1$d neue Notizen importiert, %2$d übersprungen</string>
     <string name="restore_overwrite_result">%1$d neu, %2$d überschrieben</string>
     <string name="restore_replace_result">Alle Notizen ersetzt: %d importiert</string>
-    
     <!-- ============================= -->
     <!-- RELATIVE TIME                 -->
     <!-- ============================= -->
@@ -533,7 +487,6 @@
     <string name="time_minutes_ago">Vor %d Min</string>
     <string name="time_hours_ago">Vor %d Std</string>
     <string name="time_days_ago">Vor %d Tagen</string>
-    
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->
     <!-- ============================= -->
@@ -554,7 +507,6 @@
     <string name="notification_sync_in_progress_title">Synchronisierung läuft</string>
     <string name="notification_sync_in_progress_message">Notizen werden synchronisiert…</string>
     <string name="notification_sync_error_title">Sync Fehler</string>
-    
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
@@ -562,28 +514,23 @@
         <item quantity="one">%d Notiz</item>
         <item quantity="other">%d Notizen</item>
     </plurals>
-    
     <plurals name="notes_deleted_local">
         <item quantity="one">%d Notiz lokal gelöscht</item>
         <item quantity="other">%d Notizen lokal gelöscht</item>
     </plurals>
-    
     <plurals name="notes_deleted_server">
         <item quantity="one">%d Notiz wird vom Server gelöscht</item>
         <item quantity="other">%d Notizen werden vom Server gelöscht</item>
     </plurals>
-    
     <plurals name="notes_synced">
         <item quantity="one">%d Notiz synchronisiert</item>
         <item quantity="other">%d Notizen synchronisiert</item>
     </plurals>
-
     <!-- v1.8.0 (IMPL_017): Checklist separator -->
     <plurals name="checked_items_count">
         <item quantity="one">%d erledigt</item>
         <item quantity="other">%d erledigt</item>
     </plurals>
-
     <!-- ============================= -->
     <!-- PARALLEL DOWNLOADS v1.8.0     -->
     <!-- ============================= -->
@@ -594,7 +541,6 @@
     <string name="sync_parallel_downloads_desc_5">Empfohlen (5x schneller)</string>
     <string name="sync_parallel_downloads_desc_7">Schnell (7x schneller)</string>
     <string name="sync_parallel_downloads_desc_10">Maximum (10x schneller, kann Server belasten)</string>
-
     <!-- ============================= -->
     <!-- WIDGETS v1.8.0                -->
     <!-- ============================= -->
