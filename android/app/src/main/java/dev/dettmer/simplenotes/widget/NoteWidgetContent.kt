@@ -100,6 +100,7 @@ private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
 private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L   // Helles Material-Surface
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL // Dunkles Material-Surface
 
+
 /**
  * 🆕 v1.9.0 (F01): Löst die Monet/Dynamic-Color widgetBackground auf und wendet
  * die konfigurierte Opacity an. Dadurch bleibt der Material-You-Tint bei jeder
@@ -187,6 +188,7 @@ fun NoteWidgetContent(
             )
 
             // Optionsleiste (ein-/ausblendbar)
+            // 🆕 v1.9.0 (F02): bgOpacity weitergeben für farblich passende Leiste
             if (showOptions) {
                 OptionsBar(
                     isLocked = isLocked,
@@ -312,6 +314,7 @@ fun NoteWidgetContent(
 
 /**
  * Optionsleiste — Lock/Unlock + Refresh + Open in App
+ * 🆕 v1.9.0 (F02): Kein eigener Hintergrund, nahtlos in Widget-Surface integriert.
  */
 @Composable
 private fun OptionsBar(
@@ -322,10 +325,10 @@ private fun OptionsBar(
     val context = LocalContext.current
 
     Row(
+        // 🆕 v1.9.0 (F02): Kein eigener Hintergrund — nahtlos im Widget integriert
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .background(GlanceTheme.colors.secondaryContainer),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
