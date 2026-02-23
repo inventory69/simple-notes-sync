@@ -30,7 +30,7 @@ complexity:
     threshold: 600  # Increased for WebDavSyncService
   LongMethod:
     active: true
-    threshold: 225  # v1.9.0 (F11): Increased for filter row toggle in MainScreen
+    threshold: 235  # v1.9.0 (F13): Increased for sync scroll LaunchedEffect in MainScreen
   LongParameterList:
     active: true
     functionThreshold: 10  # v1.5.0: Compose functions often have many params

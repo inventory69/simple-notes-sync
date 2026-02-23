@@ -291,7 +291,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun scrollToTop() {
         _scrollToTop.value = true
     }
-    
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F13): Scroll-to-top after manual sync completion
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _syncCompletedScrollToTop = MutableStateFlow(false)
+    val syncCompletedScrollToTop: StateFlow<Boolean> = _syncCompletedScrollToTop.asStateFlow()
+
+    /**
+     * 🆕 v1.9.0 (F13): Reset the sync-scroll flag after the UI has scrolled.
+     */
+    fun resetSyncCompletedScrollToTop() {
+        _syncCompletedScrollToTop.value = false
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Multi-Select Actions (v1.5.0)
     // ═══════════════════════════════════════════════════════════════════════
@@ -642,6 +656,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
                     SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
                     loadNotes()
+                    // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
+                    _syncCompletedScrollToTop.value = true
                     return@launch
                 }
                 
@@ -677,6 +693,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     SyncStateManager.markCompleted(bannerMessage)
                     loadNotes()
+                    // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
+                    if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
+                        _syncCompletedScrollToTop.value = true
+                    }
                 } else {
                     SyncStateManager.markError(result.errorMessage)
                 }
