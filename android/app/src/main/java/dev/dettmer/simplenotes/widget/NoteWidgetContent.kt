@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.widget
 
 import android.content.ComponentName
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
@@ -93,6 +94,44 @@ private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
     }
 }
 
+// ── Background Color Helpers ──
+
+// 🆕 v1.9.0 (F01): Fallback-Farben für Geräte ohne Dynamic Color (vor Android 12)
+private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L   // Helles Material-Surface
+private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL // Dunkles Material-Surface
+
+/**
+ * 🆕 v1.9.0 (F01): Löst die Monet/Dynamic-Color widgetBackground auf und wendet
+ * die konfigurierte Opacity an. Dadurch bleibt der Material-You-Tint bei jeder
+ * Transparenzstufe erhalten — anstatt auf ein hartkodiertes Neutral zurückzufallen.
+ *
+ * Strategie: Da GlanceTheme.colors.widgetBackground keinen raw Color-Wert exponiert,
+ * lesen wir die System-Dynamic-Color-Tokens direkt via Context.
+ */
+@Composable
+private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
+    if (bgOpacity >= 1.0f) {
+        // Volle Deckkraft → Standard-GlanceTheme-Hintergrund (keine Berechnung nötig)
+        return GlanceModifier.background(GlanceTheme.colors.widgetBackground)
+    }
+
+    val context = LocalContext.current
+    val dayColor: Color
+    val nightColor: Color
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12+: echte Dynamic Color Tokens (gleiche die Glance intern nutzt)
+        dayColor = Color(context.getColor(android.R.color.system_accent1_100)).copy(alpha = bgOpacity)
+        nightColor = Color(context.getColor(android.R.color.system_neutral1_800)).copy(alpha = bgOpacity)
+    } else {
+        // Vor Android 12: Fallback auf Material-Standardwerte mit Alpha
+        dayColor = Color(BG_FALLBACK_DAY_COLOR.toInt()).copy(alpha = bgOpacity)
+        nightColor = Color(BG_FALLBACK_NIGHT_COLOR.toInt()).copy(alpha = bgOpacity)
+    }
+
+    return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
+}
+
 @Composable
 fun NoteWidgetContent(
     note: Note?,
@@ -110,17 +149,8 @@ fun NoteWidgetContent(
         return
     }
 
-    // Background mit Opacity
-    val bgModifier = if (bgOpacity < 1.0f) {
-        GlanceModifier.background(
-            ColorProvider(
-                day = Color.White.copy(alpha = bgOpacity),
-                night = Color(0xFF1C1B1F).copy(alpha = bgOpacity)
-            )
-        )
-    } else {
-        GlanceModifier.background(GlanceTheme.colors.widgetBackground)
-    }
+    // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
+    val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
 
     Box(
         modifier = GlanceModifier
@@ -602,16 +632,8 @@ private fun ChecklistFullView(
 
 @Composable
 private fun EmptyWidgetContent(bgOpacity: Float) {
-    val bgModifier = if (bgOpacity < 1.0f) {
-        GlanceModifier.background(
-            ColorProvider(
-                day = Color.White.copy(alpha = bgOpacity),
-                night = Color(0xFF1C1B1F).copy(alpha = bgOpacity)
-            )
-        )
-    } else {
-        GlanceModifier.background(GlanceTheme.colors.widgetBackground)
-    }
+    // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
+    val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
 
     Box(
         modifier = GlanceModifier
