@@ -158,18 +158,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val noteFilter: StateFlow<NoteFilter> = _noteFilter.asStateFlow()
 
+    // 🆕 v1.9.0 (F10): Search Query State
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     /**
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
      * 🆕 v1.9.0 (F06): + Filter nach NoteType
+     * 🆕 v1.9.0 (F10): + Volltextsuche über Titel und Inhalt
      */
     val sortedNotes: StateFlow<List<Note>> = combine(
         _notes,
         _sortOption,
         _sortDirection,
-        _noteFilter
-    ) { notes, option, direction, filter ->
+        _noteFilter,
+        _searchQuery
+    ) { notes, option, direction, filter, query ->
         val filtered = filterNotes(notes, filter)
-        sortNotes(filtered, option, direction)
+        val searched = searchNotes(filtered, query)
+        sortNotes(searched, option, direction)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -807,6 +814,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * 🆕 v1.9.0 (F10): Filters notes by search query across title and content.
+     * Empty query returns all notes unchanged.
+     * Checklist notes are searched by joining all item texts.
+     */
+    private fun searchNotes(notes: List<Note>, query: String): List<Note> {
+        if (query.isBlank()) return notes
+        val lowerQuery = query.trim().lowercase()
+        return notes.filter { note ->
+            note.title.lowercase().contains(lowerQuery) ||
+                note.content.lowercase().contains(lowerQuery) ||
+                note.checklistItems?.any { item ->
+                    item.text.lowercase().contains(lowerQuery)
+                } == true
+        }
+    }
+
+    /**
      * 🔀 v1.8.0: Sortiert Notizen nach gewählter Option und Richtung.
      */
     private fun sortNotes(
@@ -853,6 +877,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _noteFilter.value = filter
         prefs.edit().putString(Constants.KEY_NOTE_FILTER, filter.prefsValue).apply()
         Logger.d(TAG, "🔍 Note filter changed to: ${filter.prefsValue}")
+    }
+
+    /**
+     * 🆕 v1.9.0 (F10): Setzt den Suchbegriff (session-only, nicht persistent).
+     */
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+        Logger.d(TAG, "🔎 Search query changed to: \"$query\"")
     }
 
     /**
