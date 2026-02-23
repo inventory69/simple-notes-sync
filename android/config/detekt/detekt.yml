@@ -30,7 +30,7 @@ complexity:
     threshold: 600  # Increased for WebDavSyncService
   LongMethod:
     active: true
-    threshold: 235  # v1.9.0 (F13): Increased for sync scroll LaunchedEffect in MainScreen
+    threshold: 245  # v1.9.0 (F07): Increased for markdown toolbar + preview in NoteEditorScreen
   LongParameterList:
     active: true
     functionThreshold: 10  # v1.5.0: Compose functions often have many params
