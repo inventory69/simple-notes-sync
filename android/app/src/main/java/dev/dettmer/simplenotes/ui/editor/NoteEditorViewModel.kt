@@ -80,6 +80,11 @@ class NoteEditorViewModel(
     
     private val _events = MutableSharedFlow<NoteEditorEvent>()
     val events: SharedFlow<NoteEditorEvent> = _events.asSharedFlow()
+
+    // 🆕 v1.9.0 (F04): Emits the item-id that was restored to its original position on un-check
+    // ChecklistEditor observes this to scroll to the restored item.
+    private val _scrollToRestoredItemId = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val scrollToRestoredItemId: SharedFlow<String> = _scrollToRestoredItemId.asSharedFlow()
     
     // Internal state
     private var existingNote: Note? = null
@@ -135,14 +140,18 @@ class NoteEditorViewModel(
             _lastChecklistSortOption.value = parseSortOption(sortName)
         }
         
-        val items = note.checklistItems?.sortedBy { it.order }?.map {
+        val rawItems = note.checklistItems?.sortedBy { it.order }.orEmpty()
+        // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0 (Gson default)
+        val isPreF04Note = rawItems.all { it.originalOrder == 0 }
+        val items = rawItems.map {
             ChecklistItemState(
                 id = it.id,
                 text = it.text,
                 isChecked = it.isChecked,
-                order = it.order
+                order = it.order,
+                originalOrder = if (isPreF04Note) it.order else it.originalOrder
             )
-        }.orEmpty()
+        }
         // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
         _checklistItems.value = sortChecklistItems(items)
     }
@@ -215,13 +224,15 @@ class NoteEditorViewModel(
      * Sortiert Checklist-Items basierend auf der aktuellen Sortier-Option.
      * 🆕 v1.8.1 (IMPL_03-FIX): Berücksichtigt jetzt _lastChecklistSortOption
      * anstatt immer unchecked-first zu sortieren.
+     * 🆕 v1.9.0 (F04): Unchecked items werden nach originalOrder sortiert für Position-Restore.
      */
     private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
         val sorted = when (_lastChecklistSortOption.value) {
             ChecklistSortOption.MANUAL,
             ChecklistSortOption.UNCHECKED_FIRST -> {
-                val unchecked = items.filter { !it.isChecked }
-                val checked = items.filter { it.isChecked }
+                // 🆕 v1.9.0 (F04): Sort by originalOrder to restore un-checked item's original position
+                val unchecked = items.filter { !it.isChecked }.sortedBy { it.originalOrder }
+                val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
                 unchecked + checked
             }
             ChecklistSortOption.CHECKED_FIRST ->
@@ -237,21 +248,37 @@ class NoteEditorViewModel(
         }
     }
 
-    fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
+    /**
+     * 🆕 v1.9.0 (F04): Returns the new data-index of the toggled item after sorting,
+     * so the UI can scroll to the restored position on un-check. Returns null if no scroll needed.
+     */
+    fun updateChecklistItemChecked(itemId: String, isChecked: Boolean): Int? {
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
+        var restoredIndex: Int? = null
         _checklistItems.update { items ->
             val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
             }
             // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Auto-Sort nur bei MANUAL und UNCHECKED_FIRST
             val currentSort = _lastChecklistSortOption.value
-            if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
+            val result = if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
                 sortChecklistItems(updatedItems)
             } else {
                 // Bei anderen Sortierungen (alphabetisch, checked first) nicht auto-sortieren
                 updatedItems.mapIndexed { index, item -> item.copy(order = index) }
             }
+            // 🆕 v1.9.0 (F04): Emit scroll target when item is un-checked (position restored)
+            if (!isChecked) {
+                restoredIndex = result.indexOfFirst { it.id == itemId }
+                if (restoredIndex != -1) {
+                    _scrollToRestoredItemId.tryEmit(itemId)
+                } else {
+                    restoredIndex = null
+                }
+            }
+            result
         }
+        return restoredIndex
     }
     
     /**
@@ -365,8 +392,8 @@ class NoteEditorViewModel(
             }
 
             mutableList.add(toIndex, movedItem)
-            // Update order values
-            mutableList.mapIndexed { index, i -> i.copy(order = index) }
+            // 🆕 v1.9.0 (F04): Update originalOrder on manual reorder to cement new position
+            mutableList.mapIndexed { index, i -> i.copy(order = index, originalOrder = index) }
         }
     }
     
@@ -397,8 +424,8 @@ class NoteEditorViewModel(
                     items.sortedByDescending { it.isChecked }
             }
             
-            // Order-Werte neu zuweisen
-            sorted.mapIndexed { index, item -> item.copy(order = index) }
+            // 🆕 v1.9.0 (F04): Explicit sort resets originalOrder baseline to new positions
+            sorted.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
         }
     }
     
@@ -438,7 +465,7 @@ class NoteEditorViewModel(
                 NoteType.CHECKLIST -> {
                     // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
                     hasUnsavedChecklistEdits = false
-                    // Filter empty items
+                    // 🆕 v1.9.0 (F04): Preserve originalOrder for position restore
                     val validItems = _checklistItems.value
                         .filter { it.text.isNotBlank() }
                         .mapIndexed { index, item ->
@@ -446,7 +473,8 @@ class NoteEditorViewModel(
                                 id = item.id,
                                 text = item.text,
                                 isChecked = item.isChecked,
-                                order = index
+                                order = index,
+                                originalOrder = item.originalOrder
                             )
                         }
                     
@@ -580,14 +608,19 @@ class NoteEditorViewModel(
 
         // Nur Checklist-Items aktualisieren
         if (freshNote.noteType == NoteType.CHECKLIST) {
-            val freshItems = freshNote.checklistItems?.sortedBy { it.order }?.map {
+            val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
+            // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
+            val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
+            val freshItems = rawFreshItems.map {
                 ChecklistItemState(
                     id = it.id,
                     text = it.text,
                     isChecked = it.isChecked,
-                    order = it.order
+                    order = it.order,
+                    originalOrder = if (isPreF04Fresh) it.order else it.originalOrder
                 )
-            } ?: return
+            }
+            if (freshItems.isEmpty()) return
 
             _checklistItems.value = sortChecklistItems(freshItems)
             // existingNote aktualisieren damit beim Speichern der richtige
@@ -666,7 +699,8 @@ data class ChecklistItemState(
     val id: String = UUID.randomUUID().toString(),
     val text: String = "",
     val isChecked: Boolean = false,
-    val order: Int = 0
+    val order: Int = 0,
+    val originalOrder: Int = order  // 🆕 v1.9.0 (F04): Position restore on un-check
 ) {
     companion object {
         fun createEmpty(order: Int): ChecklistItemState {
@@ -674,7 +708,8 @@ data class ChecklistItemState(
                 id = UUID.randomUUID().toString(),
                 text = "",
                 isChecked = false,
-                order = order
+                order = order,
+                originalOrder = order
             )
         }
     }
