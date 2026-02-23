@@ -28,7 +28,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Visibility
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.activity.result.PickVisualMediaRequest
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +77,7 @@ import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
+import dev.dettmer.simplenotes.storage.ImageStorage
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
@@ -126,6 +131,20 @@ fun NoteEditorScreen(
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
+
+    // 🆕 v1.9.0 (F08): Image picker + storage
+    val imageStorage = remember { ImageStorage(context) }
+    val altText = stringResource(R.string.editor_image_alt_text)
+    val imagePickerLauncher = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        if (uri != null) {
+            val path = imageStorage.importImage(uri)
+            if (path != null) {
+                textFieldState.edit {
+                    replace(length, length, "\n![${altText}](${path})\n")
+                }
+            }
+        }
+    }
 
     // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
     LaunchedEffect(Unit) {
@@ -217,6 +236,20 @@ fun NoteEditorScreen(
                                     Icons.Outlined.Visibility
                                 },
                                 contentDescription = stringResource(R.string.editor_toggle_preview)
+                            )
+                        }
+                    }
+
+                    // 🆕 v1.9.0 (F08): Insert image (only for TEXT, not in preview)
+                    if (uiState.noteType == NoteType.TEXT && !isPreviewMode) {
+                        IconButton(onClick = {
+                            imagePickerLauncher.launch(
+                                PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                            )
+                        }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Image,
+                                contentDescription = stringResource(R.string.editor_insert_image)
                             )
                         }
                     }
