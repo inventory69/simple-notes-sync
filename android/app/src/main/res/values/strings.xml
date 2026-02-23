@@ -459,6 +459,10 @@
     <string name="filter_text_only">Text</string>
     <string name="filter_checklist_only">Checklists</string>
 
+    <!-- v1.9.0 (F10): Search -->
+    <string name="search_notes_placeholder">Search…</string>
+    <string name="search_clear">Clear search</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->

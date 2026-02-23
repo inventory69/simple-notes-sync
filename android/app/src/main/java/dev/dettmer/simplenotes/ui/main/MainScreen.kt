@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -111,6 +112,9 @@ fun MainScreen(
     val sortDirection by viewModel.sortDirection.collectAsState()
     // 🆕 v1.9.0 (F06): Note filter state
     val noteFilter by viewModel.noteFilter.collectAsState()
+    // 🆕 v1.9.0 (F10): Search query state
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -221,9 +225,12 @@ fun MainScreen(
                     )
 
                     // 🆕 v1.9.0 (F06): Filter Chip Row
+                    // 🆕 v1.9.0 (F10): + Inline search field
                     FilterChipRow(
                         currentFilter = noteFilter,
                         onFilterSelected = { viewModel.setNoteFilter(it) },
+                        searchQuery = searchQuery,
+                        onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -242,6 +249,7 @@ fun MainScreen(
                                 timestampTicker = timestampTicker,
                                 modifier = Modifier.weight(1f),
                                 onNoteClick = { note ->
+                                    focusManager.clearFocus()
                                     if (isSelectionMode) {
                                         viewModel.toggleNoteSelection(note.id)
                                     } else {
@@ -249,6 +257,7 @@ fun MainScreen(
                                     }
                                 },
                                 onNoteLongClick = { note ->
+                                    focusManager.clearFocus()
                                     viewModel.startSelectionMode(note.id)
                                 }
                             )
@@ -261,9 +270,12 @@ fun MainScreen(
                                 timestampTicker = timestampTicker,
                                 listState = listState,
                                 modifier = Modifier.weight(1f),
-                                onNoteClick = { note -> onOpenNote(note.id) },
-                                onNoteLongPress = { note -> 
-                                    // Long-press starts selection mode
+                                onNoteClick = { note ->
+                                    focusManager.clearFocus()
+                                    onOpenNote(note.id)
+                                },
+                                onNoteLongPress = { note ->
+                                    focusManager.clearFocus()
                                     viewModel.startSelectionMode(note.id)
                                 },
                                 onNoteSelectionToggle = { note ->
