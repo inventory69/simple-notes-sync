@@ -310,10 +310,13 @@ class NoteEditorViewModel(
 
                 val newList = items.toMutableList()
                 newList.add(effectiveIndex, newItem)
-                // Update order values
-                newList.mapIndexed { i, item -> item.copy(order = i) }
+                // 🐛 v1.9.0 (F12): Set originalOrder = index for ALL items after insert.
+                // Prevents newly added items from jumping to position 0 after save/reopen.
+                newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             } else {
-                items + newItem.copy(order = items.size)
+                // 🐛 v1.9.0 (F12): Also cement originalOrder in the fallback branch
+                val appended = items + newItem.copy(order = items.size, originalOrder = items.size)
+                appended.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             }
         }
         return newItem.id
@@ -335,7 +338,9 @@ class NoteEditorViewModel(
             val insertIndex = calculateInsertIndexForNewItem(items)
             val newList = items.toMutableList()
             newList.add(insertIndex, newItem)
-            newList.mapIndexed { i, item -> item.copy(order = i) }
+            // 🐛 v1.9.0 (F12): Set originalOrder = index for ALL items after insert.
+            // Prevents newly added items from jumping to position 0 after save/reopen.
+            newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
         }
         return newItem.id
     }
@@ -368,8 +373,8 @@ class NoteEditorViewModel(
             if (filtered.isEmpty()) {
                 listOf(ChecklistItemState.createEmpty(0))
             } else {
-                // Update order values
-                filtered.mapIndexed { index, item -> item.copy(order = index) }
+                // 🐛 v1.9.0 (F12): Cement originalOrder after deletion to keep baseline consistent
+                filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
             }
         }
     }
