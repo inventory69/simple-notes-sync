@@ -482,6 +482,11 @@
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>
 
+    <!-- 🆕 v1.9.0 (F08): Bilder einbetten -->
+    <string name="editor_insert_image">Bild einfügen</string>
+    <string name="editor_image_alt_text">Bild</string>
+    <string name="editor_image_load_error">Bild konnte nicht geladen werden</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
