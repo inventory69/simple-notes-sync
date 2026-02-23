@@ -453,7 +453,12 @@
     <string name="custom_app_title_placeholder">Simple Notes</string>
     <string name="custom_app_title_info">Lege einen eigenen Titel für den Hauptbildschirm fest. Leer lassen für den Standard-Titel \"Simple Notes\". Maximal 30 Zeichen.</string>
     <string name="custom_app_title_char_count">%1$d / %2$d</string>
-    
+
+    <!-- 🆕 v1.9.0 (F06): Note Filter -->
+    <string name="filter_all">Alle</string>
+    <string name="filter_text_only">Text</string>
+    <string name="filter_checklist_only">Checklisten</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->

@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteFilter
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.R
@@ -146,17 +148,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     )
     val sortDirection: StateFlow<SortDirection> = _sortDirection.asStateFlow()
-    
+
+    // 🆕 v1.9.0 (F06): Note Filter State
+    private val _noteFilter = MutableStateFlow(
+        NoteFilter.fromPrefsValue(
+            prefs.getString(Constants.KEY_NOTE_FILTER, Constants.DEFAULT_NOTE_FILTER)
+                ?: Constants.DEFAULT_NOTE_FILTER
+        )
+    )
+    val noteFilter: StateFlow<NoteFilter> = _noteFilter.asStateFlow()
+
     /**
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
-     * Reagiert automatisch auf Änderungen in allen drei Flows.
+     * 🆕 v1.9.0 (F06): + Filter nach NoteType
      */
     val sortedNotes: StateFlow<List<Note>> = combine(
         _notes,
         _sortOption,
-        _sortDirection
-    ) { notes, option, direction ->
-        sortNotes(notes, option, direction)
+        _sortDirection,
+        _noteFilter
+    ) { notes, option, direction, filter ->
+        val filtered = filterNotes(notes, filter)
+        sortNotes(filtered, option, direction)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -783,6 +796,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
     
     /**
+     * 🆕 v1.9.0 (F06): Filtert Notizen nach NoteType.
+     */
+    private fun filterNotes(notes: List<Note>, filter: NoteFilter): List<Note> {
+        return when (filter) {
+            NoteFilter.ALL -> notes
+            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
+        }
+    }
+
+    /**
      * 🔀 v1.8.0: Sortiert Notizen nach gewählter Option und Richtung.
      */
     private fun sortNotes(
@@ -822,6 +846,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue}")
     }
     
+    /**
+     * 🆕 v1.9.0 (F06): Setzt den Notiz-Filter und speichert in SharedPreferences.
+     */
+    fun setNoteFilter(filter: NoteFilter) {
+        _noteFilter.value = filter
+        prefs.edit().putString(Constants.KEY_NOTE_FILTER, filter.prefsValue).apply()
+        Logger.d(TAG, "🔍 Note filter changed to: ${filter.prefsValue}")
+    }
+
     /**
      * 🔀 v1.8.0: Toggelt die Sortierrichtung.
      */
