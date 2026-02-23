@@ -20,12 +20,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.placeCursorAtEnd
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Visibility
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +72,7 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
+import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
@@ -101,6 +107,8 @@ fun NoteEditorScreen(
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
+    // 🆕 v1.9.0 (F07): Markdown Preview toggle (only for TEXT notes)
+    var isPreviewMode by remember { mutableStateOf(false) }
     var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
     val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
@@ -115,7 +123,33 @@ fun NoteEditorScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val titleFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
-    
+
+    // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
+    val textFieldState = rememberTextFieldState(initialText = uiState.content)
+
+    // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
+    LaunchedEffect(Unit) {
+        if (uiState.content.isNotEmpty()) {
+            textFieldState.edit { placeCursorAtEnd() }
+        }
+    }
+
+    // 🆕 v1.9.0 (F07): Reset preview mode if note type changes to CHECKLIST
+    LaunchedEffect(uiState.noteType) {
+        if (uiState.noteType == NoteType.CHECKLIST) {
+            isPreviewMode = false
+        }
+    }
+
+    // 🆕 v1.9.0 (F07): Auto-show keyboard when switching from preview → edit
+    LaunchedEffect(isPreviewMode) {
+        if (!isPreviewMode && uiState.noteType == NoteType.TEXT && !uiState.isNewNote) {
+            delay(LAYOUT_DELAY_MS)
+            contentFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
     // v1.5.0: Auto-focus and show keyboard
     LaunchedEffect(uiState.isNewNote, uiState.noteType) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
@@ -173,6 +207,20 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
+                    // 🆕 v1.9.0 (F07): Markdown Preview Toggle (only for TEXT notes)
+                    if (uiState.noteType == NoteType.TEXT) {
+                        IconButton(onClick = { isPreviewMode = !isPreviewMode }) {
+                            Icon(
+                                imageVector = if (isPreviewMode) {
+                                    Icons.Outlined.Edit
+                                } else {
+                                    Icons.Outlined.Visibility
+                                },
+                                contentDescription = stringResource(R.string.editor_toggle_preview)
+                            )
+                        }
+                    }
+
                     // Delete button (only for existing notes)
                     if (viewModel.canDelete()) {
                         IconButton(onClick = { showDeleteDialog = true }) {
@@ -243,15 +291,33 @@ fun NoteEditorScreen(
             
             when (uiState.noteType) {
                 NoteType.TEXT -> {
-                    // Content Input for TEXT notes
-                    TextNoteContent(
-                        content = uiState.content,
-                        onContentChange = { viewModel.updateContent(it) },
-                        focusRequester = contentFocusRequester,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    )
+                    if (isPreviewMode) {
+                        // 🆕 v1.9.0 (F07): Markdown rendered preview
+                        val blocks = remember(uiState.content) {
+                            MarkdownEngine.parse(uiState.content)
+                        }
+                        MarkdownPreview(
+                            blocks = blocks,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    } else {
+                        // Content Input for TEXT notes
+                        TextNoteContent(
+                            textFieldState = textFieldState,
+                            onContentChange = { viewModel.updateContent(it) },
+                            focusRequester = contentFocusRequester,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+
+                        // 🆕 v1.9.0 (F07): Markdown formatting toolbar below content
+                        MarkdownToolbar(
+                            textFieldState = textFieldState
+                        )
+                    }
                 }
                 
                 NoteType.CHECKLIST -> {
@@ -317,24 +383,17 @@ fun NoteEditorScreen(
 
 @Composable
 private fun TextNoteContent(
-    content: String,
+    textFieldState: TextFieldState,
     onContentChange: (String) -> Unit,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
     // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
-    val textFieldState = rememberTextFieldState(initialText = content)
+    // v1.9.0 (F07): TextFieldState now provided from parent for toolbar access
     val scrollState = rememberScrollState()
     
     // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
     var isFocused by remember { mutableStateOf(false) }
-    
-    // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
-    LaunchedEffect(Unit) {
-        if (content.isNotEmpty()) {
-            textFieldState.edit { placeCursorAtEnd() }
-        }
-    }
     
     // Text-Änderungen an ViewModel propagieren
     LaunchedEffect(textFieldState) {

@@ -467,6 +467,21 @@
     <string name="sort_chip_label">Sort</string>
     <string name="toggle_filter_row">Toggle filter bar</string>
 
+    <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
+    <string name="editor_mode_edit">Edit</string>
+    <string name="editor_mode_preview">Preview</string>
+    <string name="editor_toggle_preview">Toggle Markdown preview</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
+    <string name="md_toolbar_bold">Bold</string>
+    <string name="md_toolbar_italic">Italic</string>
+    <string name="md_toolbar_strikethrough">Strikethrough</string>
+    <string name="md_toolbar_heading">Heading</string>
+    <string name="md_toolbar_code">Code</string>
+    <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_list">List</string>
+    <string name="md_toolbar_rule">Horizontal rule</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->

@@ -467,6 +467,21 @@
     <string name="sort_chip_label">Sortieren</string>
     <string name="toggle_filter_row">Filterleiste ein-/ausblenden</string>
 
+    <!-- 🆕 v1.9.0 (F07): Markdown-Vorschau -->
+    <string name="editor_mode_edit">Bearbeiten</string>
+    <string name="editor_mode_preview">Vorschau</string>
+    <string name="editor_toggle_preview">Markdown-Vorschau umschalten</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
+    <string name="md_toolbar_bold">Fett</string>
+    <string name="md_toolbar_italic">Kursiv</string>
+    <string name="md_toolbar_strikethrough">Durchgestrichen</string>
+    <string name="md_toolbar_heading">Überschrift</string>
+    <string name="md_toolbar_code">Code</string>
+    <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_list">Liste</string>
+    <string name="md_toolbar_rule">Trennlinie</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
