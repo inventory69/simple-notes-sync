@@ -81,10 +81,24 @@ class NoteEditorViewModel(
     private val _events = MutableSharedFlow<NoteEditorEvent>()
     val events: SharedFlow<NoteEditorEvent> = _events.asSharedFlow()
 
-    // 🆕 v1.9.0 (F04): Emits the item-id that was restored to its original position on un-check
-    // ChecklistEditor observes this to scroll to the restored item.
-    private val _scrollToRestoredItemId = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val scrollToRestoredItemId: SharedFlow<String> = _scrollToRestoredItemId.asSharedFlow()
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F14): Explicit scroll actions for check/un-check
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Sealed class for scroll actions after checking/un-checking a checklist item.
+     * - [ScrollToTop]: Scroll the LazyColumn to index 0 (used on un-check).
+     * - [NoScroll]: Explicitly do nothing — keeps scroll position stable (used on check).
+     */
+    sealed class ChecklistScrollAction {
+        /** Un-check: scroll list to the very top. */
+        object ScrollToTop : ChecklistScrollAction()
+        /** Check: do not scroll — keep viewport exactly where it is. */
+        object NoScroll : ChecklistScrollAction()
+    }
+
+    private val _checklistScrollAction = MutableSharedFlow<ChecklistScrollAction>(extraBufferCapacity = 1)
+    val checklistScrollAction: SharedFlow<ChecklistScrollAction> = _checklistScrollAction.asSharedFlow()
     
     // Internal state
     private var existingNote: Note? = null
@@ -249,36 +263,34 @@ class NoteEditorViewModel(
     }
 
     /**
-     * 🆕 v1.9.0 (F04): Returns the new data-index of the toggled item after sorting,
-     * so the UI can scroll to the restored position on un-check. Returns null if no scroll needed.
+     * 🆕 v1.9.0 (F14): Toggles the checked state of a checklist item and emits a scroll action.
+     * - Un-check → emits [ChecklistScrollAction.ScrollToTop]: scroll to the top of the list.
+     * - Check → emits [ChecklistScrollAction.NoScroll]: keep scroll position exactly as-is.
+     *
+     * Supersedes F04's scroll-to-restored-position logic. Items still sort correctly via
+     * [sortChecklistItems]; only the scroll target changes (restored position → top).
      */
-    fun updateChecklistItemChecked(itemId: String, isChecked: Boolean): Int? {
+    fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
-        var restoredIndex: Int? = null
         _checklistItems.update { items ->
             val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
             }
             // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Auto-Sort nur bei MANUAL und UNCHECKED_FIRST
             val currentSort = _lastChecklistSortOption.value
-            val result = if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
+            if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
                 sortChecklistItems(updatedItems)
             } else {
                 // Bei anderen Sortierungen (alphabetisch, checked first) nicht auto-sortieren
                 updatedItems.mapIndexed { index, item -> item.copy(order = index) }
             }
-            // 🆕 v1.9.0 (F04): Emit scroll target when item is un-checked (position restored)
-            if (!isChecked) {
-                restoredIndex = result.indexOfFirst { it.id == itemId }
-                if (restoredIndex != -1) {
-                    _scrollToRestoredItemId.tryEmit(itemId)
-                } else {
-                    restoredIndex = null
-                }
-            }
-            result
         }
-        return restoredIndex
+        // 🆕 v1.9.0 (F14): Emit scroll action — outside update{} to ensure state is committed first
+        if (!isChecked) {
+            _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToTop)
+        } else {
+            _checklistScrollAction.tryEmit(ChecklistScrollAction.NoScroll)
+        }
     }
     
     /**
