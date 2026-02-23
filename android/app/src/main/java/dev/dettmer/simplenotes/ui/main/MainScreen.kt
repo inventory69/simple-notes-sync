@@ -54,6 +54,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
+import dev.dettmer.simplenotes.ui.main.components.FilterChipRow
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
@@ -108,7 +109,9 @@ fun MainScreen(
     var showSortDialog by remember { mutableStateOf(false) }
     val sortOption by viewModel.sortOption.collectAsState()
     val sortDirection by viewModel.sortDirection.collectAsState()
-    
+    // 🆕 v1.9.0 (F06): Note filter state
+    val noteFilter by viewModel.noteFilter.collectAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -216,7 +219,14 @@ fun MainScreen(
                         progress = syncProgress,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
+
+                    // 🆕 v1.9.0 (F06): Filter Chip Row
+                    FilterChipRow(
+                        currentFilter = noteFilter,
+                        onFilterSelected = { viewModel.setNoteFilter(it) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                     // Content: Empty state or notes list
                     if (notes.isEmpty()) {
                         EmptyState(modifier = Modifier.weight(1f))

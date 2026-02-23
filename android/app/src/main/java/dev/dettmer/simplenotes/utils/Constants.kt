@@ -86,7 +86,11 @@ object Constants {
     const val KEY_SORT_DIRECTION = "sort_direction"
     const val DEFAULT_SORT_OPTION = "updatedAt"
     const val DEFAULT_SORT_DIRECTION = "desc"
-    
+
+    // 🆕 v1.9.0 (F06): Filter
+    const val KEY_NOTE_FILTER = "note_filter"
+    const val DEFAULT_NOTE_FILTER = "all"  // NoteFilter.ALL.prefsValue
+
     // 📋 v1.8.0: Post-Update Changelog
     const val KEY_LAST_SHOWN_CHANGELOG_VERSION = "last_shown_changelog_version"
     
