@@ -463,6 +463,10 @@
     <string name="search_notes_placeholder">Search…</string>
     <string name="search_clear">Clear search</string>
 
+    <!-- v1.9.0 (F11): Sort chip + filter row toggle -->
+    <string name="sort_chip_label">Sort</string>
+    <string name="toggle_filter_row">Toggle filter bar</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
