@@ -1,8 +1,10 @@
 package dev.dettmer.simplenotes.ui.main
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
@@ -19,7 +21,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 // FabPosition nicht mehr benötigt - FAB wird manuell platziert
 import androidx.compose.material3.Icon
@@ -108,6 +110,8 @@ fun MainScreen(
     
     // 🔀 v1.8.0: Sort dialog state
     var showSortDialog by remember { mutableStateOf(false) }
+    // 🆕 v1.9.0 (F11): Filter row visibility toggle (default: hidden)
+    var showFilterRow by remember { mutableStateOf(false) }
     val sortOption by viewModel.sortOption.collectAsState()
     val sortDirection by viewModel.sortDirection.collectAsState()
     // 🆕 v1.9.0 (F06): Note filter state
@@ -197,7 +201,9 @@ fun MainScreen(
                     syncEnabled = canSync,
                     showSyncLegend = isSyncAvailable,
                     onSyncLegendClick = { showSyncLegend = true },
-                    onSortClick = { showSortDialog = true },
+                    // 🆕 v1.9.0 (F11): Sort button replaced by filter row toggle
+                    showFilterRow = showFilterRow,
+                    onFilterToggle = { showFilterRow = !showFilterRow },
                     onSyncClick = { viewModel.triggerManualSync("toolbar") },
                     onSettingsClick = onOpenSettings
                 )
@@ -226,13 +232,21 @@ fun MainScreen(
 
                     // 🆕 v1.9.0 (F06): Filter Chip Row
                     // 🆕 v1.9.0 (F10): + Inline search field
-                    FilterChipRow(
-                        currentFilter = noteFilter,
-                        onFilterSelected = { viewModel.setNoteFilter(it) },
-                        searchQuery = searchQuery,
-                        onSearchQueryChanged = { viewModel.setSearchQuery(it) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // 🆕 v1.9.0 (F11): + Sort chip + toggle visibility
+                    AnimatedVisibility(
+                        visible = showFilterRow,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        FilterChipRow(
+                            currentFilter = noteFilter,
+                            onFilterSelected = { viewModel.setNoteFilter(it) },
+                            searchQuery = searchQuery,
+                            onSearchQueryChanged = { viewModel.setSearchQuery(it) },
+                            onSortClick = { showSortDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
                     // Content: Empty state or notes list
                     if (notes.isEmpty()) {
@@ -351,7 +365,8 @@ private fun MainTopBar(
     syncEnabled: Boolean,
     showSyncLegend: Boolean,  // 🆕 v1.8.0: Ob der Hilfe-Button sichtbar sein soll
     onSyncLegendClick: () -> Unit,  // 🆕 v1.8.0
-    onSortClick: () -> Unit,  // 🔀 v1.8.0: Sort-Button
+    showFilterRow: Boolean,  // 🆕 v1.9.0 (F11): Filter row toggle state
+    onFilterToggle: () -> Unit,  // 🆕 v1.9.0 (F11): Toggle filter row visibility
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -361,15 +376,21 @@ private fun MainTopBar(
                 // 🆕 v1.9.0 (F05): Use custom title if set, otherwise default
                 text = customTitle.ifBlank { stringResource(R.string.main_title) },
                 style = MaterialTheme.typography.titleLarge,
-                maxLines = 1
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         },
         actions = {
-            // 🔀 v1.8.0: Sort Button
-            IconButton(onClick = onSortClick) {
+            // 🆕 v1.9.0 (F11): Filter row toggle button (replaces sort button)
+            IconButton(onClick = onFilterToggle) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Sort,
-                    contentDescription = stringResource(R.string.sort_notes)
+                    imageVector = Icons.Outlined.Tune,
+                    contentDescription = stringResource(R.string.toggle_filter_row),
+                    tint = if (showFilterRow) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
                 )
             }
             
