@@ -69,6 +69,7 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharedFlow
 import dev.dettmer.simplenotes.utils.showToast
 import kotlin.math.roundToInt
 
@@ -260,6 +261,7 @@ fun NoteEditorScreen(
                         scope = scope,
                         focusNewItemId = focusNewItemId,
                         currentSortOption = lastChecklistSortOption,  // 🔀 v1.8.0
+                        scrollToRestoredItemId = viewModel.scrollToRestoredItemId,  // 🆕 v1.9.0 (F04)
                         onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
                         onCheckedChange = { id, checked -> viewModel.updateChecklistItemChecked(id, checked) },
                         onDelete = { id -> viewModel.deleteChecklistItem(id) },
@@ -447,6 +449,7 @@ private fun ChecklistEditor(
     scope: kotlinx.coroutines.CoroutineScope,
     focusNewItemId: String?,
     currentSortOption: ChecklistSortOption,  // 🔀 v1.8.0: Aktuelle Sortierung
+    scrollToRestoredItemId: SharedFlow<String>,  // 🆕 v1.9.0 (F04): Scroll to restored item on un-check
     onTextChange: (String, String) -> Unit,
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
@@ -479,6 +482,24 @@ private fun ChecklistEditor(
                 scrollOffset = 0
             )
             scrollToNewItemIndex = null
+        }
+    }
+
+    // 🆕 v1.9.0 (F04): Scroll to an item that was restored to its original position on un-check
+    LaunchedEffect(Unit) {
+        scrollToRestoredItemId.collect { itemId ->
+            val dataIndex = items.indexOfFirst { it.id == itemId }
+            if (dataIndex >= 0) {
+                val hasSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
+                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
+                val unchecked = items.count { !it.isChecked }
+                val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
+                    dataIndex + 1  // +1 für Separator
+                } else {
+                    dataIndex
+                }
+                listState.animateScrollToItem(index = visualIndex, scrollOffset = 0)
+            }
         }
     }
 
