@@ -208,6 +208,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
     )
     val displayMode: StateFlow<String> = _displayMode.asStateFlow()
+
+    // 🆕 v1.9.0 (F05): Custom App Title
+    private val _customAppTitle = MutableStateFlow(
+        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+    )
+    val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
@@ -961,6 +967,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _displayMode.value = mode
         prefs.edit().putString(Constants.KEY_DISPLAY_MODE, mode).apply()
         Logger.d(TAG, "Display mode changed to: $mode")
+    }
+
+    /**
+     * 🆕 v1.9.0 (F05): Set custom app title.
+     * Enforces max length limit.
+     */
+    fun setCustomAppTitle(title: String) {
+        val sanitized = title.take(Constants.MAX_CUSTOM_APP_TITLE_LENGTH)
+        _customAppTitle.value = sanitized
+        prefs.edit().putString(Constants.KEY_CUSTOM_APP_TITLE, sanitized).apply()
+        Logger.d(TAG, "Custom app title changed to: '$sanitized'")
     }
 
     // ═══════════════════════════════════════════════════════════════════════
