@@ -360,7 +360,7 @@ fun NoteEditorScreen(
                         scope = scope,
                         focusNewItemId = focusNewItemId,
                         currentSortOption = lastChecklistSortOption,  // 🔀 v1.8.0
-                        scrollToRestoredItemId = viewModel.scrollToRestoredItemId,  // 🆕 v1.9.0 (F04)
+                        checklistScrollAction = viewModel.checklistScrollAction,  // 🆕 v1.9.0 (F14)
                         onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
                         onCheckedChange = { id, checked -> viewModel.updateChecklistItemChecked(id, checked) },
                         onDelete = { id -> viewModel.deleteChecklistItem(id) },
@@ -541,7 +541,7 @@ private fun ChecklistEditor(
     scope: kotlinx.coroutines.CoroutineScope,
     focusNewItemId: String?,
     currentSortOption: ChecklistSortOption,  // 🔀 v1.8.0: Aktuelle Sortierung
-    scrollToRestoredItemId: SharedFlow<String>,  // 🆕 v1.9.0 (F04): Scroll to restored item on un-check
+    checklistScrollAction: SharedFlow<NoteEditorViewModel.ChecklistScrollAction>,  // 🆕 v1.9.0 (F14): Scroll action on check/un-check
     onTextChange: (String, String) -> Unit,
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
@@ -577,20 +577,19 @@ private fun ChecklistEditor(
         }
     }
 
-    // 🆕 v1.9.0 (F04): Scroll to an item that was restored to its original position on un-check
+    // 🆕 v1.9.0 (F14): Scroll action handler for check/un-check
     LaunchedEffect(Unit) {
-        scrollToRestoredItemId.collect { itemId ->
-            val dataIndex = items.indexOfFirst { it.id == itemId }
-            if (dataIndex >= 0) {
-                val hasSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
-                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
-                val unchecked = items.count { !it.isChecked }
-                val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
-                    dataIndex + 1  // +1 für Separator
-                } else {
-                    dataIndex
+        checklistScrollAction.collect { action ->
+            when (action) {
+                is NoteEditorViewModel.ChecklistScrollAction.ScrollToTop -> {
+                    // Un-check → scroll smoothly to the very top of the list
+                    listState.animateScrollToItem(index = 0, scrollOffset = 0)
                 }
-                listState.animateScrollToItem(index = visualIndex, scrollOffset = 0)
+                is NoteEditorViewModel.ChecklistScrollAction.NoScroll -> {
+                    // Check → intentionally do nothing.
+                    // LazyColumn uses stable keys (item.id), so Compose preserves
+                    // the scroll position naturally during recomposition.
+                }
             }
         }
     }
