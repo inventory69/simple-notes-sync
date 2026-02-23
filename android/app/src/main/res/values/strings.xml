@@ -446,6 +446,13 @@
     <string name="display_mode_list">📋 List View</string>
     <string name="display_mode_grid">🎨 Grid View</string>
     <string name="display_mode_info">Grid view shows notes in a two-column layout. All notes appear side-by-side in a clean, compact overview.</string>
+
+    <!-- 🆕 v1.9.0 (F05): Custom App Title -->
+    <string name="custom_app_title_section">App Title</string>
+    <string name="custom_app_title_label">Custom title</string>
+    <string name="custom_app_title_placeholder">Simple Notes</string>
+    <string name="custom_app_title_info">Set a custom title for the main screen. Leave empty to use the default \"Simple Notes\" title. Maximum 30 characters.</string>
+    <string name="custom_app_title_char_count">%1$d / %2$d</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->

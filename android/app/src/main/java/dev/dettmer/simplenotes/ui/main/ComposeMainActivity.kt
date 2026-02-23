@@ -191,6 +191,7 @@ class ComposeMainActivity : ComponentActivity() {
         
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
+        viewModel.refreshCustomAppTitle()  // 🆕 v1.9.0 (F05)
         
         // Register BroadcastReceiver for Background-Sync
         @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional

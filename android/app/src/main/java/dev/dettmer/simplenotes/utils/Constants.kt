@@ -68,6 +68,11 @@ object Constants {
     const val GRID_COLUMNS = 2
     const val GRID_SPACING_DP = 8
 
+    // 🆕 v1.9.0 (F05): Custom App Title
+    const val KEY_CUSTOM_APP_TITLE = "custom_app_title"
+    const val DEFAULT_CUSTOM_APP_TITLE = ""  // Empty = use default "Simple Notes"
+    const val MAX_CUSTOM_APP_TITLE_LENGTH = 30
+
     // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
     // 🔧 v1.9.0: Unified setting for both downloads and uploads
     const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration

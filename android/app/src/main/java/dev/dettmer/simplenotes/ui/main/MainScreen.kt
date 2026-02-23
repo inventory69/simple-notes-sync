@@ -95,6 +95,8 @@ fun MainScreen(
     
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
+    // 🆕 v1.9.0 (F05): Custom App Title
+    val customAppTitle by viewModel.customAppTitle.collectAsState()
     
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
@@ -184,10 +186,11 @@ fun MainScreen(
                 exit = slideOutVertically() + fadeOut()
             ) {
                 MainTopBar(
+                    customTitle = customAppTitle,  // 🆕 v1.9.0 (F05)
                     syncEnabled = canSync,
-                    showSyncLegend = isSyncAvailable,  // 🆕 v1.8.0: Nur wenn Sync verfügbar
-                    onSyncLegendClick = { showSyncLegend = true },  // 🆕 v1.8.0
-                    onSortClick = { showSortDialog = true },  // 🔀 v1.8.0
+                    showSyncLegend = isSyncAvailable,
+                    onSyncLegendClick = { showSyncLegend = true },
+                    onSortClick = { showSortDialog = true },
                     onSyncClick = { viewModel.triggerManualSync("toolbar") },
                     onSettingsClick = onOpenSettings
                 )
@@ -322,6 +325,7 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTopBar(
+    customTitle: String,  // 🆕 v1.9.0 (F05): Custom app title (empty = default)
     syncEnabled: Boolean,
     showSyncLegend: Boolean,  // 🆕 v1.8.0: Ob der Hilfe-Button sichtbar sein soll
     onSyncLegendClick: () -> Unit,  // 🆕 v1.8.0
@@ -332,8 +336,10 @@ private fun MainTopBar(
     TopAppBar(
         title = {
             Text(
-                text = stringResource(R.string.main_title),
-                style = MaterialTheme.typography.titleLarge
+                // 🆕 v1.9.0 (F05): Use custom title if set, otherwise default
+                text = customTitle.ifBlank { stringResource(R.string.main_title) },
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1
             )
         },
         actions = {

@@ -108,6 +108,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _displayMode.value = newValue
         Logger.d(TAG, "🔄 refreshDisplayMode: displayMode=${_displayMode.value} → $newValue")
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F05): Custom App Title State
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _customAppTitle = MutableStateFlow(
+        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+    )
+    val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
+
+    /**
+     * Refresh custom app title from SharedPreferences.
+     * Called when returning from Settings screen (same pattern as refreshDisplayMode).
+     */
+    fun refreshCustomAppTitle() {
+        val newValue = prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
+            ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+        _customAppTitle.value = newValue
+        Logger.d(TAG, "🔄 refreshCustomAppTitle: '$newValue'")
+    }
     
     // ═══════════════════════════════════════════════════════════════════════
     // 🔀 v1.8.0: Sort State

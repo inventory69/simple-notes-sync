@@ -446,6 +446,13 @@
     <string name="display_mode_list">📋 Listen-Ansicht</string>
     <string name="display_mode_grid">🎨 Raster-Ansicht</string>
     <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
+
+    <!-- 🆕 v1.9.0 (F05): Custom App Title -->
+    <string name="custom_app_title_section">App-Titel</string>
+    <string name="custom_app_title_label">Eigener Titel</string>
+    <string name="custom_app_title_placeholder">Simple Notes</string>
+    <string name="custom_app_title_info">Lege einen eigenen Titel für den Hauptbildschirm fest. Leer lassen für den Standard-Titel \"Simple Notes\". Maximal 30 Zeichen.</string>
+    <string name="custom_app_title_char_count">%1$d / %2$d</string>
     
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
