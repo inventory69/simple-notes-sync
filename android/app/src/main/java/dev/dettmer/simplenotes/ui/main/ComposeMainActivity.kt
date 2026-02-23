@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.color.DynamicColors
@@ -43,6 +44,7 @@ import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import dev.dettmer.simplenotes.widget.NoteWidget
 import kotlinx.coroutines.launch
 
 /**
@@ -224,7 +226,47 @@ class ComposeMainActivity : ComponentActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
         Logger.d(TAG, "📡 BroadcastReceiver unregistered")
     }
-    
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F09): Widget refresh on leaving app
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * 🆕 v1.9.0 (F09): Refresh all active homescreen widgets.
+     *
+     * Iterates every GlanceId belonging to NoteWidget and calls update().
+     * Glance internally deduplicates — calling update() when data has not
+     * changed is a no-op at the RemoteViews level, so this is safe to call
+     * on every onStop without battery concern.
+     */
+    private fun refreshAllWidgets() {
+        lifecycleScope.launch {
+            try {
+                val glanceManager = GlanceAppWidgetManager(this@ComposeMainActivity)
+                val glanceIds = glanceManager.getGlanceIds(NoteWidget::class.java)
+                if (glanceIds.isEmpty()) return@launch
+                Logger.d(TAG, "🔄 F09: Refreshing ${glanceIds.size} widget(s) on onStop")
+                glanceIds.forEach { id ->
+                    NoteWidget().update(this@ComposeMainActivity, id)
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "F09: Failed to refresh widgets on onStop: ${e.message}")
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 🆕 v1.9.0 (F09): Refresh widgets when the user leaves the app.
+        // cameFromEditor is true when navigating to the editor (in-app); the
+        // editor already updates widgets on save — skip here to avoid double-update.
+        // When the user presses Home or switches apps, cameFromEditor is false.
+        if (!cameFromEditor) {
+            refreshAllWidgets()
+        }
+        Logger.d(TAG, "📱 ComposeMainActivity.onStop() - cameFromEditor=$cameFromEditor")
+    }
+
     private fun setupSyncStateObserver() {
         // 🆕 v1.8.0: SyncStatus nur noch für PullToRefresh-Indikator (intern)
         SyncStateManager.syncStatus.observe(this) { status ->
