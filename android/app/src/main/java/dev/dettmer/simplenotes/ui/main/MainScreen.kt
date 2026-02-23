@@ -66,6 +66,9 @@ import kotlinx.coroutines.launch
 
 private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
 
+/** 🆕 v1.9.0 (F13): Delay before scrolling to top after manual sync, giving Compose time to recompose with new data. */
+private const val SYNC_SCROLL_DELAY_MS = 150L
+
 /**
  * Main screen displaying the notes list
  * v1.5.0: Jetpack Compose MainActivity Redesign
@@ -86,6 +89,8 @@ fun MainScreen(
     val notes by viewModel.sortedNotes.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val scrollToTop by viewModel.scrollToTop.collectAsState()
+    // 🆕 v1.9.0 (F13): Scroll-to-top after manual sync
+    val syncScrollToTop by viewModel.syncCompletedScrollToTop.collectAsState()
     
     // 🆕 v1.8.0: Einziges Banner-System
     val syncProgress by viewModel.syncProgress.collectAsState()
@@ -171,6 +176,20 @@ fun MainScreen(
                 listState.animateScrollToItem(0)
             }
             viewModel.resetScrollToTop()
+        }
+    }
+
+    // 🆕 v1.9.0 (F13): Scroll to top after manual sync completion
+    LaunchedEffect(syncScrollToTop) {
+        if (syncScrollToTop) {
+            // Small delay to let the notes list recompose with new data
+            kotlinx.coroutines.delay(SYNC_SCROLL_DELAY_MS)
+            if (displayMode == "grid") {
+                gridState.animateScrollToItem(0)
+            } else {
+                listState.animateScrollToItem(0)
+            }
+            viewModel.resetSyncCompletedScrollToTop()
         }
     }
     
