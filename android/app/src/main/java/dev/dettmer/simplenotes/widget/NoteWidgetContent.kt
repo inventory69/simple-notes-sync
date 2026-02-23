@@ -37,6 +37,7 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.Text
+import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistSortOption
@@ -495,12 +496,15 @@ private fun ChecklistCompactView(
                         style = TextStyle(fontSize = 14.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
+                    // 🆕 v1.9.0 (F03): Strikethrough for completed items
                     Text(
                         text = item.text,
                         style = TextStyle(
                             color = if (item.isChecked) GlanceTheme.colors.outline
                             else GlanceTheme.colors.onSurface,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                            else TextDecoration.None
                         ),
                         maxLines = 1
                     )
@@ -516,9 +520,13 @@ private fun ChecklistCompactView(
                         )
                     ),
                     text = item.text,
+                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 13.sp
+                        color = if (item.isChecked) GlanceTheme.colors.outline
+                        else GlanceTheme.colors.onSurface,
+                        fontSize = 13.sp,
+                        textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                        else TextDecoration.None
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
@@ -598,11 +606,15 @@ private fun ChecklistFullView(
                         style = TextStyle(fontSize = 16.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))
+                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     Text(
                         text = item.text,
                         style = TextStyle(
-                            color = GlanceTheme.colors.onSurface,
-                            fontSize = 14.sp
+                            color = if (item.isChecked) GlanceTheme.colors.outline
+                            else GlanceTheme.colors.onSurface,
+                            fontSize = 14.sp,
+                            textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                            else TextDecoration.None
                         ),
                         maxLines = 2
                     )
@@ -618,9 +630,13 @@ private fun ChecklistFullView(
                         )
                     ),
                     text = item.text,
+                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 14.sp
+                        color = if (item.isChecked) GlanceTheme.colors.outline
+                        else GlanceTheme.colors.onSurface,
+                        fontSize = 14.sp,
+                        textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                        else TextDecoration.None
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
