@@ -28,7 +28,13 @@ object MarkdownEngine {
 
         /** Horizontal rule (---, ***, ___). */
         data object HorizontalRule : MarkdownBlock()
+
+        /** 🆕 v1.9.0: Task list (GitHub-style checkboxes: - [ ] / - [x]). */
+        data class TaskList(val items: List<TaskItem>) : MarkdownBlock()
     }
+
+    /** Einzelnes Task-List-Item mit Checked-Status und Text. */
+    data class TaskItem(val text: String, val isChecked: Boolean)
 
     /**
      * Parse raw Markdown [text] into a list of [MarkdownBlock]s.
@@ -70,6 +76,20 @@ object MarkdownEngine {
                     i++
                 }
 
+                // ── Task list (muss VOR UnorderedList geprüft werden) ──
+                TASK_LIST_REGEX.matches(line) -> {
+                    val taskItems = mutableListOf<TaskItem>()
+                    while (i < lines.size && TASK_LIST_REGEX.matches(lines[i])) {
+                        val m = TASK_LIST_REGEX.find(lines[i])!!
+                        taskItems.add(TaskItem(
+                            text = m.groupValues[2].trim(),
+                            isChecked = m.groupValues[1].lowercase() == "x"
+                        ))
+                        i++
+                    }
+                    blocks.add(MarkdownBlock.TaskList(taskItems))
+                }
+
                 // ── Unordered list ──
                 LIST_ITEM_REGEX.matches(line) -> {
                     val items = mutableListOf<String>()
@@ -107,12 +127,14 @@ object MarkdownEngine {
         if (line.trimStart().startsWith("```")) return false
         if (isHorizontalRule(line)) return false
         if (HEADING_REGEX.matchEntire(line) != null) return false
+        if (TASK_LIST_REGEX.matches(line)) return false
         if (LIST_ITEM_REGEX.matches(line)) return false
         return true
     }
 
     private val HEADING_REGEX = Regex("""^(#{1,3})\s+(.+)$""")
     private val LIST_ITEM_REGEX = Regex("""^\s*[-*+]\s+(.+)$""")
+    private val TASK_LIST_REGEX = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
     private const val HORIZONTAL_RULE_MIN_CHARS = 3
 
     private fun isHorizontalRule(line: String): Boolean {

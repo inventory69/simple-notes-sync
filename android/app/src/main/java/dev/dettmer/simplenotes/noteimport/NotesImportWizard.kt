@@ -3,7 +3,6 @@ package dev.dettmer.simplenotes.noteimport
 import android.content.Context
 import android.net.Uri
 import com.thegrizzlylabs.sardineandroid.Sardine
-import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -274,51 +273,25 @@ class NotesImportWizard(
             return note
         }
 
-        // Versuch 2: Plain Markdown ohne Frontmatter → Neue Notiz erstellen
+        // Versuch 2: Plain Markdown ohne Frontmatter → immer als TEXT importieren
+        // Checklist-Syntax (- [ ] / - [x]) bleibt als Markdown erhalten und wird
+        // in der Markdown-Preview als visuelle Checkboxen gerendert (TaskList-Block).
+        // Nur YAML-Frontmatter mit "type: checklist" erzeugt NoteType.CHECKLIST.
         val title = extractMarkdownTitle(normalizedContent, candidate.name)
         val body = extractMarkdownBody(normalizedContent)
 
-        // Checklist-Erkennung: Enthält der Content Checkbox-Syntax?
-        val checklistRegex = Regex("^- \\[([ xX])\\] (.*)$", RegexOption.MULTILINE)
-        val checklistMatches = checklistRegex.findAll(body).toList()
+        Logger.d(TAG, "   📄 ${candidate.name}: Parsed as plain markdown (text note)")
 
-        return if (checklistMatches.size >= 2) {
-            // Checklist erkannt (mindestens 2 Items)
-            val items = checklistMatches.mapIndexed { index, match ->
-                ChecklistItem(
-                    id = UUID.randomUUID().toString(),
-                    text = match.groupValues[2].trim(),
-                    isChecked = match.groupValues[1].lowercase() == "x",
-                    order = index
-                )
-            }
-            Logger.d(TAG, "   ☑️ ${candidate.name}: Detected as checklist (${items.size} items)")
-
-            Note(
-                id = UUID.randomUUID().toString(),
-                title = title,
-                content = "",
-                checklistItems = items,
-                createdAt = candidate.modified,
-                updatedAt = candidate.modified,
-                deviceId = DeviceIdGenerator.getDeviceId(context),
-                syncStatus = SyncStatus.PENDING,
-                noteType = NoteType.CHECKLIST
-            )
-        } else {
-            // Normaler Text-Notiz
-            Logger.d(TAG, "   📄 ${candidate.name}: Parsed as plain markdown")
-            Note(
-                id = UUID.randomUUID().toString(),
-                title = title,
-                content = body,
-                createdAt = candidate.modified,
-                updatedAt = candidate.modified,
-                deviceId = DeviceIdGenerator.getDeviceId(context),
-                syncStatus = SyncStatus.PENDING,
-                noteType = NoteType.TEXT
-            )
-        }
+        return Note(
+            id = UUID.randomUUID().toString(),
+            title = title,
+            content = body,
+            createdAt = candidate.modified,
+            updatedAt = candidate.modified,
+            deviceId = DeviceIdGenerator.getDeviceId(context),
+            syncStatus = SyncStatus.PENDING,
+            noteType = NoteType.TEXT
+        )
     }
 
     /**

@@ -2,17 +2,22 @@ package dev.dettmer.simplenotes.markdown
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -59,6 +64,10 @@ fun MarkdownPreview(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
+                is MarkdownBlock.TaskList -> {
+                    TaskListBlock(block)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
                 is MarkdownBlock.UnorderedList -> {
                     UnorderedListBlock(block)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -92,6 +101,40 @@ private fun HeadingBlock(heading: MarkdownBlock.Heading) {
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onSurface
     )
+}
+
+@Composable
+private fun TaskListBlock(taskList: MarkdownBlock.TaskList) {
+    Column {
+        taskList.items.forEach { item ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Checkbox(
+                    checked = item.isChecked,
+                    onCheckedChange = null, // Read-only in preview
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = parseInlineFormatting(item.text),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (item.isChecked) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    textDecoration = if (item.isChecked) {
+                        TextDecoration.LineThrough
+                    } else {
+                        TextDecoration.None
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+        }
+    }
 }
 
 @Composable
