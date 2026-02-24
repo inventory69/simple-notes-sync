@@ -1,43 +1,19 @@
 package dev.dettmer.simplenotes.markdown
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -50,19 +26,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
-import dev.dettmer.simplenotes.storage.ImageStorage
 
 /**
  * 🆕 v1.9.0 (F07): Renders parsed [MarkdownBlock]s as Compose UI.
  *
  * Handles both block-level layout (headings, lists, code blocks, etc.)
  * and inline formatting (bold, italic, strikethrough, inline code, links).
- *
- * 🔮 v1.9.0 (F08): Will be extended to render embedded images.
  */
 @Composable
 fun MarkdownPreview(
@@ -103,11 +73,6 @@ fun MarkdownPreview(
                         thickness = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
-                }
-                is MarkdownBlock.Image -> {
-                    // 🆕 v1.9.0 (F08): Embedded image
-                    ImageBlock(block)
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
@@ -166,84 +131,6 @@ private fun CodeBlockSurface(codeBlock: MarkdownBlock.CodeBlock) {
     }
 }
 
-/**
- * 🆕 v1.9.0 (F08): Renders an embedded image from an internal [ImageStorage] URI.
- *
- * Loads the bitmap via [ImageStorage.loadBitmap]. On success the image is displayed
- * at full width (max height 400 dp) with rounded corners. On failure an error card
- * with the alt-text is shown instead.
- */
-@Composable
-private fun ImageBlock(image: MarkdownBlock.Image) {
-    val context = LocalContext.current
-    val imageStorage = remember { ImageStorage(context) }
-    val bitmap = remember(image.path) { imageStorage.loadBitmap(image.path) }
-    var showFullscreen by remember { mutableStateOf(false) }
-
-    if (bitmap != null) {
-        androidx.compose.foundation.Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = image.altText.ifBlank { null },
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 400.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable { showFullscreen = true }
-        )
-        if (showFullscreen) {
-            Dialog(
-                onDismissRequest = { showFullscreen = false },
-                properties = DialogProperties(usePlatformDefaultWidth = false)
-            ) {
-                var scale by remember { mutableFloatStateOf(1f) }
-                var offset by remember { mutableStateOf(Offset.Zero) }
-                val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
-                    scale = (scale * zoomChange).coerceIn(0.5f, 8f)
-                    offset += panChange
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .clickable { showFullscreen = false },
-                    contentAlignment = Alignment.Center
-                ) {
-                    androidx.compose.foundation.Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = image.altText.ifBlank { null },
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                translationX = offset.x
-                                translationY = offset.y
-                            }
-                            .transformable(state = transformableState)
-                    )
-                }
-            }
-        }
-    } else {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            ),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            val errorLabel = stringResource(R.string.editor_image_load_error)
-            Text(
-                text = if (image.altText.isBlank()) errorLabel else image.altText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.padding(12.dp)
-            )
-        }
-    }
-}
 
 /**
  * Parses inline Markdown formatting into a Compose [AnnotatedString].

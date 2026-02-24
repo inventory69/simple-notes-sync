@@ -482,11 +482,6 @@
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
 
-    <!-- 🆕 v1.9.0 (F08): Image Embedding -->
-    <string name="editor_insert_image">Insert image</string>
-    <string name="editor_image_alt_text">image</string>
-    <string name="editor_image_load_error">Could not load image</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
