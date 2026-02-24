@@ -359,4 +359,32 @@ This is the content of my test note.
     fun `MAX_FILE_SIZE is 5MB`() {
         assertEquals(5L * 1024 * 1024, NotesImportWizard.MAX_FILE_SIZE)
     }
+
+    // ═══════════════════════════════════════════════
+    // v1.9.0: Import Wizard — Mixed-Content Regression
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `markdown with embedded checklists preserves full body content`() {
+        // Regression: ≥2 Checklist-Items führten dazu dass der gesamte Body als
+        // CHECKLIST importiert wurde und Nicht-Checkbox-Text verloren ging.
+        val content = """
+            # Meeting Notes
+
+            Teilnehmer: Alice, Bob
+
+            - [x] Budget genehmigt
+            - [ ] Design-Review planen
+            - [ ] Kundenmeeting bestätigen
+
+            Nächstes Meeting: Montag 14:00
+        """.trimIndent()
+
+        val body = extractMarkdownBody(content)
+
+        // Body enthält sowohl Checkbox-Syntax als auch normalen Text
+        assertTrue("Body should contain checklist syntax", body.contains("- [x]"))
+        assertTrue("Body should contain non-checklist text", body.contains("Teilnehmer"))
+        assertTrue("Body should contain trailing text", body.contains("Nächstes Meeting"))
+    }
 }
