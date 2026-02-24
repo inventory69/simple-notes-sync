@@ -7,8 +7,6 @@ package dev.dettmer.simplenotes.markdown
  * Supports: headings, paragraphs, unordered lists, code blocks, horizontal rules.
  * Inline formatting (bold, italic, strikethrough, code, links) is handled
  * per-block by [MarkdownRenderer].
- *
- * 🔮 v1.9.0 (F08): Will be extended with image block support.
  */
 object MarkdownEngine {
 
@@ -30,9 +28,6 @@ object MarkdownEngine {
 
         /** Horizontal rule (---, ***, ___). */
         data object HorizontalRule : MarkdownBlock()
-
-        /** 🆕 v1.9.0 (F08): Embedded image (standalone on its own line). */
-        data class Image(val altText: String, val path: String) : MarkdownBlock()
     }
 
     /**
@@ -64,13 +59,6 @@ object MarkdownEngine {
                 // ── Horizontal rule ──
                 isHorizontalRule(line) -> {
                     blocks.add(MarkdownBlock.HorizontalRule)
-                    i++
-                }
-
-                // ── Image (standalone on its own line) ── 🆕 v1.9.0 (F08)
-                IMAGE_REGEX.matchEntire(line.trim()) != null -> {
-                    val m = IMAGE_REGEX.matchEntire(line.trim())!!
-                    blocks.add(MarkdownBlock.Image(m.groupValues[1], m.groupValues[2]))
                     i++
                 }
 
@@ -120,13 +108,11 @@ object MarkdownEngine {
         if (isHorizontalRule(line)) return false
         if (HEADING_REGEX.matchEntire(line) != null) return false
         if (LIST_ITEM_REGEX.matches(line)) return false
-        if (IMAGE_REGEX.matchEntire(line.trim()) != null) return false  // 🆕 v1.9.0 (F08)
         return true
     }
 
     private val HEADING_REGEX = Regex("""^(#{1,3})\s+(.+)$""")
     private val LIST_ITEM_REGEX = Regex("""^\s*[-*+]\s+(.+)$""")
-    private val IMAGE_REGEX = Regex("""^!\[([^\]]*)\]\(([^)]+)\)\s*$""")  // 🆕 v1.9.0 (F08)
     private const val HORIZONTAL_RULE_MIN_CHARS = 3
 
     private fun isHorizontalRule(line: String): Boolean {
