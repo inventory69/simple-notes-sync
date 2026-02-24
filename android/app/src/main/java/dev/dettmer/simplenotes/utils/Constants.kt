@@ -73,6 +73,11 @@ object Constants {
     const val DEFAULT_CUSTOM_APP_TITLE = ""  // Empty = use default "Simple Notes"
     const val MAX_CUSTOM_APP_TITLE_LENGTH = 30
 
+    // 🆕 v1.9.0: Configurable WebDAV Sync Folder
+    const val KEY_SYNC_FOLDER_NAME = "sync_folder_name"
+    const val DEFAULT_SYNC_FOLDER_NAME = "notes"  // Backward compatible default
+    const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
+
     // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
     // 🔧 v1.9.0: Unified setting for both downloads and uploads
     const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration

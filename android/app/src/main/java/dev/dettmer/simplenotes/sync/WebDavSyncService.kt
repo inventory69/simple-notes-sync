@@ -72,6 +72,8 @@ class WebDavSyncService(
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
+    /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
+    private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
     
     // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
     private var sessionSardine: SafeSardineWrapper? = null
@@ -188,13 +190,12 @@ class WebDavSyncService(
      * @return notes/ Ordner-URL (mit trailing /)
      */
     private fun getNotesUrl(baseUrl: String): String {
+        val folderName = activeSyncFolderName
         val normalized = baseUrl.trimEnd('/')
-        
-        // Wenn URL bereits mit /notes endet → direkt nutzen
-        return if (normalized.endsWith("/notes")) {
+        return if (normalized.endsWith("/$folderName")) {
             "$normalized/"
         } else {
-            "$normalized/notes/"
+            "$normalized/$folderName/"
         }
     }
     
@@ -210,11 +211,10 @@ class WebDavSyncService(
      * @return Markdown-Ordner-URL (mit trailing /)
      */
     private fun getMarkdownUrl(baseUrl: String): String {
+        val folderName = activeSyncFolderName
         val notesUrl = getNotesUrl(baseUrl)
         val normalized = notesUrl.trimEnd('/')
-        
-        // Ersetze /notes mit /notes-md
-        return normalized.replace("/notes", "/notes-md") + "/"
+        return normalized.replace("/$folderName", "/$folderName-md") + "/"
     }
     
     /**
@@ -248,20 +248,20 @@ class WebDavSyncService(
      */
     private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
         if (notesDirEnsured) {
-            Logger.d(TAG, "⚡ notes/ directory already verified (cached)")
+            Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
             return
         }
         
         try {
-            Logger.d(TAG, "🔍 Checking if notes/ directory exists...")
+            Logger.d(TAG, "🔍 Checking if $activeSyncFolderName/ directory exists...")
             if (!sardine.exists(notesUrl)) {
-                Logger.d(TAG, "📁 Creating notes/ directory...")
+                Logger.d(TAG, "📁 Creating $activeSyncFolderName/ directory...")
                 sardine.createDirectory(notesUrl)
             }
-            Logger.d(TAG, "    ✅ notes/ directory ready")
+            Logger.d(TAG, "    ✅ $activeSyncFolderName/ directory ready")
             notesDirEnsured = true
         } catch (e: Exception) {
-            Logger.e(TAG, "💥 CRASH checking/creating notes/ directory!", e)
+            Logger.e(TAG, "💥 CRASH checking/creating $activeSyncFolderName/ directory!", e)
             throw e
         }
     }
@@ -549,13 +549,20 @@ class WebDavSyncService(
                 sardine.createDirectory(serverUrl)
             }
 
-            // 🆕 Issue #21: Zusätzlich /notes/ prüfen und Status kommunizieren
+            // 🔧 v1.9.0 Fix: activeSyncFolderName VOR getNotesUrl() laden
+            activeSyncFolderName = prefs.getString(
+                Constants.KEY_SYNC_FOLDER_NAME,
+                Constants.DEFAULT_SYNC_FOLDER_NAME
+            ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
+            // 🆕 Issue #21: Sync-Ordner prüfen und Status mit Ordnernamen kommunizieren
             val notesUrl = getNotesUrl(serverUrl)
             val notesExist = try { sardine.exists(notesUrl) } catch (_: Exception) { false }
+            val folderName = activeSyncFolderName
             val infoMessage = if (notesExist) {
-                context.getString(R.string.test_connection_success_with_notes)
+                context.getString(R.string.test_connection_success_with_notes, folderName)
             } else {
-                context.getString(R.string.test_connection_success_first_sync)
+                context.getString(R.string.test_connection_success_first_sync, folderName)
             }
 
             SyncResult(
@@ -637,6 +644,10 @@ class WebDavSyncService(
             }
             
             Logger.d(TAG, "📡 Server URL: $serverUrl")
+            // 🆕 v1.9.0: Load configured sync folder name at sync start
+            activeSyncFolderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+                ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+            Logger.d(TAG, "📁 Sync folder: $activeSyncFolderName")
             Logger.d(TAG, "🔐 Credentials configured: ${prefs.getString(Constants.KEY_USERNAME, null) != null}")
             
             var syncedCount = 0
@@ -1470,16 +1481,16 @@ class WebDavSyncService(
         var downloadException: Exception? = null
         
         try {
-            // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
+            // 🆕 PHASE 1: Download from /{syncFolder}/ (configurable since v1.9.0)
             val notesUrl = getNotesUrl(serverUrl)
-            Logger.d(TAG, "🔍 Phase 1: Checking /notes/ at: $notesUrl")
+            Logger.d(TAG, "🔍 Phase 1: Checking /$activeSyncFolderName/ at: $notesUrl")
             
             // ⚡ v1.3.1: Performance - Get last sync time for skip optimization
             val lastSyncTime = getLastSyncTimestamp()
             var skippedUnchanged = 0
             
             if (sardine.exists(notesUrl)) {
-                Logger.d(TAG, "   ✅ /notes/ exists, scanning...")
+                Logger.d(TAG, "   ✅ /$activeSyncFolderName/ exists, scanning...")
                 val resources = sardine.list(notesUrl)
                 val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
@@ -1630,6 +1641,16 @@ class WebDavSyncService(
                                     continue
                                 }
 
+                                // 🔧 v1.9.0 Fix: Validate note ID matches filename
+                                // Legitimate notes: filename = "{noteId}.json" → parsed ID == filename
+                                // Foreign JSON (e.g. google-services.json) → random UUID ≠ filename
+                                if (remoteNote.id != result.noteId) {
+                                    Logger.w(TAG, "   ⚠️ Skipping foreign JSON: ${result.noteId}.json " +
+                                        "(parsed ID '${remoteNote.id}' doesn't match filename)")
+                                    processedIds.add(result.noteId)  // Prevent re-download attempts
+                                    continue
+                                }
+
                                 processedIds.add(remoteNote.id)
                                 val localNote = storage.loadNote(remoteNote.id)
 
@@ -1638,7 +1659,7 @@ class WebDavSyncService(
                                         // New note from server
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
-                                        Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
+                                        Logger.d(TAG, "   ✅ Downloaded from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                         // ⚡ Batch E-Tag for later
                                         if (result.etag != null) {
@@ -1649,7 +1670,7 @@ class WebDavSyncService(
                                         // OVERWRITE mode: Always replace regardless of timestamps
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
-                                        Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
+                                        Logger.d(TAG, "   ♻️ Overwritten from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                         if (result.etag != null) {
                                             etagUpdates["etag_json_${result.noteId}"] = result.etag
@@ -1666,7 +1687,7 @@ class WebDavSyncService(
                                             // Safe to overwrite
                                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                             downloadedCount++
-                                            Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
+                                            Logger.d(TAG, "   ✅ Updated from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                             if (result.etag != null) {
                                                 etagUpdates["etag_json_${result.noteId}"] = result.etag
@@ -2397,16 +2418,22 @@ class WebDavSyncService(
         return@withContext try {
             val sardine = getOrCreateSardine() ?: return@withContext false
             val serverUrl = getServerUrl() ?: return@withContext false
-            
+
+            // 🔧 v1.9.0 Fix: activeSyncFolderName VOR getNotesUrl() laden
+            activeSyncFolderName = prefs.getString(
+                Constants.KEY_SYNC_FOLDER_NAME,
+                Constants.DEFAULT_SYNC_FOLDER_NAME
+            ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
             var deletedJson = false
             var deletedMd = false
-            
-            // v1.4.1: Try to delete JSON from /notes/ first (standard path)
+
+            // v1.4.1: Try to delete JSON from configured sync folder first (standard path)
             val jsonUrl = getNotesUrl(serverUrl) + "$noteId.json"
             if (sardine.exists(jsonUrl)) {
                 sardine.delete(jsonUrl)
                 deletedJson = true
-                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /notes/)")
+                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /$activeSyncFolderName/)")
             } else {
                 // v1.4.1: Fallback - check ROOT folder for v1.2.0 compatibility
                 val rootJsonUrl = serverUrl.trimEnd('/') + "/$noteId.json"
@@ -2447,8 +2474,9 @@ class WebDavSyncService(
             }
             
             if (!deletedJson && !deletedMd) {
-                Logger.w(TAG, "⚠️ Note $noteId not found on server")
-                return@withContext false
+                // 🔧 v1.9.0 Fix: Note nicht auf Server = bereits gelöscht = Ziel erreicht
+                Logger.w(TAG, "⚠️ Note $noteId not found on server (treating as already deleted)")
+                return@withContext true
             }
             
             // Remove from deletion tracker (was explicitly deleted from server)

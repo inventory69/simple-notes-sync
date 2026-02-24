@@ -56,6 +56,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
     // This prevents false-positive "server changed" toasts during text input
     private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+    // 🆕 v1.9.0: Track last confirmed sync folder name for change detection
+    private var confirmedSyncFolderName: String =
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
     
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings State
@@ -214,6 +218,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
     )
     val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
+
+    // 🆕 v1.9.0: Configurable WebDAV Sync Folder
+    private val _syncFolderName = MutableStateFlow(
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+    )
+    val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
@@ -298,6 +308,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
         prefs.edit().putString(Constants.KEY_PASSWORD, value).apply()
     }
+
+    // 🆕 v1.9.0: Update configurable sync folder name
+    fun updateSyncFolderName(name: String) {
+        val sanitized = name
+            .replace(Regex("[^a-zA-Z0-9_-]"), "")
+            .take(Constants.MAX_SYNC_FOLDER_NAME_LENGTH)
+        _syncFolderName.value = sanitized
+        prefs.edit().putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }).apply()
+    }
     
     /**
      * 🔧 v1.7.0 Hotfix: Manual save function - only called when leaving settings screen
@@ -310,8 +329,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
         
+        // 🆕 v1.9.0: Folder change counts as server change (different data location)
+        val currentFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        val folderChanged = currentFolder != confirmedSyncFolderName
+
         // 🔄 v1.7.0: Detect server change ONLY against last confirmed URL
-        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl)
+        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl) || folderChanged
         
         // ✅ Settings are already saved in updateServerHost/Protocol/Username/Password
         // This function now ONLY handles server-change detection
@@ -328,6 +351,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             // Update confirmed state after reset
             confirmedServerUrl = fullUrl
+            confirmedSyncFolderName = currentFolder
         } else {
             Logger.d(TAG, "💾 Server settings check complete (no server change detected)")
         }
