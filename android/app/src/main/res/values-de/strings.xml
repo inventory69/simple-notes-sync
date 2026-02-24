@@ -463,8 +463,7 @@
     <string name="search_notes_placeholder">Suchen…</string>
     <string name="search_clear">Suche leeren</string>
 
-    <!-- v1.9.0 (F11): Sort-Chip + Filterleiste Toggle -->
-    <string name="sort_chip_label">Sortieren</string>
+    <!-- v1.9.0 (F11): Filterleiste Toggle -->
     <string name="toggle_filter_row">Filterleiste ein-/ausblenden</string>
 
     <!-- 🆕 v1.9.0 (F07): Markdown-Vorschau -->
