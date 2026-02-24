@@ -15,14 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Notes
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,10 +41,10 @@ import dev.dettmer.simplenotes.models.NoteFilter
 /**
  * 🆕 v1.9.0 (F06): Horizontale FilterChip-Reihe für die Notizliste.
  * 🆕 v1.9.0 (F10): Inline-Suchfeld am rechten Ende der Reihe.
- * 🆕 v1.9.0 (F11): Sort-Chip als erstes Element (links).
+ * 🆕 v1.9.0 (F11): Sort-Button als erstes Element (links), icon-only.
  *
  * ┌──────────────────────────────────────────────────────────────────────────────┐
- * │  [↕ Sort]  [All]  [📝 Text]  [☑ Checklists]       [ 🔍 Search...     ✕ ] │
+ * │  [↕]  [All]  [📝 Text]  [☑ Checklists]            [ 🔍 Search...     ✕ ] │
  * └──────────────────────────────────────────────────────────────────────────────┘
  */
 @Composable
@@ -64,17 +64,13 @@ fun FilterChipRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 🆕 v1.9.0 (F11): Sort chip — opens sort dialog
-        AssistChip(
-            onClick = { focusManager.clearFocus(); onSortClick() },
-            label = { Text(stringResource(R.string.sort_chip_label)) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Sort,
-                    contentDescription = stringResource(R.string.sort_notes)
-                )
-            }
-        )
+        // 🆕 v1.9.0 (F11): Sort button (icon-only) — opens sort dialog
+        IconButton(onClick = { focusManager.clearFocus(); onSortClick() }) {
+            Icon(
+                imageVector = Icons.Default.SwapVert,
+                contentDescription = stringResource(R.string.sort_notes)
+            )
+        }
 
         // "All" chip — no icon, just text
         FilterChip(
