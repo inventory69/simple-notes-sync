@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import java.util.UUID
@@ -124,7 +125,11 @@ class NotesImportWizard(
             // baseName ausschließen: WebDAV list() gibt den Ordner selbst als erstes Element zurück
             val baseName = baseUrl.substringAfterLast('/')
             resources
-                .filter { res -> res.isDirectory && res.name != "notes" && res.name != baseName }
+                .filter { res ->
+                    res.isDirectory &&
+                    res.name != baseName &&
+                    !isSyncFolder(res.name)
+                }
                 .forEach { subDir ->
                     val subUrl = "$baseUrl/${subDir.name}"
                     try {
@@ -309,6 +314,14 @@ class NotesImportWizard(
             jsonElement.isJsonArray  -> parseJsonArray(jsonElement.asJsonArray, candidate)
             else -> null
         }
+    }
+
+    // 🆕 v1.9.0: Check if folder name matches configured sync folder (or its markdown sibling)
+    private fun isSyncFolder(folderName: String): Boolean {
+        val syncFolder = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+        return folderName == syncFolder || folderName == "$syncFolder-md"
     }
 
     private fun parseJsonObject(

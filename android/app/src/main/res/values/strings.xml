@@ -267,6 +267,9 @@
     <string name="server_connection_https_hint">HTTPS for secure connections over the internet</string>
     <string name="server_address">Server Address</string>
     <string name="server_address_hint">e.g. http://192.168.0.188:8080/notes</string>
+    <string name="server_advanced_settings">Advanced</string>
+    <string name="sync_folder_name">Sync folder</string>
+    <string name="sync_folder_name_hint">Folder name on the WebDAV server (default: notes). Only change this if you know what you\'re doing.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
@@ -524,9 +527,9 @@
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
-    <!-- Issue #21: Connection test info with /notes/ status -->
-    <string name="test_connection_success_with_notes">✅ Server reachable. Notes folder found.</string>
-    <string name="test_connection_success_first_sync">✅ Server reachable. Notes folder will be created on first sync.</string>
+    <!-- Issue #21: Connection test info with sync folder status -->
+    <string name="test_connection_success_with_notes">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
+    <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Error: %s</string>

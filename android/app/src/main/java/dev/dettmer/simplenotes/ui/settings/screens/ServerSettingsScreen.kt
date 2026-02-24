@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -73,8 +77,10 @@ fun ServerSettingsScreen(
     val isHttps by viewModel.isHttps.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val syncFolderName by viewModel.syncFolderName.collectAsState()  // 🆕 v1.9.0
     
     var passwordVisible by remember { mutableStateOf(false) }
+    var showAdvanced by remember { mutableStateOf(false) }  // 🆕 v1.9.0
     
     // 🔧 v1.7.0 Hotfix: Save server settings when leaving this screen
     // This prevents false "server changed" detection during text input
@@ -263,6 +269,55 @@ fun ServerSettingsScreen(
                     enabled = fieldsEnabled,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
                 )
+
+                // 🆕 v1.9.0: Ausklappbarer "Erweitert"-Bereich
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = fieldsEnabled) { showAdvanced = !showAdvanced }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (showAdvanced) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.server_advanced_settings),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                AnimatedVisibility(visible = showAdvanced) {
+                    OutlinedTextField(
+                        value = syncFolderName,
+                        onValueChange = { viewModel.updateSyncFolderName(it) },
+                        label = { Text(stringResource(R.string.sync_folder_name)) },
+                        supportingText = { Text(stringResource(R.string.sync_folder_name_hint)) },
+                        prefix = {
+                            Text(
+                                "/",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        suffix = {
+                            Text(
+                                "/",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingIcon = { Icon(Icons.Default.Folder, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = fieldsEnabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))

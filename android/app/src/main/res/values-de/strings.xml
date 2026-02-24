@@ -267,6 +267,9 @@
     <string name="server_connection_https_hint">HTTPS für sichere Verbindungen über das Internet</string>
     <string name="server_address">Server-Adresse</string>
     <string name="server_address_hint">z.B. http://192.168.0.188:8080/notes</string>
+    <string name="server_advanced_settings">Erweitert</string>
+    <string name="sync_folder_name">Sync-Ordner</string>
+    <string name="sync_folder_name_hint">Ordnername auf dem WebDAV-Server (Standard: notes). Nur ändern, wenn du weißt, was du tust.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Benutzername</string>
     <string name="password">Passwort</string>
@@ -524,9 +527,9 @@
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
-    <!-- Issue #21: Verbindungstest-Info mit /notes/-Status -->
-    <string name="test_connection_success_with_notes">✅ Server erreichbar. Notizen-Ordner gefunden.</string>
-    <string name="test_connection_success_first_sync">✅ Server erreichbar. Notizen-Ordner wird beim ersten Sync erstellt.</string>
+    <!-- Issue #21: Verbindungstest-Info mit Sync-Ordner-Status -->
+    <string name="test_connection_success_with_notes">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ wird automatisch erstellt).</string>
+    <string name="test_connection_success_first_sync">✅ Server erreichbar. Ordner /%1$s/ und /%1$s-md/ werden beim ersten Sync erstellt.</string>
     <string name="toast_connection_success">✅ Verbindung erfolgreich!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Fehler: %s</string>
