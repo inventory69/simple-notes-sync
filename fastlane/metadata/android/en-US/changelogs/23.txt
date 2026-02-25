@@ -1,9 +1,12 @@
-🔄 v1.9.0 — Sync Quality & Import
-• New: Import notes from WebDAV or local (.md, .json, .txt)
-• New: Parallel uploads — faster with multiple notes
-• Fixed: First sync failed if /notes/ folder missing on server
-• Fixed: Server switch caused false “deleted” status
-• Fixed: Markdown export race condition on duplicate titles
-• Fixed: Deletion detection broken with fewer than 10 notes
-• Parallel connections setting unified (1/3/5), 7/10 → 5
-• E-Tag cache improved to skip redundant re-downloads
+🔄 v1.9.0 — Filter, Markdown & Sync
+
+• New: Filter & search bar for notes
+• New: Markdown preview with formatting toolbar
+• New: Import notes from WebDAV/local files
+• New: Configurable sync folder & opt-in autosave
+• Widget: Monet colors, strikethrough, seamless design
+• Checklist: smarter scroll & un-check behavior
+• Faster sync with parallel uploads
+• Various bug fixes and stability improvements
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

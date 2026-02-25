@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.0] - 2026-02-19
+## [1.9.0] - 2026-02-25
 
 ### 🔄 Sync Quality, Performance & Import
 
@@ -67,6 +67,61 @@ Focused release adding note import, significantly faster parallel uploads, and f
 
 - Detekt magic number compliance: extraction of `ALL_DELETED_GUARD_THRESHOLD` constant
 - ProGuard/R8 release build verification (no rule changes needed)
+
+### 📊 Part 2: Filter, Search & Editor (F01–F07, F09–F14)
+
+**Filter Chip Row** *(F06, F10, F11)*
+- New filter bar below TopAppBar — filter notes by All / Text / Checklists
+- Inline search field for quick note filtering by title
+- Sort button moved from dialog into compact filter row icon
+- Tune button in TopAppBar toggles filter row visibility
+
+**Markdown Preview** *(F07)*
+- Live markdown preview for text notes with formatting toolbar
+- Supports headings, bold, italic, strikethrough, lists, horizontal rules, code blocks
+- Toggle between edit and preview mode
+
+**Widget Polish** *(F01, F02, F03, F09)*
+- Monet tint preserved in translucent widget backgrounds (F01)
+- Options bar background removed for seamless integration (F02)
+- Strikethrough for completed checklist items in widget (F03)
+- Widgets automatically refresh on onStop lifecycle hook (F09)
+
+**Checklist Improvements** *(F04, F12, F14)*
+- Un-checking an item restores it to its original position (F04)
+- Original order cemented after insert/delete operations (F12)
+- Consistent scroll behavior on check/un-check actions (F14)
+
+**Other** *(F05, F13)*
+- Custom app title: configurable app name in settings (F05)
+- Notes list scrolls to top after manual sync (F13)
+
+### 🧹 Part 3: Cleanup & Polish
+
+**New Features**
+- Configurable WebDAV sync folder name (default: `notes`, custom name for multi-app setups)
+- Opt-in autosave with debounce timer (3s after last edit, configurable in settings)
+- Checklist scroll fix: prevent scroll jump when checking first visible item
+
+**Image Support deferred to v2.0.0**
+- Local image embedding (F08) removed from v1.9.0 scope
+- Feature preserved as v2.0.0 specification with full architecture proposal
+
+**UI Fixes**
+- Tune button color: untoggled state now uses default TopAppBar icon color
+- Sort button: replaced AssistChip with compact IconButton + SwapVert icon
+- Import wizard: checklist detection preserved full note content
+
+**Code Quality**
+- Fixed deprecated `Icons.Outlined.Notes` → `Icons.AutoMirrored.Outlined.Notes`
+- Removed unused `Color` import from ServerSettingsScreen + detekt baseline entry
+- Logger timestamps use `Locale.ROOT` instead of `Locale.getDefault()`
+- Removed obsolete `Build.VERSION_CODES.N` check (minSdk=24)
+
+**Infrastructure**
+- Weblate integration switched to PR-based translation workflow
+- Documentation updated for v1.8.2 and v1.9.0 (FEATURES, UPCOMING, QUICKSTART)
+- Fixed broken links across docs (closes #22)
 
 ---
 
