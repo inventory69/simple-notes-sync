@@ -10,116 +10,140 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.9.0] - 2026-02-25
 
-### 🔄 Sync-Qualität & Performance
+### 🔄 Sync-Qualität, Performance & UI
 
-Fokussiertes Release zur Verbesserung der Sync-Korrektheit, Performance und Zuverlässigkeit — Server-Wechsel-Datenverlust behoben, parallele Upload/Download-Einstellungen vereinheitlicht, drei Sync-Edge-Cases gelöst.
+Großes Release mit Notiz-Filterung, Markdown-Vorschau, konfigurierbarem Sync-Ordner, Opt-in-Autosave, Widget-Polish und signifikanten Sync-Verbesserungen — Server-Wechsel-Datenverlust behoben, parallele Uploads, Import-Assistent und drei Sync-Edge-Cases gelöst.
 
 ### 🐛 Fehlerbehebungen
 
-**Erster Sync schlägt fehl wenn /notes/-Ordner auf Server fehlt** *(e012d17)*
+**Erster Sync schlägt fehl wenn /notes/-Ordner auf Server fehlt** ([e012d17](https://github.com/inventory69/simple-notes-sync/commit/e012d17))
 - Der erste Sync schlägt nicht mehr still fehl, wenn das Verzeichnis `/notes/` noch nicht auf dem Server angelegt wurde
 - Ursache: `checkServerForChanges()` lieferte `false` (keine Änderungen) statt `true` (fortfahren), wenn `lastSyncTime > 0` und der Ordner fehlte
 - Fix: gibt `true` zurück, damit der initiale Upload startet — der Server legt den Ordner beim ersten PUT automatisch an
 
-**Server-Wechsel verursacht falschen "Auf Server gelöscht"-Status** *(Plan 01)*
+**Server-Wechsel verursacht falschen "Auf Server gelöscht"-Status** ([0985209](https://github.com/inventory69/simple-notes-sync/commit/0985209))
 - Der Wechsel zu einem neuen Server markiert lokale Notizen nicht mehr fälschlich als gelöscht
 - Ursache: E-Tag- und Content-Hash-Caches des alten Servers wurden nicht geleert — Upload-Skip feuerte fälschlich, Notizen erschienen als SYNCED ohne tatsächlich hochgeladen zu sein
 - Fix: `clearServerCaches()` leert alle E-Tag-, Content-Hash-, Sync-Timestamp- und Deletion-Tracker-Einträge bei Server-Wechsel
 - `resetAllSyncStatusToPending()` setzt jetzt auch DELETED_ON_SERVER auf PENDING zurück
 
-**Server-Löscherkennung zu aggressiv bei wenigen Notizen** *(Plan 03, Bug A)*
+**Server-Löscherkennung zu aggressiv bei wenigen Notizen** ([56c0363](https://github.com/inventory69/simple-notes-sync/commit/56c0363))
 - Nutzer mit 2–9 Notizen, die alle über die Nextcloud-Web-UI löschten, bekamen nie den DELETED_ON_SERVER-Status
 - Guard-Schwellenwert von >1 auf ≥10 angehoben
 
-**Race Condition bei parallelem Markdown-Export mit gleichen Titeln** *(Plan 03, Bug B)*
+**Race Condition bei parallelem Markdown-Export mit gleichen Titeln** ([56c0363](https://github.com/inventory69/simple-notes-sync/commit/56c0363))
 - Zwei Notizen mit identischem Titel konnten sich gegenseitig die Markdown-Datei überschreiben
 - Ursache: gleichzeitige `exists()` → `put()`-Sequenz ohne Synchronisation
 - Fix: Markdown-Export wird per Mutex serialisiert (JSON-Uploads bleiben parallel)
 
-**E-Tag nicht gecacht bei "Lokal neuer"-Download-Skip** *(Plan 03, Bug C)*
+**E-Tag nicht gecacht bei "Lokal neuer"-Download-Skip** ([56c0363](https://github.com/inventory69/simple-notes-sync/commit/56c0363))
 - Wenn eine lokale Notiz neuer war als die Server-Version, wurde der Server-E-Tag nicht gespeichert
 - Verursachte unnötige Re-Downloads bei jedem folgenden Sync
 - Fix: E-Tag wird jetzt auch im else-Branch der Download-Ergebnis-Verarbeitung gespeichert
 
-### ✨ Verbesserungen
+**Tune-Button-Farbe passt nicht zur Standard-Iconfarbe** ([135559a](https://github.com/inventory69/simple-notes-sync/commit/135559a))
+- Untoggled-Tune-Button nutzt jetzt die Standard-TopAppBar-Iconfarbe statt einer eigenen Farbe
 
-**Notizen-Import-Assistent** *(e012d17)*
+**Import-Assistent verliert Checklisten-Inhalt** ([5031848](https://github.com/inventory69/simple-notes-sync/commit/5031848))
+- Checklisten-Erkennung beim Markdown-Import behält jetzt den vollständigen Notiz-Inhalt
+
+**Checklisten-Scroll-Sprung beim Abhaken des ersten sichtbaren Items** ([8238af4](https://github.com/inventory69/simple-notes-sync/commit/8238af4))
+- Abhaken des ersten sichtbaren Checklisten-Items verursacht keinen Scroll-Sprung mehr
+
+**Checklisten-Originalreihenfolge verloren nach Einfügen/Löschen** ([e601642](https://github.com/inventory69/simple-notes-sync/commit/e601642))
+- Originalreihenfolge wird nach Einfüge-/Löschoperationen zementiert, um Reihenfolge-Glitches zu verhindern
+
+**Inkonsistentes Scrollen beim Check/Un-Check** ([19dfb03](https://github.com/inventory69/simple-notes-sync/commit/19dfb03))
+- Konsistentes Scroll-Verhalten beim Abhaken und Aufheben von Checklisten-Items
+
+### ✨ Neue Features
+
+**Notizen-Import-Assistent** ([e012d17](https://github.com/inventory69/simple-notes-sync/commit/e012d17))
 - Neuer Import-Screen in den Einstellungen — Notizen von WebDAV-Server oder lokalem Speicher importieren
 - Unterstützte Formate: `.md` (mit/ohne YAML-Frontmatter), `.json` (Simple Notes Format oder generisch), `.txt` (Klartext)
 - WebDAV-Scan: rekursiver Unterordner-Scan (Tiefe 1), berücksichtigt bestehende DeletionTracker-Einträge
 - Notizen mit YAML-Frontmatter oder Simple Notes JSON werden als SYNCED importiert; andere als PENDING
 - Erreichbar über Einstellungen → Import
 
-**Parallele Uploads** *(187d338)*
+**Parallele Uploads** ([187d338](https://github.com/inventory69/simple-notes-sync/commit/187d338))
 - Notizen werden parallel statt sequentiell hochgeladen — ~2× schneller bei mehreren geänderten Notizen
 - Upload-Zeit für 4 Notizen von ~11,5 s auf ~6 s reduziert (auf Gerät gemessen)
 - Zweiter Sync mit unveränderten Notizen: Upload-Phase ~0 ms (alle per Content-Hash übersprungen)
 - Begrenzte Parallelität via Semaphore; Datei-I/O-Schreibzugriffe via Mutex serialisiert
 - Neu: `/notes-md/`-Existenzprüfung pro Sync-Lauf gecacht (spart ~480 ms × N exists()-Aufrufe)
 
-**Vereinheitlichte Parallele-Verbindungen-Einstellung** *(Plan 02)*
+**Vereinheitlichte Parallele-Verbindungen-Einstellung** ([ef200d0](https://github.com/inventory69/simple-notes-sync/commit/ef200d0))
 - Parallele Downloads (1/3/5/7/10) und Uploads (versteckt, max 6) zu einer einzelnen "Parallele Verbindungen"-Einstellung zusammengeführt
 - Neue Optionen: 1, 3, 5 (reduziert von 5 Optionen — 7 und 10 entfernt da Uploads auf 6 begrenzt)
 - Nutzer mit 7 oder 10 werden automatisch auf 5 migriert
 - Uploads zur Laufzeit auf `min(Einstellung, 6)` begrenzt
 
-### 🛠️ Intern
-
-- Detekt-MagicNumber-Compliance: `ALL_DELETED_GUARD_THRESHOLD`-Konstante extrahiert
-- ProGuard/R8-Release-Build-Verifikation (keine Regeländerungen nötig)
-
-### 📊 Part 2: Filter, Suche & Editor (F01–F07, F09–F14)
-
-**Filter Chip Row** *(F06, F10, F11)*
+**Filter Chip Row** ([952755f](https://github.com/inventory69/simple-notes-sync/commit/952755f), [71a0469](https://github.com/inventory69/simple-notes-sync/commit/71a0469), [07c41bb](https://github.com/inventory69/simple-notes-sync/commit/07c41bb))
 - Neue Filter-Leiste unter der TopAppBar — Notizen filtern nach Alle / Text / Checklisten
 - Inline-Suchfeld für schnelle Notiz-Filterung nach Titel
 - Sortier-Button aus Dialog in kompaktes Filter-Row-Icon verschoben
 - Tune-Button in TopAppBar schaltet Filter-Zeile ein/aus
 
-**Markdown-Vorschau** *(F07)*
+**Markdown-Vorschau** ([e83a89a](https://github.com/inventory69/simple-notes-sync/commit/e83a89a))
 - Live-Markdown-Vorschau für Textnotizen mit Formatierungs-Toolbar
 - Unterstützt Überschriften, Fett, Kursiv, Durchgestrichen, Listen, Trennlinien, Code-Blöcke
 - Umschalten zwischen Bearbeitungs- und Vorschaumodus
 
-**Widget-Polish** *(F01, F02, F03, F09)*
-- Monet-Farbton in transluzenten Widget-Hintergründen erhalten (F01)
-- Options-Leisten-Hintergrund für nahtlose Integration entfernt (F02)
-- Durchstreichung für erledigte Checklisten-Items im Widget (F03)
-- Widgets aktualisieren automatisch beim onStop Lifecycle-Hook (F09)
+**Benutzerdefinierter App-Titel** ([bf478c7](https://github.com/inventory69/simple-notes-sync/commit/bf478c7))
+- Konfigurierbarer App-Name in den Einstellungen
 
-**Checklisten-Verbesserungen** *(F04, F12, F14)*
-- Abhaken-Rückgängig stellt Item an Originalposition wieder her (F04)
-- Originalreihenfolge nach Einfügen/Löschen zementiert (F12)
-- Konsistentes Scroll-Verhalten beim Check/Un-Check (F14)
+**Konfigurierbarer WebDAV-Sync-Ordner** ([58cdf1e](https://github.com/inventory69/simple-notes-sync/commit/58cdf1e))
+- Eigener Sync-Ordnername (Standard: `notes`, konfigurierbar für Multi-App-Setups)
 
-**Sonstiges** *(F05, F13)*
-- Benutzerdefinierter App-Titel: konfigurierbarer App-Name in Einstellungen (F05)
-- Notizliste scrollt nach oben nach manuellem Sync (F13)
+**Opt-in Autosave** ([5800183](https://github.com/inventory69/simple-notes-sync/commit/5800183))
+- Autosave mit Debounce-Timer (3s nach letzter Bearbeitung, konfigurierbar in Einstellungen)
+- Standardmäßig deaktiviert, Opt-in über Einstellungen
 
-### 🧹 Part 3: Bereinigung & Polish
+**Nach oben scrollen nach manuellem Sync** ([4697e49](https://github.com/inventory69/simple-notes-sync/commit/4697e49))
+- Notizliste scrollt nach Abschluss eines manuellen Syncs nach oben
 
-**Neue Features**
-- Konfigurierbarer WebDAV-Sync-Ordnername (Standard: `notes`, eigener Name für Multi-App-Setups)
-- Opt-in Autosave mit Debounce-Timer (3s nach letzter Bearbeitung, konfigurierbar in Einstellungen)
-- Checklisten-Scroll-Fix: Kein Scroll-Sprung mehr beim Abhaken des ersten sichtbaren Items
+### 🔄 Verbesserungen
 
-**Image Support auf v2.0.0 verschoben**
-- Lokales Bild-Embedding (F08) aus v1.9.0 Scope entfernt
-- Feature als v2.0.0 Spezifikation mit vollständigem Architektur-Vorschlag erhalten
+**Widget: Monet-Farbton in transluzenten Hintergründen** ([0f5a734](https://github.com/inventory69/simple-notes-sync/commit/0f5a734))
+- Monet-Dynamic-Color-Farbton in transluzenten Widget-Hintergründen erhalten
 
-**UI-Fixes**
-- Tune-Button-Farbe: Untoggled-State nutzt jetzt Standard-TopAppBar-Iconfarbe
-- Sort-Button: AssistChip durch kompakten IconButton + SwapVert-Icon ersetzt
-- Import-Wizard: Checklisten-Erkennung behält vollständigen Notiz-Inhalt
+**Widget: Options-Leisten-Hintergrund entfernt** ([5e3273a](https://github.com/inventory69/simple-notes-sync/commit/5e3273a))
+- Options-Leisten-Hintergrund für nahtlose Widget-Integration entfernt
 
-**Code-Qualität**
+**Widget: Durchstreichung für erledigte Items** ([eb9db2e](https://github.com/inventory69/simple-notes-sync/commit/eb9db2e))
+- Erledigte Checklisten-Items in Widgets zeigen jetzt Durchstreichung
+
+**Widget: Auto-Refresh bei onStop** ([2443908](https://github.com/inventory69/simple-notes-sync/commit/2443908))
+- Widgets aktualisieren automatisch beim Verlassen der App (onStop Lifecycle Hook)
+
+**Checkliste: Abhaken-Rückgängig stellt Originalposition wieder her** ([188a0f6](https://github.com/inventory69/simple-notes-sync/commit/188a0f6))
+- Aufheben eines Hakens stellt das Item an seiner Originalposition wieder her
+
+**Sortier-Button: Kompakter Icon-Button** ([a1bd15a](https://github.com/inventory69/simple-notes-sync/commit/a1bd15a))
+- AssistChip durch kompakten IconButton + SwapVert-Icon ersetzt
+
+### 🛠️ Intern
+
+**Code-Qualität** ([6708156](https://github.com/inventory69/simple-notes-sync/commit/6708156))
 - Deprecated `Icons.Outlined.Notes` → `Icons.AutoMirrored.Outlined.Notes` behoben
 - Ungenutzten `Color`-Import aus ServerSettingsScreen + Detekt-Baseline-Eintrag entfernt
 - Logger-Timestamps nutzen `Locale.ROOT` statt `Locale.getDefault()`
 - Obsoleten `Build.VERSION_CODES.N`-Check entfernt (minSdk=24)
 
-**Infrastruktur**
+**Detekt-Compliance** ([f0e143c](https://github.com/inventory69/simple-notes-sync/commit/f0e143c))
+- `ALL_DELETED_GUARD_THRESHOLD`-Konstante für MagicNumber-Compliance extrahiert
+
+**ProGuard/R8-Verifikation**
+- Release-Build verifiziert — keine Regeländerungen für v1.9.0 nötig
+
+**Image Support auf v2.0.0 verschoben** ([845ba03](https://github.com/inventory69/simple-notes-sync/commit/845ba03))
+- Lokales Bild-Embedding aus v1.9.0 Scope entfernt
+- Feature als v2.0.0 Spezifikation mit vollständigem Architektur-Vorschlag erhalten
+
+**Weblate PR-Workflow** ([efd782f](https://github.com/inventory69/simple-notes-sync/commit/efd782f))
 - Weblate-Integration auf PR-basierten Übersetzungs-Workflow umgestellt
+
+**Dokumentation** ([395d154](https://github.com/inventory69/simple-notes-sync/commit/395d154))
 - Dokumentation für v1.8.2 und v1.9.0 aktualisiert (FEATURES, UPCOMING, QUICKSTART)
 - Fehlerhafte Links in Docs behoben (schließt #22)
 
