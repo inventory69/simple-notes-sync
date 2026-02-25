@@ -267,8 +267,9 @@ class NoteEditorViewModel(
      * - Un-check → emits [ChecklistScrollAction.ScrollToTop]: scroll to the top of the list.
      * - Check → emits [ChecklistScrollAction.NoScroll]: keep scroll position exactly as-is.
      *
-     * Supersedes F04's scroll-to-restored-position logic. Items still sort correctly via
-     * [sortChecklistItems]; only the scroll target changes (restored position → top).
+     * Scroll stability for the first-visible-item case is handled in the UI layer via
+     * LazyListState.requestScrollToItem(0) which overrides LazyColumn’s key-tracking
+     * during the layout pass.
      */
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
