@@ -19,7 +19,7 @@ object Logger {
     private var fileLoggingEnabled = false
     private var logFile: File? = null
     private var appContext: Context? = null
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT)
     
     /**
      * Setzt den File-Logging Status (für UI Toggle)

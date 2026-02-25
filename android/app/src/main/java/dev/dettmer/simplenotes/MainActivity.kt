@@ -841,11 +841,9 @@ class MainActivity : AppCompatActivity() {
         val resourcesLocale = resources.configuration.locales[0]
         Logger.d(TAG, "║ Resources Locale: $resourcesLocale")
         
-        // Context Locale (API 24+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val contextLocales = resources.configuration.locales
-            Logger.d(TAG, "║ Context Locales (all): $contextLocales")
-        }
+        // Context Locale
+        val contextLocales = resources.configuration.locales
+        Logger.d(TAG, "║ Context Locales (all): $contextLocales")
         
         // Test String Loading
         val testString = getString(R.string.toast_already_synced)

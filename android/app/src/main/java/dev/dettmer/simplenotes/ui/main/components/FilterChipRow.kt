@@ -17,8 +17,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Notes
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -87,7 +87,7 @@ fun FilterChipRow(
             leadingIcon = if (currentFilter == NoteFilter.TEXT_ONLY) {
                 {
                     Icon(
-                        imageVector = Icons.Outlined.Notes,
+                        imageVector = Icons.AutoMirrored.Outlined.Notes,
                         contentDescription = null
                     )
                 }
