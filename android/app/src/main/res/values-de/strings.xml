@@ -220,6 +220,24 @@
     <string name="settings_markdown_manual_button">Markdown synchronisieren</string>
     <string name="settings_backup">Backup &amp; Wiederherstellung</string>
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
+
+    <!-- Issue #21: Notizen importieren -->
+    <string name="settings_import_title">Notizen importieren</string>
+    <string name="settings_import_subtitle">Notizen aus Dateien oder vom Server importieren</string>
+    <string name="import_section_server">Vom WebDAV-Server</string>
+    <string name="import_section_local">Vom Gerät</string>
+    <string name="import_info_text">Importiere .md-, .json- oder .txt-Dateien als Simple Notes. Importierte Notizen werden bei der nächsten Synchronisation übertragen. Originaldateien bleiben unverändert.</string>
+    <string name="settings_import_from_server">WebDAV-Server scannen</string>
+    <string name="settings_import_from_file">Dateien vom Gerät auswählen</string>
+    <string name="import_dialog_scanning">Wird gescannt…</string>
+    <string name="import_dialog_found">%d importierbare Dateien gefunden</string>
+    <string name="import_button_import">%d Dateien importieren</string>
+    <string name="import_no_files_found">Keine importierbaren Dateien gefunden</string>
+    <string name="import_summary_title">Import-Ergebnis</string>
+    <string name="import_dialog_complete">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen</string>
+    <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
+    <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
+    <string name="import_cancel">Abbrechen</string>
     <string name="settings_backup_info">📦 Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
     <string name="settings_backup_local_title">Lokales Backup</string>
     <string name="settings_backup_server_title">Server-Backup</string>
@@ -249,6 +267,9 @@
     <string name="server_connection_https_hint">HTTPS für sichere Verbindungen über das Internet</string>
     <string name="server_address">Server-Adresse</string>
     <string name="server_address_hint">z.B. http://192.168.0.188:8080/notes</string>
+    <string name="server_advanced_settings">Erweitert</string>
+    <string name="sync_folder_name">Sync-Ordner</string>
+    <string name="sync_folder_name_hint">Ordnername auf dem WebDAV-Server (Standard: notes). Nur ändern, wenn du weißt, was du tust.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Benutzername</string>
     <string name="password">Passwort</string>
@@ -428,7 +449,46 @@
     <string name="display_mode_list">📋 Listen-Ansicht</string>
     <string name="display_mode_grid">🎨 Raster-Ansicht</string>
     <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
-    
+
+    <!-- 🆕 v1.9.0 (F05): Custom App Title -->
+    <string name="custom_app_title_section">App-Titel</string>
+    <string name="custom_app_title_label">Eigener Titel</string>
+    <string name="custom_app_title_placeholder">Simple Notes</string>
+    <string name="custom_app_title_info">Lege einen eigenen Titel für den Hauptbildschirm fest. Leer lassen für den Standard-Titel \"Simple Notes\". Maximal 30 Zeichen.</string>
+    <string name="custom_app_title_char_count">%1$d / %2$d</string>
+    <!-- 🆕 v1.9.0: Autosave -->
+    <string name="autosave_section">Editor</string>
+    <string name="autosave_toggle">Automatisches Speichern</string>
+    <string name="autosave_description">Speichert automatisch nach 3 Sekunden Inaktivität</string>
+    <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
+    <string name="autosave_indicator">✓ Gespeichert</string>
+    <!-- 🆕 v1.9.0 (F06): Note Filter -->
+    <string name="filter_all">Alle</string>
+    <string name="filter_text_only">Text</string>
+    <string name="filter_checklist_only">Checklisten</string>
+
+    <!-- v1.9.0 (F10): Suche -->
+    <string name="search_notes_placeholder">Suchen…</string>
+    <string name="search_clear">Suche leeren</string>
+
+    <!-- v1.9.0 (F11): Filterleiste Toggle -->
+    <string name="toggle_filter_row">Filterleiste ein-/ausblenden</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown-Vorschau -->
+    <string name="editor_mode_edit">Bearbeiten</string>
+    <string name="editor_mode_preview">Vorschau</string>
+    <string name="editor_toggle_preview">Markdown-Vorschau umschalten</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
+    <string name="md_toolbar_bold">Fett</string>
+    <string name="md_toolbar_italic">Kursiv</string>
+    <string name="md_toolbar_strikethrough">Durchgestrichen</string>
+    <string name="md_toolbar_heading">Überschrift</string>
+    <string name="md_toolbar_code">Code</string>
+    <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_list">Liste</string>
+    <string name="md_toolbar_rule">Trennlinie</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
@@ -472,6 +532,9 @@
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
+    <!-- Issue #21: Verbindungstest-Info mit Sync-Ordner-Status -->
+    <string name="test_connection_success_with_notes">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ wird automatisch erstellt).</string>
+    <string name="test_connection_success_first_sync">✅ Server erreichbar. Ordner /%1$s/ und /%1$s-md/ werden beim ersten Sync erstellt.</string>
     <string name="toast_connection_success">✅ Verbindung erfolgreich!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Fehler: %s</string>
@@ -584,16 +647,15 @@
         <item quantity="other">%d erledigt</item>
     </plurals>
 
-    <!-- ============================= -->
-    <!-- PARALLEL DOWNLOADS v1.8.0     -->
-    <!-- ============================= -->
-    <string name="sync_parallel_downloads_title">Parallele Downloads</string>
-    <string name="sync_parallel_downloads_unit">parallel</string>
-    <string name="sync_parallel_downloads_desc_1">Sequentiell (langsam, sicher)</string>
-    <string name="sync_parallel_downloads_desc_3">Ausgewogen (3x schneller)</string>
-    <string name="sync_parallel_downloads_desc_5">Empfohlen (5x schneller)</string>
-    <string name="sync_parallel_downloads_desc_7">Schnell (7x schneller)</string>
-    <string name="sync_parallel_downloads_desc_10">Maximum (10x schneller, kann Server belasten)</string>
+    <!-- ============================================ -->
+    <!-- PARALLELE VERBINDUNGEN v1.9.0               -->
+    <!-- (Downloads + Uploads vereint)               -->
+    <!-- ============================================ -->
+    <string name="sync_parallel_connections_title">Parallele Verbindungen</string>
+    <string name="sync_parallel_connections_unit">parallel</string>
+    <string name="sync_parallel_connections_desc_1">Sequentiell (langsam, sicher)</string>
+    <string name="sync_parallel_connections_desc_3">Ausgewogen (3x schneller)</string>
+    <string name="sync_parallel_connections_desc_5">Maximum (5x schneller)</string>
 
     <!-- ============================= -->
     <!-- WIDGETS v1.8.0                -->

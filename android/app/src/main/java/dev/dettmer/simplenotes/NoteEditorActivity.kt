@@ -255,28 +255,25 @@ class NoteEditorActivity : AppCompatActivity() {
     }
     
     private fun saveNote() {
-        val title = editTextTitle.text?.toString()?.trim() ?: ""
+        val title = editTextTitle.text?.toString()?.trim().orEmpty()
         
         when (currentNoteType) {
             NoteType.TEXT -> {
-                val content = editTextContent.text?.toString()?.trim() ?: ""
+                val content = editTextContent.text?.toString()?.trim().orEmpty()
                 
                 if (title.isEmpty() && content.isEmpty()) {
                     showToast(getString(R.string.note_is_empty))
                     return
                 }
                 
-                val note = if (existingNote != null) {
-                    existingNote!!.copy(
+                val note = existingNote?.copy(
                         title = title,
                         content = content,
                         noteType = NoteType.TEXT,
                         checklistItems = null,
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = SyncStatus.PENDING
-                    )
-                } else {
-                    Note(
+                    ) ?: Note(
                         title = title,
                         content = content,
                         noteType = NoteType.TEXT,
@@ -284,7 +281,6 @@ class NoteEditorActivity : AppCompatActivity() {
                         deviceId = DeviceIdGenerator.getDeviceId(this),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
-                }
                 
                 storage.saveNote(note)
             }
@@ -303,17 +299,14 @@ class NoteEditorActivity : AppCompatActivity() {
                     item.copy(order = index)
                 }
                 
-                val note = if (existingNote != null) {
-                    existingNote!!.copy(
+                val note = existingNote?.copy(
                         title = title,
                         content = "", // Leer für Checklisten
                         noteType = NoteType.CHECKLIST,
                         checklistItems = orderedItems,
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = SyncStatus.PENDING
-                    )
-                } else {
-                    Note(
+                    ) ?: Note(
                         title = title,
                         content = "",
                         noteType = NoteType.CHECKLIST,
@@ -321,7 +314,6 @@ class NoteEditorActivity : AppCompatActivity() {
                         deviceId = DeviceIdGenerator.getDeviceId(this),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
-                }
                 
                 storage.saveNote(note)
             }

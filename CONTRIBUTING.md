@@ -101,6 +101,18 @@ Dokumentations-Verbesserungen sind auch Contributions!
 
 **Bitte:** Halte beide Sprachen (DE/EN) synchron!
 
+### 🌍 Übersetzungen
+
+Hilf mit, Simple Notes Sync in neue Sprachen zu übersetzen!
+
+**Empfohlen: Über Weblate** (kein Programmieren nötig):
+👉 [Auf Weblate übersetzen](https://hosted.weblate.org/projects/simple-notes-sync/)
+
+**Alternativ: Manuelle Übersetzung** (Pull Request):
+Siehe [docs/TRANSLATING.de.md](docs/TRANSLATING.de.md) für Details.
+
+Weblate-Übersetzungen werden automatisch als Pull Requests eingereicht und nach erfolgreichem Build gemerged.
+
 ### ✅ Pull Request Checklist
 
 - [ ] Code kompiliert lokal (`./gradlew assembleStandardDebug`)
@@ -225,6 +237,18 @@ Documentation improvements are also contributions!
 - `server/README.de.md` / `server/README.md` - Server setup
 
 **Please:** Keep both languages (DE/EN) in sync!
+
+### 🌍 Translations
+
+Help translate Simple Notes Sync into new languages!
+
+**Recommended: Via Weblate** (no coding required):
+👉 [Translate on Weblate](https://hosted.weblate.org/projects/simple-notes-sync/)
+
+**Alternative: Manual translation** (Pull Request):
+See [docs/TRANSLATING.md](docs/TRANSLATING.md) for details.
+
+Weblate translations are automatically submitted as pull requests and merged after a successful build.
 
 ### ✅ Pull Request Checklist
 

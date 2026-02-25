@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.widget
 
 import android.content.ComponentName
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
@@ -36,6 +37,7 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.Text
+import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistSortOption
@@ -93,6 +95,45 @@ private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
     }
 }
 
+// ── Background Color Helpers ──
+
+// 🆕 v1.9.0 (F01): Fallback-Farben für Geräte ohne Dynamic Color (vor Android 12)
+private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L   // Helles Material-Surface
+private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL // Dunkles Material-Surface
+
+
+/**
+ * 🆕 v1.9.0 (F01): Löst die Monet/Dynamic-Color widgetBackground auf und wendet
+ * die konfigurierte Opacity an. Dadurch bleibt der Material-You-Tint bei jeder
+ * Transparenzstufe erhalten — anstatt auf ein hartkodiertes Neutral zurückzufallen.
+ *
+ * Strategie: Da GlanceTheme.colors.widgetBackground keinen raw Color-Wert exponiert,
+ * lesen wir die System-Dynamic-Color-Tokens direkt via Context.
+ */
+@Composable
+private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
+    if (bgOpacity >= 1.0f) {
+        // Volle Deckkraft → Standard-GlanceTheme-Hintergrund (keine Berechnung nötig)
+        return GlanceModifier.background(GlanceTheme.colors.widgetBackground)
+    }
+
+    val context = LocalContext.current
+    val dayColor: Color
+    val nightColor: Color
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12+: echte Dynamic Color Tokens (gleiche die Glance intern nutzt)
+        dayColor = Color(context.getColor(android.R.color.system_accent1_100)).copy(alpha = bgOpacity)
+        nightColor = Color(context.getColor(android.R.color.system_neutral1_800)).copy(alpha = bgOpacity)
+    } else {
+        // Vor Android 12: Fallback auf Material-Standardwerte mit Alpha
+        dayColor = Color(BG_FALLBACK_DAY_COLOR.toInt()).copy(alpha = bgOpacity)
+        nightColor = Color(BG_FALLBACK_NIGHT_COLOR.toInt()).copy(alpha = bgOpacity)
+    }
+
+    return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
+}
+
 @Composable
 fun NoteWidgetContent(
     note: Note?,
@@ -110,17 +151,8 @@ fun NoteWidgetContent(
         return
     }
 
-    // Background mit Opacity
-    val bgModifier = if (bgOpacity < 1.0f) {
-        GlanceModifier.background(
-            ColorProvider(
-                day = Color.White.copy(alpha = bgOpacity),
-                night = Color(0xFF1C1B1F).copy(alpha = bgOpacity)
-            )
-        )
-    } else {
-        GlanceModifier.background(GlanceTheme.colors.widgetBackground)
-    }
+    // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
+    val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
 
     Box(
         modifier = GlanceModifier
@@ -157,6 +189,7 @@ fun NoteWidgetContent(
             )
 
             // Optionsleiste (ein-/ausblendbar)
+            // 🆕 v1.9.0 (F02): bgOpacity weitergeben für farblich passende Leiste
             if (showOptions) {
                 OptionsBar(
                     isLocked = isLocked,
@@ -282,6 +315,7 @@ fun NoteWidgetContent(
 
 /**
  * Optionsleiste — Lock/Unlock + Refresh + Open in App
+ * 🆕 v1.9.0 (F02): Kein eigener Hintergrund, nahtlos in Widget-Surface integriert.
  */
 @Composable
 private fun OptionsBar(
@@ -292,10 +326,10 @@ private fun OptionsBar(
     val context = LocalContext.current
 
     Row(
+        // 🆕 v1.9.0 (F02): Kein eigener Hintergrund — nahtlos im Widget integriert
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .background(GlanceTheme.colors.secondaryContainer),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -462,12 +496,15 @@ private fun ChecklistCompactView(
                         style = TextStyle(fontSize = 14.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
+                    // 🆕 v1.9.0 (F03): Strikethrough for completed items
                     Text(
                         text = item.text,
                         style = TextStyle(
                             color = if (item.isChecked) GlanceTheme.colors.outline
                             else GlanceTheme.colors.onSurface,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                            else TextDecoration.None
                         ),
                         maxLines = 1
                     )
@@ -483,9 +520,13 @@ private fun ChecklistCompactView(
                         )
                     ),
                     text = item.text,
+                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 13.sp
+                        color = if (item.isChecked) GlanceTheme.colors.outline
+                        else GlanceTheme.colors.onSurface,
+                        fontSize = 13.sp,
+                        textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                        else TextDecoration.None
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
@@ -565,11 +606,15 @@ private fun ChecklistFullView(
                         style = TextStyle(fontSize = 16.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))
+                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     Text(
                         text = item.text,
                         style = TextStyle(
-                            color = GlanceTheme.colors.onSurface,
-                            fontSize = 14.sp
+                            color = if (item.isChecked) GlanceTheme.colors.outline
+                            else GlanceTheme.colors.onSurface,
+                            fontSize = 14.sp,
+                            textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                            else TextDecoration.None
                         ),
                         maxLines = 2
                     )
@@ -585,9 +630,13 @@ private fun ChecklistFullView(
                         )
                     ),
                     text = item.text,
+                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 14.sp
+                        color = if (item.isChecked) GlanceTheme.colors.outline
+                        else GlanceTheme.colors.onSurface,
+                        fontSize = 14.sp,
+                        textDecoration = if (item.isChecked) TextDecoration.LineThrough
+                        else TextDecoration.None
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
@@ -602,16 +651,8 @@ private fun ChecklistFullView(
 
 @Composable
 private fun EmptyWidgetContent(bgOpacity: Float) {
-    val bgModifier = if (bgOpacity < 1.0f) {
-        GlanceModifier.background(
-            ColorProvider(
-                day = Color.White.copy(alpha = bgOpacity),
-                night = Color(0xFF1C1B1F).copy(alpha = bgOpacity)
-            )
-        )
-    } else {
-        GlanceModifier.background(GlanceTheme.colors.widgetBackground)
-    }
+    // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
+    val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
 
     Box(
         modifier = GlanceModifier

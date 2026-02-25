@@ -14,17 +14,26 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
 import dev.dettmer.simplenotes.sync.parallel.DownloadTaskResult
 import dev.dettmer.simplenotes.sync.parallel.ParallelDownloader
+import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.net.NetworkInterface
 import java.net.Socket
 import java.net.URL
 import java.util.Date
@@ -37,9 +46,12 @@ data class ManualMarkdownSyncResult(
     val importedCount: Int
 )
 
-@Suppress("LargeClass") 
+@Suppress("LargeClass", "TooManyFunctions")
 // TODO v2.0.0: Split into SyncOrchestrator, NoteUploader, NoteDownloader, ConflictResolver
-class WebDavSyncService(private val context: Context) {
+class WebDavSyncService(
+    private val context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     
     companion object {
         private const val TAG = "WebDavSyncService"
@@ -47,7 +59,11 @@ class WebDavSyncService(private val context: Context) {
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
-        
+        private const val LOG_PREVIEW_IDS_MAX = 3
+
+        // 🔧 v1.9.0 (Plan 04): Detekt MagicNumber compliance
+        private const val ALL_DELETED_GUARD_THRESHOLD = 10
+
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
     }
@@ -56,6 +72,8 @@ class WebDavSyncService(private val context: Context) {
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
+    /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
+    private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
     
     // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
     private var sessionSardine: SafeSardineWrapper? = null
@@ -91,45 +109,11 @@ class WebDavSyncService(private val context: Context) {
     }
     
     /**
-     * 🔒 v1.7.1: Checks if any VPN/Wireguard interface is active.
-     * 
-     * Wireguard VPNs run as separate network interfaces (tun*, wg*, *-wg-*),
-     * and are NOT detected via NetworkCapabilities.TRANSPORT_VPN!
-     * 
-     * @return true if VPN interface is detected
-     */
-    @Suppress("unused") // Reserved for future VPN detection feature
-    private fun isVpnInterfaceActive(): Boolean {
-        try {
-            val interfaces = NetworkInterface.getNetworkInterfaces() ?: return false
-            while (interfaces.hasMoreElements()) {
-                val iface = interfaces.nextElement()
-                if (!iface.isUp) continue
-                
-                val name = iface.name.lowercase()
-                // Check for VPN/Wireguard interface patterns:
-                // - tun0, tun1, etc. (OpenVPN, generic VPN)
-                // - wg0, wg1, etc. (Wireguard)
-                // - *-wg-* (Mullvad, ProtonVPN style: se-sto-wg-202)
-                if (name.startsWith("tun") || 
-                    name.startsWith("wg") || 
-                    name.contains("-wg-") ||
-                    name.startsWith("ppp")) {
-                    Logger.d(TAG, "🔒 VPN interface detected: ${iface.name}")
-                    return true
-                }
-            }
-        } catch (e: Exception) {
-            Logger.w(TAG, "⚠️ Failed to check VPN interfaces: ${e.message}")
-        }
-        return false
-    }
-    
-    /**
      * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
      * Spart ~100ms pro Aufruf durch Wiederverwendung
+     * 🆕 Issue #21: internal für NotesImportWizard-Zugriff
      */
-    private fun getOrCreateSardine(): Sardine? {
+    internal fun getOrCreateSardine(): Sardine? {
         // Return cached if available
         sessionSardine?.let { 
             Logger.d(TAG, "⚡ Reusing cached Sardine client")
@@ -189,7 +173,7 @@ class WebDavSyncService(private val context: Context) {
         Logger.d(TAG, "🧹 Session caches cleared")
     }
     
-    private fun getServerUrl(): String? {
+    internal fun getServerUrl(): String? {
         return prefs.getString(Constants.KEY_SERVER_URL, null)
     }
     
@@ -206,13 +190,12 @@ class WebDavSyncService(private val context: Context) {
      * @return notes/ Ordner-URL (mit trailing /)
      */
     private fun getNotesUrl(baseUrl: String): String {
+        val folderName = activeSyncFolderName
         val normalized = baseUrl.trimEnd('/')
-        
-        // Wenn URL bereits mit /notes endet → direkt nutzen
-        return if (normalized.endsWith("/notes")) {
+        return if (normalized.endsWith("/$folderName")) {
             "$normalized/"
         } else {
-            "$normalized/notes/"
+            "$normalized/$folderName/"
         }
     }
     
@@ -228,11 +211,10 @@ class WebDavSyncService(private val context: Context) {
      * @return Markdown-Ordner-URL (mit trailing /)
      */
     private fun getMarkdownUrl(baseUrl: String): String {
+        val folderName = activeSyncFolderName
         val notesUrl = getNotesUrl(baseUrl)
         val normalized = notesUrl.trimEnd('/')
-        
-        // Ersetze /notes mit /notes-md
-        return normalized.replace("/notes", "/notes-md") + "/"
+        return normalized.replace("/$folderName", "/$folderName-md") + "/"
     }
     
     /**
@@ -266,20 +248,20 @@ class WebDavSyncService(private val context: Context) {
      */
     private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
         if (notesDirEnsured) {
-            Logger.d(TAG, "⚡ notes/ directory already verified (cached)")
+            Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
             return
         }
         
         try {
-            Logger.d(TAG, "🔍 Checking if notes/ directory exists...")
+            Logger.d(TAG, "🔍 Checking if $activeSyncFolderName/ directory exists...")
             if (!sardine.exists(notesUrl)) {
-                Logger.d(TAG, "📁 Creating notes/ directory...")
+                Logger.d(TAG, "📁 Creating $activeSyncFolderName/ directory...")
                 sardine.createDirectory(notesUrl)
             }
-            Logger.d(TAG, "    ✅ notes/ directory ready")
+            Logger.d(TAG, "    ✅ $activeSyncFolderName/ directory ready")
             notesDirEnsured = true
         } catch (e: Exception) {
-            Logger.e(TAG, "💥 CRASH checking/creating notes/ directory!", e)
+            Logger.e(TAG, "💥 CRASH checking/creating $activeSyncFolderName/ directory!", e)
             throw e
         }
     }
@@ -299,7 +281,7 @@ class WebDavSyncService(private val context: Context) {
      * 4. If unchanged → skip sync
      */
     @Suppress("ReturnCount") // Early returns for conditional checks
-    private suspend fun checkServerForChanges(sardine: Sardine, serverUrl: String): Boolean {
+    private fun checkServerForChanges(sardine: Sardine, serverUrl: String): Boolean {
         return try {
             val startTime = System.currentTimeMillis()
             val lastSyncTime = getLastSyncTimestamp()
@@ -312,9 +294,12 @@ class WebDavSyncService(private val context: Context) {
             val notesUrl = getNotesUrl(serverUrl)
             // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
             // Wenn sardine.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
+            // 🐛 Fix #21: Wenn /notes/ nicht existiert → true zurückgeben, damit syncNotes()
+            // aufgerufen wird und ensureNotesDirectoryExists() das Verzeichnis anlegen kann.
+            // Vorher: return false → Deadlock (Verzeichnis wird nie erstellt, Sync nie gestartet)
             if (!sardine.exists(notesUrl)) {
-                Logger.d(TAG, "📁 /notes/ doesn't exist - assuming no server changes")
-                return false
+                Logger.d(TAG, "📁 /notes/ doesn't exist yet - will create on sync")
+                return true
             }
             
             // ====== JSON FILES CHECK (/notes/) ======
@@ -325,7 +310,7 @@ class WebDavSyncService(private val context: Context) {
             
             // For hasUnsyncedChanges(): Conservative approach - assume changes may exist
             // Actual file-level E-Tag checks in downloadRemoteNotes() will skip unchanged files (0ms each)
-            var hasJsonChanges = true  // Assume yes, let file E-Tags optimize
+            val hasJsonChanges = true  // Assume yes, let file E-Tags optimize
             
             // ====== MARKDOWN FILES CHECK (/notes-md/) ======
             // IMPORTANT: E-Tag for collections does NOT work for content changes!
@@ -396,7 +381,7 @@ class WebDavSyncService(private val context: Context) {
      * 
      * @return true wenn unsynced changes vorhanden, false sonst
      */
-    suspend fun hasUnsyncedChanges(): Boolean = withContext(Dispatchers.IO) {
+    suspend fun hasUnsyncedChanges(): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             val lastSyncTime = getLastSyncTimestamp()
             
@@ -460,7 +445,7 @@ class WebDavSyncService(private val context: Context) {
      * 
      * @return true wenn Server erreichbar ist, false sonst
      */
-    suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
+    suspend fun isServerReachable(): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             val serverUrl = getServerUrl()
             if (serverUrl == null) {
@@ -546,7 +531,7 @@ class WebDavSyncService(private val context: Context) {
         val isBlockedByWifiOnly: Boolean get() = blockReason == "wifi_only"
     }
     
-    suspend fun testConnection(): SyncResult = withContext(Dispatchers.IO) {
+    suspend fun testConnection(): SyncResult = withContext(ioDispatcher) {
         return@withContext try {
             val sardine = getOrCreateSardine() ?: return@withContext SyncResult(
                 isSuccess = false,
@@ -563,11 +548,28 @@ class WebDavSyncService(private val context: Context) {
             if (!exists) {
                 sardine.createDirectory(serverUrl)
             }
-            
+
+            // 🔧 v1.9.0 Fix: activeSyncFolderName VOR getNotesUrl() laden
+            activeSyncFolderName = prefs.getString(
+                Constants.KEY_SYNC_FOLDER_NAME,
+                Constants.DEFAULT_SYNC_FOLDER_NAME
+            ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
+            // 🆕 Issue #21: Sync-Ordner prüfen und Status mit Ordnernamen kommunizieren
+            val notesUrl = getNotesUrl(serverUrl)
+            val notesExist = try { sardine.exists(notesUrl) } catch (_: Exception) { false }
+            val folderName = activeSyncFolderName
+            val infoMessage = if (notesExist) {
+                context.getString(R.string.test_connection_success_with_notes, folderName)
+            } else {
+                context.getString(R.string.test_connection_success_first_sync, folderName)
+            }
+
             SyncResult(
                 isSuccess = true,
                 syncedCount = 0,
-                errorMessage = null
+                errorMessage = null,
+                infoMessage = infoMessage
             )
             
         } catch (e: Exception) {
@@ -592,7 +594,7 @@ class WebDavSyncService(private val context: Context) {
         }
     }
     
-    suspend fun syncNotes(): SyncResult = withContext(Dispatchers.IO) {
+    suspend fun syncNotes(): SyncResult = withContext(ioDispatcher) {
         // 🔒 v1.3.1: Verhindere parallele Syncs
         if (!syncMutex.tryLock()) {
             Logger.d(TAG, "⏭️ Sync already in progress - skipping")
@@ -642,6 +644,10 @@ class WebDavSyncService(private val context: Context) {
             }
             
             Logger.d(TAG, "📡 Server URL: $serverUrl")
+            // 🆕 v1.9.0: Load configured sync folder name at sync start
+            activeSyncFolderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+                ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+            Logger.d(TAG, "📁 Sync folder: $activeSyncFolderName")
             Logger.d(TAG, "🔐 Credentials configured: ${prefs.getString(Constants.KEY_USERNAME, null) != null}")
             
             var syncedCount = 0
@@ -844,91 +850,281 @@ class WebDavSyncService(private val context: Context) {
         }
     }
     
-    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
-    // Sync logic requires nested conditions for comprehensive error handling and state management
-    private fun uploadLocalNotes(
+    /**
+     * 🔧 v1.9.0: Parallele Uploads mit bounded concurrency
+     * Analog zu ParallelDownloader-Pattern, aber für Uploads.
+     *
+     * Optimierungen:
+     * - Opt 1: Einmalige notes-md/ Exists-Prüfung statt N × exists()
+     * - Opt 3: Parallelisierung mit Semaphore über alle Notizen
+     * - Opt 4: Batch-E-Tag-Fetch per list(depth=1) nach allen Uploads
+     * - Opt 5: Upload-Skip per Content-Hash
+     */
+    @Suppress("NestedBlockDepth")
+    private suspend fun uploadLocalNotes(
         sardine: Sardine,
         serverUrl: String,
-        onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }  // 🆕 v1.8.0
+        onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }
     ): Int {
-        var uploadedCount = 0
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
-        
-        // 🆕 v1.8.0: Zähle zu uploadende Notizen für Progress
-        val pendingNotes = localNotes.filter { 
-            it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING 
+
+        // 🆕 v1.9.0 (Opt 1): Einmalige Prüfung statt N × exists(notes-md/)
+        val markdownDirExists: Boolean = if (markdownExportEnabled) {
+            try {
+                val mdUrl = getMarkdownUrl(serverUrl)
+                val exists = sardine.exists(mdUrl)
+                if (!exists) {
+                    sardine.createDirectory(mdUrl)
+                    Logger.d(TAG, "📁 Created notes-md/ directory (one-time check)")
+                }
+                true
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ notes-md/ check failed, falling back to per-note check: ${e.message}")
+                false
+            }
+        } else {
+            true
+        }
+
+        val pendingNotes = localNotes.filter {
+            it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING
         }
         val totalToUpload = pendingNotes.size
-        
-        // 🔧 v1.7.2 (IMPL_004): Batch E-Tag Updates für Performance
-        val etagUpdates = mutableMapOf<String, String?>()
-        
-        for (note in localNotes) {
-            try {
-                // 1. JSON-Upload (Task #1.2.1-13: nutzt getNotesUrl())
-                if (note.syncStatus == SyncStatus.LOCAL_ONLY || note.syncStatus == SyncStatus.PENDING) {
-                    val notesUrl = getNotesUrl(serverUrl)
-                    val noteUrl = "$notesUrl${note.id}.json"
-                    
-                    // 🔧 v1.7.2 FIX (IMPL_015): Status VOR Serialisierung auf SYNCED setzen
-                    // Verhindert dass Server-JSON "syncStatus": "PENDING" enthält
-                    val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
-                    val jsonBytes = noteToUpload.toJson().toByteArray()
-                    
-                    Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title})")
-                    sardine.put(noteUrl, jsonBytes, "application/json")
-                    Logger.d(TAG, "      ✅ Upload successful")
-                    
-                    // Lokale Kopie auch mit SYNCED speichern
-                    storage.saveNote(noteToUpload)
-                    uploadedCount++
-                    
-                    // 🆕 v1.8.0: Progress mit Notiz-Titel
-                    onProgress(uploadedCount, totalToUpload, note.title)
-                    
-                    // ⚡ v1.3.1: Refresh E-Tag after upload to prevent re-download
-                    // 🔧 v1.7.2 (IMPL_004): Sammle E-Tags für Batch-Update
-                    try {
-                        val uploadedResource = sardine.list(noteUrl, 0).firstOrNull()
-                        val newETag = uploadedResource?.etag
-                        etagUpdates["etag_json_${note.id}"] = newETag
-                        if (newETag != null) {
-                            Logger.d(TAG, "      ⚡ Queued E-Tag: ${newETag.take(ETAG_PREVIEW_LENGTH)}")
-                        } else {
-                            Logger.d(TAG, "      ⚠️ No E-Tag from server, will invalidate")
-                        }
-                    } catch (e: Exception) {
-                        Logger.w(TAG, "      ⚠️ Failed to get E-Tag: ${e.message}")
-                        etagUpdates["etag_json_${note.id}"] = null
+
+        if (totalToUpload == 0) {
+            Logger.d(TAG, "⏭️ No notes to upload")
+            return 0
+        }
+
+        Logger.d(TAG, "🚀 Starting parallel upload: $totalToUpload notes")
+
+        // 🔧 v1.9.0: Unified parallel setting, capped for uploads
+        val maxParallelSetting = prefs.getInt(
+            Constants.KEY_MAX_PARALLEL_CONNECTIONS,
+            Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
+        )
+        val maxParallel = maxParallelSetting.coerceAtMost(Constants.MAX_PARALLEL_UPLOADS_CAP)
+        val semaphore = Semaphore(maxParallel)
+        val completedCount = AtomicInteger(0)
+
+        // 🔒 v1.9.0: Mutex für thread-sichere storage.saveNote()-Aufrufe
+        val storageMutex = Mutex()
+
+        // 🔒 v1.9.0 (Bug B): Mutex für thread-sicheren MD-Export
+        // Verhindert Race Condition wenn 2+ Notizen denselben Titel haben:
+        // Ohne Mutex: beide prüfen exists() → false → beide schreiben → Überschreibung
+        val mdExportMutex = Mutex()
+
+        val results: List<UploadTaskResult> = coroutineScope {
+            val jobs = pendingNotes.map { note ->
+                async(ioDispatcher) {
+                    semaphore.withPermit {
+                        val result = uploadSingleNoteParallel(
+                            sardine = sardine,
+                            serverUrl = serverUrl,
+                            note = note,
+                            markdownExportEnabled = markdownExportEnabled,
+                            markdownDirExists = markdownDirExists,
+                            storageMutex = storageMutex,
+                            mdExportMutex = mdExportMutex
+                        )
+
+                        // Progress-Update thread-safe via AtomicInteger
+                        val completed = completedCount.incrementAndGet()
+                        onProgress(completed, totalToUpload, note.title)
+
+                        result
                     }
-                    
-                    // 2. Markdown-Export (NEU in v1.2.0)
-                    // Läuft NACH erfolgreichem JSON-Upload
-                    if (markdownExportEnabled) {
-                        try {
-                            exportToMarkdown(sardine, serverUrl, noteToUpload)
-                            Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
-                        } catch (e: Exception) {
-                            Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
-                            // Kein throw! JSON-Sync darf nicht blockiert werden
+                }
+            }
+
+            jobs.awaitAll()
+        }
+
+        // Statistiken
+        val successCount = results.count { it is UploadTaskResult.Success }
+        val failureCount = results.count { it is UploadTaskResult.Failure }
+        val skippedCount = results.count { it is UploadTaskResult.Skipped }
+        Logger.d(TAG, "📊 Upload complete: $successCount success, $failureCount failed, $skippedCount skipped")
+
+        // 🆕 v1.9.0 (Opt 4): Batch-E-Tag-Fetch per list(depth=1)
+        val successfulNoteIds = results
+            .filterIsInstance<UploadTaskResult.Success>()
+            .map { it.noteId }
+            .toSet()
+
+        if (successfulNoteIds.isNotEmpty()) {
+            try {
+                val notesUrl = getNotesUrl(serverUrl)
+                Logger.d(TAG, "⚡ Batch-fetching E-Tags via list(depth=1) for ${successfulNoteIds.size} notes")
+                val allResources = sardine.list(notesUrl, 1)
+
+                val batchEtagUpdates = mutableMapOf<String, String?>()
+                for (resource in allResources) {
+                    val filename = resource.name
+                    if (!filename.endsWith(".json")) continue
+
+                    val noteId = filename.removeSuffix(".json")
+                    if (noteId in successfulNoteIds) {
+                        val etag = resource.etag
+                        batchEtagUpdates["etag_json_$noteId"] = etag
+                        if (etag != null) {
+                            Logger.d(TAG, "   ⚡ E-Tag: $noteId → ${etag.take(ETAG_PREVIEW_LENGTH)}")
                         }
                     }
                 }
+
+                // Fehlende E-Tags invalidieren
+                val foundIds = batchEtagUpdates.keys.map { it.removePrefix("etag_json_") }.toSet()
+                val missingEtags = successfulNoteIds - foundIds
+                if (missingEtags.isNotEmpty()) {
+                    Logger.w(TAG, "⚠️ No E-Tag found for ${missingEtags.size} notes: ${missingEtags.take(LOG_PREVIEW_IDS_MAX)}")
+                    for (noteId in missingEtags) {
+                        batchEtagUpdates["etag_json_$noteId"] = null
+                    }
+                }
+
+                // 🆕 v1.9.0 (Opt 5): Content-Hashes für erfolgreiche Uploads speichern
+                for (noteId in successfulNoteIds) {
+                    val note = pendingNotes.find { it.id == noteId }
+                    if (note != null) {
+                        batchEtagUpdates["content_hash_$noteId"] = computeNoteContentHash(note)
+                    }
+                }
+
+                batchUpdateETags(batchEtagUpdates)
             } catch (e: Exception) {
-                Logger.w(TAG, "Upload failed for note ${note.id}, marking as pending: ${e.message}")
-                // Mark as pending for retry
-                val updatedNote = note.copy(syncStatus = SyncStatus.PENDING)
-                storage.saveNote(updatedNote)
+                Logger.e(TAG, "⚠️ Batch E-Tag fetch failed: ${e.message}")
+                // Fallback: Invalidiere alle E-Tags → nächster Sync holt sie einzeln
+                val invalidationMap = successfulNoteIds.associate { "etag_json_$it" to null as String? }
+                batchUpdateETags(invalidationMap)
             }
         }
-        
-        // 🔧 v1.7.2 (IMPL_004): Batch-Update aller E-Tags in einer Operation
-        if (etagUpdates.isNotEmpty()) {
-            batchUpdateETags(etagUpdates)
+
+        return successCount
+    }
+
+    /**
+     * 🆕 v1.9.0: Upload einer einzelnen Notiz für parallele Ausführung.
+     *
+     * Optimierungen:
+     * - Opt 3: Thread-sichere storage.saveNote() via Mutex
+     * - Opt 3: Retry mit Exponential Backoff
+     * - Opt 5: Upload-Skip per Content-Hash
+     * - Opt 6: MD-Upload-Skip per Content-Hash (in exportToMarkdown)
+     *
+     * @return UploadTaskResult mit Erfolgs-/Fehler-Info
+     */
+    private suspend fun uploadSingleNoteParallel(
+        sardine: Sardine,
+        serverUrl: String,
+        note: Note,
+        markdownExportEnabled: Boolean,
+        markdownDirExists: Boolean,
+        storageMutex: Mutex,
+        mdExportMutex: Mutex
+    ): UploadTaskResult {
+        val maxRetries = 2
+        val retryDelayMs = 500L
+        var lastError: Throwable? = null
+
+        repeat(maxRetries + 1) { attempt ->
+            try {
+                val notesUrl = getNotesUrl(serverUrl)
+                val noteUrl = "$notesUrl${note.id}.json"
+
+                // 🆕 v1.9.0 (Opt 5): Skip-Logik per Content-Hash
+                val currentHash = computeNoteContentHash(note)
+                val cachedHash = prefs.getString("content_hash_${note.id}", null)
+                val cachedETag = prefs.getString("etag_json_${note.id}", null)
+
+                if (currentHash == cachedHash && cachedETag != null) {
+                    Logger.d(TAG, "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})")
+                    // Status trotzdem auf SYNCED setzen (war evtl. fälschlich PENDING)
+                    if (note.syncStatus != SyncStatus.SYNCED) {
+                        storageMutex.withLock {
+                            storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
+                        }
+                    }
+                    return UploadTaskResult.Skipped(
+                        noteId = note.id,
+                        reason = "Content unchanged (hash match)"
+                    )
+                }
+
+                val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
+                val jsonBytes = noteToUpload.toJson().toByteArray()
+
+                Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title}) [attempt ${attempt + 1}]")
+                sardine.put(noteUrl, jsonBytes, "application/json")
+                Logger.d(TAG, "      ✅ Upload successful")
+
+                // 🔒 Thread-sicherer Storage-Write via Mutex
+                storageMutex.withLock {
+                    storage.saveNote(noteToUpload)
+                }
+
+                // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
+                // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
+                // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
+                if (markdownExportEnabled) {
+                    mdExportMutex.withLock {
+                        try {
+                            exportToMarkdown(sardine, serverUrl, noteToUpload, markdownDirExists)
+                            Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
+                        } catch (e: Exception) {
+                            Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
+                        }
+                    }
+                }
+
+                return UploadTaskResult.Success(noteId = note.id, etag = null)
+
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // 🛡️ Cancellation nie verschlucken — sofort propagieren
+                throw e
+            } catch (e: Exception) {
+                lastError = e
+                Logger.w(TAG, "⚠️ Upload failed ${note.id} (attempt ${attempt + 1}): ${e.message}")
+
+                if (attempt < maxRetries) {
+                    delay(retryDelayMs * (attempt + 1))
+                }
+            }
         }
-        
-        return uploadedCount
+
+        // Alle Retries fehlgeschlagen → Note als PENDING markieren
+        Logger.e(TAG, "❌ Upload failed after ${maxRetries + 1} attempts: ${note.id}")
+        try {
+            val storageMutexLocal = storageMutex
+            storageMutexLocal.withLock {
+                storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "Failed to mark note as PENDING: ${e.message}")
+        }
+        return UploadTaskResult.Failure(note.id, lastError ?: Exception("Unknown upload error"))
+    }
+
+    /**
+     * 🆕 v1.9.0 (Opt 5): Berechnet SHA-256-Hash des JSON-Inhalts einer Notiz.
+     *
+     * Verwendet den serialisierten JSON-String (nicht den Rohinhalt),
+     * damit Strukturänderungen (z.B. neues Feld) erkannt werden.
+     * SyncStatus wird auf SYNCED normalisiert, damit der Hash unabhängig
+     * vom aktuellen syncStatus ist.
+     *
+     * Sichtbarkeit `internal` für Testbarkeit aus dem test-Source-Set.
+     *
+     * @param note Die Notiz
+     * @return Hex-String des SHA-256-Hash (64 Zeichen)
+     */
+    internal fun computeNoteContentHash(note: Note): String {
+        val normalizedNote = note.copy(syncStatus = SyncStatus.SYNCED)
+        val jsonBytes = normalizedNote.toJson().toByteArray()
+        val digest = MessageDigest.getInstance("SHA-256").digest(jsonBytes)
+        return digest.joinToString("") { "%02x".format(it) }
     }
     
     /**
@@ -964,27 +1160,49 @@ class WebDavSyncService(private val context: Context) {
     
     /**
      * Exportiert einzelne Note als Markdown (Task #1.2.0-11)
-     * 
+     * 🔧 v1.9.0 (Opt 1): markdownDirExists-Parameter eliminiert redundanten exists()-Call
+     * 🔧 v1.9.0 (Opt 6): MD-Content-Hash-Cache für Skip bei unverändertem Inhalt
+     *
      * @param sardine Sardine-Client
      * @param serverUrl Server-URL (notes/ Ordner)
      * @param note Note zum Exportieren
+     * @param markdownDirExists true wenn notes-md/ Ordner bereits existiert
      */
-    private fun exportToMarkdown(sardine: Sardine, serverUrl: String, note: Note) {
+    private fun exportToMarkdown(
+        sardine: Sardine,
+        serverUrl: String,
+        note: Note,
+        markdownDirExists: Boolean = true
+    ) {
         val mdUrl = getMarkdownUrl(serverUrl)
-        
-        // Erstelle notes-md/ Ordner falls nicht vorhanden
-        if (!sardine.exists(mdUrl)) {
-            sardine.createDirectory(mdUrl)
-            Logger.d(TAG, "📁 Created notes-md/ directory")
+
+        // 🔧 v1.9.0 (Opt 1): Nur prüfen/erstellen wenn Caller nicht bereits bestätigt hat
+        if (!markdownDirExists) {
+            if (!sardine.exists(mdUrl)) {
+                sardine.createDirectory(mdUrl)
+                Logger.d(TAG, "📁 Created notes-md/ directory")
+            }
         }
-        
-        // Sanitize Filename (Task #1.2.0-12)
+
         val baseFilename = sanitizeFilename(note.title)
         var filename = "$baseFilename.md"
         // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
-        // getMarkdownUrl() gibt immer trailing / zurück → "notes-md/" + "/" + file = "notes-md//file"
         var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
-        
+
+        // 🆕 v1.9.0 (Opt 6): MD-Content-Hash berechnen und mit Cache vergleichen
+        val mdContentStr = note.toMarkdown()
+        val mdContentBytes = mdContentStr.toByteArray()
+        val mdHash = MessageDigest.getInstance("SHA-256")
+            .digest(mdContentBytes)
+            .joinToString("") { "%02x".format(it) }
+        val cachedMdHash = prefs.getString("content_hash_md_${note.id}", null)
+        val cachedMdETag = prefs.getString("etag_md_${note.id}", null)
+
+        if (mdHash == cachedMdHash && cachedMdETag != null) {
+            Logger.d(TAG, "   ⏭️ MD skip: ${note.title} (content unchanged)")
+            return
+        }
+
         // Prüfe ob Datei bereits existiert und von anderer Note stammt
         try {
             if (sardine.exists(noteUrl)) {
@@ -993,7 +1211,7 @@ class WebDavSyncService(private val context: Context) {
                 val existingIdMatch = Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
                     .find(existingContent)
                 val existingId = existingIdMatch?.groupValues?.get(1)
-                
+
                 if (existingId != null && existingId != note.id) {
                     // Andere Note hat gleichen Titel - verwende ID-Suffix
                     val shortId = note.id.take(8)
@@ -1006,12 +1224,25 @@ class WebDavSyncService(private val context: Context) {
             Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
             // Continue with default filename
         }
-        
-        // Konvertiere zu Markdown
-        val mdContent = note.toMarkdown().toByteArray()
-        
+
         // Upload
-        sardine.put(noteUrl, mdContent, "text/markdown")
+        sardine.put(noteUrl, mdContentBytes, "text/markdown")
+
+        // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
+        try {
+            val mdResource = sardine.list(noteUrl, 0).firstOrNull()
+            val mdETag = mdResource?.etag
+            val editor = prefs.edit().putString("content_hash_md_${note.id}", mdHash)
+            if (mdETag != null) {
+                editor.putString("etag_md_${note.id}", mdETag)
+            }
+            editor.apply()
+            Logger.d(TAG, "   ⚡ MD E-Tag cached: ${mdETag?.take(ETAG_PREVIEW_LENGTH)}")
+        } catch (e: Exception) {
+            // Non-fatal: Hash trotzdem cachen für nächsten Content-Vergleich
+            prefs.edit().putString("content_hash_md_${note.id}", mdHash).apply()
+            Logger.w(TAG, "   ⚠️ MD E-Tag fetch failed: ${e.message}")
+        }
     }
     
     /**
@@ -1066,7 +1297,7 @@ class WebDavSyncService(private val context: Context) {
         username: String,
         password: String,
         onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
-    ): Int = withContext(Dispatchers.IO) {
+    ): Int = withContext(ioDispatcher) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
         
         val okHttpClient = OkHttpClient.Builder()
@@ -1172,11 +1403,12 @@ class WebDavSyncService(private val context: Context) {
             return 0
         }
         
-        // 🔧 v1.8.1 SAFETY: Wenn ALLE lokalen SYNCED-Notizen als gelöscht erkannt werden,
-        // ist das fast sicher ein Fehler (z.B. falsche Server-URL oder partieller PROPFIND).
-        // Maximal 50% der Notizen dürfen als gelöscht markiert werden.
+        // 🔧 v1.9.0: Guard-Schwellenwert auf ≥10 angehoben
+        // Vorher: syncedNotes.size > 1 — blockierte legitime Massenlöschung bei 2–5 Notizen
+        // User mit wenigen Notizen, die alle über Nextcloud-Web-UI löschen, bekamen nie
+        // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
         val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
-        if (syncedNotes.size > 1 && potentialDeletions == syncedNotes.size) {
+        if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
             Logger.e(TAG, "🚨 detectServerDeletions: ALL ${syncedNotes.size} synced notes " +
                 "would be marked as deleted! This is almost certainly a bug. " +
                 "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection.")
@@ -1249,16 +1481,16 @@ class WebDavSyncService(private val context: Context) {
         var downloadException: Exception? = null
         
         try {
-            // 🆕 PHASE 1: Download from /notes/ (new structure v1.2.1+)
+            // 🆕 PHASE 1: Download from /{syncFolder}/ (configurable since v1.9.0)
             val notesUrl = getNotesUrl(serverUrl)
-            Logger.d(TAG, "🔍 Phase 1: Checking /notes/ at: $notesUrl")
+            Logger.d(TAG, "🔍 Phase 1: Checking /$activeSyncFolderName/ at: $notesUrl")
             
             // ⚡ v1.3.1: Performance - Get last sync time for skip optimization
             val lastSyncTime = getLastSyncTimestamp()
             var skippedUnchanged = 0
             
             if (sardine.exists(notesUrl)) {
-                Logger.d(TAG, "   ✅ /notes/ exists, scanning...")
+                Logger.d(TAG, "   ✅ /$activeSyncFolderName/ exists, scanning...")
                 val resources = sardine.list(notesUrl)
                 val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
@@ -1329,8 +1561,9 @@ class WebDavSyncService(private val context: Context) {
 
                     // SECONDARY: Timestamp fallback — nur wenn kein E-Tag vorhanden
                     // (Erster Sync oder Server liefert keine E-Tags)
-                    @Suppress("ComplexCondition") // 5 conditions at threshold, clear intent
-                    if (!forceOverwrite && fileExistsLocally && serverETag == null && lastSyncTime > 0 && serverModified <= lastSyncTime) {
+                    val noETagAndTimestampUnchanged = !forceOverwrite && fileExistsLocally &&
+                        serverETag == null && lastSyncTime > 0 && serverModified <= lastSyncTime
+                    if (noETagAndTimestampUnchanged) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)")
                         processedIds.add(noteId)
@@ -1371,10 +1604,10 @@ class WebDavSyncService(private val context: Context) {
                 // 🆕 v1.8.0: PHASE 1B - Parallel Download
                 // ════════════════════════════════════════════════════════════════
                 if (downloadTasks.isNotEmpty()) {
-                    // Konfigurierbare Parallelität aus Settings
+                    // 🔧 v1.9.0: Unified parallel setting
                     val maxParallel = prefs.getInt(
-                        Constants.KEY_MAX_PARALLEL_DOWNLOADS,
-                        Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS
+                        Constants.KEY_MAX_PARALLEL_CONNECTIONS,
+                        Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
                     )
 
                     val downloader = ParallelDownloader(
@@ -1408,6 +1641,16 @@ class WebDavSyncService(private val context: Context) {
                                     continue
                                 }
 
+                                // 🔧 v1.9.0 Fix: Validate note ID matches filename
+                                // Legitimate notes: filename = "{noteId}.json" → parsed ID == filename
+                                // Foreign JSON (e.g. google-services.json) → random UUID ≠ filename
+                                if (remoteNote.id != result.noteId) {
+                                    Logger.w(TAG, "   ⚠️ Skipping foreign JSON: ${result.noteId}.json " +
+                                        "(parsed ID '${remoteNote.id}' doesn't match filename)")
+                                    processedIds.add(result.noteId)  // Prevent re-download attempts
+                                    continue
+                                }
+
                                 processedIds.add(remoteNote.id)
                                 val localNote = storage.loadNote(remoteNote.id)
 
@@ -1416,7 +1659,7 @@ class WebDavSyncService(private val context: Context) {
                                         // New note from server
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
-                                        Logger.d(TAG, "   ✅ Downloaded from /notes/: ${remoteNote.id}")
+                                        Logger.d(TAG, "   ✅ Downloaded from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                         // ⚡ Batch E-Tag for later
                                         if (result.etag != null) {
@@ -1427,7 +1670,7 @@ class WebDavSyncService(private val context: Context) {
                                         // OVERWRITE mode: Always replace regardless of timestamps
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
-                                        Logger.d(TAG, "   ♻️ Overwritten from /notes/: ${remoteNote.id}")
+                                        Logger.d(TAG, "   ♻️ Overwritten from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                         if (result.etag != null) {
                                             etagUpdates["etag_json_${result.noteId}"] = result.etag
@@ -1444,14 +1687,21 @@ class WebDavSyncService(private val context: Context) {
                                             // Safe to overwrite
                                             storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                             downloadedCount++
-                                            Logger.d(TAG, "   ✅ Updated from /notes/: ${remoteNote.id}")
+                                            Logger.d(TAG, "   ✅ Updated from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                             if (result.etag != null) {
                                                 etagUpdates["etag_json_${result.noteId}"] = result.etag
                                             }
                                         }
                                     }
-                                    // else: Local is newer or same → skip silently
+                                    else -> {
+                                        // 🔧 v1.9.0 (Bug C): E-Tag auch bei "local newer"-Skip cachen
+                                        // Verhindert erneutes Herunterladen beim nächsten Sync,
+                                        // wenn Server-Inhalt sich nicht geändert hat
+                                        if (result.etag != null) {
+                                            etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                        }
+                                    }
                                 }
                             }
                             is DownloadTaskResult.Failure -> {
@@ -1636,7 +1886,7 @@ class WebDavSyncService(private val context: Context) {
      */
     suspend fun restoreFromServer(
         mode: dev.dettmer.simplenotes.backup.RestoreMode = dev.dettmer.simplenotes.backup.RestoreMode.REPLACE
-    ): RestoreResult = withContext(Dispatchers.IO) {
+    ): RestoreResult = withContext(ioDispatcher) {
         return@withContext try {
             val sardine = getOrCreateSardine() ?: return@withContext RestoreResult(
                 isSuccess = false,
@@ -1672,8 +1922,15 @@ class WebDavSyncService(private val context: Context) {
             prefs.all.keys.filter { it.startsWith("etag_json_") }.forEach { key ->
                 editor.remove(key)
             }
+            // 🆕 v1.9.0: Auch Content-Hashes löschen (damit alle Notizen neu hochgeladen werden)
+            prefs.all.keys.filter { it.startsWith("content_hash_") }.forEach { key ->
+                editor.remove(key)
+            }
+            prefs.all.keys.filter { it.startsWith("etag_md_") }.forEach { key ->
+                editor.remove(key)
+            }
             editor.apply()
-            Logger.d(TAG, "🔄 Cleared E-Tag caches - will re-download all files")
+            Logger.d(TAG, "🔄 Cleared E-Tag + content hash caches - will re-download all files")
             
             // Determine forceOverwrite flag
             val forceOverwrite = (mode == dev.dettmer.simplenotes.backup.RestoreMode.OVERWRITE_DUPLICATES)
@@ -1787,7 +2044,7 @@ class WebDavSyncService(private val context: Context) {
         serverUrl: String, 
         username: String, 
         password: String
-    ): Int = withContext(Dispatchers.IO) {
+    ): Int = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
@@ -1868,60 +2125,24 @@ class WebDavSyncService(private val context: Context) {
      * 
      * ⚡ v1.3.1: Performance-Optimierung - Skip unveränderte Dateien
      */
-    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements") 
+    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
     // Import logic requires nested conditions for file validation and duplicate handling
     private fun importMarkdownFiles(sardine: Sardine, serverUrl: String): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")
-            
+
             val mdUrl = getMarkdownUrl(serverUrl)
-            
-            // Check if notes-md/ exists
+
             if (!sardine.exists(mdUrl)) {
                 Logger.d(TAG, "   ⚠️ notes-md/ directory not found - skipping")
                 return 0
             }
-            
-            // 🔧 v1.8.2 (IMPL_025 Edit 25.9): One-time cleanup of stale "/" directory at WebDAV root.
-            // The double-slash bug (Edit 25.6/25.7) could create a "/" folder artifact at root level
-            // (sibling of notes/ and notes-md/). It contains only duplicates and should not exist.
-            // Safe: Only targets a directory literally named "/" — no legitimate folder uses this name.
-            try {
-                val rootUrl = serverUrl.trimEnd('/')
-                Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
-                val rootResources = sardine.list(rootUrl)
-                Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
-                for ((index, res) in rootResources.withIndex()) {
-                    Logger.d(
-                        TAG, 
-                        "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
-                        "isDir=${res.isDirectory}, href=${res.href}"
-                    )
-                }
-                
-                val staleSlashDir = rootResources.find { res ->
-                    res.isDirectory && res.name == "/"
-                }
-                if (staleSlashDir != null) {
-                    val staleHref = staleSlashDir.href?.toString() ?: "(unknown)"
-                    Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
-                    try {
-                        val deleteUrl = rootUrl + staleSlashDir.href.path
-                        sardine.delete(deleteUrl)
-                        Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
-                    } catch (e: Exception) {
-                        Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")
-                    }
-                } else {
-                    Logger.d(TAG, "   ℹ️ No stale '/' directory found at root (checked name field)")
-                }
-            } catch (e: Exception) {
-                Logger.w(TAG, "   ⚠️ Root cleanup check failed: ${e.message}")
-            }
-            
+
+            cleanupStaleRootDirectory(sardine, serverUrl)
+
             val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
             var importedCount = 0
-            var skippedCount = 0  // ⚡ v1.3.1: Zähle übersprungene Dateien
+            var skippedCount = 0
             
             Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
             
@@ -2096,7 +2317,43 @@ class WebDavSyncService(private val context: Context) {
             0
         }
     }
-    
+
+    /**
+     * 🔧 v1.8.2 (IMPL_025 Edit 25.9): One-time cleanup of stale "/" directory at WebDAV root.
+     * The double-slash bug could create a "/" folder artifact at root level.
+     * Safe: Only targets a directory literally named "/" — no legitimate folder uses this name.
+     */
+    private fun cleanupStaleRootDirectory(sardine: Sardine, serverUrl: String) {
+        try {
+            val rootUrl = serverUrl.trimEnd('/')
+            Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
+            val rootResources = sardine.list(rootUrl)
+            Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
+            for ((index, res) in rootResources.withIndex()) {
+                Logger.d(
+                    TAG,
+                    "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
+                    "isDir=${res.isDirectory}, href=${res.href}"
+                )
+            }
+            val staleSlashDir = rootResources.find { res -> res.isDirectory && res.name == "/" }
+            if (staleSlashDir != null) {
+                val staleHref = staleSlashDir.href?.toString().orEmpty()
+                Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
+                try {
+                    sardine.delete(rootUrl + staleSlashDir.href.path)
+                    Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
+                } catch (e: Exception) {
+                    Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")
+                }
+            } else {
+                Logger.d(TAG, "   ℹ️ No stale '/' directory found at root (checked name field)")
+            }
+        } catch (e: Exception) {
+            Logger.w(TAG, "   ⚠️ Root cleanup check failed: ${e.message}")
+        }
+    }
+
     /**
      * Finds a Markdown file by scanning YAML frontmatter for note ID
      * Used when local note is deleted and title is unavailable
@@ -2110,7 +2367,7 @@ class WebDavSyncService(private val context: Context) {
         sardine: Sardine,
         mdUrl: String,
         noteId: String
-    ): String? = withContext(Dispatchers.IO) {
+    ): String? = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "🔍 Scanning MD files for ID: $noteId")
             val resources = sardine.list(mdUrl)
@@ -2157,20 +2414,26 @@ class WebDavSyncService(private val context: Context) {
      * @param noteId The ID of the note to delete
      * @return true if at least one file was deleted, false otherwise
      */
-    suspend fun deleteNoteFromServer(noteId: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteNoteFromServer(noteId: String): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             val sardine = getOrCreateSardine() ?: return@withContext false
             val serverUrl = getServerUrl() ?: return@withContext false
-            
+
+            // 🔧 v1.9.0 Fix: activeSyncFolderName VOR getNotesUrl() laden
+            activeSyncFolderName = prefs.getString(
+                Constants.KEY_SYNC_FOLDER_NAME,
+                Constants.DEFAULT_SYNC_FOLDER_NAME
+            ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
             var deletedJson = false
             var deletedMd = false
-            
-            // v1.4.1: Try to delete JSON from /notes/ first (standard path)
+
+            // v1.4.1: Try to delete JSON from configured sync folder first (standard path)
             val jsonUrl = getNotesUrl(serverUrl) + "$noteId.json"
             if (sardine.exists(jsonUrl)) {
                 sardine.delete(jsonUrl)
                 deletedJson = true
-                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /notes/)")
+                Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /$activeSyncFolderName/)")
             } else {
                 // v1.4.1: Fallback - check ROOT folder for v1.2.0 compatibility
                 val rootJsonUrl = serverUrl.trimEnd('/') + "/$noteId.json"
@@ -2211,8 +2474,9 @@ class WebDavSyncService(private val context: Context) {
             }
             
             if (!deletedJson && !deletedMd) {
-                Logger.w(TAG, "⚠️ Note $noteId not found on server")
-                return@withContext false
+                // 🔧 v1.9.0 Fix: Note nicht auf Server = bereits gelöscht = Ziel erreicht
+                Logger.w(TAG, "⚠️ Note $noteId not found on server (treating as already deleted)")
+                return@withContext true
             }
             
             // Remove from deletion tracker (was explicitly deleted from server)
@@ -2222,6 +2486,15 @@ class WebDavSyncService(private val context: Context) {
                 storage.saveDeletionTracker(deletionTracker)
                 Logger.d(TAG, "🔓 Removed from deletion tracker: $noteId")
             }
+
+            // 🆕 v1.9.0 (Opt 5): Content-Hash und E-Tag bei Deletion invalidieren
+            prefs.edit()
+                .remove("etag_json_$noteId")
+                .remove("content_hash_$noteId")
+                .remove("etag_md_$noteId")
+                .remove("content_hash_md_$noteId")
+                .apply()
+            Logger.d(TAG, "🗑️ Cleared E-Tag + content hash for deleted note: $noteId")
             
             true
         } catch (e: Exception) {
@@ -2236,15 +2509,15 @@ class WebDavSyncService(private val context: Context) {
      * 
      * @return ManualMarkdownSyncResult with export and import counts
      */
-    suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(Dispatchers.IO) {
+    suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(ioDispatcher) {
         return@withContext try {
             val sardine = getOrCreateSardine()
                 ?: throw SyncException(context.getString(R.string.error_sardine_client_failed))
             val serverUrl = getServerUrl()
                 ?: throw SyncException(context.getString(R.string.error_server_url_not_configured))
             
-            val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
-            val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+            val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
+            val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
             
             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                 throw SyncException(context.getString(R.string.error_server_not_configured))

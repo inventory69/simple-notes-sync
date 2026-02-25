@@ -8,6 +8,147 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.0] - 2026-02-25
+
+### 🔄 Sync Quality, Performance & UI
+
+Major release adding note filtering, markdown preview, configurable sync folder, opt-in autosave, widget polish, and significant sync improvements — server switch data loss fixed, parallel uploads, import wizard, and three sync edge-cases resolved.
+
+### 🐛 Bug Fixes
+
+**First Sync Fails if /notes/ Folder Doesn't Exist on Server** ([e012d17](https://github.com/inventory69/simple-notes-sync/commit/e012d17))
+- First sync no longer fails silently when the `/notes/` directory hasn't been created on the server yet
+- Root cause: `checkServerForChanges()` returned `false` (no changes) instead of `true` (proceed) when `lastSyncTime > 0` and folder was missing
+- Fix: returns `true` to allow initial upload — server will create the folder on first PUT
+
+**Server Switch Causes False "Deleted on Server" Status** ([0985209](https://github.com/inventory69/simple-notes-sync/commit/0985209))
+- Switching to a new server no longer causes local notes to be falsely marked as deleted
+- Root cause: E-Tag and content hash caches from the old server were not cleared, causing upload-skip to fire incorrectly — notes appeared SYNCED without being uploaded to the new server
+- Fix: `clearServerCaches()` clears all E-Tag, content hash, last sync timestamp, and deletion tracker entries on server change
+- `resetAllSyncStatusToPending()` now also resets DELETED_ON_SERVER status to PENDING
+
+**Server Deletion Detection Guard Too Aggressive** ([56c0363](https://github.com/inventory69/simple-notes-sync/commit/56c0363))
+- Users with 2–9 notes who deleted all from the Nextcloud web UI never got DELETED_ON_SERVER status
+- Guard threshold raised from >1 to ≥10 to allow legitimate mass-deletion for small portfolios
+
+**Parallel Markdown Export Race Condition** ([56c0363](https://github.com/inventory69/simple-notes-sync/commit/56c0363))
+- Two notes with identical titles could overwrite each other's Markdown file during parallel upload
+- Root cause: concurrent `exists()` → `put()` sequence without synchronization
+- Fix: Markdown export serialized via Mutex (JSON uploads remain parallel)
+
+**E-Tag Not Cached for "Local Newer" Download Skip** ([56c0363](https://github.com/inventory69/simple-notes-sync/commit/56c0363))
+- When local note was newer than server version, the server E-Tag was not cached
+- Caused unnecessary re-downloads on every subsequent sync
+- Fix: E-Tag now saved in the else-branch of download result processing
+
+**Tune Button Color Mismatch** ([135559a](https://github.com/inventory69/simple-notes-sync/commit/135559a))
+- Untoggled tune button now uses default TopAppBar icon color instead of custom color
+
+**Import Wizard Loses Checklist Content** ([5031848](https://github.com/inventory69/simple-notes-sync/commit/5031848))
+- Checklist detection during Markdown import now preserves full note content
+
+**Checklist Scroll Jump When Checking First Visible Item** ([8238af4](https://github.com/inventory69/simple-notes-sync/commit/8238af4))
+- Checking the first visible checklist item no longer causes a scroll jump
+
+**Checklist Original Order Lost After Insert/Delete** ([e601642](https://github.com/inventory69/simple-notes-sync/commit/e601642))
+- Original item order is now cemented after insert/delete operations to prevent reordering glitches
+
+**Inconsistent Scroll on Check/Un-Check** ([19dfb03](https://github.com/inventory69/simple-notes-sync/commit/19dfb03))
+- Consistent scroll behavior when checking and unchecking checklist items
+
+### ✨ New Features
+
+**Notes Import Wizard** ([e012d17](https://github.com/inventory69/simple-notes-sync/commit/e012d17))
+- New import screen in Settings — import notes from WebDAV server or local storage
+- Supported formats: `.md` (with/without YAML frontmatter), `.json` (Simple Notes format or generic), `.txt` (plain text)
+- WebDAV scan: recursive subfolder scan (depth 1), respects existing DeletionTracker entries
+- Imported notes from YAML frontmatter or Simple Notes JSON are imported as SYNCED; others as PENDING
+- Accessible via Settings → Import
+
+**Parallel Uploads** ([187d338](https://github.com/inventory69/simple-notes-sync/commit/187d338))
+- Notes are uploaded in parallel instead of sequentially — ~2× faster for multi-note changes
+- Upload time for 4 notes reduced from ~11.5 s to ~6 s (measured on device)
+- Second sync with unchanged notes: upload phase ~0 ms (all skipped via content hash)
+- Bounded concurrency via Semaphore; file I/O writes serialized via Mutex
+- New: `/notes-md/` existence check cached per sync run (saves ~480 ms × N exists() calls)
+
+**Unified Parallel Connections Setting** ([ef200d0](https://github.com/inventory69/simple-notes-sync/commit/ef200d0))
+- Parallel downloads (1/3/5/7/10) and uploads (hidden, max 6) merged into single "Parallel Connections" setting
+- New options: 1, 3, 5 (reduced from 5 options — 7 and 10 removed since uploads cap at 6)
+- Users with 7 or 10 selected are automatically migrated to 5
+- Uploads capped at `min(setting, 6)` at runtime
+
+**Filter Chip Row** ([952755f](https://github.com/inventory69/simple-notes-sync/commit/952755f), [71a0469](https://github.com/inventory69/simple-notes-sync/commit/71a0469), [07c41bb](https://github.com/inventory69/simple-notes-sync/commit/07c41bb))
+- New filter bar below TopAppBar — filter notes by All / Text / Checklists
+- Inline search field for quick note filtering by title
+- Sort button moved from dialog into compact filter row icon
+- Tune button in TopAppBar toggles filter row visibility
+
+**Markdown Preview** ([e83a89a](https://github.com/inventory69/simple-notes-sync/commit/e83a89a))
+- Live markdown preview for text notes with formatting toolbar
+- Supports headings, bold, italic, strikethrough, lists, horizontal rules, code blocks
+- Toggle between edit and preview mode
+
+**Custom App Title** ([bf478c7](https://github.com/inventory69/simple-notes-sync/commit/bf478c7))
+- Configurable app name in settings
+
+**Configurable WebDAV Sync Folder** ([58cdf1e](https://github.com/inventory69/simple-notes-sync/commit/58cdf1e))
+- Custom sync folder name (default: `notes`, configurable for multi-app setups)
+
+**Opt-in Autosave** ([5800183](https://github.com/inventory69/simple-notes-sync/commit/5800183))
+- Autosave with debounce timer (3s after last edit, configurable in settings)
+- Disabled by default, opt-in via Settings
+
+**Scroll to Top After Manual Sync** ([4697e49](https://github.com/inventory69/simple-notes-sync/commit/4697e49))
+- Notes list scrolls to top after completing a manual sync
+
+### 🔄 Improvements
+
+**Widget: Monet Tint in Translucent Background** ([0f5a734](https://github.com/inventory69/simple-notes-sync/commit/0f5a734))
+- Monet dynamic color tint preserved in translucent widget backgrounds
+
+**Widget: Options Bar Background Removed** ([5e3273a](https://github.com/inventory69/simple-notes-sync/commit/5e3273a))
+- Options bar background removed for seamless widget integration
+
+**Widget: Strikethrough for Completed Items** ([eb9db2e](https://github.com/inventory69/simple-notes-sync/commit/eb9db2e))
+- Completed checklist items in widgets now show strikethrough styling
+
+**Widget: Auto-Refresh on onStop** ([2443908](https://github.com/inventory69/simple-notes-sync/commit/2443908))
+- Widgets automatically refresh when leaving the app (onStop lifecycle hook)
+
+**Checklist: Un-Check Restores Original Position** ([188a0f6](https://github.com/inventory69/simple-notes-sync/commit/188a0f6))
+- Un-checking an item restores it to its original position
+
+**Sort Button: Compact Icon Button** ([a1bd15a](https://github.com/inventory69/simple-notes-sync/commit/a1bd15a))
+- Replaced AssistChip with compact IconButton + SwapVert icon
+
+### 🛠️ Internal
+
+**Code Quality** ([6708156](https://github.com/inventory69/simple-notes-sync/commit/6708156))
+- Fixed deprecated `Icons.Outlined.Notes` → `Icons.AutoMirrored.Outlined.Notes`
+- Removed unused `Color` import from ServerSettingsScreen + detekt baseline entry
+- Logger timestamps use `Locale.ROOT` instead of `Locale.getDefault()`
+- Removed obsolete `Build.VERSION_CODES.N` check (minSdk=24)
+
+**Detekt Compliance** ([f0e143c](https://github.com/inventory69/simple-notes-sync/commit/f0e143c))
+- Extraction of `ALL_DELETED_GUARD_THRESHOLD` constant for magic number compliance
+
+**ProGuard/R8 Verification**
+- Release build verified — no rule changes needed for v1.9.0
+
+**Image Support Deferred to v2.0.0** ([845ba03](https://github.com/inventory69/simple-notes-sync/commit/845ba03))
+- Local image embedding removed from v1.9.0 scope
+- Feature preserved as v2.0.0 specification with full architecture proposal
+
+**Weblate PR Workflow** ([efd782f](https://github.com/inventory69/simple-notes-sync/commit/efd782f))
+- Weblate integration switched to PR-based translation workflow
+
+**Documentation** ([395d154](https://github.com/inventory69/simple-notes-sync/commit/395d154))
+- Documentation updated for v1.8.2 and v1.9.0 (FEATURES, UPCOMING, QUICKSTART)
+- Fixed broken links across docs (closes #22)
+
+---
+
 ## [1.8.2] - 2026-02-16
 
 ### 🔧 Stability, Editor & Widget Improvements

@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,12 +38,15 @@ import java.net.URL
  */
 @Suppress("TooManyFunctions") // v1.7.0: 35 Funktionen durch viele kleine Setter (setTrigger*, set*)
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     companion object {
         private const val TAG = "SettingsViewModel"
         private const val CONNECTION_TIMEOUT_MS = 3000
         private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L  // 2s for successful operations
         private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L    // 3s for errors (more important)
+        private const val PROGRESS_CLEAR_DELAY_MS = 500L
     }
     
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -51,14 +55,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
     // This prevents false-positive "server changed" toasts during text input
-    private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+    private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+    // 🆕 v1.9.0: Track last confirmed sync folder name for change detection
+    private var confirmedSyncFolderName: String =
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
     
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings State
     // ═══════════════════════════════════════════════════════════════════════
     
     // v1.5.0 Fix: Initialize URL with protocol prefix if empty
-    private val storedUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
+    private val storedUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
     
     // 🌟 v1.6.0: Separate host from prefix for better UX
     // isHttps determines the prefix, serverHost is the editable part
@@ -84,10 +92,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         if (host.isEmpty()) "" else prefix + host
     }.stateIn(viewModelScope, SharingStarted.Eagerly, storedUrl)
     
-    private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "") ?: "")
+    private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "").orEmpty())
     val username: StateFlow<String> = _username.asStateFlow()
     
-    private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "") ?: "")
+    private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "").orEmpty())
     val password: StateFlow<String> = _password.asStateFlow()
     
     private val _serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Unknown)
@@ -138,11 +146,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val syncInterval: StateFlow<Long> = _syncInterval.asStateFlow()
 
-    // 🆕 v1.8.0: Max Parallel Downloads
-    private val _maxParallelDownloads = MutableStateFlow(
-        prefs.getInt(Constants.KEY_MAX_PARALLEL_DOWNLOADS, Constants.DEFAULT_MAX_PARALLEL_DOWNLOADS)
+    // 🔧 v1.9.0: Unified parallel connections setting (downloads + uploads)
+    private val _maxParallelConnections = MutableStateFlow(
+        prefs.getInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS)
+            .coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
     )
-    val maxParallelDownloads: StateFlow<Int> = _maxParallelDownloads.asStateFlow()
+    val maxParallelConnections: StateFlow<Int> = _maxParallelConnections.asStateFlow()
 
     // 🌟 v1.6.0: Configurable Sync Triggers
     private val _triggerOnSave = MutableStateFlow(
@@ -203,6 +212,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
     )
     val displayMode: StateFlow<String> = _displayMode.asStateFlow()
+
+    // 🆕 v1.9.0 (F05): Custom App Title
+    private val _customAppTitle = MutableStateFlow(
+        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+    )
+    val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
+
+    // 🆕 v1.9.0: Configurable WebDAV Sync Folder
+    private val _syncFolderName = MutableStateFlow(
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+    )
+    val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
+
+    // 🆕 v1.9.0: Autosave
+    private val _autosaveEnabled = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_AUTOSAVE_ENABLED, Constants.DEFAULT_AUTOSAVE_ENABLED)
+    )
+    val autosaveEnabled: StateFlow<Boolean> = _autosaveEnabled.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
@@ -287,6 +314,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
         prefs.edit().putString(Constants.KEY_PASSWORD, value).apply()
     }
+
+    // 🆕 v1.9.0: Update configurable sync folder name
+    fun updateSyncFolderName(name: String) {
+        val sanitized = name
+            .replace(Regex("[^a-zA-Z0-9_-]"), "")
+            .take(Constants.MAX_SYNC_FOLDER_NAME_LENGTH)
+        _syncFolderName.value = sanitized
+        prefs.edit().putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }).apply()
+    }
+
+    /**
+     * 🆕 v1.9.0: Toggle autosave.
+     * Saves immediately to SharedPreferences. NoteEditorViewModel reads
+     * the preference at init time.
+     */
+    fun setAutosaveEnabled(enabled: Boolean) {
+        _autosaveEnabled.value = enabled
+        prefs.edit().putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled).apply()
+    }
     
     /**
      * 🔧 v1.7.0 Hotfix: Manual save function - only called when leaving settings screen
@@ -299,8 +345,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
         
+        // 🆕 v1.9.0: Folder change counts as server change (different data location)
+        val currentFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        val folderChanged = currentFolder != confirmedSyncFolderName
+
         // 🔄 v1.7.0: Detect server change ONLY against last confirmed URL
-        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl)
+        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl) || folderChanged
         
         // ✅ Settings are already saved in updateServerHost/Protocol/Username/Password
         // This function now ONLY handles server-change detection
@@ -308,15 +358,49 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // Reset sync status if server actually changed
         if (serverChanged) {
             viewModelScope.launch {
+                // 🔧 v1.9.0: E-Tag/Content-Hash-Caches und Sync-Timestamp löschen
+                // Verhindert Upload-Skip durch veraltete Cache-Einträge des alten Servers
+                clearServerCaches()
                 val count = notesStorage.resetAllSyncStatusToPending()
                 Logger.d(TAG, "🔄 Server changed from '$confirmedServerUrl' to '$fullUrl': Reset $count notes to PENDING")
                 emitToast(getString(R.string.toast_server_changed_sync_reset, count))
             }
             // Update confirmed state after reset
             confirmedServerUrl = fullUrl
+            confirmedSyncFolderName = currentFolder
         } else {
             Logger.d(TAG, "💾 Server settings check complete (no server change detected)")
         }
+    }
+
+    /**
+     * 🔧 v1.9.0: Löscht alle server-spezifischen Caches beim Server-Wechsel.
+     *
+     * Ohne diesen Clear greift die Content-Hash-Skip-Logik in uploadSingleNoteParallel():
+     * Hash matcht (Inhalt gleich) + E-Tag vom alten Server noch vorhanden → Upload übersprungen,
+     * Note auf SYNCED gesetzt ohne je auf neuen Server hochgeladen zu werden.
+     *
+     * Gelöscht werden:
+     * - etag_json_*       (JSON-Datei E-Tags)
+     * - etag_md_*         (Markdown-Datei E-Tags)
+     * - content_hash_*    (JSON-Content-Hashes)
+     * - content_hash_md_* (Markdown-Content-Hashes)
+     * - lastSyncTimestamp (damit hasUnsyncedChanges() korrekt funktioniert)
+     * - DeletionTracker   (alte Lösch-Historie ist für neuen Server irrelevant)
+     */
+    private fun clearServerCaches() {
+        val editor = prefs.edit()
+        prefs.all.keys.filter {
+            it.startsWith("etag_json_") ||
+            it.startsWith("etag_md_") ||
+            it.startsWith("content_hash_") ||
+            it.startsWith("content_hash_md_")
+        }.forEach { key -> editor.remove(key) }
+        editor.remove(Constants.KEY_LAST_SYNC)
+        editor.remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
+        editor.apply()
+        notesStorage.clearDeletionTracker()
+        Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamp, deletion tracker)")
     }
     
     /**
@@ -387,14 +471,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     ServerStatus.Unreachable(result.errorMessage)
                 }
                 val message = if (result.isSuccess) {
-                    getString(R.string.toast_connection_success)
+                    // 🆕 Issue #21: infoMessage anzeigen wenn vorhanden (z.B. /notes/-Status)
+                    result.infoMessage ?: getString(R.string.toast_connection_success)
                 } else {
-                    getString(R.string.toast_connection_failed, result.errorMessage ?: "")
+                    getString(R.string.toast_connection_failed, result.errorMessage.orEmpty())
                 }
                 emitToast(message)
             } catch (e: Exception) {
                 _serverStatus.value = ServerStatus.Unreachable(e.message)
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
@@ -419,7 +504,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         
         viewModelScope.launch {
             _serverStatus.value = ServerStatus.Checking
-            val isReachable = withContext(Dispatchers.IO) {
+            val isReachable = withContext(ioDispatcher) {
                 try {
                     val url = URL(serverUrl)
                     val connection = url.openConnection() as HttpURLConnection
@@ -466,10 +551,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
                 } else {
-                    emitToast(getString(R.string.toast_sync_failed, result.errorMessage ?: ""))
+                    emitToast(getString(R.string.toast_sync_failed, result.errorMessage.orEmpty()))
                 }
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             } finally {
                 _isSyncing.value = false
             }
@@ -510,14 +595,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // 🆕 v1.8.0: Max Parallel Downloads Setter
-    fun setMaxParallelDownloads(count: Int) {
+    // 🔧 v1.9.0: Unified parallel connections setter
+    fun setMaxParallelConnections(count: Int) {
         val validCount = count.coerceIn(
-            Constants.MIN_PARALLEL_DOWNLOADS,
-            Constants.MAX_PARALLEL_DOWNLOADS
+            Constants.MIN_PARALLEL_CONNECTIONS,
+            Constants.MAX_PARALLEL_CONNECTIONS
         )
-        _maxParallelDownloads.value = validCount
-        prefs.edit().putInt(Constants.KEY_MAX_PARALLEL_DOWNLOADS, validCount).apply()
+        _maxParallelConnections.value = validCount
+        prefs.edit().putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, validCount).apply()
     }
 
     // 🌟 v1.6.0: Configurable Sync Triggers Setters
@@ -578,9 +663,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             viewModelScope.launch {
                 try {
                     // Check server configuration first
-                    val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "") ?: ""
-                    val username = prefs.getString(Constants.KEY_USERNAME, "") ?: ""
-                    val password = prefs.getString(Constants.KEY_PASSWORD, "") ?: ""
+                    val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+                    val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
+                    val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
                     
                     if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                         emitToast(getString(R.string.toast_configure_server_first))
@@ -597,7 +682,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         _markdownExportProgress.value = MarkdownExportProgress(0, noteCount)
                         
                         val syncService = WebDavSyncService(getApplication())
-                        val exportedCount = withContext(Dispatchers.IO) {
+                        val exportedCount = withContext(ioDispatcher) {
                             syncService.exportAllNotesToMarkdown(
                                 serverUrl = serverUrl,
                                 username = username,
@@ -618,9 +703,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
                         emitToast(getString(R.string.toast_markdown_exported, exportedCount))
                         
-                        @Suppress("MagicNumber") // UI progress delay
                         // Clear progress after short delay
-                        kotlinx.coroutines.delay(500)
+                        kotlinx.coroutines.delay(PROGRESS_CLEAR_DELAY_MS)
                         _markdownExportProgress.value = null
                         
                     } else {
@@ -635,7 +719,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     
                 } catch (e: Exception) {
                     _markdownExportProgress.value = null
-                    emitToast(getString(R.string.toast_export_failed, e.message ?: ""))
+                    emitToast(getString(R.string.toast_export_failed, e.message.orEmpty()))
                     // Don't enable on error
                 }
             }
@@ -666,7 +750,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = syncService.manualMarkdownSync()
                 emitToast(getString(R.string.toast_markdown_result, result.exportedCount, result.importedCount))
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
@@ -760,7 +844,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _backupStatusText.value = getString(R.string.backup_progress_restoring_server)
             try {
                 val syncService = WebDavSyncService(getApplication())
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.restoreFromServer(mode)
                 }
                 
@@ -804,7 +888,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val cleared = Logger.clearLogFile(getApplication())
                 emitToast(if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted))
             } catch (e: Exception) {
-                emitToast(getString(R.string.toast_error, e.message ?: ""))
+                emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
@@ -923,5 +1007,94 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _displayMode.value = mode
         prefs.edit().putString(Constants.KEY_DISPLAY_MODE, mode).apply()
         Logger.d(TAG, "Display mode changed to: $mode")
+    }
+
+    /**
+     * 🆕 v1.9.0 (F05): Set custom app title.
+     * Enforces max length limit.
+     */
+    fun setCustomAppTitle(title: String) {
+        val sanitized = title.take(Constants.MAX_CUSTOM_APP_TITLE_LENGTH)
+        _customAppTitle.value = sanitized
+        prefs.edit().putString(Constants.KEY_CUSTOM_APP_TITLE, sanitized).apply()
+        Logger.d(TAG, "Custom app title changed to: '$sanitized'")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 Issue #21: Notes Import Wizard
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Scannt den konfigurierten WebDAV-Ordner nach importierbaren Dateien.
+     * Scannt die Base-URL (NICHT /notes/), da dort die externen Dateien liegen.
+     */
+    suspend fun scanWebDavForImport(): List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate> =
+        withContext(ioDispatcher) {
+            try {
+                val syncService = WebDavSyncService(getApplication())
+                val sardine = syncService.getOrCreateSardine() ?: return@withContext emptyList()
+                val serverUrl = syncService.getServerUrl() ?: return@withContext emptyList()
+
+                val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+                wizard.scanWebDavFolder(sardine, serverUrl)
+            } catch (e: Exception) {
+                Logger.e(TAG, "Import scan failed: ${e.message}")
+                emptyList()
+            }
+        }
+
+    /**
+     * Importiert ausgewählte Import-Kandidaten.
+     */
+    suspend fun importCandidates(
+        candidates: List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate>
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(ioDispatcher) {
+        val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+        wizard.importFiles(candidates)
+    }
+
+    /**
+     * Importiert lokale Dateien via Android Content-URI.
+     */
+    suspend fun importLocalFiles(
+        uris: List<Uri>
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(ioDispatcher) {
+        val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+        val candidates = uris.mapNotNull { uri ->
+            try {
+                val name = getFileName(uri) ?: "unknown.txt"
+                val size = getFileSize(uri)
+                val fileType = wizard.detectFileType(name)
+                dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate(
+                    name = name,
+                    source = dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSource.LocalFile(uri),
+                    size = size,
+                    modified = System.currentTimeMillis(),
+                    fileType = fileType
+                )
+            } catch (e: Exception) {
+                Logger.w(TAG, "Cannot process URI $uri: ${e.message}")
+                null
+            }
+        }
+        wizard.importFiles(candidates)
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        val cursor = getApplication<android.app.Application>()
+            .contentResolver.query(uri, null, null, null, null)
+        return cursor?.use {
+            val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (it.moveToFirst() && nameIndex >= 0) it.getString(nameIndex) else null
+        }
+    }
+
+    private fun getFileSize(uri: Uri): Long {
+        val cursor = getApplication<android.app.Application>()
+            .contentResolver.query(uri, null, null, null, null)
+        return cursor?.use {
+            val sizeIndex = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+            if (it.moveToFirst() && sizeIndex >= 0) it.getLong(sizeIndex) else 0L
+        } ?: 0L
     }
 }

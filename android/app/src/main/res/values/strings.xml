@@ -220,6 +220,24 @@
     <string name="settings_markdown_manual_button">Sync Markdown</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
+
+    <!-- Issue #21: Notes Import -->
+    <string name="settings_import_title">Import Notes</string>
+    <string name="settings_import_subtitle">Import notes from files or server</string>
+    <string name="import_section_server">From WebDAV Server</string>
+    <string name="import_section_local">From Device</string>
+    <string name="import_info_text">Import .md, .json, or .txt files as Simple Notes. Imported notes will be synced on next synchronization. Original files remain unchanged.</string>
+    <string name="settings_import_from_server">Scan WebDAV Server</string>
+    <string name="settings_import_from_file">Select Files from Device</string>
+    <string name="import_dialog_scanning">Scanning…</string>
+    <string name="import_dialog_found">%d importable files found</string>
+    <string name="import_button_import">Import %d files</string>
+    <string name="import_no_files_found">No importable files found</string>
+    <string name="import_summary_title">Import Result</string>
+    <string name="import_dialog_complete">%1$d imported, %2$d skipped, %3$d failed</string>
+    <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
+    <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
+    <string name="import_cancel">Cancel</string>
     <string name="settings_backup_info">📦 A safety backup is automatically created before each restore.</string>
     <string name="settings_backup_local_title">Local Backup</string>
     <string name="settings_backup_server_title">Server Backup</string>
@@ -249,6 +267,9 @@
     <string name="server_connection_https_hint">HTTPS for secure connections over the internet</string>
     <string name="server_address">Server Address</string>
     <string name="server_address_hint">e.g. http://192.168.0.188:8080/notes</string>
+    <string name="server_advanced_settings">Advanced</string>
+    <string name="sync_folder_name">Sync folder</string>
+    <string name="sync_folder_name_hint">Folder name on the WebDAV server (default: notes). Only change this if you know what you\'re doing.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
@@ -428,7 +449,46 @@
     <string name="display_mode_list">📋 List View</string>
     <string name="display_mode_grid">🎨 Grid View</string>
     <string name="display_mode_info">Grid view shows notes in a two-column layout. All notes appear side-by-side in a clean, compact overview.</string>
-    
+
+    <!-- 🆕 v1.9.0 (F05): Custom App Title -->
+    <string name="custom_app_title_section">App Title</string>
+    <string name="custom_app_title_label">Custom title</string>
+    <string name="custom_app_title_placeholder">Simple Notes</string>
+    <string name="custom_app_title_info">Set a custom title for the main screen. Leave empty to use the default \"Simple Notes\" title. Maximum 30 characters.</string>
+    <string name="custom_app_title_char_count">%1$d / %2$d</string>
+    <!-- 🆕 v1.9.0: Autosave -->
+    <string name="autosave_section">Editor</string>
+    <string name="autosave_toggle">Autosave</string>
+    <string name="autosave_description">Automatically saves after 3 seconds of inactivity</string>
+    <string name="autosave_info">When enabled, your note is saved automatically while you type. Sync only runs on manual save.</string>
+    <string name="autosave_indicator">✓ Saved</string>
+    <!-- 🆕 v1.9.0 (F06): Note Filter -->
+    <string name="filter_all">All</string>
+    <string name="filter_text_only">Text</string>
+    <string name="filter_checklist_only">Checklists</string>
+
+    <!-- v1.9.0 (F10): Search -->
+    <string name="search_notes_placeholder">Search…</string>
+    <string name="search_clear">Clear search</string>
+
+    <!-- v1.9.0 (F11): Filter row toggle -->
+    <string name="toggle_filter_row">Toggle filter bar</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
+    <string name="editor_mode_edit">Edit</string>
+    <string name="editor_mode_preview">Preview</string>
+    <string name="editor_toggle_preview">Toggle Markdown preview</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
+    <string name="md_toolbar_bold">Bold</string>
+    <string name="md_toolbar_italic">Italic</string>
+    <string name="md_toolbar_strikethrough">Strikethrough</string>
+    <string name="md_toolbar_heading">Heading</string>
+    <string name="md_toolbar_code">Code</string>
+    <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_list">List</string>
+    <string name="md_toolbar_rule">Horizontal rule</string>
+
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
@@ -472,6 +532,9 @@
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
+    <!-- Issue #21: Connection test info with sync folder status -->
+    <string name="test_connection_success_with_notes">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
+    <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Error: %s</string>
@@ -584,16 +647,15 @@
         <item quantity="other">%d completed</item>
     </plurals>
 
-    <!-- ============================= -->
-    <!-- PARALLEL DOWNLOADS v1.8.0     -->
-    <!-- ============================= -->
-    <string name="sync_parallel_downloads_title">Parallel Downloads</string>
-    <string name="sync_parallel_downloads_unit">parallel</string>
-    <string name="sync_parallel_downloads_desc_1">Sequential (slowest, safest)</string>
-    <string name="sync_parallel_downloads_desc_3">Balanced (3x faster)</string>
-    <string name="sync_parallel_downloads_desc_5">Recommended (5x faster)</string>
-    <string name="sync_parallel_downloads_desc_7">Fast (7x faster)</string>
-    <string name="sync_parallel_downloads_desc_10">Maximum (10x faster, may stress server)</string>
+    <!-- ===================================== -->
+    <!-- PARALLEL CONNECTIONS v1.9.0           -->
+    <!-- (unified downloads + uploads setting) -->
+    <!-- ===================================== -->
+    <string name="sync_parallel_connections_title">Parallel Connections</string>
+    <string name="sync_parallel_connections_unit">parallel</string>
+    <string name="sync_parallel_connections_desc_1">Sequential (slowest, safest)</string>
+    <string name="sync_parallel_connections_desc_3">Balanced (3x faster)</string>
+    <string name="sync_parallel_connections_desc_5">Maximum (5x faster)</string>
 
     <!-- ============================= -->
     <!-- WIDGETS v1.8.0                -->

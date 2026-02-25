@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.color.DynamicColors
@@ -43,6 +44,7 @@ import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import dev.dettmer.simplenotes.widget.NoteWidget
 import kotlinx.coroutines.launch
 
 /**
@@ -63,6 +65,9 @@ class ComposeMainActivity : ComponentActivity() {
         private const val TAG = "ComposeMainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
         private const val REQUEST_SETTINGS = 1002
+        private const val BANNER_DELAY_COMPLETED_MS = 2000L
+        private const val BANNER_DELAY_INFO_MS = 2500L
+        private const val BANNER_DELAY_ERROR_MS = 4000L
     }
     
     private val viewModel: MainViewModel by viewModels()
@@ -188,6 +193,7 @@ class ComposeMainActivity : ComponentActivity() {
         
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
+        viewModel.refreshCustomAppTitle()  // 🆕 v1.9.0 (F05)
         
         // Register BroadcastReceiver for Background-Sync
         @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional
@@ -220,7 +226,47 @@ class ComposeMainActivity : ComponentActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
         Logger.d(TAG, "📡 BroadcastReceiver unregistered")
     }
-    
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F09): Widget refresh on leaving app
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * 🆕 v1.9.0 (F09): Refresh all active homescreen widgets.
+     *
+     * Iterates every GlanceId belonging to NoteWidget and calls update().
+     * Glance internally deduplicates — calling update() when data has not
+     * changed is a no-op at the RemoteViews level, so this is safe to call
+     * on every onStop without battery concern.
+     */
+    private fun refreshAllWidgets() {
+        lifecycleScope.launch {
+            try {
+                val glanceManager = GlanceAppWidgetManager(this@ComposeMainActivity)
+                val glanceIds = glanceManager.getGlanceIds(NoteWidget::class.java)
+                if (glanceIds.isEmpty()) return@launch
+                Logger.d(TAG, "🔄 F09: Refreshing ${glanceIds.size} widget(s) on onStop")
+                glanceIds.forEach { id ->
+                    NoteWidget().update(this@ComposeMainActivity, id)
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "F09: Failed to refresh widgets on onStop: ${e.message}")
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 🆕 v1.9.0 (F09): Refresh widgets when the user leaves the app.
+        // cameFromEditor is true when navigating to the editor (in-app); the
+        // editor already updates widgets on save — skip here to avoid double-update.
+        // When the user presses Home or switches apps, cameFromEditor is false.
+        if (!cameFromEditor) {
+            refreshAllWidgets()
+        }
+        Logger.d(TAG, "📱 ComposeMainActivity.onStop() - cameFromEditor=$cameFromEditor")
+    }
+
     private fun setupSyncStateObserver() {
         // 🆕 v1.8.0: SyncStatus nur noch für PullToRefresh-Indikator (intern)
         SyncStateManager.syncStatus.observe(this) { status ->
@@ -230,19 +276,18 @@ class ComposeMainActivity : ComponentActivity() {
         // 🆕 v1.8.0: Auto-Hide via SyncProgress (einziges Banner-System)
         lifecycleScope.launch {
             SyncStateManager.syncProgress.collect { progress ->
-                @Suppress("MagicNumber") // UI timing delays for banner visibility
                 when (progress.phase) {
                     dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> {
-                        kotlinx.coroutines.delay(2000L)
+                        kotlinx.coroutines.delay(BANNER_DELAY_COMPLETED_MS)
                         SyncStateManager.reset()
                     }
                     // 🆕 v1.8.1 (IMPL_12): INFO-Meldungen nach 2.5s ausblenden
                     dev.dettmer.simplenotes.sync.SyncPhase.INFO -> {
-                        kotlinx.coroutines.delay(2500L)
+                        kotlinx.coroutines.delay(BANNER_DELAY_INFO_MS)
                         SyncStateManager.reset()
                     }
                     dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> {
-                        kotlinx.coroutines.delay(4000L)
+                        kotlinx.coroutines.delay(BANNER_DELAY_ERROR_MS)
                         SyncStateManager.reset()
                     }
                     else -> { /* No action needed */ }

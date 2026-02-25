@@ -30,7 +30,7 @@ complexity:
     threshold: 600  # Increased for WebDavSyncService
   LongMethod:
     active: true
-    threshold: 200  # v1.5.0: Increased for sync methods (TODO: refactor in v1.6.0)
+    threshold: 245  # v1.9.0 (F07): Increased for markdown toolbar + preview in NoteEditorScreen
   LongParameterList:
     active: true
     functionThreshold: 10  # v1.5.0: Compose functions often have many params
@@ -41,7 +41,7 @@ complexity:
   TooManyFunctions:
     active: true
     thresholdInFiles: 35  # v1.5.0: Increased for large classes
-    thresholdInClasses: 35
+    thresholdInClasses: 40  # v1.9.0 (F06): MainViewModel extended with filter functions
     thresholdInInterfaces: 20
     thresholdInObjects: 20
     thresholdInEnums: 10
