@@ -494,7 +494,7 @@ Settings → Apps → Simple Notes → Battery → Don't optimize
 **Problem: Server not reachable**
 ```
 Check: 
-1. Server running? → docker-compose ps
+1. Server running? → docker compose ps
 2. IP correct? → ip addr show
 3. Port open? → telnet 192.168.0.188 8080
 4. Firewall? → sudo ufw allow 8080

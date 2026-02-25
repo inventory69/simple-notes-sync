@@ -148,7 +148,7 @@ body:
     attributes:
       label: ✅ Checklist
       options:
-        - label: Ich habe die [Troubleshooting-Sektion](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting) gelesen / I have read the troubleshooting section
+        - label: Ich habe die [Troubleshooting-Sektion](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#-troubleshooting) gelesen / I have read the troubleshooting section
           required: false
         - label: Ich habe "Verbindung testen" in den Einstellungen probiert / I have tried "Test connection" in settings
           required: false

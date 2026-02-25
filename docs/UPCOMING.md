@@ -148,6 +148,60 @@
 
 ---
 
+## v1.8.2 - Stability & Editor Fixes ✅
+
+> **Status:** Released 🎉 (February 2026)
+
+- ✅ **26 bugfixes** - Sync deadlocks, data loss prevention, editor UX
+- ✅ **Self-signed SSL support** - User CA certificates in release builds
+- ✅ **Widget scroll fix** - Scrollable text in medium widgets
+- ✅ **Keyboard auto-capitalization** - Title field, checklist items
+- ✅ **APK size optimization** - Granular ProGuard rules (< 5 MB)
+- ✅ **Checklist drag stability** - Cross-boundary drag & drop fix
+
+---
+
+## v1.9.0 - Filter, Search, Markdown & Widget Polish ✅
+
+> **Status:** Released 🎉 (February 2026)
+
+### Part 1: Sync Quality & Import
+- ✅ **Notes Import Wizard** - Import from WebDAV or local (.md, .json, .txt)
+- ✅ **Parallel uploads** - ~2× faster multi-note sync
+- ✅ **Unified parallel connections** - Single setting for uploads & downloads
+- ✅ **Server switch fix** - E-Tag/content-hash caches cleared on change
+- ✅ **Deletion detection fix** - Threshold raised for small note portfolios
+- ✅ **Markdown export serialization** - Mutex prevents race condition
+- ✅ **E-Tag caching** - Skip redundant re-downloads
+
+### Part 2: UI Features
+
+#### 📊 Filter & Search
+- ✅ **Filter Chip Row** - Filter by All / Text / Checklists
+- ✅ **Inline search** - Quick search field in filter row
+- ✅ **Sort in filter row** - Sort button moved from dialog to filter row
+- ✅ **Filter row toggle** - Tune button in TopAppBar to show/hide
+
+#### ✏️ Editor
+- ✅ **Markdown preview** - Live preview for text notes with formatting toolbar
+- ✅ **Checklist un-check restore** - Item returns to original position
+- ✅ **Checklist order cementing** - Original order preserved after insert/delete
+- ✅ **Checklist scroll behavior** - Consistent scrolling on check/un-check
+- ✅ **Opt-in autosave** - Configurable debounce autosave timer
+- ✅ **Configurable sync folder** - Custom WebDAV folder name
+
+#### 📌 Widget Improvements
+- ✅ **Monet tint preservation** - Translucent background keeps dynamic colors
+- ✅ **Seamless options bar** - Removed background for cleaner look
+- ✅ **Checklist strikethrough** - Completed items show strikethrough
+- ✅ **onStop widget refresh** - Widgets update when leaving app
+
+#### ✨ Other
+- ✅ **Custom app title** - Configurable app name in settings
+- ✅ **Scroll to top on sync** - List scrolls to top after manual sync
+
+---
+
 ## v2.0.0 - Legacy Cleanup
 
 > **Status:** Planned 📝

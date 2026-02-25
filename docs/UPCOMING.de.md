@@ -148,6 +148,60 @@
 
 ---
 
+## v1.8.2 - Stabilität & Editor-Fixes ✅
+
+> **Status:** Released 🎉 (Februar 2026)
+
+- ✅ **26 Bugfixes** - Sync-Deadlocks, Datenverlust-Prävention, Editor-UX
+- ✅ **Self-Signed SSL Support** - User-CA-Zertifikate in Release-Builds
+- ✅ **Widget Scroll Fix** - Scrollbarer Text in mittleren Widgets
+- ✅ **Keyboard Auto-Capitalization** - Titel-Feld, Checklisten-Items
+- ✅ **APK-Größen-Optimierung** - Granulare ProGuard-Regeln (< 5 MB)
+- ✅ **Checklisten Drag-Stabilität** - Cross-Boundary Drag & Drop Fix
+
+---
+
+## v1.9.0 - Filter, Suche, Markdown & Widget-Polish ✅
+
+> **Status:** Released 🎉 (Februar 2026)
+
+### Part 1: Sync-Qualität & Import
+- ✅ **Notiz-Import-Assistent** - Import von WebDAV oder lokal (.md, .json, .txt)
+- ✅ **Parallele Uploads** - ~2× schnellerer Multi-Notiz-Sync
+- ✅ **Vereinheitlichte parallele Verbindungen** - Eine Einstellung für Uploads & Downloads
+- ✅ **Server-Wechsel-Fix** - E-Tag/Content-Hash-Caches bei Wechsel geleert
+- ✅ **Löscherkennung-Fix** - Schwellenwert für kleine Notiz-Portfolios angehoben
+- ✅ **Markdown-Export-Serialisierung** - Mutex verhindert Race Condition
+- ✅ **E-Tag-Caching** - Unnötige Re-Downloads vermieden
+
+### Part 2: UI-Features
+
+#### 📊 Filter & Suche
+- ✅ **Filter Chip Row** - Filtern nach Alle / Text / Checklisten
+- ✅ **Inline-Suche** - Schnellsuchfeld in der Filter-Zeile
+- ✅ **Sortierung in Filter-Zeile** - Sort-Button aus Dialog in Filter-Zeile verschoben
+- ✅ **Filter-Zeile Toggle** - Tune-Button in TopAppBar zum Ein-/Ausblenden
+
+#### ✏️ Editor
+- ✅ **Markdown-Vorschau** - Live-Vorschau für Textnotizen mit Formatierungs-Toolbar
+- ✅ **Checklisten Un-Check Restore** - Item kehrt an Originalposition zurück
+- ✅ **Checklisten-Reihenfolge Zementierung** - Originalreihenfolge bleibt nach Einfügen/Löschen erhalten
+- ✅ **Checklisten-Scroll-Verhalten** - Konsistentes Scrollen bei Check/Un-Check
+- ✅ **Opt-in Autosave** - Konfigurierbarer Debounce-Autosave-Timer
+- ✅ **Konfigurierbarer Sync-Ordner** - Benutzerdefinierter WebDAV-Ordnername
+
+#### 📌 Widget-Verbesserungen
+- ✅ **Monet-Farbton-Erhaltung** - Transluzenter Hintergrund behält dynamische Farben
+- ✅ **Nahtlose Options-Leiste** - Hintergrund entfernt für saubereren Look
+- ✅ **Checklisten-Durchstreichung** - Erledigte Items zeigen Durchstreichung
+- ✅ **onStop Widget-Refresh** - Widgets aktualisieren beim Verlassen der App
+
+#### ✨ Sonstiges
+- ✅ **Benutzerdefinierter App-Titel** - Konfigurierbarer App-Name in Einstellungen
+- ✅ **Scroll-to-Top bei Sync** - Liste scrollt nach oben nach manuellem Sync
+
+---
+
 ## v2.0.0 - Legacy Cleanup
 
 > **Status:** Geplant 📝
