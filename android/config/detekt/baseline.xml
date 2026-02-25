@@ -6,6 +6,5 @@
     <ID>LongParameterList:ImportSettingsScreen.kt$( isServerConfigured: Boolean, isScanning: Boolean, isImporting: Boolean, showScanResults: Boolean, scanResults: List&lt;NotesImportWizard.ImportCandidate&gt;, selectedCandidates: Set&lt;Int&gt;, onScanClick: () -&gt; Unit, onSelectionChange: (Int, Boolean) -&gt; Unit, onCancelScan: () -&gt; Unit, onImportSelected: () -&gt; Unit, )</ID>
     <ID>LoopWithTooManyJumpStatements:NotesImportWizardTest.kt$NotesImportWizardTest$for</ID>
     <ID>NestedBlockDepth:NotesImportWizardTest.kt$NotesImportWizardTest$private fun extractTimestampHelper( obj: com.google.gson.JsonObject, vararg keys: String ): Long?</ID>
-    <ID>UnusedImports:ServerSettingsScreen.kt$import androidx.compose.ui.graphics.Color</ID>
   </CurrentIssues>
 </SmellBaseline>
