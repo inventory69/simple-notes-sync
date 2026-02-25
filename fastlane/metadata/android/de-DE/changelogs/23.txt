@@ -1,0 +1,12 @@
+🔄 v1.9.0 — Filter, Markdown & Sync
+
+• Neu: Filter- & Suchleiste für Notizen
+• Neu: Markdown-Vorschau mit Formatierungs-Toolbar
+• Neu: Notizen importieren von WebDAV/lokal
+• Neu: Sync-Ordner einstellbar & Opt-in Autosave
+• Widget: Monet-Farben, Durchstreichung, nahtlos
+• Checkliste: Besseres Scroll- & Abhak-Verhalten
+• Schnellerer Sync durch parallele Uploads
+• Diverse Bugfixes und Verbesserungen
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

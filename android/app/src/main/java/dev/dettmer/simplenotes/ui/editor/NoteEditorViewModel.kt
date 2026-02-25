@@ -19,6 +19,7 @@ import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,8 @@ class NoteEditorViewModel(
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
     }
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
     
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -77,6 +80,25 @@ class NoteEditorViewModel(
     
     private val _events = MutableSharedFlow<NoteEditorEvent>()
     val events: SharedFlow<NoteEditorEvent> = _events.asSharedFlow()
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F14): Explicit scroll actions for check/un-check
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Sealed class for scroll actions after checking/un-checking a checklist item.
+     * - [ScrollToTop]: Scroll the LazyColumn to index 0 (used on un-check).
+     * - [NoScroll]: Explicitly do nothing — keeps scroll position stable (used on check).
+     */
+    sealed class ChecklistScrollAction {
+        /** Un-check: scroll list to the very top. */
+        object ScrollToTop : ChecklistScrollAction()
+        /** Check: do not scroll — keep viewport exactly where it is. */
+        object NoScroll : ChecklistScrollAction()
+    }
+
+    private val _checklistScrollAction = MutableSharedFlow<ChecklistScrollAction>(extraBufferCapacity = 1)
+    val checklistScrollAction: SharedFlow<ChecklistScrollAction> = _checklistScrollAction.asSharedFlow()
     
     // Internal state
     private var existingNote: Note? = null
@@ -86,6 +108,17 @@ class NoteEditorViewModel(
     // Wenn true, überspringt reloadFromStorage() das Neuladen, damit onResume()
     // (Notification Shade, App-Switcher etc.) keine User-Änderungen überschreibt.
     private var hasUnsavedChecklistEdits = false
+
+    // 🆕 v1.9.0: Autosave with debounce
+    private val autosaveEnabled = prefs.getBoolean(
+        Constants.KEY_AUTOSAVE_ENABLED, Constants.DEFAULT_AUTOSAVE_ENABLED
+    )
+    private var autosaveJob: kotlinx.coroutines.Job? = null
+    private var isDirty = false  // 🆕 v1.9.0: only autosave when content has actually changed
+
+    // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
+    private val _autosaveIndicatorVisible = MutableStateFlow(false)
+    val autosaveIndicatorVisible: StateFlow<Boolean> = _autosaveIndicatorVisible.asStateFlow()
     
     init {
         loadNote()
@@ -132,14 +165,18 @@ class NoteEditorViewModel(
             _lastChecklistSortOption.value = parseSortOption(sortName)
         }
         
-        val items = note.checklistItems?.sortedBy { it.order }?.map {
+        val rawItems = note.checklistItems?.sortedBy { it.order }.orEmpty()
+        // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0 (Gson default)
+        val isPreF04Note = rawItems.all { it.originalOrder == 0 }
+        val items = rawItems.map {
             ChecklistItemState(
                 id = it.id,
                 text = it.text,
                 isChecked = it.isChecked,
-                order = it.order
+                order = it.order,
+                originalOrder = if (isPreF04Note) it.order else it.originalOrder
             )
-        } ?: emptyList()
+        }
         // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
         _checklistItems.value = sortChecklistItems(items)
     }
@@ -188,20 +225,28 @@ class NoteEditorViewModel(
     // ═══════════════════════════════════════════════════════════════════════
     
     fun updateTitle(title: String) {
+        if (title == _uiState.value.title) return  // 🆕 v1.9.0: no-op guard — hydration, not a user edit
+        isDirty = true
         _uiState.update { it.copy(title = title) }
+        scheduleAutosave()  // 🆕 v1.9.0
     }
     
     fun updateContent(content: String) {
+        if (content == _uiState.value.content) return  // 🆕 v1.9.0: no-op guard — hydration, not a user edit
+        isDirty = true
         _uiState.update { it.copy(content = content) }
+        scheduleAutosave()  // 🆕 v1.9.0
     }
     
     fun updateChecklistItemText(itemId: String, newText: String) {
+        isDirty = true
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             items.map { item ->
                 if (item.id == itemId) item.copy(text = newText) else item
             }
         }
+        scheduleAutosave()  // 🆕 v1.9.0
     }
     
     /**
@@ -212,13 +257,15 @@ class NoteEditorViewModel(
      * Sortiert Checklist-Items basierend auf der aktuellen Sortier-Option.
      * 🆕 v1.8.1 (IMPL_03-FIX): Berücksichtigt jetzt _lastChecklistSortOption
      * anstatt immer unchecked-first zu sortieren.
+     * 🆕 v1.9.0 (F04): Unchecked items werden nach originalOrder sortiert für Position-Restore.
      */
     private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
         val sorted = when (_lastChecklistSortOption.value) {
             ChecklistSortOption.MANUAL,
             ChecklistSortOption.UNCHECKED_FIRST -> {
-                val unchecked = items.filter { !it.isChecked }
-                val checked = items.filter { it.isChecked }
+                // 🆕 v1.9.0 (F04): Sort by originalOrder to restore un-checked item's original position
+                val unchecked = items.filter { !it.isChecked }.sortedBy { it.originalOrder }
+                val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
                 unchecked + checked
             }
             ChecklistSortOption.CHECKED_FIRST ->
@@ -234,7 +281,17 @@ class NoteEditorViewModel(
         }
     }
 
+    /**
+     * 🆕 v1.9.0 (F14): Toggles the checked state of a checklist item and emits a scroll action.
+     * - Un-check → emits [ChecklistScrollAction.ScrollToTop]: scroll to the top of the list.
+     * - Check → emits [ChecklistScrollAction.NoScroll]: keep scroll position exactly as-is.
+     *
+     * Scroll stability for the first-visible-item case is handled in the UI layer via
+     * LazyListState.requestScrollToItem(0) which overrides LazyColumn’s key-tracking
+     * during the layout pass.
+     */
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
+        isDirty = true  // 🆕 v1.9.0: checking/unchecking is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val updatedItems = items.map { item ->
@@ -249,6 +306,13 @@ class NoteEditorViewModel(
                 updatedItems.mapIndexed { index, item -> item.copy(order = index) }
             }
         }
+        // 🆕 v1.9.0 (F14): Emit scroll action — outside update{} to ensure state is committed first
+        if (!isChecked) {
+            _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToTop)
+        } else {
+            _checklistScrollAction.tryEmit(ChecklistScrollAction.NoScroll)
+        }
+        scheduleAutosave()  // 🆕 v1.9.0: checked/unchecked counts as an edit
     }
     
     /**
@@ -280,10 +344,13 @@ class NoteEditorViewModel(
 
                 val newList = items.toMutableList()
                 newList.add(effectiveIndex, newItem)
-                // Update order values
-                newList.mapIndexed { i, item -> item.copy(order = i) }
+                // 🐛 v1.9.0 (F12): Set originalOrder = index for ALL items after insert.
+                // Prevents newly added items from jumping to position 0 after save/reopen.
+                newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             } else {
-                items + newItem.copy(order = items.size)
+                // 🐛 v1.9.0 (F12): Also cement originalOrder in the fallback branch
+                val appended = items + newItem.copy(order = items.size, originalOrder = items.size)
+                appended.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             }
         }
         return newItem.id
@@ -305,7 +372,9 @@ class NoteEditorViewModel(
             val insertIndex = calculateInsertIndexForNewItem(items)
             val newList = items.toMutableList()
             newList.add(insertIndex, newItem)
-            newList.mapIndexed { i, item -> item.copy(order = i) }
+            // 🐛 v1.9.0 (F12): Set originalOrder = index for ALL items after insert.
+            // Prevents newly added items from jumping to position 0 after save/reopen.
+            newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
         }
         return newItem.id
     }
@@ -338,8 +407,8 @@ class NoteEditorViewModel(
             if (filtered.isEmpty()) {
                 listOf(ChecklistItemState.createEmpty(0))
             } else {
-                // Update order values
-                filtered.mapIndexed { index, item -> item.copy(order = index) }
+                // 🐛 v1.9.0 (F12): Cement originalOrder after deletion to keep baseline consistent
+                filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
             }
         }
     }
@@ -362,8 +431,8 @@ class NoteEditorViewModel(
             }
 
             mutableList.add(toIndex, movedItem)
-            // Update order values
-            mutableList.mapIndexed { index, i -> i.copy(order = index) }
+            // 🆕 v1.9.0 (F04): Update originalOrder on manual reorder to cement new position
+            mutableList.mapIndexed { index, i -> i.copy(order = index, originalOrder = index) }
         }
     }
     
@@ -394,99 +463,16 @@ class NoteEditorViewModel(
                     items.sortedByDescending { it.isChecked }
             }
             
-            // Order-Werte neu zuweisen
-            sorted.mapIndexed { index, item -> item.copy(order = index) }
+            // 🆕 v1.9.0 (F04): Explicit sort resets originalOrder baseline to new positions
+            sorted.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
         }
     }
     
     fun saveNote() {
+        autosaveJob?.cancel()  // 🆕 v1.9.0: manual save supersedes pending autosave
         viewModelScope.launch {
-            val state = _uiState.value
-            val title = state.title.trim()
-            
-            when (currentNoteType) {
-                NoteType.TEXT -> {
-                    val content = state.content.trim()
-                    
-                    if (title.isEmpty() && content.isEmpty()) {
-                        _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
-                        return@launch
-                    }
-                    
-                    val note = if (existingNote != null) {
-                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
-                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
-                        existingNote!!.copy(
-                            title = title,
-                            content = content,
-                            noteType = NoteType.TEXT,
-                            checklistItems = null,
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    } else {
-                        Note(
-                            title = title,
-                            content = content,
-                            noteType = NoteType.TEXT,
-                            checklistItems = null,
-                            deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
-                            syncStatus = SyncStatus.LOCAL_ONLY
-                        )
-                    }
-                    
-                    storage.saveNote(note)
-                }
-                
-                NoteType.CHECKLIST -> {
-                    // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
-                    hasUnsavedChecklistEdits = false
-                    // Filter empty items
-                    val validItems = _checklistItems.value
-                        .filter { it.text.isNotBlank() }
-                        .mapIndexed { index, item ->
-                            ChecklistItem(
-                                id = item.id,
-                                text = item.text,
-                                isChecked = item.isChecked,
-                                order = index
-                            )
-                        }
-                    
-                    if (title.isEmpty() && validItems.isEmpty()) {
-                        _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
-                        return@launch
-                    }
-                    
-                    val note = if (existingNote != null) {
-                        // 🆕 v1.8.0 (IMPL_022): syncStatus wird immer auf PENDING gesetzt
-                        // beim Bearbeiten - gilt für SYNCED, CONFLICT, DELETED_ON_SERVER, etc.
-                        existingNote!!.copy(
-                            title = title,
-                            content = "", // Empty for checklists
-                            noteType = NoteType.CHECKLIST,
-                            checklistItems = validItems,
-                            checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    } else {
-                        Note(
-                            title = title,
-                            content = "",
-                            noteType = NoteType.CHECKLIST,
-                            checklistItems = validItems,
-                            checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
-                            deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
-                            syncStatus = SyncStatus.LOCAL_ONLY
-                        )
-                    }
-                    
-                    storage.saveNote(note)
-                }
-            }
-            
-            // 🆕 v1.8.1 (IMPL_12): NOTE_SAVED Toast entfernt — NavigateBack ist ausreichend
+            val saved = performSave()
+            if (!saved) return@launch
 
             // 🌟 v1.6.0: Trigger onSave Sync
             triggerOnSaveSync()
@@ -503,6 +489,113 @@ class NoteEditorViewModel(
             }
 
             _events.emit(NoteEditorEvent.NavigateBack)
+        }
+    }
+
+    /**
+     * 🆕 v1.9.0: Internal save logic shared by manual save and autosave.
+     * @param silent When true (autosave), empty-note check silently returns false without Toast.
+     * Returns true if the note was saved, false if it was empty (nothing to save).
+     */
+    private suspend fun performSave(silent: Boolean = false): Boolean {
+        val state = _uiState.value
+        val title = state.title.trim()
+
+        when (currentNoteType) {
+            NoteType.TEXT -> {
+                val content = state.content.trim()
+
+                if (title.isEmpty() && content.isEmpty()) {
+                    if (!silent) _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                    return false
+                }
+
+                val note = existingNote?.copy(
+                        title = title,
+                        content = content,
+                        noteType = NoteType.TEXT,
+                        checklistItems = null,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    ) ?: Note(
+                        title = title,
+                        content = content,
+                        noteType = NoteType.TEXT,
+                        checklistItems = null,
+                        deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
+                        syncStatus = SyncStatus.LOCAL_ONLY
+                    )
+
+                storage.saveNote(note)
+                existingNote = note  // 🆕 v1.9.0: keep reference current so next save is an update
+            }
+
+            NoteType.CHECKLIST -> {
+
+                // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
+                hasUnsavedChecklistEdits = false
+                // 🆕 v1.9.0 (F04): Preserve originalOrder for position restore
+                val validItems = _checklistItems.value
+                    .filter { it.text.isNotBlank() }
+                    .mapIndexed { index, item ->
+                        ChecklistItem(
+                            id = item.id,
+                            text = item.text,
+                            isChecked = item.isChecked,
+                            order = index,
+                            originalOrder = item.originalOrder
+                        )
+                    }
+
+                if (title.isEmpty() && validItems.isEmpty()) {
+                    if (!silent) _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                    return false
+                }
+
+                val note = existingNote?.copy(
+                        title = title,
+                        content = "", // Empty for checklists
+                        noteType = NoteType.CHECKLIST,
+                        checklistItems = validItems,
+                        checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    ) ?: Note(
+                        title = title,
+                        content = "",
+                        noteType = NoteType.CHECKLIST,
+                        checklistItems = validItems,
+                        checklistSortOption = _lastChecklistSortOption.value.name,  // 🆕 v1.8.1 (IMPL_03)
+                        deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
+                        syncStatus = SyncStatus.LOCAL_ONLY
+                    )
+
+                storage.saveNote(note)
+                existingNote = note  // 🆕 v1.9.0: keep reference current so next save is an update
+            }
+        }
+        isDirty = false  // 🆕 v1.9.0: note is clean after any successful save
+        return true
+    }
+
+    /**
+     * 🆕 v1.9.0: Schedules a silent autosave after AUTOSAVE_DEBOUNCE_MS.
+     * Called on every text-edit action. Cancels any previous pending autosave.
+     * Does NOT trigger sync, widget update, or navigation — only local disk save.
+     */
+    private fun scheduleAutosave() {
+        if (!autosaveEnabled) return
+        if (!isDirty) return  // 🆕 v1.9.0: no changes since last save → skip
+        autosaveJob?.cancel()
+        autosaveJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(Constants.AUTOSAVE_DEBOUNCE_MS)
+            val saved = performSave(silent = true)
+            if (saved) {
+                Logger.d(TAG, "💾 Autosave completed")
+                _autosaveIndicatorVisible.value = true
+                kotlinx.coroutines.delay(Constants.AUTOSAVE_INDICATOR_DURATION_MS)
+                _autosaveIndicatorVisible.value = false
+            }
         }
     }
     
@@ -523,7 +616,7 @@ class NoteEditorViewModel(
                 if (deleteOnServer) {
                     try {
                         val webdavService = WebDavSyncService(getApplication())
-                        val success = withContext(Dispatchers.IO) {
+                        val success = withContext(ioDispatcher) {
                             webdavService.deleteNoteFromServer(noteId)
                         }
                         // 🆕 v1.8.1 (IMPL_12): Banner-Feedback statt stiller Log-Einträge
@@ -547,7 +640,7 @@ class NoteEditorViewModel(
                         SyncStateManager.showError(
                             getApplication<Application>().getString(
                                 dev.dettmer.simplenotes.R.string.snackbar_server_error,
-                                e.message ?: ""
+                                e.message.orEmpty()
                             )
                         )
                     }
@@ -589,14 +682,19 @@ class NoteEditorViewModel(
 
         // Nur Checklist-Items aktualisieren
         if (freshNote.noteType == NoteType.CHECKLIST) {
-            val freshItems = freshNote.checklistItems?.sortedBy { it.order }?.map {
+            val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
+            // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
+            val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
+            val freshItems = rawFreshItems.map {
                 ChecklistItemState(
                     id = it.id,
                     text = it.text,
                     isChecked = it.isChecked,
-                    order = it.order
+                    order = it.order,
+                    originalOrder = if (isPreF04Fresh) it.order else it.originalOrder
                 )
-            } ?: return
+            }
+            if (freshItems.isEmpty()) return
 
             _checklistItems.value = sortChecklistItems(freshItems)
             // existingNote aktualisieren damit beim Speichern der richtige
@@ -675,7 +773,8 @@ data class ChecklistItemState(
     val id: String = UUID.randomUUID().toString(),
     val text: String = "",
     val isChecked: Boolean = false,
-    val order: Int = 0
+    val order: Int = 0,
+    val originalOrder: Int = order  // 🆕 v1.9.0 (F04): Position restore on un-check
 ) {
     companion object {
         fun createEmpty(order: Int): ChecklistItemState {
@@ -683,7 +782,8 @@ data class ChecklistItemState(
                 id = UUID.randomUUID().toString(),
                 text = "",
                 isChecked = false,
-                order = order
+                order = order,
+                originalOrder = order
             )
         }
     }

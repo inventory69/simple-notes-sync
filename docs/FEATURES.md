@@ -15,6 +15,7 @@
   - ☑️ Tap to check/uncheck
   - 📌 Long-press for drag & drop sorting
   - ~~Strikethrough~~ for completed entries
+  - ↩️ Un-check returns item to original position _(v1.9.0)_
 
 ### Basic Features
 - ✅ **Auto-save** - No manual saving needed
@@ -26,6 +27,7 @@
 - ✅ **Material Design 3** - Modern, clean UI
 - ✅ **Dark mode** - Automatically based on system settings
 - ✅ **Dynamic colors** - Adapts to your Android theme
+- ✅ **Custom app title** _(NEW in v1.9.0)_ - Configurable app name
 
 ### Editor
 - ✅ **Minimalist editor** - No bells and whistles
@@ -34,6 +36,8 @@
 - ✅ **Save button** - Manual confirmation possible
 - ✅ **Back navigation** - Saves automatically
 - ✅ **Slide animations** _(NEW in v1.5.0)_ - Smooth transitions
+- ✅ **Markdown preview** _(NEW in v1.9.0)_ - Live preview with formatting toolbar
+- ✅ **Opt-in autosave** _(NEW in v1.9.0)_ - Configurable debounce autosave timer
 
 ---
 
@@ -53,6 +57,13 @@
 - ✅ **Sort by Type** - Text notes vs checklists
 - ✅ **Persistent preferences** - Sort option saved across app restarts
 - ✅ **Sort dialog** - Direction toggle in main screen
+
+### Note Filtering _(NEW in v1.9.0)_
+- ✅ **Filter Chip Row** - Filter by All, Text, or Checklists
+- ✅ **Inline search** - Quick search in the filter row
+- ✅ **Sort button** - Compact sort icon in filter row
+- ✅ **Toggle visibility** - Tune button hides/shows the filter row
+- ✅ **Configurable sync folder** - Custom WebDAV folder name
 
 ### Checklist Sorting _(NEW in v1.8.0)_
 - ✅ **Manual** - Custom drag & drop order
@@ -78,6 +89,10 @@
 - ✅ **Configuration activity** - Note selection and settings
 - ✅ **Checklist sorting** _(v1.8.1)_ - Widgets respect saved sort option
 - ✅ **Visual separators** _(v1.8.1)_ - Between unchecked/checked items
+- ✅ **Monet tint preservation** _(v1.9.0)_ - Translucent background keeps dynamic colors
+- ✅ **Seamless options bar** _(v1.9.0)_ - Removed background for cleaner look
+- ✅ **Checklist strikethrough** _(v1.9.0)_ - Completed items show strikethrough in widget
+- ✅ **Auto-refresh on leave** _(v1.9.0)_ - Widgets update when leaving app
 
 ---
 
@@ -347,4 +362,4 @@ A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Last update:** v1.8.1 (2026-02-11)
+**Last update:** v1.9.0 (2026-02-25)

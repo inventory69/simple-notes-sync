@@ -9,6 +9,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -24,7 +25,10 @@ import java.util.*
  * - Auto-Backup vor Restore (Sicherheitsnetz)
  * - Backup-Validierung
  */
-class BackupManager(private val context: Context) {
+class BackupManager(
+    private val context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     
     companion object {
         private const val TAG = "BackupManager"
@@ -45,7 +49,7 @@ class BackupManager(private val context: Context) {
      * @param password Optional password for encryption (null = unencrypted)
      * @return BackupResult mit Erfolg/Fehler Info
      */
-    suspend fun createBackup(uri: Uri, password: String? = null): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun createBackup(uri: Uri, password: String? = null): BackupResult = withContext(ioDispatcher) {
         return@withContext try {
             val encryptedSuffix = if (password != null) " (encrypted)" else ""
             Logger.d(TAG, "📦 Creating backup$encryptedSuffix to: $uri")
@@ -96,7 +100,7 @@ class BackupManager(private val context: Context) {
      * 
      * @return Uri des Auto-Backups oder null bei Fehler
      */
-    suspend fun createAutoBackup(): Uri? = withContext(Dispatchers.IO) {
+    suspend fun createAutoBackup(): Uri? = withContext(ioDispatcher) {
         return@withContext try {
             val autoBackupDir = File(context.filesDir, AUTO_BACKUP_DIR).apply {
                 if (!exists()) mkdirs()
@@ -140,7 +144,7 @@ class BackupManager(private val context: Context) {
      * @param password Optional password if backup is encrypted
      * @return RestoreResult mit Details
      */
-    suspend fun restoreBackup(uri: Uri, mode: RestoreMode, password: String? = null): RestoreResult = withContext(Dispatchers.IO) {
+    suspend fun restoreBackup(uri: Uri, mode: RestoreMode, password: String? = null): RestoreResult = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "📥 Restoring backup from: $uri (mode: $mode)")
             
@@ -205,7 +209,7 @@ class BackupManager(private val context: Context) {
             Logger.e(TAG, "Failed to restore backup", e)
             RestoreResult(
                 success = false,
-                error = context.getString(R.string.error_restore_failed, e.message ?: "")
+                error = context.getString(R.string.error_restore_failed, e.message.orEmpty())
             )
         }
     }
@@ -213,7 +217,7 @@ class BackupManager(private val context: Context) {
     /**
      * 🔐 v1.7.0: Check if backup file is encrypted
      */
-    suspend fun isBackupEncrypted(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+    suspend fun isBackupEncrypted(uri: Uri): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val header = ByteArray(MAGIC_BYTES_LENGTH)
@@ -266,7 +270,7 @@ class BackupManager(private val context: Context) {
         } catch (e: Exception) {
             ValidationResult(
                 isValid = false,
-                errorMessage = context.getString(R.string.error_backup_corrupt, e.message ?: "")
+                errorMessage = context.getString(R.string.error_backup_corrupt, e.message.orEmpty())
             )
         }
     }

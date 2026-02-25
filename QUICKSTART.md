@@ -79,7 +79,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 4. **Press "Test connection"**
    - ✅ Success? → Continue to step 4
-   - ❌ Error? → See [Troubleshooting](#troubleshooting)
+   - ❌ Error? → See [Troubleshooting](#-troubleshooting)
 
 5. **Enable auto-sync** (toggle switch)
 
@@ -240,7 +240,7 @@ For reliable auto-sync:
 
 ### Automatic with Obtainium (recommended)
 
-1. **[Install Obtainium](https://github.com/ImranR98/Obtanium/releases/latest)**
+1. **[Install Obtainium](https://github.com/ImranR98/Obtainium/releases/latest)**
 
 2. **Add app:**
    - URL: `https://github.com/inventory69/simple-notes-sync`

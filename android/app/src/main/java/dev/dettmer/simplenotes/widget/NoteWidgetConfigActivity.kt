@@ -50,11 +50,9 @@ class NoteWidgetConfigActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // Auto-Save nur bei Reconfigure (wenn bereits eine Note konfiguriert war)
-                if (currentSelectedNoteId != null) {
-                    configureWidget(currentSelectedNoteId!!, currentLockState, currentOpacity)
-                } else {
-                    finish()
-                }
+                currentSelectedNoteId?.also { noteId ->
+                    configureWidget(noteId, currentLockState, currentOpacity)
+                } ?: finish()
             }
         })
 

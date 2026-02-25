@@ -68,18 +68,41 @@ object Constants {
     const val GRID_COLUMNS = 2
     const val GRID_SPACING_DP = 8
 
-    // ⚡ v1.8.0: Parallel Downloads
-    const val KEY_MAX_PARALLEL_DOWNLOADS = "max_parallel_downloads"
-    const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 5
-    const val MIN_PARALLEL_DOWNLOADS = 1
-    const val MAX_PARALLEL_DOWNLOADS = 10
+    // 🆕 v1.9.0 (F05): Custom App Title
+    const val KEY_CUSTOM_APP_TITLE = "custom_app_title"
+    const val DEFAULT_CUSTOM_APP_TITLE = ""  // Empty = use default "Simple Notes"
+    const val MAX_CUSTOM_APP_TITLE_LENGTH = 30
+
+    // 🆕 v1.9.0: Configurable WebDAV Sync Folder
+    const val KEY_SYNC_FOLDER_NAME = "sync_folder_name"
+    const val DEFAULT_SYNC_FOLDER_NAME = "notes"  // Backward compatible default
+    const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
+
+    // 🆕 v1.9.0: Autosave with debounce
+    const val KEY_AUTOSAVE_ENABLED = "autosave_enabled"
+    const val DEFAULT_AUTOSAVE_ENABLED = false
+    const val AUTOSAVE_DEBOUNCE_MS = 3_000L  // 3 seconds after last edit
+    const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L  // indicator visible duration
+    const val AUTOSAVE_INDICATOR_FADE_MS = 400  // fade animation duration (ms)
+
+    // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
+    // 🔧 v1.9.0: Unified setting for both downloads and uploads
+    const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration
+    const val DEFAULT_MAX_PARALLEL_CONNECTIONS = 5
+    const val MIN_PARALLEL_CONNECTIONS = 1
+    const val MAX_PARALLEL_CONNECTIONS = 5  // v1.9.0: Reduced from 10 (uploads cap at 6)
+    const val MAX_PARALLEL_UPLOADS_CAP = 6  // Hard cap for upload concurrency
     
     // 🔀 v1.8.0: Sortierung
     const val KEY_SORT_OPTION = "sort_option"
     const val KEY_SORT_DIRECTION = "sort_direction"
     const val DEFAULT_SORT_OPTION = "updatedAt"
     const val DEFAULT_SORT_DIRECTION = "desc"
-    
+
+    // 🆕 v1.9.0 (F06): Filter
+    const val KEY_NOTE_FILTER = "note_filter"
+    const val DEFAULT_NOTE_FILTER = "all"  // NoteFilter.ALL.prefsValue
+
     // 📋 v1.8.0: Post-Update Changelog
     const val KEY_LAST_SHOWN_CHANGELOG_VERSION = "last_shown_changelog_version"
     

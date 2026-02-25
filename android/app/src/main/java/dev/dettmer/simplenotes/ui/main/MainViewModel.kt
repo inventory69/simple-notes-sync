@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteFilter
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.R
@@ -14,6 +16,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,11 +38,14 @@ import kotlinx.coroutines.withContext
  * Manages notes list, sync state, and deletion with undo.
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    
+
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     companion object {
         private const val TAG = "MainViewModel"
         private const val MIN_AUTO_SYNC_INTERVAL_MS = 60_000L // 1 Minute
         private const val PREF_LAST_AUTO_SYNC_TIME = "last_auto_sync_timestamp"
+        private const val SNACKBAR_UNDO_DELAY_MS = 3500L
     }
     
     private val storage = NotesStorage(application)
@@ -104,6 +110,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _displayMode.value = newValue
         Logger.d(TAG, "🔄 refreshDisplayMode: displayMode=${_displayMode.value} → $newValue")
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F05): Custom App Title State
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _customAppTitle = MutableStateFlow(
+        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+    )
+    val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
+
+    /**
+     * Refresh custom app title from SharedPreferences.
+     * Called when returning from Settings screen (same pattern as refreshDisplayMode).
+     */
+    fun refreshCustomAppTitle() {
+        val newValue = prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
+            ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+        _customAppTitle.value = newValue
+        Logger.d(TAG, "🔄 refreshCustomAppTitle: '$newValue'")
+    }
     
     // ═══════════════════════════════════════════════════════════════════════
     // 🔀 v1.8.0: Sort State
@@ -122,17 +148,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     )
     val sortDirection: StateFlow<SortDirection> = _sortDirection.asStateFlow()
-    
+
+    // 🆕 v1.9.0 (F06): Note Filter State
+    private val _noteFilter = MutableStateFlow(
+        NoteFilter.fromPrefsValue(
+            prefs.getString(Constants.KEY_NOTE_FILTER, Constants.DEFAULT_NOTE_FILTER)
+                ?: Constants.DEFAULT_NOTE_FILTER
+        )
+    )
+    val noteFilter: StateFlow<NoteFilter> = _noteFilter.asStateFlow()
+
+    // 🆕 v1.9.0 (F10): Search Query State
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     /**
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
-     * Reagiert automatisch auf Änderungen in allen drei Flows.
+     * 🆕 v1.9.0 (F06): + Filter nach NoteType
+     * 🆕 v1.9.0 (F10): + Volltextsuche über Titel und Inhalt
      */
     val sortedNotes: StateFlow<List<Note>> = combine(
         _notes,
         _sortOption,
-        _sortDirection
-    ) { notes, option, direction ->
-        sortNotes(notes, option, direction)
+        _sortDirection,
+        _noteFilter,
+        _searchQuery
+    ) { notes, option, direction, filter, query ->
+        val filtered = filterNotes(notes, filter)
+        val searched = searchNotes(filtered, query)
+        sortNotes(searched, option, direction)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -191,7 +235,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     init {
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
         }
     }
@@ -229,7 +273,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Public loadNotes - delegates to async version
      */
     fun loadNotes() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
         }
     }
@@ -247,7 +291,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun scrollToTop() {
         _scrollToTop.value = true
     }
-    
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.0 (F13): Scroll-to-top after manual sync completion
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _syncCompletedScrollToTop = MutableStateFlow(false)
+    val syncCompletedScrollToTop: StateFlow<Boolean> = _syncCompletedScrollToTop.asStateFlow()
+
+    /**
+     * 🆕 v1.9.0 (F13): Reset the sync-scroll flag after the UI has scrolled.
+     */
+    fun resetSyncCompletedScrollToTop() {
+        _syncCompletedScrollToTop.value = false
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Multi-Select Actions (v1.5.0)
     // ═══════════════════════════════════════════════════════════════════════
@@ -329,11 +387,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             ))
             
-            @Suppress("MagicNumber") // Snackbar timing coordination
             // If delete from server, actually delete after a short delay
             // (to allow undo action before server deletion)
             if (deleteFromServer) {
-                kotlinx.coroutines.delay(3500) // Snackbar shows for ~3s
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
                 // Only delete if not restored (check if still in pending)
                 val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
                 if (idsToDelete.isNotEmpty()) {
@@ -429,10 +486,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             ))
             
-            @Suppress("MagicNumber") // Snackbar timing
             // If delete from server, actually delete after snackbar timeout
             if (deleteFromServer) {
-                kotlinx.coroutines.delay(3500) // Snackbar shows for ~3s
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
                 // Only delete if not restored (check if still in pending)
                 if (note.id in _pendingDeletions.value) {
                     deleteNoteFromServer(note.id)
@@ -465,7 +521,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val webdavService = WebDavSyncService(getApplication())
-                val success = withContext(Dispatchers.IO) {
+                val success = withContext(ioDispatcher) {
                     webdavService.deleteNoteFromServer(noteId)
                 }
                 
@@ -476,7 +532,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     SyncStateManager.showError(getString(R.string.snackbar_server_delete_failed))
                 }
             } catch (e: Exception) {
-                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message ?: ""))
+                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message.orEmpty()))
             } finally {
                 // Remove from pending deletions
                 _pendingDeletions.value = _pendingDeletions.value - noteId
@@ -496,7 +552,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             noteIds.forEach { noteId ->
                 try {
-                    val success = withContext(Dispatchers.IO) {
+                    val success = withContext(ioDispatcher) {
                         webdavService.deleteNoteFromServer(noteId)
                     }
                     if (success) successCount++ else failCount++
@@ -600,11 +656,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
                     SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
                     loadNotes()
+                    // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
+                    _syncCompletedScrollToTop.value = true
                     return@launch
                 }
                 
                 // Check server reachability
-                val isReachable = withContext(Dispatchers.IO) {
+                val isReachable = withContext(ioDispatcher) {
                     syncService.isServerReachable()
                 }
                 
@@ -615,7 +673,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Perform sync
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.syncNotes()
                 }
                 
@@ -635,6 +693,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     SyncStateManager.markCompleted(bannerMessage)
                     loadNotes()
+                    // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
+                    if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
+                        _syncCompletedScrollToTop.value = true
+                    }
                 } else {
                     SyncStateManager.markError(result.errorMessage)
                 }
@@ -705,7 +767,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Check server reachability
-                val isReachable = withContext(Dispatchers.IO) {
+                val isReachable = withContext(ioDispatcher) {
                     syncService.isServerReachable()
                 }
                 
@@ -716,7 +778,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 // Perform sync
-                val result = withContext(Dispatchers.IO) {
+                val result = withContext(ioDispatcher) {
                     syncService.syncNotes()
                 }
                 
@@ -761,6 +823,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
     
     /**
+     * 🆕 v1.9.0 (F06): Filtert Notizen nach NoteType.
+     */
+    private fun filterNotes(notes: List<Note>, filter: NoteFilter): List<Note> {
+        return when (filter) {
+            NoteFilter.ALL -> notes
+            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
+        }
+    }
+
+    /**
+     * 🆕 v1.9.0 (F10): Filters notes by search query across title and content.
+     * Empty query returns all notes unchanged.
+     * Checklist notes are searched by joining all item texts.
+     */
+    private fun searchNotes(notes: List<Note>, query: String): List<Note> {
+        if (query.isBlank()) return notes
+        val lowerQuery = query.trim().lowercase()
+        return notes.filter { note ->
+            note.title.lowercase().contains(lowerQuery) ||
+                note.content.lowercase().contains(lowerQuery) ||
+                note.checklistItems?.any { item ->
+                    item.text.lowercase().contains(lowerQuery)
+                } == true
+        }
+    }
+
+    /**
      * 🔀 v1.8.0: Sortiert Notizen nach gewählter Option und Richtung.
      */
     private fun sortNotes(
@@ -800,6 +890,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue}")
     }
     
+    /**
+     * 🆕 v1.9.0 (F06): Setzt den Notiz-Filter und speichert in SharedPreferences.
+     */
+    fun setNoteFilter(filter: NoteFilter) {
+        _noteFilter.value = filter
+        prefs.edit().putString(Constants.KEY_NOTE_FILTER, filter.prefsValue).apply()
+        Logger.d(TAG, "🔍 Note filter changed to: ${filter.prefsValue}")
+    }
+
+    /**
+     * 🆕 v1.9.0 (F10): Setzt den Suchbegriff (session-only, nicht persistent).
+     */
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+        Logger.d(TAG, "🔎 Search query changed to: \"$query\"")
+    }
+
     /**
      * 🔀 v1.8.0: Toggelt die Sortierrichtung.
      */

@@ -152,7 +152,7 @@ fun NoteCardCompact(
                             // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
                             note.checklistItems?.let { items ->
                                 generateChecklistPreview(items, note.checklistSortOption)
-                            } ?: ""
+                            }.orEmpty()
                         }
                     },
                     style = MaterialTheme.typography.bodySmall,

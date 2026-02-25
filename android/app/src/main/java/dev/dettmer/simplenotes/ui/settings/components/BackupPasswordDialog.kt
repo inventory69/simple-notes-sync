@@ -126,10 +126,10 @@ fun BackupPasswordDialog(
                 }
                 
                 // Error message
-                if (errorMessage != null) {
+                errorMessage?.let { msg ->
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = errorMessage!!,
+                        text = msg,
                         color = androidx.compose.material3.MaterialTheme.colorScheme.error,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall
                     )

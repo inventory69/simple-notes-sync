@@ -1,8 +1,10 @@
 package dev.dettmer.simplenotes.ui.main
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
@@ -19,11 +21,12 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 // FabPosition nicht mehr benötigt - FAB wird manuell platziert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -44,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -54,6 +58,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
+import dev.dettmer.simplenotes.ui.main.components.FilterChipRow
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
@@ -61,6 +66,9 @@ import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
 import kotlinx.coroutines.launch
 
 private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
+
+/** 🆕 v1.9.0 (F13): Delay before scrolling to top after manual sync, giving Compose time to recompose with new data. */
+private const val SYNC_SCROLL_DELAY_MS = 150L
 
 /**
  * Main screen displaying the notes list
@@ -82,6 +90,8 @@ fun MainScreen(
     val notes by viewModel.sortedNotes.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val scrollToTop by viewModel.scrollToTop.collectAsState()
+    // 🆕 v1.9.0 (F13): Scroll-to-top after manual sync
+    val syncScrollToTop by viewModel.syncCompletedScrollToTop.collectAsState()
     
     // 🆕 v1.8.0: Einziges Banner-System
     val syncProgress by viewModel.syncProgress.collectAsState()
@@ -95,6 +105,8 @@ fun MainScreen(
     
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
+    // 🆕 v1.9.0 (F05): Custom App Title
+    val customAppTitle by viewModel.customAppTitle.collectAsState()
     
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
@@ -104,9 +116,16 @@ fun MainScreen(
     
     // 🔀 v1.8.0: Sort dialog state
     var showSortDialog by remember { mutableStateOf(false) }
+    // 🆕 v1.9.0 (F11): Filter row visibility toggle (default: hidden)
+    var showFilterRow by remember { mutableStateOf(false) }
     val sortOption by viewModel.sortOption.collectAsState()
     val sortDirection by viewModel.sortDirection.collectAsState()
-    
+    // 🆕 v1.9.0 (F06): Note filter state
+    val noteFilter by viewModel.noteFilter.collectAsState()
+    // 🆕 v1.9.0 (F10): Search query state
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val focusManager = LocalFocusManager.current
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -160,6 +179,20 @@ fun MainScreen(
             viewModel.resetScrollToTop()
         }
     }
+
+    // 🆕 v1.9.0 (F13): Scroll to top after manual sync completion
+    LaunchedEffect(syncScrollToTop) {
+        if (syncScrollToTop) {
+            // Small delay to let the notes list recompose with new data
+            kotlinx.coroutines.delay(SYNC_SCROLL_DELAY_MS)
+            if (displayMode == "grid") {
+                gridState.animateScrollToItem(0)
+            } else {
+                listState.animateScrollToItem(0)
+            }
+            viewModel.resetSyncCompletedScrollToTop()
+        }
+    }
     
     // v1.5.0 Hotfix: FAB manuell mit zIndex platzieren für garantierte Sichtbarkeit
     Scaffold(
@@ -184,10 +217,13 @@ fun MainScreen(
                 exit = slideOutVertically() + fadeOut()
             ) {
                 MainTopBar(
+                    customTitle = customAppTitle,  // 🆕 v1.9.0 (F05)
                     syncEnabled = canSync,
-                    showSyncLegend = isSyncAvailable,  // 🆕 v1.8.0: Nur wenn Sync verfügbar
-                    onSyncLegendClick = { showSyncLegend = true },  // 🆕 v1.8.0
-                    onSortClick = { showSortDialog = true },  // 🔀 v1.8.0
+                    showSyncLegend = isSyncAvailable,
+                    onSyncLegendClick = { showSyncLegend = true },
+                    // 🆕 v1.9.0 (F11): Sort button replaced by filter row toggle
+                    showFilterRow = showFilterRow,
+                    onFilterToggle = { showFilterRow = !showFilterRow },
                     onSyncClick = { viewModel.triggerManualSync("toolbar") },
                     onSettingsClick = onOpenSettings
                 )
@@ -213,7 +249,25 @@ fun MainScreen(
                         progress = syncProgress,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
+
+                    // 🆕 v1.9.0 (F06): Filter Chip Row
+                    // 🆕 v1.9.0 (F10): + Inline search field
+                    // 🆕 v1.9.0 (F11): + Sort chip + toggle visibility
+                    AnimatedVisibility(
+                        visible = showFilterRow,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        FilterChipRow(
+                            currentFilter = noteFilter,
+                            onFilterSelected = { viewModel.setNoteFilter(it) },
+                            searchQuery = searchQuery,
+                            onSearchQueryChanged = { viewModel.setSearchQuery(it) },
+                            onSortClick = { showSortDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     // Content: Empty state or notes list
                     if (notes.isEmpty()) {
                         EmptyState(modifier = Modifier.weight(1f))
@@ -229,6 +283,7 @@ fun MainScreen(
                                 timestampTicker = timestampTicker,
                                 modifier = Modifier.weight(1f),
                                 onNoteClick = { note ->
+                                    focusManager.clearFocus()
                                     if (isSelectionMode) {
                                         viewModel.toggleNoteSelection(note.id)
                                     } else {
@@ -236,6 +291,7 @@ fun MainScreen(
                                     }
                                 },
                                 onNoteLongClick = { note ->
+                                    focusManager.clearFocus()
                                     viewModel.startSelectionMode(note.id)
                                 }
                             )
@@ -248,9 +304,12 @@ fun MainScreen(
                                 timestampTicker = timestampTicker,
                                 listState = listState,
                                 modifier = Modifier.weight(1f),
-                                onNoteClick = { note -> onOpenNote(note.id) },
-                                onNoteLongPress = { note -> 
-                                    // Long-press starts selection mode
+                                onNoteClick = { note ->
+                                    focusManager.clearFocus()
+                                    onOpenNote(note.id)
+                                },
+                                onNoteLongPress = { note ->
+                                    focusManager.clearFocus()
                                     viewModel.startSelectionMode(note.id)
                                 },
                                 onNoteSelectionToggle = { note ->
@@ -322,26 +381,36 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTopBar(
+    customTitle: String,  // 🆕 v1.9.0 (F05): Custom app title (empty = default)
     syncEnabled: Boolean,
     showSyncLegend: Boolean,  // 🆕 v1.8.0: Ob der Hilfe-Button sichtbar sein soll
     onSyncLegendClick: () -> Unit,  // 🆕 v1.8.0
-    onSortClick: () -> Unit,  // 🔀 v1.8.0: Sort-Button
+    showFilterRow: Boolean,  // 🆕 v1.9.0 (F11): Filter row toggle state
+    onFilterToggle: () -> Unit,  // 🆕 v1.9.0 (F11): Toggle filter row visibility
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     TopAppBar(
         title = {
             Text(
-                text = stringResource(R.string.main_title),
-                style = MaterialTheme.typography.titleLarge
+                // 🆕 v1.9.0 (F05): Use custom title if set, otherwise default
+                text = customTitle.ifBlank { stringResource(R.string.main_title) },
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         },
         actions = {
-            // 🔀 v1.8.0: Sort Button
-            IconButton(onClick = onSortClick) {
+            // 🆕 v1.9.0 (F11): Filter row toggle button (replaces sort button)
+            IconButton(onClick = onFilterToggle) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Sort,
-                    contentDescription = stringResource(R.string.sort_notes)
+                    imageVector = Icons.Outlined.Tune,
+                    contentDescription = stringResource(R.string.toggle_filter_row),
+                    tint = if (showFilterRow) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        LocalContentColor.current
+                    }
                 )
             }
             

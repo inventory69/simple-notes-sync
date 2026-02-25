@@ -50,6 +50,13 @@ class ToggleChecklistItemAction : ActionCallback {
             if (item.id == itemId) {
                 item.copy(isChecked = !item.isChecked)
             } else item
+        }?.run {
+            // 🆕 v1.9.0 (F04): Backward compat — old notes (pre-F04) have all originalOrder == 0
+            // (Gson default). Only patch if ALL items are 0, meaning F04 was never active for this note.
+            // If at least one item has originalOrder != 0, the note was saved with F04 → don't touch.
+            val isPreF04Note = all { it.originalOrder == 0 }
+            if (isPreF04Note) map { it.copy(originalOrder = it.order) }
+            else this
         } ?: return
 
         // 🆕 v1.8.1 (IMPL_04): Auto-Sort nach Toggle
@@ -59,10 +66,11 @@ class ToggleChecklistItemAction : ActionCallback {
         } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
             ?: ChecklistSortOption.MANUAL
 
+        // 🆕 v1.9.0 (F04): Restore position on un-check using originalOrder
         val sortedItems = if (sortOption == ChecklistSortOption.MANUAL ||
                              sortOption == ChecklistSortOption.UNCHECKED_FIRST) {
-            val unchecked = updatedItems.filter { !it.isChecked }
-            val checked = updatedItems.filter { it.isChecked }
+            val unchecked = updatedItems.filter { !it.isChecked }.sortedBy { it.originalOrder }
+            val checked = updatedItems.filter { it.isChecked }.sortedBy { it.originalOrder }
             (unchecked + checked).mapIndexed { index, item ->
                 item.copy(order = index)
             }

@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.sync.parallel
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,7 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger
 class ParallelDownloader(
     private val sardine: Sardine,
     private val maxParallelDownloads: Int = DEFAULT_MAX_PARALLEL,
-    private val retryCount: Int = DEFAULT_RETRY_COUNT
+    private val retryCount: Int = DEFAULT_RETRY_COUNT,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     companion object {
         private const val TAG = "ParallelDownloader"
@@ -71,7 +73,7 @@ class ParallelDownloader(
         val totalCount = tasks.size
 
         val jobs = tasks.map { task ->
-            async(Dispatchers.IO) {
+            async(ioDispatcher) {
                 semaphore.withPermit {
                     val result = downloadWithRetry(task)
 

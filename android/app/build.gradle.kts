@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 22  // 🔧 v1.8.2: Sync-Stuck Fix, SSL Certs, APK Size, Widget Scroll, Keyboard
-        versionName = "1.8.2"  // 🔧 v1.8.2: Stability & Polish Release
+        versionCode = 23  // 🆕 v1.9.0: Server-Switch Fix, Parallel Settings, Bug Audit
+        versionName = "1.9.0"  // 🆕 v1.9.0: Sync Quality & Performance Release
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -169,6 +169,10 @@ dependencies {
 
     // Testing (bleiben so)
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.arch.core.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

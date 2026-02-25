@@ -27,7 +27,7 @@ body:
           required: false
         - label: Ich habe den [Quick Start Guide](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md) gelesen / I have read the Quick Start Guide
           required: false
-        - label: Ich habe das [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#troubleshooting) durchgearbeitet / I have checked the troubleshooting section
+        - label: Ich habe das [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#-troubleshooting) durchgearbeitet / I have checked the troubleshooting section
           required: false
 
   - type: textarea

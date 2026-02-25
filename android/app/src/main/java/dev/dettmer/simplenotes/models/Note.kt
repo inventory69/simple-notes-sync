@@ -64,7 +64,7 @@ data class Note(
         return checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
             val checkbox = if (item.isChecked) "[x]" else "[ ]"
             "$checkbox ${item.text}"
-        } ?: ""
+        }.orEmpty()
     }
     
     /**
@@ -99,7 +99,7 @@ type: ${noteType.name.lowercase()}$sortLine
                 val checklistMarkdown = checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
                     val checkbox = if (item.isChecked) "[x]" else "[ ]"
                     "- $checkbox ${item.text}"
-                } ?: ""
+                }.orEmpty()
                 header + checklistMarkdown
             }
         }
@@ -155,7 +155,7 @@ type: ${noteType.name.lowercase()}$sortLine
                 // v1.4.1: Recovery-Mode - Falls Checkliste aber keine Items, 
                 // versuche Content als Fallback zu parsen
                 if (noteType == NoteType.CHECKLIST && 
-                    (checklistItems == null || checklistItems.isEmpty()) &&
+                    checklistItems.isNullOrEmpty() &&
                     rawNote.content.isNotBlank()) {
                     
                     val recoveredItems = parseChecklistFromContent(rawNote.content)
@@ -307,7 +307,7 @@ type: ${noteType.name.lowercase()}$sortLine
                 // IMPL_014-Logik entfernt: Server mtime nach eigenem Export ist immer "jetzt",
                 // was zu Feedback Loop führt (IMPL_025). Externe Editoren (Obsidian etc.)
                 // aktualisieren den YAML-Header zuverlässig.
-                val yamlUpdatedAt = parseISO8601(metadata["updated"] ?: "")
+                val yamlUpdatedAt = parseISO8601(metadata["updated"].orEmpty())
                 val effectiveUpdatedAt = when {
                     yamlUpdatedAt <= 0L && serverModifiedTime != null && serverModifiedTime > 0L -> {
                         Logger.d(TAG, "YAML timestamp missing/invalid, using server mtime: $serverModifiedTime")
@@ -325,7 +325,7 @@ type: ${noteType.name.lowercase()}$sortLine
                     id = metadata["id"] ?: UUID.randomUUID().toString(),
                     title = title,
                     content = content,
-                    createdAt = parseISO8601(metadata["created"] ?: ""),
+                    createdAt = parseISO8601(metadata["created"].orEmpty()),
                     updatedAt = effectiveUpdatedAt,
                     deviceId = metadata["device"] ?: "desktop",
                     syncStatus = SyncStatus.SYNCED,  // Annahme: Vom Server importiert
@@ -365,7 +365,7 @@ type: ${noteType.name.lowercase()}$sortLine
          * @param dateString ISO8601 Datum-String
          * @return Unix Timestamp in Millisekunden
          */
-        private fun parseISO8601(dateString: String): Long {
+        internal fun parseISO8601(dateString: String): Long {
             if (dateString.isBlank()) {
                 return System.currentTimeMillis()
             }
