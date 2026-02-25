@@ -8,7 +8,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.9.0] - 2026-02-19
+## [1.9.0] - 2026-02-25
 
 ### 🔄 Sync-Qualität & Performance
 
@@ -67,6 +67,61 @@ Fokussiertes Release zur Verbesserung der Sync-Korrektheit, Performance und Zuve
 
 - Detekt-MagicNumber-Compliance: `ALL_DELETED_GUARD_THRESHOLD`-Konstante extrahiert
 - ProGuard/R8-Release-Build-Verifikation (keine Regeländerungen nötig)
+
+### 📊 Part 2: Filter, Suche & Editor (F01–F07, F09–F14)
+
+**Filter Chip Row** *(F06, F10, F11)*
+- Neue Filter-Leiste unter der TopAppBar — Notizen filtern nach Alle / Text / Checklisten
+- Inline-Suchfeld für schnelle Notiz-Filterung nach Titel
+- Sortier-Button aus Dialog in kompaktes Filter-Row-Icon verschoben
+- Tune-Button in TopAppBar schaltet Filter-Zeile ein/aus
+
+**Markdown-Vorschau** *(F07)*
+- Live-Markdown-Vorschau für Textnotizen mit Formatierungs-Toolbar
+- Unterstützt Überschriften, Fett, Kursiv, Durchgestrichen, Listen, Trennlinien, Code-Blöcke
+- Umschalten zwischen Bearbeitungs- und Vorschaumodus
+
+**Widget-Polish** *(F01, F02, F03, F09)*
+- Monet-Farbton in transluzenten Widget-Hintergründen erhalten (F01)
+- Options-Leisten-Hintergrund für nahtlose Integration entfernt (F02)
+- Durchstreichung für erledigte Checklisten-Items im Widget (F03)
+- Widgets aktualisieren automatisch beim onStop Lifecycle-Hook (F09)
+
+**Checklisten-Verbesserungen** *(F04, F12, F14)*
+- Abhaken-Rückgängig stellt Item an Originalposition wieder her (F04)
+- Originalreihenfolge nach Einfügen/Löschen zementiert (F12)
+- Konsistentes Scroll-Verhalten beim Check/Un-Check (F14)
+
+**Sonstiges** *(F05, F13)*
+- Benutzerdefinierter App-Titel: konfigurierbarer App-Name in Einstellungen (F05)
+- Notizliste scrollt nach oben nach manuellem Sync (F13)
+
+### 🧹 Part 3: Bereinigung & Polish
+
+**Neue Features**
+- Konfigurierbarer WebDAV-Sync-Ordnername (Standard: `notes`, eigener Name für Multi-App-Setups)
+- Opt-in Autosave mit Debounce-Timer (3s nach letzter Bearbeitung, konfigurierbar in Einstellungen)
+- Checklisten-Scroll-Fix: Kein Scroll-Sprung mehr beim Abhaken des ersten sichtbaren Items
+
+**Image Support auf v2.0.0 verschoben**
+- Lokales Bild-Embedding (F08) aus v1.9.0 Scope entfernt
+- Feature als v2.0.0 Spezifikation mit vollständigem Architektur-Vorschlag erhalten
+
+**UI-Fixes**
+- Tune-Button-Farbe: Untoggled-State nutzt jetzt Standard-TopAppBar-Iconfarbe
+- Sort-Button: AssistChip durch kompakten IconButton + SwapVert-Icon ersetzt
+- Import-Wizard: Checklisten-Erkennung behält vollständigen Notiz-Inhalt
+
+**Code-Qualität**
+- Deprecated `Icons.Outlined.Notes` → `Icons.AutoMirrored.Outlined.Notes` behoben
+- Ungenutzten `Color`-Import aus ServerSettingsScreen + Detekt-Baseline-Eintrag entfernt
+- Logger-Timestamps nutzen `Locale.ROOT` statt `Locale.getDefault()`
+- Obsoleten `Build.VERSION_CODES.N`-Check entfernt (minSdk=24)
+
+**Infrastruktur**
+- Weblate-Integration auf PR-basierten Übersetzungs-Workflow umgestellt
+- Dokumentation für v1.8.2 und v1.9.0 aktualisiert (FEATURES, UPCOMING, QUICKSTART)
+- Fehlerhafte Links in Docs behoben (schließt #22)
 
 ---
 
