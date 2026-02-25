@@ -90,7 +90,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-➡️ **Details:** [Server Setup Guide](server/README.de.md)
+➡️ **Details:** [Server Setup Guide](server/README.md)
 
 ### 2. App Installation (2 Minuten)
 

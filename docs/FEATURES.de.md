@@ -15,6 +15,7 @@
   - ☑️ Tap zum Abhaken/Wieder-Öffnen
   - 📌 Long-Press für Drag & Drop Sortierung
   - ~~Durchstreichen~~ bei erledigten Einträgen
+  - ↩️ Abhaken-Rückgängig stellt Item an Originalposition _(v1.9.0)_
 
 ### Basis-Funktionen
 - ✅ **Automatisches Speichern** - Kein manuelles Speichern nötig
@@ -26,6 +27,7 @@
 - ✅ **Material Design 3** - Moderne, saubere UI
 - ✅ **Dark Mode** - Automatisch je nach System-Einstellung
 - ✅ **Dynamic Colors** - Passt sich deinem Android-Theme an
+- ✅ **Benutzerdefinierter App-Titel** _(NEU in v1.9.0)_ - Konfigurierbarer App-Name
 
 ### Editor
 - ✅ **Minimalistischer Editor** - Kein Schnickschnack
@@ -34,6 +36,8 @@
 - ✅ **Speichern-Button** - Manuelle Bestätigung möglich
 - ✅ **Zurück-Navigation** - Speichert automatisch
 - ✅ **Slide-Animationen** _(NEU in v1.5.0)_ - Flüssige Übergänge
+- ✅ **Markdown-Vorschau** _(NEU in v1.9.0)_ - Live-Vorschau mit Formatierungs-Toolbar
+- ✅ **Opt-in Autosave** _(NEU in v1.9.0)_ - Konfigurierbarer Debounce-Autosave-Timer
 
 ---
 
@@ -53,6 +57,13 @@
 - ✅ **Nach Typ** - Textnotizen vs. Checklisten
 - ✅ **Persistente Einstellungen** - Sortier-Option bleibt nach App-Neustart
 - ✅ **Sortier-Dialog** - Richtungswahl im Hauptbildschirm
+
+### Notiz-Filter _(NEU in v1.9.0)_
+- ✅ **Filter Chip Row** - Filtern nach Alle, Text oder Checklisten
+- ✅ **Inline-Suche** - Schnellsuche in der Filter-Zeile
+- ✅ **Sort-Button** - Kompaktes Sort-Icon in der Filter-Zeile
+- ✅ **Sichtbarkeit umschalten** - Tune-Button blendet die Filter-Zeile ein/aus
+- ✅ **Konfigurierbarer Sync-Ordner** - Benutzerdefinierter WebDAV-Ordnername
 
 ### Checklisten-Sortierung _(NEU in v1.8.0)_
 - ✅ **Manuell** - Eigene Drag & Drop Reihenfolge
@@ -78,6 +89,10 @@
 - ✅ **Konfigurations-Activity** - Notiz-Auswahl und Einstellungen
 - ✅ **Checklisten-Sortierung** _(v1.8.1)_ - Widgets übernehmen Sortier-Option
 - ✅ **Visuelle Trenner** _(v1.8.1)_ - Zwischen offenen/erledigten Items
+- ✅ **Monet-Farbton-Erhaltung** _(v1.9.0)_ - Transluzenter Hintergrund behält dynamische Farben
+- ✅ **Nahtlose Options-Leiste** _(v1.9.0)_ - Hintergrund entfernt für saubereren Look
+- ✅ **Checklisten-Durchstreichung** _(v1.9.0)_ - Erledigte Items zeigen Durchstreichung im Widget
+- ✅ **Auto-Refresh beim Verlassen** _(v1.9.0)_ - Widgets aktualisieren beim Verlassen der App
 
 ---
 
@@ -347,4 +362,4 @@ A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v1.8.1 (2026-02-11)
+**Letzte Aktualisierung:** v1.9.0 (2026-02-25)

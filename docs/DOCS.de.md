@@ -494,7 +494,7 @@ Settings → Apps → Simple Notes → Battery → Don't optimize
 **Problem: Server nicht erreichbar**
 ```
 Check: 
-1. Server läuft? → docker-compose ps
+1. Server läuft? → docker compose ps
 2. IP korrekt? → ip addr show
 3. Port offen? → telnet 192.168.0.188 8080
 4. Firewall? → sudo ufw allow 8080
@@ -541,7 +541,7 @@ androidx.localbroadcastmanager:localbroadcastmanager:1.1.0
 
 ## 🔮 Roadmap
 
-Siehe [UPCOMING.md](UPCOMING.md) für die vollständige Roadmap und geplante Features.
+Siehe [UPCOMING.de.md](UPCOMING.de.md) für die vollständige Roadmap und geplante Features.
 
 ---
 
