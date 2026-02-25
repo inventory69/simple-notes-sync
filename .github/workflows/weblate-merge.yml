@@ -1,0 +1,23 @@
+name: Weblate PR Label
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  label:
+    name: Label Weblate PRs
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'weblate'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Add translation label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['translation', 'weblate']
+            });

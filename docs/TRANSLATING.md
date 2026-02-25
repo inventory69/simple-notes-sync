@@ -27,7 +27,7 @@ The easiest way to contribute translations is through **Weblate** — no coding 
 3. Select your language (or request a new one)
 4. Start translating directly in the browser
 
-Weblate automatically creates pull requests with your translations.
+Weblate automatically creates pull requests with your translations. These PRs go through the same CI build check as all other contributions. Once the build passes, they are approved and merged.
 
 ---
 

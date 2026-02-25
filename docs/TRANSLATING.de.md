@@ -27,7 +27,7 @@ Der einfachste Weg, Übersetzungen beizutragen, ist über **Weblate** — kein P
 3. Deine Sprache auswählen (oder eine neue anfordern)
 4. Direkt im Browser übersetzen
 
-Weblate erstellt automatisch Pull Requests mit deinen Übersetzungen.
+Weblate erstellt automatisch Pull Requests mit deinen Übersetzungen. Diese PRs durchlaufen den gleichen CI-Build-Check wie alle anderen Beiträge. Nach erfolgreichem Build werden sie genehmigt und gemerged.
 
 ---
 
