@@ -24,6 +24,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.utils.Constants
 
 /**
@@ -40,6 +41,7 @@ fun DisplaySettingsScreen(
 ) {
     val displayMode by viewModel.displayMode.collectAsState()
     val customAppTitle by viewModel.customAppTitle.collectAsState()
+    val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()  // 🆕 v1.9.0
 
     SettingsScaffold(
         title = stringResource(R.string.display_settings_title),
@@ -114,6 +116,22 @@ fun DisplaySettingsScreen(
 
             SettingsInfoCard(
                 text = stringResource(R.string.custom_app_title_info)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── 🆕 v1.9.0: Autosave Section ──
+            SettingsSectionHeader(text = stringResource(R.string.autosave_section))
+
+            SettingsSwitch(
+                title = stringResource(R.string.autosave_toggle),
+                subtitle = stringResource(R.string.autosave_description),
+                checked = autosaveEnabled,
+                onCheckedChange = { viewModel.setAutosaveEnabled(it) }
+            )
+
+            SettingsInfoCard(
+                text = stringResource(R.string.autosave_info)
             )
 
             Spacer(modifier = Modifier.height(16.dp))

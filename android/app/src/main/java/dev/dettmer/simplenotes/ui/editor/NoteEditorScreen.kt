@@ -1,6 +1,10 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -77,6 +81,8 @@ import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.drop
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.showToast
 import kotlin.math.roundToInt
 
@@ -112,6 +118,7 @@ fun NoteEditorScreen(
     var isPreviewMode by remember { mutableStateOf(false) }
     var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
     val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
+    val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState()  // 🆕 v1.9.0
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
@@ -190,13 +197,9 @@ fun NoteEditorScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = when (uiState.toolbarTitle) {
-                            ToolbarTitle.NEW_NOTE -> stringResource(R.string.new_note)
-                            ToolbarTitle.EDIT_NOTE -> stringResource(R.string.edit_note)
-                            ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.new_checklist)
-                            ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.edit_checklist)
-                        }
+                    NoteEditorToolbarTitle(
+                        toolbarTitle = uiState.toolbarTitle,
+                        autosaveIndicatorVisible = autosaveIndicatorVisible
                     )
                 },
                 navigationIcon = {
@@ -401,6 +404,8 @@ private fun TextNoteContent(
     // Text-Änderungen an ViewModel propagieren
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
+            .drop(1)  // 🆕 v1.9.0: skip initial emission — snapshotFlow always emits current
+                      // value on first collect, but that's hydration, not a user edit
             .collect { newText ->
                 onContentChange(newText)
             }
@@ -723,3 +728,32 @@ private fun ChecklistEditor(
 }
 
 // v1.5.0: Local DeleteConfirmationDialog removed - now using shared component from ui/main/components/
+
+/** 🆕 v1.9.0: TopAppBar title with optional autosave confirmation indicator. */
+@Composable
+private fun NoteEditorToolbarTitle(
+    toolbarTitle: ToolbarTitle,
+    autosaveIndicatorVisible: Boolean
+) {
+    Column {
+        Text(
+            text = when (toolbarTitle) {
+                ToolbarTitle.NEW_NOTE -> stringResource(R.string.new_note)
+                ToolbarTitle.EDIT_NOTE -> stringResource(R.string.edit_note)
+                ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.new_checklist)
+                ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.edit_checklist)
+            }
+        )
+        AnimatedVisibility(
+            visible = autosaveIndicatorVisible,
+            enter = fadeIn(animationSpec = tween(Constants.AUTOSAVE_INDICATOR_FADE_MS)),
+            exit = fadeOut(animationSpec = tween(Constants.AUTOSAVE_INDICATOR_FADE_MS))
+        ) {
+            Text(
+                text = stringResource(R.string.autosave_indicator),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}

@@ -224,6 +224,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
     )
     val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
+
+    // 🆕 v1.9.0: Autosave
+    private val _autosaveEnabled = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_AUTOSAVE_ENABLED, Constants.DEFAULT_AUTOSAVE_ENABLED)
+    )
+    val autosaveEnabled: StateFlow<Boolean> = _autosaveEnabled.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
@@ -316,6 +322,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             .take(Constants.MAX_SYNC_FOLDER_NAME_LENGTH)
         _syncFolderName.value = sanitized
         prefs.edit().putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }).apply()
+    }
+
+    /**
+     * 🆕 v1.9.0: Toggle autosave.
+     * Saves immediately to SharedPreferences. NoteEditorViewModel reads
+     * the preference at init time.
+     */
+    fun setAutosaveEnabled(enabled: Boolean) {
+        _autosaveEnabled.value = enabled
+        prefs.edit().putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled).apply()
     }
     
     /**

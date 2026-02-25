@@ -456,7 +456,12 @@
     <string name="custom_app_title_placeholder">Simple Notes</string>
     <string name="custom_app_title_info">Set a custom title for the main screen. Leave empty to use the default \"Simple Notes\" title. Maximum 30 characters.</string>
     <string name="custom_app_title_char_count">%1$d / %2$d</string>
-
+    <!-- 🆕 v1.9.0: Autosave -->
+    <string name="autosave_section">Editor</string>
+    <string name="autosave_toggle">Autosave</string>
+    <string name="autosave_description">Automatically saves after 3 seconds of inactivity</string>
+    <string name="autosave_info">When enabled, your note is saved automatically while you type. Sync only runs on manual save.</string>
+    <string name="autosave_indicator">✓ Saved</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">All</string>
     <string name="filter_text_only">Text</string>
