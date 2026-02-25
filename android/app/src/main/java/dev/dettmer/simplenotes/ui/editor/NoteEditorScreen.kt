@@ -330,7 +330,9 @@ fun NoteEditorScreen(
                         currentSortOption = lastChecklistSortOption,  // 🔀 v1.8.0
                         checklistScrollAction = viewModel.checklistScrollAction,  // 🆕 v1.9.0 (F14)
                         onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
-                        onCheckedChange = { id, checked -> viewModel.updateChecklistItemChecked(id, checked) },
+                        onCheckedChange = { id, checked ->
+                            viewModel.updateChecklistItemChecked(id, checked)
+                        },
                         onDelete = { id -> viewModel.deleteChecklistItem(id) },
                         onAddNewItemAfter = { id -> 
                             val newId = viewModel.addChecklistItemAfter(id)
@@ -673,7 +675,16 @@ private fun ChecklistEditor(
                         dragDropState = dragDropState,
                         focusNewItemId = focusNewItemId,
                         onTextChange = onTextChange,
-                        onCheckedChange = onCheckedChange,
+                        onCheckedChange = { id, checked ->
+                            // 🔧 v1.9.0 (F14 fix): When checking the first visible item,
+                            // pre-request scroll to index 0. requestScrollToItem runs DURING
+                            // the next layout pass, overriding LazyColumn's key-tracking
+                            // which would otherwise follow the checked item to the bottom.
+                            if (checked && listState.firstVisibleItemIndex == 0) {
+                                listState.requestScrollToItem(0, 0)
+                            }
+                            onCheckedChange(id, checked)
+                        },
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
                         onFocusHandled = onFocusHandled,
