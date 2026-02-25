@@ -78,6 +78,13 @@ object Constants {
     const val DEFAULT_SYNC_FOLDER_NAME = "notes"  // Backward compatible default
     const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
 
+    // 🆕 v1.9.0: Autosave with debounce
+    const val KEY_AUTOSAVE_ENABLED = "autosave_enabled"
+    const val DEFAULT_AUTOSAVE_ENABLED = false
+    const val AUTOSAVE_DEBOUNCE_MS = 3_000L  // 3 seconds after last edit
+    const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L  // indicator visible duration
+    const val AUTOSAVE_INDICATOR_FADE_MS = 400  // fade animation duration (ms)
+
     // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
     // 🔧 v1.9.0: Unified setting for both downloads and uploads
     const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration
