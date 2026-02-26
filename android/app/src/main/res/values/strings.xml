@@ -138,10 +138,19 @@
     <string name="snackbar_undo">UNDO</string>
     <string name="snackbar_note_deleted_local">\"%s\" deleted locally</string>
     <string name="snackbar_note_deleted_server">\"%s\" will be deleted from server</string>
-    <string name="snackbar_notes_deleted_local">%d note(s) deleted locally</string>
-    <string name="snackbar_notes_deleted_server">%d note(s) will be deleted from server</string>
+    <plurals name="snackbar_notes_deleted_local">
+        <item quantity="one">%d note deleted locally</item>
+        <item quantity="other">%d notes deleted locally</item>
+    </plurals>
+    <plurals name="snackbar_notes_deleted_server">
+        <item quantity="one">%d note will be deleted from server</item>
+        <item quantity="other">%d notes will be deleted from server</item>
+    </plurals>
     <string name="snackbar_deleted_from_server">Deleted from server</string>
-    <string name="snackbar_notes_deleted_from_server">%d note(s) deleted from server</string>
+    <plurals name="snackbar_notes_deleted_from_server">
+        <item quantity="one">%d note deleted from server</item>
+        <item quantity="other">%d notes deleted from server</item>
+    </plurals>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d of %2$d notes deleted from server</string>
     <string name="snackbar_server_delete_failed">Server deletion failed</string>
     <string name="snackbar_server_error">Server error: %s</string>
@@ -605,12 +614,18 @@
     <string name="sync_in_progress">Syncing</string>
     <string name="sync_in_progress_text">Syncing notes…</string>
     <string name="notification_sync_success_title">Sync successful</string>
-    <string name="notification_sync_success_message">%d note(s) synchronized</string>
+    <plurals name="notification_sync_success_message">
+        <item quantity="one">%d note synchronized</item>
+        <item quantity="other">%d notes synchronized</item>
+    </plurals>
     <string name="notification_sync_failed_title">Sync failed</string>
     <string name="notification_sync_progress_title">Syncing…</string>
     <string name="notification_sync_progress_message">Notes are being synchronized</string>
     <string name="notification_sync_conflict_title">Sync conflict detected</string>
-    <string name="notification_sync_conflict_message">%d note(s) have conflicts</string>
+    <plurals name="notification_sync_conflict_message">
+        <item quantity="one">%d note has conflicts</item>
+        <item quantity="other">%d notes have conflicts</item>
+    </plurals>
     <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
     <string name="notification_sync_warning_message">Server unreachable for %dh</string>
     <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
