@@ -373,9 +373,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Show snackbar with undo
         val count = selectedNotes.size
         val message = if (deleteFromServer) {
-            getString(R.string.snackbar_notes_deleted_server, count)
+            getQuantityString(R.plurals.snackbar_notes_deleted_server, count, count)
         } else {
-            getString(R.string.snackbar_notes_deleted_local, count)
+            getQuantityString(R.plurals.snackbar_notes_deleted_local, count, count)
         }
         
         viewModelScope.launch {
@@ -566,7 +566,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO/ERROR
             val message = when {
-                failCount == 0 -> getString(R.string.snackbar_notes_deleted_from_server, successCount)
+                failCount == 0 -> getQuantityString(R.plurals.snackbar_notes_deleted_from_server, successCount, successCount)
                 successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
                 else -> getString(
                     R.string.snackbar_notes_deleted_from_server_partial,
@@ -921,8 +921,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     private fun getString(resId: Int): String = getApplication<android.app.Application>().getString(resId)
     
-    private fun getString(resId: Int, vararg formatArgs: Any): String = 
+    private fun getString(resId: Int, vararg formatArgs: Any): String =
         getApplication<android.app.Application>().getString(resId, *formatArgs)
+
+    private fun getQuantityString(resId: Int, quantity: Int, vararg formatArgs: Any): String =
+        getApplication<android.app.Application>().resources.getQuantityString(resId, quantity, *formatArgs)
     
     fun isServerConfigured(): Boolean {
         // 🌟 v1.6.0: Use reactive offline mode state
