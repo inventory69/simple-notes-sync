@@ -472,8 +472,8 @@
     <!-- 🆕 v1.9.0: Autosave -->
     <string name="autosave_section">Editor</string>
     <string name="autosave_toggle">Automatisches Speichern</string>
-    <string name="autosave_description">Speichert automatisch nach 3 Sekunden Inaktivität</string>
-    <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
+    <string name="autosave_description">Speichert nach 3 s Inaktivität und beim Verlassen des Editors</string>
+    <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
     <string name="autosave_indicator">✓ Gespeichert</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Rükgängig</string>
