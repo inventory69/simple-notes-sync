@@ -8,6 +8,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.0] - 2026-02-27
+
+### ✏️ Editor Quality & Sync Polish
+
+Feature release adding undo/redo, configurable connection timeout, save-on-back, autosave fixes, smoother sync banner animations, and a pre-download filter for foreign JSON files.
+
+### ✨ New Features
+
+**Undo/Redo in Note Editor** ([484bf3a](https://github.com/inventory69/simple-notes-sync/commit/484bf3a))
+- Full undo/redo support for text notes and checklists via toolbar buttons
+- Debounced snapshots: rapid keystrokes are grouped into a single undo step (500 ms window)
+- Stack limited to 50 entries; cleared on note switch to prevent cross-note undo
+- Restoring a snapshot correctly updates the text field cursor position
+
+**Configurable WebDAV Connection Timeout** ([b1aebc4](https://github.com/inventory69/simple-notes-sync/commit/b1aebc4))
+- New Settings slider (1–30 s, default 8 s) to configure the WebDAV connection timeout
+- Applied to all OkHttpClient instances (connect, read, write) used by Sardine
+- Consistent, user-facing error messages for timeout, auth failure, not found, and server errors
+
+**Markdown Auto-Sync Timeout Protection** ([7f74ae9](https://github.com/inventory69/simple-notes-sync/commit/7f74ae9))
+- Enabling Markdown auto-sync now has a 10 s timeout for the initial export
+- UI toggle updates optimistically and reverts if the export fails or times out
+- Prevents the Settings screen from hanging indefinitely on unreachable servers
+
+**Save on Back Navigation** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c))
+- Dirty notes are saved automatically when navigating back from the editor (system back + toolbar back)
+- Only active when autosave is enabled; synchronous save without triggering sync
+- Autosave toggle description updated to mention this behavior
+
+### 🐛 Bug Fixes
+
+**False Autosave on Checklist Cursor Tap** ([9ea7089](https://github.com/inventory69/simple-notes-sync/commit/9ea7089))
+- Tapping a checklist item to place the cursor no longer triggers a false autosave
+- No-op guards added to `updateChecklistItemText()` and `updateChecklistItemChecked()` — only mark dirty if the value actually changed
+
+**Undo to Saved State Still Triggered Autosave** ([cf5027b](https://github.com/inventory69/simple-notes-sync/commit/cf5027b))
+- Undoing all changes back to the last saved state now correctly resets `isDirty` and cancels the pending autosave
+- New `savedSnapshot` property captures state at load time and after every save
+- `applySnapshot()` compares against `savedSnapshot` to determine dirty state
+
+**Foreign JSON Files Downloaded Unnecessarily** ([c409243](https://github.com/inventory69/simple-notes-sync/commit/c409243))
+- Non-note JSON files (e.g. `google-services.json`) are now filtered before download via UUID format check
+- Previously: file was downloaded, parsed, then discarded after ID mismatch — wasting bandwidth and causing a brief flash in the sync banner
+
+**Note Count Strings Not Pluralized Correctly** ([8ca8df3](https://github.com/inventory69/simple-notes-sync/commit/8ca8df3))
+- Note count strings converted to proper Android plural forms (EN + DE)
+
+### 🎨 UI Improvements
+
+**Smooth Sync Banner Animations** ([c409243](https://github.com/inventory69/simple-notes-sync/commit/c409243))
+- Banner enter: fadeIn (300 ms, EaseOutCubic) — no more abrupt "push from top"
+- Banner exit: fadeOut + shrinkVertically (300/400 ms, EaseInCubic)
+- Phase transitions use AnimatedContent crossfade (250 ms) for text changes
+- Minimum display duration per active phase (400 ms) prevents unreadable flashes
+- Auto-hide job decoupled from flow collector — guaranteed minimum display time for completed/error/info states
+
+---
+
 ## [1.9.0] - 2026-02-25
 
 ### 🔄 Sync Quality, Performance & UI

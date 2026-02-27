@@ -8,6 +8,64 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.0] - 2026-02-27
+
+### ✏️ Editor-Qualität & Sync-Polish
+
+Feature-Release mit Rückgängig/Wiederherstellen, konfigurierbarem Verbindungs-Timeout, Speichern beim Zurücknavigieren, Autosave-Fixes, sanfteren Sync-Banner-Animationen und einem Pre-Download-Filter für fremde JSON-Dateien.
+
+### ✨ Neue Features
+
+**Rückgängig/Wiederherstellen im Notiz-Editor** ([484bf3a](https://github.com/inventory69/simple-notes-sync/commit/484bf3a))
+- Vollständige Undo/Redo-Unterstützung für Text-Notizen und Checklisten via Toolbar-Buttons
+- Debounced Snapshots: schnelles Tippen wird zu einem einzelnen Undo-Schritt gruppiert (500 ms Fenster)
+- Stack auf 50 Einträge begrenzt; wird beim Notizwechsel geleert um Cross-Note-Undo zu verhindern
+- Wiederhergestellte Snapshots aktualisieren die Cursor-Position korrekt
+
+**Konfigurierbarer WebDAV-Verbindungs-Timeout** ([b1aebc4](https://github.com/inventory69/simple-notes-sync/commit/b1aebc4))
+- Neuer Settings-Slider (1–30 s, Standard 8 s) zur Konfiguration des WebDAV-Timeouts
+- Wird auf alle OkHttpClient-Instanzen angewendet (Connect, Read, Write)
+- Einheitliche, nutzerfreundliche Fehlermeldungen für Timeout, Auth-Fehler, Nicht gefunden und Server-Fehler
+
+**Markdown-Auto-Sync Timeout-Schutz** ([7f74ae9](https://github.com/inventory69/simple-notes-sync/commit/7f74ae9))
+- Aktivierung von Markdown-Auto-Sync hat jetzt einen 10-s-Timeout für den initialen Export
+- UI-Toggle aktualisiert optimistisch und kehrt bei Fehler oder Timeout zurück
+- Verhindert, dass der Einstellungs-Screen bei unerreichbaren Servern endlos hängt
+
+**Speichern beim Zurücknavigieren** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c))
+- Ungespeicherte Notizen werden beim Verlassen des Editors automatisch gespeichert (System-Zurück + Toolbar-Zurück)
+- Nur aktiv wenn Autosave aktiviert ist; synchrones Speichern ohne Sync auszulösen
+- Autosave-Toggle-Beschreibung erwähnt jetzt dieses Verhalten
+
+### 🐛 Fehlerbehebungen
+
+**Falsches Autosave beim Tippen in Checkliste** ([9ea7089](https://github.com/inventory69/simple-notes-sync/commit/9ea7089))
+- Antippen eines Checklisten-Items zum Platzieren des Cursors löst kein falsches Autosave mehr aus
+- No-Op-Guards in `updateChecklistItemText()` und `updateChecklistItemChecked()` — nur dirty markieren wenn sich der Wert tatsächlich geändert hat
+
+**Undo auf Originalzustand löste trotzdem Autosave aus** ([cf5027b](https://github.com/inventory69/simple-notes-sync/commit/cf5027b))
+- Rückgängig-Machen aller Änderungen zum letzten Speicherzustand setzt `isDirty` jetzt korrekt zurück und bricht das ausstehende Autosave ab
+- Neues `savedSnapshot`-Property erfasst den Zustand beim Laden und nach jedem Speichern
+- `applySnapshot()` vergleicht gegen `savedSnapshot` um den Dirty-State zu bestimmen
+
+**Fremde JSON-Dateien unnötig heruntergeladen** ([c409243](https://github.com/inventory69/simple-notes-sync/commit/c409243))
+- Nicht-Notiz-JSON-Dateien (z.B. `google-services.json`) werden jetzt vor dem Download via UUID-Format-Check gefiltert
+- Zuvor: Datei wurde heruntergeladen, geparst und nach ID-Mismatch verworfen — verschwendete Bandbreite und kurzes Aufblitzen im Sync-Banner
+
+**Notiz-Anzahl-Strings nicht korrekt pluralisiert** ([8ca8df3](https://github.com/inventory69/simple-notes-sync/commit/8ca8df3))
+- Notiz-Anzahl-Strings in korrekte Android-Pluralformen konvertiert (EN + DE)
+
+### 🎨 UI-Verbesserungen
+
+**Sanfte Sync-Banner-Animationen** ([c409243](https://github.com/inventory69/simple-notes-sync/commit/c409243))
+- Banner-Einblendung: fadeIn (300 ms, EaseOutCubic) — kein abruptes „Reinschieben von oben" mehr
+- Banner-Ausblendung: fadeOut + shrinkVertically (300/400 ms, EaseInCubic)
+- Phasen-Übergänge nutzen AnimatedContent-Crossfade (250 ms) für Textwechsel
+- Mindest-Anzeigedauer pro aktiver Phase (400 ms) verhindert unlesbare Blitze
+- Auto-Hide-Job vom Flow-Collector entkoppelt — garantierte Mindest-Anzeigedauer für Abgeschlossen/Fehler/Info-States
+
+---
+
 ## [1.9.0] - 2026-02-25
 
 ### 🔄 Sync-Qualität, Performance & UI
