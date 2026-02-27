@@ -18,6 +18,8 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -188,9 +191,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Sync State
     // ═══════════════════════════════════════════════════════════════════════
     
-    // 🆕 v1.8.0: Einziges Banner-System - SyncProgress
+    // 🆕 v1.8.0 / 🔧 v1.10.0: Banner-System — min. Anzeigedauer pro Phase
     val syncProgress: StateFlow<SyncProgress> = SyncStateManager.syncProgress
-    
+        .withMinPhaseDuration(Constants.BANNER_PHASE_MIN_MS)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SyncProgress.IDLE)
+
+    /**
+     * 🔧 v1.10.0: Ensures each active sync phase (PREPARING/UPLOADING/DOWNLOADING/
+     * IMPORTING_MARKDOWN) is displayed for at least [minMs] milliseconds.
+     * Phase transitions IDLE→active and active→IDLE are not delayed, so the
+     * banner still appears and disappears quickly.
+     */
+    @Suppress("NestedBlockDepth")  // inherently nested: flow → collect → if
+    private fun Flow<SyncProgress>.withMinPhaseDuration(minMs: Long): Flow<SyncProgress> = flow {
+        var lastEmitTime = 0L
+        var lastPhase = dev.dettmer.simplenotes.sync.SyncPhase.IDLE
+        collect { value ->
+            if (
+                value.phase != dev.dettmer.simplenotes.sync.SyncPhase.IDLE &&
+                lastPhase != dev.dettmer.simplenotes.sync.SyncPhase.IDLE &&
+                value.phase != lastPhase
+            ) {
+                val elapsed = System.currentTimeMillis() - lastEmitTime
+                val remaining = minMs - elapsed
+                if (remaining > 0) delay(remaining)
+            }
+            emit(value)
+            lastEmitTime = System.currentTimeMillis()
+            lastPhase = value.phase
+        }
+    }
+
     // Intern: SyncState für PullToRefresh-Indikator
     private val _syncState = MutableStateFlow(SyncStateManager.SyncState.IDLE)
     val syncState: StateFlow<SyncStateManager.SyncState> = _syncState.asStateFlow()

@@ -73,6 +73,9 @@ class WebDavSyncService(
 
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
+
+        // 🔧 v1.10.0: UUID-Format-Check — filtert fremde JSONs (z.B. google-services.json) vor dem Download heraus
+        private val UUID_REGEX = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     }
     
     private val storage: NotesStorage
@@ -1516,6 +1519,12 @@ class WebDavSyncService(
                 for (resource in jsonFiles) {
                     val noteId = resource.name.removeSuffix(".json")
                     val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
+
+                    // 🔧 v1.10.0: UUID-Format-Check — fremde JSONs (z.B. google-services.json) überspringen
+                    if (!UUID_REGEX.matches(noteId)) {
+                        Logger.d(TAG, "   ⏭️ Skipping non-note JSON: ${resource.name}")
+                        continue
+                    }
 
                     // ⚡ v1.3.1: HYBRID PERFORMANCE - Timestamp + E-Tag (like Markdown!)
                     val serverETag = resource.etag

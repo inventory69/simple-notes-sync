@@ -96,6 +96,13 @@ object Constants {
     const val UNDO_SNAPSHOT_DEBOUNCE_MS = 500L  // Group keystrokes into single undo step
     const val SNAPSHOT_RESTORE_GUARD_DELAY_MS = 50L  // Delay before clearing isRestoringSnapshot
 
+    // 🆕 v1.10.0: Sync Banner auto-hide delays
+    const val BANNER_DELAY_COMPLETED_MS = 2_000L
+    const val BANNER_DELAY_INFO_MS = 2_500L
+    const val BANNER_DELAY_ERROR_MS = 4_000L
+    // Minimum display duration for active sync phases (PREPARING/UPLOADING/…) — prevents too-brief flashes
+    const val BANNER_PHASE_MIN_MS = 400L
+
     // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
     // 🔧 v1.9.0: Unified setting for both downloads and uploads
     const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration
