@@ -122,8 +122,8 @@ fun NoteEditorScreen(
     var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
     val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
     val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState()  // 🆕 v1.9.0
-    val canUndo by viewModel.canUndo.collectAsState()  // 🆕 v1.9.1
-    val canRedo by viewModel.canRedo.collectAsState()  // 🆕 v1.9.1
+    val canUndo by viewModel.canUndo.collectAsState()  // 🆕 v1.10.0
+    val canRedo by viewModel.canRedo.collectAsState()  // 🆕 v1.10.0
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
@@ -194,7 +194,7 @@ fun NoteEditorScreen(
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
                 is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
-                is NoteEditorEvent.RestoreContent -> {  // 🆕 v1.9.1: Undo/Redo
+                is NoteEditorEvent.RestoreContent -> {  // 🆕 v1.10.0: Undo/Redo
                     textFieldState.edit {
                         replace(0, length, event.content)
                         placeCursorAtEnd()
@@ -222,7 +222,7 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
-                    // 🆕 v1.9.1: Undo/Redo buttons
+                    // 🆕 v1.10.0: Undo/Redo buttons
                     IconButton(
                         onClick = { viewModel.undo() },
                         enabled = canUndo

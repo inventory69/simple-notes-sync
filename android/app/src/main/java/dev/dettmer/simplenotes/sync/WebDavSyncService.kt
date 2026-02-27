@@ -55,7 +55,7 @@ class WebDavSyncService(
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        // 🔧 v1.9.1: Fallback-Wert wenn SharedPreferences nicht verfügbar (z.B. in companion)
+        // 🔧 v1.10.0: Fallback-Wert wenn SharedPreferences nicht verfügbar (z.B. in companion)
         private const val FALLBACK_TIMEOUT_MS = 8000L
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
@@ -65,7 +65,7 @@ class WebDavSyncService(
         // 🔧 v1.9.0 (Plan 04): Detekt MagicNumber compliance
         private const val ALL_DELETED_GUARD_THRESHOLD = 10
 
-        // 🆕 v1.9.1: HTTP Status codes for SardineException mapping
+        // 🆕 v1.10.0: HTTP Status codes for SardineException mapping
         private const val HTTP_UNAUTHORIZED = 401
         private const val HTTP_FORBIDDEN = 403
         private const val HTTP_NOT_FOUND = 404
@@ -83,7 +83,7 @@ class WebDavSyncService(
     private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
 
     /**
-     * 🆕 v1.9.1: Liest den konfigurierten Timeout aus SharedPreferences.
+     * 🆕 v1.10.0: Liest den konfigurierten Timeout aus SharedPreferences.
      * Konvertiert Sekunden → Millisekunden. Clamped auf [MIN..MAX].
      */
     private fun getTimeoutMs(): Long {
@@ -170,7 +170,7 @@ class WebDavSyncService(
         Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
         
         // 🛡️ v1.8.2: readTimeout ergänzt (SNS-182-19c) — verhindert endloses Warten bei hängenden Servern
-        // 🔧 v1.9.1: Konfigurierbarer Timeout aus SharedPreferences
+        // 🔧 v1.10.0: Konfigurierbarer Timeout aus SharedPreferences
         val timeoutMs = getTimeoutMs()
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -491,7 +491,7 @@ class WebDavSyncService(
             // Socket-Check mit konfiguriertem Timeout
             // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
             // 🛡️ v1.8.2: Socket.use{} garantiert close() auch bei connect-Fehler (SNS-182-15)
-            // 🔧 v1.9.1: Nutzt den konfigurierbaren Timeout statt Hardcoded
+            // 🔧 v1.10.0: Nutzt den konfigurierbaren Timeout statt Hardcoded
             val socketTimeoutMs = getTimeoutMs().toInt()
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(host, port), socketTimeoutMs)
@@ -1303,7 +1303,7 @@ class WebDavSyncService(
     ): Int = withContext(ioDispatcher) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
         
-        // 🔧 v1.9.1: readTimeout + writeTimeout ergänzt, konfigurierbarer Timeout
+        // 🔧 v1.10.0: readTimeout + writeTimeout ergänzt, konfigurierbarer Timeout
         val timeoutMs = getTimeoutMs()
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -1887,7 +1887,7 @@ class WebDavSyncService(
     }
 
     /**
-     * 🆕 v1.9.1: Zentrale Exception-zu-Fehlermeldung-Konvertierung.
+     * 🆕 v1.10.0: Zentrale Exception-zu-Fehlermeldung-Konvertierung.
      * Wird von syncNotes(), testConnection() und allen Sync-Pfaden genutzt
      * um KONSISTENTE Fehlermeldungen zu garantieren.
      *
@@ -2099,7 +2099,7 @@ class WebDavSyncService(
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
             // 🛡️ v1.8.2: Timeout setzen wie bei createSardineClient() (SNS-182-19c)
-            // 🔧 v1.9.1: Konfigurierbarer Timeout aus SharedPreferences
+            // 🔧 v1.10.0: Konfigurierbarer Timeout aus SharedPreferences
             val timeoutMs = getTimeoutMs()
             val okHttpClient = OkHttpClient.Builder()
                 .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
