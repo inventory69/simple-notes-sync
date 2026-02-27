@@ -19,6 +19,7 @@ import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.NoteShareHelper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -48,6 +49,7 @@ class NoteEditorViewModel(
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
+        private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50  // 🆕 v1.10.0-Papa
     }
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -800,6 +802,75 @@ class NoteEditorViewModel(
         }
     }
     
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.10.0-Papa: Calendar Export & Share
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * 🆕 v1.10.0-Papa: Opens the current note as a calendar event via ACTION_INSERT intent.
+     * Does nothing if the note is completely empty.
+     */
+    fun openInCalendar() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val calTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
+            _events.emit(NoteEditorEvent.OpenCalendar(title = calTitle, description = content))
+        }
+    }
+
+    /**
+     * 🆕 v1.10.0-Papa: Shares the current note as plain text via ACTION_SEND intent.
+     */
+    fun shareAsText() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val shareTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
+            _events.emit(NoteEditorEvent.ShareAsText(title = shareTitle, text = content))
+        }
+    }
+
+    /**
+     * 🆕 v1.10.0-Papa: Triggers PDF generation and share.
+     * Emits [NoteEditorEvent.ShareAsPdf]; the Activity handles generation via PdfExporter.
+     */
+    fun shareAsPdf() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val pdfTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
+            _events.emit(NoteEditorEvent.ShareAsPdf(title = pdfTitle))
+        }
+    }
+
     /**
      * Delete the current note
      * @param deleteOnServer if true, also triggers server deletion; if false, only deletes locally
@@ -1008,4 +1079,8 @@ sealed interface NoteEditorEvent {
     data object NavigateBack : NoteEditorEvent
     data object ShowDeleteConfirmation : NoteEditorEvent
     data class RestoreContent(val content: String) : NoteEditorEvent  // 🆕 v1.10.0: Undo/Redo
+    // 🆕 v1.10.0-Papa: Calendar & Share events
+    data class OpenCalendar(val title: String, val description: String) : NoteEditorEvent
+    data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
+    data class ShareAsPdf(val title: String) : NoteEditorEvent
 }
