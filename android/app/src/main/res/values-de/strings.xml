@@ -365,6 +365,7 @@
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export abgeschlossen</string>
     <string name="markdown_export_progress">Exportiere %1$d/%2$d Notizen…</string>
+    <string name="markdown_checking_server">Verbindung wird geprüft…</string>
     <string name="markdown_info">📝 Exportiert Notizen zusätzlich als .md-Dateien. Mounte WebDAV als Netzlaufwerk um mit VS Code, Typora oder jedem Markdown-Editor zu bearbeiten. JSON-Sync bleibt primäres Format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Synchronisiert Notizen automatisch als .md-Dateien (Upload + Download bei jedem Sync)</string>
@@ -567,6 +568,8 @@
     <string name="toast_markdown_syncing">📝 Markdown-Sync läuft…</string>
     <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
     <string name="toast_export_failed">❌ Export fehlgeschlagen: %s</string>
+    <!-- v1.9.1: Markdown Export Timeout -->
+    <string name="toast_export_timeout">⏱️ Export-Zeitüberschreitung – Server zu langsam oder nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.</string>
     <string name="toast_backup_success">✅ %s</string>
     <string name="toast_backup_failed">❌ Backup fehlgeschlagen: %s</string>
     <string name="toast_restore_success">✅ %d Notizen wiederhergestellt</string>

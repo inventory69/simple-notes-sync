@@ -15,7 +15,9 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -47,6 +49,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L  // 2s for successful operations
         private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L    // 3s for errors (more important)
         private const val PROGRESS_CLEAR_DELAY_MS = 500L
+        // 🆕 v1.9.1: Overhead-Timeout für Markdown-Export (Ordner-Erstellung, Listing etc.)
+        private const val EXPORT_OVERHEAD_TIMEOUT_MS = 10_000L
     }
     
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -684,8 +688,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Markdown Settings Actions
     // ═══════════════════════════════════════════════════════════════════════
     
+    /**
+     * 🔧 v1.9.1: Timeout-Absicherung + konsistente Fehlermeldung.
+     * - withTimeout() verhindert endloses Hängen bei Server-Problemen
+     * - mapSyncExceptionToMessage() für user-freundliche Fehlertexte
+     * - Toggle wird bei Fehler/Timeout automatisch zurückgesetzt
+     */
     fun setMarkdownAutoSync(enabled: Boolean) {
         if (enabled) {
+            // 🆕 v1.9.1: Optimistic Update — Toggle springt sofort auf ON,
+            // Dialog öffnet sich direkt mit "Verbindung wird geprüft...".
+            // Bei Fehler werden beide wieder zurückgesetzt.
+            _markdownAutoSync.value = true
+            _markdownExportProgress.value = MarkdownExportProgress(0, 0, isChecking = true)
+
             // v1.5.0 Fix: Perform initial export when enabling (like old SettingsActivity)
             viewModelScope.launch {
                 try {
@@ -693,61 +709,106 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
                     val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
                     val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
-                    
+
                     if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
+                        _markdownAutoSync.value = false
+                        _markdownExportProgress.value = null
                         emitToast(getString(R.string.toast_configure_server_first))
-                        // Don't enable - revert state
                         return@launch
                     }
-                    
+
                     // Check if there are notes to export
                     val noteStorage = dev.dettmer.simplenotes.storage.NotesStorage(getApplication())
                     val noteCount = noteStorage.loadAllNotes().size
-                    
+
                     if (noteCount > 0) {
-                        // Show progress and perform initial export
-                        _markdownExportProgress.value = MarkdownExportProgress(0, noteCount)
-                        
                         val syncService = WebDavSyncService(getApplication())
-                        val exportedCount = withContext(ioDispatcher) {
-                            syncService.exportAllNotesToMarkdown(
-                                serverUrl = serverUrl,
-                                username = username,
-                                password = password,
-                                onProgress = { current, total ->
-                                    _markdownExportProgress.value = MarkdownExportProgress(current, total)
-                                }
-                            )
+
+                        // 🔧 v1.9.1 Fix: Schnell-Fail — Server-Erreichbarkeit VOR dem Export prüfen.
+                        // Verhindert N×timeout (z.B. 21×3s=63s) wenn der Server schlicht nicht
+                        // erreichbar ist. Ein einzelner Socket-Check reicht (1×timeout).
+                        val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
+                        if (!reachable) {
+                            _markdownAutoSync.value = false
+                            _markdownExportProgress.value = null
+                            emitToast(getString(R.string.snackbar_server_unreachable))
+                            return@launch
                         }
-                        
-                        // Export successful - save settings
-                        _markdownAutoSync.value = true
+
+                        // Server erreichbar — Dialog wechselt zur echten Export-Progress-Anzeige
+                        _markdownExportProgress.value = MarkdownExportProgress(0, noteCount)
+
+                        // 🆕 v1.9.1: Gesamt-Timeout für den Export-Vorgang.
+                        // Pro Note rechnen wir mit max. 2× dem konfigurierten Timeout
+                        // (1× connect + 1× upload), plus 10s Overhead für Ordner-Erstellung etc.
+                        val perNoteTimeoutMs = prefs.getInt(
+                            Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
+                            Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+                        ).coerceIn(
+                            Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
+                            Constants.MAX_CONNECTION_TIMEOUT_SECONDS
+                        ) * 2 * 1000L
+                        val totalTimeoutMs = (noteCount * perNoteTimeoutMs) + EXPORT_OVERHEAD_TIMEOUT_MS
+
+                        val exportedCount = withTimeout(totalTimeoutMs) {
+                            withContext(ioDispatcher) {
+                                syncService.exportAllNotesToMarkdown(
+                                    serverUrl = serverUrl,
+                                    username = username,
+                                    password = password,
+                                    onProgress = { current, total ->
+                                        _markdownExportProgress.value = MarkdownExportProgress(current, total)
+                                    }
+                                )
+                            }
+                        }
+
+                        // 🔧 v1.9.1 Fix: Safety-Net — wenn KEIN einziger Export erfolgreich war,
+                        // ist das ein Fehler (z.B. Server per Socket erreichbar aber HTTP schlägt fehl).
+                        // Toggle wird zurückgesetzt.
+                        if (exportedCount == 0) {
+                            _markdownAutoSync.value = false
+                            _markdownExportProgress.value = null
+                            emitToast(getString(R.string.toast_export_failed, getString(R.string.snackbar_server_unreachable)))
+                            return@launch
+                        }
+
+                        // Export successful — prefs persistieren (_markdownAutoSync ist bereits true)
                         prefs.edit()
                             .putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
                             .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
                             .apply()
-                        
+
                         _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
                         emitToast(getString(R.string.toast_markdown_exported, exportedCount))
-                        
+
                         // Clear progress after short delay
                         kotlinx.coroutines.delay(PROGRESS_CLEAR_DELAY_MS)
                         _markdownExportProgress.value = null
-                        
+
                     } else {
-                        // No notes - just enable the feature
-                        _markdownAutoSync.value = true
+                        // No notes — feature sofort aktivieren, kein Export nötig
+                        _markdownExportProgress.value = null
                         prefs.edit()
                             .putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
                             .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
                             .apply()
                         emitToast(getString(R.string.toast_markdown_enabled))
                     }
-                    
-                } catch (e: Exception) {
+
+                } catch (e: TimeoutCancellationException) {
+                    // 🆕 v1.9.1: Gesamt-Export-Timeout überschritten — Toggle zurücksetzen
+                    Logger.w(TAG, "Markdown export timed out: ${e.message}")
+                    _markdownAutoSync.value = false
                     _markdownExportProgress.value = null
-                    emitToast(getString(R.string.toast_export_failed, e.message.orEmpty()))
-                    // Don't enable on error
+                    emitToast(getString(R.string.toast_export_timeout))
+                } catch (e: Exception) {
+                    // 🔧 v1.9.1: Toggle zurücksetzen + konsistente Fehlermeldung
+                    _markdownAutoSync.value = false
+                    _markdownExportProgress.value = null
+                    val syncService = WebDavSyncService(getApplication())
+                    val userMessage = syncService.mapSyncExceptionToMessage(e)
+                    emitToast(getString(R.string.toast_export_failed, userMessage))
                 }
             }
         } else {
@@ -1020,7 +1081,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     data class MarkdownExportProgress(
         val current: Int,
         val total: Int,
-        val isComplete: Boolean = false
+        val isComplete: Boolean = false,
+        val isChecking: Boolean = false  // 🆕 v1.9.1: Server-Check-Phase (indeterminate)
     )
     
     // ═══════════════════════════════════════════════════════════════════════
