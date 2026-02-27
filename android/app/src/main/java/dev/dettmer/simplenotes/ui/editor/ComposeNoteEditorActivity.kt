@@ -18,10 +18,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.google.android.material.color.DynamicColors
+import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.PdfExporter
 import kotlinx.coroutines.launch
 
 /**
@@ -161,11 +163,47 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     }
 
     /**
-     * 🔜 v1.10.0-Papa: PDF share stub — replaced in Commit 5 (PdfExporter + FileProvider).
+     * 🆕 v1.10.0-Papa: Generates a PDF from the current note and opens the share dialog.
+     *
+     * Uses android.graphics.pdf.PdfDocument (no external libraries).
+     * PDF is saved to cacheDir/shared_pdfs/ and shared via FileProvider.
      */
-    @Suppress("UnusedParameter")
     private fun handleShareAsPdf(event: NoteEditorEvent.ShareAsPdf) {
-        Toast.makeText(this, getString(R.string.share_pdf_error), Toast.LENGTH_SHORT).show()
+        val state = viewModel.uiState.value
+        val checklistItems = viewModel.checklistItems.value
+
+        val pdfFile = PdfExporter.generatePdf(
+            context = this,
+            title = event.title,
+            noteType = state.noteType,
+            textContent = state.content,
+            checklistItems = checklistItems
+        )
+
+        if (pdfFile == null || !pdfFile.exists()) {
+            Toast.makeText(this, getString(R.string.share_pdf_error), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(
+            this,
+            "${applicationInfo.packageName}.fileprovider",
+            pdfFile
+        )
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_SUBJECT, event.title)
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        try {
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_chooser_title)))
+        } catch (e: ActivityNotFoundException) {
+            Logger.w(TAG, "No PDF share target found: ${e.message}")
+            Toast.makeText(this, getString(R.string.share_error), Toast.LENGTH_SHORT).show()
+        }
     }
 }
 

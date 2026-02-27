@@ -2,4 +2,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- App-internal files directory -->
     <files-path name="logs" path="." />
+    <!-- 🆕 v1.10.0-Papa: Cache directory for shared PDF files -->
+    <cache-path name="shared_pdfs" path="shared_pdfs/" />
 </paths>
