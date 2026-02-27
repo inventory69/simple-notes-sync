@@ -1,0 +1,12 @@
+✏️ v1.10.0 — Undo/Redo & Editor-Polish
+
+• Neu: Rückgängig/Wiederherstellen im Editor
+• Neu: WebDAV-Verbindungs-Timeout einstellbar
+• Neu: Auto-Speichern beim Zurücknavigieren
+• Fix: Markdown-Auto-Sync Timeout-Schutz
+• Fix: Kein falsches Autosave bei Checklisten-Tipp
+• Fix: Undo auf Originalzustand bricht Autosave ab
+• Sanftere Sync-Banner-Animationen
+• Fremde JSON-Dateien vor Download gefiltert
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

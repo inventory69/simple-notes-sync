@@ -1,0 +1,12 @@
+✏️ v1.10.0 — Undo/Redo & Editor Polish
+
+• New: Undo/Redo in the note editor
+• New: Configurable WebDAV connection timeout
+• New: Auto-save on back navigation
+• Fix: Markdown auto-sync timeout protection
+• Fix: No false autosave on checklist tap
+• Fix: Undo to saved state cancels autosave
+• Smoother sync banner animations
+• Foreign JSON files skipped before download
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
