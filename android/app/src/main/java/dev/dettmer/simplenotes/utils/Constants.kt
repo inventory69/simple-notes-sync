@@ -86,7 +86,7 @@ object Constants {
 
     // 🆕 v1.9.0: Autosave with debounce
     const val KEY_AUTOSAVE_ENABLED = "autosave_enabled"
-    const val DEFAULT_AUTOSAVE_ENABLED = false
+    const val DEFAULT_AUTOSAVE_ENABLED = true
     const val AUTOSAVE_DEBOUNCE_MS = 3_000L  // 3 seconds after last edit
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L  // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400  // fade animation duration (ms)

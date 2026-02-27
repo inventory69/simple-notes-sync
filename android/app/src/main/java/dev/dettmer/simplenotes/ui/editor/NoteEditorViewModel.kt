@@ -38,6 +38,7 @@ import java.util.UUID
  * 
  * Manages note editing state including title, content, and checklist items.
  */
+@Suppress("LargeClass")  // 🔧 v1.10.0: Detekt compliance — many features, deliberate design
 class NoteEditorViewModel(
     application: Application,
     private val savedStateHandle: SavedStateHandle
@@ -518,6 +519,100 @@ class NoteEditorViewModel(
             }
 
             _events.emit(NoteEditorEvent.NavigateBack)
+        }
+    }
+
+    /**
+     * 🆕 v1.10.0: Silent save for back-navigation.
+     *
+     * Speichert ungesicherte Änderungen lokal, OHNE:
+     * - Sync zu triggern (User verlässt den Editor, kein expliziter „Speichern“-Intent)
+     * - Navigation-Event zu emittieren (Activity handled finish() selbst)
+     * - Toast/Indicator anzuzeigen
+     *
+     * @return true wenn gespeichert wurde (oder nichts zu speichern war), false bei Fehler
+     */
+    fun saveOnBack(): Boolean {
+        if (!autosaveEnabled) {
+            Logger.d(TAG, "⏭️ saveOnBack: autosave disabled — skipping")
+            return true
+        }
+        if (!isDirty) {
+            Logger.d(TAG, "⏭️ saveOnBack: nothing dirty — skipping")
+            return true
+        }
+
+        autosaveJob?.cancel()  // Pending autosave superseded
+
+        return try {
+            val state = _uiState.value
+            val title = state.title.trim()
+
+            when (currentNoteType) {
+                NoteType.TEXT -> {
+                    val content = state.content.trim()
+                    if (title.isEmpty() && content.isEmpty()) return true
+
+                    val note = existingNote?.copy(
+                        title = title,
+                        content = content,
+                        noteType = NoteType.TEXT,
+                        checklistItems = null,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    ) ?: Note(
+                        title = title,
+                        content = content,
+                        noteType = NoteType.TEXT,
+                        checklistItems = null,
+                        deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
+                        syncStatus = SyncStatus.LOCAL_ONLY
+                    )
+                    storage.saveNote(note)
+                    existingNote = note
+                }
+                NoteType.CHECKLIST -> {
+                    hasUnsavedChecklistEdits = false
+                    val validItems = _checklistItems.value
+                        .filter { it.text.isNotBlank() }
+                        .mapIndexed { index, item ->
+                            ChecklistItem(
+                                id = item.id,
+                                text = item.text,
+                                isChecked = item.isChecked,
+                                order = index,
+                                originalOrder = item.originalOrder
+                            )
+                        }
+                    if (title.isEmpty() && validItems.isEmpty()) return true
+
+                    val note = existingNote?.copy(
+                        title = title,
+                        content = "",
+                        noteType = NoteType.CHECKLIST,
+                        checklistItems = validItems,
+                        checklistSortOption = _lastChecklistSortOption.value.name,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    ) ?: Note(
+                        title = title,
+                        content = "",
+                        noteType = NoteType.CHECKLIST,
+                        checklistItems = validItems,
+                        checklistSortOption = _lastChecklistSortOption.value.name,
+                        deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
+                        syncStatus = SyncStatus.LOCAL_ONLY
+                    )
+                    storage.saveNote(note)
+                    existingNote = note
+                }
+            }
+            isDirty = false
+            Logger.d(TAG, "💾 saveOnBack: saved successfully")
+            true
+        } catch (e: Exception) {
+            Logger.e(TAG, "saveOnBack failed: ${e.message}")
+            false
         }
     }
 
