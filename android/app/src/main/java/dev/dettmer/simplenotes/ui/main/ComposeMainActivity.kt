@@ -65,9 +65,6 @@ class ComposeMainActivity : ComponentActivity() {
         private const val TAG = "ComposeMainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
         private const val REQUEST_SETTINGS = 1002
-        private const val BANNER_DELAY_COMPLETED_MS = 2000L
-        private const val BANNER_DELAY_INFO_MS = 2500L
-        private const val BANNER_DELAY_ERROR_MS = 4000L
     }
     
     private val viewModel: MainViewModel by viewModels()
@@ -76,6 +73,9 @@ class ComposeMainActivity : ComponentActivity() {
         getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
     
+    // 🆕 v1.10.0: Separate Job for banner auto-hide — survives collect re-emissions
+    private var bannerAutoHideJob: kotlinx.coroutines.Job? = null
+
     // Phase 3: Track if coming from editor to scroll to top
     private var cameFromEditor = false
     
@@ -272,25 +272,36 @@ class ComposeMainActivity : ComponentActivity() {
         SyncStateManager.syncStatus.observe(this) { status ->
             viewModel.updateSyncState(status)
         }
-        
-        // 🆕 v1.8.0: Auto-Hide via SyncProgress (einziges Banner-System)
+
+        // 🆕 v1.10.0: Auto-Hide via separatem Job — garantierte Mindest-Anzeigedauer
+        // Reads from viewModel.syncProgress (has min-phase-duration applied) so auto-hide
+        // timer is aligned with what the user actually sees in the banner.
         lifecycleScope.launch {
-            SyncStateManager.syncProgress.collect { progress ->
+            viewModel.syncProgress.collect { progress ->
                 when (progress.phase) {
-                    dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> {
-                        kotlinx.coroutines.delay(BANNER_DELAY_COMPLETED_MS)
-                        SyncStateManager.reset()
-                    }
-                    // 🆕 v1.8.1 (IMPL_12): INFO-Meldungen nach 2.5s ausblenden
-                    dev.dettmer.simplenotes.sync.SyncPhase.INFO -> {
-                        kotlinx.coroutines.delay(BANNER_DELAY_INFO_MS)
-                        SyncStateManager.reset()
-                    }
+                    dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED,
+                    dev.dettmer.simplenotes.sync.SyncPhase.INFO,
                     dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> {
-                        kotlinx.coroutines.delay(BANNER_DELAY_ERROR_MS)
-                        SyncStateManager.reset()
+                        bannerAutoHideJob?.cancel()
+                        val delayMs = when (progress.phase) {
+                            dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> Constants.BANNER_DELAY_COMPLETED_MS
+                            dev.dettmer.simplenotes.sync.SyncPhase.INFO -> Constants.BANNER_DELAY_INFO_MS
+                            dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> Constants.BANNER_DELAY_ERROR_MS
+                            else -> 0L
+                        }
+                        bannerAutoHideJob = lifecycleScope.launch {
+                            kotlinx.coroutines.delay(delayMs)
+                            SyncStateManager.reset()
+                        }
                     }
-                    else -> { /* No action needed */ }
+                    // Cancel pending auto-hide if a new sync starts
+                    dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
+                    dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
+                    dev.dettmer.simplenotes.sync.SyncPhase.DOWNLOADING,
+                    dev.dettmer.simplenotes.sync.SyncPhase.IMPORTING_MARKDOWN -> {
+                        bannerAutoHideJob?.cancel()
+                    }
+                    dev.dettmer.simplenotes.sync.SyncPhase.IDLE -> { /* nothing */ }
                 }
             }
         }
