@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
  * 
  * Manages notes list, sync state, and deletion with undo.
  */
+@Suppress("TooManyFunctions")  // 🔧 v1.9.1: Detekt compliance — class has many features
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO

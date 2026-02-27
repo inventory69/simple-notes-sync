@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.utils.Constants
 
 /**
  * Server configuration settings screen
@@ -77,6 +79,7 @@ fun ServerSettingsScreen(
     val serverStatus by viewModel.serverStatus.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val syncFolderName by viewModel.syncFolderName.collectAsState()  // 🆕 v1.9.0
+    val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState()  // 🆕 v1.9.1
     
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) }  // 🆕 v1.9.0
@@ -291,31 +294,73 @@ fun ServerSettingsScreen(
                     )
                 }
                 AnimatedVisibility(visible = showAdvanced) {
-                    OutlinedTextField(
-                        value = syncFolderName,
-                        onValueChange = { viewModel.updateSyncFolderName(it) },
-                        label = { Text(stringResource(R.string.sync_folder_name)) },
-                        supportingText = { Text(stringResource(R.string.sync_folder_name_hint)) },
-                        prefix = {
+                    Column {
+                        OutlinedTextField(
+                            value = syncFolderName,
+                            onValueChange = { viewModel.updateSyncFolderName(it) },
+                            label = { Text(stringResource(R.string.sync_folder_name)) },
+                            supportingText = { Text(stringResource(R.string.sync_folder_name_hint)) },
+                            prefix = {
+                                Text(
+                                    "/",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            suffix = {
+                                Text(
+                                    "/",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            leadingIcon = { Icon(Icons.Default.Folder, null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = fieldsEnabled,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // 🆕 v1.9.1: Connection Timeout Slider
+                        Text(
+                            text = stringResource(R.string.server_timeout_label, connectionTimeoutSeconds),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.server_timeout_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Slider(
+                            value = connectionTimeoutSeconds.toFloat(),
+                            onValueChange = { viewModel.setConnectionTimeoutSeconds(it.toInt()) },
+                            valueRange = Constants.MIN_CONNECTION_TIMEOUT_SECONDS.toFloat()
+                                ..Constants.MAX_CONNECTION_TIMEOUT_SECONDS.toFloat(),
+                            steps = Constants.MAX_CONNECTION_TIMEOUT_SECONDS -
+                                Constants.MIN_CONNECTION_TIMEOUT_SECONDS - 1,
+                            enabled = fieldsEnabled,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Text(
-                                "/",
-                                style = MaterialTheme.typography.bodyLarge,
+                                text = "${Constants.MIN_CONNECTION_TIMEOUT_SECONDS}s",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        suffix = {
                             Text(
-                                "/",
-                                style = MaterialTheme.typography.bodyLarge,
+                                text = "${Constants.MAX_CONNECTION_TIMEOUT_SECONDS}s",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        leadingIcon = { Icon(Icons.Default.Folder, null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        enabled = fieldsEnabled,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-                    )
+                        }
+                    }
                 }
             }
             
