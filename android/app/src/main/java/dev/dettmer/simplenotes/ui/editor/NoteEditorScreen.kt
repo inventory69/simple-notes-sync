@@ -32,13 +32,20 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
 
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -124,6 +131,7 @@ fun NoteEditorScreen(
     val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState()  // 🆕 v1.9.0
     val canUndo by viewModel.canUndo.collectAsState()  // 🆕 v1.10.0
     val canRedo by viewModel.canRedo.collectAsState()  // 🆕 v1.10.0
+    var showOverflowMenu by remember { mutableStateOf(false) }  // 🆕 v1.10.0-Papa
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
@@ -200,6 +208,10 @@ fun NoteEditorScreen(
                         placeCursorAtEnd()
                     }
                 }
+                // 🆕 v1.10.0-Papa: handled by Activity
+                is NoteEditorEvent.OpenCalendar -> Unit
+                is NoteEditorEvent.ShareAsText -> Unit
+                is NoteEditorEvent.ShareAsPdf -> Unit
             }
         }
     }
@@ -256,22 +268,79 @@ fun NoteEditorScreen(
                         }
                     }
 
-                    // Delete button (only for existing notes)
-                    if (viewModel.canDelete()) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete)
-                            )
-                        }
-                    }
-                    
+                    // Delete button (only for existing notes) — moved to overflow menu
+
                     // Save button
                     IconButton(onClick = { viewModel.saveNote() }) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = stringResource(R.string.save)
                         )
+                    }
+
+                    // 🆕 v1.10.0-Papa: Overflow menu (Calendar, Share, PDF, Delete)
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.share_overflow_menu)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_to_calendar)) },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.CalendarMonth, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                viewModel.openInCalendar()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_as_text)) },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Share, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                viewModel.shareAsText()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_as_pdf)) },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.PictureAsPdf, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                viewModel.shareAsPdf()
+                            }
+                        )
+                        if (viewModel.canDelete()) {
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.delete),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
