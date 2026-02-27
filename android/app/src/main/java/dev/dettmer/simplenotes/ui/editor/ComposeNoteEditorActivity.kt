@@ -52,8 +52,10 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         // v1.5.0: Handle back button with slide animation
+        // 🔧 v1.10.0: Save unsaved changes before navigating back
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
                 finish()
                 @Suppress("DEPRECATION")
                 overridePendingTransition(
@@ -68,6 +70,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                 NoteEditorScreen(
                     viewModel = viewModel,
                     onNavigateBack = {
+                        viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
                         finish()
                         @Suppress("DEPRECATION")
                         overridePendingTransition(
