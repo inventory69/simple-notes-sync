@@ -475,6 +475,9 @@
     <string name="autosave_description">Speichert automatisch nach 3 Sekunden Inaktivität</string>
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
     <string name="autosave_indicator">✓ Gespeichert</string>
+    <!-- 🆕 v1.9.1: Undo/Redo -->
+    <string name="editor_undo">Rükgängig</string>
+    <string name="editor_redo">Wiederherstellen</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">Alle</string>
     <string name="filter_text_only">Text</string>

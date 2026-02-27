@@ -27,6 +27,8 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -101,6 +103,7 @@ private val DRAGGING_ELEVATION_DP = 8.dp
  * - Auto-keyboard focus for new items
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod")
 @Composable
 fun NoteEditorScreen(
     viewModel: NoteEditorViewModel,
@@ -119,6 +122,8 @@ fun NoteEditorScreen(
     var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
     val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
     val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState()  // 🆕 v1.9.0
+    val canUndo by viewModel.canUndo.collectAsState()  // 🆕 v1.9.1
+    val canRedo by viewModel.canRedo.collectAsState()  // 🆕 v1.9.1
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
@@ -189,6 +194,12 @@ fun NoteEditorScreen(
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
                 is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
+                is NoteEditorEvent.RestoreContent -> {  // 🆕 v1.9.1: Undo/Redo
+                    textFieldState.edit {
+                        replace(0, length, event.content)
+                        placeCursorAtEnd()
+                    }
+                }
             }
         }
     }
@@ -211,6 +222,26 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
+                    // 🆕 v1.9.1: Undo/Redo buttons
+                    IconButton(
+                        onClick = { viewModel.undo() },
+                        enabled = canUndo
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = stringResource(R.string.editor_undo)
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.redo() },
+                        enabled = canRedo
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Redo,
+                            contentDescription = stringResource(R.string.editor_redo)
+                        )
+                    }
+
                     // 🆕 v1.9.0 (F07): Markdown Preview Toggle (only for TEXT notes)
                     if (uiState.noteType == NoteType.TEXT) {
                         IconButton(onClick = { isPreviewMode = !isPreviewMode }) {

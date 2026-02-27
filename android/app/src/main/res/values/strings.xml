@@ -475,6 +475,9 @@
     <string name="autosave_description">Automatically saves after 3 seconds of inactivity</string>
     <string name="autosave_info">When enabled, your note is saved automatically while you type. Sync only runs on manual save.</string>
     <string name="autosave_indicator">✓ Saved</string>
+    <!-- 🆕 v1.9.1: Undo/Redo -->
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">All</string>
     <string name="filter_text_only">Text</string>
