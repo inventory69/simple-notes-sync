@@ -697,4 +697,16 @@
     <string name="widget_preview_title">Shopping List</string>
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
 
+    <!-- ============================= -->
+    <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
+    <!-- ============================= -->
+    <string name="share_overflow_menu">More options</string>
+    <string name="share_to_calendar">Add to calendar</string>
+    <string name="share_as_text">Share as text</string>
+    <string name="share_as_pdf">Share as PDF</string>
+    <string name="share_chooser_title">Share note</string>
+    <string name="share_no_calendar_app">No calendar app found</string>
+    <string name="share_error">Could not open share dialog</string>
+    <string name="share_pdf_error">Could not create PDF</string>
+
 </resources>

@@ -696,4 +696,16 @@
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
     <string name="widget_preview_title">Einkaufsliste</string>
     <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
+
+    <!-- ============================= -->
+    <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
+    <!-- ============================= -->
+    <string name="share_overflow_menu">Weitere Optionen</string>
+    <string name="share_to_calendar">Zum Kalender hinzufügen</string>
+    <string name="share_as_text">Als Text teilen</string>
+    <string name="share_as_pdf">Als PDF teilen</string>
+    <string name="share_chooser_title">Notiz teilen</string>
+    <string name="share_no_calendar_app">Keine Kalender-App gefunden</string>
+    <string name="share_error">Teilen-Dialog konnte nicht geöffnet werden</string>
+    <string name="share_pdf_error">PDF konnte nicht erstellt werden</string>
 </resources>
