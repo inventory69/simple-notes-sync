@@ -252,6 +252,11 @@ class NoteEditorViewModel(
     }
     
     fun updateChecklistItemText(itemId: String, newText: String) {
+        // 🔧 v1.10.0: No-Op Guard — verhindert false positive isDirty bei Cursor-Repositionierung.
+        // BasicTextField feuert onValueChange auch bei reiner Selection-Änderung (gleicher Text).
+        val currentText = _checklistItems.value.find { it.id == itemId }?.text
+        if (newText == currentText) return
+
         pushUndoSnapshotDebounced()  // 🆕 v1.10.0
         isDirty = true
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
@@ -305,6 +310,10 @@ class NoteEditorViewModel(
      * during the layout pass.
      */
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
+        // 🔧 v1.10.0: Defensive No-Op Guard — skip wenn State identisch
+        val currentItem = _checklistItems.value.find { it.id == itemId }
+        if (currentItem?.isChecked == isChecked) return
+
         pushUndoSnapshot()  // 🆕 v1.10.0
         isDirty = true  // 🆕 v1.9.0: checking/unchecking is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
