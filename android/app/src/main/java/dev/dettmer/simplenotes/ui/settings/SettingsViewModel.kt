@@ -49,7 +49,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L  // 2s for successful operations
         private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L    // 3s for errors (more important)
         private const val PROGRESS_CLEAR_DELAY_MS = 500L
-        // 🆕 v1.9.1: Overhead-Timeout für Markdown-Export (Ordner-Erstellung, Listing etc.)
+        // 🆕 v1.10.0: Overhead-Timeout für Markdown-Export (Ordner-Erstellung, Listing etc.)
         private const val EXPORT_OVERHEAD_TIMEOUT_MS = 10_000L
     }
     
@@ -235,7 +235,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val autosaveEnabled: StateFlow<Boolean> = _autosaveEnabled.asStateFlow()
 
-    // 🆕 v1.9.1: Configurable connection timeout
+    // 🆕 v1.10.0: Configurable connection timeout
     private val _connectionTimeoutSeconds = MutableStateFlow(
         prefs.getInt(
             Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
@@ -351,7 +351,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 🆕 v1.9.1: Set connection timeout in seconds.
+     * 🆕 v1.10.0: Set connection timeout in seconds.
      * Clamped to [MIN_CONNECTION_TIMEOUT_SECONDS..MAX_CONNECTION_TIMEOUT_SECONDS].
      * WebDavSyncService reads this at each sync start via SharedPreferences.
      */
@@ -689,14 +689,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
     
     /**
-     * 🔧 v1.9.1: Timeout-Absicherung + konsistente Fehlermeldung.
+     * 🔧 v1.10.0: Timeout-Absicherung + konsistente Fehlermeldung.
      * - withTimeout() verhindert endloses Hängen bei Server-Problemen
      * - mapSyncExceptionToMessage() für user-freundliche Fehlertexte
      * - Toggle wird bei Fehler/Timeout automatisch zurückgesetzt
      */
     fun setMarkdownAutoSync(enabled: Boolean) {
         if (enabled) {
-            // 🆕 v1.9.1: Optimistic Update — Toggle springt sofort auf ON,
+            // 🆕 v1.10.0: Optimistic Update — Toggle springt sofort auf ON,
             // Dialog öffnet sich direkt mit "Verbindung wird geprüft...".
             // Bei Fehler werden beide wieder zurückgesetzt.
             _markdownAutoSync.value = true
@@ -724,7 +724,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     if (noteCount > 0) {
                         val syncService = WebDavSyncService(getApplication())
 
-                        // 🔧 v1.9.1 Fix: Schnell-Fail — Server-Erreichbarkeit VOR dem Export prüfen.
+                        // 🔧 v1.10.0 Fix: Schnell-Fail — Server-Erreichbarkeit VOR dem Export prüfen.
                         // Verhindert N×timeout (z.B. 21×3s=63s) wenn der Server schlicht nicht
                         // erreichbar ist. Ein einzelner Socket-Check reicht (1×timeout).
                         val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
@@ -738,7 +738,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         // Server erreichbar — Dialog wechselt zur echten Export-Progress-Anzeige
                         _markdownExportProgress.value = MarkdownExportProgress(0, noteCount)
 
-                        // 🆕 v1.9.1: Gesamt-Timeout für den Export-Vorgang.
+                        // 🆕 v1.10.0: Gesamt-Timeout für den Export-Vorgang.
                         // Pro Note rechnen wir mit max. 2× dem konfigurierten Timeout
                         // (1× connect + 1× upload), plus 10s Overhead für Ordner-Erstellung etc.
                         val perNoteTimeoutMs = prefs.getInt(
@@ -763,7 +763,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             }
                         }
 
-                        // 🔧 v1.9.1 Fix: Safety-Net — wenn KEIN einziger Export erfolgreich war,
+                        // 🔧 v1.10.0 Fix: Safety-Net — wenn KEIN einziger Export erfolgreich war,
                         // ist das ein Fehler (z.B. Server per Socket erreichbar aber HTTP schlägt fehl).
                         // Toggle wird zurückgesetzt.
                         if (exportedCount == 0) {
@@ -797,13 +797,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     }
 
                 } catch (e: TimeoutCancellationException) {
-                    // 🆕 v1.9.1: Gesamt-Export-Timeout überschritten — Toggle zurücksetzen
+                    // 🆕 v1.10.0: Gesamt-Export-Timeout überschritten — Toggle zurücksetzen
                     Logger.w(TAG, "Markdown export timed out: ${e.message}")
                     _markdownAutoSync.value = false
                     _markdownExportProgress.value = null
                     emitToast(getString(R.string.toast_export_timeout))
                 } catch (e: Exception) {
-                    // 🔧 v1.9.1: Toggle zurücksetzen + konsistente Fehlermeldung
+                    // 🔧 v1.10.0: Toggle zurücksetzen + konsistente Fehlermeldung
                     _markdownAutoSync.value = false
                     _markdownExportProgress.value = null
                     val syncService = WebDavSyncService(getApplication())
@@ -1082,7 +1082,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val current: Int,
         val total: Int,
         val isComplete: Boolean = false,
-        val isChecking: Boolean = false  // 🆕 v1.9.1: Server-Check-Phase (indeterminate)
+        val isChecking: Boolean = false  // 🆕 v1.10.0: Server-Check-Phase (indeterminate)
     )
     
     // ═══════════════════════════════════════════════════════════════════════

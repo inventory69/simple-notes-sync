@@ -66,7 +66,7 @@ fun MarkdownSettingsScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-                    // 🆕 v1.9.1: Indeterminate während Server-Check, determinate beim Export
+                    // 🆕 v1.10.0: Indeterminate während Server-Check, determinate beim Export
                     if (progress.isChecking) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     } else {

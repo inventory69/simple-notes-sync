@@ -279,7 +279,7 @@
     <string name="server_advanced_settings">Erweitert</string>
     <string name="sync_folder_name">Sync-Ordner</string>
     <string name="sync_folder_name_hint">Ordnername auf dem WebDAV-Server (Standard: notes). Nur ändern, wenn du weißt, was du tust.</string>
-    <!-- v1.9.1: Connection Timeout Settings -->
+    <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Verbindungs-Timeout: %d Sekunden</string>
     <string name="server_timeout_description">Wartezeit bevor ein Verbindungsversuch als fehlgeschlagen gilt. Niedrigere Werte geben schnellere Rückmeldung wenn der Server nicht erreichbar ist.</string>
     <string name="server_url">Server URL</string>
@@ -475,7 +475,7 @@
     <string name="autosave_description">Speichert automatisch nach 3 Sekunden Inaktivität</string>
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
     <string name="autosave_indicator">✓ Gespeichert</string>
-    <!-- 🆕 v1.9.1: Undo/Redo -->
+    <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Rükgängig</string>
     <string name="editor_redo">Wiederherstellen</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
@@ -571,7 +571,7 @@
     <string name="toast_markdown_syncing">📝 Markdown-Sync läuft…</string>
     <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
     <string name="toast_export_failed">❌ Export fehlgeschlagen: %s</string>
-    <!-- v1.9.1: Markdown Export Timeout -->
+    <!-- v1.10.0: Markdown Export Timeout -->
     <string name="toast_export_timeout">⏱️ Export-Zeitüberschreitung – Server zu langsam oder nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.</string>
     <string name="toast_backup_success">✅ %s</string>
     <string name="toast_backup_failed">❌ Backup fehlgeschlagen: %s</string>

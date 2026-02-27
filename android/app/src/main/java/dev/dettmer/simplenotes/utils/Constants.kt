@@ -78,7 +78,7 @@ object Constants {
     const val DEFAULT_SYNC_FOLDER_NAME = "notes"  // Backward compatible default
     const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
 
-    // 🆕 v1.9.1: Configurable connection timeout
+    // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
     const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8  // 8s default, good for mobile
     const val MIN_CONNECTION_TIMEOUT_SECONDS = 3
@@ -91,7 +91,7 @@ object Constants {
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L  // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400  // fade animation duration (ms)
 
-    // 🆕 v1.9.1: Undo/Redo
+    // 🆕 v1.10.0: Undo/Redo
     const val UNDO_STACK_MAX_SIZE = 50
     const val UNDO_SNAPSHOT_DEBOUNCE_MS = 500L  // Group keystrokes into single undo step
     const val SNAPSHOT_RESTORE_GUARD_DELAY_MS = 50L  // Delay before clearing isRestoringSnapshot

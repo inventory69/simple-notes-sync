@@ -79,7 +79,7 @@ fun ServerSettingsScreen(
     val serverStatus by viewModel.serverStatus.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val syncFolderName by viewModel.syncFolderName.collectAsState()  // 🆕 v1.9.0
-    val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState()  // 🆕 v1.9.1
+    val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState()  // 🆕 v1.10.0
     
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) }  // 🆕 v1.9.0
@@ -323,7 +323,7 @@ fun ServerSettingsScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 🆕 v1.9.1: Connection Timeout Slider
+                        // 🆕 v1.10.0: Connection Timeout Slider
                         Text(
                             text = stringResource(R.string.server_timeout_label, connectionTimeoutSeconds),
                             style = MaterialTheme.typography.labelLarge,

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * 🆕 v1.9.1: Undo/Redo manager for the note editor.
+ * 🆕 v1.10.0: Undo/Redo manager for the note editor.
  *
  * Maintains two stacks (undo and redo) of [EditorSnapshot]s.
  * - [pushUndo]: Captures state before an edit; clears the redo stack.

@@ -279,7 +279,7 @@
     <string name="server_advanced_settings">Advanced</string>
     <string name="sync_folder_name">Sync folder</string>
     <string name="sync_folder_name_hint">Folder name on the WebDAV server (default: notes). Only change this if you know what you\'re doing.</string>
-    <!-- v1.9.1: Connection Timeout Settings -->
+    <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Connection Timeout: %d seconds</string>
     <string name="server_timeout_description">Time to wait before a connection attempt is considered failed. Lower values give faster feedback when the server is unreachable.</string>
     <string name="server_url">Server URL</string>
@@ -475,7 +475,7 @@
     <string name="autosave_description">Automatically saves after 3 seconds of inactivity</string>
     <string name="autosave_info">When enabled, your note is saved automatically while you type. Sync only runs on manual save.</string>
     <string name="autosave_indicator">✓ Saved</string>
-    <!-- 🆕 v1.9.1: Undo/Redo -->
+    <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Undo</string>
     <string name="editor_redo">Redo</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
@@ -571,7 +571,7 @@
     <string name="toast_markdown_syncing">📝 Markdown sync running…</string>
     <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
     <string name="toast_export_failed">❌ Export failed: %s</string>
-    <!-- v1.9.1: Markdown Export Timeout -->
+    <!-- v1.10.0: Markdown Export Timeout -->
     <string name="toast_export_timeout">⏱️ Export timed out – server too slow or unreachable. Please check your connection and try again.</string>
     <string name="toast_backup_success">✅ %s</string>
     <string name="toast_backup_failed">❌ Backup failed: %s</string>
