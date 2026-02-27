@@ -127,7 +127,11 @@ class NoteEditorViewModel(
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedo
     private var snapshotDebounceJob: kotlinx.coroutines.Job? = null
     private var isRestoringSnapshot = false
-    
+    // 🔧 v1.10.0: Snapshot des zuletzt gespeicherten Zustands.
+    // Wird beim Öffnen und nach jedem erfolgreichen Save gesetzt.
+    // Ermöglicht isDirty-Reset wenn Undo den Originalzustand wiederherstellt.
+    private var savedSnapshot: EditorSnapshot? = null
+
     init {
         loadNote()
     }
@@ -166,6 +170,7 @@ class NoteEditorViewModel(
             }
         }
         undoRedoManager.clear()  // 🆕 v1.10.0: No cross-note undo
+        savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
     }
 
     private fun loadChecklistData(note: Note) {
@@ -215,6 +220,7 @@ class NoteEditorViewModel(
             _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
         }
         undoRedoManager.clear()  // 🆕 v1.10.0: No cross-note undo
+        savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
     }
 
     /**
@@ -608,6 +614,7 @@ class NoteEditorViewModel(
                 }
             }
             isDirty = false
+            savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
             Logger.d(TAG, "💾 saveOnBack: saved successfully")
             true
         } catch (e: Exception) {
@@ -699,6 +706,7 @@ class NoteEditorViewModel(
             }
         }
         isDirty = false  // 🆕 v1.9.0: note is clean after any successful save
+        savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
         return true
     }
 
@@ -746,6 +754,22 @@ class NoteEditorViewModel(
         isRestoringSnapshot = true
         _uiState.update { it.copy(title = snapshot.title, content = snapshot.content) }
         _checklistItems.value = snapshot.checklistItems
+
+        // 🔧 v1.10.0: isDirty-Reset wenn Undo/Redo den gespeicherten Zustand wiederherstellt
+        val isBackToSaved = savedSnapshot?.let { saved ->
+            snapshot.title == saved.title &&
+                snapshot.content == saved.content &&
+                snapshot.checklistItems == saved.checklistItems
+        } ?: false
+
+        if (isBackToSaved) {
+            isDirty = false
+            autosaveJob?.cancel()  // Kein Autosave nötig — Zustand = gespeicherter Zustand
+        } else {
+            isDirty = true
+            scheduleAutosave()  // Undo/Redo auf Zwischen-Stand → Autosave nötig
+        }
+
         viewModelScope.launch {
             if (currentNoteType == NoteType.TEXT) {
                 _events.emit(NoteEditorEvent.RestoreContent(snapshot.content))
