@@ -119,6 +119,13 @@ class NoteEditorViewModel(
     // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
     private val _autosaveIndicatorVisible = MutableStateFlow(false)
     val autosaveIndicatorVisible: StateFlow<Boolean> = _autosaveIndicatorVisible.asStateFlow()
+
+    // 🆕 v1.9.1: Undo/Redo
+    private val undoRedoManager = UndoRedoManager()
+    val canUndo: StateFlow<Boolean> = undoRedoManager.canUndo
+    val canRedo: StateFlow<Boolean> = undoRedoManager.canRedo
+    private var snapshotDebounceJob: kotlinx.coroutines.Job? = null
+    private var isRestoringSnapshot = false
     
     init {
         loadNote()
@@ -157,6 +164,7 @@ class NoteEditorViewModel(
                 loadChecklistData(note)
             }
         }
+        undoRedoManager.clear()  // 🆕 v1.9.1: No cross-note undo
     }
 
     private fun loadChecklistData(note: Note) {
@@ -205,6 +213,7 @@ class NoteEditorViewModel(
         if (currentNoteType == NoteType.CHECKLIST) {
             _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
         }
+        undoRedoManager.clear()  // 🆕 v1.9.1: No cross-note undo
     }
 
     /**
@@ -226,6 +235,8 @@ class NoteEditorViewModel(
     
     fun updateTitle(title: String) {
         if (title == _uiState.value.title) return  // 🆕 v1.9.0: no-op guard — hydration, not a user edit
+        if (isRestoringSnapshot) return  // 🆕 v1.9.1: Suppress during undo/redo restore
+        pushUndoSnapshotDebounced()  // 🆕 v1.9.1: Capture state before this edit
         isDirty = true
         _uiState.update { it.copy(title = title) }
         scheduleAutosave()  // 🆕 v1.9.0
@@ -233,12 +244,15 @@ class NoteEditorViewModel(
     
     fun updateContent(content: String) {
         if (content == _uiState.value.content) return  // 🆕 v1.9.0: no-op guard — hydration, not a user edit
+        if (isRestoringSnapshot) return  // 🆕 v1.9.1: Suppress during undo/redo restore
+        pushUndoSnapshotDebounced()  // 🆕 v1.9.1: Capture state before this edit
         isDirty = true
         _uiState.update { it.copy(content = content) }
         scheduleAutosave()  // 🆕 v1.9.0
     }
     
     fun updateChecklistItemText(itemId: String, newText: String) {
+        pushUndoSnapshotDebounced()  // 🆕 v1.9.1
         isDirty = true
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
@@ -291,6 +305,7 @@ class NoteEditorViewModel(
      * during the layout pass.
      */
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
+        pushUndoSnapshot()  // 🆕 v1.9.1
         isDirty = true  // 🆕 v1.9.0: checking/unchecking is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
@@ -323,6 +338,7 @@ class NoteEditorViewModel(
      * checked ist, wird stattdessen vor dem ersten checked Item eingefügt.
      */
     fun addChecklistItemAfter(afterItemId: String): String {
+        pushUndoSnapshot()  // 🆕 v1.9.1
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
@@ -366,6 +382,7 @@ class NoteEditorViewModel(
      * unter dem Separator erscheint.
      */
     fun addChecklistItemAtEnd(): String {
+        pushUndoSnapshot()  // 🆕 v1.9.1
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
@@ -400,6 +417,7 @@ class NoteEditorViewModel(
     }
     
     fun deleteChecklistItem(itemId: String) {
+        pushUndoSnapshot()  // 🆕 v1.9.1
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val filtered = items.filter { it.id != itemId }
@@ -414,6 +432,7 @@ class NoteEditorViewModel(
     }
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
+        pushUndoSnapshot()  // 🆕 v1.9.1
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val fromItem = items.getOrNull(fromIndex) ?: return@update items
@@ -441,6 +460,7 @@ class NoteEditorViewModel(
      * Einmalige Aktion (nicht persistiert) — User kann danach per Drag & Drop feinjustieren.
      */
     fun sortChecklistItems(option: ChecklistSortOption) {
+        pushUndoSnapshot()  // 🆕 v1.9.1
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         // Merke die Auswahl für diesen Editor-Session
         _lastChecklistSortOption.value = option
@@ -576,6 +596,59 @@ class NoteEditorViewModel(
         }
         isDirty = false  // 🆕 v1.9.0: note is clean after any successful save
         return true
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.9.1: Undo/Redo
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private fun currentSnapshot(): EditorSnapshot = EditorSnapshot(
+        title = _uiState.value.title,
+        content = _uiState.value.content,
+        checklistItems = _checklistItems.value.toList()
+    )
+
+    private fun pushUndoSnapshot() {
+        undoRedoManager.pushUndo(currentSnapshot())
+    }
+
+    /**
+     * Debounced snapshot: captures state ONCE per burst of rapid edits (e.g. typing).
+     * First call in a burst immediately records a snapshot; subsequent calls within
+     * [Constants.UNDO_SNAPSHOT_DEBOUNCE_MS] are ignored. The window resets after the delay.
+     */
+    private fun pushUndoSnapshotDebounced() {
+        if (snapshotDebounceJob == null || !snapshotDebounceJob!!.isActive) {
+            pushUndoSnapshot()  // Capture state BEFORE this burst of edits
+        }
+        snapshotDebounceJob?.cancel()
+        snapshotDebounceJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(Constants.UNDO_SNAPSHOT_DEBOUNCE_MS)
+            snapshotDebounceJob = null
+        }
+    }
+
+    fun undo() {
+        val snapshot = undoRedoManager.undo(currentSnapshot()) ?: return
+        applySnapshot(snapshot)
+    }
+
+    fun redo() {
+        val snapshot = undoRedoManager.redo(currentSnapshot()) ?: return
+        applySnapshot(snapshot)
+    }
+
+    private fun applySnapshot(snapshot: EditorSnapshot) {
+        isRestoringSnapshot = true
+        _uiState.update { it.copy(title = snapshot.title, content = snapshot.content) }
+        _checklistItems.value = snapshot.checklistItems
+        viewModelScope.launch {
+            if (currentNoteType == NoteType.TEXT) {
+                _events.emit(NoteEditorEvent.RestoreContent(snapshot.content))
+            }
+            kotlinx.coroutines.delay(Constants.SNAPSHOT_RESTORE_GUARD_DELAY_MS)
+            isRestoringSnapshot = false
+        }
     }
 
     /**
@@ -806,4 +879,5 @@ sealed interface NoteEditorEvent {
     data class ShowToast(val message: ToastMessage) : NoteEditorEvent
     data object NavigateBack : NoteEditorEvent
     data object ShowDeleteConfirmation : NoteEditorEvent
+    data class RestoreContent(val content: String) : NoteEditorEvent  // 🆕 v1.9.1: Undo/Redo
 }

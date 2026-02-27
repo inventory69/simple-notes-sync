@@ -91,6 +91,11 @@ object Constants {
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L  // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400  // fade animation duration (ms)
 
+    // 🆕 v1.9.1: Undo/Redo
+    const val UNDO_STACK_MAX_SIZE = 50
+    const val UNDO_SNAPSHOT_DEBOUNCE_MS = 500L  // Group keystrokes into single undo step
+    const val SNAPSHOT_RESTORE_GUARD_DELAY_MS = 50L  // Delay before clearing isRestoringSnapshot
+
     // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
     // 🔧 v1.9.0: Unified setting for both downloads and uploads
     const val KEY_MAX_PARALLEL_CONNECTIONS = "max_parallel_downloads"  // Keep old key for migration
