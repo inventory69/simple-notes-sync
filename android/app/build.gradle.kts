@@ -21,7 +21,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 24  // 🆕 v1.10.0: Undo/Redo, Timeout, Save-on-Back, Banner Polish
-        versionName = "1.10.0"  // 🆕 v1.10.0: Editor Quality & Sync Polish
+        versionName = "1.10.0"  // 🆕 v1.10.0: Calendar Export, Share, PDF
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
