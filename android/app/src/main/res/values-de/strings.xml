@@ -279,6 +279,9 @@
     <string name="server_advanced_settings">Erweitert</string>
     <string name="sync_folder_name">Sync-Ordner</string>
     <string name="sync_folder_name_hint">Ordnername auf dem WebDAV-Server (Standard: notes). Nur ändern, wenn du weißt, was du tust.</string>
+    <!-- v1.9.1: Connection Timeout Settings -->
+    <string name="server_timeout_label">Verbindungs-Timeout: %d Sekunden</string>
+    <string name="server_timeout_description">Wartezeit bevor ein Verbindungsversuch als fehlgeschlagen gilt. Niedrigere Werte geben schnellere Rückmeldung wenn der Server nicht erreichbar ist.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Benutzername</string>
     <string name="password">Passwort</string>

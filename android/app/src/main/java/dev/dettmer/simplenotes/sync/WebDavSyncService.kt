@@ -55,7 +55,8 @@ class WebDavSyncService(
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        private const val SOCKET_TIMEOUT_MS = 10000  // 🔧 v1.7.2: 10s für stabile Verbindungen (1s war zu kurz)
+        // 🔧 v1.9.1: Fallback-Wert wenn SharedPreferences nicht verfügbar (z.B. in companion)
+        private const val FALLBACK_TIMEOUT_MS = 8000L
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
@@ -63,6 +64,12 @@ class WebDavSyncService(
 
         // 🔧 v1.9.0 (Plan 04): Detekt MagicNumber compliance
         private const val ALL_DELETED_GUARD_THRESHOLD = 10
+
+        // 🆕 v1.9.1: HTTP Status codes for SardineException mapping
+        private const val HTTP_UNAUTHORIZED = 401
+        private const val HTTP_FORBIDDEN = 403
+        private const val HTTP_NOT_FOUND = 404
+        private const val HTTP_INTERNAL_SERVER_ERROR = 500
 
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
@@ -74,7 +81,26 @@ class WebDavSyncService(
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
     private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
-    
+
+    /**
+     * 🆕 v1.9.1: Liest den konfigurierten Timeout aus SharedPreferences.
+     * Konvertiert Sekunden → Millisekunden. Clamped auf [MIN..MAX].
+     */
+    private fun getTimeoutMs(): Long {
+        return try {
+            val seconds = prefs.getInt(
+                Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
+                Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+            ).coerceIn(
+                Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
+                Constants.MAX_CONNECTION_TIMEOUT_SECONDS
+            )
+            seconds * 1000L
+        } catch (_: Exception) {
+            FALLBACK_TIMEOUT_MS
+        }
+    }
+
     // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
     private var sessionSardine: SafeSardineWrapper? = null
     
@@ -144,9 +170,12 @@ class WebDavSyncService(
         Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
         
         // 🛡️ v1.8.2: readTimeout ergänzt (SNS-182-19c) — verhindert endloses Warten bei hängenden Servern
+        // 🔧 v1.9.1: Konfigurierbarer Timeout aus SharedPreferences
+        val timeoutMs = getTimeoutMs()
         val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
-            .readTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
             .build()
         
         return SafeSardineWrapper.create(okHttpClient, username, password)
@@ -459,11 +488,13 @@ class WebDavSyncService(
             
             Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
             
-            // Socket-Check mit Timeout
+            // Socket-Check mit konfiguriertem Timeout
             // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
             // 🛡️ v1.8.2: Socket.use{} garantiert close() auch bei connect-Fehler (SNS-182-15)
+            // 🔧 v1.9.1: Nutzt den konfigurierbaren Timeout statt Hardcoded
+            val socketTimeoutMs = getTimeoutMs().toInt()
             Socket().use { socket ->
-                socket.connect(InetSocketAddress(host, port), SOCKET_TIMEOUT_MS)
+                socket.connect(InetSocketAddress(host, port), socketTimeoutMs)
             }
             
             Logger.d(TAG, "✅ Server is reachable")
@@ -575,21 +606,7 @@ class WebDavSyncService(
         } catch (e: Exception) {
             SyncResult(
                 isSuccess = false,
-                errorMessage = when (e) {
-                    is java.net.UnknownHostException -> context.getString(R.string.snackbar_server_unreachable)
-                    is java.net.SocketTimeoutException -> context.getString(R.string.snackbar_connection_timeout)
-                    is javax.net.ssl.SSLException -> context.getString(R.string.sync_error_ssl)
-                    is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
-                        when (e.statusCode) {
-                            401 -> context.getString(R.string.sync_error_auth_failed)
-                            403 -> context.getString(R.string.sync_error_access_denied)
-                            404 -> context.getString(R.string.sync_error_path_not_found)
-                            500 -> context.getString(R.string.sync_error_server)
-                            else -> context.getString(R.string.sync_error_http, e.statusCode)
-                        }
-                    }
-                    else -> e.message ?: context.getString(R.string.sync_error_unknown)
-                }
+                errorMessage = mapSyncExceptionToMessage(e)
             )
         }
     }
@@ -817,21 +834,7 @@ class WebDavSyncService(
             
             SyncResult(
                 isSuccess = false,
-                errorMessage = when (e) {
-                    is java.net.UnknownHostException -> "${context.getString(R.string.snackbar_server_unreachable)}: ${e.message}"
-                    is java.net.SocketTimeoutException -> "${context.getString(R.string.snackbar_connection_timeout)}: ${e.message}"
-                    is javax.net.ssl.SSLException -> context.getString(R.string.sync_error_ssl)
-                    is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
-                        when (e.statusCode) {
-                            401 -> context.getString(R.string.sync_error_auth_failed)
-                            403 -> context.getString(R.string.sync_error_access_denied)
-                            404 -> context.getString(R.string.sync_error_path_not_found)
-                            500 -> context.getString(R.string.sync_error_server)
-                            else -> context.getString(R.string.sync_error_http, e.statusCode)
-                        }
-                    }
-                    else -> e.message ?: context.getString(R.string.sync_error_unknown)
-                }
+                errorMessage = mapSyncExceptionToMessage(e)
             )
         }
         } finally {
@@ -1300,8 +1303,12 @@ class WebDavSyncService(
     ): Int = withContext(ioDispatcher) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
         
+        // 🔧 v1.9.1: readTimeout + writeTimeout ergänzt, konfigurierbarer Timeout
+        val timeoutMs = getTimeoutMs()
         val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
             .build()
         
         val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
@@ -1878,7 +1885,50 @@ class WebDavSyncService(
     fun getLastSuccessfulSyncTimestamp(): Long {
         return prefs.getLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, 0)
     }
-    
+
+    /**
+     * 🆕 v1.9.1: Zentrale Exception-zu-Fehlermeldung-Konvertierung.
+     * Wird von syncNotes(), testConnection() und allen Sync-Pfaden genutzt
+     * um KONSISTENTE Fehlermeldungen zu garantieren.
+     *
+     * @param e Die aufgetretene Exception
+     * @return User-freundliche Fehlermeldung
+     */
+    internal fun mapSyncExceptionToMessage(e: Exception): String {
+        return when (e) {
+            is java.net.ConnectException ->
+                context.getString(R.string.snackbar_server_unreachable)
+            is java.net.UnknownHostException ->
+                context.getString(R.string.snackbar_server_unreachable)
+            is java.net.SocketTimeoutException ->
+                context.getString(R.string.snackbar_connection_timeout)
+            is java.net.NoRouteToHostException ->
+                context.getString(R.string.snackbar_server_unreachable)
+            is java.io.IOException -> {
+                // IOException kann vieles sein — prüfe ob es ein Timeout-artiger Fehler ist
+                val msg = e.message?.lowercase() ?: ""
+                when {
+                    msg.contains("timeout") -> context.getString(R.string.snackbar_connection_timeout)
+                    msg.contains("refused") -> context.getString(R.string.snackbar_server_unreachable)
+                    msg.contains("unreachable") -> context.getString(R.string.snackbar_server_unreachable)
+                    else -> "${context.getString(R.string.sync_error_unknown)}: ${e.message}"
+                }
+            }
+            is javax.net.ssl.SSLException ->
+                context.getString(R.string.sync_error_ssl)
+            is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
+                when (e.statusCode) {
+                    HTTP_UNAUTHORIZED -> context.getString(R.string.sync_error_auth_failed)
+                    HTTP_FORBIDDEN -> context.getString(R.string.sync_error_access_denied)
+                    HTTP_NOT_FOUND -> context.getString(R.string.sync_error_path_not_found)
+                    HTTP_INTERNAL_SERVER_ERROR -> context.getString(R.string.sync_error_server)
+                    else -> context.getString(R.string.sync_error_http, e.statusCode)
+                }
+            }
+            else -> e.message ?: context.getString(R.string.sync_error_unknown)
+        }
+    }
+
     /**
      * Restore all notes from server with different modes (v1.3.0)
      * @param mode RestoreMode (REPLACE, MERGE, or OVERWRITE_DUPLICATES)
@@ -2049,9 +2099,12 @@ class WebDavSyncService(
             Logger.d(TAG, "📝 Starting Markdown sync...")
             
             // 🛡️ v1.8.2: Timeout setzen wie bei createSardineClient() (SNS-182-19c)
+            // 🔧 v1.9.1: Konfigurierbarer Timeout aus SharedPreferences
+            val timeoutMs = getTimeoutMs()
             val okHttpClient = OkHttpClient.Builder()
-                .connectTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
-                .readTimeout(SOCKET_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+                .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .build()
             val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
             

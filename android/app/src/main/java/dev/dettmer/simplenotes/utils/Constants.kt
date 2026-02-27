@@ -78,6 +78,12 @@ object Constants {
     const val DEFAULT_SYNC_FOLDER_NAME = "notes"  // Backward compatible default
     const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
 
+    // 🆕 v1.9.1: Configurable connection timeout
+    const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
+    const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8  // 8s default, good for mobile
+    const val MIN_CONNECTION_TIMEOUT_SECONDS = 3
+    const val MAX_CONNECTION_TIMEOUT_SECONDS = 30
+
     // 🆕 v1.9.0: Autosave with debounce
     const val KEY_AUTOSAVE_ENABLED = "autosave_enabled"
     const val DEFAULT_AUTOSAVE_ENABLED = false

@@ -230,6 +230,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_AUTOSAVE_ENABLED, Constants.DEFAULT_AUTOSAVE_ENABLED)
     )
     val autosaveEnabled: StateFlow<Boolean> = _autosaveEnabled.asStateFlow()
+
+    // 🆕 v1.9.1: Configurable connection timeout
+    private val _connectionTimeoutSeconds = MutableStateFlow(
+        prefs.getInt(
+            Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
+            Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+        ).coerceIn(
+            Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
+            Constants.MAX_CONNECTION_TIMEOUT_SECONDS
+        )
+    )
+    val connectionTimeoutSeconds: StateFlow<Int> = _connectionTimeoutSeconds.asStateFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
@@ -332,6 +344,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAutosaveEnabled(enabled: Boolean) {
         _autosaveEnabled.value = enabled
         prefs.edit().putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled).apply()
+    }
+
+    /**
+     * 🆕 v1.9.1: Set connection timeout in seconds.
+     * Clamped to [MIN_CONNECTION_TIMEOUT_SECONDS..MAX_CONNECTION_TIMEOUT_SECONDS].
+     * WebDavSyncService reads this at each sync start via SharedPreferences.
+     */
+    fun setConnectionTimeoutSeconds(seconds: Int) {
+        val validSeconds = seconds.coerceIn(
+            Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
+            Constants.MAX_CONNECTION_TIMEOUT_SECONDS
+        )
+        _connectionTimeoutSeconds.value = validSeconds
+        prefs.edit().putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, validSeconds).apply()
+        Logger.d(TAG, "Connection timeout set to: ${validSeconds}s")
     }
     
     /**
