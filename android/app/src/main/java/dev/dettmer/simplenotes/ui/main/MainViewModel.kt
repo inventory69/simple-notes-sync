@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -591,9 +592,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val webdavService = WebDavSyncService(getApplication())
             var successCount = 0
             var failCount = 0
-            
+            val total = noteIds.size
+
+            // 🆕 v1.10.0-P2: Show progress banner for server deletion (only for 2+)
+            if (total > 1) {
+                SyncStateManager.updateProgress(
+                    phase = SyncPhase.DELETING,
+                    current = 0,
+                    total = total,
+                    currentFileName = null
+                )
+            }
+
             noteIds.forEach { noteId ->
                 try {
+                    // 🆕 v1.10.0-P2: Increment progress counter before each deletion
+                    if (total > 1) {
+                        SyncStateManager.incrementProgress(currentFileName = null)
+                    }
+
                     val success = withContext(ioDispatcher) {
                         webdavService.deleteNoteFromServer(noteId)
                     }

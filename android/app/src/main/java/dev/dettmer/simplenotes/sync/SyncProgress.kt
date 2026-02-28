@@ -65,6 +65,7 @@ data class SyncProgress(
             SyncPhase.PREPARING,
             SyncPhase.UPLOADING,
             SyncPhase.DOWNLOADING,
+            SyncPhase.DELETING,
             SyncPhase.IMPORTING_MARKDOWN
         )
     
@@ -88,7 +89,10 @@ enum class SyncPhase {
     
     /** Lädt Server-Änderungen herunter */
     DOWNLOADING,
-    
+
+    /** 🆕 v1.10.0-P2: Löscht Notizen vom Server (Batch-Deletion mit Fortschrittsanzeige) */
+    DELETING,
+
     /** Importiert Markdown-Dateien vom Server */
     IMPORTING_MARKDOWN,
     

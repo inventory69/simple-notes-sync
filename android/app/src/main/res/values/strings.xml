@@ -89,6 +89,7 @@
     <string name="sync_phase_checking">Checking server…</string>
     <string name="sync_phase_uploading">Uploading…</string>
     <string name="sync_phase_downloading">Downloading…</string>
+    <string name="sync_phase_deleting">Deleting from server…</string>
     
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
     <string name="sort_notes">Sort notes</string>

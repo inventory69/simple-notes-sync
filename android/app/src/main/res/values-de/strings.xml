@@ -89,6 +89,7 @@
     <string name="sync_phase_checking">Prüfe Server…</string>
     <string name="sync_phase_uploading">Hochladen…</string>
     <string name="sync_phase_downloading">Herunterladen…</string>
+    <string name="sync_phase_deleting">Vom Server löschen…</string>
     <string name="sync_phase_importing_markdown">Markdown importieren…</string>
     <string name="sync_phase_saving">Speichern…</string>
     <string name="sync_phase_completed">Sync abgeschlossen</string>
