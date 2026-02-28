@@ -95,6 +95,7 @@ object Constants {
     const val UNDO_STACK_MAX_SIZE = 50
     const val UNDO_SNAPSHOT_DEBOUNCE_MS = 500L  // Group keystrokes into single undo step
     const val SNAPSHOT_RESTORE_GUARD_DELAY_MS = 50L  // Delay before clearing isRestoringSnapshot
+    const val CHECKLIST_SCROLL_LAYOUT_DELAY_MS = 50L  // Wait for item layout before scroll check
 
     // 🆕 v1.10.0: Sync Banner auto-hide delays
     const val BANNER_DELAY_COMPLETED_MS = 2_000L
