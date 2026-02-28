@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -640,14 +641,31 @@ private fun ChecklistEditor(
     // 🆕 v1.8.2 (IMPL_10): Kontrollierter Scroll zum neuen Item (verhindert Sprung ans Ende)
     var scrollToNewItemIndex by remember { mutableStateOf<Int?>(null) }
 
-    // 🆕 v1.8.2 (IMPL_10): Scroll vor Fokus — Item muss sichtbar sein bevor fokussiert wird
+    // 🆕 v1.10.0-P2: Minimal scroll — only ensure new item is visible, don't force to top
     LaunchedEffect(scrollToNewItemIndex) {
         scrollToNewItemIndex?.let { index ->
-            // Scroll zum neuen Item (nicht zum nächsten — item soll oben/mittig sichtbar sein)
-            listState.animateScrollToItem(
-                index = index,
-                scrollOffset = 0
-            )
+            // Wait one frame for the new item to be laid out
+            delay(Constants.CHECKLIST_SCROLL_LAYOUT_DELAY_MS)
+            val layoutInfo = listState.layoutInfo
+            val viewportEnd = layoutInfo.viewportEndOffset
+            val viewportStart = layoutInfo.viewportStartOffset
+            val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
+            if (itemInfo != null) {
+                val itemBottom = itemInfo.offset + itemInfo.size
+                val itemTop = itemInfo.offset
+                when {
+                    itemBottom > viewportEnd ->
+                        // Partially below viewport — scroll just enough to show it
+                        listState.animateScrollBy((itemBottom - viewportEnd).toFloat())
+                    itemTop < viewportStart ->
+                        // Partially above viewport — scroll up just enough
+                        listState.animateScrollBy((itemTop - viewportStart).toFloat())
+                    // else: fully visible → no scroll needed
+                }
+            } else {
+                // Item not yet visible (far away) — fallback: scroll to it
+                listState.animateScrollToItem(index)
+            }
             scrollToNewItemIndex = null
         }
     }
