@@ -1,12 +1,12 @@
-✏️ v1.10.0 — Undo/Redo & Editor-Polish
+📝 v1.10.0 — Teilen, Export & Editor-Überarbeitung
 
-• Neu: Rückgängig/Wiederherstellen im Editor
-• Neu: WebDAV-Verbindungs-Timeout einstellbar
-• Neu: Auto-Speichern beim Zurücknavigieren
-• Fix: Markdown-Auto-Sync Timeout-Schutz
-• Fix: Kein falsches Autosave bei Checklisten-Tipp
-• Fix: Undo auf Originalzustand bricht Autosave ab
-• Sanftere Sync-Banner-Animationen
-• Fremde JSON-Dateien vor Download gefiltert
+• Neu: PDF-Export, als Text oder in Kalender teilen
+• Neu: Aufklappendes FAB-Menü mit Animationen
+• Neu: Aus Editor löschen: Bottom Sheet + Rückgängig
+• Neu: Undo/Redo + Autosave beim Zurücknavigieren
+• Neu: Serverlöschung mit Fortschrittsbalken
+• Neu: Adaptive Layouts für Tablets & Querformat
+• Fix: Echter Download-Fortschritt
+• Weitere Verbesserungen & Korrekturen
 
 https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
