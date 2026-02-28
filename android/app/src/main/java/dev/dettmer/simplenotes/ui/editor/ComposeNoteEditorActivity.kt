@@ -43,6 +43,10 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
         private const val TAG = "ComposeNoteEditorActivity"  // 🆕 v1.10.0-Papa
+        // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
+        const val RESULT_NOTE_DELETED = 10
+        const val RESULT_EXTRA_NOTE_ID = "result_note_id"
+        const val RESULT_EXTRA_DELETE_FROM_SERVER = "result_delete_from_server"
     }
     
     private val viewModel: NoteEditorViewModel by viewModels {
@@ -100,6 +104,21 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                     is NoteEditorEvent.OpenCalendar -> handleCalendarExport(event)
                     is NoteEditorEvent.ShareAsText -> handleShareAsText(event)
                     is NoteEditorEvent.ShareAsPdf -> handleShareAsPdf(event)
+                    // 🆕 v1.10.0-P2: Forward deletion to ComposeMainActivity so it can
+                    // show the undo snackbar via MainViewModel.deleteNoteFromEditor()
+                    is NoteEditorEvent.NoteDeleteRequested -> {
+                        val resultIntent = Intent().apply {
+                            putExtra(RESULT_EXTRA_NOTE_ID, event.noteId)
+                            putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
+                        }
+                        setResult(RESULT_NOTE_DELETED, resultIntent)
+                        finish()
+                        @Suppress("DEPRECATION")
+                        overridePendingTransition(
+                            dev.dettmer.simplenotes.R.anim.slide_in_left,
+                            dev.dettmer.simplenotes.R.anim.slide_out_right
+                        )
+                    }
                     else -> { /* handled by Composable */ }
                 }
             }
