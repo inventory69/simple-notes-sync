@@ -90,7 +90,9 @@
     <string name="sync_phase_uploading">Uploading…</string>
     <string name="sync_phase_downloading">Downloading…</string>
     <string name="sync_phase_deleting">Deleting from server…</string>
-    
+    <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
+    <string name="sync_quota_warning">⚠️ Sync was delayed by Android power management. Open the app regularly or disable battery optimization for reliable background sync.</string>
+
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
     <string name="sort_notes">Sort notes</string>
     <string name="sort_ascending">Ascending</string>
