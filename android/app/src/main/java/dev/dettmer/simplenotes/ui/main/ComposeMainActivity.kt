@@ -65,6 +65,7 @@ class ComposeMainActivity : ComponentActivity() {
         private const val TAG = "ComposeMainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
         private const val REQUEST_SETTINGS = 1002
+        private const val REQUEST_EDITOR_RETURN = 1003  // 🆕 v1.10.0-P2: detect note deletion from editor
     }
     
     private val viewModel: MainViewModel by viewModels()
@@ -320,7 +321,8 @@ class ComposeMainActivity : ComponentActivity() {
             dev.dettmer.simplenotes.R.anim.slide_in_right,
             dev.dettmer.simplenotes.R.anim.slide_out_left
         )
-        startActivity(intent, options.toBundle())
+        @Suppress("DEPRECATION")
+        startActivityForResult(intent, REQUEST_EDITOR_RETURN, options.toBundle())
     }
     
     private fun createNote(noteType: NoteType) {
@@ -334,7 +336,8 @@ class ComposeMainActivity : ComponentActivity() {
             dev.dettmer.simplenotes.R.anim.slide_in_right,
             dev.dettmer.simplenotes.R.anim.slide_out_left
         )
-        startActivity(intent, options.toBundle())
+        @Suppress("DEPRECATION")
+        startActivityForResult(intent, REQUEST_EDITOR_RETURN, options.toBundle())
     }
     
     private fun openSettings() {
@@ -404,6 +407,16 @@ class ComposeMainActivity : ComponentActivity() {
         if (requestCode == REQUEST_SETTINGS && resultCode == RESULT_OK) {
             // Settings changed, reload notes
             viewModel.loadNotes()
+        }
+        
+        // 🆕 v1.10.0-P2: Note deleted from editor — delegate to MainViewModel for undo snackbar
+        if (requestCode == REQUEST_EDITOR_RETURN &&
+            resultCode == ComposeNoteEditorActivity.RESULT_NOTE_DELETED) {
+            val noteId = data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID) ?: return
+            val deleteFromServer = data.getBooleanExtra(
+                ComposeNoteEditorActivity.RESULT_EXTRA_DELETE_FROM_SERVER, false
+            )
+            viewModel.deleteNoteFromEditor(noteId, deleteFromServer)
         }
     }
     

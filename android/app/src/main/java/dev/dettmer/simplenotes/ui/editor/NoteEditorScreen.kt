@@ -210,6 +210,8 @@ fun NoteEditorScreen(
                         placeCursorAtEnd()
                     }
                 }
+                // 🆕 v1.10.0-P2: handled by Activity (deletion forwarded to MainViewModel)
+                is NoteEditorEvent.NoteDeleteRequested -> Unit
                 // 🆕 v1.10.0-Papa: handled by Activity
                 is NoteEditorEvent.OpenCalendar -> Unit
                 is NoteEditorEvent.ShareAsText -> Unit

@@ -13,15 +13,12 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
-import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -30,7 +27,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
@@ -52,8 +48,6 @@ class NoteEditorViewModel(
         private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50  // 🆕 v1.10.0-Papa
     }
 
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-    
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     
@@ -887,46 +881,9 @@ class NoteEditorViewModel(
     fun deleteNote(deleteOnServer: Boolean = true) {
         viewModelScope.launch {
             existingNote?.let { note ->
-                val noteId = note.id
-                
-                // Delete locally first
-                storage.deleteNote(noteId)
-                
-                // Delete from server if requested
-                if (deleteOnServer) {
-                    try {
-                        val webdavService = WebDavSyncService(getApplication())
-                        val success = withContext(ioDispatcher) {
-                            webdavService.deleteNoteFromServer(noteId)
-                        }
-                        // 🆕 v1.8.1 (IMPL_12): Banner-Feedback statt stiller Log-Einträge
-                        if (success) {
-                            Logger.d(TAG, "Note $noteId deleted from server")
-                            SyncStateManager.showInfo(
-                                getApplication<Application>().getString(
-                                    dev.dettmer.simplenotes.R.string.snackbar_deleted_from_server
-                                )
-                            )
-                        } else {
-                            Logger.w(TAG, "Failed to delete note $noteId from server")
-                            SyncStateManager.showError(
-                                getApplication<Application>().getString(
-                                    dev.dettmer.simplenotes.R.string.snackbar_server_delete_failed
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Logger.e(TAG, "Error deleting note from server: ${e.message}")
-                        SyncStateManager.showError(
-                            getApplication<Application>().getString(
-                                dev.dettmer.simplenotes.R.string.snackbar_server_error,
-                                e.message.orEmpty()
-                            )
-                        )
-                    }
-                }
-                
-                _events.emit(NoteEditorEvent.NavigateBack)
+                // 🆕 v1.10.0-P2: Don't delete here — let ComposeMainActivity handle deletion
+                // so MainViewModel can show the undo snackbar.
+                _events.emit(NoteEditorEvent.NoteDeleteRequested(note.id, deleteOnServer))
             }
         }
     }
@@ -1087,6 +1044,8 @@ sealed interface NoteEditorEvent {
     data object NavigateBack : NoteEditorEvent
     data object ShowDeleteConfirmation : NoteEditorEvent
     data class RestoreContent(val content: String) : NoteEditorEvent  // 🆕 v1.10.0: Undo/Redo
+    /** 🆕 v1.10.0-P2: Signals Activity to set result and finish so MainViewModel shows undo snackbar. */
+    data class NoteDeleteRequested(val noteId: String, val deleteFromServer: Boolean) : NoteEditorEvent
     // 🆕 v1.10.0-Papa: Calendar & Share events
     data class OpenCalendar(val title: String, val description: String) : NoteEditorEvent
     data class ShareAsText(val title: String, val text: String) : NoteEditorEvent

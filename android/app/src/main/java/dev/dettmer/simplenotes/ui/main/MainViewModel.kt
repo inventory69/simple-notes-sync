@@ -533,6 +533,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
+     * 🆕 v1.10.0-P2: Called when a note was deleted from the editor.
+     * Loads the note from storage (not yet deleted) then delegates to
+     * [deleteNoteConfirmed] which shows the undo snackbar.
+     */
+    fun deleteNoteFromEditor(noteId: String, deleteFromServer: Boolean) {
+        val note = storage.loadNote(noteId) ?: return
+        deleteNoteConfirmed(note, deleteFromServer)
+    }
+
+    /**
      * Undo note deletion
      */
     fun undoDelete(note: Note) {
