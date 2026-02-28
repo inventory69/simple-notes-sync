@@ -23,7 +23,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -757,6 +759,9 @@ class WebDavSyncService(
             try {
                 val markdownAutoImportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
                 if (markdownAutoImportEnabled) {
+                    // 🆕 v1.10.0-P2: Cancel checkpoint before potentially long Markdown import
+                    currentCoroutineContext().ensureActive()
+
                     // 🆕 v1.8.0: Phase nur setzen wenn Feature aktiv
                     SyncStateManager.updateProgress(phase = SyncPhase.IMPORTING_MARKDOWN)
                     
@@ -1517,6 +1522,7 @@ class WebDavSyncService(
                 val downloadTasks = mutableListOf<DownloadTask>()
 
                 for (resource in jsonFiles) {
+                    currentCoroutineContext().ensureActive()  // 🆕 v1.10.0-P2: FGS cancel checkpoint
                     val noteId = resource.name.removeSuffix(".json")
                     val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
 
