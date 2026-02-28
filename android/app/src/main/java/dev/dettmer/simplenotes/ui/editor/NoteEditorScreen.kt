@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -280,6 +281,10 @@ fun NoteEditorScreen(
                     }
 
                     // 🆕 v1.10.0-Papa: Overflow menu (Calendar, Share, PDF, Delete)
+                    // 🆕 v1.10.0-P2: Box ensures menu anchors to the ⋮ button,
+                    // not to the full actions block (fixes position inconsistency
+                    // between text and checklist note types)
+                    Box {
                     IconButton(onClick = { showOverflowMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
@@ -288,12 +293,20 @@ fun NoteEditorScreen(
                     }
                     DropdownMenu(
                         expanded = showOverflowMenu,
-                        onDismissRequest = { showOverflowMenu = false }
+                        onDismissRequest = { showOverflowMenu = false },
+                        shape = MaterialTheme.shapes.large,  // 🆕 v1.10.0-P2: Rounded corners
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,  // 🆕 v1.10.0-P2
+                        shadowElevation = 6.dp,  // 🆕 v1.10.0-P2
+                        tonalElevation = 2.dp  // 🆕 v1.10.0-P2
                     ) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.share_to_calendar)) },
                             leadingIcon = {
-                                Icon(Icons.Outlined.CalendarMonth, contentDescription = null)
+                                Icon(
+                                    Icons.Outlined.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             },
                             onClick = {
                                 showOverflowMenu = false
@@ -303,7 +316,11 @@ fun NoteEditorScreen(
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.share_as_text)) },
                             leadingIcon = {
-                                Icon(Icons.Outlined.Share, contentDescription = null)
+                                Icon(
+                                    Icons.Outlined.Share,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             },
                             onClick = {
                                 showOverflowMenu = false
@@ -313,7 +330,11 @@ fun NoteEditorScreen(
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.share_as_pdf)) },
                             leadingIcon = {
-                                Icon(Icons.Outlined.PictureAsPdf, contentDescription = null)
+                                Icon(
+                                    Icons.Outlined.PictureAsPdf,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             },
                             onClick = {
                                 showOverflowMenu = false
@@ -321,7 +342,10 @@ fun NoteEditorScreen(
                             }
                         )
                         if (viewModel.canDelete()) {
-                            HorizontalDivider()
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -343,6 +367,7 @@ fun NoteEditorScreen(
                             )
                         }
                     }
+                    } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
