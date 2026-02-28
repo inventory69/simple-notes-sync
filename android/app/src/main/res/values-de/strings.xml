@@ -31,6 +31,7 @@
     <!-- FAB MENU                      -->
     <!-- ============================= -->
     <string name="fab_new_note">Neue Notiz</string>
+    <string name="fab_close">Menü schließen</string>
     <string name="fab_text_note">Text-Notiz</string>
     <string name="fab_checklist">Checkliste</string>
     <string name="create_text_note">Notiz</string>

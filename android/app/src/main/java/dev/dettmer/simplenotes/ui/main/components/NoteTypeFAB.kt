@@ -1,32 +1,50 @@
 package dev.dettmer.simplenotes.ui.main.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 
 /**
- * FAB with dropdown menu for note type selection
- * v1.5.0: PERFORMANCE FIX - No Box wrapper for proper elevation
- * 
- * Uses consistent icons with NoteCard:
- * - TEXT: Description (document icon)
- * - CHECKLIST: List (bullet list icon)
+ * Expandable FAB with animated sub-actions (Breezy Weather style).
+ * v1.10.0-P2: Replaces DropdownMenu-based FAB with expanding mini-FABs.
+ *
+ * When collapsed: Standard FAB with + icon.
+ * When expanded: + rotates to ×, mini-FABs slide up with staggered animation.
  */
 @Composable
 fun NoteTypeFAB(
@@ -34,52 +52,156 @@ fun NoteTypeFAB(
     onCreateNote: (NoteType) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
-    // FAB directly without Box wrapper - elevation works correctly
-    FloatingActionButton(
-        onClick = { expanded = true },
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = stringResource(R.string.fab_new_note)
-        )
-        
-        // Dropdown inside FAB - renders as popup overlay
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.fab_text_note)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Description,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                onClick = {
-                    expanded = false
-                    onCreateNote(NoteType.TEXT)
-                }
+
+    // Main FAB icon rotation: 0° → 45° (+ becomes ×)
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 45f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "fab_rotation"
+    )
+
+    Box(modifier = modifier.fillMaxSize()) {
+        // Transparent dismiss overlay — no visual change, but catches taps outside FAB
+        if (expanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { expanded = false }
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.fab_checklist)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.List,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface
+        }
+
+        // FAB column: sub-actions above main FAB
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Sub-action items (only when expanded)
+            val items = listOf(
+                FabSubAction(
+                    label = stringResource(R.string.fab_text_note),
+                    icon = Icons.Outlined.Description,
+                    noteType = NoteType.TEXT
+                ),
+                FabSubAction(
+                    label = stringResource(R.string.fab_checklist),
+                    icon = Icons.AutoMirrored.Outlined.List,
+                    noteType = NoteType.CHECKLIST
+                )
+            )
+
+            items.forEachIndexed { index, action ->
+                // Staggered animation: each item appears slightly after the previous
+                val delayMs = index * 50
+                val animatedScale by animateFloatAsState(
+                    targetValue = if (expanded) 1f else 0f,
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        delayMillis = delayMs
+                    ),
+                    label = "sub_fab_scale_$index"
+                )
+                val animatedAlpha by animateFloatAsState(
+                    targetValue = if (expanded) 1f else 0f,
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        delayMillis = delayMs
+                    ),
+                    label = "sub_fab_alpha_$index"
+                )
+
+                if (expanded || animatedScale > 0f) {
+                    FabSubActionRow(
+                        label = action.label,
+                        icon = action.icon,
+                        scale = animatedScale,
+                        alpha = animatedAlpha,
+                        onClick = {
+                            expanded = false
+                            onCreateNote(action.noteType)
+                        }
                     )
-                },
-                onClick = {
-                    expanded = false
-                    onCreateNote(NoteType.CHECKLIST)
                 }
+            }
+
+            // Main FAB
+            FloatingActionButton(
+                onClick = { expanded = !expanded },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = if (expanded) {
+                        stringResource(R.string.fab_close)
+                    } else {
+                        stringResource(R.string.fab_new_note)
+                    },
+                    modifier = Modifier.rotate(rotation)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A single sub-action row: label text + small FAB icon.
+ */
+@Composable
+private fun FabSubActionRow(
+    label: String,
+    icon: ImageVector,
+    scale: Float,
+    alpha: Float,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .scale(scale)
+            .alpha(alpha)
+    ) {
+        // Label pill
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shadowElevation = 2.dp,
+            tonalElevation = 2.dp
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label
             )
         }
     }
 }
+
+/**
+ * Data class for sub-action configuration.
+ */
+private data class FabSubAction(
+    val label: String,
+    val icon: ImageVector,
+    val noteType: NoteType
+)

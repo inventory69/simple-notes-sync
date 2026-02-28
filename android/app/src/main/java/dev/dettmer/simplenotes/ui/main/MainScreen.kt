@@ -45,11 +45,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
@@ -321,13 +319,13 @@ fun MainScreen(
                 }
                 
                 // FAB als TOP-LAYER - nur anzeigen wenn nicht im Selection Mode
+                // 🆕 v1.10.0-P2: FAB handles its own fullscreen scrim + padding
                 AnimatedVisibility(
                     visible = !isSelectionMode,
                     enter = fadeIn(),
                     exit = fadeOut(),
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp)
+                        .matchParentSize()
                         .zIndex(Float.MAX_VALUE)
                 ) {
                     NoteTypeFAB(
