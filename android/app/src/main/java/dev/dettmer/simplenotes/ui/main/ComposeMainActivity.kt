@@ -299,6 +299,7 @@ class ComposeMainActivity : ComponentActivity() {
                     dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
                     dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
                     dev.dettmer.simplenotes.sync.SyncPhase.DOWNLOADING,
+                    dev.dettmer.simplenotes.sync.SyncPhase.DELETING,
                     dev.dettmer.simplenotes.sync.SyncPhase.IMPORTING_MARKDOWN -> {
                         bannerAutoHideJob?.cancel()
                     }

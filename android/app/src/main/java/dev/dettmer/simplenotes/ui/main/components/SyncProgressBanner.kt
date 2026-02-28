@@ -182,9 +182,9 @@ fun SyncProgressBanner(
                         }
                     }
 
-                    // Zeile 2: Progress Bar (nur bei Upload mit bekanntem Total)
-                    if (!pIsResult && p.total > 0 && p.current > 0 &&
-                        p.phase == SyncPhase.UPLOADING) {
+                    // Zeile 2: Progress Bar (nur bei Upload/Deletion mit bekanntem Total)
+                    val isProgressPhase = p.phase == SyncPhase.UPLOADING || p.phase == SyncPhase.DELETING
+                    if (!pIsResult && p.total > 0 && p.current > 0 && isProgressPhase) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         LinearProgressIndicator(
@@ -224,6 +224,7 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.PREPARING -> stringResource(R.string.sync_phase_preparing)
         SyncPhase.UPLOADING -> stringResource(R.string.sync_phase_uploading)
         SyncPhase.DOWNLOADING -> stringResource(R.string.sync_phase_downloading)
+        SyncPhase.DELETING -> stringResource(R.string.sync_phase_deleting)
         SyncPhase.IMPORTING_MARKDOWN -> stringResource(R.string.sync_phase_importing_markdown)
         SyncPhase.COMPLETED -> stringResource(R.string.sync_phase_completed)
         SyncPhase.ERROR -> stringResource(R.string.sync_phase_error)
