@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -136,7 +137,14 @@ fun NoteTypeFAB(
             FloatingActionButton(
                 onClick = { expanded = !expanded },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                // 🆕 v1.10.0-P2: Stronger shadow so FAB floats clearly above note cards
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 12.dp,
+                    hoveredElevation = 10.dp,
+                    focusedElevation = 10.dp
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -172,22 +180,29 @@ private fun FabSubActionRow(
         // Label pill
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shadowElevation = 2.dp,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shadowElevation = 6.dp,
             tonalElevation = 2.dp
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
+        // 🆕 v1.10.0-P2: Standard FAB (56dp) — larger than SmallFAB, proportional icon
         FloatingActionButton(
             onClick = onClick,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 8.dp,
+                pressedElevation = 12.dp,
+                hoveredElevation = 10.dp,
+                focusedElevation = 10.dp
+            )
         ) {
             Icon(
                 imageVector = icon,
