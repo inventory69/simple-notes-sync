@@ -90,6 +90,8 @@
     <string name="sync_phase_uploading">Hochladen…</string>
     <string name="sync_phase_downloading">Herunterladen…</string>
     <string name="sync_phase_deleting">Vom Server löschen…</string>
+    <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
+    <string name="sync_quota_warning">⚠️ Sync wurde durch Androids Energieverwaltung verzögert. Öffne die App regelmäßig oder deaktiviere die Akku-Optimierung für zuverlässigen Hintergrund-Sync.</string>
     <string name="sync_phase_importing_markdown">Markdown importieren…</string>
     <string name="sync_phase_saving">Speichern…</string>
     <string name="sync_phase_completed">Sync abgeschlossen</string>

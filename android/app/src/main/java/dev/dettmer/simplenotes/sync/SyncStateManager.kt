@@ -22,6 +22,7 @@ object SyncStateManager {
     
     /** 🆕 v1.8.2: Maximale Dauer eines Syncs bevor er als "stuck" gilt (5 Minuten) */
     private const val SYNC_TIMEOUT_MS = 5 * 60 * 1000L
+    private const val QUOTA_STOP_MAX_AGE_MS = 86400000L  // 24 hours
     
     /**
      * Mögliche Sync-Zustände (intern für Mutex + PullToRefresh)
@@ -342,5 +343,35 @@ object SyncStateManager {
             
             Logger.e(TAG, "❌ Showing error: $message")
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 🆕 v1.10.0-P2: WorkManager Quota / App Standby stop tracking
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private var lastQuotaStopReason: String? = null
+    private var lastQuotaStopTimestamp: Long = 0L
+
+    /**
+     * Records that a sync was stopped due to quota/standby restrictions (API 31+).
+     * The UI queries this on next resume to show a one-time hint.
+     */
+    fun recordQuotaStop(reason: String) {
+        lastQuotaStopReason = reason
+        lastQuotaStopTimestamp = System.currentTimeMillis()
+        Logger.w(TAG, "⚠️ Sync stopped by system quota/standby: $reason")
+    }
+
+    /**
+     * Returns the last quota-stop reason if it occurred within the last 24 hours.
+     * Show-once: calling this clears the flag. Returns null if no recent stop.
+     */
+    fun consumeQuotaStopNotification(): String? {
+        val reason = lastQuotaStopReason ?: return null
+        val elapsed = System.currentTimeMillis() - lastQuotaStopTimestamp
+        if (elapsed > QUOTA_STOP_MAX_AGE_MS) return null
+        lastQuotaStopReason = null
+        lastQuotaStopTimestamp = 0L
+        return reason
     }
 }

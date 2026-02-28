@@ -217,6 +217,13 @@ class ComposeMainActivity : ComponentActivity() {
         
         // Trigger Auto-Sync on app resume
         viewModel.triggerAutoSync("onResume")
+
+        // 🆕 v1.10.0-P2: Show one-time hint if last sync was stopped by quota/standby
+        val quotaReason = SyncStateManager.consumeQuotaStopNotification()
+        if (quotaReason != null) {
+            Logger.w(TAG, "⚠️ Showing quota-stop notification (reason: $quotaReason)")
+            SyncStateManager.showInfo(getString(R.string.sync_quota_warning))
+        }
     }
     
     override fun onPause() {

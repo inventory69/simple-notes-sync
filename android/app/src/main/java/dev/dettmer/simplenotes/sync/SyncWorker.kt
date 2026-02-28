@@ -28,6 +28,11 @@ class SyncWorker(
     companion object {
         private const val TAG = "SyncWorker"
         const val ACTION_SYNC_COMPLETED = "dev.dettmer.simplenotes.SYNC_COMPLETED"
+
+        // WorkManager stop reason codes (mirrors WorkInfo.STOP_REASON_* constants, API 31+)
+        private const val STOP_REASON_QUOTA = 10
+        private const val STOP_REASON_BACKGROUND_RESTRICTION = 11
+        private const val STOP_REASON_APP_STANDBY = 12
     }
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -324,10 +329,9 @@ class SyncWorker(
             // 🛡️ v1.8.2 (IMPL_14): State reset — verhindert "Sync already in progress" Deadlock
             SyncStateManager.reset()
 
-            // 🆕 v1.10.0-P2: Log stop reason (WorkManager 2.9.0+) for FGS timeout debugging
+            // 🆕 v1.10.0-P2: Detailed stop reason logging + quota/standby tracking
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Logger.d(TAG, "⏹️ Job was cancelled — stop reason code: $stopReason")
-                Logger.d(TAG, "   Possible: FGS timeout (6h), App update, Doze mode, Battery opt, Network disconnect")
+                logCancellationStopReason(stopReason)
             } else {
                 Logger.d(TAG, "⏹️ Job was cancelled (normal - update/doze/constraints)")
             }
@@ -382,7 +386,40 @@ class SyncWorker(
             Result.failure()
         }
     }
-    
+    /**
+     * 🆕 v1.10.0-P2: Maps WorkManager stopReason code to a human-readable name and tracks
+     * quota/standby stops for user-facing notification on next app resume.
+     *
+     * Extracted to keep doWork() within cyclomatic complexity limits.
+     */
+    @androidx.annotation.RequiresApi(31)
+    private fun logCancellationStopReason(reason: Int) {
+        val reasonName = when (reason) {
+            0 -> "NOT_STOPPED"
+            1 -> "CANCELLED_BY_APP"
+            2 -> "PREEMPTED"
+            3 -> "TIMEOUT"
+            4 -> "DEVICE_STATE"
+            5 -> "CONSTRAINT_BATTERY_NOT_LOW"
+            6 -> "CONSTRAINT_CHARGING"
+            7 -> "CONSTRAINT_CONNECTIVITY"
+            8 -> "CONSTRAINT_DEVICE_IDLE"
+            9 -> "CONSTRAINT_STORAGE_NOT_LOW"
+            STOP_REASON_QUOTA -> "QUOTA"
+            STOP_REASON_BACKGROUND_RESTRICTION -> "BACKGROUND_RESTRICTION"
+            STOP_REASON_APP_STANDBY -> "APP_STANDBY"
+            13 -> "ESTIMATED_APP_LAUNCH_TIME_CHANGED"
+            14 -> "SYSTEM_PROCESSING"
+            15 -> "FOREGROUND_SERVICE_TIMEOUT"
+            else -> "UNKNOWN($reason)"
+        }
+        Logger.d(TAG, "⏹️ Job was cancelled — stop reason: $reasonName (code: $reason)")
+
+        if (reason == STOP_REASON_QUOTA || reason == STOP_REASON_BACKGROUND_RESTRICTION || reason == STOP_REASON_APP_STANDBY) {
+            SyncStateManager.recordQuotaStop(reasonName)
+        }
+    }
+
     /**
      * Sendet Broadcast an MainActivity für UI Refresh
      */
