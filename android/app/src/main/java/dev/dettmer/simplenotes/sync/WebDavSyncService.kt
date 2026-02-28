@@ -718,13 +718,12 @@ class WebDavSyncService(
                     sardine, 
                     serverUrl,
                     includeRootFallback = true,  // ✅ v1.3.0: Enable for v1.2.0 compatibility
-                    onProgress = { current, _, noteTitle ->
-                        // 🆕 v1.8.0: Phase wird erst beim ersten echten Download gesetzt
-                        // current = laufender Zähler (downloadedCount), kein Total → kein irreführender x/y Counter
+                    onProgress = { current, total, noteTitle ->
+                        // 🆕 v1.10.0-P2: Pass actual total from ParallelDownloader for determinate progress
                         SyncStateManager.updateProgress(
                             phase = SyncPhase.DOWNLOADING,
                             current = current,
-                            total = 0,
+                            total = total,
                             currentFileName = noteTitle
                         )
                     }
@@ -2214,11 +2213,26 @@ class WebDavSyncService(
             
             Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
             
+            // 🆕 v1.10.0-P2: Set total upfront so the progress bar is determinate from the start
+            SyncStateManager.updateProgress(
+                phase = SyncPhase.IMPORTING_MARKDOWN,
+                current = 0,
+                total = mdResources.size
+            )
+            
             // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
             val lastSyncTime = getLastSyncTimestamp()
             Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
             
+            var processedCount = 0  // 🆕 v1.10.0-P2: per-file determinate progress counter
             for (resource in mdResources) {
+                // 🆕 v1.10.0-P2: Advance progress for every file (including skipped ones)
+                SyncStateManager.updateProgress(
+                    phase = SyncPhase.IMPORTING_MARKDOWN,
+                    current = ++processedCount,
+                    total = mdResources.size,
+                    currentFileName = resource.name
+                )
                 try {
                     val serverModifiedTime = resource.modified?.time ?: 0L
                     
