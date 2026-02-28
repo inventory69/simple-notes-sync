@@ -8,19 +8,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.10.0] - 2026-02-27
+## [1.10.0] - 2026-03-01
 
-### ✏️ Editor Quality & Sync Polish
+### ✏️ Editor Overhaul, Share / Export & Sync Reliability
 
-Feature release adding undo/redo, configurable connection timeout, save-on-back, autosave fixes, smoother sync banner animations, and a pre-download filter for foreign JSON files.
+Major release adding PDF export, text and calendar sharing, a redesigned FAB menu, delete-from-editor with undo, batch server deletion with progress, adaptive tablet layouts, WorkManager reliability improvements, and real determinate progress bars for all sync phases.
 
 ### ✨ New Features
 
+**Share & Export from Editor** ([e2b9f79](https://github.com/inventory69/simple-notes-sync/commit/e2b9f79), [2aca873](https://github.com/inventory69/simple-notes-sync/commit/2aca873), [57c4e96](https://github.com/inventory69/simple-notes-sync/commit/57c4e96))
+- New overflow menu (⋮) in the editor toolbar: Share as Text, Share as PDF, Export to Calendar
+- PDF generated natively via `PdfDocument` API — no third-party library required
+- Shared via `FileProvider` for secure, permission-free sharing with any PDF viewer
+- Calendar export pre-fills title, all-day start date (today), and note content as description
+
+**Expandable FAB Menu** ([85d68c4](https://github.com/inventory69/simple-notes-sync/commit/85d68c4), [61788e3](https://github.com/inventory69/simple-notes-sync/commit/61788e3))
+- FAB replaced with an expanding speed-dial: tap `+` to reveal animated sub-action buttons for Text Note and Checklist
+- `+` icon rotates to `×` when expanded; sub-actions slide in with staggered spring animation
+- Transparent dismiss overlay closes the menu on outside tap
+- Sub-action buttons and label pills use `secondaryContainer` colour, forming a visual unit
+- Stronger shadow elevation (8–10 dp) ensures the FAB visually floats above note cards in both light and dark theme
+
+**Delete Note from Editor with Undo** ([f3fd806](https://github.com/inventory69/simple-notes-sync/commit/f3fd806))
+- Delete action moved from a blocking dialog to a bottom sheet confirmation
+- After confirming, the editor closes and the main screen shows a timed undo snackbar
+- Undo restores the note from the deleted state and cancels any scheduled server deletion
+
+**Batch Server Deletion with Progress** ([39a873f](https://github.com/inventory69/simple-notes-sync/commit/39a873f))
+- New `DELETING` sync phase shown in the banner when deleting multiple notes from the server
+- Progress bar shows `current / total` with the current note title
+- Phase transitions smoothly to `COMPLETED` with a result message
+
+**Adaptive Layouts for Tablets & Landscape** ([a117cbe](https://github.com/inventory69/simple-notes-sync/commit/a117cbe))
+- Editor content capped at 720 dp width, centred on wide screens
+- Settings screens capped at 600 dp width, centred
+- Main screen grid uses `Adaptive(180 dp)` columns — more columns appear automatically on tablets and in landscape
+- Prepares for Android 16 (targetSdk 36) which ignores `screenOrientation` locks on displays ≥ 600 dp
+
 **Undo/Redo in Note Editor** ([484bf3a](https://github.com/inventory69/simple-notes-sync/commit/484bf3a))
 - Full undo/redo support for text notes and checklists via toolbar buttons
-- Debounced snapshots: rapid keystrokes are grouped into a single undo step (500 ms window)
+- Debounced snapshots: rapid keystrokes grouped into a single undo step (500 ms window)
 - Stack limited to 50 entries; cleared on note switch to prevent cross-note undo
-- Restoring a snapshot correctly updates the text field cursor position
+- Restoring a snapshot correctly updates the cursor position
 
 **Configurable WebDAV Connection Timeout** ([b1aebc4](https://github.com/inventory69/simple-notes-sync/commit/b1aebc4))
 - New Settings slider (1–30 s, default 8 s) to configure the WebDAV connection timeout
@@ -30,27 +59,52 @@ Feature release adding undo/redo, configurable connection timeout, save-on-back,
 **Markdown Auto-Sync Timeout Protection** ([7f74ae9](https://github.com/inventory69/simple-notes-sync/commit/7f74ae9))
 - Enabling Markdown auto-sync now has a 10 s timeout for the initial export
 - UI toggle updates optimistically and reverts if the export fails or times out
-- Prevents the Settings screen from hanging indefinitely on unreachable servers
+- Prevents the Settings screen from hanging on unreachable servers
 
 **Save on Back Navigation** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c))
 - Dirty notes are saved automatically when navigating back from the editor (system back + toolbar back)
 - Only active when autosave is enabled; synchronous save without triggering sync
-- Autosave toggle description updated to mention this behavior
+- Autosave toggle description updated to mention this behaviour
 
 ### 🐛 Bug Fixes
 
+**Download Progress Always Indeterminate** ([c83aae3](https://github.com/inventory69/simple-notes-sync/commit/c83aae3))
+- `ParallelDownloader` already tracked `completed / total` internally but `syncNotes()` hardcoded `total = 0`
+- Fixed: `total` is now passed through → DOWNLOADING phase shows a real `LinearProgressIndicator`
+- `importMarkdownFiles()` also reports per-file progress: banner shows `X / Y filename.md` with a determinate bar
+
+**FGS Timeout on Android 15+** ([1e6eb64](https://github.com/inventory69/simple-notes-sync/commit/1e6eb64))
+- Added `ensureActive()` checkpoints in `WebDavSyncService` download loop and markdown import so coroutines respond promptly to WorkManager cancellation on targetSdk 35+
+- `CancellationException` handler in `SyncWorker` now logs the stop reason (API 31+)
+
+**WorkManager Quota / Standby Stops Not Surfaced** ([3d66a19](https://github.com/inventory69/simple-notes-sync/commit/3d66a19))
+- Added detailed stop reason logging: 16 WorkManager stop codes mapped to human-readable names
+- When a sync is stopped due to JobScheduler quota or app standby, an info banner is shown next time the app comes to foreground
+
+**Consistent Editor Overflow Menu Position** ([242ece3](https://github.com/inventory69/simple-notes-sync/commit/242ece3))
+- Overflow menu (⋮) is now anchored to the `⋮` button in both text and checklist note types
+- Previously the menu anchored to the outer actions `Row`, appearing too far left on checklist notes
+
+**Markdown Import: Pre-Heading Content Lost** ([e33ac23](https://github.com/inventory69/simple-notes-sync/commit/e33ac23))
+- Content before the first `#` heading was silently discarded during Markdown import
+- Checklist detection improved: more item patterns are now recognised
+
+**Checklist Autosave Not Triggered on Item Changes** ([5401df3](https://github.com/inventory69/simple-notes-sync/commit/5401df3))
+- Deleting, adding, and reordering checklist items now correctly marks the note as dirty and triggers autosave
+
+**Minimal Scroll When Adding New Checklist Items** ([c2fbe0b](https://github.com/inventory69/simple-notes-sync/commit/c2fbe0b))
+- New checklist items scroll just enough to become visible instead of jumping to the top
+
 **False Autosave on Checklist Cursor Tap** ([9ea7089](https://github.com/inventory69/simple-notes-sync/commit/9ea7089))
-- Tapping a checklist item to place the cursor no longer triggers a false autosave
-- No-op guards added to `updateChecklistItemText()` and `updateChecklistItemChecked()` — only mark dirty if the value actually changed
+- Tapping a checklist item to position the cursor no longer triggers a false autosave
+- No-op guards added to `updateChecklistItemText()` and `updateChecklistItemChecked()`
 
 **Undo to Saved State Still Triggered Autosave** ([cf5027b](https://github.com/inventory69/simple-notes-sync/commit/cf5027b))
-- Undoing all changes back to the last saved state now correctly resets `isDirty` and cancels the pending autosave
-- New `savedSnapshot` property captures state at load time and after every save
-- `applySnapshot()` compares against `savedSnapshot` to determine dirty state
+- Undoing all changes back to the last saved state now resets `isDirty` and cancels the pending autosave
+- New `savedSnapshot` property captures state at load time and after every explicit save
 
 **Foreign JSON Files Downloaded Unnecessarily** ([c409243](https://github.com/inventory69/simple-notes-sync/commit/c409243))
-- Non-note JSON files (e.g. `google-services.json`) are now filtered before download via UUID format check
-- Previously: file was downloaded, parsed, then discarded after ID mismatch — wasting bandwidth and causing a brief flash in the sync banner
+- Non-note JSON files (e.g. `google-services.json`) filtered before download via UUID format check
 
 **Note Count Strings Not Pluralized Correctly** ([8ca8df3](https://github.com/inventory69/simple-notes-sync/commit/8ca8df3))
 - Note count strings converted to proper Android plural forms (EN + DE)
@@ -58,11 +112,14 @@ Feature release adding undo/redo, configurable connection timeout, save-on-back,
 ### 🎨 UI Improvements
 
 **Smooth Sync Banner Animations** ([c409243](https://github.com/inventory69/simple-notes-sync/commit/c409243))
-- Banner enter: fadeIn (300 ms, EaseOutCubic) — no more abrupt "push from top"
+- Banner enter: fadeIn (300 ms, EaseOutCubic) — no more abrupt push from top
 - Banner exit: fadeOut + shrinkVertically (300/400 ms, EaseInCubic)
 - Phase transitions use AnimatedContent crossfade (250 ms) for text changes
 - Minimum display duration per active phase (400 ms) prevents unreadable flashes
-- Auto-hide job decoupled from flow collector — guaranteed minimum display time for completed/error/info states
+- Auto-hide job decoupled from flow collector — guaranteed minimum display time
+
+**Markdown Folder Mentioned in Sync Settings** ([a8bb80c](https://github.com/inventory69/simple-notes-sync/commit/a8bb80c))
+- Sync folder hint now explicitly mentions the `notes-md/` subdirectory used for Markdown auto-sync
 
 ---
 

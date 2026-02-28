@@ -1,12 +1,12 @@
-✏️ v1.10.0 — Undo/Redo & Editor Polish
+📝 v1.10.0 — Share, Export & Editor Overhaul
 
-• New: Undo/Redo in the note editor
-• New: Configurable WebDAV connection timeout
-• New: Auto-save on back navigation
-• Fix: Markdown auto-sync timeout protection
-• Fix: No false autosave on checklist tap
-• Fix: Undo to saved state cancels autosave
-• Smoother sync banner animations
-• Foreign JSON files skipped before download
+• New: Export as PDF, share as text or to calendar
+• New: Expanding FAB with animated speed-dial
+• New: Delete from editor: bottom sheet with undo
+• New: Undo/Redo + auto-save on back in editor
+• New: Server deletion with progress bar
+• New: Adaptive layouts for tablets & landscape
+• Fix: Actual download progress in sync
+• Further improvements and bug fixes
 
 https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
