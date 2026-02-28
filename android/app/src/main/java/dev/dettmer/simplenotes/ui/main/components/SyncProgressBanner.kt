@@ -182,8 +182,9 @@ fun SyncProgressBanner(
                         }
                     }
 
-                    // Zeile 2: Progress Bar (nur bei Upload/Deletion mit bekanntem Total)
-                    val isProgressPhase = p.phase == SyncPhase.UPLOADING || p.phase == SyncPhase.DELETING
+                    // Zeile 2: Progress Bar (alle aktiven Phasen mit bekanntem Total)
+                    // 🆕 v1.10.0-P2: DOWNLOADING and IMPORTING_MARKDOWN now also supply total
+                    val isProgressPhase = p.isActiveSync
                     if (!pIsResult && p.total > 0 && p.current > 0 && isProgressPhase) {
                         Spacer(modifier = Modifier.height(8.dp))
 
