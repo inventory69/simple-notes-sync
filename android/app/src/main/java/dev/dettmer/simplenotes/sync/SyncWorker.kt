@@ -60,7 +60,7 @@ class SyncWorker(
             )
         }
     }
-    
+
     /**
      * Prüft ob die App im Vordergrund ist.
      * Wenn ja, brauchen wir keine Benachrichtigung - die UI zeigt die Änderungen direkt.
@@ -323,14 +323,14 @@ class SyncWorker(
         } catch (e: CancellationException) {
             // 🛡️ v1.8.2 (IMPL_14): State reset — verhindert "Sync already in progress" Deadlock
             SyncStateManager.reset()
-            
-            // ⭐ Job wurde gecancelt - KEIN FEHLER!
-            // Gründe: App-Update, Doze Mode, Battery Optimization, Network Constraint, etc.
-            if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "═══════════════════════════════════════")
+
+            // 🆕 v1.10.0-P2: Log stop reason (WorkManager 2.9.0+) for FGS timeout debugging
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                Logger.d(TAG, "⏹️ Job was cancelled — stop reason code: $stopReason")
+                Logger.d(TAG, "   Possible: FGS timeout (6h), App update, Doze mode, Battery opt, Network disconnect")
+            } else {
+                Logger.d(TAG, "⏹️ Job was cancelled (normal - update/doze/constraints)")
             }
-            Logger.d(TAG, "⏹️ Job was cancelled (normal - update/doze/constraints)")
-            Logger.d(TAG, "   Reason could be: App update, Doze mode, Battery opt, Network disconnect")
             Logger.d(TAG, "   This is expected Android behavior - not an error!")
             
             try {
