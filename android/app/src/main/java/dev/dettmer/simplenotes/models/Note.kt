@@ -68,9 +68,27 @@ data class Note(
     }
     
     /**
-     * Konvertiert Note zu Markdown mit YAML Frontmatter (Task #1.2.0-08)
-     * Format kompatibel mit Obsidian, Joplin, Typora
-     * v1.4.0: Unterstützt jetzt auch Checklisten-Format
+     * Exports this note as a Markdown file with YAML frontmatter.
+     * Format kompatibel mit Obsidian, Joplin, Typora (Task #1.2.0-08)
+     *
+     * **Checklist format** (GFM Task Lists):
+     * ```
+     * ---
+     * type: checklist
+     * sort: MANUAL
+     * ---
+     * # Title
+     *
+     * - [ ] Unchecked item
+     * - [x] Checked item
+     * ```
+     *
+     * The frontmatter `type: checklist` is required for reliable round-trip import.
+     * Without it, the import heuristic will only detect the file as a checklist if
+     * ALL content lines are GFM task items (- [ ] / - [x]).
+     *
+     * @return Complete markdown string with YAML frontmatter
+     * 🆕 v1.10.0-P2: KDoc updated
      */
     fun toMarkdown(): String {
         // 🆕 v1.8.1 (IMPL_03): Sortierung im Frontmatter
@@ -287,7 +305,8 @@ type: ${noteType.name.lowercase()}$sortLine
                 
                 if (noteType == NoteType.CHECKLIST) {
                     // Parse Checklist Items
-                    val checklistRegex = Regex("^- \\[([ xX])\\] (.*)$", RegexOption.MULTILINE)
+                    // 🆕 v1.10.0-P2: More lenient regex — supports `*` prefix and extra spaces
+                    val checklistRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""", RegexOption.MULTILINE)
                     checklistItems = checklistRegex.findAll(contentAfterTitle).mapIndexed { index, matchResult ->
                         ChecklistItem(
                             id = UUID.randomUUID().toString(),
