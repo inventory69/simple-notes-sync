@@ -387,6 +387,8 @@ class NoteEditorViewModel(
                 appended.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             }
         }
+        isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item addition
         return newItem.id
     }
 
@@ -411,6 +413,8 @@ class NoteEditorViewModel(
             // Prevents newly added items from jumping to position 0 after save/reopen.
             newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
         }
+        isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item addition
         return newItem.id
     }
 
@@ -436,6 +440,7 @@ class NoteEditorViewModel(
     
     fun deleteChecklistItem(itemId: String) {
         pushUndoSnapshot()  // 🆕 v1.10.0
+        isDirty = true  // 🆕 v1.10.0-P2: Deletion is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val filtered = items.filter { it.id != itemId }
@@ -447,10 +452,12 @@ class NoteEditorViewModel(
                 filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
             }
         }
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item deletion
     }
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
         pushUndoSnapshot()  // 🆕 v1.10.0
+        isDirty = true  // 🆕 v1.10.0-P2: Moving an item is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val fromItem = items.getOrNull(fromIndex) ?: return@update items
@@ -471,6 +478,7 @@ class NoteEditorViewModel(
             // 🆕 v1.9.0 (F04): Update originalOrder on manual reorder to cement new position
             mutableList.mapIndexed { index, i -> i.copy(order = index, originalOrder = index) }
         }
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item move
     }
     
     /**
