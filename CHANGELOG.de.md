@@ -16,7 +16,7 @@ Großes Release mit PDF-Export, Text- und Kalender-Teilen, überarbeitetem FAB-M
 
 ### ✨ Neue Features
 
-**Teilen & Exportieren aus dem Editor** ([e2b9f79](https://github.com/inventory69/simple-notes-sync/commit/e2b9f79), [2aca873](https://github.com/inventory69/simple-notes-sync/commit/2aca873), [57c4e96](https://github.com/inventory69/simple-notes-sync/commit/57c4e96))
+**Teilen & Exportieren aus dem Editor** ([e2b9f79](https://github.com/inventory69/simple-notes-sync/commit/e2b9f79), [2aca873](https://github.com/inventory69/simple-notes-sync/commit/2aca873), [57c4e96](https://github.com/inventory69/simple-notes-sync/commit/57c4e96)) _(Danke an [@james0336](https://github.com/james0336) für den PDF-Export-Wunsch!)_
 - Neues Überlaufmenü (⋮) in der Editor-Toolbar: Als Text teilen, Als PDF teilen, In Kalender exportieren
 - PDF nativ über `PdfDocument`-API erstellt — keine Drittanbieter-Bibliothek erforderlich
 - Teilen via `FileProvider` für sichere Freigabe mit beliebigen PDF-Viewern
@@ -61,7 +61,7 @@ Großes Release mit PDF-Export, Text- und Kalender-Teilen, überarbeitetem FAB-M
 - UI-Toggle aktualisiert optimistisch und kehrt bei Fehler oder Timeout zurück
 - Verhindert, dass der Einstellungs-Screen bei unerreichbaren Servern hängt
 
-**Speichern beim Zurücknavigieren** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c))
+**Speichern beim Zurücknavigieren** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c)) _(Danke an [@GitNichtGibtsNicht](https://github.com/GitNichtGibtsNicht) für den Autosave-beim-Zurück-Wunsch!)_
 - Ungespeicherte Notizen werden beim Verlassen des Editors automatisch gespeichert (System-Zurück + Toolbar-Zurück)
 - Nur aktiv wenn Autosave aktiviert ist; synchrones Speichern ohne Sync auszulösen
 - Autosave-Toggle-Beschreibung erwähnt jetzt dieses Verhalten

@@ -16,7 +16,7 @@ Major release adding PDF export, text and calendar sharing, a redesigned FAB men
 
 ### ✨ New Features
 
-**Share & Export from Editor** ([e2b9f79](https://github.com/inventory69/simple-notes-sync/commit/e2b9f79), [2aca873](https://github.com/inventory69/simple-notes-sync/commit/2aca873), [57c4e96](https://github.com/inventory69/simple-notes-sync/commit/57c4e96))
+**Share & Export from Editor** ([e2b9f79](https://github.com/inventory69/simple-notes-sync/commit/e2b9f79), [2aca873](https://github.com/inventory69/simple-notes-sync/commit/2aca873), [57c4e96](https://github.com/inventory69/simple-notes-sync/commit/57c4e96)) _(Thanks to [@james0336](https://github.com/james0336) for requesting PDF export!)_
 - New overflow menu (⋮) in the editor toolbar: Share as Text, Share as PDF, Export to Calendar
 - PDF generated natively via `PdfDocument` API — no third-party library required
 - Shared via `FileProvider` for secure, permission-free sharing with any PDF viewer
@@ -61,7 +61,7 @@ Major release adding PDF export, text and calendar sharing, a redesigned FAB men
 - UI toggle updates optimistically and reverts if the export fails or times out
 - Prevents the Settings screen from hanging on unreachable servers
 
-**Save on Back Navigation** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c))
+**Save on Back Navigation** ([402382c](https://github.com/inventory69/simple-notes-sync/commit/402382c)) _(Thanks to [@GitNichtGibtsNicht](https://github.com/GitNichtGibtsNicht) for requesting autosave on back!)_
 - Dirty notes are saved automatically when navigating back from the editor (system back + toolbar back)
 - Only active when autosave is enabled; synchronous save without triggering sync
 - Autosave toggle description updated to mention this behaviour

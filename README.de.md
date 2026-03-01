@@ -74,6 +74,8 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 - 🔒 **Self-hosted** – Deine Daten bleiben bei dir (WebDAV)
 - 💾 **Lokales Backup** – Export/Import als JSON-Datei (optional verschlüsselt)
 - 🖥️ **Desktop-Integration** – Markdown-Export für Obsidian, VS Code, Typora
+- 📤 **Teilen & Exportieren** – Als Text oder PDF teilen, in Kalender exportieren
+- ↩️ **Rückgängig/Wiederherstellen** – Vollständige Undo/Redo-Historie im Notiz-Editor
 - 🎨 **Material Design 3** – Dynamischer Dark/Light Mode & Farben
 
 ➡️ **Vollständige Feature-Liste:** [docs/FEATURES.de.md](docs/FEATURES.de.md)
@@ -140,6 +142,6 @@ MIT License – siehe [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.8.2** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.10.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
