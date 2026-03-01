@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.models.Note
-import dev.dettmer.simplenotes.utils.Constants
 
 /**
  * 🎨 v1.7.0: Staggered Grid Layout - OPTIMIERT
@@ -37,7 +36,7 @@ fun NotesStaggeredGrid(
     onNoteLongClick: (Note) -> Unit
 ) {
     LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Fixed(Constants.GRID_COLUMNS),
+        columns = StaggeredGridCells.Adaptive(180.dp),  // 🆕 v1.10.0-P2: Adaptive columns for tablets
         modifier = modifier.fillMaxSize(),
         state = gridState,
         // 🎨 v1.7.0: Konsistente Abstände - 16dp horizontal wie Liste, mehr Platz für FAB

@@ -34,10 +34,13 @@
 - ✅ **Auto-Fokus** - Direkt losschreiben
 - ✅ **Vollbild-Modus** - Maximale Schreibfläche
 - ✅ **Speichern-Button** - Manuelle Bestätigung möglich
-- ✅ **Zurück-Navigation** - Speichert automatisch
+- ✅ **Zurück-Navigation** - Speichert automatisch wenn Autosave aktiviert ist _(v1.10.0)_
 - ✅ **Slide-Animationen** _(NEU in v1.5.0)_ - Flüssige Übergänge
 - ✅ **Markdown-Vorschau** _(NEU in v1.9.0)_ - Live-Vorschau mit Formatierungs-Toolbar
 - ✅ **Opt-in Autosave** _(NEU in v1.9.0)_ - Konfigurierbarer Debounce-Autosave-Timer
+- ✅ **Rückgängig/Wiederherstellen** _(NEU in v1.10.0)_ - Vollständige Undo/Redo-Historie (bis 50 Schritte) via Toolbar-Buttons
+- ✅ **Teilen & Exportieren** _(NEU in v1.10.0)_ - Als Text oder PDF teilen, in Kalender exportieren
+- ✅ **Löschen mit Rückgängig** _(NEU in v1.10.0)_ - Löschen aus dem Editor mit zeitgesteuerter Rückgängig-Snackbar
 
 ---
 
@@ -362,4 +365,4 @@ A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v1.9.0 (2026-02-25)
+**Letzte Aktualisierung:** v1.10.0 (2026-03-01)

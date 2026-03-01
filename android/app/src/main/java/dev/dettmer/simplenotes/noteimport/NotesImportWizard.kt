@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.noteimport
 import android.content.Context
 import android.net.Uri
 import com.thegrizzlylabs.sardineandroid.Sardine
+import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -278,12 +279,36 @@ class NotesImportWizard(
             return note
         }
 
-        // Versuch 2: Plain Markdown ohne Frontmatter → immer als TEXT importieren
-        // Checklist-Syntax (- [ ] / - [x]) bleibt als Markdown erhalten und wird
-        // in der Markdown-Preview als visuelle Checkboxen gerendert (TaskList-Block).
-        // Nur YAML-Frontmatter mit "type: checklist" erzeugt NoteType.CHECKLIST.
+        // Versuch 2: Plain Markdown ohne Frontmatter
+        // 🆕 v1.10.0-P2: Heuristic — if ALL non-empty lines are GFM task items, import as CHECKLIST
         val title = extractMarkdownTitle(normalizedContent, candidate.name)
         val body = extractMarkdownBody(normalizedContent)
+
+        val heuristicTaskRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val nonEmptyLines = body.lines().filter { it.isNotBlank() }
+        if (nonEmptyLines.isNotEmpty() && nonEmptyLines.all { heuristicTaskRegex.matches(it.trim()) }) {
+            val items = nonEmptyLines.mapIndexed { index, line ->
+                val m = heuristicTaskRegex.find(line.trim())!!
+                ChecklistItem(
+                    id = UUID.randomUUID().toString(),
+                    text = m.groupValues[2].trim(),
+                    isChecked = m.groupValues[1].lowercase() != " ",
+                    order = index
+                )
+            }
+            Logger.d(TAG, "   ✅ ${candidate.name}: Heuristic detection — imported as checklist (${items.size} items)")
+            return Note(
+                id = UUID.randomUUID().toString(),
+                title = title,
+                content = "",
+                createdAt = candidate.modified,
+                updatedAt = candidate.modified,
+                deviceId = DeviceIdGenerator.getDeviceId(context),
+                syncStatus = SyncStatus.PENDING,
+                noteType = NoteType.CHECKLIST,
+                checklistItems = items
+            )
+        }
 
         Logger.d(TAG, "   📄 ${candidate.name}: Parsed as plain markdown (text note)")
 
@@ -451,10 +476,19 @@ class NotesImportWizard(
         val lines = content.lines()
         val firstHeadingIndex = lines.indexOfFirst { it.startsWith("# ") }
         return if (firstHeadingIndex >= 0) {
-            lines.drop(firstHeadingIndex + 1)
+            // 🆕 v1.10.0-P2: Preserve content that appears before the heading
+            val preHeading = lines.take(firstHeadingIndex)
                 .dropWhile { it.isBlank() }
-                .joinToString("\n")
-                .trim()
+                .dropLastWhile { it.isBlank() }
+            val postHeading = lines.drop(firstHeadingIndex + 1)
+                .dropWhile { it.isBlank() }
+            buildString {
+                if (preHeading.isNotEmpty()) {
+                    append(preHeading.joinToString("\n"))
+                    append("\n\n")
+                }
+                append(postHeading.joinToString("\n").trim())
+            }.trim()
         } else {
             content.trim()
         }

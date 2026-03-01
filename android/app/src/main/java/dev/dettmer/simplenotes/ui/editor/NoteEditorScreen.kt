@@ -6,7 +6,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,6 +16,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -27,16 +31,25 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
 
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +69,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
@@ -101,6 +115,7 @@ private val DRAGGING_ELEVATION_DP = 8.dp
  * - Auto-keyboard focus for new items
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod")
 @Composable
 fun NoteEditorScreen(
     viewModel: NoteEditorViewModel,
@@ -119,6 +134,9 @@ fun NoteEditorScreen(
     var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
     val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
     val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState()  // 🆕 v1.9.0
+    val canUndo by viewModel.canUndo.collectAsState()  // 🆕 v1.10.0
+    val canRedo by viewModel.canRedo.collectAsState()  // 🆕 v1.10.0
+    var showOverflowMenu by remember { mutableStateOf(false) }  // 🆕 v1.10.0-Papa
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
@@ -189,6 +207,18 @@ fun NoteEditorScreen(
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
                 is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
+                is NoteEditorEvent.RestoreContent -> {  // 🆕 v1.10.0: Undo/Redo
+                    textFieldState.edit {
+                        replace(0, length, event.content)
+                        placeCursorAtEnd()
+                    }
+                }
+                // 🆕 v1.10.0-P2: handled by Activity (deletion forwarded to MainViewModel)
+                is NoteEditorEvent.NoteDeleteRequested -> Unit
+                // 🆕 v1.10.0-Papa: handled by Activity
+                is NoteEditorEvent.OpenCalendar -> Unit
+                is NoteEditorEvent.ShareAsText -> Unit
+                is NoteEditorEvent.ShareAsPdf -> Unit
             }
         }
     }
@@ -211,6 +241,26 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
+                    // 🆕 v1.10.0: Undo/Redo buttons
+                    IconButton(
+                        onClick = { viewModel.undo() },
+                        enabled = canUndo
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = stringResource(R.string.editor_undo)
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.redo() },
+                        enabled = canRedo
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Redo,
+                            contentDescription = stringResource(R.string.editor_redo)
+                        )
+                    }
+
                     // 🆕 v1.9.0 (F07): Markdown Preview Toggle (only for TEXT notes)
                     if (uiState.noteType == NoteType.TEXT) {
                         IconButton(onClick = { isPreviewMode = !isPreviewMode }) {
@@ -225,16 +275,8 @@ fun NoteEditorScreen(
                         }
                     }
 
-                    // Delete button (only for existing notes)
-                    if (viewModel.canDelete()) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete)
-                            )
-                        }
-                    }
-                    
+                    // Delete button (only for existing notes) — moved to overflow menu
+
                     // Save button
                     IconButton(onClick = { viewModel.saveNote() }) {
                         Icon(
@@ -242,6 +284,95 @@ fun NoteEditorScreen(
                             contentDescription = stringResource(R.string.save)
                         )
                     }
+
+                    // 🆕 v1.10.0-Papa: Overflow menu (Calendar, Share, PDF, Delete)
+                    // 🆕 v1.10.0-P2: Box ensures menu anchors to the ⋮ button,
+                    // not to the full actions block (fixes position inconsistency
+                    // between text and checklist note types)
+                    Box {
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.share_overflow_menu)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false },
+                        shape = MaterialTheme.shapes.large,  // 🆕 v1.10.0-P2: Rounded corners
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,  // 🆕 v1.10.0-P2
+                        shadowElevation = 6.dp,  // 🆕 v1.10.0-P2
+                        tonalElevation = 2.dp  // 🆕 v1.10.0-P2
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_to_calendar)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                viewModel.openInCalendar()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_as_text)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.Share,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                viewModel.shareAsText()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_as_pdf)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.PictureAsPdf,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                viewModel.shareAsPdf()
+                            }
+                        )
+                        if (viewModel.canDelete()) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.delete),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
+                    }
+                    } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -254,6 +385,9 @@ fun NoteEditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .wrapContentWidth(align = Alignment.CenterHorizontally)  // 🆕 v1.10.0-P2: Center on tablets
+                .widthIn(max = 720.dp)  // 🆕 v1.10.0-P2: Constrain width for readability
+                .fillMaxWidth()  // 🆕 v1.10.0-P2: Fill up to constrained width
                 .padding(16.dp)
         ) {
             // Title Input (for both types)
@@ -540,14 +674,31 @@ private fun ChecklistEditor(
     // 🆕 v1.8.2 (IMPL_10): Kontrollierter Scroll zum neuen Item (verhindert Sprung ans Ende)
     var scrollToNewItemIndex by remember { mutableStateOf<Int?>(null) }
 
-    // 🆕 v1.8.2 (IMPL_10): Scroll vor Fokus — Item muss sichtbar sein bevor fokussiert wird
+    // 🆕 v1.10.0-P2: Minimal scroll — only ensure new item is visible, don't force to top
     LaunchedEffect(scrollToNewItemIndex) {
         scrollToNewItemIndex?.let { index ->
-            // Scroll zum neuen Item (nicht zum nächsten — item soll oben/mittig sichtbar sein)
-            listState.animateScrollToItem(
-                index = index,
-                scrollOffset = 0
-            )
+            // Wait one frame for the new item to be laid out
+            delay(Constants.CHECKLIST_SCROLL_LAYOUT_DELAY_MS)
+            val layoutInfo = listState.layoutInfo
+            val viewportEnd = layoutInfo.viewportEndOffset
+            val viewportStart = layoutInfo.viewportStartOffset
+            val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
+            if (itemInfo != null) {
+                val itemBottom = itemInfo.offset + itemInfo.size
+                val itemTop = itemInfo.offset
+                when {
+                    itemBottom > viewportEnd ->
+                        // Partially below viewport — scroll just enough to show it
+                        listState.animateScrollBy((itemBottom - viewportEnd).toFloat())
+                    itemTop < viewportStart ->
+                        // Partially above viewport — scroll up just enough
+                        listState.animateScrollBy((itemTop - viewportStart).toFloat())
+                    // else: fully visible → no scroll needed
+                }
+            } else {
+                // Item not yet visible (far away) — fallback: scroll to it
+                listState.animateScrollToItem(index)
+            }
             scrollToNewItemIndex = null
         }
     }

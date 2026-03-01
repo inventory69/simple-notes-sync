@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 23  // 🆕 v1.9.0: Server-Switch Fix, Parallel Settings, Bug Audit
-        versionName = "1.9.0"  // 🆕 v1.9.0: Sync Quality & Performance Release
+        versionCode = 24  // 🆕 v1.10.0: Undo/Redo, Timeout, Save-on-Back, Banner Polish
+        versionName = "1.10.0"  // 🆕 v1.10.0: Calendar Export, Share, PDF
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

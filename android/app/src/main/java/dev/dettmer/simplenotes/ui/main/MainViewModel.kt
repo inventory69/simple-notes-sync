@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -18,6 +19,8 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,6 +41,7 @@ import kotlinx.coroutines.withContext
  * 
  * Manages notes list, sync state, and deletion with undo.
  */
+@Suppress("TooManyFunctions")  // 🔧 v1.10.0: Detekt compliance — class has many features
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -187,9 +192,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Sync State
     // ═══════════════════════════════════════════════════════════════════════
     
-    // 🆕 v1.8.0: Einziges Banner-System - SyncProgress
+    // 🆕 v1.8.0 / 🔧 v1.10.0: Banner-System — min. Anzeigedauer pro Phase
     val syncProgress: StateFlow<SyncProgress> = SyncStateManager.syncProgress
-    
+        .withMinPhaseDuration(Constants.BANNER_PHASE_MIN_MS)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SyncProgress.IDLE)
+
+    /**
+     * 🔧 v1.10.0: Ensures each active sync phase (PREPARING/UPLOADING/DOWNLOADING/
+     * IMPORTING_MARKDOWN) is displayed for at least [minMs] milliseconds.
+     * Phase transitions IDLE→active and active→IDLE are not delayed, so the
+     * banner still appears and disappears quickly.
+     */
+    @Suppress("NestedBlockDepth")  // inherently nested: flow → collect → if
+    private fun Flow<SyncProgress>.withMinPhaseDuration(minMs: Long): Flow<SyncProgress> = flow {
+        var lastEmitTime = 0L
+        var lastPhase = dev.dettmer.simplenotes.sync.SyncPhase.IDLE
+        collect { value ->
+            if (
+                value.phase != dev.dettmer.simplenotes.sync.SyncPhase.IDLE &&
+                lastPhase != dev.dettmer.simplenotes.sync.SyncPhase.IDLE &&
+                value.phase != lastPhase
+            ) {
+                val elapsed = System.currentTimeMillis() - lastEmitTime
+                val remaining = minMs - elapsed
+                if (remaining > 0) delay(remaining)
+            }
+            emit(value)
+            lastEmitTime = System.currentTimeMillis()
+            lastPhase = value.phase
+        }
+    }
+
     // Intern: SyncState für PullToRefresh-Indikator
     private val _syncState = MutableStateFlow(SyncStateManager.SyncState.IDLE)
     val syncState: StateFlow<SyncStateManager.SyncState> = _syncState.asStateFlow()
@@ -373,9 +406,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Show snackbar with undo
         val count = selectedNotes.size
         val message = if (deleteFromServer) {
-            getString(R.string.snackbar_notes_deleted_server, count)
+            getQuantityString(R.plurals.snackbar_notes_deleted_server, count, count)
         } else {
-            getString(R.string.snackbar_notes_deleted_local, count)
+            getQuantityString(R.plurals.snackbar_notes_deleted_local, count, count)
         }
         
         viewModelScope.launch {
@@ -501,6 +534,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
+     * 🆕 v1.10.0-P2: Called when a note was deleted from the editor.
+     * Loads the note from storage (not yet deleted) then delegates to
+     * [deleteNoteConfirmed] which shows the undo snackbar.
+     */
+    fun deleteNoteFromEditor(noteId: String, deleteFromServer: Boolean) {
+        val note = storage.loadNote(noteId) ?: return
+        deleteNoteConfirmed(note, deleteFromServer)
+    }
+
+    /**
      * Undo note deletion
      */
     fun undoDelete(note: Note) {
@@ -549,9 +592,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val webdavService = WebDavSyncService(getApplication())
             var successCount = 0
             var failCount = 0
-            
+            val total = noteIds.size
+
+            // 🆕 v1.10.0-P2: Show progress banner for server deletion (only for 2+)
+            if (total > 1) {
+                SyncStateManager.updateProgress(
+                    phase = SyncPhase.DELETING,
+                    current = 0,
+                    total = total,
+                    currentFileName = null
+                )
+            }
+
             noteIds.forEach { noteId ->
                 try {
+                    // 🆕 v1.10.0-P2: Increment progress counter before each deletion
+                    if (total > 1) {
+                        SyncStateManager.incrementProgress(currentFileName = null)
+                    }
+
                     val success = withContext(ioDispatcher) {
                         webdavService.deleteNoteFromServer(noteId)
                     }
@@ -566,7 +625,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO/ERROR
             val message = when {
-                failCount == 0 -> getString(R.string.snackbar_notes_deleted_from_server, successCount)
+                failCount == 0 -> getQuantityString(R.plurals.snackbar_notes_deleted_from_server, successCount, successCount)
                 successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
                 else -> getString(
                     R.string.snackbar_notes_deleted_from_server_partial,
@@ -921,8 +980,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     private fun getString(resId: Int): String = getApplication<android.app.Application>().getString(resId)
     
-    private fun getString(resId: Int, vararg formatArgs: Any): String = 
+    private fun getString(resId: Int, vararg formatArgs: Any): String =
         getApplication<android.app.Application>().getString(resId, *formatArgs)
+
+    private fun getQuantityString(resId: Int, quantity: Int, vararg formatArgs: Any): String =
+        getApplication<android.app.Application>().resources.getQuantityString(resId, quantity, *formatArgs)
     
     fun isServerConfigured(): Boolean {
         // 🌟 v1.6.0: Use reactive offline mode state

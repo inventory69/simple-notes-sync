@@ -13,14 +13,12 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
-import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import dev.dettmer.simplenotes.utils.NoteShareHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,7 +27,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
@@ -38,6 +35,7 @@ import java.util.UUID
  * 
  * Manages note editing state including title, content, and checklist items.
  */
+@Suppress("LargeClass")  // 🔧 v1.10.0: Detekt compliance — many features, deliberate design
 class NoteEditorViewModel(
     application: Application,
     private val savedStateHandle: SavedStateHandle
@@ -47,10 +45,9 @@ class NoteEditorViewModel(
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
+        private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50  // 🆕 v1.10.0-Papa
     }
 
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-    
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     
@@ -119,7 +116,18 @@ class NoteEditorViewModel(
     // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
     private val _autosaveIndicatorVisible = MutableStateFlow(false)
     val autosaveIndicatorVisible: StateFlow<Boolean> = _autosaveIndicatorVisible.asStateFlow()
-    
+
+    // 🆕 v1.10.0: Undo/Redo
+    private val undoRedoManager = UndoRedoManager()
+    val canUndo: StateFlow<Boolean> = undoRedoManager.canUndo
+    val canRedo: StateFlow<Boolean> = undoRedoManager.canRedo
+    private var snapshotDebounceJob: kotlinx.coroutines.Job? = null
+    private var isRestoringSnapshot = false
+    // 🔧 v1.10.0: Snapshot des zuletzt gespeicherten Zustands.
+    // Wird beim Öffnen und nach jedem erfolgreichen Save gesetzt.
+    // Ermöglicht isDirty-Reset wenn Undo den Originalzustand wiederherstellt.
+    private var savedSnapshot: EditorSnapshot? = null
+
     init {
         loadNote()
     }
@@ -157,6 +165,8 @@ class NoteEditorViewModel(
                 loadChecklistData(note)
             }
         }
+        undoRedoManager.clear()  // 🆕 v1.10.0: No cross-note undo
+        savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
     }
 
     private fun loadChecklistData(note: Note) {
@@ -205,6 +215,8 @@ class NoteEditorViewModel(
         if (currentNoteType == NoteType.CHECKLIST) {
             _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
         }
+        undoRedoManager.clear()  // 🆕 v1.10.0: No cross-note undo
+        savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
     }
 
     /**
@@ -226,6 +238,8 @@ class NoteEditorViewModel(
     
     fun updateTitle(title: String) {
         if (title == _uiState.value.title) return  // 🆕 v1.9.0: no-op guard — hydration, not a user edit
+        if (isRestoringSnapshot) return  // 🆕 v1.10.0: Suppress during undo/redo restore
+        pushUndoSnapshotDebounced()  // 🆕 v1.10.0: Capture state before this edit
         isDirty = true
         _uiState.update { it.copy(title = title) }
         scheduleAutosave()  // 🆕 v1.9.0
@@ -233,12 +247,20 @@ class NoteEditorViewModel(
     
     fun updateContent(content: String) {
         if (content == _uiState.value.content) return  // 🆕 v1.9.0: no-op guard — hydration, not a user edit
+        if (isRestoringSnapshot) return  // 🆕 v1.10.0: Suppress during undo/redo restore
+        pushUndoSnapshotDebounced()  // 🆕 v1.10.0: Capture state before this edit
         isDirty = true
         _uiState.update { it.copy(content = content) }
         scheduleAutosave()  // 🆕 v1.9.0
     }
     
     fun updateChecklistItemText(itemId: String, newText: String) {
+        // 🔧 v1.10.0: No-Op Guard — verhindert false positive isDirty bei Cursor-Repositionierung.
+        // BasicTextField feuert onValueChange auch bei reiner Selection-Änderung (gleicher Text).
+        val currentText = _checklistItems.value.find { it.id == itemId }?.text
+        if (newText == currentText) return
+
+        pushUndoSnapshotDebounced()  // 🆕 v1.10.0
         isDirty = true
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
@@ -291,6 +313,11 @@ class NoteEditorViewModel(
      * during the layout pass.
      */
     fun updateChecklistItemChecked(itemId: String, isChecked: Boolean) {
+        // 🔧 v1.10.0: Defensive No-Op Guard — skip wenn State identisch
+        val currentItem = _checklistItems.value.find { it.id == itemId }
+        if (currentItem?.isChecked == isChecked) return
+
+        pushUndoSnapshot()  // 🆕 v1.10.0
         isDirty = true  // 🆕 v1.9.0: checking/unchecking is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
@@ -323,6 +350,7 @@ class NoteEditorViewModel(
      * checked ist, wird stattdessen vor dem ersten checked Item eingefügt.
      */
     fun addChecklistItemAfter(afterItemId: String): String {
+        pushUndoSnapshot()  // 🆕 v1.10.0
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
@@ -353,6 +381,8 @@ class NoteEditorViewModel(
                 appended.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             }
         }
+        isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item addition
         return newItem.id
     }
 
@@ -366,6 +396,7 @@ class NoteEditorViewModel(
      * unter dem Separator erscheint.
      */
     fun addChecklistItemAtEnd(): String {
+        pushUndoSnapshot()  // 🆕 v1.10.0
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         val newItem = ChecklistItemState.createEmpty(0)
         _checklistItems.update { items ->
@@ -376,6 +407,8 @@ class NoteEditorViewModel(
             // Prevents newly added items from jumping to position 0 after save/reopen.
             newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
         }
+        isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item addition
         return newItem.id
     }
 
@@ -400,6 +433,8 @@ class NoteEditorViewModel(
     }
     
     fun deleteChecklistItem(itemId: String) {
+        pushUndoSnapshot()  // 🆕 v1.10.0
+        isDirty = true  // 🆕 v1.10.0-P2: Deletion is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val filtered = items.filter { it.id != itemId }
@@ -411,9 +446,12 @@ class NoteEditorViewModel(
                 filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
             }
         }
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item deletion
     }
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
+        pushUndoSnapshot()  // 🆕 v1.10.0
+        isDirty = true  // 🆕 v1.10.0-P2: Moving an item is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
             val fromItem = items.getOrNull(fromIndex) ?: return@update items
@@ -434,6 +472,7 @@ class NoteEditorViewModel(
             // 🆕 v1.9.0 (F04): Update originalOrder on manual reorder to cement new position
             mutableList.mapIndexed { index, i -> i.copy(order = index, originalOrder = index) }
         }
+        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item move
     }
     
     /**
@@ -441,6 +480,7 @@ class NoteEditorViewModel(
      * Einmalige Aktion (nicht persistiert) — User kann danach per Drag & Drop feinjustieren.
      */
     fun sortChecklistItems(option: ChecklistSortOption) {
+        pushUndoSnapshot()  // 🆕 v1.10.0
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         // Merke die Auswahl für diesen Editor-Session
         _lastChecklistSortOption.value = option
@@ -489,6 +529,101 @@ class NoteEditorViewModel(
             }
 
             _events.emit(NoteEditorEvent.NavigateBack)
+        }
+    }
+
+    /**
+     * 🆕 v1.10.0: Silent save for back-navigation.
+     *
+     * Speichert ungesicherte Änderungen lokal, OHNE:
+     * - Sync zu triggern (User verlässt den Editor, kein expliziter „Speichern“-Intent)
+     * - Navigation-Event zu emittieren (Activity handled finish() selbst)
+     * - Toast/Indicator anzuzeigen
+     *
+     * @return true wenn gespeichert wurde (oder nichts zu speichern war), false bei Fehler
+     */
+    fun saveOnBack(): Boolean {
+        if (!autosaveEnabled) {
+            Logger.d(TAG, "⏭️ saveOnBack: autosave disabled — skipping")
+            return true
+        }
+        if (!isDirty) {
+            Logger.d(TAG, "⏭️ saveOnBack: nothing dirty — skipping")
+            return true
+        }
+
+        autosaveJob?.cancel()  // Pending autosave superseded
+
+        return try {
+            val state = _uiState.value
+            val title = state.title.trim()
+
+            when (currentNoteType) {
+                NoteType.TEXT -> {
+                    val content = state.content.trim()
+                    if (title.isEmpty() && content.isEmpty()) return true
+
+                    val note = existingNote?.copy(
+                        title = title,
+                        content = content,
+                        noteType = NoteType.TEXT,
+                        checklistItems = null,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    ) ?: Note(
+                        title = title,
+                        content = content,
+                        noteType = NoteType.TEXT,
+                        checklistItems = null,
+                        deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
+                        syncStatus = SyncStatus.LOCAL_ONLY
+                    )
+                    storage.saveNote(note)
+                    existingNote = note
+                }
+                NoteType.CHECKLIST -> {
+                    hasUnsavedChecklistEdits = false
+                    val validItems = _checklistItems.value
+                        .filter { it.text.isNotBlank() }
+                        .mapIndexed { index, item ->
+                            ChecklistItem(
+                                id = item.id,
+                                text = item.text,
+                                isChecked = item.isChecked,
+                                order = index,
+                                originalOrder = item.originalOrder
+                            )
+                        }
+                    if (title.isEmpty() && validItems.isEmpty()) return true
+
+                    val note = existingNote?.copy(
+                        title = title,
+                        content = "",
+                        noteType = NoteType.CHECKLIST,
+                        checklistItems = validItems,
+                        checklistSortOption = _lastChecklistSortOption.value.name,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    ) ?: Note(
+                        title = title,
+                        content = "",
+                        noteType = NoteType.CHECKLIST,
+                        checklistItems = validItems,
+                        checklistSortOption = _lastChecklistSortOption.value.name,
+                        deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
+                        syncStatus = SyncStatus.LOCAL_ONLY
+                    )
+                    storage.saveNote(note)
+                    existingNote = note
+                }
+            }
+            isDirty = false
+            savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
+            Logger.d(TAG, "💾 saveOnBack: saved successfully")
+            true
+        } catch (e: Exception) {
+            Logger.e(TAG, "saveOnBack failed: ${e.message}")
+            false
         }
     }
 
@@ -575,7 +710,77 @@ class NoteEditorViewModel(
             }
         }
         isDirty = false  // 🆕 v1.9.0: note is clean after any successful save
+        savedSnapshot = currentSnapshot()  // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
         return true
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.10.0: Undo/Redo
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private fun currentSnapshot(): EditorSnapshot = EditorSnapshot(
+        title = _uiState.value.title,
+        content = _uiState.value.content,
+        checklistItems = _checklistItems.value.toList()
+    )
+
+    private fun pushUndoSnapshot() {
+        undoRedoManager.pushUndo(currentSnapshot())
+    }
+
+    /**
+     * Debounced snapshot: captures state ONCE per burst of rapid edits (e.g. typing).
+     * First call in a burst immediately records a snapshot; subsequent calls within
+     * [Constants.UNDO_SNAPSHOT_DEBOUNCE_MS] are ignored. The window resets after the delay.
+     */
+    private fun pushUndoSnapshotDebounced() {
+        if (snapshotDebounceJob == null || !snapshotDebounceJob!!.isActive) {
+            pushUndoSnapshot()  // Capture state BEFORE this burst of edits
+        }
+        snapshotDebounceJob?.cancel()
+        snapshotDebounceJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(Constants.UNDO_SNAPSHOT_DEBOUNCE_MS)
+            snapshotDebounceJob = null
+        }
+    }
+
+    fun undo() {
+        val snapshot = undoRedoManager.undo(currentSnapshot()) ?: return
+        applySnapshot(snapshot)
+    }
+
+    fun redo() {
+        val snapshot = undoRedoManager.redo(currentSnapshot()) ?: return
+        applySnapshot(snapshot)
+    }
+
+    private fun applySnapshot(snapshot: EditorSnapshot) {
+        isRestoringSnapshot = true
+        _uiState.update { it.copy(title = snapshot.title, content = snapshot.content) }
+        _checklistItems.value = snapshot.checklistItems
+
+        // 🔧 v1.10.0: isDirty-Reset wenn Undo/Redo den gespeicherten Zustand wiederherstellt
+        val isBackToSaved = savedSnapshot?.let { saved ->
+            snapshot.title == saved.title &&
+                snapshot.content == saved.content &&
+                snapshot.checklistItems == saved.checklistItems
+        } ?: false
+
+        if (isBackToSaved) {
+            isDirty = false
+            autosaveJob?.cancel()  // Kein Autosave nötig — Zustand = gespeicherter Zustand
+        } else {
+            isDirty = true
+            scheduleAutosave()  // Undo/Redo auf Zwischen-Stand → Autosave nötig
+        }
+
+        viewModelScope.launch {
+            if (currentNoteType == NoteType.TEXT) {
+                _events.emit(NoteEditorEvent.RestoreContent(snapshot.content))
+            }
+            kotlinx.coroutines.delay(Constants.SNAPSHOT_RESTORE_GUARD_DELAY_MS)
+            isRestoringSnapshot = false
+        }
     }
 
     /**
@@ -599,6 +804,75 @@ class NoteEditorViewModel(
         }
     }
     
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.10.0-Papa: Calendar Export & Share
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * 🆕 v1.10.0-Papa: Opens the current note as a calendar event via ACTION_INSERT intent.
+     * Does nothing if the note is completely empty.
+     */
+    fun openInCalendar() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val calTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
+            _events.emit(NoteEditorEvent.OpenCalendar(title = calTitle, description = content))
+        }
+    }
+
+    /**
+     * 🆕 v1.10.0-Papa: Shares the current note as plain text via ACTION_SEND intent.
+     */
+    fun shareAsText() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val shareTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
+            _events.emit(NoteEditorEvent.ShareAsText(title = shareTitle, text = content))
+        }
+    }
+
+    /**
+     * 🆕 v1.10.0-Papa: Triggers PDF generation and share.
+     * Emits [NoteEditorEvent.ShareAsPdf]; the Activity handles generation via PdfExporter.
+     */
+    fun shareAsPdf() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val pdfTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
+            _events.emit(NoteEditorEvent.ShareAsPdf(title = pdfTitle))
+        }
+    }
+
     /**
      * Delete the current note
      * @param deleteOnServer if true, also triggers server deletion; if false, only deletes locally
@@ -607,46 +881,9 @@ class NoteEditorViewModel(
     fun deleteNote(deleteOnServer: Boolean = true) {
         viewModelScope.launch {
             existingNote?.let { note ->
-                val noteId = note.id
-                
-                // Delete locally first
-                storage.deleteNote(noteId)
-                
-                // Delete from server if requested
-                if (deleteOnServer) {
-                    try {
-                        val webdavService = WebDavSyncService(getApplication())
-                        val success = withContext(ioDispatcher) {
-                            webdavService.deleteNoteFromServer(noteId)
-                        }
-                        // 🆕 v1.8.1 (IMPL_12): Banner-Feedback statt stiller Log-Einträge
-                        if (success) {
-                            Logger.d(TAG, "Note $noteId deleted from server")
-                            SyncStateManager.showInfo(
-                                getApplication<Application>().getString(
-                                    dev.dettmer.simplenotes.R.string.snackbar_deleted_from_server
-                                )
-                            )
-                        } else {
-                            Logger.w(TAG, "Failed to delete note $noteId from server")
-                            SyncStateManager.showError(
-                                getApplication<Application>().getString(
-                                    dev.dettmer.simplenotes.R.string.snackbar_server_delete_failed
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Logger.e(TAG, "Error deleting note from server: ${e.message}")
-                        SyncStateManager.showError(
-                            getApplication<Application>().getString(
-                                dev.dettmer.simplenotes.R.string.snackbar_server_error,
-                                e.message.orEmpty()
-                            )
-                        )
-                    }
-                }
-                
-                _events.emit(NoteEditorEvent.NavigateBack)
+                // 🆕 v1.10.0-P2: Don't delete here — let ComposeMainActivity handle deletion
+                // so MainViewModel can show the undo snackbar.
+                _events.emit(NoteEditorEvent.NoteDeleteRequested(note.id, deleteOnServer))
             }
         }
     }
@@ -806,4 +1043,11 @@ sealed interface NoteEditorEvent {
     data class ShowToast(val message: ToastMessage) : NoteEditorEvent
     data object NavigateBack : NoteEditorEvent
     data object ShowDeleteConfirmation : NoteEditorEvent
+    data class RestoreContent(val content: String) : NoteEditorEvent  // 🆕 v1.10.0: Undo/Redo
+    /** 🆕 v1.10.0-P2: Signals Activity to set result and finish so MainViewModel shows undo snackbar. */
+    data class NoteDeleteRequested(val noteId: String, val deleteFromServer: Boolean) : NoteEditorEvent
+    // 🆕 v1.10.0-Papa: Calendar & Share events
+    data class OpenCalendar(val title: String, val description: String) : NoteEditorEvent
+    data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
+    data class ShareAsPdf(val title: String) : NoteEditorEvent
 }
