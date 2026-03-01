@@ -66,20 +66,24 @@
 # 🔧 v1.8.2: Granulare Regeln statt breiter Wildcard
 # Ersetzt die v1.8.1-Notlösung (-keep class dev.dettmer.simplenotes.** { *; })
 # die JEGLICHES Tree-Shaking verhinderte → APK > 5MB.
+# 🔧 v1.10.0 Audit: BackupData-Fix, tote data/-Regel entfernt, ActionCallback robuster
 
 # 1) DATA MODELS — Gson braucht Feldnamen + Konstruktoren
 #    NoteRaw ist Note$Companion$NoteRaw (Companion-verschachtelt!)
 -keep class dev.dettmer.simplenotes.models.** { *; }
--keep class dev.dettmer.simplenotes.data.** { *; }
 
-# 2) WORKMANAGER — instanziiert SyncWorker via Reflection
+# 2) BACKUP — BackupData.notes hat kein @SerializedName; R8-Obfuscation würde
+#    den Feldnamen umbenennen → Gson findet JSON-Key "notes" nicht → leere
+#    Notizen-Liste beim Import (stiller Datenverlust im Release-Build!)
+-keep class dev.dettmer.simplenotes.backup.BackupData { *; }
+
+# 3) WORKMANAGER — instanziiert SyncWorker via Reflection
 -keep class dev.dettmer.simplenotes.sync.SyncWorker { *; }
 
-# 3) BROADCAST RECEIVERS — via AndroidManifest registriert
--keep class dev.dettmer.simplenotes.widget.NoteWidgetReceiver { *; }
+# 4) BROADCAST RECEIVERS — via AndroidManifest registriert
 -keep class dev.dettmer.simplenotes.** extends android.content.BroadcastReceiver { *; }
 
-# 4) ACTIVITIES & APPLICATION — Android-Framework instanziiert via Reflection
+# 5) ACTIVITIES & APPLICATION — Android-Framework instanziiert via Reflection
 -keep class dev.dettmer.simplenotes.SimpleNotesApplication { *; }
 -keep class dev.dettmer.simplenotes.** extends android.app.Activity { *; }
 -keep class dev.dettmer.simplenotes.** extends androidx.fragment.app.Fragment { *; }
@@ -94,8 +98,9 @@
 
 # Glance Widget ActionCallbacks (instanziiert via Reflection durch actionRunCallback<T>())
 # Ohne diese Rule findet R8 die Klassen nicht zur Laufzeit → Widget-Crash
+# Interface-Regel ist robuster als *Action-Pattern (erfasst alle zukünftigen Callbacks)
 -keep class dev.dettmer.simplenotes.widget.*Action { *; }
--keep class dev.dettmer.simplenotes.widget.*Receiver { *; }
+-keep class * implements androidx.glance.appwidget.action.ActionCallback { *; }
 
 # Compose Text Layout: Verhindert dass R8 onTextLayout-Callbacks
 # als Side-Effect-Free optimiert (behebt Gradient-Regression)
