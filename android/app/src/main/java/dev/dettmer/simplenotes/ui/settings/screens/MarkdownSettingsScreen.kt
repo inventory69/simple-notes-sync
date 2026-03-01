@@ -58,22 +58,27 @@ fun MarkdownSettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = if (progress.isComplete) {
-                            stringResource(R.string.markdown_export_complete)
-                        } else {
-                            stringResource(R.string.markdown_export_progress, progress.current, progress.total)
+                        text = when {
+                            progress.isChecking -> stringResource(R.string.markdown_checking_server)
+                            progress.isComplete -> stringResource(R.string.markdown_export_complete)
+                            else -> stringResource(R.string.markdown_export_progress, progress.current, progress.total)
                         },
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    
-                    LinearProgressIndicator(
-                        progress = { 
-                            if (progress.total > 0) {
-                                progress.current.toFloat() / progress.total.toFloat()
-                            } else 0f
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+
+                    // 🆕 v1.10.0: Indeterminate während Server-Check, determinate beim Export
+                    if (progress.isChecking) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(
+                            progress = {
+                                if (progress.total > 0) {
+                                    progress.current.toFloat() / progress.total.toFloat()
+                                } else 0f
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             },
             confirmButton = { /* No button - auto dismiss */ }

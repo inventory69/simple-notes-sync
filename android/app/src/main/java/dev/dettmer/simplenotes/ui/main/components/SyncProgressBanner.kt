@@ -1,9 +1,15 @@
 package dev.dettmer.simplenotes.ui.main.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.EaseInCubic
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,9 +57,7 @@ fun SyncProgressBanner(
 ) {
     // Farbe animiert wechseln je nach State
     val isError = progress.phase == SyncPhase.ERROR
-    val isCompleted = progress.phase == SyncPhase.COMPLETED
-    val isInfo = progress.phase == SyncPhase.INFO  // 🆕 v1.8.1 (IMPL_12)
-    val isResult = isError || isCompleted || isInfo
+    val isInfo = progress.phase == SyncPhase.INFO
     
     val backgroundColor by animateColorAsState(
         targetValue = when {
@@ -75,111 +79,136 @@ fun SyncProgressBanner(
     
     AnimatedVisibility(
         visible = progress.isVisible,
-        enter = expandVertically(),
-        exit = shrinkVertically(),
+        // 🆕 v1.10.0: Nur fadeIn beim Einblenden – kein expandVertically, das von oben reinschieben würde
+        enter = fadeIn(
+            animationSpec = tween(durationMillis = 350, easing = EaseOutCubic)
+        ),
+        exit = shrinkVertically(
+            animationSpec = tween(durationMillis = 280, easing = EaseInCubic)
+        ) + fadeOut(
+            animationSpec = tween(durationMillis = 220, easing = EaseInCubic)
+        ),
         modifier = modifier
     ) {
         Surface(
             color = backgroundColor,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-            ) {
-                // Zeile 1: Icon + Phase/Message + Counter
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // 🆕 v1.10.0: AnimatedContent crossfadet Inhalte beim Phasenwechsel, damit
+            // kurze Phasen (z.B. IMPORTING_MARKDOWN) leserlich übergeblendet werden
+            AnimatedContent(
+                targetState = progress,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(durationMillis = 220, easing = EaseOutCubic)) togetherWith
+                        fadeOut(animationSpec = tween(durationMillis = 160, easing = EaseInCubic))
+                },
+                contentKey = { it.phase },
+                label = "bannerContent"
+            ) { p ->
+                val pIsError = p.phase == SyncPhase.ERROR
+                val pIsCompleted = p.phase == SyncPhase.COMPLETED
+                val pIsInfo = p.phase == SyncPhase.INFO
+                val pIsResult = pIsError || pIsCompleted || pIsInfo
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    // Icon: Spinner (aktiv), Checkmark (completed), Error (error), Info (info)
-                    when {
-                        isCompleted -> {
-                            Icon(
-                                imageVector = Icons.Filled.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = contentColor
-                            )
+                    // Zeile 1: Icon + Phase/Message + Counter
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Icon: Spinner (aktiv), Checkmark (completed), Error (error), Info (info)
+                        when {
+                            pIsCompleted -> {
+                                Icon(
+                                    imageVector = Icons.Filled.CheckCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = contentColor
+                                )
+                            }
+                            pIsInfo -> {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = contentColor
+                                )
+                            }
+                            pIsError -> {
+                                Icon(
+                                    imageVector = Icons.Filled.ErrorOutline,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = contentColor
+                                )
+                            }
+                            else -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = contentColor
+                                )
+                            }
                         }
-                        isInfo -> {  // 🆕 v1.8.1 (IMPL_12)
-                            Icon(
-                                imageVector = Icons.Outlined.Info,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = contentColor
-                            )
-                        }
-                        isError -> {
-                            Icon(
-                                imageVector = Icons.Filled.ErrorOutline,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = contentColor
-                            )
-                        }
-                        else -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = contentColor
+
+                        // Text: Ergebnisnachricht oder Phase
+                        Text(
+                            text = when {
+                                pIsResult && !p.resultMessage.isNullOrBlank() -> p.resultMessage
+                                else -> phaseToString(p.phase)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = contentColor,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Counter: x/y bei Uploads (Total bekannt), nur Zähler bei Downloads
+                        if (!pIsResult && p.current > 0) {
+                            Text(
+                                text = if (p.total > 0) {
+                                    "${p.current}/${p.total}"
+                                } else {
+                                    "${p.current}"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = contentColor.copy(alpha = 0.7f)
                             )
                         }
                     }
-                    
-                    // Text: Ergebnisnachricht oder Phase
-                    Text(
-                        text = when {
-                            isResult && !progress.resultMessage.isNullOrBlank() -> progress.resultMessage
-                            else -> phaseToString(progress.phase)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = contentColor,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    // Counter: x/y bei Uploads (Total bekannt), nur Zähler bei Downloads
-                    if (!isResult && progress.current > 0) {
-                        Text(
-                            text = if (progress.total > 0) {
-                                "${progress.current}/${progress.total}"
-                            } else {
-                                "${progress.current}"
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = contentColor.copy(alpha = 0.7f)
+
+                    // Zeile 2: Progress Bar (alle aktiven Phasen mit bekanntem Total)
+                    // 🆕 v1.10.0-P2: DOWNLOADING and IMPORTING_MARKDOWN now also supply total
+                    val isProgressPhase = p.isActiveSync
+                    if (!pIsResult && p.total > 0 && p.current > 0 && isProgressPhase) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        LinearProgressIndicator(
+                            progress = { p.progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp),
+                            color = contentColor,
+                            trackColor = contentColor.copy(alpha = 0.2f)
                         )
                     }
-                }
-                
-                // Zeile 2: Progress Bar (nur bei Upload mit bekanntem Total)
-                if (!isResult && progress.total > 0 && progress.current > 0 &&
-                    progress.phase == SyncPhase.UPLOADING) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    LinearProgressIndicator(
-                        progress = { progress.progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp),
-                        color = contentColor,
-                        trackColor = contentColor.copy(alpha = 0.2f)
-                    )
-                }
-                
-                // Zeile 3: Aktueller Notiz-Titel (optional, nur bei aktivem Sync)
-                if (!isResult && !progress.currentFileName.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = progress.currentFileName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.6f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+
+                    // Zeile 3: Aktueller Notiz-Titel (optional, nur bei aktivem Sync)
+                    if (!pIsResult && !p.currentFileName.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = p.currentFileName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = contentColor.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
@@ -196,6 +225,7 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.PREPARING -> stringResource(R.string.sync_phase_preparing)
         SyncPhase.UPLOADING -> stringResource(R.string.sync_phase_uploading)
         SyncPhase.DOWNLOADING -> stringResource(R.string.sync_phase_downloading)
+        SyncPhase.DELETING -> stringResource(R.string.sync_phase_deleting)
         SyncPhase.IMPORTING_MARKDOWN -> stringResource(R.string.sync_phase_importing_markdown)
         SyncPhase.COMPLETED -> stringResource(R.string.sync_phase_completed)
         SyncPhase.ERROR -> stringResource(R.string.sync_phase_error)

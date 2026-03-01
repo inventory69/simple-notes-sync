@@ -31,6 +31,7 @@
     <!-- FAB MENU                      -->
     <!-- ============================= -->
     <string name="fab_new_note">New Note</string>
+    <string name="fab_close">Close menu</string>
     <string name="fab_text_note">Text Note</string>
     <string name="fab_checklist">Checklist</string>
     <string name="create_text_note">Note</string>
@@ -88,7 +89,10 @@
     <string name="sync_phase_checking">Checking server…</string>
     <string name="sync_phase_uploading">Uploading…</string>
     <string name="sync_phase_downloading">Downloading…</string>
-    
+    <string name="sync_phase_deleting">Deleting from server…</string>
+    <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
+    <string name="sync_quota_warning">⚠️ Sync was delayed by Android power management. Open the app regularly or disable battery optimization for reliable background sync.</string>
+
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
     <string name="sort_notes">Sort notes</string>
     <string name="sort_ascending">Ascending</string>
@@ -138,10 +142,19 @@
     <string name="snackbar_undo">UNDO</string>
     <string name="snackbar_note_deleted_local">\"%s\" deleted locally</string>
     <string name="snackbar_note_deleted_server">\"%s\" will be deleted from server</string>
-    <string name="snackbar_notes_deleted_local">%d note(s) deleted locally</string>
-    <string name="snackbar_notes_deleted_server">%d note(s) will be deleted from server</string>
+    <plurals name="snackbar_notes_deleted_local">
+        <item quantity="one">%d note deleted locally</item>
+        <item quantity="other">%d notes deleted locally</item>
+    </plurals>
+    <plurals name="snackbar_notes_deleted_server">
+        <item quantity="one">%d note will be deleted from server</item>
+        <item quantity="other">%d notes will be deleted from server</item>
+    </plurals>
     <string name="snackbar_deleted_from_server">Deleted from server</string>
-    <string name="snackbar_notes_deleted_from_server">%d note(s) deleted from server</string>
+    <plurals name="snackbar_notes_deleted_from_server">
+        <item quantity="one">%d note deleted from server</item>
+        <item quantity="other">%d notes deleted from server</item>
+    </plurals>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d of %2$d notes deleted from server</string>
     <string name="snackbar_server_delete_failed">Server deletion failed</string>
     <string name="snackbar_server_error">Server error: %s</string>
@@ -269,7 +282,10 @@
     <string name="server_address_hint">e.g. http://192.168.0.188:8080/notes</string>
     <string name="server_advanced_settings">Advanced</string>
     <string name="sync_folder_name">Sync folder</string>
-    <string name="sync_folder_name_hint">Folder name on the WebDAV server (default: notes). Only change this if you know what you\'re doing.</string>
+    <string name="sync_folder_name_hint">Folder name on the WebDAV server (default: notes). This also affects the Markdown folder (e.g. notes → notes-md). Only change this if you know what you\'re doing.</string>
+    <!-- v1.10.0: Connection Timeout Settings -->
+    <string name="server_timeout_label">Connection Timeout: %d seconds</string>
+    <string name="server_timeout_description">Time to wait before a connection attempt is considered failed. Lower values give faster feedback when the server is unreachable.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
@@ -353,6 +369,7 @@
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export complete</string>
     <string name="markdown_export_progress">Exporting %1$d/%2$d notes…</string>
+    <string name="markdown_checking_server">Checking server connection…</string>
     <string name="markdown_info">📝 Exports notes additionally as .md files. Mount WebDAV as network drive to edit with VS Code, Typora, or any Markdown editor. JSON sync remains primary format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Automatically syncs notes as .md files (upload + download on each sync)</string>
@@ -459,9 +476,12 @@
     <!-- 🆕 v1.9.0: Autosave -->
     <string name="autosave_section">Editor</string>
     <string name="autosave_toggle">Autosave</string>
-    <string name="autosave_description">Automatically saves after 3 seconds of inactivity</string>
-    <string name="autosave_info">When enabled, your note is saved automatically while you type. Sync only runs on manual save.</string>
+    <string name="autosave_description">Saves after 3 s of inactivity and when leaving the editor</string>
+    <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
     <string name="autosave_indicator">✓ Saved</string>
+    <!-- 🆕 v1.10.0: Undo/Redo -->
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">All</string>
     <string name="filter_text_only">Text</string>
@@ -555,6 +575,8 @@
     <string name="toast_markdown_syncing">📝 Markdown sync running…</string>
     <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
     <string name="toast_export_failed">❌ Export failed: %s</string>
+    <!-- v1.10.0: Markdown Export Timeout -->
+    <string name="toast_export_timeout">⏱️ Export timed out – server too slow or unreachable. Please check your connection and try again.</string>
     <string name="toast_backup_success">✅ %s</string>
     <string name="toast_backup_failed">❌ Backup failed: %s</string>
     <string name="toast_restore_success">✅ %d notes restored</string>
@@ -605,12 +627,18 @@
     <string name="sync_in_progress">Syncing</string>
     <string name="sync_in_progress_text">Syncing notes…</string>
     <string name="notification_sync_success_title">Sync successful</string>
-    <string name="notification_sync_success_message">%d note(s) synchronized</string>
+    <plurals name="notification_sync_success_message">
+        <item quantity="one">%d note synchronized</item>
+        <item quantity="other">%d notes synchronized</item>
+    </plurals>
     <string name="notification_sync_failed_title">Sync failed</string>
     <string name="notification_sync_progress_title">Syncing…</string>
     <string name="notification_sync_progress_message">Notes are being synchronized</string>
     <string name="notification_sync_conflict_title">Sync conflict detected</string>
-    <string name="notification_sync_conflict_message">%d note(s) have conflicts</string>
+    <plurals name="notification_sync_conflict_message">
+        <item quantity="one">%d note has conflicts</item>
+        <item quantity="other">%d notes have conflicts</item>
+    </plurals>
     <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
     <string name="notification_sync_warning_message">Server unreachable for %dh</string>
     <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
@@ -672,5 +700,17 @@
     <string name="widget_opacity_description">Adjust the transparency of the widget background</string>
     <string name="widget_preview_title">Shopping List</string>
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
+
+    <!-- ============================= -->
+    <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
+    <!-- ============================= -->
+    <string name="share_overflow_menu">More options</string>
+    <string name="share_to_calendar">Add to calendar</string>
+    <string name="share_as_text">Share as text</string>
+    <string name="share_as_pdf">Share as PDF</string>
+    <string name="share_chooser_title">Share note</string>
+    <string name="share_no_calendar_app">No calendar app found</string>
+    <string name="share_error">Could not open share dialog</string>
+    <string name="share_pdf_error">Could not create PDF</string>
 
 </resources>

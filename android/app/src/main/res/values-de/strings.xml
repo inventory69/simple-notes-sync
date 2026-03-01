@@ -31,6 +31,7 @@
     <!-- FAB MENU                      -->
     <!-- ============================= -->
     <string name="fab_new_note">Neue Notiz</string>
+    <string name="fab_close">Menü schließen</string>
     <string name="fab_text_note">Text-Notiz</string>
     <string name="fab_checklist">Checkliste</string>
     <string name="create_text_note">Notiz</string>
@@ -88,6 +89,9 @@
     <string name="sync_phase_checking">Prüfe Server…</string>
     <string name="sync_phase_uploading">Hochladen…</string>
     <string name="sync_phase_downloading">Herunterladen…</string>
+    <string name="sync_phase_deleting">Vom Server löschen…</string>
+    <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
+    <string name="sync_quota_warning">⚠️ Sync wurde durch Androids Energieverwaltung verzögert. Öffne die App regelmäßig oder deaktiviere die Akku-Optimierung für zuverlässigen Hintergrund-Sync.</string>
     <string name="sync_phase_importing_markdown">Markdown importieren…</string>
     <string name="sync_phase_saving">Speichern…</string>
     <string name="sync_phase_completed">Sync abgeschlossen</string>
@@ -138,10 +142,19 @@
     <string name="snackbar_undo">RÜCKGÄNGIG</string>
     <string name="snackbar_note_deleted_local">\"%s\" lokal gelöscht</string>
     <string name="snackbar_note_deleted_server">\"%s\" wird vom Server gelöscht</string>
-    <string name="snackbar_notes_deleted_local">%d Notiz(en) lokal gelöscht</string>
-    <string name="snackbar_notes_deleted_server">%d Notiz(en) werden vom Server gelöscht</string>
+    <plurals name="snackbar_notes_deleted_local">
+        <item quantity="one">%d Notiz lokal gelöscht</item>
+        <item quantity="other">%d Notizen lokal gelöscht</item>
+    </plurals>
+    <plurals name="snackbar_notes_deleted_server">
+        <item quantity="one">%d Notiz wird vom Server gelöscht</item>
+        <item quantity="other">%d Notizen werden vom Server gelöscht</item>
+    </plurals>
     <string name="snackbar_deleted_from_server">Vom Server gelöscht</string>
-    <string name="snackbar_notes_deleted_from_server">%d Notiz(en) vom Server gelöscht</string>
+    <plurals name="snackbar_notes_deleted_from_server">
+        <item quantity="one">%d Notiz vom Server gelöscht</item>
+        <item quantity="other">%d Notizen vom Server gelöscht</item>
+    </plurals>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d von %2$d Notizen vom Server gelöscht</string>
     <string name="snackbar_server_delete_failed">Server-Löschung fehlgeschlagen</string>
     <string name="snackbar_server_error">Server-Fehler: %s</string>
@@ -269,7 +282,10 @@
     <string name="server_address_hint">z.B. http://192.168.0.188:8080/notes</string>
     <string name="server_advanced_settings">Erweitert</string>
     <string name="sync_folder_name">Sync-Ordner</string>
-    <string name="sync_folder_name_hint">Ordnername auf dem WebDAV-Server (Standard: notes). Nur ändern, wenn du weißt, was du tust.</string>
+    <string name="sync_folder_name_hint">Ordnername auf dem WebDAV-Server (Standard: notes). Betrifft auch den Markdown-Ordner (z. B. notes → notes-md). Nur ändern, wenn du weißt, was du tust.</string>
+    <!-- v1.10.0: Connection Timeout Settings -->
+    <string name="server_timeout_label">Verbindungs-Timeout: %d Sekunden</string>
+    <string name="server_timeout_description">Wartezeit bevor ein Verbindungsversuch als fehlgeschlagen gilt. Niedrigere Werte geben schnellere Rückmeldung wenn der Server nicht erreichbar ist.</string>
     <string name="server_url">Server URL</string>
     <string name="username">Benutzername</string>
     <string name="password">Passwort</string>
@@ -353,6 +369,7 @@
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export abgeschlossen</string>
     <string name="markdown_export_progress">Exportiere %1$d/%2$d Notizen…</string>
+    <string name="markdown_checking_server">Verbindung wird geprüft…</string>
     <string name="markdown_info">📝 Exportiert Notizen zusätzlich als .md-Dateien. Mounte WebDAV als Netzlaufwerk um mit VS Code, Typora oder jedem Markdown-Editor zu bearbeiten. JSON-Sync bleibt primäres Format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Synchronisiert Notizen automatisch als .md-Dateien (Upload + Download bei jedem Sync)</string>
@@ -459,9 +476,12 @@
     <!-- 🆕 v1.9.0: Autosave -->
     <string name="autosave_section">Editor</string>
     <string name="autosave_toggle">Automatisches Speichern</string>
-    <string name="autosave_description">Speichert automatisch nach 3 Sekunden Inaktivität</string>
-    <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
+    <string name="autosave_description">Speichert nach 3 s Inaktivität und beim Verlassen des Editors</string>
+    <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
     <string name="autosave_indicator">✓ Gespeichert</string>
+    <!-- 🆕 v1.10.0: Undo/Redo -->
+    <string name="editor_undo">Rükgängig</string>
+    <string name="editor_redo">Wiederherstellen</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">Alle</string>
     <string name="filter_text_only">Text</string>
@@ -555,6 +575,8 @@
     <string name="toast_markdown_syncing">📝 Markdown-Sync läuft…</string>
     <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
     <string name="toast_export_failed">❌ Export fehlgeschlagen: %s</string>
+    <!-- v1.10.0: Markdown Export Timeout -->
+    <string name="toast_export_timeout">⏱️ Export-Zeitüberschreitung – Server zu langsam oder nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.</string>
     <string name="toast_backup_success">✅ %s</string>
     <string name="toast_backup_failed">❌ Backup fehlgeschlagen: %s</string>
     <string name="toast_restore_success">✅ %d Notizen wiederhergestellt</string>
@@ -605,12 +627,18 @@
     <string name="sync_in_progress">Synchronisierung läuft</string>
     <string name="sync_in_progress_text">Notizen werden synchronisiert…</string>
     <string name="notification_sync_success_title">Sync erfolgreich</string>
-    <string name="notification_sync_success_message">%d Notiz(en) synchronisiert</string>
+    <plurals name="notification_sync_success_message">
+        <item quantity="one">%d Notiz synchronisiert</item>
+        <item quantity="other">%d Notizen synchronisiert</item>
+    </plurals>
     <string name="notification_sync_failed_title">Sync fehlgeschlagen</string>
     <string name="notification_sync_progress_title">Synchronisiere…</string>
     <string name="notification_sync_progress_message">Notizen werden synchronisiert</string>
     <string name="notification_sync_conflict_title">Sync-Konflikt erkannt</string>
-    <string name="notification_sync_conflict_message">%d Notiz(en) haben Konflikte</string>
+    <plurals name="notification_sync_conflict_message">
+        <item quantity="one">%d Notiz hat Konflikte</item>
+        <item quantity="other">%d Notizen haben Konflikte</item>
+    </plurals>
     <string name="notification_sync_warning_title">⚠️ Sync-Warnung</string>
     <string name="notification_sync_warning_message">Server seit %dh nicht erreichbar</string>
     <string name="notification_sync_warning_detail">Der WebDAV-Server ist seit %d Stunden nicht erreichbar. Bitte prüfe deine Netzwerkverbindung oder Server-Einstellungen.</string>
@@ -672,4 +700,16 @@
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
     <string name="widget_preview_title">Einkaufsliste</string>
     <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
+
+    <!-- ============================= -->
+    <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
+    <!-- ============================= -->
+    <string name="share_overflow_menu">Weitere Optionen</string>
+    <string name="share_to_calendar">Zum Kalender hinzufügen</string>
+    <string name="share_as_text">Als Text teilen</string>
+    <string name="share_as_pdf">Als PDF teilen</string>
+    <string name="share_chooser_title">Notiz teilen</string>
+    <string name="share_no_calendar_app">Keine Kalender-App gefunden</string>
+    <string name="share_error">Teilen-Dialog konnte nicht geöffnet werden</string>
+    <string name="share_pdf_error">PDF konnte nicht erstellt werden</string>
 </resources>

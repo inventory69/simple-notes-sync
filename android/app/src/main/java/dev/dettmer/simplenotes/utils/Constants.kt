@@ -78,12 +78,31 @@ object Constants {
     const val DEFAULT_SYNC_FOLDER_NAME = "notes"  // Backward compatible default
     const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
 
+    // 🆕 v1.10.0: Configurable connection timeout
+    const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
+    const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8  // 8s default, good for mobile
+    const val MIN_CONNECTION_TIMEOUT_SECONDS = 3
+    const val MAX_CONNECTION_TIMEOUT_SECONDS = 30
+
     // 🆕 v1.9.0: Autosave with debounce
     const val KEY_AUTOSAVE_ENABLED = "autosave_enabled"
-    const val DEFAULT_AUTOSAVE_ENABLED = false
+    const val DEFAULT_AUTOSAVE_ENABLED = true
     const val AUTOSAVE_DEBOUNCE_MS = 3_000L  // 3 seconds after last edit
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L  // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400  // fade animation duration (ms)
+
+    // 🆕 v1.10.0: Undo/Redo
+    const val UNDO_STACK_MAX_SIZE = 50
+    const val UNDO_SNAPSHOT_DEBOUNCE_MS = 500L  // Group keystrokes into single undo step
+    const val SNAPSHOT_RESTORE_GUARD_DELAY_MS = 50L  // Delay before clearing isRestoringSnapshot
+    const val CHECKLIST_SCROLL_LAYOUT_DELAY_MS = 50L  // Wait for item layout before scroll check
+
+    // 🆕 v1.10.0: Sync Banner auto-hide delays
+    const val BANNER_DELAY_COMPLETED_MS = 2_000L
+    const val BANNER_DELAY_INFO_MS = 2_500L
+    const val BANNER_DELAY_ERROR_MS = 4_000L
+    // Minimum display duration for active sync phases (PREPARING/UPLOADING/…) — prevents too-brief flashes
+    const val BANNER_PHASE_MIN_MS = 400L
 
     // ⚡ v1.8.0: Parallel Connections (Downloads + Uploads)
     // 🔧 v1.9.0: Unified setting for both downloads and uploads
