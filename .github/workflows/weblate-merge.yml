@@ -29,7 +29,7 @@ jobs:
         continue-on-error: true
         with:
           script: |
-            // GraphQL nötig — REST API kann keine PRs zu Draft konvertieren
+            // GraphQL required — REST API cannot convert PRs to Draft
             const mutation = `mutation($id: ID!) {
               convertPullRequestToDraft(input: {pullRequestId: $id}) {
                 pullRequest { isDraft }
@@ -53,13 +53,13 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // Finde neue/geänderte Sprachdateien
+            // Find new/changed language files
             const resDir = 'android/app/src/main/res';
             const enFile = path.join(resDir, 'values/strings.xml');
             const enContent = fs.readFileSync(enFile, 'utf8');
             const enCount = (enContent.match(/<string name="/g) || []).length;
 
-            // Finde alle values-XX Ordner (außer values, values-de, values-night)
+            // Find all values-XX directories (except values, values-de, values-night)
             const dirs = fs.readdirSync(resDir)
               .filter(d => d.match(/^values-[a-z]{2}$/) && d !== 'values-de');
 
@@ -113,7 +113,7 @@ Please check the following before approving:
 
 > ⚠️ **Note:** This PR was automatically marked as **Draft** so the CI build doesn't run unnecessarily. Mark it as "Ready for Review" when you're done reviewing.`;
 
-            // Prüfe ob bereits ein Bot-Kommentar existiert
+            // Check if a bot comment already exists
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,

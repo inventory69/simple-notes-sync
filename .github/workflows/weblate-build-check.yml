@@ -10,7 +10,7 @@ jobs:
   build:
     name: Build & Test Translation PR
     runs-on: ubuntu-latest
-    # Nur für Weblate-PRs, nur nach Approval oder Ready-for-Review
+    # Only for Weblate PRs, only after approval or ready-for-review
     if: >
       github.event.pull_request.head.ref == 'weblate-translations' &&
       (
@@ -21,10 +21,10 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Code auschecken
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Java einrichten
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -58,32 +58,32 @@ jobs:
           fi
           echo "✅ All translation files are valid XML"
 
-      - name: Debug Build erstellen
+      - name: Build Debug APK
         run: |
           cd android
           ./gradlew assembleStandardDebug assembleFdroidDebug --no-daemon --stacktrace
 
-      - name: Unit Tests ausfuehren
+      - name: Run Unit Tests
         run: |
           cd android
           ./gradlew test --no-daemon --stacktrace
 
-      - name: Build-Ergebnis pruefen
+      - name: Verify build result
         run: |
           if [ -f "android/app/build/outputs/apk/standard/debug/app-standard-debug.apk" ]; then
-            echo "✅ Standard Debug APK erfolgreich gebaut"
+            echo "✅ Standard Debug APK built successfully"
           else
-            echo "❌ Standard Debug APK Build fehlgeschlagen"
+            echo "❌ Standard Debug APK build failed"
             exit 1
           fi
           if [ -f "android/app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk" ]; then
-            echo "✅ F-Droid Debug APK erfolgreich gebaut"
+            echo "✅ F-Droid Debug APK built successfully"
           else
-            echo "❌ F-Droid Debug APK Build fehlgeschlagen"
+            echo "❌ F-Droid Debug APK build failed"
             exit 1
           fi
 
-      - name: Kommentar zu PR hinzufuegen
+      - name: Post PR comment
         uses: actions/github-script@v7
         if: success()
         with:
@@ -92,11 +92,11 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ✅ Translation Build erfolgreich!
+              body: `## ✅ Translation Build successful!
 
-            Die Übersetzungs-PR wurde erfolgreich gebaut und getestet.
+            The translation PR was built and tested successfully.
 
-            **Nächster Schritt:** Squash-Merge durchführen.
+            **Next step:** Perform squash-merge.
 
-            > Vergiss nicht, \`locales_config.xml\` zu aktualisieren falls eine neue Sprache hinzugefügt wurde.`
+            > Don't forget to update \`locales_config.xml\` if a new language was added.`
             })
