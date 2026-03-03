@@ -101,15 +101,20 @@ jobs:
         if: success()
         with:
           script: |
+            // workflow_dispatch passes pr_number as input; PR events use context.issue.number
+            const prNumber = context.payload.inputs?.pr_number
+              ? parseInt(context.payload.inputs.pr_number)
+              : context.issue.number;
+            if (!prNumber) {
+              core.warning('No PR number available — skipping comment');
+              return;
+            }
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ✅ Translation Build successful!
-
-            The translation PR was built and tested successfully.
-
-            **Next step:** Perform squash-merge.
-
-            > Don't forget to update \`locales_config.xml\` if a new language was added.`
+              body: '## \u2705 Translation Build successful!\n\n' +
+                'The translation PR was built and tested successfully.\n\n' +
+                '**Next step:** Perform squash-merge.\n\n' +
+                '> Don\'t forget to update `locales_config.xml` if a new language was added.'
             })
