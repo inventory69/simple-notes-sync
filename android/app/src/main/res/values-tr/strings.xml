@@ -595,9 +595,9 @@
     <string name="toast_sync_interval_changed">⏱️ Senkronizasyon aralığı %s olarak değiştirildi</string>
     <string name="version_not_available">Sürüm mevcut değil</string>
     <string name="status_checking">🔍 Kontrol ediliyor…</string>
-    <string name="battery_optimization_dialog_message">Lütfen Simple Notes için 'Optimizasyon yok' seçeneğini işaretleyin.</string>
+    <string name="battery_optimization_dialog_message">Lütfen Simple Notes için \'Optimizasyon yok\' seçeneğini işaretleyin.</string>
     <string name="battery_optimization_dialog_title">Arka Plan Senkronizasyonu</string>
-    <string name="battery_optimization_dialog_full_message">Uygulamanın arka planda senkronize olabilmesi için pil optimizasyonu devre dışı olmalıdır.\n\nLütfen Simple Notes için 'Optimizasyon yok' seçeneğini işaretleyin.</string>
+    <string name="battery_optimization_dialog_full_message">Uygulamanın arka planda senkronize olabilmesi için pil optimizasyonu devre dışı olmalıdır.\n\nLütfen Simple Notes için \'Optimizasyon yok\' seçeneğini işaretleyin.</string>
     <string name="battery_optimization_open_settings">Ayarları Aç</string>
     <string name="battery_optimization_later">Sonra</string>
     <string name="content_description_back">Geri</string>
