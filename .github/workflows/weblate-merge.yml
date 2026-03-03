@@ -75,43 +75,33 @@ jobs:
               }
             }
 
-            const body = `## 🌍 Translation PR — Review Required
-
-This PR contains translation updates from [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/).
-
-### 📊 Translation Coverage (in this PR)
-
-| Language | Translated | Coverage |
-|----------|-----------|----------|
-${langStats || '| — | — | PR contains empty file(s) |'}
-
-### ✅ Review Checklist
-
-Please check the following before approving:
-
-- [ ] **Coverage**: Is the translation sufficiently complete? (Recommendation: ≥50%)
-- [ ] **Spot check**: Verify 5–10 random strings for correctness (back-translate via Google Translate)
-- [ ] **Placeholders**: Are \`%s\`, \`%d\`, \`%1$s\` etc. correctly preserved?
-- [ ] **App name**: Is \`app_name\` unchanged ("Simple Notes")?
-- [ ] **XML validity**: No broken XML tags or encoding errors?
-- [ ] **Length**: Are translations not excessively long (UI overflow)?
-- [ ] **Consistency**: Is terminology used consistently?
-- [ ] **locales_config.xml**: Needs to be updated (add new language)
-
-### 🔍 How to review translations you don't speak
-
-1. **Back-translate**: Copy translated strings → Google Translate / DeepL → compare with English original
-2. **Weblate checks**: [Open Weblate project](https://hosted.weblate.org/projects/simple-notes-sync/android-app/) — built-in quality checks for placeholders, length, duplicates etc.
-3. **Community review**: Ask in the PR if another speaker of the language can review
-
-### ⏭️ Next Steps
-
-1. Review translations (see checklist above)
-2. If OK: **Approve** the PR or mark it as **Ready for Review**
-3. CI build starts automatically after approval
-4. After successful build: Merge
-
-> ⚠️ **Note:** This PR was automatically marked as **Draft** so the CI build doesn't run unnecessarily. Mark it as "Ready for Review" when you're done reviewing.`;
+            const body =
+              '## 🌍 Translation PR — Review Required\n\n' +
+              'This PR contains translation updates from [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/).\n\n' +
+              '### 📊 Translation Coverage (in this PR)\n\n' +
+              '| Language | Translated | Coverage |\n' +
+              '|----------|-----------|----------|\n' +
+              (langStats || '| — | — | PR contains empty file(s) |\n') + '\n' +
+              '### ✅ Review Checklist\n\n' +
+              'Please check the following before approving:\n\n' +
+              '- [ ] **Coverage**: Is the translation sufficiently complete? (Recommendation: ≥50%)\n' +
+              '- [ ] **Spot check**: Verify 5–10 random strings for correctness (back-translate via Google Translate)\n' +
+              '- [ ] **Placeholders**: Are `%s`, `%d`, `%1$s` etc. correctly preserved?\n' +
+              '- [ ] **App name**: Is `app_name` unchanged ("Simple Notes")?\n' +
+              '- [ ] **XML validity**: No broken XML tags or encoding errors?\n' +
+              '- [ ] **Length**: Are translations not excessively long (UI overflow)?\n' +
+              '- [ ] **Consistency**: Is terminology used consistently?\n' +
+              '- [ ] **locales_config.xml**: Needs to be updated (add new language)\n\n' +
+              '### 🔍 How to review translations you don\'t speak\n\n' +
+              '1. **Back-translate**: Copy translated strings → Google Translate / DeepL → compare with English original\n' +
+              '2. **Weblate checks**: [Open Weblate project](https://hosted.weblate.org/projects/simple-notes-sync/android-app/) — built-in quality checks for placeholders, length, duplicates etc.\n' +
+              '3. **Community review**: Ask in the PR if another speaker of the language can review\n\n' +
+              '### ⏭️ Next Steps\n\n' +
+              '1. Review translations (see checklist above)\n' +
+              '2. If OK: **Approve** the PR or mark it as **Ready for Review**\n' +
+              '3. CI build starts automatically after approval\n' +
+              '4. After successful build: Merge\n\n' +
+              '> ⚠️ **Note:** This PR was automatically marked as **Draft** so the CI build doesn\'t run unnecessarily. Mark it as "Ready for Review" when you\'re done reviewing.';
 
             // Check if a bot comment already exists
             const comments = await github.rest.issues.listComments({
