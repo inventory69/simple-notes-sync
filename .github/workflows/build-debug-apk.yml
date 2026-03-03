@@ -1,12 +1,7 @@
 name: Build Debug APK
 
 on:
-  push:
-    branches: 
-      - 'debug/**'
-      - 'fix/**'
-      - 'feature/**'
-  workflow_dispatch:  # Manueller Trigger möglich
+  workflow_dispatch:  # Nur manueller Trigger
 
 jobs:
   build-debug:
