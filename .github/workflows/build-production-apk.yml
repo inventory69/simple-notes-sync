@@ -3,6 +3,8 @@ name: Build Android Production APK
 on:
   push:
     branches: [ main ]  # Only trigger on push/merge to main
+    paths-ignore:
+      - 'android/app/src/main/res/values-*/strings.xml'  # Translation-only merges don't produce a release
   workflow_dispatch:  # Enables manual trigger
 
 permissions:
