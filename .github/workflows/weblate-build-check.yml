@@ -5,17 +5,25 @@ on:
   pull_request:
     types: [ready_for_review]
     branches: [main]
+  workflow_dispatch:  # Allows owner to manually trigger (owners cannot approve their own PRs)
+    inputs:
+      pr_number:
+        description: 'PR number to post result comment on'
+        required: false
 
 jobs:
   build:
     name: Build & Test Translation PR
     runs-on: ubuntu-latest
-    # Only for Weblate PRs, only after approval or ready-for-review
+    # Only for Weblate PRs, only after approval, ready-for-review, or manual dispatch
     if: >
-      github.event.pull_request.head.ref == 'weblate-translations' &&
+      github.event_name == 'workflow_dispatch' ||
       (
-        (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') ||
-        (github.event_name == 'pull_request' && github.event.action == 'ready_for_review')
+        github.event.pull_request.head.ref == 'weblate-translations' &&
+        (
+          (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') ||
+          (github.event_name == 'pull_request' && github.event.action == 'ready_for_review')
+        )
       )
     permissions:
       contents: read
