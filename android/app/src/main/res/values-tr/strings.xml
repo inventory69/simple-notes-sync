@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================= -->
+    <!-- APP IDENTITY                  -->
+    <!-- ============================= -->
+    <string name="app_name">Simple Notes</string>
+    
+    <!-- ============================= -->
+    <!-- MAIN SCREEN                   -->
+    <!-- ============================= -->
+    <string name="main_title">Simple Notes</string>
+    <string name="no_notes_yet">Henüz not yok.\nNot oluşturmak için + simgesine dokunun.</string>
+    <string name="add_note">Not Ekle</string>
+    <string name="sync">Senkronize Et</string>
+    <string name="settings">Ayarlar</string>
+    <string name="action_sync">Senkronize Et</string>
+    <string name="action_settings">Ayarlar</string>
+    <string name="action_close_selection">Seçimi Kapat</string>
+    <string name="action_select_all">Tümünü Seç</string>
+    <string name="action_delete_selected">Seçilenleri Sil</string>
+    <string name="selection_count">%d seçildi</string>
+    
+    <!-- ============================= -->
+    <!-- EMPTY STATE                   -->
+    <!-- ============================= -->
+    <string name="empty_state_emoji">📝</string>
+    <string name="empty_state_title">Henüz not yok</string>
+    <string name="empty_state_message">Not oluşturmak için + simgesine dokunun.</string>
+    
+    <!-- ============================= -->
+    <!-- FAB MENU                      -->
+    <!-- ============================= -->
+    <string name="fab_new_note">Yeni Not</string>
+    <string name="fab_close">Menüyü Kapat</string>
+    <string name="fab_text_note">Metin Notu</string>
+    <string name="fab_checklist">Kontrol Listesi</string>
+    <string name="create_text_note">Not</string>
+    <string name="create_checklist">Liste</string>
+        
+    <!-- ============================= -->
+    <!-- NOTE CARD                     -->
+    <!-- ============================= -->
+    <string name="note_title_placeholder">Not Başlığı</string>
+    <string name="note_content_placeholder">Not içeriği önizlemesi…</string>
+    <string name="note_timestamp_placeholder">2 saat önce</string>
+    <string name="untitled">Başlıksız</string>
+    <string name="checklist_progress">%1$d/%2$d tamamlandı</string>
+    <string name="empty_checklist">Kayıt yok</string>
+    
+    <!-- ============================= -->
+    <!-- SYNC STATUS BANNER            -->
+    <!-- ============================= -->
+    <string name="sync_status">Senkronizasyon Durumu</string>
+    <string name="sync_syncing">Senkronize ediliyor…</string>
+    <string name="sync_completed">Senkronize edildi</string>
+    <string name="sync_error">Hata</string>
+    <string name="sync_status_syncing">Senkronize ediliyor…</string>
+    <string name="sync_status_completed">Senkronizasyon tamamlandı</string>
+    <string name="sync_status_error">Senkronizasyon başarısız</string>
+    <string name="sync_already_running">Senkronizasyon zaten devam ediyor</string>
+    
+    <!-- 🆕 v1.8.0: SyncStatus enum values -->
+    <string name="sync_status_synced">Sunucu ile senkronize edildi</string>
+    <string name="sync_status_pending">Senkronizasyon bekleniyor</string>
+    <string name="sync_status_conflict">Senkronizasyon çakışması tespit edildi</string>
+    <string name="sync_status_local_only">Henüz senkronize edilmedi</string>
+    <string name="sync_status_deleted_on_server">Sunucuda silindi</string>
+    
+    <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
+    <string name="sync_legend_button">Senkronizasyon durumu yardımı</string>
+    <string name="sync_legend_title">Senkronizasyon Durumu Simgeleri</string>
+    <string name="sync_legend_description">Her not, senkronizasyon durumunu gösteren küçük bir simge içerir:</string>
+    <string name="sync_legend_synced_label">Senkronize</string>
+    <string name="sync_legend_synced_desc">Bu not tüm cihazlarda günceldir.</string>
+    <string name="sync_legend_pending_label">Beklemede</string>
+    <string name="sync_legend_pending_desc">Bu notta senkronize edilmeyi bekleyen yerel değişiklikler var.</string>
+    <string name="sync_legend_conflict_label">Çakışma</string>
+    <string name="sync_legend_conflict_desc">Bu not birden fazla cihazda aynı anda değiştirildi. En son sürüm korundu.</string>
+    <string name="sync_legend_local_only_label">Yalnızca yerel</string>
+    <string name="sync_legend_local_only_desc">Bu not henüz sunucuya hiç senkronize edilmedi.</string>
+    <string name="sync_legend_deleted_label">Sunucuda silindi</string>
+    <string name="sync_legend_deleted_desc">Bu not başka bir cihazda veya doğrudan sunucuda silindi. Yerel olarak hâlâ mevcut.</string>
+
+    <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
+    <string name="sync_deleted_on_server_count">Sunucuda silinen: %d</string>
+    
+    <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
+    <string name="sync_phase_preparing">Senkronize ediliyor…</string>
+    <string name="sync_phase_checking">Sunucu kontrol ediliyor…</string>
+    <string name="sync_phase_uploading">Yükleniyor…</string>
+    <string name="sync_phase_downloading">İndiriliyor…</string>
+    <string name="sync_phase_deleting">Sunucudan siliniyor…</string>
+    <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
+    <string name="sync_quota_warning">⚠️ Senkronizasyon, Android güç yönetimi nedeniyle gecikti. Arka planda güvenilir senkronizasyon için uygulamayı düzenli olarak açın veya pil optimizasyonunu devre dışı bırakın.</string>
+
+    <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
+    <string name="sort_notes">Notları Sırala</string>
+    <string name="sort_ascending">Artan</string>
+    <string name="sort_descending">Azalan</string>
+    <string name="sort_by_updated">Son düzenlenme</string>
+    <string name="sort_by_created">Oluşturulma tarihi</string>
+    <string name="sort_by_name">Ad</string>
+    <string name="sort_by_type">Tür</string>
+    <string name="close">Kapat</string>
+    
+    <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->
+    <string name="sort_checklist">Kontrol listesini sırala</string>
+    <string name="sort_checklist_manual">Manuel</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_unchecked_first">İşaretlenmemişler önce</string>
+    <string name="sort_checklist_checked_first">İşaretlenmişler önce</string>
+    <string name="apply">Uygula</string>
+    <string name="sync_phase_importing_markdown">Markdown içe aktarılıyor…</string>
+    <string name="sync_phase_saving">Kaydediliyor…</string>
+    <string name="sync_phase_completed">Senkronizasyon tamamlandı</string>
+    <string name="sync_phase_error">Senkronizasyon başarısız</string>
+    
+    <!-- ============================= -->
+    <!-- DELETE DIALOGS                -->
+    <!-- ============================= -->
+    <string name="delete_note_title">Not silinsin mi?</string>
+    <string name="delete_notes_title">%d not silinsin mi?</string>
+    <string name="delete_note_message">Bu notu nasıl silmek istiyorsunuz?</string>
+    <string name="delete_notes_message">Bu %d notu nasıl silmek istiyorsunuz?</string>
+    <string name="delete_everywhere">Her yerden sil (sunucu dahil)</string>
+    <string name="delete_everywhere_offline_hint">Çevrimdışı modda kullanılamaz</string>
+    <string name="delete_local_only">Yalnızca yerel olarak sil</string>
+    <string name="delete">Sil</string>
+    <string name="cancel">İptal</string>
+    <string name="ok">Tamam</string>
+    <!-- Legacy delete dialogs -->
+    <string name="legacy_delete_dialog_title">Notu sil</string>
+    <string name="legacy_delete_dialog_message">\"%s\" yerel olarak silinecek.\n\nSunucudan da silinsin mi?</string>
+    <string name="legacy_delete_from_server">Sunucudan sil</string>
+    <string name="legacy_delete_with_server">\"%s\" yerel olarak ve sunucudan silinecek</string>
+    <string name="legacy_delete_local_only">\"%s\" yerel olarak silindi (sunucu kalır)</string>
+    
+    <!-- ============================= -->
+    <!-- SNACKBAR MESSAGES             -->
+    <!-- ============================= -->
+    <string name="snackbar_undo">GERİ AL</string>
+    <string name="snackbar_note_deleted_local">\"%s\" yerel olarak silindi</string>
+    <string name="snackbar_note_deleted_server">\"%s\" sunucudan silinecek</string>
+    <plurals name="snackbar_notes_deleted_local">
+        <item quantity="one">%d not yerel olarak silindi</item>
+        <item quantity="other">%d not yerel olarak silindi</item>
+    </plurals>
+    <plurals name="snackbar_notes_deleted_server">
+        <item quantity="one">%d not sunucudan silinecek</item>
+        <item quantity="other">%d not sunucudan silinecek</item>
+    </plurals>
+    <string name="snackbar_deleted_from_server">Sunucudan silindi</string>
+    <plurals name="snackbar_notes_deleted_from_server">
+        <item quantity="one">%d not sunucudan silindi</item>
+        <item quantity="other">%d not sunucudan silindi</item>
+    </plurals>
+    <string name="snackbar_notes_deleted_from_server_partial">%2$d notun %1$d tanesi sunucudan silindi</string>
+    <string name="snackbar_server_delete_failed">Sunucudan silme başarısız</string>
+    <string name="snackbar_server_error">Sunucu hatası: %s</string>
+    <string name="snackbar_already_synced">Zaten senkronize edildi</string>
+    <string name="snackbar_server_unreachable">Sunucuya ulaşılamıyor</string>
+    <string name="snackbar_connection_timeout">Bağlantı zaman aşımı</string>
+    <string name="snackbar_synced_count">✅ Senkronize edildi: %d not</string>
+    <string name="snackbar_nothing_to_sync">ℹ️ Senkronize edilecek bir şey yok</string>
+    
+    <!-- ============================= -->
+    <!-- SYNC ERROR MESSAGES           -->
+    <!-- ============================= -->
+    <string name="sync_error_ssl">SSL hatası</string>
+    <string name="sync_error_auth_failed">Kimlik doğrulama başarısız</string>
+    <string name="sync_error_access_denied">Erişim reddedildi</string>
+    <string name="sync_error_path_not_found">Sunucu yolu bulunamadı</string>
+    <string name="sync_error_server">Sunucu hatası</string>
+    <string name="sync_error_http">HTTP hatası: %d</string>
+    <string name="sync_error_unknown">Bilinmeyen hata</string>
+
+    <!-- ============================= -->
+    <!-- URL VALIDATION ERRORS         -->
+    <!-- ============================= -->
+    <string name="error_http_local_only">HTTP yalnızca yerel sunucular için izinlidir (örn. 192.168.x.x, 10.x.x.x, nas.local). Genel sunucular için lütfen HTTPS kullanın.</string>
+    <string name="error_invalid_protocol">Geçersiz protokol: %s. Lütfen HTTP veya HTTPS kullanın.</string>
+    <string name="error_invalid_url">Geçersiz URL: %s</string>
+    <string name="error_server_not_configured">WebDAV sunucusu tam olarak yapılandırılmamış</string>
+    <string name="error_sardine_client_failed">Sardine istemcisi oluşturulamadı</string>
+    <string name="error_server_url_not_configured">Sunucu URL’si yapılandırılmamış</string>
+
+    <!-- ============================= -->
+    <!-- NOTE EDITOR                   -->
+    <!-- ============================= -->
+    <string name="new_note">Yeni Not</string>
+    <string name="edit_note">Notu Düzenle</string>
+    <string name="new_checklist">Yeni Liste</string>
+    <string name="edit_checklist">Listeyi Düzenle</string>
+    <string name="title">Başlık</string>
+    <string name="content">İçerik</string>
+    <string name="back">Geri</string>
+    <string name="save">Kaydet</string>
+    <string name="add_item">Öğe ekle</string>
+    <string name="item_placeholder">Yeni öğe…</string>
+    <string name="reorder_item">Öğeyi yeniden sırala</string>
+    <string name="drag_to_reorder">Yeniden sıralamak için sürükleyin</string>
+    <string name="delete_item">Öğeyi sil</string>
+    <string name="note_is_empty">Not boş</string>
+    <string name="note_saved">Not kaydedildi</string>
+    <string name="note_deleted">Not silindi</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - MAIN               -->
+    <!-- ============================= -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="settings_language">Dil</string>
+    <string name="settings_language_subtitle">%s</string>
+    <string name="settings_server">Sunucu Ayarları</string>
+    <string name="settings_server_status_reachable">✅ Erişilebilir</string>
+    <string name="settings_server_status_unreachable">❌ Erişilemiyor</string>
+    <string name="settings_server_status_checking">🔍 Kontrol ediliyor…</string>
+    <string name="settings_server_status_not_configured">⚠️ Yapılandırılmadı</string>
+    <string name="settings_server_status_offline_mode">📴 Çevrimdışı Mod</string>
+    <string name="settings_sync">Senkronizasyon Ayarları</string>
+    <string name="settings_sync_auto_on">Otomatik Senkronizasyon: Açık • %s</string>
+    <string name="settings_sync_auto_off">Otomatik Senkronizasyon: Kapalı</string>
+    <string name="settings_sync_offline_mode">📴 Çevrimdışı Mod</string>
+    <string name="settings_sync_manual_only">Yalnızca manuel senkronizasyon</string>
+    <string name="settings_sync_triggers_active">%d tetikleyici aktif</string>
+    <string name="settings_interval_15min">15 dk</string>
+    <string name="settings_interval_30min">30 dk</string>
+    <string name="settings_interval_60min">60 dk</string>
+    <string name="settings_markdown">Markdown Masaüstü Entegrasyonu</string>
+    <string name="settings_markdown_auto_on">Otomatik Senkronizasyon: Açık</string>
+    <string name="settings_markdown_auto_off">Otomatik Senkronizasyon: Kapalı</string>
+    <string name="settings_markdown_manual_hint">Veya markdown dosyalarını manuel olarak senkronize edin:</string>
+    <string name="settings_markdown_manual_button">Markdown Senkronize Et</string>
+    <string name="settings_backup">Yedekleme &amp; Geri Yükleme</string>
+    <string name="settings_backup_subtitle">Yerel veya sunucu yedeği</string>
+
+    <!-- Issue #21: Notes Import -->
+    <string name="settings_import_title">Notları İçe Aktar</string>
+    <string name="settings_import_subtitle">Dosyalardan veya sunucudan not içe aktar</string>
+    <string name="import_section_server">WebDAV Sunucusundan</string>
+    <string name="import_section_local">Cihazdan</string>
+    <string name="import_info_text">.md, .json veya .txt dosyalarını Simple Notes olarak içe aktarın. İçe aktarılan notlar bir sonraki senkronizasyonda senkronize edilir. Orijinal dosyalar değişmeden kalır.</string>
+    <string name="settings_import_from_server">WebDAV Sunucusunu Tara</string>
+    <string name="settings_import_from_file">Cihazdan Dosya Seç</string>
+    <string name="import_dialog_scanning">Taranıyor…</string>
+    <string name="import_dialog_found">%d içe aktarılabilir dosya bulundu</string>
+    <string name="import_button_import">%d dosyayı içe aktar</string>
+    <string name="import_no_files_found">İçe aktarılabilir dosya bulunamadı</string>
+    <string name="import_summary_title">İçe Aktarma Sonucu</string>
+    <string name="import_dialog_complete">%1$d içe aktarıldı, %2$d atlandı, %3$d başarısız</string>
+    <string name="import_server_info">WebDAV sunucunuzu tüm alt klasörlerde içe aktarılabilir not dosyaları için tarar. Not kimlikleri eşleşen JSON dosyaları doğrudan senkronize edilir.</string>
+    <string name="import_local_info">.md, .json veya .txt dosyalarını doğrudan cihaz depolamanızdan seçin.</string>
+    <string name="import_cancel">İptal</string>
+    <string name="settings_backup_info">📦 Her geri yüklemeden önce otomatik olarak bir güvenlik yedeği oluşturulur.</string>
+    <string name="settings_backup_local_title">Yerel Yedek</string>
+    <string name="settings_backup_server_title">Sunucu Yedeği</string>
+    <string name="settings_about">Bu Uygulama Hakkında</string>
+    <string name="settings_about_app_version">📱 Uygulama Sürümü</string>
+    <string name="settings_about_app_version_loading">Sürüm yükleniyor…</string>
+    <string name="settings_about_github">🌐 GitHub Deposu</string>
+    <string name="settings_about_developer">👤 Geliştirici</string>
+    <string name="settings_about_license">⚖️ Lisans</string>
+    <string name="settings_debug">Hata Ayıklama &amp; Tanılama</string>
+    <string name="settings_debug_logging_on">Günlük Kaydı: Açık</string>
+    <string name="settings_debug_logging_off">Günlük Kaydı: Kapalı</string>
+    <string name="settings_debug_file_logging">📝 Dosyaya Günlük Kaydı</string>
+    <string name="settings_debug_file_logging_desc">Senkronizasyon günlüklerini dosyaya kaydet</string>
+    <string name="settings_debug_export_logs">📤 Günlükleri dışa aktar &amp; paylaş</string>
+    <string name="settings_debug_delete_logs">🗑️ Günlükleri sil</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - SERVER             -->
+    <!-- ============================= -->
+    <string name="server_settings">Sunucu Ayarları</string>
+    <string name="server_settings_title">Sunucu Ayarları</string>
+    <string name="server_connection_type">Bağlantı Türü</string>
+    <string name="server_connection_http">🏠 Dahili (HTTP)</string>
+    <string name="server_connection_https">🌐 Harici (HTTPS)</string>
+    <string name="server_connection_http_hint">HTTP yalnızca yerel ağlar için (örn. 192.168.x.x, 10.x.x.x)</string>
+    <string name="server_connection_https_hint">İnternet üzerinden güvenli bağlantılar için HTTPS kullanın</string>
+    <string name="server_address">Sunucu Adresi</string>
+    <string name="server_address_hint">örn. http://192.168.0.188:8080/notes</string>
+    <string name="server_advanced_settings">Gelişmiş</string>
+    <string name="sync_folder_name">Senkronizasyon klasörü</string>
+    <string name="sync_folder_name_hint">WebDAV sunucusundaki klasör adı (varsayılan: notes). Bu aynı zamanda Markdown klasörünü de etkiler (örn. notes → notes-md). Ne yaptığınızı biliyorsanız değiştirin.</string>
+    <!-- v1.10.0: Connection Timeout Settings -->
+    <string name="server_timeout_label">Bağlantı Zaman Aşımı: %d saniye</string>
+    <string name="server_timeout_description">Bir bağlantı girişimi başarısız sayılmadan önce beklenen süre. Daha düşük değerler, sunucuya ulaşılamadığında daha hızlı geri bildirim verir.</string>
+    <string name="server_url">Sunucu URL’si</string>
+    <string name="username">Kullanıcı Adı</string>
+    <string name="password">Parola</string>
+    <string name="server_password_show">Göster</string>
+    <string name="server_password_hide">Gizle</string>
+    <string name="server_status_label">Sunucu Durumu:</string>
+    <string name="server_status_reachable">✅ Erişilebilir</string>
+    <string name="server_status_unreachable">❌ Erişilemiyor</string>
+    <string name="server_status_checking">🔍 Kontrol ediliyor…</string>
+    <string name="server_status_not_configured">⚠️ Yapılandırılmadı</string>
+    <string name="server_status_offline_mode">📴 Çevrimdışı mod aktif</string>
+    <string name="server_status_unknown">❓ Bilinmiyor</string>
+    <string name="server_offline_mode_title">📴 Çevrimdışı Mod</string>
+    <string name="server_offline_mode_subtitle">Tüm ağ özelliklerini devre dışı bırak</string>
+    <string name="test_connection">Bağlantıyı Test Et</string>
+    <string name="sync_now">Şimdi Senkronize Et</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - SYNC               -->
+    <!-- ============================= -->
+    <string name="sync_settings">Senkronizasyon Ayarları</string>
+    <string name="sync_settings_title">Senkronizasyon Ayarları</string>
+    <string name="auto_sync">Otomatik Senkronizasyon etkin</string>
+    <string name="sync_auto_sync_info">🔄 Otomatik Senkronizasyon:\n• Her 30 dakikada sunucu erişilebilirliğini kontrol eder\n• Herhangi bir WiFi bağlantısında çalışır\n• Arka planda çalışır\n• Minimum pil kullanımı (~0.4%%/gün)</string>
+    <string name="sync_auto_sync_enabled">Otomatik Senkronizasyon etkin</string>
+    <string name="sync_interval_section">Senkronizasyon Aralığı</string>
+    <string name="sync_interval_info">Uygulamanın arka planda ne sıklıkla senkronize olacağını belirler. Daha kısa aralıklar daha güncel veri sağlar, ancak pil kullanımı biraz artar.\n\n⏱️ Not: Telefonunuz bekleme modunda olduğunda, Android pil tasarrufu için senkronizasyonları geciktirebilir (60 dakikaya kadar). Bu normaldir ve tüm arka plan uygulamalarını etkiler.</string>
+    <string name="sync_interval_15min_title">⚡ Her 15 dakika</string>
+    <string name="sync_interval_15min_subtitle">En hızlı senkronizasyon • ~0.8%% pil/gün (~23 mAh)</string>
+    <string name="sync_interval_30min_title">✓ Her 30 dakika (Önerilen)</string>
+    <string name="sync_interval_30min_subtitle">Dengeli oran • ~0.4%% pil/gün (~12 mAh)</string>
+    <string name="sync_interval_60min_title">🔋 Her 60 dakika</string>
+    <string name="sync_interval_60min_subtitle">Maksimum pil ömrü • ~0.2%% pil/gün (~6 mAh tah.)</string>
+    <!-- Legacy -->
+    <string name="auto_sync_info">ℹ️ Otomatik Senkronizasyon:\n\n• Her 30 dakikada sunucu erişilebilirliğini kontrol eder\n• Herhangi bir WiFi bağlantısında çalışır\n• Arka planda çalışır\n• Minimum pil kullanımı (~0.4%%/gün)</string>
+
+    <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
+    <string name="sync_section_network">📶 Ağ Kısıtlaması</string>
+    <string name="sync_section_instant">📲 Anında Senkronizasyon</string>
+    <string name="sync_section_background">📡 Arka Plan Senkronizasyonu</string>
+    <string name="sync_section_advanced">⚙️ Gelişmiş</string>
+
+    <!-- 🆕 v1.8.0: Sync Settings Restructure -->
+    <string name="sync_section_triggers">Senkronizasyon Tetikleyicileri</string>
+    <string name="sync_section_network_performance">Ağ &amp; Performans</string>
+
+    <string name="sync_wifi_only_hint">💡 WiFi-Bağlantı tetikleyicisi bu ayardan etkilenmez – WiFi bağlı olduğunda her zaman senkronize olur.</string>
+    <string name="sync_wifi_only_error">Senkronizasyon yalnızca WiFi bağlıyken çalışır</string>
+
+    <string name="sync_trigger_on_save_title">Kaydettikten Sonra</string>
+    <string name="sync_trigger_on_save_subtitle">Her değişiklikten sonra hemen senkronize et</string>
+
+    <string name="sync_trigger_on_resume_title">Uygulama Başlatıldığında</string>
+    <string name="sync_trigger_on_resume_subtitle">Uygulama açıldığında senkronize et</string>
+
+    <string name="sync_trigger_wifi_connect_title">WiFi Bağlandığında</string>
+    <string name="sync_trigger_wifi_connect_subtitle">WiFi bağlıyken senkronize et</string>
+
+    <string name="sync_trigger_periodic_title">Her X dakikada otomatik</string>
+    <string name="sync_trigger_periodic_subtitle">Düzenli arka plan senkronizasyonu</string>
+
+    <string name="sync_trigger_boot_title">Cihaz Yeniden Başladığında</string>
+    <string name="sync_trigger_boot_subtitle">Yeniden başlatmadan sonra arka plan senkronizasyonu başlatır</string>
+
+    <!-- 🆕 v1.7.0: WiFi-Only Sync -->
+    <string name="sync_wifi_only_title">Yalnızca WiFi ile senkronizasyon</string>
+    <string name="sync_wifi_only_subtitle">Sadece WiFi bağlıyken senkronize eder. Mobil veri tasarrufu sağlar ve uzun bekleme sürelerini önler.</string>
+    <string name="sync_wifi_only_blocked">Senkronizasyon yalnızca WiFi bağlıyken çalışır</string>
+
+    <string name="sync_manual_hint">Manuel senkronizasyon (araç çubuğu/kaynağı çek) da mevcuttur.</string>
+    <string name="sync_manual_hint_disabled">Senkronizasyon çevrimdışı modda kullanılamaz.</string>
+
+    <string name="sync_offline_mode_title">Çevrimdışı Mod</string>
+    <string name="sync_offline_mode_message">Uygulamayı çevrimdışı modda kullanıyorsunuz. Notları senkronize etmek için bir sunucu kurun.</string>
+    <string name="sync_offline_mode_button">Sunucu Kur</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - MARKDOWN           -->
+    <!-- ============================= -->
+    <string name="markdown_settings_title">Markdown Masaüstü Entegrasyonu</string>
+    <string name="markdown_dialog_title">Markdown Otomatik Senkronizasyon</string>
+    <string name="markdown_export_complete">✅ Dışa aktarma tamamlandı</string>
+    <string name="markdown_export_progress">%1$d/%2$d not dışa aktarılıyor…</string>
+    <string name="markdown_checking_server">Sunucu bağlantısı kontrol ediliyor…</string>
+    <string name="markdown_info">📝 Notları ayrıca .md dosyaları olarak dışa aktarır. WebDAV’ı ağ sürücüsü olarak bağlayarak VS Code, Typora veya herhangi bir Markdown düzenleyici ile düzenleyebilirsiniz. JSON senkronizasyonu birincil format olarak kalır.</string>
+    <string name="markdown_auto_sync_title">Markdown Otomatik Senkronizasyon</string>
+    <string name="markdown_auto_sync_subtitle">Notları otomatik olarak .md dosyaları olarak senkronize eder (her senkronizasyonda yükleme + indirme)</string>
+    <string name="markdown_manual_sync_info">Manuel senkronizasyon tüm notları .md dosyaları olarak dışa aktarır ve sunucudan .md dosyalarını içe aktarır. Tek seferlik senkronizasyon için kullanışlıdır.</string>
+    <string name="markdown_manual_sync_button">📝 Manuel Markdown Senkronizasyonu</string>
+
+    <!-- ============================= -->
+    <!-- SETTINGS - BACKUP             -->
+    <!-- ============================= -->
+    <string name="backup_settings_title">Yedekleme &amp; Geri Yükleme</string>
+    <string name="backup_restore_title">Yedekleme &amp; Geri Yükleme</string>
+    <string name="backup_auto_info">📦 Her geri yüklemeden önce otomatik olarak bir güvenlik yedeği oluşturulur.</string>
+    <string name="backup_local_section">Yerel Yedek</string>
+    <string name="backup_create">💾 Yedek Oluştur</string>
+    <string name="backup_restore_file">📂 Dosyadan Geri Yükle</string>
+
+    <!-- 🔐 v1.7.0: Encryption -->
+    <string name="backup_encryption_title">Yedeği Şifrele</string>
+    <string name="backup_encryption_subtitle">Yedek dosyanızı parola ile koruyun</string>
+    <string name="backup_encryption_password">Parola</string>
+    <string name="backup_encryption_password_hint">Parolayı girin (min. 8 karakter)</string>
+    <string name="backup_encryption_confirm">Parolayı Onayla</string>
+    <string name="backup_encryption_confirm_hint">Parolayı tekrar girin</string>
+    <string name="backup_encryption_error_mismatch">Parolalar eşleşmiyor</string>
+    <string name="backup_encryption_error_too_short">Parola çok kısa (min. 8 karakter)</string>
+    <string name="backup_decryption_required">🔒 Şifreli Yedek</string>
+    <string name="backup_decryption_password">Şifreyi çözmek için parolayı girin</string>
+    <string name="backup_decryption_error">❌ Şifre çözme başarısız. Parola yanlış mı?</string>
+    
+    <string name="backup_server_section">Sunucu Yedeği</string>
+    <string name="backup_restore_server">☁️ Sunucudan Geri Yükle</string>
+    <string name="backup_restore_dialog_title">⚠️ Yedeği Geri Yükle?</string>
+    <string name="backup_restore_source">Kaynak: %s</string>
+    <string name="backup_restore_source_file">Yerel Dosya</string>
+    <string name="backup_restore_source_server">WebDAV Sunucusu</string>
+    <string name="backup_restore_mode_label">Geri Yükleme Modu:</string>
+    <string name="backup_mode_merge_title">⚪ Birleştir (Varsayılan)</string>
+    <string name="backup_mode_merge_subtitle">Yeni ekle, mevcutları koru</string>
+    <string name="backup_mode_merge_full">⚪ Birleştir (Varsayılan)\n   → Yeni ekle, mevcutları koru</string>
+    <string name="backup_mode_replace_title">⚪ Değiştir</string>
+    <string name="backup_mode_replace_subtitle">Tümünü sil &amp; yedeği içe aktar</string>
+    <string name="backup_mode_replace_full">⚪ Değiştir\n   → Tümünü sil &amp; yedeği içe aktar</string>
+    <string name="backup_mode_overwrite_title">⚪ Çiftleri Üzerine Yaz</string>
+    <string name="backup_mode_overwrite_subtitle">Çakışmalarda yedek kazanır</string>
+    <string name="backup_mode_overwrite_full">⚪ Çiftleri Üzerine Yaz\n   → Çakışmalarda yedek kazanır</string>
+    <string name="backup_restore_info">ℹ️ Geri yüklemeden önce otomatik olarak bir güvenlik yedeği oluşturulacaktır.</string>
+    <string name="backup_restore_button">Geri Yükle</string>
+    <!-- Legacy -->
+    <string name="backup_restore_warning">⚠️ Uyarı:\n\nGeri yükleme, TÜM yerel notları sunucudaki verilerle değiştirir. Bu işlem geri alınamaz!</string>
+    <string name="restore_from_server">Sunucudan Geri Yükle</string>
+    <string name="restore_confirmation_title">⚠️ Sunucudan Geri Yükle?</string>
+    <string name="restore_confirmation_message">UYARI: Tüm yerel notlar silinecek ve sunucudaki notlarla değiştirilecektir.\n\nBu işlem geri alınamaz!</string>
+    <string name="restore_button">Geri Yükle</string>
+    <string name="restore_progress">Notlar geri yükleniyor…</string>
+    <string name="restore_success">✓ %d not geri yüklendi</string>
+    <string name="restore_error">Hata: %s</string>
+    
+    <!-- ============================= -->
+    <!-- SETTINGS - DEBUG              -->
+    <!-- ============================= -->
+    <string name="debug_settings_title">Hata Ayıklama &amp; Tanılama</string>
+    <string name="debug_file_logging_title">Dosya Kaydı</string>
+    <string name="debug_file_logging_subtitle">Senkronizasyon günlüklerini dosyaya kaydet</string>
+    <string name="debug_privacy_info">🔒 Gizlilik: Günlükler yalnızca cihazınızda saklanır ve asla harici sunuculara gönderilmez. Günlükler, sorun gidermek için senkronizasyon aktivitelerini içerir. İstediğiniz zaman silebilir veya dışa aktarabilirsiniz.</string>
+    <string name="debug_log_actions_section">Günlük İşlemleri</string>
+    <string name="debug_export_logs">📤 Günlükleri Dışa Aktar &amp; Paylaş</string>
+    <string name="debug_logs_subject">Simple Notes Senkronizasyon Günlükleri</string>
+    <string name="debug_logs_share_via">Günlükleri paylaş…</string>
+    <string name="debug_delete_logs">🗑️ Günlükleri Sil</string>
+    <string name="debug_delete_logs_title">Günlükler silinsin mi?</string>
+    <string name="debug_delete_logs_message">Kaydedilmiş tüm senkronizasyon günlükleri kalıcı olarak silinecektir.</string>
+    <string name="debug_test_section">Test Modu</string>
+    <string name="debug_reset_changelog">Değişiklik Günlüğü Penceresini Sıfırla</string>
+    <string name="debug_reset_changelog_desc">Bir sonraki uygulama başlatıldığında değişiklik günlüğünü göster</string>
+    <string name="debug_changelog_reset">Değişiklik günlüğü bir sonraki başlatmada gösterilecek</string>
+    <!-- Legacy -->
+    <string name="file_logging_privacy_notice">ℹ️ Gizlilik: Günlükler yalnızca cihazınızda saklanır ve asla harici sunuculara gönderilmez. Günlükler, sorun gidermek için senkronizasyon aktivitelerini içerir. İstediğiniz zaman silebilir veya dışa aktarabilirsiniz.</string>
+
+    <!-- ============================= -->
+    <!-- SETTINGS - LANGUAGE           -->
+    <!-- ============================= -->
+    <string name="language_settings_title">Dil</string>
+    <string name="language_system_default">Sistem Varsayılanı</string>
+    <string name="language_english">English</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_info">ℹ️ Tercih ettiğiniz dili seçin. Değişiklik uygulandığında görünüm kısa bir süreliğine yenilenecektir.</string>
+    <string name="language_changed_restart">Dil değiştirildi. Yeniden başlatılıyor…</string>
+
+    <!-- ============================= -->
+    <!-- SETTINGS - DISPLAY            -->
+    <!-- ============================= -->
+    <string name="display_settings_title">Görünüm</string>
+    <string name="display_mode_title">Not Görünüm Modu</string>
+    <string name="display_mode_list">📋 Liste Görünümü</string>
+    <string name="display_mode_grid">🎨 Grid Görünümü</string>
+    <string name="display_mode_info">Grid görünümü, notları iki sütunlu bir düzen içinde gösterir. Tüm notlar yan yana, temiz ve kompakt bir genel bakışta görünür.</string>
+
+    <!-- 🆕 v1.9.0 (F05): Custom App Title -->
+    <string name="custom_app_title_section">Uygulama Başlığı</string>
+    <string name="custom_app_title_label">Özel başlık</string>
+    <string name="custom_app_title_placeholder">Simple Notes</string>
+    <string name="custom_app_title_info">Ana ekran için özel bir başlık belirleyin. Varsayılan "Simple Notes" başlığını kullanmak için boş bırakın. Maksimum 30 karakter.</string>
+    <string name="custom_app_title_char_count">%1$d / %2$d</string>
+    <!-- 🆕 v1.9.0: Autosave -->
+    <string name="autosave_section">Düzenleyici</string>
+    <string name="autosave_toggle">Otomatik Kaydet</string>
+    <string name="autosave_description">3 s hareketsizlik sonrası ve editörden çıkarken kaydeder</string>
+    <string name="autosave_info">Etkinleştirildiğinde, yazarken ve geri giderken notunuz otomatik olarak kaydedilir. Senkronizasyon yalnızca manuel kayıtta çalışır.</string>
+    <string name="autosave_indicator">✓ Kaydedildi</string>
+    <!-- 🆕 v1.10.0: Undo/Redo -->
+    <string name="editor_undo">Geri Al</string>
+    <string name="editor_redo">Yinele</string>
+    <!-- 🆕 v1.9.0 (F06): Note Filter -->
+    <string name="filter_all">Tümü</string>
+    <string name="filter_text_only">Metin</string>
+    <string name="filter_checklist_only">Kontrol Listeleri</string>
+
+    <!-- v1.9.0 (F10): Search -->
+    <string name="search_notes_placeholder">Ara…</string>
+    <string name="search_clear">Aramayı temizle</string>
+
+    <!-- v1.9.0 (F11): Filter row toggle -->
+    <string name="toggle_filter_row">Filtre çubuğunu aç/kapat</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
+    <string name="editor_mode_edit">Düzenle</string>
+    <string name="editor_mode_preview">Önizleme</string>
+    <string name="editor_toggle_preview">Markdown önizlemeyi aç/kapat</string>
+
+    <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
+    <string name="md_toolbar_bold">Kalın</string>
+    <string name="md_toolbar_italic">İtalik</string>
+    <string name="md_toolbar_strikethrough">Üstü Çizili</string>
+    <string name="md_toolbar_heading">Başlık</string>
+    <string name="md_toolbar_code">Kod</string>
+    <string name="md_toolbar_link">Bağlantı</string>
+    <string name="md_toolbar_list">Liste</string>
+    <string name="md_toolbar_rule">Yatay çizgi</string>
+
+    <!-- ============================= -->
+    <!-- SETTINGS - ABOUT              -->
+    <!-- ============================= -->
+    <string name="about_settings_title">Bu Uygulama Hakkında</string>
+    <string name="about_app_name">Simple Notes Senkronizasyonu</string>
+    <string name="about_version">Sürüm %1$s (%2$d)</string>
+    <string name="about_links_section">Bağlantılar</string>
+    <string name="about_github_title">GitHub Deposu</string>
+    <string name="about_github_subtitle">Kaynak kod, sorunlar &amp; dokümantasyon</string>
+    <string name="about_developer_title">Geliştirici</string>
+    <string name="about_developer_subtitle">GitHub Profili: @inventory69</string>
+    <string name="about_license_title">Lisans</string>
+    <string name="about_license_subtitle">MIT Lisansı - Açık Kaynak</string>
+
+    <!-- v1.8.0: Changelog Link in About -->
+    <string name="about_changelog_title">Değişiklik Günlüğü</string>
+    <string name="about_changelog_subtitle">Tam sürüm geçmişi</string>
+
+    <!-- v1.8.0: Post-Update Changelog Dialog -->
+    <string name="update_changelog_title">Yenilikler</string>
+    <string name="update_changelog_dismiss">Tamam!</string>
+
+    <!-- v1.8.0: Backup Progress -->
+    <string name="backup_progress_creating">Yedek oluşturuluyor…</string>
+    <string name="backup_progress_restoring">Yedek geri yükleniyor…</string>
+    <string name="backup_progress_restoring_server">Sunucudan notlar indiriliyor…</string>
+
+    <!-- v1.8.0: Backup Progress - Completion -->
+    <string name="backup_progress_complete">Yedek oluşturuldu!</string>
+    <string name="restore_progress_complete">Geri yükleme tamamlandı!</string>
+    <string name="restore_server_progress_complete">İndirme tamamlandı!</string>
+
+    <!-- v1.8.0: Backup Progress - Error -->
+    <string name="backup_progress_failed">Yedek oluşturulamadı</string>
+    <string name="restore_progress_failed">Geri yükleme başarısız</string>
+    <string name="restore_server_progress_failed">İndirme başarısız</string>
+    
+    <string name="about_privacy_title">🔒 Gizlilik</string>
+    <string name="about_privacy_text">Bu uygulama herhangi bir veri toplamaz. Tüm notlar yalnızca cihazınızda ve kendi WebDAV sunucunuzda saklanır. Telemetri yok, reklam yok.</string>
+    
+    <!-- ============================= -->
+    <!-- TOAST MESSAGES                -->
+    <!-- ============================= -->
+    <!-- Issue #21: Connection test info with sync folder status -->
+    <string name="test_connection_success_with_notes">✅ Sunucuya ulaşıldı. /%1$s/ klasörü bulundu (/%1$s-md/ otomatik olarak oluşturulacak).</string>
+    <string name="test_connection_success_first_sync">✅ Sunucuya ulaşıldı. /%1$s/ ve /%1$s-md/ klasörleri ilk senkronizasyonda oluşturulacak.</string>
+    <string name="toast_connection_success">✅ Bağlantı başarılı!</string>
+    <string name="toast_connection_failed">❌ %s</string>
+    <string name="toast_error">❌ Hata: %s</string>
+    <string name="toast_syncing">🔄 Senkronize ediliyor…</string>
+    <string name="toast_already_synced">✅ Zaten senkronize edildi</string>
+    <string name="toast_sync_success">✅ %d not senkronize edildi</string>
+    <string name="toast_sync_failed">❌ %s</string>
+    <string name="toast_auto_sync_enabled">✅ Otomatik Senkronizasyon etkin</string>
+    <string name="toast_auto_sync_disabled">Otomatik Senkronizasyon devre dışı</string>
+    <string name="toast_sync_interval">⏱️ Senkronizasyon aralığı: %s</string>
+    <string name="toast_sync_interval_15min">15 dakika</string>
+    <string name="toast_sync_interval_30min">30 dakika</string>
+    <string name="toast_sync_interval_60min">60 dakika</string>
+    <string name="toast_configure_server_first">⚠️ Lütfen önce WebDAV sunucusunu yapılandırın</string>
+    <string name="toast_markdown_exported">✅ %d not Markdown olarak dışa aktarıldı</string>
+    <string name="toast_markdown_enabled">📝 Markdown Otomatik Senkronizasyon etkin</string>
+    <string name="toast_markdown_disabled">📝 Markdown Otomatik Senkronizasyon devre dışı</string>
+    <string name="toast_markdown_syncing">📝 Markdown senkronizasyonu çalışıyor…</string>
+    <string name="toast_markdown_result">✅ Dışa aktar: %1$d • İçe aktar: %2$d</string>
+    <string name="toast_export_failed">❌ Dışa aktarma başarısız: %s</string>
+    <!-- v1.10.0: Markdown Export Timeout -->
+    <string name="toast_export_timeout">⏱️ Dışa aktarma zaman aşımına uğradı – sunucu yavaş veya ulaşılamıyor. Lütfen bağlantınızı kontrol edin ve tekrar deneyin.</string>
+    <string name="toast_backup_success">✅ %s</string>
+    <string name="toast_backup_failed">❌ Yedekleme başarısız: %s</string>
+    <string name="toast_restore_success">✅ %d not geri yüklendi</string>
+    <string name="toast_restore_failed">❌ Geri yükleme başarısız: %s</string>
+    <string name="toast_notifications_enabled">Bildirimler etkin</string>
+    <string name="toast_notifications_disabled">Bildirimler devre dışı. Ayarlardan etkinleştirebilirsiniz.</string>
+    <string name="toast_battery_optimization">Lütfen pil optimizasyonunu manuel olarak devre dışı bırakın</string>
+    <string name="toast_logs_deleted">🗑️ Kayıtlar silindi</string>
+    <string name="toast_no_logs_to_delete">📭 Silinecek kayıt yok</string>
+    <string name="toast_logs_delete_error">❌ Silme hatası: %s</string>
+    <!-- 🔄 v1.7.0: Server change notification -->
+    <string name="toast_server_changed_sync_reset">🔄 Sunucu değişti. %d not bir sonraki senkronizasyonda yüklenecek.</string>
+    <string name="toast_link_error">❌ Bağlantı açılırken hata</string>
+    <string name="toast_file_logging_enabled">📝 Dosya kaydı etkin</string>
+    <string name="toast_file_logging_disabled">📝 Dosya kaydı devre dışı</string>
+    <string name="toast_sync_interval_changed">⏱️ Senkronizasyon aralığı %s olarak değiştirildi</string>
+    <string name="version_not_available">Sürüm mevcut değil</string>
+    <string name="status_checking">🔍 Kontrol ediliyor…</string>
+    <string name="battery_optimization_dialog_message">Lütfen Simple Notes için 'Optimizasyon yok' seçeneğini işaretleyin.</string>
+    <string name="battery_optimization_dialog_title">Arka Plan Senkronizasyonu</string>
+    <string name="battery_optimization_dialog_full_message">Uygulamanın arka planda senkronize olabilmesi için pil optimizasyonu devre dışı olmalıdır.\n\nLütfen Simple Notes için 'Optimizasyon yok' seçeneğini işaretleyin.</string>
+    <string name="battery_optimization_open_settings">Ayarları Aç</string>
+    <string name="battery_optimization_later">Sonra</string>
+    <string name="content_description_back">Geri</string>
+    <string name="error_invalid_backup_file">Geçersiz yedek dosyası</string>
+    <string name="error_backup_version_unsupported">Yedek sürümü desteklenmiyor (v%1$d için v%2$d+ gerekir)</string>
+    <string name="error_backup_empty">Yedek hiçbir not içermiyor</string>
+    <string name="error_backup_invalid_notes">Yedek %d geçersiz not içeriyor</string>
+    <string name="error_backup_corrupt">Yedek dosyası bozuk veya geçersiz: %s</string>
+    <string name="error_restore_failed">Geri yükleme başarısız: %s</string>
+    <string name="restore_merge_result">%1$d yeni not içe aktarıldı, %2$d atlandı</string>
+    <string name="restore_overwrite_result">%1$d yeni, %2$d üzerine yazıldı</string>
+    <string name="restore_replace_result">Tüm notlar değiştirildi: %d içe aktarıldı</string>
+
+    <!-- ============================= -->
+    <!-- RELATIVE TIME                 -->
+    <!-- ============================= -->
+    <string name="time_just_now">Şimdi</string>
+    <string name="time_minutes_ago">%d dk önce</string>
+    <string name="time_hours_ago">%d saat önce</string>
+    <string name="time_days_ago">%d gün önce</string>
+    
+    <!-- ============================= -->
+    <!-- NOTIFICATIONS                 -->
+    <!-- ============================= -->
+    <string name="notification_channel_name">Notlar Senkronizasyonu</string>
+    <string name="notification_channel_desc">Senkronizasyon durumu ile ilgili bildirimler</string>
+    <string name="sync_in_progress">Senkronize ediliyor</string>
+    <string name="sync_in_progress_text">Notlar senkronize ediliyor…</string>
+    <string name="notification_sync_success_title">Senkronizasyon başarılı</string>
+    <plurals name="notification_sync_success_message">
+        <item quantity="one">%d not senkronize edildi</item>
+        <item quantity="other">%d notlar senkronize edildi</item>
+    </plurals>
+    <string name="notification_sync_failed_title">Senkronizasyon başarısız</string>
+    <string name="notification_sync_progress_title">Senkronize ediliyor…</string>
+    <string name="notification_sync_progress_message">Notlar senkronize ediliyor</string>
+    <string name="notification_sync_conflict_title">Senkronizasyon çakışması tespit edildi</string>
+    <plurals name="notification_sync_conflict_message">
+        <item quantity="one">%d notta çakışma var</item>
+        <item quantity="other">%d notlarda çakışma var</item>
+    </plurals>
+    <string name="notification_sync_warning_title">⚠️ Senkronizasyon Uyarısı</string>
+    <string name="notification_sync_warning_message">%dh boyunca sunucuya ulaşılamıyor</string>
+    <string name="notification_sync_warning_detail">WebDAV sunucusuna %d saat boyunca ulaşılamadı. Lütfen ağ bağlantınızı veya sunucu ayarlarını kontrol edin.</string>
+    <string name="notification_sync_in_progress_title">Senkronizasyon devam ediyor</string>
+    <string name="notification_sync_in_progress_message">Notlar senkronize ediliyor…</string>
+    <string name="notification_sync_error_title">Senkronizasyon Hatası</string>
+    
+    <!-- ============================= -->
+    <!-- PLURALS                       -->
+    <!-- ============================= -->
+    <plurals name="notes_count">
+        <item quantity="one">%d not</item>
+        <item quantity="other">%d notlar</item>
+    </plurals>
+
+    <plurals name="notes_deleted_local">
+        <item quantity="one">%d not yerel olarak silindi</item>
+        <item quantity="other">%d notlar yerel olarak silindi</item>
+    </plurals>
+
+    <plurals name="notes_deleted_server">
+        <item quantity="one">%d not sunucudan silinecek</item>
+        <item quantity="other">%d notlar sunucudan silinecek</item>
+    </plurals>
+
+    <plurals name="notes_synced">
+        <item quantity="one">%d not senkronize edildi</item>
+        <item quantity="other">%d notlar senkronize edildi</item>
+    </plurals>
+
+    <!-- v1.8.0 (IMPL_017): Checklist separator -->
+    <plurals name="checked_items_count">
+        <item quantity="one">%d tamamlandı</item>
+        <item quantity="other">%d tamamlandı</item>
+    </plurals>
+
+    <!-- ===================================== -->
+    <!-- PARALLEL CONNECTIONS v1.9.0           -->
+    <!-- (unified downloads + uploads setting) -->
+    <!-- ===================================== -->
+    <string name="sync_parallel_connections_title">Paralel Bağlantılar</string>
+    <string name="sync_parallel_connections_unit">paralel</string>
+    <string name="sync_parallel_connections_desc_1">Sıralı (en yavaş, en güvenli)</string>
+    <string name="sync_parallel_connections_desc_3">Dengeli (3x daha hızlı)</string>
+    <string name="sync_parallel_connections_desc_5">Maksimum (5x daha hızlı)</string>
+
+    <!-- ============================= -->
+    <!-- WIDGETS v1.8.0                -->
+    <!-- ============================= -->
+    <string name="widget_name">Simple Notes</string>
+    <string name="widget_description">Ev ekranınızda bir not veya kontrol listesi gösterir</string>
+    <string name="widget_config_title">Bir Not Seçin</string>
+    <string name="widget_config_hint">Widget olarak eklemek için bir nota dokunun</string>
+    <string name="widget_config_save">Kaydet</string>
+    <string name="widget_lock_label">Widget\'ı kilitle</string>
+    <string name="widget_lock_description">Yanlışlıkla yapılan değişiklikleri önler</string>
+    <string name="widget_note_not_found">Not bulunamadı</string>
+    <string name="widget_opacity_label">Arka plan opaklığı</string>
+    <string name="widget_opacity_description">Widget arka planının şeffaflığını ayarlayın</string>
+    <string name="widget_preview_title">Alışveriş Listesi</string>
+    <string name="widget_preview_content">Süt, yumurta, ekmek, tereyağı, peynir, domates, makarna, pirinç, zeytinyağı…</string>
+    <!-- ============================= -->
+    <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
+    <!-- ============================= -->
+    <string name="share_overflow_menu">Diğer seçenekler</string>
+    <string name="share_to_calendar">Takvime ekle</string>
+    <string name="share_as_text">Metin olarak paylaş</string>
+    <string name="share_as_pdf">PDF olarak paylaş</string>
+    <string name="share_chooser_title">Notu paylaş</string>
+    <string name="share_no_calendar_app">Takvim uygulaması bulunamadı</string>
+    <string name="share_error">Paylaşım penceresi açılamadı</string>
+    <string name="share_pdf_error">PDF oluşturulamadı</string>
+
+</resources>
