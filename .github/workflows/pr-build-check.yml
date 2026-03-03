@@ -14,9 +14,9 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Code auschecken
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: Java einrichten
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -30,7 +30,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Version auslesen
+      - name: Extract version
         run: |
           VERSION_NAME=$(grep "versionName = " android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
           VERSION_CODE=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
@@ -49,7 +49,7 @@ jobs:
         run: |
           cd android
           ./gradlew ktlintCheck --no-daemon
-        continue-on-error: true  # Parser-Probleme in Legacy-Code
+        continue-on-error: true  # Parser issues in legacy code
       
       - name: Upload Lint Reports
         if: always()
@@ -62,32 +62,32 @@ jobs:
             android/app/build/reports/lint-results*.html
           retention-days: 7
       
-      - name: Debug Build erstellen (ohne Signing)
+      - name: Build Debug APK (unsigned)
         run: |
           cd android
           ./gradlew assembleStandardDebug assembleFdroidDebug --no-daemon --stacktrace
-      - name: Unit Tests ausfuehren
+      - name: Run Unit Tests
         run: |
           cd android
           ./gradlew test --no-daemon --stacktrace
         continue-on-error: false
-      - name: Build-Ergebnis pruefen
+      - name: Verify build result
         run: |
           if [ -f "android/app/build/outputs/apk/standard/debug/app-standard-debug.apk" ]; then
-            echo "✅ Standard Debug APK erfolgreich gebaut"
+            echo "✅ Standard Debug APK built successfully"
             ls -lh android/app/build/outputs/apk/standard/debug/*.apk
           else
-            echo "❌ Standard Debug APK Build fehlgeschlagen"
+            echo "❌ Standard Debug APK build failed"
             exit 1
           fi
           if [ -f "android/app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk" ]; then
-            echo "✅ F-Droid Debug APK erfolgreich gebaut"
+            echo "✅ F-Droid Debug APK built successfully"
             ls -lh android/app/build/outputs/apk/fdroid/debug/*.apk
           else
-            echo "❌ F-Droid Debug APK Build fehlgeschlagen"
+            echo "❌ F-Droid Debug APK build failed"
             exit 1
           fi
-      - name: Debug APKs hochladen (Artefakte)
+      - name: Upload Debug APKs
         uses: actions/upload-artifact@v4
         with:
           name: debug-apks-pr-${{ github.event.pull_request.number }}
@@ -95,7 +95,7 @@ jobs:
             android/app/build/outputs/apk/standard/debug/*.apk
             android/app/build/outputs/apk/fdroid/debug/*.apk
           retention-days: 30
-      - name: Kommentar zu PR hinzufuegen
+      - name: Post PR comment
         uses: actions/github-script@v7
         if: success()
         with:
@@ -109,12 +109,12 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ✅ Build erfolgreich!
+              body: `## ✅ Build successful!
             
             **Version:** ${{ env.VERSION_NAME }} (Code: ${{ env.VERSION_CODE }})
             
-            ### 📦 Debug APKs (Test-Builds)
-            Die Debug-APKs wurden erfolgreich gebaut und sind als Artefakte verfuegbar:
+            ### 📦 Debug APKs (Test Builds)
+            Debug APKs were built successfully and are available as artifacts:
             
             **Standard Flavor:**
             ${standardApk.map(f => '- \`' + f + '\`').join('\n')}
@@ -122,7 +122,7 @@ jobs:
             **F-Droid Flavor:**
             ${fdroidApk.map(f => '- \`' + f + '\`').join('\n')}
             
-            > ⚠️ **Hinweis:** Dies sind unsigned Debug-Builds zum Testen. Production Releases werden nur bei Merge auf \`main\` erstellt.
+            > ⚠️ **Note:** These are unsigned debug builds for testing. Production releases are only created on merge to \`main\`.
             
-            [📥 Download Artefakte](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            [📥 Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
             })

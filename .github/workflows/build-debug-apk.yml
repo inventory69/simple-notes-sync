@@ -1,7 +1,7 @@
 name: Build Debug APK
 
 on:
-  workflow_dispatch:  # Nur manueller Trigger
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   build-debug:
@@ -54,8 +54,8 @@ jobs:
         with:
           name: simple-notes-sync-debug-v${{ env.VERSION_NAME }}-${{ env.BUILD_TIME }}
           path: debug-apks/*.apk
-          retention-days: 30  # Debug Builds länger aufbewahren
-          compression-level: 0  # APK ist bereits komprimiert
+          retention-days: 30  # Keep debug builds longer
+          compression-level: 0  # APK is already compressed
       
       - name: Create summary
         run: |
