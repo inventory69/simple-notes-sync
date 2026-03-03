@@ -141,6 +141,14 @@ Have an idea for a new feature or improvement? We'd love to hear it!
 
 Features with enough community support will be considered for implementation. Please keep in mind that this app is designed to stay simple and user-friendly.
 
+## 🌍 Translations
+
+[![Translation status](https://hosted.weblate.org/widget/simple-notes-sync/android-app/svg-badge.svg)](https://hosted.weblate.org/engage/simple-notes-sync/)
+
+<a href="https://hosted.weblate.org/engage/simple-notes-sync/">
+<img src="https://hosted.weblate.org/widget/simple-notes-sync/android-app/horizontal-auto.svg" alt="Translation status" />
+</a>
+
 ## 🤝 Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
