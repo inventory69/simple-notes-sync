@@ -1,0 +1,102 @@
+name: Weblate Translation Build Check
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request:
+    types: [ready_for_review]
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Test Translation PR
+    runs-on: ubuntu-latest
+    # Only for Weblate PRs, only after approval or ready-for-review
+    if: >
+      github.event.pull_request.head.ref == 'weblate-translations' &&
+      (
+        (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') ||
+        (github.event_name == 'pull_request' && github.event.action == 'ready_for_review')
+      )
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Verify strings.xml validity
+        run: |
+          echo "🔍 Checking XML validity of all translation files..."
+          ERRORS=0
+          for f in android/app/src/main/res/values-*/strings.xml; do
+            if xmllint --noout "$f" 2>/dev/null; then
+              echo "  ✅ $f"
+            else
+              echo "  ❌ $f — Invalid XML!"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ $ERRORS file(s) have XML errors"
+            exit 1
+          fi
+          echo "✅ All translation files are valid XML"
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleStandardDebug assembleFdroidDebug --no-daemon --stacktrace
+
+      - name: Run Unit Tests
+        run: |
+          cd android
+          ./gradlew test --no-daemon --stacktrace
+
+      - name: Verify build result
+        run: |
+          if [ -f "android/app/build/outputs/apk/standard/debug/app-standard-debug.apk" ]; then
+            echo "✅ Standard Debug APK built successfully"
+          else
+            echo "❌ Standard Debug APK build failed"
+            exit 1
+          fi
+          if [ -f "android/app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk" ]; then
+            echo "✅ F-Droid Debug APK built successfully"
+          else
+            echo "❌ F-Droid Debug APK build failed"
+            exit 1
+          fi
+
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        if: success()
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ✅ Translation Build successful!
+
+            The translation PR was built and tested successfully.
+
+            **Next step:** Perform squash-merge.
+
+            > Don't forget to update \`locales_config.xml\` if a new language was added.`
+            })
