@@ -39,18 +39,6 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 
 <div align="center">
 
-### 🌍 Übersetzungen
-
-[![Übersetzungsstatus](https://hosted.weblate.org/widget/simple-notes-sync/android-app/svg-badge.svg)](https://hosted.weblate.org/engage/simple-notes-sync/)
-
-<a href="https://hosted.weblate.org/engage/simple-notes-sync/">
-<img src="https://hosted.weblate.org/widget/simple-notes-sync/android-app/horizontal-auto.svg" alt="Übersetzungsstatus" />
-</a>
-
-</div>
-
-<div align="center">
-
 <br />[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Dokumentation](docs/DOCS.de.md) · [🚀 Schnellstart](QUICKSTART.de.md)<br />
 **🌍** Deutsch · [English](README.md)
 
@@ -142,6 +130,14 @@ cd android
 ```
 
 ➡️ **Build-Anleitung:** [docs/DOCS.de.md#-build--deployment](docs/DOCS.de.md#-build--deployment)
+
+## 🌍 Übersetzungen
+
+[![Übersetzungsstatus](https://hosted.weblate.org/widget/simple-notes-sync/android-app/svg-badge.svg)](https://hosted.weblate.org/engage/simple-notes-sync/)
+
+<a href="https://hosted.weblate.org/engage/simple-notes-sync/">
+<img src="https://hosted.weblate.org/widget/simple-notes-sync/android-app/horizontal-auto.svg" alt="Übersetzungsstatus" />
+</a>
 
 ## 🤝 Contributing
 
