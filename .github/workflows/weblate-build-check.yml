@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: weblate-translations
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -51,20 +53,23 @@ jobs:
       - name: Verify strings.xml validity
         run: |
           echo "🔍 Checking XML validity of all translation files..."
-          ERRORS=0
-          for f in android/app/src/main/res/values-*/strings.xml; do
-            if xmllint --noout "$f" 2>/dev/null; then
-              echo "  ✅ $f"
-            else
-              echo "  ❌ $f — Invalid XML!"
-              ERRORS=$((ERRORS + 1))
-            fi
-          done
-          if [ $ERRORS -gt 0 ]; then
-            echo "❌ $ERRORS file(s) have XML errors"
-            exit 1
-          fi
-          echo "✅ All translation files are valid XML"
+          python3 - <<'EOF'
+          import xml.etree.ElementTree as ET
+          import glob, sys
+          files = glob.glob('android/app/src/main/res/values-*/strings.xml')
+          errors = 0
+          for f in sorted(files):
+              try:
+                  ET.parse(f)
+                  print(f'  ✅ {f}')
+              except ET.ParseError as e:
+                  print(f'  ❌ {f} — Invalid XML: {e}')
+                  errors += 1
+          if errors > 0:
+              print(f'❌ {errors} file(s) have XML errors')
+              sys.exit(1)
+          print('✅ All translation files are valid XML')
+          EOF
 
       - name: Build Debug APK
         run: |
