@@ -13,8 +13,8 @@ class SyncProgressTest {
     // ═══════════════════════════════════════════════
 
     @Test
-    fun `SyncPhase has all 8 values`() {
-        assertEquals(8, SyncPhase.entries.size)
+    fun `SyncPhase has all 9 values`() {
+        assertEquals(9, SyncPhase.entries.size)
     }
 
     @Test
@@ -23,6 +23,7 @@ class SyncProgressTest {
         assertNotNull(SyncPhase.PREPARING)
         assertNotNull(SyncPhase.UPLOADING)
         assertNotNull(SyncPhase.DOWNLOADING)
+        assertNotNull(SyncPhase.DELETING)
         assertNotNull(SyncPhase.IMPORTING_MARKDOWN)
         assertNotNull(SyncPhase.COMPLETED)
         assertNotNull(SyncPhase.ERROR)

@@ -9,6 +9,10 @@ jobs:
   build:
     name: Build & Test APK
     runs-on: ubuntu-latest
+    if: github.event.pull_request.head.ref != 'weblate-translations'
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Code auschecken
         uses: actions/checkout@v4
@@ -66,7 +70,7 @@ jobs:
         run: |
           cd android
           ./gradlew test --no-daemon --stacktrace
-        continue-on-error: true
+        continue-on-error: false
       - name: Build-Ergebnis pruefen
         run: |
           if [ -f "android/app/build/outputs/apk/standard/debug/app-standard-debug.apk" ]; then

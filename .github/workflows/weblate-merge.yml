@@ -1,17 +1,18 @@
-name: Weblate PR Label
+name: Weblate Translation PR Handler
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
 
 jobs:
-  label:
-    name: Label Weblate PRs
+  label-and-prepare:
+    name: Prepare Weblate PR for Review
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'weblate'
+    if: github.event.pull_request.head.ref == 'weblate-translations'
     permissions:
       pull-requests: write
+      contents: read
     steps:
-      - name: Add translation label
+      - name: Add translation labels
         uses: actions/github-script@v7
         with:
           script: |
@@ -19,5 +20,121 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['translation', 'weblate']
+              labels: ['translation', 'weblate', 'needs-review']
             });
+
+      - name: Convert to Draft PR
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            // GraphQL nötig — REST API kann keine PRs zu Draft konvertieren
+            const mutation = `mutation($id: ID!) {
+              convertPullRequestToDraft(input: {pullRequestId: $id}) {
+                pullRequest { isDraft }
+              }
+            }`;
+            try {
+              await github.graphql(mutation, {
+                id: context.payload.pull_request.node_id
+              });
+              core.info('✅ PR converted to Draft — CI will not run until review');
+            } catch (e) {
+              core.warning('⚠️ Could not convert to Draft (manual action needed): ' + e.message);
+            }
+
+      - uses: actions/checkout@v4
+
+      - name: Analyze translation and post review checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Finde neue/geänderte Sprachdateien
+            const resDir = 'android/app/src/main/res';
+            const enFile = path.join(resDir, 'values/strings.xml');
+            const enContent = fs.readFileSync(enFile, 'utf8');
+            const enCount = (enContent.match(/<string name="/g) || []).length;
+
+            // Finde alle values-XX Ordner (außer values, values-de, values-night)
+            const dirs = fs.readdirSync(resDir)
+              .filter(d => d.match(/^values-[a-z]{2}$/) && d !== 'values-de');
+
+            let langStats = '';
+            for (const dir of dirs) {
+              const langFile = path.join(resDir, dir, 'strings.xml');
+              if (fs.existsSync(langFile)) {
+                const content = fs.readFileSync(langFile, 'utf8');
+                const count = (content.match(/<string name="/g) || []).length;
+                const pct = Math.round((count / enCount) * 100);
+                const lang = dir.replace('values-', '').toUpperCase();
+                langStats += `| ${lang} | ${count} / ${enCount} | ${pct}% |\n`;
+              }
+            }
+
+            const body = `## 🌍 Translation PR — Review Required
+
+This PR contains translation updates from [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/).
+
+### 📊 Translation Coverage (in this PR)
+
+| Language | Translated | Coverage |
+|----------|-----------|----------|
+${langStats || '| — | — | PR contains empty file(s) |'}
+
+### ✅ Review Checklist
+
+Please check the following before approving:
+
+- [ ] **Coverage**: Is the translation sufficiently complete? (Recommendation: ≥50%)
+- [ ] **Spot check**: Verify 5–10 random strings for correctness (back-translate via Google Translate)
+- [ ] **Placeholders**: Are \`%s\`, \`%d\`, \`%1$s\` etc. correctly preserved?
+- [ ] **App name**: Is \`app_name\` unchanged ("Simple Notes")?
+- [ ] **XML validity**: No broken XML tags or encoding errors?
+- [ ] **Length**: Are translations not excessively long (UI overflow)?
+- [ ] **Consistency**: Is terminology used consistently?
+- [ ] **locales_config.xml**: Needs to be updated (add new language)
+
+### 🔍 How to review translations you don't speak
+
+1. **Back-translate**: Copy translated strings → Google Translate / DeepL → compare with English original
+2. **Weblate checks**: [Open Weblate project](https://hosted.weblate.org/projects/simple-notes-sync/android-app/) — built-in quality checks for placeholders, length, duplicates etc.
+3. **Community review**: Ask in the PR if another speaker of the language can review
+
+### ⏭️ Next Steps
+
+1. Review translations (see checklist above)
+2. If OK: **Approve** the PR or mark it as **Ready for Review**
+3. CI build starts automatically after approval
+4. After successful build: Merge
+
+> ⚠️ **Note:** This PR was automatically marked as **Draft** so the CI build doesn't run unnecessarily. Mark it as "Ready for Review" when you're done reviewing.`;
+
+            // Prüfe ob bereits ein Bot-Kommentar existiert
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.data.find(c =>
+              c.body && c.body.includes('Translation PR — Review Required')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
