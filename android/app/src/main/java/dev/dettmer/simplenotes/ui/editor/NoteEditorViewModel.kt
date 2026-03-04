@@ -382,7 +382,9 @@ class NoteEditorViewModel(
             }
         }
         isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
-        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item addition
+        // 🔧 v1.10.1: Kein Autosave bei leerem Item — verhindert Save-Indikator für nicht-gespeichertes Item.
+        // Autosave wird erst durch updateChecklistItemText() getriggert, wenn User Text eingibt.
+        // isDirty=true bleibt gesetzt, damit saveOnBack() bei Verlassen trotzdem greift.
         return newItem.id
     }
 
@@ -408,7 +410,7 @@ class NoteEditorViewModel(
             newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
         }
         isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
-        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item addition
+        // 🔧 v1.10.1: Kein Autosave bei leerem Item — konsistent mit addChecklistItemAfter()
         return newItem.id
     }
 
@@ -434,6 +436,9 @@ class NoteEditorViewModel(
     
     fun deleteChecklistItem(itemId: String) {
         pushUndoSnapshot()  // 🆕 v1.10.0
+        // 🔧 v1.10.1: Prüfe ob gelöschtes Item leer war — kein Autosave nötig wenn nie gespeichert
+        val deletedItem = _checklistItems.value.find { it.id == itemId }
+        val wasEmpty = deletedItem?.text?.isBlank() != false
         isDirty = true  // 🆕 v1.10.0-P2: Deletion is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
@@ -446,7 +451,10 @@ class NoteEditorViewModel(
                 filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
             }
         }
-        scheduleAutosave()  // 🆕 v1.10.0-P2: Trigger autosave on item deletion
+        // 🔧 v1.10.1: Autosave nur wenn gelöschtes Item Text hatte (= auf Disk existierte)
+        if (!wasEmpty) {
+            scheduleAutosave()
+        }
     }
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
@@ -596,6 +604,26 @@ class NoteEditorViewModel(
                         }
                     if (title.isEmpty() && validItems.isEmpty()) return true
 
+                    // 🔧 v1.10.1: No-Change-Guard — kein Save wenn nur leere Items hinzugefügt
+                    // wurden und sich der tatsächliche Inhalt nicht geändert hat.
+                    // Verhindert fälschliches PENDING-Flag beim Verlassen der Notiz.
+                    if (existingNote != null) {
+                        val existingItems = existingNote!!.checklistItems.orEmpty()
+                        val noContentChange = existingNote!!.title == title &&
+                            existingItems.size == validItems.size &&
+                            existingItems.zip(validItems).all { (old, new) ->
+                                old.id == new.id &&
+                                old.text == new.text &&
+                                old.isChecked == new.isChecked &&
+                                old.order == new.order
+                            }
+                        if (noContentChange) {
+                            Logger.d(TAG, "⏭️ saveOnBack: no effective change after filtering empty items — skipping")
+                            isDirty = false
+                            return true
+                        }
+                    }
+
                     val note = existingNote?.copy(
                         title = title,
                         content = "",
@@ -685,6 +713,25 @@ class NoteEditorViewModel(
                 if (title.isEmpty() && validItems.isEmpty()) {
                     if (!silent) _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
                     return false
+                }
+
+                // 🔧 v1.10.1: No-Change-Guard — kein erneutes Speichern wenn sich nichts geändert hat.
+                // Verhindert falschen Autosave-Indikator wenn nur leere Items hinzugefügt wurden.
+                if (silent && existingNote != null) {
+                    val existingItems = existingNote!!.checklistItems.orEmpty()
+                    val existingTitle = existingNote!!.title
+                    val noContentChange = existingTitle == title &&
+                        existingItems.size == validItems.size &&
+                        existingItems.zip(validItems).all { (old, new) ->
+                            old.id == new.id &&
+                            old.text == new.text &&
+                            old.isChecked == new.isChecked &&
+                            old.order == new.order
+                        }
+                    if (noContentChange) {
+                        Logger.d(TAG, "⏭️ Autosave: no effective change after filtering empty items — skipping")
+                        return false
+                    }
                 }
 
                 val note = existingNote?.copy(
