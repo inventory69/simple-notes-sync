@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Simple Notes</string>
-    <string name="main_title">Прості Нотатки</string>
     <string name="no_notes_yet">Поки немає нотаток.\nНатисніть +, щоб створити.</string>
     <string name="add_note">Створити Нотатку</string>
     <string name="sync">Синхронізація</string>

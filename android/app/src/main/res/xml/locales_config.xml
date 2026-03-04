@@ -4,5 +4,6 @@
     <locale android:name="en" />
     <!-- Supported languages -->
     <locale android:name="de" />
-    <locale android:name="tr" />  <!-- NEW -->
+    <locale android:name="tr" />
+    <locale android:name="uk" />
 </locale-config>

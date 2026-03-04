@@ -59,6 +59,16 @@ fun LanguageSettingsScreen(
             value = "de",
             title = stringResource(R.string.language_german),
             subtitle = "German"
+        ),
+        RadioOption(
+            value = "tr",
+            title = stringResource(R.string.language_turkish),
+            subtitle = "Turkish"
+        ),
+        RadioOption(
+            value = "uk",
+            title = stringResource(R.string.language_ukrainian),
+            subtitle = "Ukrainian"
         )
     )
     
