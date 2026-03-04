@@ -447,6 +447,11 @@
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>
     <string name="debug_changelog_reset">Changelog wird beim nächsten Start angezeigt</string>
+
+    <!-- 🔧 v1.10.1: Easter-Egg Entwickleroptionen -->
+    <string name="developer_options_countdown">Noch %d Taps bis zu den Entwickleroptionen</string>
+    <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>
+    <string name="developer_options_already_unlocked">Entwickleroptionen sind bereits freigeschaltet</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
     

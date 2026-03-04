@@ -447,6 +447,11 @@
     <string name="debug_reset_changelog">Reset Changelog Dialog</string>
     <string name="debug_reset_changelog_desc">Show changelog on next app start</string>
     <string name="debug_changelog_reset">Changelog will show on next start</string>
+
+    <!-- 🔧 v1.10.1: Easter-Egg Developer Options -->
+    <string name="developer_options_countdown">%d taps to unlock developer options</string>
+    <string name="developer_options_unlocked">🔧 Developer options unlocked</string>
+    <string name="developer_options_already_unlocked">Developer options are already unlocked</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
     

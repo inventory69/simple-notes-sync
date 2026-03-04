@@ -207,7 +207,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
     )
     val fileLoggingEnabled: StateFlow<Boolean> = _fileLoggingEnabled.asStateFlow()
-    
+
+    // 🔧 v1.10.1: Developer Options (Easter-Egg) — session-only, nicht persistiert
+    private val _developerOptionsUnlocked = MutableStateFlow(false)
+    val developerOptionsUnlocked: StateFlow<Boolean> = _developerOptionsUnlocked.asStateFlow()
+
+    /**
+     * Schaltet Entwickleroptionen frei (5× Tippen auf den Banner im Über-Screen).
+     * Nur In-Memory — wird bei Prozess-Tod zurückgesetzt.
+     */
+    fun unlockDeveloperOptions() {
+        _developerOptionsUnlocked.value = true
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // 🎨 v1.7.0: Display Settings State
     // ═══════════════════════════════════════════════════════════════════════

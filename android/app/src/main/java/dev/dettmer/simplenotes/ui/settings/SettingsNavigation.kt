@@ -83,9 +83,10 @@ fun SettingsNavHost(
             )
         }
         
-        // About Screen
+        // About Screen — 🔧 v1.10.1: viewModel für Easter-Egg Entwickleroptionen
         composable(SettingsRoute.About.route) {
             AboutScreen(
+                viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
         }
