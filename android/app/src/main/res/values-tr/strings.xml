@@ -455,6 +455,8 @@
     <string name="language_system_default">Sistem Varsayılanı</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_ukrainian">Ukraynaca</string>
     <string name="language_info">ℹ️ Tercih ettiğiniz dili seçin. Değişiklik uygulandığında görünüm kısa bir süreliğine yenilenecektir.</string>
     <string name="language_changed_restart">Dil değiştirildi. Yeniden başlatılıyor…</string>
 
