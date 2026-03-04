@@ -726,7 +726,9 @@ private fun ChecklistEditor(
             val dataIndex = items.indexOfFirst { it.id == itemId }
             if (dataIndex >= 0) {
                 val hasSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
-                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
+                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
+                    currentSortOption == ChecklistSortOption.CREATION_DATE ||
+                    currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
                 val unchecked = items.count { !it.isChecked }
                 val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
                     dataIndex + 1  // +1 für Separator
@@ -738,11 +740,13 @@ private fun ChecklistEditor(
         }
     }
 
-    // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL und UNCHECKED_FIRST anzeigen
+    // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL, UNCHECKED_FIRST und CREATION_DATE anzeigen
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
     val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL || 
-                              currentSortOption == ChecklistSortOption.UNCHECKED_FIRST
+                              currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
+                              currentSortOption == ChecklistSortOption.CREATION_DATE ||
+                              currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
     val showSeparator = shouldShowSeparator && (
         (uncheckedCount > 0 && checkedCount > 0) ||
         // 🆕 v1.8.2 (IMPL_26): Separator während Drag beibehalten wenn er vorher sichtbar war.
