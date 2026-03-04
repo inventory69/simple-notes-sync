@@ -26,10 +26,12 @@ sealed class UploadTaskResult {
      *
      * @param noteId Die ID der hochgeladenen Notiz
      * @param etag E-Tag vom Server nach Upload (null wenn nicht verfügbar)
+     * @param markdownExported 🆕 v1.10.1: Flag ob MD-Export für diese Notiz durchgeführt wurde
      */
     data class Success(
         val noteId: String,
-        val etag: String?
+        val etag: String?,
+        val markdownExported: Boolean = false  // 🆕 v1.10.1: Flag ob MD-Export durchgeführt wurde
     ) : UploadTaskResult()
 
     /**
