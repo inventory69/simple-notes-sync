@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
@@ -45,11 +46,12 @@ import dev.dettmer.simplenotes.models.NoteType
 /**
  * Expandable FAB with animated sub-actions (Breezy Weather style).
  * v1.10.0-P2: Replaces DropdownMenu-based FAB with expanding mini-FABs.
- * v1.10.1: Semi-transparent animated scrim, primaryContainer sub-FABs, secondaryContainer labels.
+ * v1.10.1-P3: Semi-transparent animated scrim, improved colors.
+ * v1.10.1-P4: Entire sub-action row is clickable (label + icon as one unit, Aegis style).
  *
  * When collapsed: Standard FAB with + icon.
- * When expanded: + rotates to ×, mini-FABs slide up with staggered animation.
- *                Semi-transparent scrim covers entire screen.
+ * When expanded: + rotates to ×, sub-action rows slide up with staggered animation.
+ *                Semi-transparent scrim covers entire screen (incl. status bar).
  */
 @Composable
 fun NoteTypeFAB(
@@ -94,7 +96,7 @@ fun NoteTypeFAB(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 40.dp),
+                .padding(end = 16.dp, bottom = 40.dp),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -174,7 +176,8 @@ fun NoteTypeFAB(
 }
 
 /**
- * A single sub-action row: label text + small FAB icon.
+ * Eine breite klickbare Pill — Icon + Text in einer Surface (Aegis Authenticator style).
+ * 🆕 v1.10.1-P4: Kein separates FAB-Icon, alles in einer einzigen Pill.
  */
 @Composable
 private fun FabSubActionRow(
@@ -184,42 +187,31 @@ private fun FabSubActionRow(
     alpha: Float,
     onClick: () -> Unit
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 6.dp,
+        tonalElevation = 0.dp,
         modifier = Modifier
             .scale(scale)
             .alpha(alpha)
     ) {
-        // Label pill — surfaceContainerHigh: dunkelgrau in Dark Mode (wie Aegis), hellgrau in Light Mode
-        Surface(
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shadowElevation = 6.dp,
-            tonalElevation = 0.dp
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        // 🔧 v1.10.1: primaryContainer für visuelle Verwandtschaft zum Main-FAB
-        FloatingActionButton(
-            onClick = onClick,
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 8.dp,
-                pressedElevation = 12.dp,
-                hoveredElevation = 10.dp,
-                focusedElevation = 10.dp
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = label
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
