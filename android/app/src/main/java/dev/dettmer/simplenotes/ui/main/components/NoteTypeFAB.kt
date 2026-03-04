@@ -32,8 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,9 +45,11 @@ import dev.dettmer.simplenotes.models.NoteType
 /**
  * Expandable FAB with animated sub-actions (Breezy Weather style).
  * v1.10.0-P2: Replaces DropdownMenu-based FAB with expanding mini-FABs.
+ * v1.10.1: Semi-transparent animated scrim, primaryContainer sub-FABs, secondaryContainer labels.
  *
  * When collapsed: Standard FAB with + icon.
  * When expanded: + rotates to ×, mini-FABs slide up with staggered animation.
+ *                Semi-transparent scrim covers entire screen.
  */
 @Composable
 fun NoteTypeFAB(
@@ -65,11 +69,20 @@ fun NoteTypeFAB(
     )
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Transparent dismiss overlay — no visual change, but catches taps outside FAB
-        if (expanded) {
+        // 🆕 v1.10.1: Semi-transparent scrim overlay — smooth animated, fullscreen inkl. Statusbar
+        // Orientiert an Aegis Authenticator: dunkler Scrim hinter dem geöffneten FAB-Menü
+        val scrimAlpha by animateFloatAsState(
+            targetValue = if (expanded) 1f else 0f,
+            animationSpec = tween(durationMillis = 250),
+            label = "scrim_alpha"
+        )
+        if (expanded || scrimAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .drawBehind {
+                        drawRect(color = Color.Black.copy(alpha = 0.5f * scrimAlpha))
+                    }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -81,7 +94,7 @@ fun NoteTypeFAB(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
+                .padding(end = 24.dp, bottom = 40.dp),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -177,26 +190,26 @@ private fun FabSubActionRow(
             .scale(scale)
             .alpha(alpha)
     ) {
-        // Label pill
+        // Label pill — surfaceContainerHigh: dunkelgrau in Dark Mode (wie Aegis), hellgrau in Light Mode
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.secondaryContainer,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             shadowElevation = 6.dp,
-            tonalElevation = 2.dp
+            tonalElevation = 0.dp
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        // 🆕 v1.10.0-P2: Standard FAB (56dp) — larger than SmallFAB, proportional icon
+        // 🔧 v1.10.1: primaryContainer für visuelle Verwandtschaft zum Main-FAB
         FloatingActionButton(
             onClick = onClick,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             elevation = FloatingActionButtonDefaults.elevation(
                 defaultElevation = 8.dp,
                 pressedElevation = 12.dp,
