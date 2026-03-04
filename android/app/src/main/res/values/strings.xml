@@ -110,6 +110,8 @@
     <string name="sort_checklist_alpha_desc">Z → A</string>
     <string name="sort_checklist_unchecked_first">Unchecked first</string>
     <string name="sort_checklist_checked_first">Checked first</string>
+    <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation">Date created ↑</string>
+    <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation">Date created ↓</string>
     <string name="apply">Apply</string>
     <string name="sync_phase_importing_markdown">Importing Markdown…</string>
     <string name="sync_phase_saving">Saving…</string>

@@ -178,13 +178,16 @@ class NoteEditorViewModel(
         val rawItems = note.checklistItems?.sortedBy { it.order }.orEmpty()
         // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0 (Gson default)
         val isPreF04Note = rawItems.all { it.originalOrder == 0 }
-        val items = rawItems.map {
+        // 🆕 v1.10.1: Backward compat — old notes have no createdAt (Gson default = 0)
+        val isPreCreatedAtNote = rawItems.all { it.createdAt == 0L }
+        val items = rawItems.mapIndexed { index, raw ->
             ChecklistItemState(
-                id = it.id,
-                text = it.text,
-                isChecked = it.isChecked,
-                order = it.order,
-                originalOrder = if (isPreF04Note) it.order else it.originalOrder
+                id = raw.id,
+                text = raw.text,
+                isChecked = raw.isChecked,
+                order = raw.order,
+                originalOrder = if (isPreF04Note) raw.order else raw.originalOrder,
+                createdAt = if (isPreCreatedAtNote) index.toLong() else raw.createdAt
             )
         }
         // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
@@ -290,6 +293,18 @@ class NoteEditorViewModel(
                 val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
                 unchecked + checked
             }
+            ChecklistSortOption.CREATION_DATE -> {
+                // 🆕 v1.11.0: Sort by creation timestamp — oldest first (ascending)
+                val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
+                val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
+                unchecked + checked
+            }
+            ChecklistSortOption.CREATION_DATE_DESC -> {
+                // 🆕 v1.11.0: Sort by creation timestamp — newest first (descending)
+                val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
+                val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
+                unchecked + checked
+            }
             ChecklistSortOption.CHECKED_FIRST ->
                 items.sortedByDescending { it.isChecked }
             ChecklistSortOption.ALPHABETICAL_ASC ->
@@ -326,7 +341,10 @@ class NoteEditorViewModel(
             }
             // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Auto-Sort nur bei MANUAL und UNCHECKED_FIRST
             val currentSort = _lastChecklistSortOption.value
-            if (currentSort == ChecklistSortOption.MANUAL || currentSort == ChecklistSortOption.UNCHECKED_FIRST) {
+            if (currentSort == ChecklistSortOption.MANUAL ||
+                currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
+                currentSort == ChecklistSortOption.CREATION_DATE ||
+                currentSort == ChecklistSortOption.CREATION_DATE_DESC) {
                 sortChecklistItems(updatedItems)
             } else {
                 // Bei anderen Sortierungen (alphabetisch, checked first) nicht auto-sortieren
@@ -358,7 +376,9 @@ class NoteEditorViewModel(
             if (index >= 0) {
                 val currentSort = _lastChecklistSortOption.value
                 val hasSeparator = currentSort == ChecklistSortOption.MANUAL ||
-                        currentSort == ChecklistSortOption.UNCHECKED_FIRST
+                        currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
+                        currentSort == ChecklistSortOption.CREATION_DATE ||
+                        currentSort == ChecklistSortOption.CREATION_DATE_DESC
 
                 // 🆕 v1.8.1 (IMPL_15): Wenn das Trigger-Item checked ist und ein Separator
                 // existiert, darf das neue unchecked Item nicht in die checked-Sektion.
@@ -426,7 +446,9 @@ class NoteEditorViewModel(
         val currentSort = _lastChecklistSortOption.value
         return when (currentSort) {
             ChecklistSortOption.MANUAL,
-            ChecklistSortOption.UNCHECKED_FIRST -> {
+            ChecklistSortOption.UNCHECKED_FIRST,
+            ChecklistSortOption.CREATION_DATE,
+            ChecklistSortOption.CREATION_DATE_DESC -> {
                 val firstCheckedIndex = items.indexOfFirst { it.isChecked }
                 if (firstCheckedIndex >= 0) firstCheckedIndex else items.size
             }
@@ -509,6 +531,20 @@ class NoteEditorViewModel(
                 
                 ChecklistSortOption.CHECKED_FIRST -> 
                     items.sortedByDescending { it.isChecked }
+
+                ChecklistSortOption.CREATION_DATE -> {
+                    // 🆕 v1.11.0: Unchecked-Items nach Erstellungszeit sortiert (aufsteigend), dann Checked
+                    val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
+                    val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
+                    unchecked + checked
+                }
+
+                ChecklistSortOption.CREATION_DATE_DESC -> {
+                    // 🆕 v1.11.0: Neueste zuerst (absteigend), dann Checked
+                    val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
+                    val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
+                    unchecked + checked
+                }
             }
             
             // 🆕 v1.9.0 (F04): Explicit sort resets originalOrder baseline to new positions
@@ -599,7 +635,8 @@ class NoteEditorViewModel(
                                 text = item.text,
                                 isChecked = item.isChecked,
                                 order = index,
-                                originalOrder = item.originalOrder
+                                originalOrder = item.originalOrder,
+                                createdAt = item.createdAt  // 🆕 v1.10.1
                             )
                         }
                     if (title.isEmpty() && validItems.isEmpty()) return true
@@ -706,7 +743,8 @@ class NoteEditorViewModel(
                             text = item.text,
                             isChecked = item.isChecked,
                             order = index,
-                            originalOrder = item.originalOrder
+                            originalOrder = item.originalOrder,
+                            createdAt = item.createdAt  // 🆕 v1.10.1
                         )
                     }
 
@@ -969,13 +1007,16 @@ class NoteEditorViewModel(
             val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
             // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
             val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
-            val freshItems = rawFreshItems.map {
+            // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
+            val isPreCreatedAtFresh = rawFreshItems.all { it.createdAt == 0L }
+            val freshItems = rawFreshItems.mapIndexed { index, raw ->
                 ChecklistItemState(
-                    id = it.id,
-                    text = it.text,
-                    isChecked = it.isChecked,
-                    order = it.order,
-                    originalOrder = if (isPreF04Fresh) it.order else it.originalOrder
+                    id = raw.id,
+                    text = raw.text,
+                    isChecked = raw.isChecked,
+                    order = raw.order,
+                    originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
+                    createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt
                 )
             }
             if (freshItems.isEmpty()) return
@@ -1058,16 +1099,25 @@ data class ChecklistItemState(
     val text: String = "",
     val isChecked: Boolean = false,
     val order: Int = 0,
-    val originalOrder: Int = order  // 🆕 v1.9.0 (F04): Position restore on un-check
+    val originalOrder: Int = order,  // 🆕 v1.9.0 (F04): Position restore on un-check
+    val createdAt: Long = System.currentTimeMillis()  // 🆕 v1.10.1: Timestamp for sort-by-creation-date
 ) {
     companion object {
+        // 🆕 v1.11.0: Monoton steigender Timestamp — verhindert gleiche createdAt-Werte
+        // wenn mehrere Items in derselben Millisekunde erstellt werden (z.B. schnelles Enter-Drücken).
+        // maxOf(now, last+1) garantiert: jedes neue Item hat einen strikt größeren Wert als das vorige.
+        private var lastCreatedAt = 0L
+
         fun createEmpty(order: Int): ChecklistItemState {
+            val now = System.currentTimeMillis()
+            lastCreatedAt = maxOf(now, lastCreatedAt + 1)
             return ChecklistItemState(
                 id = UUID.randomUUID().toString(),
                 text = "",
                 isChecked = false,
                 order = order,
-                originalOrder = order
+                originalOrder = order,
+                createdAt = lastCreatedAt
             )
         }
     }

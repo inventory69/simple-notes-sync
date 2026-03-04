@@ -114,6 +114,8 @@
     <string name="sort_checklist_alpha_desc">Z → A</string>
     <string name="sort_checklist_unchecked_first">Unerledigte zuerst</string>
     <string name="sort_checklist_checked_first">Erledigte zuerst</string>
+    <string name="sort_checklist_creation_date">Erstellungsdatum ↑</string>
+    <string name="sort_checklist_creation_date_desc">Erstellungsdatum ↓</string>
     <string name="apply">Anwenden</string>
     
     <!-- ============================= -->
