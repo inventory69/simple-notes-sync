@@ -1,5 +1,14 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,19 +17,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PhonelinkRing
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsInputAntenna
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
@@ -54,9 +80,9 @@ fun SyncSettingsScreen(
 
     val maxParallelConnections by viewModel.maxParallelConnections.collectAsState()
     val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
-    
+
     val isServerConfigured = viewModel.isServerConfigured()
-    
+
     SettingsScaffold(
         title = stringResource(R.string.sync_settings_title),
         onBack = onBack
@@ -240,8 +266,219 @@ fun SyncSettingsScreen(
                 selectedValue = maxParallelConnections,
                 onValueSelected = { viewModel.setMaxParallelConnections(it) }
             )
-            
+
+            SettingsDivider()
+
+            // ═══════════════════════════════════════════════════════════════
+            // SECTION 3: NOTIFICATIONS (v1.10.1)
+            // ═══════════════════════════════════════════════════════════════
+
+            NotificationSettingsSection(
+                viewModel = viewModel,
+                isServerConfigured = isServerConfigured
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun NotificationSettingsSection(
+    viewModel: SettingsViewModel,
+    isServerConfigured: Boolean
+) {
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val notificationsErrorsOnly by viewModel.notificationsErrorsOnly.collectAsState()
+    val notificationsServerWarning by viewModel.notificationsServerWarning.collectAsState()
+
+    // 🆕 v1.10.1-B: Permission-aware notification toggle
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    // Live permission check — re-evaluated on each recomposition (screen open/resume)
+    val hasNotificationPermission = remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // Pre-Android 13: no runtime permission needed
+            }
+        )
+    }
+
+    // Re-check permission on every ON_RESUME (incl. returning from system settings)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasNotificationPermission.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else {
+                    true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Dialog states
+    var showPermissionRationale by remember { mutableStateOf(false) }
+    var showPermissionSettingsDialog by remember { mutableStateOf(false) }
+    // Set to true when user intentionally navigates to system settings to grant permission
+    var pendingNotificationEnable by remember { mutableStateOf(false) }
+
+    // Sync toggle with actual permission status:
+    // - Permission revoked externally → disable toggle
+    // - Permission granted after user intentionally went to system settings → enable toggle
+    LaunchedEffect(hasNotificationPermission.value) {
+        if (!hasNotificationPermission.value && notificationsEnabled) {
+            viewModel.setNotificationsEnabled(false)
+        } else if (hasNotificationPermission.value && pendingNotificationEnable) {
+            pendingNotificationEnable = false
+            viewModel.setNotificationsEnabled(true)
+        }
+    }
+
+    // Permission launcher (Compose-idiomatic)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasNotificationPermission.value = granted
+        viewModel.setNotificationsEnabled(granted)
+    }
+
+    // ── Permission Rationale Dialog ──
+    if (showPermissionRationale) {
+        AlertDialog(
+            onDismissRequest = { showPermissionRationale = false },
+            title = { Text(stringResource(R.string.notifications_permission_rationale_title)) },
+            text = { Text(stringResource(R.string.notifications_permission_rationale_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPermissionRationale = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPermissionRationale = false
+                    viewModel.setNotificationsEnabled(false)
+                }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // ── Permission permanently denied → Open App Settings Dialog ──
+    if (showPermissionSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionSettingsDialog = false },
+            title = { Text(stringResource(R.string.notifications_permission_settings_title)) },
+            text = { Text(stringResource(R.string.notifications_permission_settings_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPermissionSettingsDialog = false
+                    pendingNotificationEnable = true
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    }
+                    context.startActivity(intent)
+                }) {
+                    Text(stringResource(R.string.notifications_permission_open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPermissionSettingsDialog = false
+                    viewModel.setNotificationsEnabled(false)
+                }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    SettingsSectionHeader(text = stringResource(R.string.sync_section_notifications))
+
+    SettingsSwitch(
+        title = stringResource(R.string.notifications_enabled_title),
+        subtitle = stringResource(R.string.notifications_enabled_subtitle),
+        checked = notificationsEnabled,
+        onCheckedChange = { enabled ->
+            if (enabled) {
+                // User wants to enable notifications — check permission first
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (hasNotificationPermission.value) {
+                        // Permission already granted — just enable
+                        viewModel.setNotificationsEnabled(true)
+                    } else if (activity != null &&
+                        ActivityCompat.shouldShowRequestPermissionRationale(
+                            activity, Manifest.permission.POST_NOTIFICATIONS
+                        )
+                    ) {
+                        // Permission denied once — show rationale, then re-ask
+                        showPermissionRationale = true
+                    } else {
+                        // Either never asked OR permanently denied
+                        val prefs = context.getSharedPreferences(
+                            dev.dettmer.simplenotes.utils.Constants.PREFS_NAME,
+                            Context.MODE_PRIVATE
+                        )
+                        val wasPermissionRequested = prefs.getBoolean(
+                            "notification_permission_requested", false
+                        )
+                        if (wasPermissionRequested) {
+                            // Permanently denied — redirect to system settings
+                            showPermissionSettingsDialog = true
+                        } else {
+                            // First time asking from settings screen
+                            prefs.edit().putBoolean(
+                                "notification_permission_requested", true
+                            ).apply()
+                            notificationPermissionLauncher.launch(
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
+                        }
+                    }
+                } else {
+                    // Pre-Android 13 — no runtime permission needed
+                    viewModel.setNotificationsEnabled(true)
+                }
+            } else {
+                // User wants to disable — always allowed
+                viewModel.setNotificationsEnabled(false)
+            }
+        },
+        icon = if (notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+        enabled = isServerConfigured
+    )
+
+    if (notificationsEnabled && isServerConfigured) {
+        SettingsSwitch(
+            title = stringResource(R.string.notifications_errors_only_title),
+            subtitle = stringResource(R.string.notifications_errors_only_subtitle),
+            checked = notificationsErrorsOnly,
+            onCheckedChange = { viewModel.setNotificationsErrorsOnly(it) },
+            icon = Icons.Default.ErrorOutline
+        )
+
+        SettingsSwitch(
+            title = stringResource(R.string.notifications_server_warning_title),
+            subtitle = stringResource(R.string.notifications_server_warning_subtitle),
+            checked = notificationsServerWarning,
+            onCheckedChange = { viewModel.setNotificationsServerWarning(it) },
+            icon = Icons.Default.Warning
+        )
     }
 }

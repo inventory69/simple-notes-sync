@@ -333,6 +333,18 @@
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">Sync Triggers</string>
     <string name="sync_section_network_performance">Network &amp; Performance</string>
+    <string name="sync_section_notifications">Notifications</string>
+    <string name="notifications_enabled_title">Notifications</string>
+    <string name="notifications_enabled_subtitle">Show notifications for sync events</string>
+    <string name="notifications_errors_only_title">Errors and warnings only</string>
+    <string name="notifications_errors_only_subtitle">Hide success notifications, only show errors and warnings</string>
+    <string name="notifications_server_warning_title">Server unreachable warning</string>
+    <string name="notifications_server_warning_subtitle">Warn when the server has been unreachable for over 24 hours</string>
+    <string name="notifications_permission_rationale_title">Notification permission required</string>
+    <string name="notifications_permission_rationale_message">To show sync notifications, the app needs permission to send notifications. Please grant the permission in the next dialog.</string>
+    <string name="notifications_permission_settings_title">Notifications blocked</string>
+    <string name="notifications_permission_settings_message">Notification permission was permanently denied. To enable notifications, please allow them in the app settings.</string>
+    <string name="notifications_permission_open_settings">Open Settings</string>
     
     <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
     <string name="sync_wifi_only_error">Sync only works when WiFi is connected</string>

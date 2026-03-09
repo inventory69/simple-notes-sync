@@ -2,6 +2,28 @@
 <issues format="6" by="lint 8.13.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.2)" variant="all" version="8.13.2">
 
     <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.provider.Settings#ACTION_APP_NOTIFICATION_SETTINGS`"
+        errorLine1="                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/SyncSettingsScreen.kt"
+            line="377"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.provider.Settings#EXTRA_APP_PACKAGE`"
+        errorLine1="                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/SyncSettingsScreen.kt"
+            line="378"
+            column="34"/>
+    </issue>
+
+    <issue
         id="UnusedAttribute"
         message="Attribute `localeConfig` is only used in API level 33 and higher (current min is 31)"
         errorLine1="        android:localeConfig=&quot;@xml/locales_config&quot;"
@@ -96,7 +118,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1039"
+            line="1078"
             column="13"/>
     </issue>
 
@@ -366,7 +388,7 @@
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jlleitschuh.gradle.ktlint than 12.1.0 is available: 14.0.1"
+        message="A newer version of org.jlleitschuh.gradle.ktlint than 12.1.0 is available: 14.1.0"
         errorLine1="ktlint = &quot;12.1.0&quot;"
         errorLine2="         ~~~~~~~~">
         <location
@@ -498,12 +520,144 @@
 
     <issue
         id="MissingTranslation"
+        message="&quot;sync_section_notifications&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;sync_section_notifications&quot;>Notifications&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="335"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_enabled_title&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_enabled_title&quot;>Notifications&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="336"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_enabled_subtitle&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_enabled_subtitle&quot;>Show notifications for sync events&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="337"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_errors_only_title&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_errors_only_title&quot;>Errors and warnings only&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="338"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_errors_only_subtitle&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_errors_only_subtitle&quot;>Hide success notifications, only show errors and warnings&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="339"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_server_warning_title&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_server_warning_title&quot;>Server unreachable warning&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="340"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_server_warning_subtitle&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_server_warning_subtitle&quot;>Warn when the server has been unreachable for over 24 hours&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="341"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_permission_rationale_title&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_permission_rationale_title&quot;>Notification permission required&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="342"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_permission_rationale_message&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_permission_rationale_message&quot;>To show sync notifications, the app needs permission to send notifications. Please grant the permission in the next dialog.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="343"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_permission_settings_title&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_permission_settings_title&quot;>Notifications blocked&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="344"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_permission_settings_message&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_permission_settings_message&quot;>Notification permission was permanently denied. To enable notifications, please allow them in the app settings.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="345"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_permission_open_settings&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;notifications_permission_open_settings&quot;>Open Settings&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="346"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
         message="&quot;developer_options_countdown&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
         errorLine1="    &lt;string name=&quot;developer_options_countdown&quot;>%d taps to unlock developer options&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="451"
+            line="463"
             column="13"/>
     </issue>
 
@@ -514,7 +668,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="452"
+            line="464"
             column="13"/>
     </issue>
 
@@ -525,7 +679,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="453"
+            line="465"
             column="13"/>
     </issue>
 
@@ -668,7 +822,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="372"
+            line="384"
             column="5"/>
     </issue>
 
@@ -679,7 +833,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="428"
+            line="440"
             column="5"/>
     </issue>
 
@@ -690,7 +844,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="451"
+            line="463"
             column="5"/>
     </issue>
 
@@ -701,7 +855,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="571"
+            line="583"
             column="5"/>
     </issue>
 
@@ -712,7 +866,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="580"
+            line="592"
             column="5"/>
     </issue>
 
@@ -723,7 +877,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="590"
+            line="602"
             column="5"/>
     </issue>
 
@@ -734,7 +888,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="599"
+            line="611"
             column="5"/>
     </issue>
 
@@ -745,7 +899,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="613"
+            line="625"
             column="5"/>
     </issue>
 
@@ -756,7 +910,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="615"
+            line="627"
             column="5"/>
     </issue>
 
@@ -767,7 +921,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="618"
+            line="630"
             column="5"/>
     </issue>
 
@@ -778,7 +932,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="619"
+            line="631"
             column="5"/>
     </issue>
 
@@ -789,7 +943,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="620"
+            line="632"
             column="5"/>
     </issue>
 
@@ -800,7 +954,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="627"
+            line="639"
             column="5"/>
     </issue>
 
@@ -811,7 +965,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="628"
+            line="640"
             column="5"/>
     </issue>
 
@@ -822,7 +976,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="652"
+            line="664"
             column="5"/>
     </issue>
 
@@ -1261,7 +1415,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="357"
+            line="369"
             column="13"/>
     </issue>
 
@@ -1272,7 +1426,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="362"
+            line="374"
             column="13"/>
     </issue>
 
@@ -1283,7 +1437,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="397"
+            line="409"
             column="13"/>
     </issue>
 
@@ -1294,7 +1448,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="398"
+            line="410"
             column="13"/>
     </issue>
 
@@ -1305,7 +1459,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="400"
+            line="412"
             column="13"/>
     </issue>
 
@@ -1316,7 +1470,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="401"
+            line="413"
             column="13"/>
     </issue>
 
@@ -1327,7 +1481,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="422"
+            line="434"
             column="13"/>
     </issue>
 
@@ -1338,7 +1492,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="423"
+            line="435"
             column="13"/>
     </issue>
 
@@ -1349,7 +1503,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="424"
+            line="436"
             column="13"/>
     </issue>
 
@@ -1360,7 +1514,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="425"
+            line="437"
             column="13"/>
     </issue>
 
@@ -1371,7 +1525,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="426"
+            line="438"
             column="13"/>
     </issue>
 
@@ -1382,7 +1536,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="427"
+            line="439"
             column="13"/>
     </issue>
 
@@ -1393,7 +1547,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="428"
+            line="440"
             column="13"/>
     </issue>
 
@@ -1404,7 +1558,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="429"
+            line="441"
             column="13"/>
     </issue>
 
@@ -1415,7 +1569,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="467"
+            line="479"
             column="13"/>
     </issue>
 
@@ -1426,7 +1580,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="506"
+            line="518"
             column="13"/>
     </issue>
 
@@ -1437,7 +1591,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="507"
+            line="519"
             column="13"/>
     </issue>
 
@@ -1448,7 +1602,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="588"
+            line="600"
             column="13"/>
     </issue>
 
@@ -1459,7 +1613,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="589"
+            line="601"
             column="13"/>
     </issue>
 
@@ -1470,7 +1624,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="590"
+            line="602"
             column="13"/>
     </issue>
 
@@ -1481,7 +1635,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="591"
+            line="603"
             column="13"/>
     </issue>
 
@@ -1492,7 +1646,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="594"
+            line="606"
             column="13"/>
     </issue>
 
@@ -1503,7 +1657,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="596"
+            line="608"
             column="13"/>
     </issue>
 
@@ -1514,7 +1668,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="597"
+            line="609"
             column="13"/>
     </issue>
 
@@ -1525,7 +1679,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="660"
+            line="672"
             column="14"/>
     </issue>
 
@@ -1536,7 +1690,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="665"
+            line="677"
             column="14"/>
     </issue>
 
@@ -1547,7 +1701,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="670"
+            line="682"
             column="14"/>
     </issue>
 
@@ -1558,7 +1712,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="675"
+            line="687"
             column="14"/>
     </issue>
 
@@ -1569,7 +1723,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="706"
+            line="718"
             column="13"/>
     </issue>
 
@@ -1658,7 +1812,7 @@
         errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/AboutScreen.kt"
-            line="133"
+            line="139"
             column="42"/>
     </issue>
 
@@ -1669,7 +1823,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/AboutScreen.kt"
-            line="177"
+            line="183"
             column="61"/>
     </issue>
 
@@ -1680,7 +1834,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/AboutScreen.kt"
-            line="188"
+            line="194"
             column="61"/>
     </issue>
 
@@ -1691,7 +1845,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/AboutScreen.kt"
-            line="199"
+            line="205"
             column="61"/>
     </issue>
 
@@ -1702,7 +1856,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/AboutScreen.kt"
-            line="210"
+            line="216"
             column="61"/>
     </issue>
 
@@ -1955,7 +2109,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="289"
+            line="308"
             column="9"/>
     </issue>
 
@@ -1966,7 +2120,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="319"
+            line="338"
             column="9"/>
     </issue>
 
@@ -1977,7 +2131,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="331"
+            line="350"
             column="9"/>
     </issue>
 
@@ -1988,7 +2142,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="337"
+            line="356"
             column="9"/>
     </issue>
 
@@ -1999,7 +2153,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="343"
+            line="362"
             column="9"/>
     </issue>
 
@@ -2010,7 +2164,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="352"
+            line="371"
             column="9"/>
     </issue>
 
@@ -2021,7 +2175,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="362"
+            line="381"
             column="9"/>
     </issue>
 
@@ -2032,7 +2186,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="376"
+            line="395"
             column="9"/>
     </issue>
 
@@ -2043,7 +2197,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="435"
+            line="454"
             column="22"/>
     </issue>
 
@@ -2054,7 +2208,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="613"
+            line="632"
             column="9"/>
     </issue>
 
@@ -2065,7 +2219,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="630"
+            line="649"
             column="9"/>
     </issue>
 
@@ -2076,7 +2230,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="648"
+            line="667"
             column="9"/>
     </issue>
 
@@ -2087,7 +2241,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="655"
+            line="674"
             column="9"/>
     </issue>
 
@@ -2098,7 +2252,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="661"
+            line="680"
             column="9"/>
     </issue>
 
@@ -2109,7 +2263,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="667"
+            line="686"
             column="9"/>
     </issue>
 
@@ -2120,7 +2274,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="676"
+            line="695"
             column="9"/>
     </issue>
 
@@ -2131,7 +2285,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="685"
+            line="704"
             column="9"/>
     </issue>
 
@@ -2142,7 +2296,40 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="695"
+            line="714"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
+            line="722"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, enabled).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
+            line="728"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, enabled).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
+            line="734"
             column="9"/>
     </issue>
 
@@ -2153,7 +2340,7 @@
         errorLine2="                        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="789"
+            line="828"
             column="25"/>
     </issue>
 
@@ -2164,7 +2351,7 @@
         errorLine2="                        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="804"
+            line="843"
             column="25"/>
     </issue>
 
@@ -2175,7 +2362,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="829"
+            line="868"
             column="13"/>
     </issue>
 
@@ -2186,7 +2373,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="978"
+            line="1017"
             column="9"/>
     </issue>
 
@@ -2197,7 +2384,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1003"
+            line="1042"
             column="9"/>
     </issue>
 
@@ -2208,7 +2395,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1109"
+            line="1148"
             column="9"/>
     </issue>
 
@@ -2219,7 +2406,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1120"
+            line="1159"
             column="9"/>
     </issue>
 
@@ -2232,6 +2419,17 @@
             file="src/main/java/dev/dettmer/simplenotes/SimpleNotesApplication.kt"
             line="102"
             column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                            prefs.edit().putBoolean("
+        errorLine2="                            ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/SyncSettingsScreen.kt"
+            line="430"
+            column="29"/>
     </issue>
 
     <issue
