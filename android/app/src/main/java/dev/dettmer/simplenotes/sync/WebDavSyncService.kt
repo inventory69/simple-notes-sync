@@ -775,8 +775,9 @@ class WebDavSyncService(
                     // 🆕 v1.10.0-P2: Cancel checkpoint before potentially long Markdown import
                     currentCoroutineContext().ensureActive()
 
-                    // 🆕 v1.8.0: Phase nur setzen wenn Feature aktiv
-                    SyncStateManager.updateProgress(phase = SyncPhase.IMPORTING_MARKDOWN)
+                    // 🔧 v1.11.0: Phase IMPORTING_MARKDOWN wird jetzt erst innerhalb von
+                    // importMarkdownFiles() gesetzt, und nur wenn tatsächlich Dateien
+                    // verarbeitet werden müssen (nicht beim Fast-Path).
                     
                     Logger.d(TAG, "📥 Auto-importing Markdown files...")
                     // 🆕 v1.10.1: Pass exported note IDs to prevent re-import of just-exported files
@@ -2266,25 +2267,45 @@ class WebDavSyncService(
             
             Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
             
-            // 🆕 v1.10.0-P2: Set total upfront so the progress bar is determinate from the start
+            // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
+            val lastSyncTime = getLastSyncTimestamp()
+            Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
+            
+            // 🔧 v1.11.0: Fast-Path — wenn alle Dateien älter als letzter Sync sind,
+            // überspringe die gesamte Schleife und zeige keine IMPORTING_MARKDOWN-Phase.
+            // Das verhindert die irreführende Anzeige "Markdown importieren… Test Neu.md"
+            // wenn tatsächlich 0 Dateien importiert werden.
+            if (lastSyncTime > 0) {
+                val allUnchanged = mdResources.all { resource ->
+                    val serverModifiedTime = resource.modified?.time ?: 0L
+                    serverModifiedTime <= lastSyncTime
+                }
+                if (allUnchanged) {
+                    Logger.d(TAG, "   ⏭️ All ${mdResources.size} markdown files unchanged since last sync (fast-path)")
+                    Logger.d(TAG, "   📊 Markdown import complete: 0 imported, ${mdResources.size} skipped (fast-path)")
+                    return 0
+                }
+            }
+            
+            // 🔧 v1.11.0: Phase erst hier setzen — nach dem Fast-Path-Check.
+            // Wenn alle Dateien unverändert waren, wurde bereits return 0 ausgeführt
+            // und diese Zeile wird nie erreicht → kein irreführendes Banner.
             SyncStateManager.updateProgress(
                 phase = SyncPhase.IMPORTING_MARKDOWN,
                 current = 0,
                 total = mdResources.size
             )
             
-            // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
-            val lastSyncTime = getLastSyncTimestamp()
-            Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
-            
             var processedCount = 0  // 🆕 v1.10.0-P2: per-file determinate progress counter
             for (resource in mdResources) {
-                // 🆕 v1.10.0-P2: Advance progress for every file (including skipped ones)
+                // 🔧 v1.11.0: Counter für jede Datei inkrementieren (Fortschrittsbalken korrekt),
+                // aber currentFileName = null für übersprungene Dateien.
+                // Dateiname wird erst gesetzt wenn die Datei tatsächlich heruntergeladen wird.
                 SyncStateManager.updateProgress(
                     phase = SyncPhase.IMPORTING_MARKDOWN,
                     current = ++processedCount,
                     total = mdResources.size,
-                    currentFileName = resource.name
+                    currentFileName = null  // 🔧 v1.11.0: Kein Dateiname für Skip-Phase
                 )
                 try {
                     val serverModifiedTime = resource.modified?.time ?: 0L
@@ -2298,6 +2319,14 @@ class WebDavSyncService(
                     }
                     
                     Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
+                    
+                    // 🔧 v1.11.0: Erst jetzt currentFileName setzen — Datei wird tatsächlich verarbeitet
+                    SyncStateManager.updateProgress(
+                        phase = SyncPhase.IMPORTING_MARKDOWN,
+                        current = processedCount,
+                        total = mdResources.size,
+                        currentFileName = resource.name
+                    )
                     
                     // Build full URL
                     val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
