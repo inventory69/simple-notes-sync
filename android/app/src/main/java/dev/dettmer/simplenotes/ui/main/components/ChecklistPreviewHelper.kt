@@ -38,6 +38,20 @@ fun sortChecklistItemsForPreview(
 
         ChecklistSortOption.ALPHABETICAL_DESC ->
             items.sortedByDescending { it.text.lowercase() }
+
+        ChecklistSortOption.CREATION_DATE -> {
+            // 🆕 v1.11.0: Unchecked first, then checked — both sorted by creation timestamp (ascending)
+            val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
+            val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
+            unchecked + checked
+        }
+
+        ChecklistSortOption.CREATION_DATE_DESC -> {
+            // 🆕 v1.11.0: Unchecked first, then checked — both sorted by creation timestamp (descending)
+            val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
+            val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
+            unchecked + checked
+        }
     }
 }
 

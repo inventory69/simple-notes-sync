@@ -13,7 +13,15 @@ object Constants {
     const val KEY_LAST_SUCCESSFUL_SYNC = "last_successful_sync_time"
     const val KEY_LAST_SYNC_WARNING_SHOWN = "last_sync_warning_shown_time"
     const val SYNC_WARNING_THRESHOLD_MS = 24 * 60 * 60 * 1000L  // 24h
-    
+
+    // 🆕 v1.11.0: Notification preferences
+    const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+    const val DEFAULT_NOTIFICATIONS_ENABLED = true
+    const val KEY_NOTIFICATIONS_ERRORS_ONLY = "notifications_errors_only"
+    const val DEFAULT_NOTIFICATIONS_ERRORS_ONLY = false
+    const val KEY_NOTIFICATIONS_SERVER_WARNING = "notifications_server_warning"
+    const val DEFAULT_NOTIFICATIONS_SERVER_WARNING = true
+
     // 🔥 NEU: Sync Interval Configuration
     const val PREF_SYNC_INTERVAL_MINUTES = "sync_interval_minutes"
     const val DEFAULT_SYNC_INTERVAL_MINUTES = 30L

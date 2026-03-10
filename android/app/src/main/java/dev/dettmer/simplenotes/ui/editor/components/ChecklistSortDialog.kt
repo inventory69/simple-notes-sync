@@ -120,4 +120,6 @@ fun ChecklistSortOption.toStringRes(): Int = when (this) {
     ChecklistSortOption.ALPHABETICAL_DESC -> R.string.sort_checklist_alpha_desc
     ChecklistSortOption.UNCHECKED_FIRST -> R.string.sort_checklist_unchecked_first
     ChecklistSortOption.CHECKED_FIRST -> R.string.sort_checklist_checked_first
+    ChecklistSortOption.CREATION_DATE -> R.string.sort_checklist_creation_date
+    ChecklistSortOption.CREATION_DATE_DESC -> R.string.sort_checklist_creation_date_desc
 }

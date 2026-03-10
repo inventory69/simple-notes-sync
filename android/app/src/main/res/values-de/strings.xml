@@ -114,6 +114,8 @@
     <string name="sort_checklist_alpha_desc">Z → A</string>
     <string name="sort_checklist_unchecked_first">Unerledigte zuerst</string>
     <string name="sort_checklist_checked_first">Erledigte zuerst</string>
+    <string name="sort_checklist_creation_date">Erstellungsdatum ↑</string>
+    <string name="sort_checklist_creation_date_desc">Erstellungsdatum ↓</string>
     <string name="apply">Anwenden</string>
     
     <!-- ============================= -->
@@ -217,7 +219,7 @@
     <string name="settings_server_status_checking">🔍 Prüfe…</string>
     <string name="settings_server_status_not_configured">⚠️ Nicht konfiguriert</string>
     <string name="settings_server_status_offline_mode">📴 Offline-Modus</string>
-    <string name="settings_sync">Sync-Einstellungen</string>
+    <string name="settings_sync">Sync &amp; Benachrichtigungen</string>
     <string name="settings_sync_auto_on">Auto-Sync: An • %s</string>
     <string name="settings_sync_auto_off">Auto-Sync: Aus</string>
     <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
@@ -307,7 +309,7 @@
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
     <string name="sync_settings">Sync-Einstellungen</string>
-    <string name="sync_settings_title">Sync-Einstellungen</string>
+    <string name="sync_settings_title">Sync &amp; Benachrichtigungen</string>
     <string name="auto_sync">Auto-Sync aktiviert</string>
     <string name="sync_auto_sync_info">🔄 Auto-Sync:\n• Prüft alle 30 Min. ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%/Tag)</string>
     <string name="sync_auto_sync_enabled">Auto-Sync aktiviert</string>
@@ -330,7 +332,19 @@
     
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">Sync-Auslöser</string>
-    <string name="sync_section_network_performance">Netzwerk &amp; Performance</string>
+    <string name="sync_section_network_performance">Netzwerk</string>
+    <string name="sync_section_notifications">Benachrichtigungen</string>
+    <string name="notifications_enabled_title">Benachrichtigungen</string>
+    <string name="notifications_enabled_subtitle">Benachrichtigungen für Sync-Ereignisse anzeigen</string>
+    <string name="notifications_errors_only_title">Nur bei Fehler und Warnung</string>
+    <string name="notifications_errors_only_subtitle">Erfolgs-Benachrichtigungen ausblenden, nur Fehler und Warnungen anzeigen</string>
+    <string name="notifications_server_warning_title">Warnung bei Server nicht erreichbar</string>
+    <string name="notifications_server_warning_subtitle">Warnen, wenn der Server seit über 24 Stunden nicht erreichbar ist</string>
+    <string name="notifications_permission_rationale_title">Benachrichtigungsberechtigung erforderlich</string>
+    <string name="notifications_permission_rationale_message">Um Sync-Benachrichtigungen anzuzeigen, benötigt die App die Berechtigung zum Senden von Benachrichtigungen. Bitte erteile die Berechtigung im nächsten Dialog.</string>
+    <string name="notifications_permission_settings_title">Benachrichtigungen blockiert</string>
+    <string name="notifications_permission_settings_message">Die Benachrichtigungsberechtigung wurde dauerhaft abgelehnt. Um Benachrichtigungen zu aktivieren, erlaube sie bitte in den App-Einstellungen.</string>
+    <string name="notifications_permission_open_settings">Einstellungen öffnen</string>
     
     <string name="sync_wifi_only_hint">💡 Der WiFi-Connect Trigger ist davon nicht betroffen \u2013 er synchronisiert immer wenn WiFi verbunden wird.</string>
     <string name="sync_wifi_only_error">Sync funktioniert nur wenn WLAN verbunden ist</string>
@@ -445,6 +459,11 @@
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>
     <string name="debug_changelog_reset">Changelog wird beim nächsten Start angezeigt</string>
+
+    <!-- 🔧 v1.10.1: Easter-Egg Entwickleroptionen -->
+    <string name="developer_options_countdown">Noch %d Taps bis zu den Entwickleroptionen</string>
+    <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>
+    <string name="developer_options_already_unlocked">Entwickleroptionen sind bereits freigeschaltet</string>
     <!-- Legacy -->
     <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
     
@@ -455,6 +474,8 @@
     <string name="language_system_default">Systemstandard</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
+    <string name="language_turkish">Türkisch</string>
+    <string name="language_ukrainian">Ukrainisch</string>
     <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
     <string name="language_changed_restart">Sprache geändert. Neustart…</string>
     

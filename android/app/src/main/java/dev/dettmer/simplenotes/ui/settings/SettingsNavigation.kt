@@ -1,5 +1,8 @@
 package dev.dettmer.simplenotes.ui.settings
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -15,6 +18,9 @@ import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SyncSettingsScreen
 
+// 🆕 v1.11.0: Smooth Fade-Transitions für Settings-Navigation
+private const val NAV_ANIM_DURATION_MS = 700
+
 /**
  * Settings navigation host with all routes
  * v1.5.0: Jetpack Compose Settings Redesign
@@ -27,7 +33,20 @@ fun SettingsNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = SettingsRoute.Main.route
+        startDestination = SettingsRoute.Main.route,
+        // 🆕 v1.11.0: Globale Fade-Transitions für alle Settings-Routen
+        enterTransition = {
+            fadeIn(animationSpec = tween(NAV_ANIM_DURATION_MS))
+        },
+        exitTransition = {
+            fadeOut(animationSpec = tween(NAV_ANIM_DURATION_MS))
+        },
+        popEnterTransition = {
+            fadeIn(animationSpec = tween(NAV_ANIM_DURATION_MS))
+        },
+        popExitTransition = {
+            fadeOut(animationSpec = tween(NAV_ANIM_DURATION_MS))
+        }
     ) {
         // Main Settings Overview
         composable(SettingsRoute.Main.route) {
@@ -83,9 +102,10 @@ fun SettingsNavHost(
             )
         }
         
-        // About Screen
+        // About Screen — 🔧 v1.11.0: viewModel für Easter-Egg Entwickleroptionen
         composable(SettingsRoute.About.route) {
             AboutScreen(
+                viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
         }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Simple Notes</string>
+    <string name="main_title">Simple Notes</string>
     <string name="no_notes_yet">Поки немає нотаток.\nНатисніть +, щоб створити.</string>
     <string name="add_note">Створити Нотатку</string>
     <string name="sync">Синхронізація</string>
@@ -352,6 +353,8 @@
     <string name="language_system_default">Системна</string>
     <string name="language_english">Англійська</string>
     <string name="language_german">Німецька</string>
+    <string name="language_turkish">Турецька</string>
+    <string name="language_ukrainian">Українська</string>
     <string name="language_info">ℹ️ Оберіть бажану мову. Перегляд буде за мить оновлений, щоб застосувати зміни.</string>
     <string name="language_changed_restart">Мову змінено. Перезапуск…</string>
     <string name="display_settings_title">Вигляд</string>

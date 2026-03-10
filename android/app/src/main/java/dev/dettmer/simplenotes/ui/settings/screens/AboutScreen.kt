@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -29,7 +30,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -40,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
@@ -50,10 +57,21 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
  */
 @Composable
 fun AboutScreen(
+    viewModel: SettingsViewModel,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    
+    val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
+
+    // 🔧 v1.11.0: Easter-Egg-Tap-Counter für Entwickleroptionen
+    var tapCount by remember { mutableIntStateOf(0) }
+    var currentToast by remember { mutableStateOf<Toast?>(null) }
+    val requiredTaps = 5
+    // Strings bei Composable-Scope laden (nicht innerhalb von Lambdas per context.getString)
+    val msgAlreadyUnlocked = stringResource(R.string.developer_options_already_unlocked)
+    val msgUnlocked = stringResource(R.string.developer_options_unlocked)
+    val msgCountdownFormat = stringResource(R.string.developer_options_countdown)
+
     val githubRepoUrl = "https://github.com/inventory69/simple-notes-sync"
     val githubProfileUrl = "https://github.com/inventory69"
     val licenseUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
@@ -71,11 +89,37 @@ fun AboutScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             
-            // App Info Card
+            // App Info Card — 🔧 v1.11.0: Easter-Egg-Target (5× tippen → Entwickleroptionen)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .clickable {
+                        if (developerOptionsUnlocked) {
+                            Toast.makeText(context, msgAlreadyUnlocked, Toast.LENGTH_SHORT).show()
+                            return@clickable
+                        }
+                        tapCount++
+                        val remaining = requiredTaps - tapCount
+                        when {
+                            remaining == 0 -> {
+                                currentToast?.cancel()
+                                viewModel.unlockDeveloperOptions()
+                                Toast.makeText(context, msgUnlocked, Toast.LENGTH_LONG).show()
+                            }
+                            remaining in 1..2 -> {
+                                currentToast?.cancel()
+                                val toast = Toast.makeText(
+                                    context,
+                                    String.format(msgCountdownFormat, remaining),
+                                    Toast.LENGTH_SHORT
+                                )
+                                currentToast = toast
+                                toast.show()
+                            }
+                            // Taps 1-2: kein Feedback (wie Android-Entwickleroptionen)
+                        }
+                    },
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )

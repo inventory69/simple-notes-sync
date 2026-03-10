@@ -193,6 +193,8 @@ fun MainScreen(
     }
     
     // v1.5.0 Hotfix: FAB manuell mit zIndex platzieren für garantierte Sichtbarkeit
+    // 🆕 v1.11.0: Äußere Box — ermöglicht NoteTypeFAB als Fullscreen-Overlay über dem Scaffold
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             // Animated switch between normal and selection TopBar
@@ -318,24 +320,9 @@ fun MainScreen(
                     }
                 }
                 
-                // FAB als TOP-LAYER - nur anzeigen wenn nicht im Selection Mode
-                // 🆕 v1.10.0-P2: FAB handles its own fullscreen scrim + padding
-                AnimatedVisibility(
-                    visible = !isSelectionMode,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                    modifier = Modifier
-                        .matchParentSize()
-                        .zIndex(Float.MAX_VALUE)
-                ) {
-                    NoteTypeFAB(
-                        onCreateNote = onCreateNote
-                    )
-                }
+                // FAB ist jetzt außerhalb des Scaffolds als Fullscreen-Overlay — siehe unten
             }
         }
-        
-        // Batch Delete Confirmation Dialog
         if (showBatchDeleteDialog) {
             DeleteConfirmationDialog(
                 noteCount = selectedNotes.size,
@@ -373,7 +360,22 @@ fun MainScreen(
                 onDismiss = { showSortDialog = false }
             )
         }
+    } // end Scaffold
+
+    // 🆕 v1.11.0: FAB als Fullscreen-Overlay ÜBER dem Scaffold — Scrim deckt Statusbar ab
+    AnimatedVisibility(
+        visible = !isSelectionMode,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(Float.MAX_VALUE)
+    ) {
+        NoteTypeFAB(
+            onCreateNote = onCreateNote
+        )
     }
+} // end outer Box
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

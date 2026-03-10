@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 24  // 🆕 v1.10.0: Undo/Redo, Timeout, Save-on-Back, Banner Polish
-        versionName = "1.10.0"  // 🆕 v1.10.0: Calendar Export, Share, PDF
+        versionCode = 25  // 🆕 v1.11.0: Notifications, FAB Rework, Sort-by-Creation, Sync Fix
+        versionName = "1.11.0"  // 🆕 v1.11.0: Notifications, Checklist Sort, FAB Polish, ProGuard Audit
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -114,6 +114,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+
+    lint {
+        baseline = file("lint-baseline.xml")
     }
 }
 
