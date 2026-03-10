@@ -73,6 +73,7 @@
 - ✅ **Alphabetical** - A-Z sorting
 - ✅ **Unchecked First** - Unchecked items on top
 - ✅ **Checked Last** - Checked items at bottom
+- ✅ **Date created** _(NEW in v1.11.0)_ - Sort by creation date (ascending or descending)
 - ✅ **Visual separator** - Between unchecked/checked groups with count
 - ✅ **Auto-sort on toggle** - Re-sorts when checking/unchecking items
 - ✅ **Drag across boundaries** - Items auto-toggle state when crossing separator
@@ -365,4 +366,4 @@ A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Last update:** v1.10.0 (2026-03-01)
+**Last update:** v1.11.0 (2026-03-10)

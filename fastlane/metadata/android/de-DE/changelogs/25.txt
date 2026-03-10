@@ -1,0 +1,11 @@
+📝 v1.11.0 — Benachrichtigungen, FAB-Überarbeitung & Checklisten-Sortierung
+
+• Neu: Benachrichtigungseinstellungen mit Berechtigungshandling
+• Neu: Checklisten nach Erstellungsdatum sortieren (auf-/absteigend)
+• Neu: Entwickleroptionen hinter Easter-Egg-Geste versteckt
+• Verbessert: FAB-Menü mit animiertem Scrim und einheitlichen Pills
+• Verbessert: Sync-Einstellungen logisch umstrukturiert
+• Fix: Autosave reagiert nicht mehr auf leere Checklisten-Items
+• Fix: Korrekte Sync-Anzahl bei Markdown-Auto-Sync
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

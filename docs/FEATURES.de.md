@@ -73,6 +73,7 @@
 - ✅ **Alphabetisch** - A-Z Sortierung
 - ✅ **Offene zuerst** - Unerledigte Items oben
 - ✅ **Erledigte zuletzt** - Abgehakte Items unten
+- ✅ **Erstellungsdatum** _(NEU in v1.11.0)_ - Nach Erstellungsdatum sortieren (auf- oder absteigend)
 - ✅ **Visueller Trenner** - Zwischen offenen/erledigten Gruppen mit Anzahl
 - ✅ **Auto-Sortierung** - Neu sortieren beim Abhaken/Öffnen
 - ✅ **Drag über Grenzen** - Items wechseln Status beim Überqueren des Trenners
@@ -365,4 +366,4 @@ A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v1.10.0 (2026-03-01)
+**Letzte Aktualisierung:** v1.11.0 (2026-03-10)
