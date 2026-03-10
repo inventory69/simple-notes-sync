@@ -219,7 +219,7 @@
     <string name="settings_server_status_checking">🔍 Checking…</string>
     <string name="settings_server_status_not_configured">⚠️ Not configured</string>
     <string name="settings_server_status_offline_mode">📴 Offline Mode</string>
-    <string name="settings_sync">Sync Settings</string>
+    <string name="settings_sync">Sync &amp; Notifications</string>
     <string name="settings_sync_auto_on">Auto-Sync: On • %s</string>
     <string name="settings_sync_auto_off">Auto-Sync: Off</string>
     <string name="settings_sync_offline_mode">📴 Offline Mode</string>
@@ -309,7 +309,7 @@
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
     <string name="sync_settings">Sync Settings</string>
-    <string name="sync_settings_title">Sync Settings</string>
+    <string name="sync_settings_title">Sync &amp; Notifications</string>
     <string name="auto_sync">Auto-Sync enabled</string>
     <string name="sync_auto_sync_info">🔄 Auto-Sync:\n• Checks every 30 min if server is reachable\n• Works on any WiFi connection\n• Runs in background\n• Minimal battery usage (~0.4%/day)</string>
     <string name="sync_auto_sync_enabled">Auto-Sync enabled</string>
@@ -332,7 +332,7 @@
     
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">Sync Triggers</string>
-    <string name="sync_section_network_performance">Network &amp; Performance</string>
+    <string name="sync_section_network_performance">Network</string>
     <string name="sync_section_notifications">Notifications</string>
     <string name="notifications_enabled_title">Notifications</string>
     <string name="notifications_enabled_subtitle">Show notifications for sync events</string>
