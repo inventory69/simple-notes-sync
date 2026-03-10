@@ -49,7 +49,7 @@ data class ManualMarkdownSyncResult(
 )
 
 /**
- * 🆕 v1.10.1: Ergebnis eines Upload-Durchlaufs.
+ * 🆕 v1.11.0: Ergebnis eines Upload-Durchlaufs.
  * Enthält neben der Anzahl auch die IDs der Notizen, für die ein Markdown-Export
  * durchgeführt wurde. Diese werden an importMarkdownFiles() weitergegeben, um
  * Re-Import der soeben exportierten Dateien zu verhindern.
@@ -697,7 +697,7 @@ class WebDavSyncService(
             // 🆕 v1.8.0: Phase 2 - Uploading (Phase wird nur bei echten Uploads gesetzt)
             Logger.d(TAG, "📍 Step 4: Uploading local notes")
             // Upload local notes
-            // 🆕 v1.10.1: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
+            // 🆕 v1.11.0: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
             var markdownExportedNoteIds: Set<String> = emptySet()
             try {
                 Logger.d(TAG, "⬆️ Uploading local notes...")
@@ -780,7 +780,7 @@ class WebDavSyncService(
                     // verarbeitet werden müssen (nicht beim Fast-Path).
                     
                     Logger.d(TAG, "📥 Auto-importing Markdown files...")
-                    // 🆕 v1.10.1: Pass exported note IDs to prevent re-import of just-exported files
+                    // 🆕 v1.11.0: Pass exported note IDs to prevent re-import of just-exported files
                     markdownImportedCount = importMarkdownFiles(sardine, serverUrl, markdownExportedNoteIds)
                     Logger.d(TAG, "✅ Auto-imported: $markdownImportedCount Markdown files")
                     
@@ -789,7 +789,7 @@ class WebDavSyncService(
                         Logger.d(TAG, "📤 Re-uploading notes updated from Markdown (JSON sync)...")
                         val reUploadResult = uploadLocalNotes(sardine, serverUrl)
                         Logger.d(TAG, "✅ Re-uploaded: ${reUploadResult.uploadedCount} notes (JSON updated on server)")
-                        // 🔧 v1.10.1: Re-Uploads NICHT zum syncedCount addieren.
+                        // 🔧 v1.11.0: Re-Uploads NICHT zum syncedCount addieren.
                         // Re-Uploads sind ein technisches Artefakt der MD→JSON-Sync-Kette,
                         // keine vom User initiierten Aktionen. Die importierten Markdown-Änderungen
                         // werden bereits über markdownImportedCount in effectiveSyncedCount berücksichtigt.
@@ -815,12 +815,12 @@ class WebDavSyncService(
                 // Non-fatal, continue
             }
             
-            // ✅ v1.3.0 / 🔧 v1.10.1: Hybrid counting to prevent double-counting
+            // ✅ v1.3.0 / 🔧 v1.11.0: Hybrid counting to prevent double-counting
             // - syncedCount = JSON uploads + downloads (unique notes)
             // - markdownImportedCount = .md files that introduced NEW content from desktop editors
             // - Re-uploads (JSON sync after MD import) are NOT counted to prevent inflation
             //
-            // 🔧 v1.10.1: Addiere markdownImportedCount nur wenn die Notizen NICHT bereits
+            // 🔧 v1.11.0: Addiere markdownImportedCount nur wenn die Notizen NICHT bereits
             // im syncedCount enthalten sind (= nicht vom Upload stammen). Desktop-Edited
             // Notes werden durch importMarkdownFiles() importiert und via Re-Upload gesynct,
             // aber markdownImportedCount zählt nur echte externe Änderungen.
@@ -1034,7 +1034,7 @@ class WebDavSyncService(
             }
         }
 
-        // 🆕 v1.10.1: IDs der Notizen sammeln, für die ein Markdown-Export durchgeführt wurde
+        // 🆕 v1.11.0: IDs der Notizen sammeln, für die ein Markdown-Export durchgeführt wurde
         val mdExportedIds = results
             .filterIsInstance<UploadTaskResult.Success>()
             .filter { it.markdownExported }
@@ -1114,12 +1114,12 @@ class WebDavSyncService(
                 // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
                 // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
                 // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
-                var didExportMarkdown = false  // 🆕 v1.10.1
+                var didExportMarkdown = false  // 🆕 v1.11.0
                 if (markdownExportEnabled) {
                     mdExportMutex.withLock {
                         try {
                             exportToMarkdown(sardine, serverUrl, noteToUpload, markdownDirExists)
-                            didExportMarkdown = true  // 🆕 v1.10.1
+                            didExportMarkdown = true  // 🆕 v1.11.0
                             Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
                         } catch (e: Exception) {
                             Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
@@ -1127,7 +1127,7 @@ class WebDavSyncService(
                     }
                 }
 
-                // 🆕 v1.10.1: markdownExported-Flag für Import-Exclusion
+                // 🆕 v1.11.0: markdownExported-Flag für Import-Exclusion
                 return UploadTaskResult.Success(
                     noteId = note.id,
                     etag = null,
@@ -2236,7 +2236,7 @@ class WebDavSyncService(
      * ⚡ v1.3.1: Performance-Optimierung - Skip unveränderte Dateien
      */
     /**
-     * 🆕 v1.10.1: excludeNoteIds-Parameter verhindert Re-Import von Dateien,
+     * 🆕 v1.11.0: excludeNoteIds-Parameter verhindert Re-Import von Dateien,
      * die in diesem Sync-Zyklus von uploadLocalNotes() exportiert wurden.
      * Das eliminiert die Feedback-Loop: Export → Re-Import → PENDING → Re-Upload → Doppelzählung.
      *
@@ -2342,7 +2342,7 @@ class WebDavSyncService(
                         continue
                     }
 
-                    // 🆕 v1.10.1: Skip Markdown files whose note ID was just exported in this sync cycle.
+                    // 🆕 v1.11.0: Skip Markdown files whose note ID was just exported in this sync cycle.
                     // Prevents the feedback loop: Export → Re-Import → PENDING → Re-Upload → double count.
                     if (mdNote.id in excludeNoteIds) {
                         skippedCount++
@@ -2392,7 +2392,7 @@ class WebDavSyncService(
                     // 🔧 v1.8.2 (IMPL_025): Semantischer Content-Vergleich
                     // ChecklistItems haben bei jedem fromMarkdown() neue UUIDs,
                     // daher nur Text + isChecked + order vergleichen (nicht die ID)
-                    // 🔧 v1.10.1: null und emptyList() als semantisch gleich behandeln.
+                    // 🔧 v1.11.0: null und emptyList() als semantisch gleich behandeln.
                     // performSave() speichert leere Listen als emptyList(), aber fromMarkdown()
                     // gibt null zurück wenn keine Checklist-Items geparst wurden (.ifEmpty { null }).
                     // Ohne diese Normalisierung wird ein Round-Trip als "Änderung" erkannt.

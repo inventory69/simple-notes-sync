@@ -48,7 +48,7 @@ fun SettingsMainScreen(
     val syncInterval by viewModel.syncInterval.collectAsState()
     val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
-    val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()  // 🔧 v1.10.1
+    val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()  // 🔧 v1.11.0
     
     // 🌟 v1.6.0: Collect offline mode and trigger states
     val offlineMode by viewModel.offlineMode.collectAsState()
@@ -231,7 +231,7 @@ fun SettingsMainScreen(
                 )
             }
             
-            // 🔧 v1.10.1: Debug & Diagnose — nur sichtbar nach Easter-Egg-Freischaltung
+            // 🔧 v1.11.0: Debug & Diagnose — nur sichtbar nach Easter-Egg-Freischaltung
             if (developerOptionsUnlocked) {
                 item {
                     SettingsCard(

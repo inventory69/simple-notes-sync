@@ -14,7 +14,7 @@ object Constants {
     const val KEY_LAST_SYNC_WARNING_SHOWN = "last_sync_warning_shown_time"
     const val SYNC_WARNING_THRESHOLD_MS = 24 * 60 * 60 * 1000L  // 24h
 
-    // 🆕 v1.10.1: Notification preferences
+    // 🆕 v1.11.0: Notification preferences
     const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
     const val DEFAULT_NOTIFICATIONS_ENABLED = true
     const val KEY_NOTIFICATIONS_ERRORS_ONLY = "notifications_errors_only"

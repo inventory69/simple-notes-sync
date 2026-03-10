@@ -63,7 +63,7 @@ fun AboutScreen(
     val context = LocalContext.current
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
 
-    // 🔧 v1.10.1: Easter-Egg-Tap-Counter für Entwickleroptionen
+    // 🔧 v1.11.0: Easter-Egg-Tap-Counter für Entwickleroptionen
     var tapCount by remember { mutableIntStateOf(0) }
     var currentToast by remember { mutableStateOf<Toast?>(null) }
     val requiredTaps = 5
@@ -89,7 +89,7 @@ fun AboutScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             
-            // App Info Card — 🔧 v1.10.1: Easter-Egg-Target (5× tippen → Entwickleroptionen)
+            // App Info Card — 🔧 v1.11.0: Easter-Egg-Target (5× tippen → Entwickleroptionen)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -58,7 +58,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 
 /**
- * Sync & Notification settings screen — Restructured for v1.10.1
+ * Sync & Notification settings screen — Restructured for v1.11.0
  *
  * Three clear sections, each as a separate Composable for recomposition isolation:
  * 1. Sync Triggers (5 triggers + interval selector)
@@ -125,7 +125,7 @@ fun SyncSettingsScreen(
             SettingsDivider()
 
             // ═══════════════════════════════════════════════════════════════
-            // SECTION 3: NOTIFICATIONS (v1.10.1)
+            // SECTION 3: NOTIFICATIONS (v1.11.0)
             // ═══════════════════════════════════════════════════════════════
 
             NotificationSettingsSection(
@@ -317,7 +317,7 @@ private fun NotificationSettingsSection(
     val notificationsErrorsOnly by viewModel.notificationsErrorsOnly.collectAsState()
     val notificationsServerWarning by viewModel.notificationsServerWarning.collectAsState()
 
-    // 🆕 v1.10.1-B: Permission-aware notification toggle
+    // 🆕 v1.11.0-B: Permission-aware notification toggle
     val context = LocalContext.current
     val activity = context as? Activity
 

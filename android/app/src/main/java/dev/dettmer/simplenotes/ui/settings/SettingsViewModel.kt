@@ -190,7 +190,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val wifiOnlySync: StateFlow<Boolean> = _wifiOnlySync.asStateFlow()
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 v1.10.1: Notification Settings State
+    // 🆕 v1.11.0: Notification Settings State
     // ═══════════════════════════════════════════════════════════════════════
 
     private val _notificationsEnabled = MutableStateFlow(
@@ -227,7 +227,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val fileLoggingEnabled: StateFlow<Boolean> = _fileLoggingEnabled.asStateFlow()
 
-    // 🔧 v1.10.1: Developer Options (Easter-Egg) — session-only, nicht persistiert
+    // 🔧 v1.11.0: Developer Options (Easter-Egg) — session-only, nicht persistiert
     private val _developerOptionsUnlocked = MutableStateFlow(false)
     val developerOptionsUnlocked: StateFlow<Boolean> = _developerOptionsUnlocked.asStateFlow()
 
@@ -715,7 +715,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         Logger.d(TAG, "📡 WiFi-only sync: $enabled")
     }
 
-    // 🆕 v1.10.1: Notification Settings Setters
+    // 🆕 v1.11.0: Notification Settings Setters
 
     fun setNotificationsEnabled(enabled: Boolean) {
         _notificationsEnabled.value = enabled

@@ -89,7 +89,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var cardLicense: MaterialCardView
     
     // Debug Section UI
-    private lateinit var cardDebugSection: View  // 🔧 v1.10.1: Easter-Egg hidden
+    private lateinit var cardDebugSection: View  // 🔧 v1.11.0: Easter-Egg hidden
     private lateinit var switchFileLogging: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var buttonExportLogs: Button
     private lateinit var buttonClearLogs: Button
@@ -170,7 +170,7 @@ class SettingsActivity : AppCompatActivity() {
         cardLicense = findViewById(R.id.cardLicense)
         
         // Debug Section UI
-        cardDebugSection = findViewById(R.id.cardDebugSection)  // 🔧 v1.10.1
+        cardDebugSection = findViewById(R.id.cardDebugSection)  // 🔧 v1.11.0
         switchFileLogging = findViewById(R.id.switchFileLogging)
         buttonExportLogs = findViewById(R.id.buttonExportLogs)
         buttonClearLogs = findViewById(R.id.buttonClearLogs)
@@ -413,7 +413,7 @@ class SettingsActivity : AppCompatActivity() {
      * Setup Debug section with file logging toggle and export functionality
      */
     private fun setupDebugSection() {
-        // 🔧 v1.10.1: Debug-Sektion in der Legacy-Activity komplett ausblenden.
+        // 🔧 v1.11.0: Debug-Sektion in der Legacy-Activity komplett ausblenden.
         // In der Compose-Settings ist sie nur nach Easter-Egg-Freischaltung (Ü ber-Screen, 5× tippen) erreichbar.
         cardDebugSection.visibility = View.GONE
         // Die Legacy-Activity wird in v2.0.0 komplett entfernt.

@@ -22,7 +22,7 @@ object NotificationHelper {
     const val SYNC_PROGRESS_NOTIFICATION_ID = 1003  // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
 
-    // 🆕 v1.10.1: Notification preference checks
+    // 🆕 v1.11.0: Notification preference checks
 
     /**
      * Prüft ob Benachrichtigungen global aktiviert sind.
@@ -276,7 +276,7 @@ object NotificationHelper {
      * Zeigt Erfolgs-Notification
      */
     fun showSyncSuccess(context: Context, count: Int) {
-        // 🆕 v1.10.1: Notification preferences check
+        // 🆕 v1.11.0: Notification preferences check
         if (!areNotificationsEnabled(context)) return
         if (isErrorsOnlyMode(context)) return
 
@@ -311,7 +311,7 @@ object NotificationHelper {
      * Auto-Cancel nach 30 Sekunden
      */
     fun showSyncError(context: Context, message: String) {
-        // 🆕 v1.10.1: Notification preferences check
+        // 🆕 v1.11.0: Notification preferences check
         if (!areNotificationsEnabled(context)) return
 
         // PendingIntent für App-Öffnung
@@ -351,7 +351,7 @@ object NotificationHelper {
      * Throttling: Max. 1 Warnung pro 24h
      */
     fun showSyncWarning(context: Context, hoursSinceLastSync: Long) {
-        // 🆕 v1.10.1: Notification preferences check
+        // 🆕 v1.11.0: Notification preferences check
         if (!areNotificationsEnabled(context)) return
         if (!isServerWarningEnabled(context)) return
 

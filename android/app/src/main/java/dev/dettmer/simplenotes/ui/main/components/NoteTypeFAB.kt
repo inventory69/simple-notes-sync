@@ -46,8 +46,8 @@ import dev.dettmer.simplenotes.models.NoteType
 /**
  * Expandable FAB with animated sub-actions (Breezy Weather style).
  * v1.10.0-P2: Replaces DropdownMenu-based FAB with expanding mini-FABs.
- * v1.10.1-P3: Semi-transparent animated scrim, improved colors.
- * v1.10.1-P4: Entire sub-action row is clickable (label + icon as one unit, Aegis style).
+ * v1.11.0-P3: Semi-transparent animated scrim, improved colors.
+ * v1.11.0-P4: Entire sub-action row is clickable (label + icon as one unit, Aegis style).
  *
  * When collapsed: Standard FAB with + icon.
  * When expanded: + rotates to ×, sub-action rows slide up with staggered animation.
@@ -71,7 +71,7 @@ fun NoteTypeFAB(
     )
 
     Box(modifier = modifier.fillMaxSize()) {
-        // 🆕 v1.10.1: Semi-transparent scrim overlay — smooth animated, fullscreen inkl. Statusbar
+        // 🆕 v1.11.0: Semi-transparent scrim overlay — smooth animated, fullscreen inkl. Statusbar
         // Orientiert an Aegis Authenticator: dunkler Scrim hinter dem geöffneten FAB-Menü
         val scrimAlpha by animateFloatAsState(
             targetValue = if (expanded) 1f else 0f,
@@ -177,7 +177,7 @@ fun NoteTypeFAB(
 
 /**
  * Eine breite klickbare Pill — Icon + Text in einer Surface (Aegis Authenticator style).
- * 🆕 v1.10.1-P4: Kein separates FAB-Icon, alles in einer einzigen Pill.
+ * 🆕 v1.11.0-P4: Kein separates FAB-Icon, alles in einer einzigen Pill.
  */
 @Composable
 private fun FabSubActionRow(

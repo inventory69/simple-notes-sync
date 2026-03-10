@@ -178,7 +178,7 @@ class NoteEditorViewModel(
         val rawItems = note.checklistItems?.sortedBy { it.order }.orEmpty()
         // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0 (Gson default)
         val isPreF04Note = rawItems.all { it.originalOrder == 0 }
-        // 🆕 v1.10.1: Backward compat — old notes have no createdAt (Gson default = 0)
+        // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
         val isPreCreatedAtNote = rawItems.all { it.createdAt == 0L }
         val items = rawItems.mapIndexed { index, raw ->
             ChecklistItemState(
@@ -402,7 +402,7 @@ class NoteEditorViewModel(
             }
         }
         isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
-        // 🔧 v1.10.1: Kein Autosave bei leerem Item — verhindert Save-Indikator für nicht-gespeichertes Item.
+        // 🔧 v1.11.0: Kein Autosave bei leerem Item — verhindert Save-Indikator für nicht-gespeichertes Item.
         // Autosave wird erst durch updateChecklistItemText() getriggert, wenn User Text eingibt.
         // isDirty=true bleibt gesetzt, damit saveOnBack() bei Verlassen trotzdem greift.
         return newItem.id
@@ -430,7 +430,7 @@ class NoteEditorViewModel(
             newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
         }
         isDirty = true  // 🆕 v1.10.0-P2: Adding an item is an edit
-        // 🔧 v1.10.1: Kein Autosave bei leerem Item — konsistent mit addChecklistItemAfter()
+        // 🔧 v1.11.0: Kein Autosave bei leerem Item — konsistent mit addChecklistItemAfter()
         return newItem.id
     }
 
@@ -458,7 +458,7 @@ class NoteEditorViewModel(
     
     fun deleteChecklistItem(itemId: String) {
         pushUndoSnapshot()  // 🆕 v1.10.0
-        // 🔧 v1.10.1: Prüfe ob gelöschtes Item leer war — kein Autosave nötig wenn nie gespeichert
+        // 🔧 v1.11.0: Prüfe ob gelöschtes Item leer war — kein Autosave nötig wenn nie gespeichert
         val deletedItem = _checklistItems.value.find { it.id == itemId }
         val wasEmpty = deletedItem?.text?.isBlank() != false
         isDirty = true  // 🆕 v1.10.0-P2: Deletion is an edit
@@ -473,7 +473,7 @@ class NoteEditorViewModel(
                 filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
             }
         }
-        // 🔧 v1.10.1: Autosave nur wenn gelöschtes Item Text hatte (= auf Disk existierte)
+        // 🔧 v1.11.0: Autosave nur wenn gelöschtes Item Text hatte (= auf Disk existierte)
         if (!wasEmpty) {
             scheduleAutosave()
         }
@@ -636,12 +636,12 @@ class NoteEditorViewModel(
                                 isChecked = item.isChecked,
                                 order = index,
                                 originalOrder = item.originalOrder,
-                                createdAt = item.createdAt  // 🆕 v1.10.1
+                                createdAt = item.createdAt  // 🆕 v1.11.0
                             )
                         }
                     if (title.isEmpty() && validItems.isEmpty()) return true
 
-                    // 🔧 v1.10.1: No-Change-Guard — kein Save wenn nur leere Items hinzugefügt
+                    // 🔧 v1.11.0: No-Change-Guard — kein Save wenn nur leere Items hinzugefügt
                     // wurden und sich der tatsächliche Inhalt nicht geändert hat.
                     // Verhindert fälschliches PENDING-Flag beim Verlassen der Notiz.
                     if (existingNote != null) {
@@ -744,7 +744,7 @@ class NoteEditorViewModel(
                             isChecked = item.isChecked,
                             order = index,
                             originalOrder = item.originalOrder,
-                            createdAt = item.createdAt  // 🆕 v1.10.1
+                            createdAt = item.createdAt  // 🆕 v1.11.0
                         )
                     }
 
@@ -753,7 +753,7 @@ class NoteEditorViewModel(
                     return false
                 }
 
-                // 🔧 v1.10.1: No-Change-Guard — kein erneutes Speichern wenn sich nichts geändert hat.
+                // 🔧 v1.11.0: No-Change-Guard — kein erneutes Speichern wenn sich nichts geändert hat.
                 // Verhindert falschen Autosave-Indikator wenn nur leere Items hinzugefügt wurden.
                 if (silent && existingNote != null) {
                     val existingItems = existingNote!!.checklistItems.orEmpty()
@@ -1100,7 +1100,7 @@ data class ChecklistItemState(
     val isChecked: Boolean = false,
     val order: Int = 0,
     val originalOrder: Int = order,  // 🆕 v1.9.0 (F04): Position restore on un-check
-    val createdAt: Long = System.currentTimeMillis()  // 🆕 v1.10.1: Timestamp for sort-by-creation-date
+    val createdAt: Long = System.currentTimeMillis()  // 🆕 v1.11.0: Timestamp for sort-by-creation-date
 ) {
     companion object {
         // 🆕 v1.11.0: Monoton steigender Timestamp — verhindert gleiche createdAt-Werte

@@ -7,7 +7,7 @@ import java.util.UUID
  * 
  * v1.4.0: Checklisten-Feature
  * v1.9.0 (F04): originalOrder für Position-Restore bei Un-check
- * v1.10.1: createdAt für Sort-by-Creation-Date
+ * v1.11.0: createdAt für Sort-by-Creation-Date
  * 
  * @property id Eindeutige ID für Sync-Konflikterkennung
  * @property text Der Text des Items
@@ -22,7 +22,7 @@ data class ChecklistItem(
     var isChecked: Boolean = false,
     var order: Int = 0,
     val originalOrder: Int = order,  // 🆕 v1.9.0 (F04): Remembers creation position for restore on un-check
-    val createdAt: Long = System.currentTimeMillis()  // 🆕 v1.10.1: Timestamp for sort-by-creation-date
+    val createdAt: Long = System.currentTimeMillis()  // 🆕 v1.11.0: Timestamp for sort-by-creation-date
 ) {
     companion object {
         // 🆕 v1.11.0: Monoton steigender Timestamp — verhindert gleiche createdAt-Werte

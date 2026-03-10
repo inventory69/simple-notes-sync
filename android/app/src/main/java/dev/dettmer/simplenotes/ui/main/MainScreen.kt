@@ -193,7 +193,7 @@ fun MainScreen(
     }
     
     // v1.5.0 Hotfix: FAB manuell mit zIndex platzieren für garantierte Sichtbarkeit
-    // 🆕 v1.10.1: Äußere Box — ermöglicht NoteTypeFAB als Fullscreen-Overlay über dem Scaffold
+    // 🆕 v1.11.0: Äußere Box — ermöglicht NoteTypeFAB als Fullscreen-Overlay über dem Scaffold
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
@@ -362,7 +362,7 @@ fun MainScreen(
         }
     } // end Scaffold
 
-    // 🆕 v1.10.1: FAB als Fullscreen-Overlay ÜBER dem Scaffold — Scrim deckt Statusbar ab
+    // 🆕 v1.11.0: FAB als Fullscreen-Overlay ÜBER dem Scaffold — Scrim deckt Statusbar ab
     AnimatedVisibility(
         visible = !isSelectionMode,
         enter = fadeIn(),
