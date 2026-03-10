@@ -8,6 +8,73 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.11.0] - 2026-03-10
+
+### 🔔 Benachrichtigungen, FAB-Überarbeitung & Checklisten-Sortierung
+
+Fokussiertes Release mit konfigurierbaren Benachrichtigungseinstellungen und Android 13+ Berechtigungshandling, auf- und absteigende Sortierung nach Erstellungsdatum für Checklisten, überarbeitetem FAB-Overlay mit animiertem Scrim und vereinheitlichten Action-Pills, umstrukturierten Sync-Einstellungen, versteckten Entwickleroptionen und mehreren Bugfixes rund um Autosave-Verhalten und Sync-Zählung.
+
+### ✨ Neue Features
+
+**Benachrichtigungseinstellungen mit Berechtigungshandling** ([c1f5078](https://github.com/inventory69/simple-notes-sync/commit/c1f5078))
+- Drei neue Toggles unter Sync & Benachrichtigungen: Global ein/aus, Nur-Fehler-Modus, Server-nicht-erreichbar-Warnung
+- Vollständiger Android 13+ POST_NOTIFICATIONS Permission-Flow: Abfrage beim ersten Aktivieren, Erklärungsdialog bei Ablehnung, Weiterleitung zu App-Einstellungen bei dauerhafter Ablehnung
+- Berechtigungsstatus wird bei jedem Screen-Resume geprüft — Toggle synchronisiert mit Systemstatus
+
+**Checklisten nach Erstellungsdatum sortieren (auf- und absteigend)** ([a265e3c](https://github.com/inventory69/simple-notes-sync/commit/a265e3c))
+- Neue Sortieroption „Erstellungsdatum ↑" (älteste zuerst) und „Erstellungsdatum ↓" (neueste zuerst)
+- Jedes Checklisten-Item erhält einen `createdAt`-Zeitstempel, der über Bearbeitungen und Syncs erhalten bleibt
+- Abwärtskompatibel: alte Items ohne Zeitstempel verwenden Index als Fallback
+- Separator zwischen offenen/erledigten Gruppen bleibt bei beiden Richtungen erhalten
+
+**Entwickleroptionen hinter Easter Egg versteckt** ([186a345](https://github.com/inventory69/simple-notes-sync/commit/186a345))
+- Debug & Diagnose-Einstellungen standardmäßig ausgeblendet
+- Freischaltung durch 5× Tippen auf die App-Info-Karte im Über-Screen (Android-Entwickleroptionen-Stil)
+- Nur für die Sitzung: wird beim App-Neustart zurückgesetzt, nicht in SharedPreferences persistiert
+- Countdown-Toast für die letzten 2 Taps, Bestätigungs-Toast bei Freischaltung
+
+### 🐛 Fehlerbehebungen
+
+**Autosave bei leeren Checklisten-Items ausgelöst** ([f7e25db](https://github.com/inventory69/simple-notes-sync/commit/f7e25db))
+- Hinzufügen oder Löschen leerer Checklisten-Items löst kein Autosave mehr aus
+- No-Change-Guard in `performSave()` und `saveOnBack()` überspringt Speichern wenn nur leere Items vom gespeicherten Stand abweichen
+- Autosave-Indikator erscheint nicht mehr irreführend nach dem Hinzufügen eines leeren Items
+
+**Markdown-Auto-Sync: Doppelzählung** ([7dd092e](https://github.com/inventory69/simple-notes-sync/commit/7dd092e))
+- Das Erstellen einer Notiz mit aktiviertem Markdown-Auto-Sync zeigt nicht mehr „2 Notizen synchronisiert" statt 1
+- Exportierte Markdown-Dateien werden im selben Sync-Zyklus per Notiz-ID-Tracking vom Re-Import ausgeschlossen
+- Technische Re-Uploads nach Markdown-Import zählen nicht mehr zum Sync-Count
+- `null` vs. `emptyList()`-Inkonsistenz im Checklisten-Inhaltsvergleich behoben
+
+**Irreführendes „Markdown importieren"-Banner bei unveränderter Dateilage** ([e352ce1](https://github.com/inventory69/simple-notes-sync/commit/e352ce1))
+- Progress-Banner zeigt keinen Dateinamen (z. B. „Test Neu.md") mehr wenn tatsächlich 0 Dateien importiert werden
+- Fast-Path überspringt die IMPORTING_MARKDOWN-Phase vollständig wenn alle Server-Dateien unverändert sind
+- Dateiname im Progress-Update wird nur noch gesetzt wenn die Datei tatsächlich heruntergeladen wird
+
+### 🎨 UI-Verbesserungen
+
+**Animierter FAB-Scrim und verbesserte Farben** ([4a8a202](https://github.com/inventory69/simple-notes-sync/commit/4a8a202))
+- FAB-Overlay deckt jetzt den gesamten Bildschirm ab, inklusive Statusleiste (aus dem Scaffold herausbewegt)
+- Semi-transparenter animierter Scrim (50 % Schwarz, 250 ms Tween) ersetzt transparentes Dismiss-Overlay
+- Sub-Action-Farben von `secondaryContainer` auf `primaryContainer` geändert für bessere Hierarchie
+
+**Vereinheitlichte Action-Pills** ([847154f](https://github.com/inventory69/simple-notes-sync/commit/847154f))
+- Label-Text und Icon in einer einzigen breiten Pill pro Aktion zusammengefasst (Aegis Authenticator-Stil)
+- Gesamte Pill ist ein Klickziel — kein separates Label + Icon-FAB mehr
+- Verwendet `surfaceContainerHigh` / `onSurface` für konsistente Darstellung im Dark Mode
+
+**Sync-Einstellungen umstrukturiert** ([e9d48cb](https://github.com/inventory69/simple-notes-sync/commit/e9d48cb))
+- Screen umbenannt von „Sync-Einstellungen" zu „Sync & Benachrichtigungen"
+- Sektions-Header umbenannt von „Netzwerk & Performance" zu „Netzwerk"
+- Sub-Header „Sofort-Sync" und „Hintergrund-Sync" entfernt für saubereres Layout
+- Sync-Trigger, Netzwerk und Benachrichtigungen in separate Composables extrahiert für isolierte Recomposition
+
+**Smooth Fade-Transitions in der Settings-Navigation** ([1ef565d](https://github.com/inventory69/simple-notes-sync/commit/1ef565d))
+- Alle Settings-Routen nutzen jetzt einen 700 ms Fade statt des abrupten Standard-Crossfades
+- Global auf NavHost-Ebene definiert — kein duplizierter Code pro Route
+
+---
+
 ## [1.10.0] - 2026-03-01
 
 ### ✏️ Editor-Überarbeitung, Teilen / Export & Sync-Zuverlässigkeit

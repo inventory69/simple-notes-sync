@@ -150,6 +150,6 @@ MIT License – siehe [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.10.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.11.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
