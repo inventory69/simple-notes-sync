@@ -21,7 +21,34 @@ object NotificationHelper {
     private const val SYNC_NOTIFICATION_ID = 2
     const val SYNC_PROGRESS_NOTIFICATION_ID = 1003  // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
-    
+
+    // 🆕 v1.11.0: Notification preference checks
+
+    /**
+     * Prüft ob Benachrichtigungen global aktiviert sind.
+     */
+    private fun areNotificationsEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, Constants.DEFAULT_NOTIFICATIONS_ENABLED)
+    }
+
+    /**
+     * Prüft ob nur Fehler/Warnungen angezeigt werden sollen.
+     * Gibt true zurück wenn Erfolgs-Notifications unterdrückt werden sollen.
+     */
+    private fun isErrorsOnlyMode(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, Constants.DEFAULT_NOTIFICATIONS_ERRORS_ONLY)
+    }
+
+    /**
+     * Prüft ob die Server-Erreichbarkeits-Warnung aktiviert ist.
+     */
+    private fun isServerWarningEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING)
+    }
+
     /**
      * Erstellt Notification Channel (Android 8.0+)
      * Muss beim App-Start aufgerufen werden
@@ -249,6 +276,10 @@ object NotificationHelper {
      * Zeigt Erfolgs-Notification
      */
     fun showSyncSuccess(context: Context, count: Int) {
+        // 🆕 v1.11.0: Notification preferences check
+        if (!areNotificationsEnabled(context)) return
+        if (isErrorsOnlyMode(context)) return
+
         // PendingIntent für App-Öffnung
         val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -280,6 +311,9 @@ object NotificationHelper {
      * Auto-Cancel nach 30 Sekunden
      */
     fun showSyncError(context: Context, message: String) {
+        // 🆕 v1.11.0: Notification preferences check
+        if (!areNotificationsEnabled(context)) return
+
         // PendingIntent für App-Öffnung
         val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -317,6 +351,10 @@ object NotificationHelper {
      * Throttling: Max. 1 Warnung pro 24h
      */
     fun showSyncWarning(context: Context, hoursSinceLastSync: Long) {
+        // 🆕 v1.11.0: Notification preferences check
+        if (!areNotificationsEnabled(context)) return
+        if (!isServerWarningEnabled(context)) return
+
         // PendingIntent für App-Öffnung
         val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP

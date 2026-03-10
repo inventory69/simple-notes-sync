@@ -188,7 +188,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
     )
     val wifiOnlySync: StateFlow<Boolean> = _wifiOnlySync.asStateFlow()
-    
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v1.11.0: Notification Settings State
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _notificationsEnabled = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, Constants.DEFAULT_NOTIFICATIONS_ENABLED)
+    )
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+
+    private val _notificationsErrorsOnly = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, Constants.DEFAULT_NOTIFICATIONS_ERRORS_ONLY)
+    )
+    val notificationsErrorsOnly: StateFlow<Boolean> = _notificationsErrorsOnly.asStateFlow()
+
+    private val _notificationsServerWarning = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING)
+    )
+    val notificationsServerWarning: StateFlow<Boolean> = _notificationsServerWarning.asStateFlow()
+
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Settings State
     // ═══════════════════════════════════════════════════════════════════════
@@ -207,7 +226,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
     )
     val fileLoggingEnabled: StateFlow<Boolean> = _fileLoggingEnabled.asStateFlow()
-    
+
+    // 🔧 v1.11.0: Developer Options (Easter-Egg) — session-only, nicht persistiert
+    private val _developerOptionsUnlocked = MutableStateFlow(false)
+    val developerOptionsUnlocked: StateFlow<Boolean> = _developerOptionsUnlocked.asStateFlow()
+
+    /**
+     * Schaltet Entwickleroptionen frei (5× Tippen auf den Banner im Über-Screen).
+     * Nur In-Memory — wird bei Prozess-Tod zurückgesetzt.
+     */
+    fun unlockDeveloperOptions() {
+        _developerOptionsUnlocked.value = true
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // 🎨 v1.7.0: Display Settings State
     // ═══════════════════════════════════════════════════════════════════════
@@ -683,7 +714,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.edit().putBoolean(Constants.KEY_WIFI_ONLY_SYNC, enabled).apply()
         Logger.d(TAG, "📡 WiFi-only sync: $enabled")
     }
-    
+
+    // 🆕 v1.11.0: Notification Settings Setters
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        _notificationsEnabled.value = enabled
+        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled).apply()
+        Logger.d(TAG, "🔔 Notifications enabled: $enabled")
+    }
+
+    fun setNotificationsErrorsOnly(enabled: Boolean) {
+        _notificationsErrorsOnly.value = enabled
+        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, enabled).apply()
+        Logger.d(TAG, "🔔 Notifications errors-only: $enabled")
+    }
+
+    fun setNotificationsServerWarning(enabled: Boolean) {
+        _notificationsServerWarning.value = enabled
+        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, enabled).apply()
+        Logger.d(TAG, "🔔 Notifications server warning: $enabled")
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Settings Actions
     // ═══════════════════════════════════════════════════════════════════════

@@ -1,0 +1,11 @@
+📝 v1.11.0 — Notifications, FAB Polish & Checklist Sorting
+
+• New: Notification settings with permission handling
+• New: Sort checklists by creation date (ascending + descending)
+• New: Developer options hidden behind easter-egg gesture
+• Improved: FAB menu with animated scrim and unified action pills
+• Improved: Sync settings restructured with clear sections
+• Fix: Autosave no longer triggers for empty checklist items
+• Fix: Correct sync count with markdown auto-sync enabled
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

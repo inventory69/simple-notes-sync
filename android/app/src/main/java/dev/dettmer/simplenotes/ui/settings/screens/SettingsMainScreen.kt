@@ -48,6 +48,7 @@ fun SettingsMainScreen(
     val syncInterval by viewModel.syncInterval.collectAsState()
     val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
+    val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()  // 🔧 v1.11.0
     
     // 🌟 v1.6.0: Collect offline mode and trigger states
     val offlineMode by viewModel.offlineMode.collectAsState()
@@ -230,18 +231,20 @@ fun SettingsMainScreen(
                 )
             }
             
-            // Debug & Diagnose
-            item {
-                SettingsCard(
-                    icon = Icons.Default.BugReport,
-                    title = stringResource(R.string.settings_debug),
-                    subtitle = if (fileLoggingEnabled) {
-                        stringResource(R.string.settings_debug_logging_on)
-                    } else {
-                        stringResource(R.string.settings_debug_logging_off)
-                    },
-                    onClick = { onNavigate(SettingsRoute.Debug) }
-                )
+            // 🔧 v1.11.0: Debug & Diagnose — nur sichtbar nach Easter-Egg-Freischaltung
+            if (developerOptionsUnlocked) {
+                item {
+                    SettingsCard(
+                        icon = Icons.Default.BugReport,
+                        title = stringResource(R.string.settings_debug),
+                        subtitle = if (fileLoggingEnabled) {
+                            stringResource(R.string.settings_debug_logging_on)
+                        } else {
+                            stringResource(R.string.settings_debug_logging_off)
+                        },
+                        onClick = { onNavigate(SettingsRoute.Debug) }
+                    )
+                }
             }
         }
     }

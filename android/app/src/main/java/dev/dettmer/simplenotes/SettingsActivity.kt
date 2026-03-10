@@ -22,7 +22,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
@@ -90,6 +89,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var cardLicense: MaterialCardView
     
     // Debug Section UI
+    private lateinit var cardDebugSection: View  // 🔧 v1.11.0: Easter-Egg hidden
     private lateinit var switchFileLogging: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var buttonExportLogs: Button
     private lateinit var buttonClearLogs: Button
@@ -170,6 +170,7 @@ class SettingsActivity : AppCompatActivity() {
         cardLicense = findViewById(R.id.cardLicense)
         
         // Debug Section UI
+        cardDebugSection = findViewById(R.id.cardDebugSection)  // 🔧 v1.11.0
         switchFileLogging = findViewById(R.id.switchFileLogging)
         buttonExportLogs = findViewById(R.id.buttonExportLogs)
         buttonClearLogs = findViewById(R.id.buttonClearLogs)
@@ -412,103 +413,10 @@ class SettingsActivity : AppCompatActivity() {
      * Setup Debug section with file logging toggle and export functionality
      */
     private fun setupDebugSection() {
-        // Load current file logging state
-        val fileLoggingEnabled = prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
-        switchFileLogging.isChecked = fileLoggingEnabled
-        
-        // Update Logger state
-        Logger.setFileLoggingEnabled(fileLoggingEnabled)
-        
-        // Toggle file logging
-        switchFileLogging.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, isChecked).apply()
-            Logger.setFileLoggingEnabled(isChecked)
-            
-            if (isChecked) {
-                showToast("📝 Datei-Logging aktiviert")
-                Logger.i(TAG, "File logging enabled by user")
-            } else {
-                showToast("📝 Datei-Logging deaktiviert")
-            }
-        }
-        
-        // Export logs button
-        buttonExportLogs.setOnClickListener {
-            exportAndShareLogs()
-        }
-        
-        // Clear logs button
-        buttonClearLogs.setOnClickListener {
-            showClearLogsConfirmation()
-        }
-    }
-    
-    /**
-     * Export logs and share via system share sheet
-     */
-    private fun exportAndShareLogs() {
-        lifecycleScope.launch {
-            try {
-                val logFile = Logger.getLogFile(this@SettingsActivity)
-                
-                if (logFile == null || !logFile.exists() || logFile.length() == 0L) {
-                    showToast("📭 Keine Logs vorhanden")
-                    return@launch
-                }
-                
-                // Create share intent using FileProvider
-                val logUri = FileProvider.getUriForFile(
-                    this@SettingsActivity,
-                    "${BuildConfig.APPLICATION_ID}.fileprovider",
-                    logFile
-                )
-                
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_STREAM, logUri)
-                    putExtra(Intent.EXTRA_SUBJECT, "SimpleNotes Sync Logs")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                
-                startActivity(Intent.createChooser(shareIntent, "Logs teilen via..."))
-                Logger.i(TAG, "Logs exported and shared")
-                
-            } catch (e: Exception) {
-                Logger.e(TAG, "Failed to export logs", e)
-                showToast("❌ Fehler beim Exportieren: ${e.message}")
-            }
-        }
-    }
-    
-    /**
-     * Show confirmation dialog before clearing logs
-     */
-    private fun showClearLogsConfirmation() {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.debug_delete_logs_title))
-            .setMessage(getString(R.string.debug_delete_logs_message))
-            .setPositiveButton(getString(R.string.delete)) { _, _ ->
-                clearLogs()
-            }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .show()
-    }
-    
-    /**
-     * Clear all log files
-     */
-    private fun clearLogs() {
-        try {
-            val cleared = Logger.clearLogFile(this)
-            if (cleared) {
-                showToast(getString(R.string.toast_logs_deleted))
-            } else {
-                showToast(getString(R.string.toast_no_logs_to_delete))
-            }
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to clear logs", e)
-            showToast(getString(R.string.toast_logs_delete_error, e.message.orEmpty()))
-        }
+        // 🔧 v1.11.0: Debug-Sektion in der Legacy-Activity komplett ausblenden.
+        // In der Compose-Settings ist sie nur nach Easter-Egg-Freischaltung (Ü ber-Screen, 5× tippen) erreichbar.
+        cardDebugSection.visibility = View.GONE
+        // Die Legacy-Activity wird in v2.0.0 komplett entfernt.
     }
     
     /**

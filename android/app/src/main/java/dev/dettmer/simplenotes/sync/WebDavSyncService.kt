@@ -48,6 +48,17 @@ data class ManualMarkdownSyncResult(
     val importedCount: Int
 )
 
+/**
+ * 🆕 v1.11.0: Ergebnis eines Upload-Durchlaufs.
+ * Enthält neben der Anzahl auch die IDs der Notizen, für die ein Markdown-Export
+ * durchgeführt wurde. Diese werden an importMarkdownFiles() weitergegeben, um
+ * Re-Import der soeben exportierten Dateien zu verhindern.
+ */
+data class UploadBatchResult(
+    val uploadedCount: Int,
+    val markdownExportedNoteIds: Set<String>
+)
+
 @Suppress("LargeClass", "TooManyFunctions")
 // TODO v2.0.0: Split into SyncOrchestrator, NoteUploader, NoteDownloader, ConflictResolver
 class WebDavSyncService(
@@ -686,9 +697,11 @@ class WebDavSyncService(
             // 🆕 v1.8.0: Phase 2 - Uploading (Phase wird nur bei echten Uploads gesetzt)
             Logger.d(TAG, "📍 Step 4: Uploading local notes")
             // Upload local notes
+            // 🆕 v1.11.0: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
+            var markdownExportedNoteIds: Set<String> = emptySet()
             try {
                 Logger.d(TAG, "⬆️ Uploading local notes...")
-                val uploadedCount = uploadLocalNotes(
+                val uploadResult = uploadLocalNotes(
                     sardine,
                     serverUrl,
                     onProgress = { current, total, noteTitle ->
@@ -700,8 +713,9 @@ class WebDavSyncService(
                         )
                     }
                 )
-                syncedCount += uploadedCount
-                Logger.d(TAG, "✅ Uploaded: $uploadedCount notes")
+                syncedCount += uploadResult.uploadedCount
+                markdownExportedNoteIds = uploadResult.markdownExportedNoteIds
+                Logger.d(TAG, "✅ Uploaded: ${uploadResult.uploadedCount} notes")
             } catch (e: Exception) {
                 Logger.e(TAG, "💥 CRASH in uploadLocalNotes()!", e)
                 e.printStackTrace()
@@ -761,19 +775,25 @@ class WebDavSyncService(
                     // 🆕 v1.10.0-P2: Cancel checkpoint before potentially long Markdown import
                     currentCoroutineContext().ensureActive()
 
-                    // 🆕 v1.8.0: Phase nur setzen wenn Feature aktiv
-                    SyncStateManager.updateProgress(phase = SyncPhase.IMPORTING_MARKDOWN)
+                    // 🔧 v1.11.0: Phase IMPORTING_MARKDOWN wird jetzt erst innerhalb von
+                    // importMarkdownFiles() gesetzt, und nur wenn tatsächlich Dateien
+                    // verarbeitet werden müssen (nicht beim Fast-Path).
                     
                     Logger.d(TAG, "📥 Auto-importing Markdown files...")
-                    markdownImportedCount = importMarkdownFiles(sardine, serverUrl)
+                    // 🆕 v1.11.0: Pass exported note IDs to prevent re-import of just-exported files
+                    markdownImportedCount = importMarkdownFiles(sardine, serverUrl, markdownExportedNoteIds)
                     Logger.d(TAG, "✅ Auto-imported: $markdownImportedCount Markdown files")
                     
                     // 🔧 v1.7.2 (IMPL_014): Re-upload notes that were updated from Markdown
                     if (markdownImportedCount > 0) {
                         Logger.d(TAG, "📤 Re-uploading notes updated from Markdown (JSON sync)...")
-                        val reUploadedCount = uploadLocalNotes(sardine, serverUrl)
-                        Logger.d(TAG, "✅ Re-uploaded: $reUploadedCount notes (JSON updated on server)")
-                        syncedCount += reUploadedCount
+                        val reUploadResult = uploadLocalNotes(sardine, serverUrl)
+                        Logger.d(TAG, "✅ Re-uploaded: ${reUploadResult.uploadedCount} notes (JSON updated on server)")
+                        // 🔧 v1.11.0: Re-Uploads NICHT zum syncedCount addieren.
+                        // Re-Uploads sind ein technisches Artefakt der MD→JSON-Sync-Kette,
+                        // keine vom User initiierten Aktionen. Die importierten Markdown-Änderungen
+                        // werden bereits über markdownImportedCount in effectiveSyncedCount berücksichtigt.
+                        // Vorher: syncedCount += reUploadedCount → führte zu Doppelzählung.
                     }
                 } else {
                     Logger.d(TAG, "⏭️ Markdown auto-import disabled")
@@ -795,14 +815,16 @@ class WebDavSyncService(
                 // Non-fatal, continue
             }
             
-            // ✅ v1.3.0: Hybrid counting to prevent double-counting
-            // - If JSON sync occurred, it represents unique notes (JSON is source of truth)
-            // - If ONLY Markdown edits (no JSON), use Markdown count
-            val effectiveSyncedCount = if (syncedCount > 0) {
-                syncedCount  // JSON-based count is authoritative
-            } else {
-                markdownImportedCount  // Fallback: Markdown-only edits
-            }
+            // ✅ v1.3.0 / 🔧 v1.11.0: Hybrid counting to prevent double-counting
+            // - syncedCount = JSON uploads + downloads (unique notes)
+            // - markdownImportedCount = .md files that introduced NEW content from desktop editors
+            // - Re-uploads (JSON sync after MD import) are NOT counted to prevent inflation
+            //
+            // 🔧 v1.11.0: Addiere markdownImportedCount nur wenn die Notizen NICHT bereits
+            // im syncedCount enthalten sind (= nicht vom Upload stammen). Desktop-Edited
+            // Notes werden durch importMarkdownFiles() importiert und via Re-Upload gesynct,
+            // aber markdownImportedCount zählt nur echte externe Änderungen.
+            val effectiveSyncedCount = syncedCount + markdownImportedCount
             
             Logger.d(TAG, "🎉 Sync completed successfully: $effectiveSyncedCount notes")
             if (markdownImportedCount > 0 && syncedCount > 0) {
@@ -875,7 +897,7 @@ class WebDavSyncService(
         sardine: Sardine,
         serverUrl: String,
         onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }
-    ): Int {
+    ): UploadBatchResult {
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
 
@@ -904,7 +926,7 @@ class WebDavSyncService(
 
         if (totalToUpload == 0) {
             Logger.d(TAG, "⏭️ No notes to upload")
-            return 0
+            return UploadBatchResult(uploadedCount = 0, markdownExportedNoteIds = emptySet())
         }
 
         Logger.d(TAG, "🚀 Starting parallel upload: $totalToUpload notes")
@@ -1012,7 +1034,21 @@ class WebDavSyncService(
             }
         }
 
-        return successCount
+        // 🆕 v1.11.0: IDs der Notizen sammeln, für die ein Markdown-Export durchgeführt wurde
+        val mdExportedIds = results
+            .filterIsInstance<UploadTaskResult.Success>()
+            .filter { it.markdownExported }
+            .map { it.noteId }
+            .toSet()
+
+        if (mdExportedIds.isNotEmpty()) {
+            Logger.d(TAG, "📝 Markdown exported for ${mdExportedIds.size} notes: ${mdExportedIds.take(LOG_PREVIEW_IDS_MAX)}")
+        }
+
+        return UploadBatchResult(
+            uploadedCount = successCount,
+            markdownExportedNoteIds = mdExportedIds
+        )
     }
 
     /**
@@ -1078,10 +1114,12 @@ class WebDavSyncService(
                 // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
                 // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
                 // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
+                var didExportMarkdown = false  // 🆕 v1.11.0
                 if (markdownExportEnabled) {
                     mdExportMutex.withLock {
                         try {
                             exportToMarkdown(sardine, serverUrl, noteToUpload, markdownDirExists)
+                            didExportMarkdown = true  // 🆕 v1.11.0
                             Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
                         } catch (e: Exception) {
                             Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
@@ -1089,7 +1127,12 @@ class WebDavSyncService(
                     }
                 }
 
-                return UploadTaskResult.Success(noteId = note.id, etag = null)
+                // 🆕 v1.11.0: markdownExported-Flag für Import-Exclusion
+                return UploadTaskResult.Success(
+                    noteId = note.id,
+                    etag = null,
+                    markdownExported = didExportMarkdown
+                )
 
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // 🛡️ Cancellation nie verschlucken — sofort propagieren
@@ -2192,9 +2235,20 @@ class WebDavSyncService(
      * 
      * ⚡ v1.3.1: Performance-Optimierung - Skip unveränderte Dateien
      */
+    /**
+     * 🆕 v1.11.0: excludeNoteIds-Parameter verhindert Re-Import von Dateien,
+     * die in diesem Sync-Zyklus von uploadLocalNotes() exportiert wurden.
+     * Das eliminiert die Feedback-Loop: Export → Re-Import → PENDING → Re-Upload → Doppelzählung.
+     *
+     * @param excludeNoteIds IDs der Notizen, deren .md-Dateien in diesem Sync-Zyklus exportiert wurden
+     */
     @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
     // Import logic requires nested conditions for file validation and duplicate handling
-    private fun importMarkdownFiles(sardine: Sardine, serverUrl: String): Int {
+    private fun importMarkdownFiles(
+        sardine: Sardine,
+        serverUrl: String,
+        excludeNoteIds: Set<String> = emptySet()
+    ): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")
 
@@ -2213,25 +2267,45 @@ class WebDavSyncService(
             
             Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
             
-            // 🆕 v1.10.0-P2: Set total upfront so the progress bar is determinate from the start
+            // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
+            val lastSyncTime = getLastSyncTimestamp()
+            Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
+            
+            // 🔧 v1.11.0: Fast-Path — wenn alle Dateien älter als letzter Sync sind,
+            // überspringe die gesamte Schleife und zeige keine IMPORTING_MARKDOWN-Phase.
+            // Das verhindert die irreführende Anzeige "Markdown importieren… Test Neu.md"
+            // wenn tatsächlich 0 Dateien importiert werden.
+            if (lastSyncTime > 0) {
+                val allUnchanged = mdResources.all { resource ->
+                    val serverModifiedTime = resource.modified?.time ?: 0L
+                    serverModifiedTime <= lastSyncTime
+                }
+                if (allUnchanged) {
+                    Logger.d(TAG, "   ⏭️ All ${mdResources.size} markdown files unchanged since last sync (fast-path)")
+                    Logger.d(TAG, "   📊 Markdown import complete: 0 imported, ${mdResources.size} skipped (fast-path)")
+                    return 0
+                }
+            }
+            
+            // 🔧 v1.11.0: Phase erst hier setzen — nach dem Fast-Path-Check.
+            // Wenn alle Dateien unverändert waren, wurde bereits return 0 ausgeführt
+            // und diese Zeile wird nie erreicht → kein irreführendes Banner.
             SyncStateManager.updateProgress(
                 phase = SyncPhase.IMPORTING_MARKDOWN,
                 current = 0,
                 total = mdResources.size
             )
             
-            // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
-            val lastSyncTime = getLastSyncTimestamp()
-            Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
-            
             var processedCount = 0  // 🆕 v1.10.0-P2: per-file determinate progress counter
             for (resource in mdResources) {
-                // 🆕 v1.10.0-P2: Advance progress for every file (including skipped ones)
+                // 🔧 v1.11.0: Counter für jede Datei inkrementieren (Fortschrittsbalken korrekt),
+                // aber currentFileName = null für übersprungene Dateien.
+                // Dateiname wird erst gesetzt wenn die Datei tatsächlich heruntergeladen wird.
                 SyncStateManager.updateProgress(
                     phase = SyncPhase.IMPORTING_MARKDOWN,
                     current = ++processedCount,
                     total = mdResources.size,
-                    currentFileName = resource.name
+                    currentFileName = null  // 🔧 v1.11.0: Kein Dateiname für Skip-Phase
                 )
                 try {
                     val serverModifiedTime = resource.modified?.time ?: 0L
@@ -2246,6 +2320,14 @@ class WebDavSyncService(
                     
                     Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
                     
+                    // 🔧 v1.11.0: Erst jetzt currentFileName setzen — Datei wird tatsächlich verarbeitet
+                    SyncStateManager.updateProgress(
+                        phase = SyncPhase.IMPORTING_MARKDOWN,
+                        current = processedCount,
+                        total = mdResources.size,
+                        currentFileName = resource.name
+                    )
+                    
                     // Build full URL
                     val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
                     
@@ -2259,7 +2341,15 @@ class WebDavSyncService(
                         Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
                         continue
                     }
-                    
+
+                    // 🆕 v1.11.0: Skip Markdown files whose note ID was just exported in this sync cycle.
+                    // Prevents the feedback loop: Export → Re-Import → PENDING → Re-Upload → double count.
+                    if (mdNote.id in excludeNoteIds) {
+                        skippedCount++
+                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle (ID=${mdNote.id})")
+                        continue
+                    }
+
                     // v1.4.0 FIX: Validierung - leere TEXT-Notizen nicht importieren wenn lokal Content existiert
                     val localNote = storage.loadNote(mdNote.id)
                     if (mdNote.noteType == dev.dettmer.simplenotes.models.NoteType.TEXT &&
@@ -2302,11 +2392,16 @@ class WebDavSyncService(
                     // 🔧 v1.8.2 (IMPL_025): Semantischer Content-Vergleich
                     // ChecklistItems haben bei jedem fromMarkdown() neue UUIDs,
                     // daher nur Text + isChecked + order vergleichen (nicht die ID)
+                    // 🔧 v1.11.0: null und emptyList() als semantisch gleich behandeln.
+                    // performSave() speichert leere Listen als emptyList(), aber fromMarkdown()
+                    // gibt null zurück wenn keine Checklist-Items geparst wurden (.ifEmpty { null }).
+                    // Ohne diese Normalisierung wird ein Round-Trip als "Änderung" erkannt.
+                    val mdItems = mdNote.checklistItems.orEmpty()
+                    val localItems = localNote?.checklistItems.orEmpty()
                     val checklistContentEqual = when {
-                        mdNote.checklistItems == null && localNote?.checklistItems == null -> true
-                        mdNote.checklistItems == null || localNote?.checklistItems == null -> false
-                        mdNote.checklistItems.size != localNote.checklistItems.size -> false
-                        else -> mdNote.checklistItems.zip(localNote.checklistItems).all { (md, local) ->
+                        mdItems.size != localItems.size -> false
+                        mdItems.isEmpty() && localItems.isEmpty() -> true
+                        else -> mdItems.zip(localItems).all { (md, local) ->
                             md.text == local.text && md.isChecked == local.isChecked && md.order == local.order
                         }
                     }
