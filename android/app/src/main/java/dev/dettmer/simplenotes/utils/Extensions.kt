@@ -51,15 +51,15 @@ fun Long.toReadableTime(context: Context): String {
         diff < TimeUnit.MINUTES.toMillis(1) -> context.getString(R.string.time_just_now)
         diff < TimeUnit.HOURS.toMillis(1) -> {
             val minutes = TimeUnit.MILLISECONDS.toMinutes(diff).toInt()
-            context.getString(R.string.time_minutes_ago, minutes)
+            context.resources.getQuantityString(R.plurals.time_minutes_ago, minutes, minutes)
         }
         diff < TimeUnit.DAYS.toMillis(1) -> {
             val hours = TimeUnit.MILLISECONDS.toHours(diff).toInt()
-            context.getString(R.string.time_hours_ago, hours)
+            context.resources.getQuantityString(R.plurals.time_hours_ago, hours, hours)
         }
         diff < TimeUnit.DAYS.toMillis(DAYS_THRESHOLD) -> {
             val days = TimeUnit.MILLISECONDS.toDays(diff).toInt()
-            context.getString(R.string.time_days_ago, days)
+            context.resources.getQuantityString(R.plurals.time_days_ago, days, days)
         }
         else -> {
             val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
