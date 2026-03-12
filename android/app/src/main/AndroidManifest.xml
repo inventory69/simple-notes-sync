@@ -44,18 +44,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Legacy MainActivity (XML-based) - kept for reference -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="false"
-            android:theme="@style/Theme.SimpleNotes" />
-
-        <!-- Editor Activity (Legacy - XML-based) -->
-        <activity
-            android:name=".NoteEditorActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:parentActivityName=".ui.main.ComposeMainActivity" />
-
         <!-- Editor Activity v1.5.0 (Jetpack Compose) -->
         <activity
             android:name=".ui.editor.ComposeNoteEditorActivity"
