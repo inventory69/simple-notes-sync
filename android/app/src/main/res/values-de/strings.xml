@@ -589,15 +589,15 @@
     <string name="time_just_now">Gerade eben</string>
     <plurals name="time_minutes_ago">
         <item quantity="one">Vor %d Min</item>
-        <item quantity="other"></item>
+        <item quantity="other">Vor %d Min</item>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">Vor %d Std</item>
-        <item quantity="other"></item>
+        <item quantity="other">Vor %d Std</item>
     </plurals>
     <plurals name="time_days_ago">
-        <item quantity="one">Vor %d Tagen</item>
-        <item quantity="other"></item>
+        <item quantity="one">Vor %d Tag</item>
+        <item quantity="other">Vor %d Tagen</item>
     </plurals>
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->
