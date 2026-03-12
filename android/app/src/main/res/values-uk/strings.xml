@@ -474,21 +474,21 @@
     <string name="time_just_now">Щойно</string>
     <plurals name="time_minutes_ago">
         <item quantity="one">%d хв тому</item>
-        <item quantity="few"></item>
-        <item quantity="many"></item>
-        <item quantity="other"></item>
+        <item quantity="few"/>
+        <item quantity="many"/>
+        <item quantity="other"/>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">%d год тому</item>
-        <item quantity="few"></item>
-        <item quantity="many"></item>
-        <item quantity="other"></item>
+        <item quantity="few"/>
+        <item quantity="many"/>
+        <item quantity="other"/>
     </plurals>
     <plurals name="time_days_ago">
         <item quantity="one">%d днів тому</item>
-        <item quantity="few"></item>
-        <item quantity="many"></item>
-        <item quantity="other"></item>
+        <item quantity="few"/>
+        <item quantity="many"/>
+        <item quantity="other"/>
     </plurals>
     <string name="notification_channel_name">Синхронізація Нотаток</string>
     <string name="notification_channel_desc">Сповіщення про стан синхронізації</string>
@@ -572,21 +572,4 @@
     <string name="share_no_calendar_app">Не знайдено застосунок календаря</string>
     <string name="share_error">Неможливо відкрити діалог поширення</string>
     <string name="share_pdf_error">Неможливо створити PDF</string>
-    <string name="notifications_errors_only_title"></string>
-    <string name="sync_section_notifications"></string>
-    <string name="notifications_server_warning_title"></string>
-    <string name="developer_options_already_unlocked"></string>
-    <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation"></string>
-    <string name="developer_options_countdown"></string>
-    <string name="notifications_permission_open_settings"></string>
-    <string name="notifications_enabled_subtitle"></string>
-    <string name="notifications_errors_only_subtitle"></string>
-    <string name="notifications_permission_rationale_title"></string>
-    <string name="notifications_permission_settings_message"></string>
-    <string name="notifications_permission_settings_title"></string>
-    <string name="notifications_permission_rationale_message"></string>
-    <string name="notifications_server_warning_subtitle"></string>
-    <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation"></string>
-    <string name="notifications_enabled_title"></string>
-    <string name="developer_options_unlocked"></string>
 </resources>

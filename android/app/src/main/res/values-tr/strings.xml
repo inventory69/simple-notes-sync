@@ -567,15 +567,15 @@
     <string name="time_just_now">Şimdi</string>
     <plurals name="time_minutes_ago">
         <item quantity="one">%d dk önce</item>
-        <item quantity="other"></item>
+        <item quantity="other"/>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">%d saat önce</item>
-        <item quantity="other"></item>
+        <item quantity="other"/>
     </plurals>
     <plurals name="time_days_ago">
         <item quantity="one">%d gün önce</item>
-        <item quantity="other"></item>
+        <item quantity="other"/>
     </plurals>
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->
@@ -662,21 +662,4 @@
     <string name="share_no_calendar_app">Takvim uygulaması bulunamadı</string>
     <string name="share_error">Paylaşım penceresi açılamadı</string>
     <string name="share_pdf_error">PDF oluşturulamadı</string>
-    <string name="notifications_errors_only_title"></string>
-    <string name="sync_section_notifications"></string>
-    <string name="notifications_server_warning_title"></string>
-    <string name="developer_options_already_unlocked"></string>
-    <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation"></string>
-    <string name="developer_options_countdown"></string>
-    <string name="notifications_permission_open_settings"></string>
-    <string name="notifications_enabled_subtitle"></string>
-    <string name="notifications_errors_only_subtitle"></string>
-    <string name="notifications_permission_rationale_title"></string>
-    <string name="notifications_permission_settings_message"></string>
-    <string name="notifications_permission_settings_title"></string>
-    <string name="notifications_permission_rationale_message"></string>
-    <string name="notifications_server_warning_subtitle"></string>
-    <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation"></string>
-    <string name="notifications_enabled_title"></string>
-    <string name="developer_options_unlocked"></string>
 </resources>
