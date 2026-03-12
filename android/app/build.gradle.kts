@@ -142,9 +142,6 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
-    // LocalBroadcastManager für UI Refresh
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
-
     // SwipeRefreshLayout für Pull-to-Refresh
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 

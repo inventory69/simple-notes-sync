@@ -1,13 +1,9 @@
-@file:Suppress("DEPRECATION") // LocalBroadcastManager & deprecated lifecycle methods, will migrate in v2.0.0
-
 package dev.dettmer.simplenotes.ui.main
 
 import android.Manifest
 import android.app.ActivityOptions
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -29,16 +25,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncEventBus
+import dev.dettmer.simplenotes.sync.SyncEvent
 import dev.dettmer.simplenotes.sync.SyncStateManager
-import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.ui.settings.ComposeSettingsActivity
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Constants
@@ -80,24 +78,6 @@ class ComposeMainActivity : ComponentActivity() {
     // Phase 3: Track if coming from editor to scroll to top
     private var cameFromEditor = false
     
-    /**
-     * BroadcastReceiver for Background-Sync Completion (Periodic Sync)
-     */
-    private val syncCompletedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val success = intent?.getBooleanExtra("success", false) ?: false
-            val count = intent?.getIntExtra("count", 0) ?: 0
-            
-            Logger.d(TAG, "📡 Sync completed broadcast received: success=$success, count=$count")
-            
-            // UI refresh
-            if (success && count > 0) {
-                viewModel.loadNotes()
-                Logger.d(TAG, "🔄 Notes reloaded after background sync")
-            }
-        }
-    }
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen (Android 12+)
         installSplashScreen()
@@ -129,6 +109,23 @@ class ComposeMainActivity : ComponentActivity() {
         
         // Setup Sync State Observer
         setupSyncStateObserver()
+
+        // v2.0.0: Collect SyncEventBus events (replaces LocalBroadcastManager)
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SyncEventBus.events.collect { event ->
+                    when (event) {
+                        is SyncEvent.SyncCompleted -> {
+                            Logger.d(TAG, "📡 Sync completed event: success=${event.success}, count=${event.count}")
+                            if (event.success && event.count > 0) {
+                                viewModel.loadNotes()
+                                Logger.d(TAG, "🔄 Notes reloaded after background sync")
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
         setContent {
             SimpleNotesTheme {
@@ -186,7 +183,7 @@ class ComposeMainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         
-        Logger.d(TAG, "📱 ComposeMainActivity.onResume() - Registering receivers")
+        Logger.d(TAG, "📱 ComposeMainActivity.onResume()")
         
         // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
         // This ensures UI reflects current offline mode when returning from Settings
@@ -195,15 +192,6 @@ class ComposeMainActivity : ComponentActivity() {
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
         viewModel.refreshCustomAppTitle()  // 🆕 v1.9.0 (F05)
-        
-        // Register BroadcastReceiver for Background-Sync
-        @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            syncCompletedReceiver,
-            IntentFilter(SyncWorker.ACTION_SYNC_COMPLETED)
-        )
-        
-        Logger.d(TAG, "📡 BroadcastReceiver registered (sync-completed)")
         
         // Reload notes
         viewModel.loadNotes()
@@ -226,15 +214,6 @@ class ComposeMainActivity : ComponentActivity() {
         }
     }
     
-    override fun onPause() {
-        super.onPause()
-        
-        // Unregister BroadcastReceiver
-        @Suppress("DEPRECATION")
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
-        Logger.d(TAG, "📡 BroadcastReceiver unregistered")
-    }
-
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.9.0 (F09): Widget refresh on leaving app
     // ═══════════════════════════════════════════════════════════════════════
