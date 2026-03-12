@@ -225,6 +225,9 @@
     <string name="settings_sync_offline_mode">📴 Offline Mode</string>
     <string name="settings_sync_manual_only">Manual sync only</string>
     <string name="settings_sync_triggers_active">%d triggers active</string>
+    <string name="settings_sync_notifications_enabled">Notifications enabled</string>
+    <string name="settings_sync_notifications_errors_only">Errors and warnings only</string>
+    <string name="settings_sync_notifications_disabled">Notifications disabled</string>
     <string name="settings_interval_15min">15 min</string>
     <string name="settings_interval_30min">30 min</string>
     <string name="settings_interval_60min">60 min</string>
