@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
@@ -57,12 +58,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 setResult(RESULT_OK)
-                finish()
-                @Suppress("DEPRECATION")
-                overridePendingTransition(
-                    dev.dettmer.simplenotes.R.anim.slide_in_left,
-                    dev.dettmer.simplenotes.R.anim.slide_out_right
-                )
+                finishWithSlideAnimation()
             }
         })
         
@@ -86,18 +82,27 @@ class ComposeSettingsActivity : AppCompatActivity() {
                     viewModel = viewModel,
                     onFinish = {
                         setResult(RESULT_OK)
-                        finish()
-                        @Suppress("DEPRECATION")
-                        overridePendingTransition(
-                            dev.dettmer.simplenotes.R.anim.slide_in_left,
-                            dev.dettmer.simplenotes.R.anim.slide_out_right
-                        )
+                        finishWithSlideAnimation()
                     }
                 )
             }
         }
     }
     
+    private fun finishWithSlideAnimation() {
+        finish()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
+    }
+
     /**
      * Collect events from ViewModel for Activity-level actions
      * v1.5.0: Ported from old SettingsActivity

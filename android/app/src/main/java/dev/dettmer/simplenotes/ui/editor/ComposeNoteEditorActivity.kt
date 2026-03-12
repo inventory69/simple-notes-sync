@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.CalendarContract
 import android.widget.Toast
@@ -71,12 +72,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
-                finish()
-                @Suppress("DEPRECATION")
-                overridePendingTransition(
-                    dev.dettmer.simplenotes.R.anim.slide_in_left,
-                    dev.dettmer.simplenotes.R.anim.slide_out_right
-                )
+                finishWithSlideAnimation()
             }
         })
         
@@ -86,12 +82,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                     viewModel = viewModel,
                     onNavigateBack = {
                         viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
-                        finish()
-                        @Suppress("DEPRECATION")
-                        overridePendingTransition(
-                            dev.dettmer.simplenotes.R.anim.slide_in_left,
-                            dev.dettmer.simplenotes.R.anim.slide_out_right
-                        )
+                        finishWithSlideAnimation()
                     }
                 )
             }
@@ -112,12 +103,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                             putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
                         }
                         setResult(RESULT_NOTE_DELETED, resultIntent)
-                        finish()
-                        @Suppress("DEPRECATION")
-                        overridePendingTransition(
-                            dev.dettmer.simplenotes.R.anim.slide_in_left,
-                            dev.dettmer.simplenotes.R.anim.slide_out_right
-                        )
+                        finishWithSlideAnimation()
                     }
                     else -> { /* handled by Composable */ }
                 }
@@ -135,6 +121,20 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.reloadFromStorage()
+    }
+
+    private fun finishWithSlideAnimation() {
+        finish()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
