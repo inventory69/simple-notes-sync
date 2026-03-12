@@ -1,13 +1,9 @@
-@file:Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional, will migrate in v2.0.0
-
 package dev.dettmer.simplenotes.sync
 
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
@@ -27,7 +23,6 @@ class SyncWorker(
     
     companion object {
         private const val TAG = "SyncWorker"
-        const val ACTION_SYNC_COMPLETED = "dev.dettmer.simplenotes.SYNC_COMPLETED"
 
         // WorkManager stop reason codes (mirrors WorkInfo.STOP_REASON_* constants, API 31+)
         private const val STOP_REASON_QUOTA = 10
@@ -277,11 +272,11 @@ class SyncWorker(
                     Logger.d(TAG, "ℹ️ No changes to sync - no notification")
                 }
                 
-                // **UI REFRESH**: Broadcast für MainActivity
+                // **UI REFRESH**: SyncEventBus für ComposeMainActivity
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "    Broadcasting sync completed...")
                 }
-                broadcastSyncCompleted(true, result.syncedCount)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = true, count = result.syncedCount))
 
                 // 🆕 v1.8.0: Alle Widgets aktualisieren nach Sync
                 try {
@@ -316,8 +311,8 @@ class SyncWorker(
                     result.errorMessage ?: "Unbekannter Fehler"
                 )
                 
-                // Broadcast auch bei Fehler (damit UI refresht)
-                broadcastSyncCompleted(false, 0)
+                // Notify UI auch bei Fehler
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
                 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "❌ SyncWorker.doWork() FAILURE")
@@ -338,10 +333,10 @@ class SyncWorker(
             Logger.d(TAG, "   This is expected Android behavior - not an error!")
             
             try {
-                // UI-Refresh trotzdem triggern (falls MainActivity geöffnet)
-                broadcastSyncCompleted(false, 0)
+                // UI-Refresh trotzdem triggern (falls ComposeMainActivity geöffnet)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
             } catch (broadcastError: Exception) {
-                Logger.e(TAG, "Failed to broadcast after cancellation", broadcastError)
+                Logger.e(TAG, "Failed to emit SyncEvent after cancellation", broadcastError)
             }
             
             if (BuildConfig.DEBUG) {
@@ -375,9 +370,9 @@ class SyncWorker(
             }
             
             try {
-                broadcastSyncCompleted(false, 0)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
             } catch (broadcastError: Exception) {
-                Logger.e(TAG, "Failed to broadcast", broadcastError)
+                Logger.e(TAG, "Failed to emit SyncEvent", broadcastError)
             }
             
             if (BuildConfig.DEBUG) {
@@ -420,19 +415,6 @@ class SyncWorker(
         }
     }
 
-    /**
-     * Sendet Broadcast an MainActivity für UI Refresh
-     */
-    @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but still functional, will migrate in v2.0.0
-    private fun broadcastSyncCompleted(success: Boolean, count: Int) {
-        val intent = Intent(ACTION_SYNC_COMPLETED).apply {
-            putExtra("success", success)
-            putExtra("count", count)
-        }
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
-        Logger.d(TAG, "📡 Broadcast sent: success=$success, count=$count")
-    }
-    
     /**
      * Prüft ob Server längere Zeit unreachable und zeigt ggf. Warnung (v1.1.2)
      * - Nur wenn Auto-Sync aktiviert
