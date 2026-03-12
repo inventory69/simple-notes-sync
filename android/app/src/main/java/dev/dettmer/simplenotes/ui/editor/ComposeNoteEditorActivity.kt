@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION") // AbstractSavedStateViewModelFactory deprecated, will migrate to viewModelFactory in v2.0.0
-
 package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ActivityNotFoundException
@@ -12,11 +10,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
-import androidx.savedstate.SavedStateRegistryOwner
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.google.android.material.color.DynamicColors
 import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.R
@@ -50,12 +47,15 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     }
     
     private val viewModel: NoteEditorViewModel by viewModels {
-        NoteEditorViewModelFactory(
-            application = application,
-            owner = this,
-            noteId = intent.getStringExtra(EXTRA_NOTE_ID),
-            noteType = intent.getStringExtra(EXTRA_NOTE_TYPE) ?: NoteType.TEXT.name
-        )
+        viewModelFactory {
+            initializer {
+                val handle = createSavedStateHandle()
+                handle[NoteEditorViewModel.ARG_NOTE_ID] = intent.getStringExtra(EXTRA_NOTE_ID)
+                handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
+                    intent.getStringExtra(EXTRA_NOTE_TYPE) ?: NoteType.TEXT.name
+                NoteEditorViewModel(application, handle)
+            }
+        }
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -226,26 +226,4 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     }
 }
 
-/**
- * Custom ViewModelFactory to pass SavedStateHandle with intent extras
- */
-class NoteEditorViewModelFactory(
-    private val application: android.app.Application,
-    owner: SavedStateRegistryOwner,
-    private val noteId: String?,
-    private val noteType: String
-) : AbstractSavedStateViewModelFactory(owner, null) {
-    
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        key: String,
-        modelClass: Class<T>,
-        handle: SavedStateHandle
-    ): T {
-        // Populate SavedStateHandle with intent extras
-        handle[NoteEditorViewModel.ARG_NOTE_ID] = noteId
-        handle[NoteEditorViewModel.ARG_NOTE_TYPE] = noteType
-        
-        return NoteEditorViewModel(application, handle) as T
-    }
-}
+
