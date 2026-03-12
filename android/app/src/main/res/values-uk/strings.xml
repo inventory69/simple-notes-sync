@@ -473,22 +473,22 @@
     <string name="restore_replace_result">Всі нотатки замінені: імпортовано %d</string>
     <string name="time_just_now">Щойно</string>
     <plurals name="time_minutes_ago">
-        <item quantity="one">%d хвилина тому</item>
-        <item quantity="few">%d хвилини тому</item>
-        <item quantity="many">%d хвилин тому</item>
-        <item quantity="other">%d хвилин тому</item>
+        <item quantity="one">%d хв тому</item>
+        <item quantity="few"></item>
+        <item quantity="many"></item>
+        <item quantity="other"></item>
     </plurals>
     <plurals name="time_hours_ago">
-        <item quantity="one">%d година тому</item>
-        <item quantity="few">%d години тому</item>
-        <item quantity="many">%d годин тому</item>
-        <item quantity="other">%d годин тому</item>
+        <item quantity="one">%d год тому</item>
+        <item quantity="few"></item>
+        <item quantity="many"></item>
+        <item quantity="other"></item>
     </plurals>
     <plurals name="time_days_ago">
-        <item quantity="one">%d день тому</item>
-        <item quantity="few">%d дні тому</item>
-        <item quantity="many">%d днів тому</item>
-        <item quantity="other">%d днів тому</item>
+        <item quantity="one">%d днів тому</item>
+        <item quantity="few"></item>
+        <item quantity="many"></item>
+        <item quantity="other"></item>
     </plurals>
     <string name="notification_channel_name">Синхронізація Нотаток</string>
     <string name="notification_channel_desc">Сповіщення про стан синхронізації</string>
