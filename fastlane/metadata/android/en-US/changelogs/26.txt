@@ -1,0 +1,9 @@
+🌍 v1.12.0 — i18n & Settings Polish
+
+• New: Chinese (Simplified) translation (thanks @heretic43!)
+• New: Notification status shown in settings overview
+• New: Liberapay donation option in README
+• Fix: Proper i18n plural forms for time-ago strings (e.g. Ukrainian)
+
+Full changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

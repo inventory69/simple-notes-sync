@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 25  // 🆕 v1.11.0: Notifications, FAB Rework, Sort-by-Creation, Sync Fix
-        versionName = "1.11.0"  // 🆕 v1.11.0: Notifications, Checklist Sort, FAB Polish, ProGuard Audit
+        versionCode = 26  // 🆕 v1.12.0: i18n, Notification Status, Liberapay
+        versionName = "1.12.0"  // 🆕 v1.12.0: Chinese translation, Plural fixes, Settings polish
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
