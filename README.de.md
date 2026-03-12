@@ -13,6 +13,7 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
 [![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge)](LICENSE)
+[![Spenden](https://img.shields.io/liberapay/receives/inventory?style=for-the-badge&logo=liberapay&logoColor=white&label=Spenden)](https://liberapay.com/inventory/)
 
 </div>
 
@@ -143,6 +144,12 @@ cd android
 
 Beiträge willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md)
 
+Wenn du die App nützlich findest, kannst du die Entwicklung unterstützen:
+
+<a href="https://liberapay.com/inventory/">
+<img src="https://liberapay.com/assets/widgets/donate.svg" alt="Über Liberapay spenden" height="35" />
+</a>
+
 ## 📄 Lizenz
 
 MIT License – siehe [LICENSE](LICENSE)
@@ -150,6 +157,6 @@ MIT License – siehe [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.11.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v1.12.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
