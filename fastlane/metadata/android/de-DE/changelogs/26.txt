@@ -1,0 +1,9 @@
+🌍 v1.12.0 — Internationalisierung & Einstellungen
+
+• Neu: Chinesisch (vereinfacht) Übersetzung (Danke @heretic43!)
+• Neu: Benachrichtigungsstatus in der Einstellungs-Übersicht
+• Neu: Liberapay-Spendenoption in der README
+• Fix: Korrekte i18n-Pluralformen für Zeitangaben (z.B. Ukrainisch)
+
+Vollständiger Changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

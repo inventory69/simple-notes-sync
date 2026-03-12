@@ -8,6 +8,41 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.0] - 2026-03-12
+
+### 🌍 Internationalisierung, Einstellungen & Community
+
+Fokussiertes Release mit Chinesisch (vereinfacht) Lokalisierung, korrekten Pluralformen für Zeitangaben, Benachrichtigungsstatus-Anzeige in der Einstellungs-Übersicht und Liberapay-Spendenintegration in der README.
+
+### 🌍 Übersetzungen
+
+**Chinesisch (vereinfacht) Übersetzung** ([15a49d6](https://github.com/inventory69/simple-notes-sync/commit/15a49d6))
+- Vollständige zh-CN Lokalisierung (547 Strings) basierend auf Weblate-Beitrag von [@heretic43](https://github.com/heretic43) ([#40](https://github.com/inventory69/simple-notes-sync/issues/40))
+- App-Name bleibt als „Simple Notes" (nicht übersetzt)
+
+### 🐛 Fehlerbehebungen
+
+**Korrekte i18n-Pluralformen für Zeitangaben** ([c804964](https://github.com/inventory69/simple-notes-sync/commit/c804964))
+- `time_minutes_ago`, `time_hours_ago` und `time_days_ago` von `<string>` zu `<plurals>` konvertiert für grammatisch korrekte Formen in Sprachen wie Ukrainisch
+- `Extensions.kt` auf `getQuantityString` umgestellt
+- Alle bestehenden Sprachen aktualisiert (en/de/tr/uk/zh)
+
+### ✨ Neue Features
+
+**Benachrichtigungsstatus in der Einstellungs-Übersicht** ([5d82e7d](https://github.com/inventory69/simple-notes-sync/commit/5d82e7d))
+- Die Sync & Benachrichtigungen-Karte auf dem Einstellungs-Hauptscreen zeigt jetzt den aktuellen Benachrichtigungsstatus neben der Trigger-Anzahl an
+- Drei Zustände: „Benachrichtigungen aktiv", „Nur Fehler und Warnungen", „Benachrichtigungen deaktiviert"
+- Konsistent mit dem Zusammenfassungsstil der anderen Einstellungskarten
+
+### 📝 Dokumentation
+
+**Liberapay-Spendenintegration** ([7081286](https://github.com/inventory69/simple-notes-sync/commit/7081286))
+- Shields.io-Spendenbadge in die Badge-Reihe von README.md und README.de.md eingefügt
+- Offizieller Liberapay-Spendenbutton im Contributing-Abschnitt hinzugefügt
+- Beide Sprachversionen (EN/DE) der README aktualisiert
+
+---
+
 ## [1.11.0] - 2026-03-10
 
 ### 🔔 Benachrichtigungen, FAB-Überarbeitung & Checklisten-Sortierung

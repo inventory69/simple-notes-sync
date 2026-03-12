@@ -718,8 +718,8 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;language_chinese_simplified&quot; is not translated in &quot;de&quot; (German), &quot;uk&quot; (Ukrainian), &quot;tr&quot; (Turkish)"
-        errorLine1="    &lt;string name=&quot;language_chinese_simplified&quot;>中文 (简体)&lt;/string>"
+        message="&quot;language_chinese_simplified&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;language_chinese_simplified&quot;>Chinese (Simplified)&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
