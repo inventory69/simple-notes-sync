@@ -225,6 +225,9 @@
     <string name="settings_sync_offline_mode">📴 Offline Mode</string>
     <string name="settings_sync_manual_only">Manual sync only</string>
     <string name="settings_sync_triggers_active">%d triggers active</string>
+    <string name="settings_sync_notifications_enabled">Notifications enabled</string>
+    <string name="settings_sync_notifications_errors_only">Errors and warnings only</string>
+    <string name="settings_sync_notifications_disabled">Notifications disabled</string>
     <string name="settings_interval_15min">15 min</string>
     <string name="settings_interval_30min">30 min</string>
     <string name="settings_interval_60min">60 min</string>
@@ -476,6 +479,7 @@
     <string name="language_german">Deutsch</string>
     <string name="language_turkish">Türkçe</string>
     <string name="language_ukrainian">Українська</string>
+    <string name="language_chinese_simplified">Chinese (Simplified)</string>
     <string name="language_info">ℹ️ Choose your preferred language. The view will briefly refresh to apply the change.</string>
     <string name="language_changed_restart">Language changed. Restarting…</string>
     
@@ -636,9 +640,18 @@
     <!-- RELATIVE TIME                 -->
     <!-- ============================= -->
     <string name="time_just_now">Just now</string>
-    <string name="time_minutes_ago">%d min ago</string>
-    <string name="time_hours_ago">%d hours ago</string>
-    <string name="time_days_ago">%d days ago</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%d min ago</item>
+        <item quantity="other">%d min ago</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
     
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->

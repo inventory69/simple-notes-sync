@@ -225,6 +225,9 @@
     <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
     <string name="settings_sync_manual_only">Nur manueller Sync</string>
     <string name="settings_sync_triggers_active">%d Trigger aktiv</string>
+    <string name="settings_sync_notifications_enabled">Benachrichtigungen aktiv</string>
+    <string name="settings_sync_notifications_errors_only">Nur Fehler und Warnungen</string>
+    <string name="settings_sync_notifications_disabled">Benachrichtigungen deaktiviert</string>
     <string name="settings_interval_15min">15 Min</string>
     <string name="settings_interval_30min">30 Min</string>
     <string name="settings_interval_60min">60 Min</string>
@@ -476,6 +479,7 @@
     <string name="language_german">Deutsch</string>
     <string name="language_turkish">Türkisch</string>
     <string name="language_ukrainian">Ukrainisch</string>
+    <string name="language_chinese_simplified">Chinesisch (vereinfacht)</string>
     <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
     <string name="language_changed_restart">Sprache geändert. Neustart…</string>
     
@@ -636,9 +640,18 @@
     <!-- RELATIVE TIME                 -->
     <!-- ============================= -->
     <string name="time_just_now">Gerade eben</string>
-    <string name="time_minutes_ago">Vor %d Min</string>
-    <string name="time_hours_ago">Vor %d Std</string>
-    <string name="time_days_ago">Vor %d Tagen</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">Vor %d Min</item>
+        <item quantity="other">Vor %d Min</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">Vor %d Stunde</item>
+        <item quantity="other">Vor %d Std</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">Vor %d Tag</item>
+        <item quantity="other">Vor %d Tagen</item>
+    </plurals>
     
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->

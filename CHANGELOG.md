@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.0] - 2026-03-12
+
+### 🌍 i18n, Settings Polish & Community
+
+Focused release adding Chinese (Simplified) localization, proper plural forms for time-ago strings, notification status display in the settings overview, and Liberapay donation integration in the README.
+
+### 🌍 Translations
+
+**Chinese (Simplified) Translation** ([15a49d6](https://github.com/inventory69/simple-notes-sync/commit/15a49d6))
+- Complete zh-CN localization (547 strings) based on Weblate contribution from [@heretic43](https://github.com/heretic43) ([#40](https://github.com/inventory69/simple-notes-sync/issues/40))
+- App name kept as "Simple Notes" (untranslated)
+
+### 🐛 Bug Fixes
+
+**Proper i18n Plural Forms for Time-Ago Strings** ([c804964](https://github.com/inventory69/simple-notes-sync/commit/c804964))
+- Converted `time_minutes_ago`, `time_hours_ago` and `time_days_ago` from `<string>` to `<plurals>` for proper grammatical forms in languages like Ukrainian
+- Updated `Extensions.kt` to use `getQuantityString` accordingly
+- All existing languages updated (en/de/tr/uk/zh)
+
+### ✨ New Features
+
+**Notification Status in Settings Overview** ([5d82e7d](https://github.com/inventory69/simple-notes-sync/commit/5d82e7d))
+- The Sync & Notifications card on the settings hub screen now shows the current notification status alongside the trigger count
+- Three states displayed: "Notifications enabled", "Errors and warnings only", "Notifications disabled"
+- Consistent with the summary style of other settings cards
+
+### 📝 Documentation
+
+**Liberapay Donation Integration** ([7081286](https://github.com/inventory69/simple-notes-sync/commit/7081286))
+- Added Shields.io donation badge to the badge row in README.md and README.de.md
+- Added official Liberapay donate button in the Contributing section
+- Both English and German READMEs updated
+
+---
+
 ## [1.11.0] - 2026-03-10
 
 ### 🔔 Notifications, FAB Polish & Checklist Sorting

@@ -57,7 +57,11 @@ fun SettingsMainScreen(
     val triggerWifiConnect by viewModel.triggerWifiConnect.collectAsState()
     val triggerPeriodic by viewModel.triggerPeriodic.collectAsState()
     val triggerBoot by viewModel.triggerBoot.collectAsState()
-    
+
+    // 🆕 v1.12.0: Notification state for settings overview summary
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val notificationsErrorsOnly by viewModel.notificationsErrorsOnly.collectAsState()
+
     // Check server status on first load
     LaunchedEffect(Unit) {
         viewModel.checkServerStatus()
@@ -160,16 +164,25 @@ fun SettingsMainScreen(
                     triggerPeriodic,
                     triggerBoot
                 ).count { it }
-                
+
+                // 🆕 v1.12.0: Notification status text
+                val notificationStatus = when {
+                    !notificationsEnabled -> stringResource(R.string.settings_sync_notifications_disabled)
+                    notificationsErrorsOnly -> stringResource(R.string.settings_sync_notifications_errors_only)
+                    else -> stringResource(R.string.settings_sync_notifications_enabled)
+                }
+
                 // 🌟 v1.6.0 Fix: Use statusText for offline mode (consistent with Server card)
+                // 🆕 v1.12.0: Append notification status to subtitle
                 val syncSubtitle = if (isServerConfigured) {
-                    if (activeTriggersCount == 0) {
+                    val triggerText = if (activeTriggersCount == 0) {
                         stringResource(R.string.settings_sync_manual_only)
                     } else {
                         stringResource(R.string.settings_sync_triggers_active, activeTriggersCount)
                     }
+                    "$triggerText · $notificationStatus"
                 } else null
-                
+
                 SettingsCard(
                     icon = Icons.Default.Sync,
                     title = stringResource(R.string.settings_sync),

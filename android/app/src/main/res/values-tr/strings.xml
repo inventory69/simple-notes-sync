@@ -617,9 +617,18 @@
     <!-- RELATIVE TIME                 -->
     <!-- ============================= -->
     <string name="time_just_now">Şimdi</string>
-    <string name="time_minutes_ago">%d dk önce</string>
-    <string name="time_hours_ago">%d saat önce</string>
-    <string name="time_days_ago">%d gün önce</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%d dk önce</item>
+        <item quantity="other">%d dk önce</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%d saat önce</item>
+        <item quantity="other">%d saat önce</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%d gün önce</item>
+        <item quantity="other">%d gün önce</item>
+    </plurals>
     
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->

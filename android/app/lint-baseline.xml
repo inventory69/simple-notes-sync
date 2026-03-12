@@ -8,7 +8,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/SyncSettingsScreen.kt"
-            line="377"
+            line="418"
             column="41"/>
     </issue>
 
@@ -19,7 +19,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/SyncSettingsScreen.kt"
-            line="378"
+            line="419"
             column="34"/>
     </issue>
 
@@ -212,7 +212,7 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.core:core-ktx than 1.10.1 is available: 1.17.0"
+        message="A newer version of androidx.core:core-ktx than 1.10.1 is available: 1.18.0"
         errorLine1="coreKtx = &quot;1.10.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
@@ -267,7 +267,7 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.activity:activity than 1.8.0 is available: 1.12.4"
+        message="A newer version of androidx.activity:activity than 1.8.0 is available: 1.13.0"
         errorLine1="activity = &quot;1.8.0&quot;"
         errorLine2="           ~~~~~~~">
         <location
@@ -289,7 +289,7 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.compose:compose-bom than 2026.01.00 is available: 2026.02.01"
+        message="A newer version of androidx.compose:compose-bom than 2026.01.00 is available: 2026.03.00"
         errorLine1="composeBom = &quot;2026.01.00&quot;"
         errorLine2="             ~~~~~~~~~~~~">
         <location
@@ -322,7 +322,7 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.activity:activity-compose than 1.8.2 is available: 1.12.4"
+        message="A newer version of androidx.activity:activity-compose than 1.8.2 is available: 1.13.0"
         errorLine1="activityCompose = &quot;1.8.2&quot;"
         errorLine2="                  ~~~~~~~">
         <location
@@ -520,12 +520,45 @@
 
     <issue
         id="MissingTranslation"
+        message="&quot;settings_sync_notifications_enabled&quot; is not translated in &quot;uk&quot; (Ukrainian), &quot;tr&quot; (Turkish), &quot;zh&quot; (Chinese)"
+        errorLine1="    &lt;string name=&quot;settings_sync_notifications_enabled&quot;>Notifications enabled&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="228"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;settings_sync_notifications_errors_only&quot; is not translated in &quot;uk&quot; (Ukrainian), &quot;tr&quot; (Turkish), &quot;zh&quot; (Chinese)"
+        errorLine1="    &lt;string name=&quot;settings_sync_notifications_errors_only&quot;>Errors and warnings only&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="229"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;settings_sync_notifications_disabled&quot; is not translated in &quot;uk&quot; (Ukrainian), &quot;tr&quot; (Turkish), &quot;zh&quot; (Chinese)"
+        errorLine1="    &lt;string name=&quot;settings_sync_notifications_disabled&quot;>Notifications disabled&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="230"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
         message="&quot;sync_section_notifications&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
         errorLine1="    &lt;string name=&quot;sync_section_notifications&quot;>Notifications&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="335"
+            line="339"
             column="13"/>
     </issue>
 
@@ -536,7 +569,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="336"
+            line="340"
             column="13"/>
     </issue>
 
@@ -547,7 +580,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="337"
+            line="341"
             column="13"/>
     </issue>
 
@@ -558,7 +591,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="338"
+            line="342"
             column="13"/>
     </issue>
 
@@ -569,7 +602,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="339"
+            line="343"
             column="13"/>
     </issue>
 
@@ -580,7 +613,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="340"
+            line="344"
             column="13"/>
     </issue>
 
@@ -591,7 +624,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="341"
+            line="345"
             column="13"/>
     </issue>
 
@@ -602,7 +635,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="342"
+            line="346"
             column="13"/>
     </issue>
 
@@ -613,7 +646,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="343"
+            line="347"
             column="13"/>
     </issue>
 
@@ -624,7 +657,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="344"
+            line="348"
             column="13"/>
     </issue>
 
@@ -635,7 +668,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="345"
+            line="349"
             column="13"/>
     </issue>
 
@@ -646,7 +679,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="346"
+            line="350"
             column="13"/>
     </issue>
 
@@ -657,7 +690,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="463"
+            line="467"
             column="13"/>
     </issue>
 
@@ -668,7 +701,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="464"
+            line="468"
             column="13"/>
     </issue>
 
@@ -679,7 +712,18 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="465"
+            line="469"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;language_chinese_simplified&quot; is not translated in &quot;uk&quot; (Ukrainian) or &quot;tr&quot; (Turkish)"
+        errorLine1="    &lt;string name=&quot;language_chinese_simplified&quot;>Chinese (Simplified)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="482"
             column="13"/>
     </issue>
 
@@ -723,7 +767,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="124"
+            line="125"
             column="5"/>
     </issue>
 
@@ -734,7 +778,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="126"
+            line="127"
             column="5"/>
     </issue>
 
@@ -745,7 +789,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="159"
+            line="160"
             column="5"/>
     </issue>
 
@@ -756,7 +800,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="165"
+            line="166"
             column="5"/>
     </issue>
 
@@ -767,7 +811,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="226"
+            line="227"
             column="5"/>
     </issue>
 
@@ -778,7 +822,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="247"
+            line="251"
             column="5"/>
     </issue>
 
@@ -789,7 +833,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="248"
+            line="252"
             column="5"/>
     </issue>
 
@@ -800,7 +844,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="251"
+            line="255"
             column="5"/>
     </issue>
 
@@ -811,7 +855,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="288"
+            line="292"
             column="5"/>
     </issue>
 
@@ -822,7 +866,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="384"
+            line="388"
             column="5"/>
     </issue>
 
@@ -833,7 +877,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="440"
+            line="444"
             column="5"/>
     </issue>
 
@@ -844,7 +888,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="463"
+            line="467"
             column="5"/>
     </issue>
 
@@ -855,7 +899,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="583"
+            line="588"
             column="5"/>
     </issue>
 
@@ -866,7 +910,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="592"
+            line="597"
             column="5"/>
     </issue>
 
@@ -877,7 +921,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="602"
+            line="607"
             column="5"/>
     </issue>
 
@@ -888,7 +932,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="611"
+            line="616"
             column="5"/>
     </issue>
 
@@ -899,7 +943,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="625"
+            line="630"
             column="5"/>
     </issue>
 
@@ -910,7 +954,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="627"
+            line="632"
             column="5"/>
     </issue>
 
@@ -921,7 +965,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="630"
+            line="635"
             column="5"/>
     </issue>
 
@@ -932,7 +976,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="631"
+            line="636"
             column="5"/>
     </issue>
 
@@ -943,29 +987,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="632"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;hours&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;time_hours_ago&quot;>%d hours ago&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="639"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;days&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;time_days_ago&quot;>%d days ago&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="640"
+            line="637"
             column="5"/>
     </issue>
 
@@ -976,7 +998,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="664"
+            line="678"
             column="5"/>
     </issue>
 
@@ -1272,7 +1294,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="116"
+            line="117"
             column="13"/>
     </issue>
 
@@ -1283,7 +1305,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="214"
+            line="215"
             column="13"/>
     </issue>
 
@@ -1294,7 +1316,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="219"
+            line="220"
             column="13"/>
     </issue>
 
@@ -1305,7 +1327,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="222"
+            line="223"
             column="13"/>
     </issue>
 
@@ -1316,7 +1338,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="223"
+            line="224"
             column="13"/>
     </issue>
 
@@ -1327,7 +1349,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="227"
+            line="231"
             column="13"/>
     </issue>
 
@@ -1338,7 +1360,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="228"
+            line="232"
             column="13"/>
     </issue>
 
@@ -1349,7 +1371,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="229"
+            line="233"
             column="13"/>
     </issue>
 
@@ -1360,7 +1382,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="290"
+            line="294"
             column="13"/>
     </issue>
 
@@ -1371,7 +1393,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="313"
+            line="317"
             column="13"/>
     </issue>
 
@@ -1382,7 +1404,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="314"
+            line="318"
             column="13"/>
     </issue>
 
@@ -1393,7 +1415,29 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="327"
+            line="331"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_section_instant` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_section_instant&quot;>📲 Instant Sync&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="332"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_section_background` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_section_background&quot;>📡 Background Sync&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="333"
             column="13"/>
     </issue>
 
@@ -1404,7 +1448,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="330"
+            line="334"
             column="13"/>
     </issue>
 
@@ -1415,7 +1459,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="369"
+            line="373"
             column="13"/>
     </issue>
 
@@ -1426,7 +1470,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="374"
+            line="378"
             column="13"/>
     </issue>
 
@@ -1437,7 +1481,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="409"
+            line="413"
             column="13"/>
     </issue>
 
@@ -1448,7 +1492,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="410"
+            line="414"
             column="13"/>
     </issue>
 
@@ -1459,7 +1503,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="412"
+            line="416"
             column="13"/>
     </issue>
 
@@ -1470,7 +1514,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="413"
+            line="417"
             column="13"/>
     </issue>
 
@@ -1481,7 +1525,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="434"
+            line="438"
             column="13"/>
     </issue>
 
@@ -1492,7 +1536,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="435"
+            line="439"
             column="13"/>
     </issue>
 
@@ -1503,7 +1547,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="436"
+            line="440"
             column="13"/>
     </issue>
 
@@ -1514,7 +1558,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="437"
+            line="441"
             column="13"/>
     </issue>
 
@@ -1525,7 +1569,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="438"
+            line="442"
             column="13"/>
     </issue>
 
@@ -1536,7 +1580,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="439"
+            line="443"
             column="13"/>
     </issue>
 
@@ -1547,7 +1591,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="440"
+            line="444"
             column="13"/>
     </issue>
 
@@ -1558,7 +1602,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="441"
+            line="445"
             column="13"/>
     </issue>
 
@@ -1569,7 +1613,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="479"
+            line="484"
             column="13"/>
     </issue>
 
@@ -1580,7 +1624,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="518"
+            line="523"
             column="13"/>
     </issue>
 
@@ -1591,7 +1635,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="519"
+            line="524"
             column="13"/>
     </issue>
 
@@ -1602,7 +1646,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="600"
+            line="605"
             column="13"/>
     </issue>
 
@@ -1613,7 +1657,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="601"
+            line="606"
             column="13"/>
     </issue>
 
@@ -1624,7 +1668,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="602"
+            line="607"
             column="13"/>
     </issue>
 
@@ -1635,7 +1679,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="603"
+            line="608"
             column="13"/>
     </issue>
 
@@ -1646,7 +1690,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="606"
+            line="611"
             column="13"/>
     </issue>
 
@@ -1657,7 +1701,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="608"
+            line="613"
             column="13"/>
     </issue>
 
@@ -1668,7 +1712,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="609"
+            line="614"
             column="13"/>
     </issue>
 
@@ -1679,7 +1723,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="672"
+            line="686"
             column="14"/>
     </issue>
 
@@ -1690,7 +1734,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="677"
+            line="691"
             column="14"/>
     </issue>
 
@@ -1701,7 +1745,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="682"
+            line="696"
             column="14"/>
     </issue>
 
@@ -1712,7 +1756,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="687"
+            line="701"
             column="14"/>
     </issue>
 
@@ -1723,7 +1767,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="718"
+            line="732"
             column="13"/>
     </issue>
 
@@ -2010,7 +2054,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/editor/NoteEditorViewModel.kt"
-            line="1054"
+            line="1073"
             column="9"/>
     </issue>
 
@@ -2428,7 +2472,7 @@
         errorLine2="                            ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/screens/SyncSettingsScreen.kt"
-            line="430"
+            line="471"
             column="29"/>
     </issue>
 
@@ -2483,7 +2527,7 @@
         errorLine2="                         ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1287"
+            line="1288"
             column="26"/>
     </issue>
 
@@ -2494,7 +2538,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1295"
+            line="1296"
             column="13"/>
     </issue>
 
@@ -2505,7 +2549,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1412"
+            line="1413"
             column="17"/>
     </issue>
 
@@ -2516,7 +2560,7 @@
         errorLine2="                        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1784"
+            line="1785"
             column="25"/>
     </issue>
 
@@ -2527,7 +2571,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1929"
+            line="1930"
             column="9"/>
     </issue>
 
@@ -2538,7 +2582,7 @@
         errorLine2="                         ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="2027"
+            line="2028"
             column="26"/>
     </issue>
 
@@ -2549,7 +2593,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="2639"
+            line="2668"
             column="13"/>
     </issue>
 
