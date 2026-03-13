@@ -49,7 +49,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "MainViewModel"
         private const val MIN_AUTO_SYNC_INTERVAL_MS = 60_000L // 1 Minute
-        private const val PREF_LAST_AUTO_SYNC_TIME = "last_auto_sync_timestamp"
         private const val SNACKBAR_UNDO_DELAY_MS = 3500L
     }
     
@@ -810,8 +809,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         Logger.d(TAG, "🔄 Auto-sync triggered ($source)")
         
-        // Update last sync timestamp
-        prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()
+        // Update last sync timestamp (in-memory only — resets on process restart
+        // so first onResume after cold start always triggers)
+        lastAutoSyncTime = System.currentTimeMillis()
         
         // 🆕 v1.8.1 (IMPL_08): Globalen Sync-Cooldown markieren
         SyncStateManager.markGlobalSyncStarted(prefs)
@@ -863,10 +863,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    // In-memory throttle for onResume sync (not persisted — cold start always syncs)
+    private var lastAutoSyncTime: Long = 0L
+
     private fun canTriggerAutoSync(): Boolean {
-        val lastSyncTime = prefs.getLong(PREF_LAST_AUTO_SYNC_TIME, 0)
         val now = System.currentTimeMillis()
-        val timeSinceLastSync = now - lastSyncTime
+        val timeSinceLastSync = now - lastAutoSyncTime
         
         if (timeSinceLastSync < MIN_AUTO_SYNC_INTERVAL_MS) {
             val remainingSeconds = (MIN_AUTO_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
