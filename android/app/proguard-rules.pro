@@ -86,7 +86,6 @@
 # 5) ACTIVITIES & APPLICATION — Android-Framework instanziiert via Reflection
 -keep class dev.dettmer.simplenotes.SimpleNotesApplication { *; }
 -keep class dev.dettmer.simplenotes.** extends android.app.Activity { *; }
--keep class dev.dettmer.simplenotes.** extends androidx.fragment.app.Fragment { *; }
 
 # v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
 # This class only exists on API 35+ but Compose handles the fallback gracefully
