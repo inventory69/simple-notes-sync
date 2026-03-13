@@ -6,7 +6,6 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
-import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
@@ -22,10 +21,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
-import java.security.MessageDigest
-import okhttp3.OkHttpClient
 import java.io.IOException
-import java.util.Date
 
 /**
  * Result of manual Markdown sync operation
@@ -55,9 +51,7 @@ class WebDavSyncService(
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
-        private const val CONTENT_PREVIEW_LENGTH = 50
 
         // 🔧 v1.9.0 (Plan 04): Detekt MagicNumber compliance
         private const val ALL_DELETED_GUARD_THRESHOLD = 10
@@ -79,12 +73,6 @@ class WebDavSyncService(
     private val connectionManager = ConnectionManager(prefs)
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
     private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
-
-    /**
-     * 🆕 v1.10.0: Liest den konfigurierten Timeout aus SharedPreferences.
-     * Konvertiert Sekunden → Millisekunden. Clamped auf [MIN..MAX].
-     */
-    private fun getTimeoutMs(): Long = connectionManager.getTimeoutMs()
 
     init {
         if (BuildConfig.DEBUG) {
@@ -116,6 +104,16 @@ class WebDavSyncService(
         }
     }
     
+    private val markdownSyncManager = MarkdownSyncManager(
+        prefs = prefs,
+        storage = storage,
+        eTagCache = eTagCache,
+        urlBuilder = urlBuilder,
+        connectionManager = connectionManager,
+        timestampManager = timestampManager,
+        ioDispatcher = ioDispatcher
+    )
+
     private val noteUploader = NoteUploader(
         prefs = prefs,
         storage = storage,
@@ -123,7 +121,7 @@ class WebDavSyncService(
         urlBuilder = urlBuilder,
         ioDispatcher = ioDispatcher,
         markdownExporter = { sardine, serverUrl, note, mdDirExists ->
-            exportToMarkdown(sardine, serverUrl, note, mdDirExists)
+            markdownSyncManager.exportSingle(sardine, serverUrl, note, mdDirExists)
         }
     )
 
@@ -160,15 +158,15 @@ class WebDavSyncService(
      */
     private fun ensureMarkdownDirectoryExists(sardine: Sardine, serverUrl: String) {
         if (connectionManager.markdownDirEnsured) return
-        
+
         try {
             val mdUrl = getMarkdownUrl(serverUrl)
-            
+
             if (!sardine.exists(mdUrl)) {
                 sardine.createDirectory(mdUrl)
                 Logger.d(TAG, "📁 Created notes-md/ directory (for future use)")
             }
-            
+
             connectionManager.markdownDirEnsured = true
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to create notes-md/: ${e.message}")
@@ -707,216 +705,20 @@ class WebDavSyncService(
      */
     internal fun computeNoteContentHash(note: Note): String = noteUploader.computeContentHash(note)
 
-    
     /**
-     * Exportiert einzelne Note als Markdown (Task #1.2.0-11)
-     * 🔧 v1.9.0 (Opt 1): markdownDirExists-Parameter eliminiert redundanten exists()-Call
-     * 🔧 v1.9.0 (Opt 6): MD-Content-Hash-Cache für Skip bei unverändertem Inhalt
-     *
-     * @param sardine Sardine-Client
-     * @param serverUrl Server-URL (notes/ Ordner)
-     * @param note Note zum Exportieren
-     * @param markdownDirExists true wenn notes-md/ Ordner bereits existiert
+     * Sanitize Filename für sichere Dateinamen.
      */
-    private fun exportToMarkdown(
-        sardine: Sardine,
-        serverUrl: String,
-        note: Note,
-        markdownDirExists: Boolean = true
-    ) {
-        val mdUrl = getMarkdownUrl(serverUrl)
-
-        // 🔧 v1.9.0 (Opt 1): Nur prüfen/erstellen wenn Caller nicht bereits bestätigt hat
-        if (!markdownDirExists) {
-            if (!sardine.exists(mdUrl)) {
-                sardine.createDirectory(mdUrl)
-                Logger.d(TAG, "📁 Created notes-md/ directory")
-            }
-        }
-
-        val baseFilename = sanitizeFilename(note.title)
-        var filename = "$baseFilename.md"
-        // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
-        var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
-
-        // 🆕 v1.9.0 (Opt 6): MD-Content-Hash berechnen und mit Cache vergleichen
-        val mdContentStr = note.toMarkdown()
-        val mdContentBytes = mdContentStr.toByteArray()
-        val mdHash = MessageDigest.getInstance("SHA-256")
-            .digest(mdContentBytes)
-            .joinToString("") { "%02x".format(it) }
-        val cachedMdHash = prefs.getString("content_hash_md_${note.id}", null)
-        val cachedMdETag = eTagCache.getMdETag(note.id)
-
-        if (mdHash == cachedMdHash && cachedMdETag != null) {
-            Logger.d(TAG, "   ⏭️ MD skip: ${note.title} (content unchanged)")
-            return
-        }
-
-        // Prüfe ob Datei bereits existiert und von anderer Note stammt
-        try {
-            if (sardine.exists(noteUrl)) {
-                // Lese existierende Datei und prüfe ID im YAML-Header
-                val existingContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
-                val existingIdMatch = Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
-                    .find(existingContent)
-                val existingId = existingIdMatch?.groupValues?.get(1)
-
-                if (existingId != null && existingId != note.id) {
-                    // Andere Note hat gleichen Titel - verwende ID-Suffix
-                    val shortId = note.id.take(8)
-                    filename = "${baseFilename}_$shortId.md"
-                    noteUrl = "${mdUrl.trimEnd('/')}/$filename"
-                    Logger.d(TAG, "📝 Duplicate title, using: $filename")
-                }
-            }
-        } catch (e: Exception) {
-            Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
-            // Continue with default filename
-        }
-
-        // Upload
-        sardine.put(noteUrl, mdContentBytes, "text/markdown")
-
-        // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
-        try {
-            val mdResource = sardine.list(noteUrl, 0).firstOrNull()
-            val mdETag = mdResource?.etag
-            val editor = prefs.edit().putString("content_hash_md_${note.id}", mdHash)
-            if (mdETag != null) {
-                editor.putString("etag_md_${note.id}", mdETag)
-            }
-            editor.apply()
-            Logger.d(TAG, "   ⚡ MD E-Tag cached: ${mdETag?.take(ETAG_PREVIEW_LENGTH)}")
-        } catch (e: Exception) {
-            // Non-fatal: Hash trotzdem cachen für nächsten Content-Vergleich
-            prefs.edit().putString("content_hash_md_${note.id}", mdHash).apply()
-            Logger.w(TAG, "   ⚠️ MD E-Tag fetch failed: ${e.message}")
-        }
-    }
+    private fun sanitizeFilename(title: String): String = markdownSyncManager.sanitizeFilename(title)
     
     /**
-     * Sanitize Filename für sichere Dateinamen (Task #1.2.0-12)
-     * 
-     * Entfernt Windows/Linux-verbotene Zeichen, begrenzt Länge
-     * 
-     * @param title Original-Titel
-     * @return Sicherer Filename
-     */
-    private fun sanitizeFilename(title: String): String {
-        return title
-            .replace(Regex("[<>:\"/\\\\|?*]"), "_")  // Ersetze verbotene Zeichen
-            .replace(Regex("\\s+"), " ")              // Normalisiere Whitespace
-            .take(MAX_FILENAME_LENGTH)                 // Max Zeichen (Reserve für .md)
-            .trim('_', ' ')                            // Trim Underscores/Spaces
-    }
-    
-    /**
-     * Generiert eindeutigen Markdown-Dateinamen für eine Notiz.
-     * Bei Duplikaten wird die Note-ID als Suffix angehängt.
-     * 
-     * @param note Die Notiz
-     * @param usedFilenames Set der bereits verwendeten Dateinamen (ohne .md)
-     * @return Eindeutiger Dateiname (ohne .md Extension)
-     */
-    private fun getUniqueMarkdownFilename(note: Note, usedFilenames: MutableSet<String>): String {
-        val baseFilename = sanitizeFilename(note.title)
-        
-        return if (usedFilenames.contains(baseFilename)) {
-            // Duplikat - hänge gekürzte ID an
-            val shortId = note.id.take(8)
-            val uniqueFilename = "${baseFilename}_$shortId"
-            usedFilenames.add(uniqueFilename)
-            uniqueFilename
-        } else {
-            usedFilenames.add(baseFilename)
-            baseFilename
-        }
-    }
-    
-    /**
-     * Exportiert ALLE lokalen Notizen als Markdown (Initial-Export)
-     * 
-     * Wird beim ersten Aktivieren der Desktop-Integration aufgerufen.
-     * Exportiert auch bereits synchronisierte Notizen.
-     * 
-     * @return Anzahl exportierter Notizen
+     * Exportiert ALLE lokalen Notizen als Markdown — delegiert an MarkdownSyncManager.
      */
     suspend fun exportAllNotesToMarkdown(
         serverUrl: String,
         username: String,
         password: String,
         onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
-    ): Int = withContext(ioDispatcher) {
-        Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
-        
-        // 🔧 v1.10.0: readTimeout + writeTimeout ergänzt, konfigurierbarer Timeout
-        val timeoutMs = getTimeoutMs()
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .build()
-        
-        val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
-        
-        try {
-            val mdUrl = getMarkdownUrl(serverUrl)
-            
-            // Ordner sollte bereits existieren (durch #1.2.1-00), aber Sicherheitscheck
-            ensureMarkdownDirectoryExists(sardine, serverUrl)
-            
-            // Hole ALLE lokalen Notizen (inklusive SYNCED)
-            val allNotes = storage.loadAllNotes()
-            val totalCount = allNotes.size
-            var exportedCount = 0
-            
-            // Track used filenames to handle duplicates
-            val usedFilenames = mutableSetOf<String>()
-            
-            Logger.d(TAG, "📝 Found $totalCount notes to export")
-            
-            allNotes.forEachIndexed { index, note ->
-                try {
-                    // Progress-Callback
-                    onProgress(index + 1, totalCount)
-                    
-                    // Eindeutiger Filename (mit Duplikat-Handling)
-                    val filename = getUniqueMarkdownFilename(note, usedFilenames) + ".md"
-                    // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
-                    val noteUrl = "${mdUrl.trimEnd('/')}/$filename"
-                    
-                    // Konvertiere zu Markdown
-                    val mdContent = note.toMarkdown().toByteArray()
-                    
-                    // Upload (überschreibt falls vorhanden)
-                    sardine.put(noteUrl, mdContent, "text/markdown")
-                    
-                    exportedCount++
-                    Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
-                    
-                } catch (e: Exception) {
-                    Logger.e(TAG, "❌ Failed to export ${note.title}: ${e.message}")
-                    // Continue mit nächster Note (keine Abbruch bei Einzelfehlern)
-                }
-            }
-            
-            Logger.d(TAG, "✅ Initial export completed: $exportedCount/$totalCount notes")
-            
-            // ⚡ v1.3.1: Set lastSyncTimestamp to enable timestamp-based skip on next sync
-            // This prevents re-downloading all MD files on the first manual sync after initial export
-            if (exportedCount > 0) {
-                val timestamp = System.currentTimeMillis()
-                prefs.edit().putLong("last_sync_timestamp", timestamp).apply()
-                Logger.d(TAG, "💾 Set lastSyncTimestamp after initial export (enables fast next sync)")
-            }
-            
-            return@withContext exportedCount
-        } finally {
-            // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
-            sardine.close()
-        }
-    }
+    ): Int = markdownSyncManager.exportAll(serverUrl, username, password, onProgress)
     
     private data class DownloadResult(
         val downloadedCount: Int,
@@ -1584,100 +1386,17 @@ class WebDavSyncService(
      * @param password WebDAV Password
      * @return Anzahl importierter Notizen
      */
+    /**
+     * Manueller Markdown-Sync — delegiert an MarkdownSyncManager.
+     */
     suspend fun syncMarkdownFiles(
-        serverUrl: String, 
-        username: String, 
+        serverUrl: String,
+        username: String,
         password: String
-    ): Int = withContext(ioDispatcher) {
-        return@withContext try {
-            Logger.d(TAG, "📝 Starting Markdown sync...")
-            
-            // 🛡️ v1.8.2: Timeout setzen wie bei createSardineClient() (SNS-182-19c)
-            // 🔧 v1.10.0: Konfigurierbarer Timeout aus SharedPreferences
-            val timeoutMs = getTimeoutMs()
-            val okHttpClient = OkHttpClient.Builder()
-                .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .build()
-            val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
-            
-            try {
-                val mdUrl = getMarkdownUrl(serverUrl)
-                
-                // Check if notes-md/ exists
-                if (!sardine.exists(mdUrl)) {
-                    Logger.d(TAG, "⚠️ notes-md/ directory not found - skipping MD import")
-                    return@withContext 0
-                }
-                
-                val localNotes = storage.loadAllNotes()
-                val mdResources = sardine.list(mdUrl).filter { it.name.endsWith(".md") }
-                var importedCount = 0
-                
-                Logger.d(TAG, "📂 Found ${mdResources.size} markdown files")
-                
-                for (resource in mdResources) {
-                    try {
-                        // Download MD-File
-                        val mdContent = sardine.get(resource.href.toString())
-                            .bufferedReader().use { it.readText() }
-                        
-                        // Parse zu Note
-                        val mdNote = Note.fromMarkdown(mdContent) ?: continue
-                        
-                        val localNote = localNotes.find { it.id == mdNote.id }
-                        
-                        // Konfliktauflösung: Last-Write-Wins
-                        when {
-                            localNote == null -> {
-                                // Neue Notiz vom Desktop
-                                storage.saveNote(mdNote)
-                                importedCount++
-                                Logger.d(TAG, "   ✅ Imported new: ${mdNote.title}")
-                            }
-                            mdNote.updatedAt > localNote.updatedAt -> {
-                                // Desktop-Version ist neuer (Last-Write-Wins)
-                                storage.saveNote(mdNote)
-                                importedCount++
-                                Logger.d(TAG, "   ✅ Updated from MD: ${mdNote.title}")
-                            }
-                            // Sonst: Lokale Version behalten
-                            else -> {
-                                Logger.d(TAG, "   ⏭️ Local newer, skipping: ${mdNote.title}")
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Logger.e(TAG, "Failed to import ${resource.name}", e)
-                        // Continue with other files
-                    }
-                }
-                
-                Logger.d(TAG, "✅ Markdown sync completed: $importedCount imported")
-                importedCount
-            } finally {
-                // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
-                sardine.close()
-            }
-            
-        } catch (e: Exception) {
-            Logger.e(TAG, "Markdown sync failed", e)
-            0
-        }
-    }
+    ): Int = markdownSyncManager.syncAll(serverUrl, username, password)
     
     /**
-     * Auto-import Markdown files during regular sync (v1.3.0)
-     * Called automatically if KEY_MARKDOWN_AUTO_IMPORT is enabled
-     * 
-     * ⚡ v1.3.1: Performance-Optimierung - Skip unveränderte Dateien
-     */
-    /**
-     * 🆕 v1.11.0: excludeNoteIds-Parameter verhindert Re-Import von Dateien,
-     * die in diesem Sync-Zyklus von uploadLocalNotes() exportiert wurden.
-     * Das eliminiert die Feedback-Loop: Export → Re-Import → PENDING → Re-Upload → Doppelzählung.
-     *
-     * @param excludeNoteIds IDs der Notizen, deren .md-Dateien in diesem Sync-Zyklus exportiert wurden
+     * Auto-Import Markdown files during regular sync — delegiert an MarkdownSyncManager.
      */
     @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
     // Import logic requires nested conditions for file validation and duplicate handling
@@ -1685,338 +1404,16 @@ class WebDavSyncService(
         sardine: Sardine,
         serverUrl: String,
         excludeNoteIds: Set<String> = emptySet()
-    ): Int {
-        return try {
-            Logger.d(TAG, "📝 Importing Markdown files...")
-
-            val mdUrl = getMarkdownUrl(serverUrl)
-
-            if (!sardine.exists(mdUrl)) {
-                Logger.d(TAG, "   ⚠️ notes-md/ directory not found - skipping")
-                return 0
-            }
-
-            cleanupStaleRootDirectory(sardine, serverUrl)
-
-            val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
-            var importedCount = 0
-            var skippedCount = 0
-            
-            Logger.d(TAG, "   📂 Found ${mdResources.size} markdown files")
-            
-            // ⚡ v1.3.1: Performance-Optimierung - Letzten Sync-Zeitpunkt holen
-            val lastSyncTime = getLastSyncTimestamp()
-            Logger.d(TAG, "   📅 Last sync: ${Date(lastSyncTime)}")
-            
-            // 🔧 v1.11.0: Fast-Path — wenn alle Dateien älter als letzter Sync sind,
-            // überspringe die gesamte Schleife und zeige keine IMPORTING_MARKDOWN-Phase.
-            // Das verhindert die irreführende Anzeige "Markdown importieren… Test Neu.md"
-            // wenn tatsächlich 0 Dateien importiert werden.
-            if (lastSyncTime > 0) {
-                val allUnchanged = mdResources.all { resource ->
-                    val serverModifiedTime = resource.modified?.time ?: 0L
-                    serverModifiedTime <= lastSyncTime
-                }
-                if (allUnchanged) {
-                    Logger.d(TAG, "   ⏭️ All ${mdResources.size} markdown files unchanged since last sync (fast-path)")
-                    Logger.d(TAG, "   📊 Markdown import complete: 0 imported, ${mdResources.size} skipped (fast-path)")
-                    return 0
-                }
-            }
-            
-            // 🔧 v1.11.0: Phase erst hier setzen — nach dem Fast-Path-Check.
-            // Wenn alle Dateien unverändert waren, wurde bereits return 0 ausgeführt
-            // und diese Zeile wird nie erreicht → kein irreführendes Banner.
-            SyncStateManager.updateProgress(
-                phase = SyncPhase.IMPORTING_MARKDOWN,
-                current = 0,
-                total = mdResources.size
-            )
-            
-            var processedCount = 0  // 🆕 v1.10.0-P2: per-file determinate progress counter
-            for (resource in mdResources) {
-                // 🔧 v1.11.0: Counter für jede Datei inkrementieren (Fortschrittsbalken korrekt),
-                // aber currentFileName = null für übersprungene Dateien.
-                // Dateiname wird erst gesetzt wenn die Datei tatsächlich heruntergeladen wird.
-                SyncStateManager.updateProgress(
-                    phase = SyncPhase.IMPORTING_MARKDOWN,
-                    current = ++processedCount,
-                    total = mdResources.size,
-                    currentFileName = null  // 🔧 v1.11.0: Kein Dateiname für Skip-Phase
-                )
-                try {
-                    val serverModifiedTime = resource.modified?.time ?: 0L
-                    
-                    // ⚡ v1.3.1: PERFORMANCE - Skip wenn Datei seit letztem Sync nicht geändert wurde
-                    // Das ist der Haupt-Performance-Fix! Spart ~500ms pro Datei bei Nextcloud.
-                    if (lastSyncTime > 0 && serverModifiedTime <= lastSyncTime) {
-                        skippedCount++
-                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: not modified since last sync")
-                        continue
-                    }
-                    
-                    Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
-                    
-                    // 🔧 v1.11.0: Erst jetzt currentFileName setzen — Datei wird tatsächlich verarbeitet
-                    SyncStateManager.updateProgress(
-                        phase = SyncPhase.IMPORTING_MARKDOWN,
-                        current = processedCount,
-                        total = mdResources.size,
-                        currentFileName = resource.name
-                    )
-                    
-                    // Build full URL
-                    val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
-                    
-                    // Download MD content
-                    val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
-                    Logger.d(TAG, "      Downloaded ${mdContent.length} chars")
-                    
-                    // 🔧 v1.7.2 (IMPL_014): Server mtime übergeben für korrekte Timestamp-Sync
-                    val mdNote = Note.fromMarkdown(mdContent, serverModifiedTime)
-                    if (mdNote == null) {
-                        Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
-                        continue
-                    }
-
-                    // 🆕 v1.11.0: Skip Markdown files whose note ID was just exported in this sync cycle.
-                    // Prevents the feedback loop: Export → Re-Import → PENDING → Re-Upload → double count.
-                    if (mdNote.id in excludeNoteIds) {
-                        skippedCount++
-                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle (ID=${mdNote.id})")
-                        continue
-                    }
-
-                    // v1.4.0 FIX: Validierung - leere TEXT-Notizen nicht importieren wenn lokal Content existiert
-                    val localNote = storage.loadNote(mdNote.id)
-                    if (mdNote.noteType == dev.dettmer.simplenotes.models.NoteType.TEXT &&
-                        mdNote.content.isBlank() && 
-                        localNote != null && localNote.content.isNotBlank()) {
-                        Logger.w(
-                            TAG,
-                            "      ⚠️ Skipping ${resource.name}: " +
-                                "MD content empty but local has content - likely parse error!"
-                        )
-                        continue
-                    }
-                    
-                    Logger.d(
-                        TAG,
-                        "      Parsed: id=${mdNote.id}, title=${mdNote.title}, " +
-                            "updatedAt=${Date(mdNote.updatedAt)}, " +
-                            "content=${mdNote.content.take(CONTENT_PREVIEW_LENGTH)}..."
-                    )
-                    
-                    Logger.d(
-                        TAG,
-                        "      Local note: " + if (localNote == null) {
-                            "NOT FOUND"
-                        } else {
-                            "exists, updatedAt=${Date(localNote.updatedAt)}, " +
-                                "syncStatus=${localNote.syncStatus}"
-                        }
-                    )
-                    
-                    // ⚡ v1.3.1 / 🔧 v1.8.2 (IMPL_025): Content-basierte Erkennung
-                    // YAML-Timestamp ist autoritativ (siehe Edit 25.2).
-                    // Content-Vergleich dient als zusätzliche Sicherheit bei echten externen Änderungen.
-                    Logger.d(
-                        TAG,
-                        "      Comparison: mdUpdatedAt=${mdNote.updatedAt}, " +
-                            "localUpdated=${localNote?.updatedAt ?: 0L}"
-                    )
-                    
-                    // 🔧 v1.8.2 (IMPL_025): Semantischer Content-Vergleich
-                    // ChecklistItems haben bei jedem fromMarkdown() neue UUIDs,
-                    // daher nur Text + isChecked + order vergleichen (nicht die ID)
-                    // 🔧 v1.11.0: null und emptyList() als semantisch gleich behandeln.
-                    // performSave() speichert leere Listen als emptyList(), aber fromMarkdown()
-                    // gibt null zurück wenn keine Checklist-Items geparst wurden (.ifEmpty { null }).
-                    // Ohne diese Normalisierung wird ein Round-Trip als "Änderung" erkannt.
-                    val mdItems = mdNote.checklistItems.orEmpty()
-                    val localItems = localNote?.checklistItems.orEmpty()
-                    val checklistContentEqual = when {
-                        mdItems.size != localItems.size -> false
-                        mdItems.isEmpty() && localItems.isEmpty() -> true
-                        else -> mdItems.zip(localItems).all { (md, local) ->
-                            md.text == local.text && md.isChecked == local.isChecked && md.order == local.order
-                        }
-                    }
-                    
-                    // Content-Vergleich: Ist der Inhalt tatsächlich unterschiedlich?
-                    // 🔧 v1.8.2 (IMPL_025 Edit 25.8): Für Checklisten NUR checklistItems vergleichen!
-                    // fromMarkdown() setzt content="" für Checklisten, aber toJson() generiert einen
-                    // Fallback-Content (z.B. "[x] Item1\n[ ] Item2"). Dieser Unterschied ist KEIN
-                    // echter Content-Change, sondern ein Serialisierungs-Artefakt.
-                    val contentChanged = localNote != null && when (mdNote.noteType) {
-                        NoteType.CHECKLIST -> {
-                            mdNote.title != localNote.title || !checklistContentEqual
-                        }
-                        else -> {
-                            mdNote.content.trim() != localNote.content.trim() ||
-                                mdNote.title != localNote.title
-                        }
-                    }
-                    
-                    if (contentChanged) {
-                        Logger.d(TAG, "      📝 Content differs from local!")
-                    }
-                    
-                    // Conflict resolution: Content-First, dann Timestamp
-                    when {
-                        localNote == null -> {
-                            // New note from desktop
-                            storage.saveNote(mdNote.copy(syncStatus = SyncStatus.SYNCED))
-                            importedCount++
-                            Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
-                        }
-                        // ⚡ v1.3.1 FIX: Content-basierter Skip - nur wenn Inhalt UND Timestamp gleich
-                        localNote.syncStatus == SyncStatus.SYNCED &&
-                            !contentChanged &&
-                            localNote.updatedAt >= mdNote.updatedAt -> {
-                            // Inhalt identisch UND Timestamps passen → Skip
-                            skippedCount++
-                            Logger.d(
-                                TAG,
-                                "   ⏭️ Skipped ${mdNote.title}: content identical " +
-                                    "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
-                            )
-                        }
-                        // 🔧 v1.8.2 (IMPL_025): Content geändert → Importieren UND als PENDING markieren!
-                        // PENDING triggert JSON-Upload beim nächsten Sync-Zyklus
-                        contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
-                            storage.saveNote(mdNote.copy(
-                                // updatedAt kommt bereits korrekt aus fromMarkdown() (YAML-basiert, siehe Edit 25.2)
-                                syncStatus = SyncStatus.PENDING  // ⬅️ KRITISCH: Triggert JSON-Upload
-                            ))
-                            importedCount++
-                            Logger.d(TAG, "   ✅ Imported changed content (marked PENDING for JSON sync): ${mdNote.title}")
-                        }
-                        mdNote.updatedAt > localNote.updatedAt -> {
-                            // Markdown has newer YAML timestamp
-                            Logger.d(TAG, "      Decision: Markdown has newer timestamp!")
-                            if (localNote.syncStatus == SyncStatus.PENDING) {
-                                // Conflict: local has pending changes
-                                storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
-                                Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
-                            } else {
-                                // Import with the newer YAML timestamp
-                                storage.saveNote(mdNote.copy(syncStatus = SyncStatus.SYNCED))
-                                importedCount++
-                                Logger.d(TAG, "   ✅ Updated from Markdown (newer timestamp): ${mdNote.title}")
-                            }
-                        }
-                        else -> {
-                            // Local has pending changes but MD is older - keep local
-                            skippedCount++
-                            Logger.d(
-                                TAG,
-                                "   ⏭️ Skipped ${mdNote.title}: local is newer or pending " +
-                                    "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    Logger.e(TAG, "   ⚠️ Failed to import ${resource.name}", e)
-                    // Continue with other files
-                }
-            }
-            
-            // ⚡ v1.3.1: Verbessertes Logging mit Skip-Count
-            Logger.d(TAG, "   📊 Markdown import complete: $importedCount imported, $skippedCount skipped (unchanged)")
-            importedCount
-            
-        } catch (e: Exception) {
-            Logger.e(TAG, "❌ Markdown import failed", e)
-            0
-        }
-    }
+    ): Int = markdownSyncManager.importAll(sardine, serverUrl, excludeNoteIds)
 
     /**
-     * 🔧 v1.8.2 (IMPL_025 Edit 25.9): One-time cleanup of stale "/" directory at WebDAV root.
-     * The double-slash bug could create a "/" folder artifact at root level.
-     * Safe: Only targets a directory literally named "/" — no legitimate folder uses this name.
-     */
-    private fun cleanupStaleRootDirectory(sardine: Sardine, serverUrl: String) {
-        try {
-            val rootUrl = serverUrl.trimEnd('/')
-            Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
-            val rootResources = sardine.list(rootUrl)
-            Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
-            for ((index, res) in rootResources.withIndex()) {
-                Logger.d(
-                    TAG,
-                    "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
-                    "isDir=${res.isDirectory}, href=${res.href}"
-                )
-            }
-            val staleSlashDir = rootResources.find { res -> res.isDirectory && res.name == "/" }
-            if (staleSlashDir != null) {
-                val staleHref = staleSlashDir.href?.toString().orEmpty()
-                Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
-                try {
-                    sardine.delete(rootUrl + staleSlashDir.href.path)
-                    Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
-                } catch (e: Exception) {
-                    Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")
-                }
-            } else {
-                Logger.d(TAG, "   ℹ️ No stale '/' directory found at root (checked name field)")
-            }
-        } catch (e: Exception) {
-            Logger.w(TAG, "   ⚠️ Root cleanup check failed: ${e.message}")
-        }
-    }
-
-    /**
-     * Finds a Markdown file by scanning YAML frontmatter for note ID
-     * Used when local note is deleted and title is unavailable
-     * 
-     * @param sardine Sardine client
-     * @param mdUrl Base URL of notes-md/ directory
-     * @param noteId The note ID to search for
-     * @return Filename if found, null otherwise
+     * Finds a Markdown file by note ID — delegiert an MarkdownSyncManager.
      */
     private suspend fun findMarkdownFileByNoteId(
         sardine: Sardine,
         mdUrl: String,
         noteId: String
-    ): String? = withContext(ioDispatcher) {
-        return@withContext try {
-            Logger.d(TAG, "🔍 Scanning MD files for ID: $noteId")
-            val resources = sardine.list(mdUrl)
-            
-            for (resource in resources) {
-                if (resource.isDirectory || !resource.name.endsWith(".md")) {
-                    continue
-                }
-                
-                try {
-                    // Download MD content
-                    val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
-                    val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
-                    
-                    // Parse YAML frontmatter for ID
-                    val idMatch = Regex("""^---\s*\n.*?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
-                        .find(mdContent)
-                    
-                    if (idMatch?.groupValues?.get(1) == noteId) {
-                        Logger.d(TAG, "   ✅ Found MD file: ${resource.name}")
-                        return@withContext resource.name
-                    }
-                } catch (e: Exception) {
-                    Logger.w(TAG, "   ⚠️ Failed to parse ${resource.name}: ${e.message}")
-                    // Continue with next file
-                }
-            }
-            
-            Logger.w(TAG, "   ❌ No MD file found for ID: $noteId")
-            null
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to scan MD files: ${e.message}")
-            null
-        }
-    }
+    ): String? = markdownSyncManager.findByNoteId(sardine, mdUrl, noteId)
     
     /**
      * Deletes a note from the server (JSON + Markdown)
