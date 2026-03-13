@@ -339,8 +339,8 @@ class ComposeMainActivity : ComponentActivity() {
         }
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.slide_in_right,
-            dev.dettmer.simplenotes.R.anim.slide_out_left
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
         )
         editorLauncher.launch(intent, options)
     }
@@ -351,8 +351,8 @@ class ComposeMainActivity : ComponentActivity() {
         intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.slide_in_right,
-            dev.dettmer.simplenotes.R.anim.slide_out_left
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
         )
         editorLauncher.launch(intent, options)
     }
@@ -362,8 +362,8 @@ class ComposeMainActivity : ComponentActivity() {
         val intent = Intent(this, ComposeSettingsActivity::class.java)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.slide_in_right,
-            dev.dettmer.simplenotes.R.anim.slide_out_left
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
         )
         settingsLauncher.launch(intent, options)
     }
