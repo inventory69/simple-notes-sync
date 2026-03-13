@@ -37,8 +37,7 @@ data class UploadBatchResult(
     val markdownExportedNoteIds: Set<String>
 )
 
-@Suppress("LargeClass", "TooManyFunctions")
-// TODO v2.1.0: Split into NoteUploader, NoteDownloader, MarkdownSyncManager
+@Suppress("LargeClass") // Functions extracted into NoteUploader/NoteDownloader/MarkdownSyncManager (v2.0.0)
 class WebDavSyncService(
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -131,22 +130,9 @@ class WebDavSyncService(
     internal fun getOrCreateSardine(): Sardine? = connectionManager.getOrCreateClient()
     
     /**
-     * ⚡ v1.3.1: Session-Caches leeren (am Ende von syncNotes)
-     * 🔧 v1.7.2 (IMPL_003): Schließt Sardine-Client explizit für Resource-Cleanup
-     */
-    private fun clearSessionCache() {
-        connectionManager.clearSession()
-        Logger.d(TAG, "🧹 Session caches cleared")
-    }
-    
-    /**
      * 🆕 v2.0.0: Delegiert an SyncUrlBuilder (extrahiert in Commit 17).
      */
     internal fun getServerUrl(): String? = urlBuilder.getServerUrl()
-
-    private fun getNotesUrl(baseUrl: String): String = urlBuilder.getNotesUrl(baseUrl)
-
-    private fun getMarkdownUrl(baseUrl: String): String = urlBuilder.getMarkdownUrl(baseUrl)
     
     /**
      * Stellt sicher dass notes-md/ Ordner existiert
@@ -158,7 +144,7 @@ class WebDavSyncService(
         if (connectionManager.markdownDirEnsured) return
 
         try {
-            val mdUrl = getMarkdownUrl(serverUrl)
+            val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
             if (!sardine.exists(mdUrl)) {
                 sardine.createDirectory(mdUrl)
@@ -222,7 +208,7 @@ class WebDavSyncService(
                 return true
             }
             
-            val notesUrl = getNotesUrl(serverUrl)
+            val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
             // Wenn sardine.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
             // 🐛 Fix #21: Wenn /notes/ nicht existiert → true zurückgeben, damit syncNotes()
@@ -251,7 +237,7 @@ class WebDavSyncService(
             if (!markdownAutoImportEnabled) {
                 Logger.d(TAG, "⏭️ Markdown check skipped (auto-import disabled)")
             } else {
-                val mdUrl = getMarkdownUrl(serverUrl)
+                val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
                 
                 if (!sardine.exists(mdUrl)) {
                     Logger.d(TAG, "📁 /notes-md/ doesn't exist - no markdown changes")
@@ -408,7 +394,7 @@ class WebDavSyncService(
             ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
 
             // 🆕 Issue #21: Sync-Ordner prüfen und Status mit Ordnernamen kommunizieren
-            val notesUrl = getNotesUrl(serverUrl)
+            val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             val notesExist = try { sardine.exists(notesUrl) } catch (_: Exception) { false }
             val folderName = activeSyncFolderName
             val infoMessage = if (notesExist) {
@@ -493,7 +479,7 @@ class WebDavSyncService(
             
             Logger.d(TAG, "📍 Step 3: Checking server directory")
             // ⚡ v1.3.1: Verwende gecachte Directory-Checks
-            val notesUrl = getNotesUrl(serverUrl)
+            val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             ensureNotesDirectoryExists(sardine, notesUrl)
             
             // Ensure notes-md/ directory exists (for Markdown export)
@@ -676,9 +662,10 @@ class WebDavSyncService(
             // 🛡️ v1.8.2 (IMPL_13): try-catch verhindert dass eine Exception in
             // clearSessionCache() den syncMutex.unlock() blockiert → permanenter Deadlock
             try {
-                clearSessionCache()
+                connectionManager.clearSession()
+                Logger.d(TAG, "🧹 Session caches cleared")
             } catch (e: Exception) {
-                Logger.e(TAG, "⚠️ clearSessionCache() failed (non-fatal): ${e.message}")
+                Logger.e(TAG, "⚠️ Session cache clear failed (non-fatal): ${e.message}")
             }
             // 🆕 v1.8.0: Reset progress state
             SyncStateManager.resetProgress()
@@ -703,11 +690,6 @@ class WebDavSyncService(
      */
     internal fun computeNoteContentHash(note: Note): String = noteUploader.computeContentHash(note)
 
-    /**
-     * Sanitize Filename für sichere Dateinamen.
-     */
-    private fun sanitizeFilename(title: String): String = markdownSyncManager.sanitizeFilename(title)
-    
     /**
      * Exportiert ALLE lokalen Notizen als Markdown — delegiert an MarkdownSyncManager.
      */
@@ -895,16 +877,6 @@ class WebDavSyncService(
     }
     
     /**
-     * Synchronisiert Markdown-Dateien (Import von Desktop-Programmen) (Task #1.2.0-14)
-     * 
-     * Last-Write-Wins Konfliktauflösung basierend auf updatedAt Timestamp
-     * 
-     * @param serverUrl WebDAV Server-URL (notes/ Ordner)
-     * @param username WebDAV Username
-     * @param password WebDAV Password
-     * @return Anzahl importierter Notizen
-     */
-    /**
      * Manueller Markdown-Sync — delegiert an MarkdownSyncManager.
      */
     suspend fun syncMarkdownFiles(
@@ -916,8 +888,6 @@ class WebDavSyncService(
     /**
      * Auto-Import Markdown files during regular sync — delegiert an MarkdownSyncManager.
      */
-    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
-    // Import logic requires nested conditions for file validation and duplicate handling
     private fun importMarkdownFiles(
         sardine: Sardine,
         serverUrl: String,
