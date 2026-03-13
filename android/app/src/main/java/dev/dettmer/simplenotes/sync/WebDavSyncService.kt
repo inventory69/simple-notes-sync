@@ -73,12 +73,6 @@ class WebDavSyncService(
         // 🔧 v1.9.0 (Plan 04): Detekt MagicNumber compliance
         private const val ALL_DELETED_GUARD_THRESHOLD = 10
 
-        // 🆕 v1.10.0: HTTP Status codes for SardineException mapping
-        private const val HTTP_UNAUTHORIZED = 401
-        private const val HTTP_FORBIDDEN = 403
-        private const val HTTP_NOT_FOUND = 404
-        private const val HTTP_INTERNAL_SERVER_ERROR = 500
-
         // 🔒 v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
 
@@ -91,6 +85,7 @@ class WebDavSyncService(
     private val gateChecker = SyncGateChecker(context, prefs, ioDispatcher)
     private val eTagCache = ETagCache(prefs)
     private val timestampManager = SyncTimestampManager(prefs)
+    private val exceptionMapper = SyncExceptionMapper(context)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
@@ -1823,46 +1818,9 @@ class WebDavSyncService(
 
     /**
      * 🆕 v1.10.0: Zentrale Exception-zu-Fehlermeldung-Konvertierung.
-     * Wird von syncNotes(), testConnection() und allen Sync-Pfaden genutzt
-     * um KONSISTENTE Fehlermeldungen zu garantieren.
-     *
-     * @param e Die aufgetretene Exception
-     * @return User-freundliche Fehlermeldung
+     * Delegiert an SyncExceptionMapper (extrahiert in v2.0.0, Commit 16).
      */
-    internal fun mapSyncExceptionToMessage(e: Exception): String {
-        return when (e) {
-            is java.net.ConnectException ->
-                context.getString(R.string.snackbar_server_unreachable)
-            is java.net.UnknownHostException ->
-                context.getString(R.string.snackbar_server_unreachable)
-            is java.net.SocketTimeoutException ->
-                context.getString(R.string.snackbar_connection_timeout)
-            is java.net.NoRouteToHostException ->
-                context.getString(R.string.snackbar_server_unreachable)
-            is java.io.IOException -> {
-                // IOException kann vieles sein — prüfe ob es ein Timeout-artiger Fehler ist
-                val msg = e.message?.lowercase() ?: ""
-                when {
-                    msg.contains("timeout") -> context.getString(R.string.snackbar_connection_timeout)
-                    msg.contains("refused") -> context.getString(R.string.snackbar_server_unreachable)
-                    msg.contains("unreachable") -> context.getString(R.string.snackbar_server_unreachable)
-                    else -> "${context.getString(R.string.sync_error_unknown)}: ${e.message}"
-                }
-            }
-            is javax.net.ssl.SSLException ->
-                context.getString(R.string.sync_error_ssl)
-            is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
-                when (e.statusCode) {
-                    HTTP_UNAUTHORIZED -> context.getString(R.string.sync_error_auth_failed)
-                    HTTP_FORBIDDEN -> context.getString(R.string.sync_error_access_denied)
-                    HTTP_NOT_FOUND -> context.getString(R.string.sync_error_path_not_found)
-                    HTTP_INTERNAL_SERVER_ERROR -> context.getString(R.string.sync_error_server)
-                    else -> context.getString(R.string.sync_error_http, e.statusCode)
-                }
-            }
-            else -> e.message ?: context.getString(R.string.sync_error_unknown)
-        }
-    }
+    internal fun mapSyncExceptionToMessage(e: Exception): String = exceptionMapper.mapToUserMessage(e)
 
     /**
      * Restore all notes from server with different modes (v1.3.0)
