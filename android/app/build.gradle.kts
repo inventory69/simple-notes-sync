@@ -184,9 +184,6 @@ ktlint {
     filter {
         exclude("**/generated/**")
         exclude("**/build/**")
-        // Legacy adapters with ktlint parser issues
-        exclude("**/adapters/NotesAdapter.kt")
-        exclude("**/SettingsActivity.kt")
     }
 }
 
