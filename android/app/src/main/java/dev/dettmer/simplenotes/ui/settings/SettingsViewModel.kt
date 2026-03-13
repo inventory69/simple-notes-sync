@@ -130,6 +130,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     private val _events = MutableSharedFlow<SettingsEvent>()
     val events: SharedFlow<SettingsEvent> = _events.asSharedFlow()
+
+    private val _showBatteryOptimizationDialog = MutableStateFlow(false)
+    val showBatteryOptimizationDialog: StateFlow<Boolean> = _showBatteryOptimizationDialog.asStateFlow()
+
+    fun dismissBatteryOptimizationDialog() { _showBatteryOptimizationDialog.value = false }
     
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Export Progress State
@@ -623,18 +628,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
     
+    fun showBatteryOptimizationDialogRequest() { _showBatteryOptimizationDialog.value = true }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Sync Settings Actions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     fun setAutoSync(enabled: Boolean) {
         _autoSyncEnabled.value = enabled
         prefs.edit().putBoolean(Constants.KEY_AUTO_SYNC, enabled).apply()
-        
+
         viewModelScope.launch {
             if (enabled) {
-                // v1.5.0 Fix: Trigger battery optimization check and network monitor restart
-                _events.emit(SettingsEvent.RequestBatteryOptimization)
+                // v2.0.0: Battery optimization dialog now state-driven via showBatteryOptimizationDialog
+                _showBatteryOptimizationDialog.value = true
                 _events.emit(SettingsEvent.RestartNetworkMonitor)
                 emitToast(getString(R.string.toast_auto_sync_enabled))
             } else {
@@ -1123,6 +1130,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     sealed class SettingsEvent {
         data object RequestBatteryOptimization : SettingsEvent()
         data object RestartNetworkMonitor : SettingsEvent()
+        data object ShowBatteryOptimizationDialog : SettingsEvent()
     }
     
     /**

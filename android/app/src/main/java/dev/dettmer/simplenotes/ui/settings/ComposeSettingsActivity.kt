@@ -1,21 +1,23 @@
 package dev.dettmer.simplenotes.ui.settings
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
@@ -37,7 +39,7 @@ import kotlinx.coroutines.launch
  * - Navigation with back button in each screen
  * - Clean separation of concerns with SettingsViewModel
  */
-class ComposeSettingsActivity : AppCompatActivity() {
+class ComposeSettingsActivity : ComponentActivity() {
     
     companion object {
         private const val TAG = "ComposeSettingsActivity"
@@ -69,14 +71,37 @@ class ComposeSettingsActivity : AppCompatActivity() {
             SimpleNotesTheme {
                 val navController = rememberNavController()
                 val context = LocalContext.current
-                
+                val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
+
                 // Toast handling from ViewModel
                 LaunchedEffect(Unit) {
                     viewModel.showToast.collect { message ->
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
-                
+
+                // Battery optimization dialog (state-driven)
+                if (showBatteryDialog) {
+                    AlertDialog(
+                        onDismissRequest = { viewModel.dismissBatteryOptimizationDialog() },
+                        title = { Text(getString(R.string.battery_optimization_dialog_title)) },
+                        text = { Text(getString(R.string.battery_optimization_dialog_full_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                viewModel.dismissBatteryOptimizationDialog()
+                                openBatteryOptimizationSettings()
+                            }) {
+                                Text(getString(R.string.battery_optimization_open_settings))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { viewModel.dismissBatteryOptimizationDialog() }) {
+                                Text(getString(R.string.battery_optimization_later))
+                            }
+                        }
+                    )
+                }
+
                 SettingsNavHost(
                     navController = navController,
                     viewModel = viewModel,
@@ -111,45 +136,13 @@ class ComposeSettingsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.events.collect { event ->
                 when (event) {
-                    is SettingsViewModel.SettingsEvent.RequestBatteryOptimization -> {
-                        checkBatteryOptimization()
-                    }
                     is SettingsViewModel.SettingsEvent.RestartNetworkMonitor -> {
                         restartNetworkMonitor()
                     }
+                    else -> { /* handled via state */ }
                 }
             }
         }
-    }
-    
-    /**
-     * Check if battery optimization is disabled for this app
-     * v1.5.0: Ported from old SettingsActivity
-     */
-    private fun checkBatteryOptimization() {
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        
-        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            showBatteryOptimizationDialog()
-        }
-    }
-    
-    /**
-     * Show dialog asking user to disable battery optimization
-     * v1.5.0: Ported from old SettingsActivity
-     */
-    private fun showBatteryOptimizationDialog() {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.battery_optimization_dialog_title))
-            .setMessage(getString(R.string.battery_optimization_dialog_full_message))
-            .setPositiveButton(getString(R.string.battery_optimization_open_settings)) { _, _ ->
-                openBatteryOptimizationSettings()
-            }
-            .setNegativeButton(getString(R.string.battery_optimization_later)) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setCancelable(false)
-            .show()
     }
     
     /**
