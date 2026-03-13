@@ -62,9 +62,15 @@ class ComposeMainActivity : ComponentActivity() {
     
     companion object {
         private const val TAG = "ComposeMainActivity"
-        private const val REQUEST_NOTIFICATION_PERMISSION = 1001
     }
     
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val messageRes = if (granted) R.string.toast_notifications_enabled else R.string.toast_notifications_disabled
+        Toast.makeText(this, getString(messageRes), Toast.LENGTH_SHORT).show()
+    }
+
     private val editorLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -352,12 +358,9 @@ class ComposeMainActivity : ComponentActivity() {
     
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) 
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    REQUEST_NOTIFICATION_PERMISSION
-                )
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
@@ -400,29 +403,6 @@ class ComposeMainActivity : ComponentActivity() {
     }
     
     
-    @Deprecated("Deprecated in API 23", ReplaceWith("Use ActivityResultContracts"))
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        
-        when (requestCode) {
-            REQUEST_NOTIFICATION_PERMISSION -> {
-                if (grantResults.isNotEmpty() && 
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, getString(R.string.toast_notifications_enabled), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, 
-                        getString(R.string.toast_notifications_disabled), 
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-    }
 }
 
 /**

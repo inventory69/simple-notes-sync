@@ -129,24 +129,20 @@ dependencies {
     implementation(libs.androidx.activity)
 
     // Splash Screen API (Android 12+)
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.core.splashscreen)
 
-    // Unsere Dependencies (DIREKT mit Versionen - viel einfacher!)
-    implementation("com.github.thegrizzlylabs:sardine-android:0.8") {
+    // WebDAV
+    implementation(libs.sardine.android) {
         exclude(group = "xpp3", module = "xpp3")
     }
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-
-    // SwipeRefreshLayout für Pull-to-Refresh
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.gson)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // 🔐 v1.7.0: AndroidX Security Crypto für Backup-Verschlüsselung
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation(libs.androidx.security.crypto)
 
     // ═══════════════════════════════════════════════════════════════════════
     // v1.5.0: Jetpack Compose für Settings Redesign
@@ -165,8 +161,8 @@ dependencies {
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.8.0: Homescreen Widgets
     // ═══════════════════════════════════════════════════════════════════════
-    implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 
     // Testing (bleiben so)
     testImplementation(libs.junit)
