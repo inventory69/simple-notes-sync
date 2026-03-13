@@ -23,8 +23,8 @@ import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SyncSettingsScreen
 
-// v2.0.0: Smooth fade transitions for Settings sub-screens (400ms = Material 3 medium emphasis)
-private const val NAV_ANIM_DURATION_MS = 400
+// v2.0.0: Smooth fade transitions for Settings sub-screens
+private const val NAV_ANIM_DURATION_MS = 500
 
 /**
  * Settings navigation host with all routes
