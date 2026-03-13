@@ -1,7 +1,8 @@
 package dev.dettmer.simplenotes.ui.main
 
 import android.Manifest
-import android.app.ActivityOptions
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityOptionsCompat
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -62,10 +63,28 @@ class ComposeMainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "ComposeMainActivity"
         private const val REQUEST_NOTIFICATION_PERMISSION = 1001
-        private const val REQUEST_SETTINGS = 1002
-        private const val REQUEST_EDITOR_RETURN = 1003  // 🆕 v1.10.0-P2: detect note deletion from editor
     }
     
+    private val editorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == ComposeNoteEditorActivity.RESULT_NOTE_DELETED) {
+            val noteId = result.data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID) ?: return@registerForActivityResult
+            val deleteFromServer = result.data?.getBooleanExtra(
+                ComposeNoteEditorActivity.RESULT_EXTRA_DELETE_FROM_SERVER, false
+            ) ?: false
+            viewModel.deleteNoteFromEditor(noteId, deleteFromServer)
+        }
+    }
+
+    private val settingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            viewModel.loadNotes()
+        }
+    }
+
     private val viewModel: MainViewModel by viewModels()
     
     private val prefs by lazy {
@@ -301,41 +320,34 @@ class ComposeMainActivity : ComponentActivity() {
         noteId?.let {
             intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_ID, it)
         }
-        
-        // v1.5.0: Add slide animation
-        val options = ActivityOptions.makeCustomAnimation(
+        val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.slide_in_right,
             dev.dettmer.simplenotes.R.anim.slide_out_left
         )
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_EDITOR_RETURN, options.toBundle())
+        editorLauncher.launch(intent, options)
     }
     
     private fun createNote(noteType: NoteType) {
         cameFromEditor = true
         val intent = Intent(this, ComposeNoteEditorActivity::class.java)
         intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
-        
-        // v1.5.0: Add slide animation
-        val options = ActivityOptions.makeCustomAnimation(
+        val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.slide_in_right,
             dev.dettmer.simplenotes.R.anim.slide_out_left
         )
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_EDITOR_RETURN, options.toBundle())
+        editorLauncher.launch(intent, options)
     }
     
     private fun openSettings() {
         val intent = Intent(this, ComposeSettingsActivity::class.java)
-        val options = ActivityOptions.makeCustomAnimation(
+        val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.slide_in_right,
             dev.dettmer.simplenotes.R.anim.slide_out_left
         )
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_SETTINGS, options.toBundle())
+        settingsLauncher.launch(intent, options)
     }
     
     private fun requestNotificationPermission() {
@@ -387,25 +399,6 @@ class ComposeMainActivity : ComponentActivity() {
         prefs.edit().putBoolean(migrationKey, true).apply()
     }
     
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        
-        if (requestCode == REQUEST_SETTINGS && resultCode == RESULT_OK) {
-            // Settings changed, reload notes
-            viewModel.loadNotes()
-        }
-        
-        // 🆕 v1.10.0-P2: Note deleted from editor — delegate to MainViewModel for undo snackbar
-        if (requestCode == REQUEST_EDITOR_RETURN &&
-            resultCode == ComposeNoteEditorActivity.RESULT_NOTE_DELETED) {
-            val noteId = data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID) ?: return
-            val deleteFromServer = data.getBooleanExtra(
-                ComposeNoteEditorActivity.RESULT_EXTRA_DELETE_FROM_SERVER, false
-            )
-            viewModel.deleteNoteFromEditor(noteId, deleteFromServer)
-        }
-    }
     
     @Deprecated("Deprecated in API 23", ReplaceWith("Use ActivityResultContracts"))
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
