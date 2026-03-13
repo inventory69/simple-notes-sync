@@ -61,7 +61,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
     val notes: StateFlow<List<Note>> = _notes.asStateFlow()
-    
+
+    private val _isReady = MutableStateFlow(false)
+    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
     private val _pendingDeletions = MutableStateFlow<Set<String>>(emptySet())
     val pendingDeletions: StateFlow<Set<String>> = _pendingDeletions.asStateFlow()
     
@@ -269,6 +272,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
+            _isReady.value = true
         }
     }
     

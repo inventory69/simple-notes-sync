@@ -104,9 +104,10 @@ class ComposeMainActivity : ComponentActivity() {
     private var cameFromEditor = false
     
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Install Splash Screen (Android 12+)
-        installSplashScreen()
-        
+        // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
+
         super.onCreate(savedInstanceState)
         
         // Apply Dynamic Colors for Material You (Android 12+)
