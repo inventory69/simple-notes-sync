@@ -3,7 +3,12 @@ package dev.dettmer.simplenotes.ui.settings
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,8 +23,8 @@ import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SyncSettingsScreen
 
-// 🆕 v1.11.0: Smooth Fade-Transitions für Settings-Navigation
-private const val NAV_ANIM_DURATION_MS = 700
+// v2.0.0: Smooth fade transitions for Settings sub-screens (400ms = Material 3 medium emphasis)
+private const val NAV_ANIM_DURATION_MS = 400
 
 /**
  * Settings navigation host with all routes
@@ -31,10 +36,17 @@ fun SettingsNavHost(
     viewModel: SettingsViewModel,
     onFinish: () -> Unit
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = SettingsRoute.Main.route,
-        // 🆕 v1.11.0: Globale Fade-Transitions für alle Settings-Routen
+    // Opaque background prevents the translucent Activity window from
+    // showing the note list through during internal NavHost fade transitions.
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        NavHost(
+            navController = navController,
+            startDestination = SettingsRoute.Main.route,
+        // v2.0.0: Smooth fade transitions for Settings sub-screens
         enterTransition = {
             fadeIn(animationSpec = tween(NAV_ANIM_DURATION_MS))
         },
@@ -132,6 +144,7 @@ fun SettingsNavHost(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
+        }
         }
     }
 }
