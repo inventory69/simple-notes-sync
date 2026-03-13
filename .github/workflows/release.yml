@@ -1,0 +1,122 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Extract version info
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          BUILD_NUMBER=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "🚀 Building version: $VERSION (Code: $BUILD_NUMBER)"
+
+      - name: Configure Android signing
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/simple-notes-release.jks
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=simple-notes-release.jks" >> android/key.properties
+          echo "✅ Signing configuration created"
+
+      - name: Build release APKs
+        run: cd android && ./gradlew assembleStandardRelease assembleFdroidRelease --no-daemon --stacktrace
+
+      - name: Run tests
+        run: cd android && ./gradlew testFdroidReleaseUnitTest testStandardReleaseUnitTest
+
+      - name: Copy APKs with version names
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/standard/release/app-standard-release.apk \
+             apk-output/simple-notes-sync-v${{ steps.version.outputs.VERSION }}-standard.apk
+          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-release.apk \
+             apk-output/simple-notes-sync-v${{ steps.version.outputs.VERSION }}-fdroid.apk
+          echo "✅ APK files prepared:"
+          ls -lh apk-output/
+
+      - name: Read F-Droid changelogs
+        run: |
+          BUILD_NUMBER=${{ steps.version.outputs.BUILD_NUMBER }}
+          if [ -f "fastlane/metadata/android/de-DE/changelogs/$BUILD_NUMBER.txt" ]; then
+            CHANGELOG_CONTENT=$(cat "fastlane/metadata/android/de-DE/changelogs/$BUILD_NUMBER.txt")
+            echo "CHANGELOG_DE<<GHADELIMITER" >> $GITHUB_ENV
+            echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
+            echo "GHADELIMITER" >> $GITHUB_ENV
+          else
+            echo "CHANGELOG_DE=No German release notes available." >> $GITHUB_ENV
+          fi
+          if [ -f "fastlane/metadata/android/en-US/changelogs/$BUILD_NUMBER.txt" ]; then
+            CHANGELOG_CONTENT_EN=$(cat "fastlane/metadata/android/en-US/changelogs/$BUILD_NUMBER.txt")
+            echo "CHANGELOG_EN<<GHADELIMITER" >> $GITHUB_ENV
+            echo "$CHANGELOG_CONTENT_EN" >> $GITHUB_ENV
+            echo "GHADELIMITER" >> $GITHUB_ENV
+          else
+            echo "CHANGELOG_EN=" >> $GITHUB_ENV
+          fi
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "📝 Simple Notes Sync v${{ steps.version.outputs.VERSION }}"
+          draft: true
+          prerelease: false
+          generate_release_notes: false
+          files: apk-output/*.apk
+          body: |
+            ## 📋 Changelog / Release Notes
+
+            ${{ env.CHANGELOG_EN }}
+
+            <details>
+            <summary>🇩🇪 German Version</summary>
+
+            ${{ env.CHANGELOG_DE }}
+
+            </details>
+
+            ## 📦 Downloads
+
+            | Variant | File | Info |
+            |---------|------|------|
+            | **🏆 Recommended** | `simple-notes-sync-v${{ steps.version.outputs.VERSION }}-standard.apk` | Standard version (works on all devices) |
+            | F-Droid | `simple-notes-sync-v${{ steps.version.outputs.VERSION }}-fdroid.apk` | For F-Droid Store |
+
+            ## 📊 Build Info
+
+            - **Version:** ${{ steps.version.outputs.VERSION }} (Code: ${{ steps.version.outputs.BUILD_NUMBER }})
+            - **Commit:** ${{ github.sha }}
+
+            ## 🔐 APK Signature Verification
+
+            All APKs are signed with the official release certificate.
+
+            **Recommended:** Verify with [AppVerifier](https://github.com/nicholson-lab/AppVerifier) (Android app)
+
+            **Expected SHA-256:**
+            ```
+            42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
+            ```
+
+            **[📖 Documentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Report Bug](https://github.com/inventory69/simple-notes-sync/issues)**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
