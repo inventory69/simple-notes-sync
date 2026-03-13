@@ -126,10 +126,11 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         viewModel.reloadFromStorage()
     }
 
-    // v2.0.0: Save unsaved changes when activity stops (Back gesture, Home, task switch)
-    // Replaces OnBackPressedCallback — enables Predictive Back cross-activity preview
-    override fun onStop() {
-        super.onStop()
+    // v2.0.0: Save unsaved changes when activity pauses (Back gesture, Home, task switch).
+    // Must happen in onPause (not onStop) so data is on disk BEFORE the parent
+    // activity's onResume reloads the note list.
+    override fun onPause() {
+        super.onPause()
         viewModel.saveOnBack()
     }
 

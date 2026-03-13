@@ -60,6 +60,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -152,6 +153,13 @@ fun NoteEditorScreen(
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
+
+    // v2.0.0: Register content provider so saveOnBack() can read the latest
+    // TextFieldState content directly — avoids snapshotFlow race condition
+    DisposableEffect(textFieldState) {
+        viewModel.contentProvider = { textFieldState.text.toString() }
+        onDispose { viewModel.contentProvider = null }
+    }
 
     // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
     LaunchedEffect(Unit) {

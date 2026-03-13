@@ -100,6 +100,10 @@ class NoteEditorViewModel(
     // Internal state
     private var existingNote: Note? = null
     private var currentNoteType: NoteType = NoteType.TEXT
+
+    // v2.0.0: Callback to read the latest content directly from Compose TextFieldState.
+    // Avoids snapshotFlow race condition when the user presses back before the next frame.
+    var contentProvider: (() -> String)? = null
     
     // 🛡️ v1.8.2 (IMPL_17): Trackt ob User ungespeicherte Checklist-Edits hat.
     // Wenn true, überspringt reloadFromStorage() das Neuladen, damit onResume()
@@ -591,6 +595,18 @@ class NoteEditorViewModel(
             Logger.d(TAG, "⏭️ saveOnBack: autosave disabled — skipping")
             return true
         }
+
+        // v2.0.0: Flush latest content from Compose TextFieldState BEFORE the
+        // isDirty check — snapshotFlow may not have propagated the last keystrokes yet
+        if (currentNoteType == NoteType.TEXT) {
+            contentProvider?.invoke()?.let { latestContent ->
+                if (latestContent != _uiState.value.content) {
+                    _uiState.update { it.copy(content = latestContent) }
+                    isDirty = true
+                }
+            }
+        }
+
         if (!isDirty) {
             Logger.d(TAG, "⏭️ saveOnBack: nothing dirty — skipping")
             return true
