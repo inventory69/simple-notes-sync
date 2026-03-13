@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.provider.CalendarContract
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -66,22 +65,26 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         DynamicColors.applyToActivityIfAvailable(this)
         
         enableEdgeToEdge()
-        
-        // v1.5.0: Handle back button with slide animation
-        // 🔧 v1.10.0: Save unsaved changes before navigating back
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
-                finishWithSlideAnimation()
-            }
-        })
-        
+
+        // v2.0.0: Register enter/exit transitions in onCreate for Predictive Back (API 34+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                R.anim.slide_in_right,
+                R.anim.slide_out_left
+            )
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+        }
+
         setContent {
             SimpleNotesTheme {
                 NoteEditorScreen(
                     viewModel = viewModel,
                     onNavigateBack = {
-                        viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
                         finishWithSlideAnimation()
                     }
                 )
@@ -123,18 +126,20 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         viewModel.reloadFromStorage()
     }
 
+    // v2.0.0: Save unsaved changes when activity stops (Back gesture, Home, task switch)
+    // Replaces OnBackPressedCallback — enables Predictive Back cross-activity preview
+    override fun onStop() {
+        super.onStop()
+        viewModel.saveOnBack()
+    }
+
     private fun finishWithSlideAnimation() {
         finish()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            overrideActivityTransition(
-                OVERRIDE_TRANSITION_CLOSE,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
-            )
-        } else {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             @Suppress("DEPRECATION")
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+        // API 34+: overrideActivityTransition(CLOSE, ...) registered in onCreate handles this
     }
 
     // ═══════════════════════════════════════════════════════════════════════

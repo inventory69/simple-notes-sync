@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -55,15 +54,24 @@ class ComposeSettingsActivity : ComponentActivity() {
         
         // Enable edge-to-edge display
         enableEdgeToEdge()
-        
-        // Handle back button with slide animation
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                setResult(RESULT_OK)
-                finishWithSlideAnimation()
-            }
-        })
-        
+
+        // v2.0.0: Register enter/exit transitions in onCreate for Predictive Back (API 34+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                R.anim.slide_in_right,
+                R.anim.slide_out_left
+            )
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+        }
+
+        // v2.0.0: Default result for Back gesture (no callback needed for Predictive Back)
+        setResult(RESULT_OK)
+
         // Collect events from ViewModel (for Activity-level actions)
         collectViewModelEvents()
         
@@ -116,16 +124,11 @@ class ComposeSettingsActivity : ComponentActivity() {
     
     private fun finishWithSlideAnimation() {
         finish()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            overrideActivityTransition(
-                OVERRIDE_TRANSITION_CLOSE,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
-            )
-        } else {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             @Suppress("DEPRECATION")
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+        // API 34+: overrideActivityTransition(CLOSE, ...) registered in onCreate handles this
     }
 
     /**

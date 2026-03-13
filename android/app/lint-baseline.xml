@@ -30,7 +30,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/AndroidManifest.xml"
-            line="30"
+            line="31"
             column="9"/>
     </issue>
 
@@ -118,7 +118,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1078"
+            line="1085"
             column="13"/>
     </issue>
 
@@ -146,74 +146,8 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.core:core-splashscreen than 1.0.1 is available: 1.2.0"
-        errorLine1="    implementation(&quot;androidx.core:core-splashscreen:1.0.1&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="132"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.work:work-runtime-ktx than 2.9.0 is available: 2.11.1"
-        errorLine1="    implementation(&quot;androidx.work:work-runtime-ktx:2.9.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="141"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.recyclerview:recyclerview than 1.3.2 is available: 1.4.0"
-        errorLine1="    implementation(&quot;androidx.recyclerview:recyclerview:1.3.2&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="142"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.7.0 is available: 2.10.0"
-        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-ktx:2.7.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="143"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.swiperefreshlayout:swiperefreshlayout than 1.1.0 is available: 1.2.0"
-        errorLine1="    implementation(&quot;androidx.swiperefreshlayout:swiperefreshlayout:1.1.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="149"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.security:security-crypto than 1.1.0-alpha06 is available: 1.1.0"
-        errorLine1="    implementation(&quot;androidx.security:security-crypto:1.1.0-alpha06&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="152"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.core:core-ktx than 1.10.1 is available: 1.18.0"
-        errorLine1="coreKtx = &quot;1.10.1&quot;"
+        message="A newer version of androidx.core:core-ktx than 1.15.0 is available: 1.18.0"
+        errorLine1="coreKtx = &quot;1.15.0&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -234,8 +168,8 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.7.0"
-        errorLine1="espressoCore = &quot;3.5.1&quot;"
+        message="A newer version of androidx.test.espresso:espresso-core than 3.6.1 is available: 3.7.0"
+        errorLine1="espressoCore = &quot;3.6.1&quot;"
         errorLine2="               ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -245,8 +179,8 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.1"
-        errorLine1="appcompat = &quot;1.6.1&quot;"
+        message="A newer version of androidx.appcompat:appcompat than 1.7.0 is available: 1.7.1"
+        errorLine1="appcompat = &quot;1.7.0&quot;"
         errorLine2="            ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -256,8 +190,8 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of com.google.android.material:material than 1.10.0 is available: 1.13.0"
-        errorLine1="material = &quot;1.10.0&quot;"
+        message="A newer version of com.google.android.material:material than 1.12.0 is available: 1.13.0"
+        errorLine1="material = &quot;1.12.0&quot;"
         errorLine2="           ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -267,8 +201,8 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.activity:activity than 1.8.0 is available: 1.13.0"
-        errorLine1="activity = &quot;1.8.0&quot;"
+        message="A newer version of androidx.activity:activity than 1.9.3 is available: 1.13.0"
+        errorLine1="activity = &quot;1.9.3&quot;"
         errorLine2="           ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -278,97 +212,86 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.constraintlayout:constraintlayout than 2.1.4 is available: 2.2.1"
-        errorLine1="constraintlayout = &quot;2.1.4&quot;"
-        errorLine2="                   ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="11"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.compose:compose-bom than 2026.01.00 is available: 2026.03.00"
-        errorLine1="composeBom = &quot;2026.01.00&quot;"
-        errorLine2="             ~~~~~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="15"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.navigation:navigation-compose than 2.7.6 is available: 2.9.7"
-        errorLine1="navigationCompose = &quot;2.7.6&quot;"
+        message="A newer version of androidx.navigation:navigation-compose than 2.8.5 is available: 2.9.7"
+        errorLine1="navigationCompose = &quot;2.8.5&quot;"
         errorLine2="                    ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="16"
+            line="14"
             column="21"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.7.0 is available: 2.10.0"
-        errorLine1="lifecycleRuntimeCompose = &quot;2.7.0&quot;"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.8.7 is available: 2.10.0"
+        errorLine1="lifecycleRuntimeCompose = &quot;2.8.7&quot;"
         errorLine2="                          ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="17"
+            line="15"
             column="27"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.activity:activity-compose than 1.8.2 is available: 1.13.0"
-        errorLine1="activityCompose = &quot;1.8.2&quot;"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.8.7 is available: 2.10.0"
+        errorLine1="lifecycleRuntimeCompose = &quot;2.8.7&quot;"
+        errorLine2="                          ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="15"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.9.3 is available: 1.13.0"
+        errorLine1="activityCompose = &quot;1.9.3&quot;"
         errorLine2="                  ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="18"
+            line="16"
             column="19"/>
     </issue>
 
     <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.7.3 is available: 1.10.2"
-        errorLine1="    implementation(&quot;org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="GradleDependency"
+        message="A newer version of androidx.work:work-runtime-ktx than 2.10.0 is available: 2.11.1"
+        errorLine1="workRuntime = &quot;2.10.0&quot;"
+        errorLine2="              ~~~~~~~~">
         <location
-            file="build.gradle.kts"
-            line="138"
-            column="20"/>
+            file="../gradle/libs.versions.toml"
+            line="23"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-splashscreen than 1.2.0-alpha02 is available: 1.2.0"
+        errorLine1="splashscreen = &quot;1.2.0-alpha02&quot;"
+        errorLine2="               ~~~~~~~~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="24"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.security:security-crypto than 1.1.0-alpha06 is available: 1.1.0"
+        errorLine1="securityCrypto = &quot;1.1.0-alpha06&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="25"
+            column="18"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-core than 1.7.3 is available: 1.10.2"
-        errorLine1="    implementation(&quot;org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="139"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of com.google.code.gson:gson than 2.10.1 is available: 2.13.2"
-        errorLine1="    implementation(&quot;com.google.code.gson:gson:2.10.1&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="140"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.android than 2.0.21 is available: 2.3.10"
-        errorLine1="kotlin = &quot;2.0.21&quot;"
-        errorLine2="         ~~~~~~~~">
+        message="A newer version of org.jetbrains.kotlin.android than 2.1.0 is available: 2.3.10"
+        errorLine1="kotlin = &quot;2.1.0&quot;"
+        errorLine2="         ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
             line="3"
@@ -377,9 +300,9 @@
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.0.21 is available: 2.3.10"
-        errorLine1="kotlin = &quot;2.0.21&quot;"
-        errorLine2="         ~~~~~~~~">
+        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.1.0 is available: 2.3.10"
+        errorLine1="kotlin = &quot;2.1.0&quot;"
+        errorLine2="         ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
             line="3"
@@ -393,18 +316,7 @@
         errorLine2="         ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="12"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.gitlab.arturbosch.detekt than 1.23.4 is available: 1.23.8"
-        errorLine1="detekt = &quot;1.23.4&quot;"
-        errorLine2="         ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="13"
+            line="11"
             column="10"/>
     </issue>
 
@@ -415,7 +327,7 @@
         errorLine2="        ~~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="19"
+            line="17"
             column="9"/>
     </issue>
 
@@ -426,18 +338,18 @@
         errorLine2="        ~~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="19"
+            line="17"
             column="9"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-test than 1.7.3 is available: 1.10.2"
-        errorLine1="coroutinesTest = &quot;1.7.3&quot;"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-test than 1.9.0 is available: 1.10.2"
+        errorLine1="coroutinesTest = &quot;1.9.0&quot;"
         errorLine2="                 ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="20"
+            line="18"
             column="18"/>
     </issue>
 
@@ -448,8 +360,41 @@
         errorLine2="          ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="21"
+            line="19"
             column="11"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.9.0 is available: 1.10.2"
+        errorLine1="coroutines = &quot;1.9.0&quot;"
+        errorLine2="             ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="21"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-core than 1.9.0 is available: 1.10.2"
+        errorLine1="coroutines = &quot;1.9.0&quot;"
+        errorLine2="             ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="21"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.code.gson:gson than 2.11.0 is available: 2.13.2"
+        errorLine1="gson = &quot;2.11.0&quot;"
+        errorLine2="       ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="22"
+            column="8"/>
     </issue>
 
     <issue
@@ -1025,28 +970,6 @@
     </issue>
 
     <issue
-        id="UseCompoundDrawables"
-        message="This tag and its children can be replaced by one `&lt;TextView/>` and a compound drawable"
-        errorLine1="        &lt;LinearLayout"
-        errorLine2="         ~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/item_note.xml"
-            line="23"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="UseCompoundDrawables"
-        message="This tag and its children can be replaced by one `&lt;TextView/>` and a compound drawable"
-        errorLine1="        &lt;LinearLayout"
-        errorLine2="         ~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/item_note.xml"
-            line="77"
-            column="10"/>
-    </issue>
-
-    <issue
         id="FrequentlyChangingValue"
         message="Reading a value annotated with @FrequentlyChangingValue inside composition"
         errorLine1="    val showTopGradient = showGradient &amp;&amp; scrollState.value > 0"
@@ -1113,50 +1036,6 @@
     </issue>
 
     <issue
-        id="NestedWeights"
-        message="Nested weights are bad for performance"
-        errorLine1="            android:layout_weight=&quot;1&quot;"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_editor.xml"
-            line="95"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="Overdraw"
-        message="Possible overdraw: Root element paints background `?attr/colorSurface` with a theme that also paints a background (inferred theme is `@style/Theme.SimpleNotes`)"
-        errorLine1="    android:background=&quot;?attr/colorSurface&quot;"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_editor.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="Overdraw"
-        message="Possible overdraw: Root element paints background `?attr/colorSurface` with a theme that also paints a background (inferred theme is `@style/Theme_SimpleNotes`)"
-        errorLine1="    android:background=&quot;?attr/colorSurface&quot;"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="Overdraw"
-        message="Possible overdraw: Root element paints background `?attr/colorSurface` with a theme that also paints a background (inferred theme is `@style/Theme.SimpleNotes`)"
-        errorLine1="    android:background=&quot;?attr/colorSurface&quot;>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_settings.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
         id="UnusedResources"
         message="The resource `R.string.app_name_debug` appears to be unused">
         <location
@@ -1201,12 +1080,34 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.layout.dialog_delete_confirmation` appears to be unused"
-        errorLine1="&lt;LinearLayout"
+        message="The resource `R.drawable.ic_checklist_24` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
         errorLine2="^">
         <location
-            file="src/main/res/layout/dialog_delete_confirmation.xml"
-            line="3"
+            file="src/main/res/drawable/ic_checklist_24.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_delete_24` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_delete_24.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_drag_handle_24` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_drag_handle_24.xml"
+            line="1"
             column="1"/>
     </issue>
 
@@ -1245,6 +1146,127 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.add_note` appears to be unused"
+        errorLine1="    &lt;string name=&quot;add_note&quot;>Add Note&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync&quot;>Sync&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="14"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings&quot;>Settings&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.empty_state_emoji` appears to be unused"
+        errorLine1="    &lt;string name=&quot;empty_state_emoji&quot;>📝&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="26"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.create_text_note` appears to be unused"
+        errorLine1="    &lt;string name=&quot;create_text_note&quot;>Note&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="37"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.create_checklist` appears to be unused"
+        errorLine1="    &lt;string name=&quot;create_checklist&quot;>List&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="38"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.note_title_placeholder` appears to be unused"
+        errorLine1="    &lt;string name=&quot;note_title_placeholder&quot;>Note Title&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="43"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.note_content_placeholder` appears to be unused"
+        errorLine1="    &lt;string name=&quot;note_content_placeholder&quot;>Note content preview…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="44"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.note_timestamp_placeholder` appears to be unused"
+        errorLine1="    &lt;string name=&quot;note_timestamp_placeholder&quot;>2 hours ago&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="45"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.empty_checklist` appears to be unused"
+        errorLine1="    &lt;string name=&quot;empty_checklist&quot;>No entries&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="48"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_status` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_status&quot;>Sync Status&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="53"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.sync_syncing` appears to be unused"
         errorLine1="    &lt;string name=&quot;sync_syncing&quot;>Syncing…&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~">
@@ -1278,6 +1300,17 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.sync_status_syncing` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_status_syncing&quot;>Syncing…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="57"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.sync_phase_checking` appears to be unused"
         errorLine1="    &lt;string name=&quot;sync_phase_checking&quot;>Checking server…&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -1295,6 +1328,61 @@
         <location
             file="src/main/res/values/strings.xml"
             line="117"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.legacy_delete_with_server` appears to be unused"
+        errorLine1="    &lt;string name=&quot;legacy_delete_with_server&quot;>\&quot;%s\&quot; will be deleted locally and from server&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="138"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.legacy_delete_local_only` appears to be unused"
+        errorLine1="    &lt;string name=&quot;legacy_delete_local_only&quot;>\&quot;%s\&quot; deleted locally (server remains)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="139"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snackbar_already_synced` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snackbar_already_synced&quot;>Already synced&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="163"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.snackbar_synced_count` appears to be unused"
+        errorLine1="    &lt;string name=&quot;snackbar_synced_count&quot;>✅ Synced: %d notes&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="166"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.reorder_item` appears to be unused"
+        errorLine1="    &lt;string name=&quot;reorder_item&quot;>Reorder item&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="203"
             column="13"/>
     </issue>
 
@@ -1377,12 +1465,210 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.settings_markdown_manual_hint` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_markdown_manual_hint&quot;>Or sync markdown files manually:&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="237"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_markdown_manual_button` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_markdown_manual_button&quot;>Sync Markdown&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="238"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_backup_info` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_backup_info&quot;>📦 A safety backup is automatically created before each restore.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="259"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_backup_local_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_backup_local_title&quot;>Local Backup&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="260"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_backup_server_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_backup_server_title&quot;>Server Backup&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="261"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_about_app_version` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_about_app_version&quot;>📱 App Version&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="263"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_about_app_version_loading` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_about_app_version_loading&quot;>Loading version…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="264"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_about_github` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_about_github&quot;>🌐 GitHub Repository&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="265"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_about_developer` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_about_developer&quot;>👤 Developer&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="266"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_about_license` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_about_license&quot;>⚖️ License&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="267"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_debug_file_logging` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_debug_file_logging&quot;>📝 File Logging&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="271"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_debug_file_logging_desc` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_debug_file_logging_desc&quot;>Save sync logs to file&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="272"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_debug_export_logs` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_debug_export_logs&quot;>📤 Export &amp;amp; share logs&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="273"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_debug_delete_logs` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_debug_delete_logs&quot;>🗑️ Delete logs&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="274"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.server_settings` appears to be unused"
+        errorLine1="    &lt;string name=&quot;server_settings&quot;>Server Settings&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="279"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.server_url` appears to be unused"
         errorLine1="    &lt;string name=&quot;server_url&quot;>Server URL&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
             line="294"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.server_status_not_configured` appears to be unused"
+        errorLine1="    &lt;string name=&quot;server_status_not_configured&quot;>⚠️ Not configured&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="303"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_settings` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_settings&quot;>Sync Settings&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="314"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.auto_sync` appears to be unused"
+        errorLine1="    &lt;string name=&quot;auto_sync&quot;>Auto-Sync enabled&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="316"
             column="13"/>
     </issue>
 
@@ -1405,6 +1691,72 @@
         <location
             file="src/main/res/values/strings.xml"
             line="318"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_interval_section` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_interval_section&quot;>Sync Interval&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="319"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_interval_info` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_interval_info&quot;>Determines how often the app syncs in the background. Shorter intervals mean more up-to-date data, but use slightly more battery.\n\n⏱️ Note: When your phone is in standby, Android may delay syncs (up to 60 min) to save battery. This is normal and affects all background apps.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="320"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_interval_15min_subtitle` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_interval_15min_subtitle&quot;>Fastest sync • ~0.8%% battery/day (~23 mAh)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="322"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_interval_30min_subtitle` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_interval_30min_subtitle&quot;>Balanced ratio • ~0.4%% battery/day (~12 mAh)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="324"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sync_interval_60min_subtitle` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sync_interval_60min_subtitle&quot;>Maximum battery life • ~0.2%% battery/day (~6 mAh est.)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="326"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.auto_sync_info` appears to be unused"
+        errorLine1="    &lt;string name=&quot;auto_sync_info&quot;>ℹ️ Auto-Sync:\n\n• Checks every 30 min if server is reachable\n• Works on any WiFi connection\n• Runs in background\n• Minimal battery usage (~0.4%%/day)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="328"
             column="13"/>
     </issue>
 
@@ -1476,6 +1828,17 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.backup_restore_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;backup_restore_title&quot;>Backup &amp;amp; Restore&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="400"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.backup_encryption_error_mismatch` appears to be unused"
         errorLine1="    &lt;string name=&quot;backup_encryption_error_mismatch&quot;>Passwords don\&apos;t match&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -1515,6 +1878,39 @@
         <location
             file="src/main/res/values/strings.xml"
             line="417"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.backup_mode_merge_full` appears to be unused"
+        errorLine1="    &lt;string name=&quot;backup_mode_merge_full&quot;>⚪ Merge (Default)\n   → Add new, keep existing&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="428"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.backup_mode_replace_full` appears to be unused"
+        errorLine1="    &lt;string name=&quot;backup_mode_replace_full&quot;>⚪ Replace\n   → Delete all &amp;amp; import backup&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="431"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.backup_mode_overwrite_full` appears to be unused"
+        errorLine1="    &lt;string name=&quot;backup_mode_overwrite_full&quot;>⚪ Overwrite duplicates\n   → Backup wins on conflicts&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="434"
             column="13"/>
     </issue>
 
@@ -1603,6 +1999,17 @@
         <location
             file="src/main/res/values/strings.xml"
             line="445"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.file_logging_privacy_notice` appears to be unused"
+        errorLine1="    &lt;string name=&quot;file_logging_privacy_notice&quot;>ℹ️ Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="471"
             column="13"/>
     </issue>
 
@@ -1718,6 +2125,61 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.toast_link_error` appears to be unused"
+        errorLine1="    &lt;string name=&quot;toast_link_error&quot;>❌ Error opening link&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="617"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.toast_sync_interval_changed` appears to be unused"
+        errorLine1="    &lt;string name=&quot;toast_sync_interval_changed&quot;>⏱️ Sync interval changed to %s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="620"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.version_not_available` appears to be unused"
+        errorLine1="    &lt;string name=&quot;version_not_available&quot;>Version not available&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="621"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.status_checking` appears to be unused"
+        errorLine1="    &lt;string name=&quot;status_checking&quot;>🔍 Checking…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="622"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.battery_optimization_dialog_message` appears to be unused"
+        errorLine1="    &lt;string name=&quot;battery_optimization_dialog_message&quot;>Please select \&apos;Not optimized\&apos; for Simple Notes.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="623"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.plurals.notes_count` appears to be unused"
         errorLine1="    &lt;plurals name=&quot;notes_count&quot;>"
         errorLine2="             ~~~~~~~~~~~~~~~~~~">
@@ -1772,17 +2234,6 @@
     </issue>
 
     <issue
-        id="TooManyViews"
-        message="`activity_settings.xml` has more than 80 views, bad for performance"
-        errorLine1="                            &lt;TextView"
-        errorLine2="                             ~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_settings.xml"
-            line="703"
-            column="30"/>
-    </issue>
-
-    <issue
         id="IconDuplicates"
         message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png">
         <location
@@ -1825,28 +2276,6 @@
             file="src/main/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"/>
         <location
             file="src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png"/>
-    </issue>
-
-    <issue
-        id="AlwaysShowAction"
-        message="Prefer &quot;`ifRoom`&quot; instead of &quot;`always`&quot;"
-        errorLine1="        app:showAsAction=&quot;always&quot; />"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/menu/menu_editor.xml"
-            line="9"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="Autofill"
-        message="Missing `autofillHints` attribute"
-        errorLine1="    &lt;EditText"
-        errorLine2="     ~~~~~~~~">
-        <location
-            file="src/main/res/layout/item_checklist_editor.xml"
-            line="35"
-            column="6"/>
     </issue>
 
     <issue
@@ -1911,7 +2340,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/main/ComposeMainActivity.kt"
-            line="408"
+            line="403"
             column="9"/>
     </issue>
 
@@ -1922,7 +2351,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/ComposeSettingsActivity.kt"
-            line="162"
+            line="169"
             column="27"/>
     </issue>
 
@@ -1933,7 +2362,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/ComposeSettingsActivity.kt"
-            line="162"
+            line="169"
             column="27"/>
     </issue>
 
@@ -1950,6 +2379,28 @@
 
     <issue
         id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            val editor = prefs.edit()"
+        errorLine2="                         ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/ETagCache.kt"
+            line="56"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/ETagCache.kt"
+            line="68"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
         message="Use the KTX function `createBitmap` instead?"
         errorLine1="                        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)"
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -1962,66 +2413,11 @@
     <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/MainActivity.kt"
-            line="261"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                    prefs.edit().putBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, false).apply()"
-        errorLine2="                    ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/MainActivity.kt"
-            line="496"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                    prefs.edit().putBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, true).apply()"
-        errorLine2="                    ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/MainActivity.kt"
-            line="503"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putBoolean(migrationKey, true).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/MainActivity.kt"
-            line="803"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putLong(PREF_LAST_AUTO_SYNC_TIME, System.currentTimeMillis()).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/ui/main/MainViewModel.kt"
-            line="814"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="        prefs.edit().putString(Constants.KEY_SORT_OPTION, option.prefsValue).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/main/MainViewModel.kt"
-            line="939"
+            line="945"
             column="9"/>
     </issue>
 
@@ -2032,7 +2428,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/main/MainViewModel.kt"
-            line="948"
+            line="954"
             column="9"/>
     </issue>
 
@@ -2043,8 +2439,52 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/main/MainViewModel.kt"
-            line="957"
+            line="963"
             column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            val editor = prefs.edit().putString(&quot;content_hash_md_${note.id}&quot;, mdHash)"
+        errorLine2="                         ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/MarkdownSyncManager.kt"
+            line="112"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().putString(&quot;content_hash_md_${note.id}&quot;, mdHash).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/MarkdownSyncManager.kt"
+            line="120"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                prefs.edit().putLong(&quot;last_sync_timestamp&quot;, timestamp).apply()"
+        errorLine2="                ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/MarkdownSyncManager.kt"
+            line="196"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/NoteDownloader.kt"
+            line="633"
+            column="13"/>
     </issue>
 
     <issue
@@ -2061,99 +2501,11 @@
     <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            prefs.edit().putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, newInterval).apply()"
-        errorLine2="            ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="360"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))"
-        errorLine2="                                                    ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="427"
-            column="53"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putBoolean(Constants.KEY_AUTO_SYNC, enabled).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="598"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                            prefs.edit()"
-        errorLine2="                            ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="660"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                        prefs.edit()"
-        errorLine2="                        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="680"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            prefs.edit()"
-        errorLine2="            ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="700"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            intent.data = Uri.parse(&quot;package:$packageName&quot;)"
-        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="746"
-            column="27"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            intent.data = Uri.parse(&quot;package:$packageName&quot;)"
-        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/SettingsActivity.kt"
-            line="746"
-            column="27"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="        prefs.edit().putBoolean(Constants.KEY_OFFLINE_MODE, enabled).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="308"
+            line="313"
             column="9"/>
     </issue>
 
@@ -2164,7 +2516,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="338"
+            line="343"
             column="9"/>
     </issue>
 
@@ -2175,7 +2527,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="350"
+            line="355"
             column="9"/>
     </issue>
 
@@ -2186,7 +2538,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="356"
+            line="361"
             column="9"/>
     </issue>
 
@@ -2197,7 +2549,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="362"
+            line="367"
             column="9"/>
     </issue>
 
@@ -2208,7 +2560,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="371"
+            line="376"
             column="9"/>
     </issue>
 
@@ -2219,7 +2571,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="381"
+            line="386"
             column="9"/>
     </issue>
 
@@ -2230,7 +2582,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="395"
+            line="400"
             column="9"/>
     </issue>
 
@@ -2241,7 +2593,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="454"
+            line="459"
             column="22"/>
     </issue>
 
@@ -2252,7 +2604,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="632"
+            line="639"
             column="9"/>
     </issue>
 
@@ -2263,7 +2615,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="649"
+            line="656"
             column="9"/>
     </issue>
 
@@ -2274,7 +2626,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="667"
+            line="674"
             column="9"/>
     </issue>
 
@@ -2285,7 +2637,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="674"
+            line="681"
             column="9"/>
     </issue>
 
@@ -2296,7 +2648,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="680"
+            line="687"
             column="9"/>
     </issue>
 
@@ -2307,7 +2659,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="686"
+            line="693"
             column="9"/>
     </issue>
 
@@ -2318,7 +2670,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="695"
+            line="702"
             column="9"/>
     </issue>
 
@@ -2329,7 +2681,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="704"
+            line="711"
             column="9"/>
     </issue>
 
@@ -2340,7 +2692,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="714"
+            line="721"
             column="9"/>
     </issue>
 
@@ -2351,7 +2703,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="722"
+            line="729"
             column="9"/>
     </issue>
 
@@ -2362,7 +2714,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="728"
+            line="735"
             column="9"/>
     </issue>
 
@@ -2373,7 +2725,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="734"
+            line="741"
             column="9"/>
     </issue>
 
@@ -2384,7 +2736,7 @@
         errorLine2="                        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="828"
+            line="835"
             column="25"/>
     </issue>
 
@@ -2395,7 +2747,7 @@
         errorLine2="                        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="843"
+            line="850"
             column="25"/>
     </issue>
 
@@ -2406,7 +2758,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="868"
+            line="875"
             column="13"/>
     </issue>
 
@@ -2417,7 +2769,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1017"
+            line="1024"
             column="9"/>
     </issue>
 
@@ -2428,7 +2780,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1042"
+            line="1049"
             column="9"/>
     </issue>
 
@@ -2439,7 +2791,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1148"
+            line="1156"
             column="9"/>
     </issue>
 
@@ -2450,7 +2802,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/ui/settings/SettingsViewModel.kt"
-            line="1159"
+            line="1167"
             column="9"/>
     </issue>
 
@@ -2490,11 +2842,22 @@
     <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/dettmer/simplenotes/sync/SyncTimestampManager.kt"
+            line="26"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="            prefs.edit()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/SyncWorker.kt"
-            line="490"
+            line="472"
             column="13"/>
     </issue>
 
@@ -2523,276 +2886,12 @@
     <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            val editor = prefs.edit().putString(&quot;content_hash_md_${note.id}&quot;, mdHash)"
-        errorLine2="                         ~~~~~~~~~~~~">
+        errorLine1="            val contentHashEditor = prefs.edit()"
+        errorLine2="                                    ~~~~~~~~~~~~">
         <location
             file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1288"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            prefs.edit().putString(&quot;content_hash_md_${note.id}&quot;, mdHash).apply()"
-        errorLine2="            ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1296"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                prefs.edit().putLong(&quot;last_sync_timestamp&quot;, timestamp).apply()"
-        errorLine2="                ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1413"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                        prefs.edit().apply {"
-        errorLine2="                        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1785"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="1930"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            val editor = prefs.edit()"
-        errorLine2="                         ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="2028"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            prefs.edit()"
-        errorLine2="            ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/sync/WebDavSyncService.kt"
-            line="2668"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.core:core-splashscreen:1.0.1&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="132"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="138"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="139"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;com.google.code.gson:gson:2.10.1&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="140"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.work:work-runtime-ktx:2.9.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="141"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.recyclerview:recyclerview:1.3.2&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="142"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-ktx:2.7.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="143"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.localbroadcastmanager:localbroadcastmanager:1.1.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="146"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.swiperefreshlayout:swiperefreshlayout:1.1.0&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="149"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.security:security-crypto:1.1.0-alpha06&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="152"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.glance:glance-appwidget:1.1.1&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="171"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;androidx.glance:glance-material3:1.1.1&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="172"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="Custom view ``ImageView`` has `setOnTouchListener` called on it but does not override `performClick`"
-        errorLine1="            dragHandle.setOnTouchListener { _, event ->"
-        errorLine2="            ^">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/adapters/ChecklistEditorAdapter.kt"
-            line="90"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="`onTouch` lambda should call `View#performClick` when a click is detected"
-        errorLine1="            dragHandle.setOnTouchListener { _, event ->"
-        errorLine2="                                          ^">
-        <location
-            file="src/main/java/dev/dettmer/simplenotes/adapters/ChecklistEditorAdapter.kt"
-            line="90"
-            column="43"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;Diese Entscheidung merken&quot;, should use `@string` resource"
-        errorLine1="        android:text=&quot;Diese Entscheidung merken&quot;"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/dialog_server_deletion.xml"
-            line="12"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="RtlSymmetry"
-        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
-        errorLine1="                            android:paddingStart=&quot;48dp&quot;"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_settings.xml"
-            line="346"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="RtlSymmetry"
-        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
-        errorLine1="                            android:paddingStart=&quot;48dp&quot;"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_settings.xml"
-            line="364"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="RtlSymmetry"
-        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
-        errorLine1="                            android:paddingStart=&quot;48dp&quot; />"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_settings.xml"
-            line="382"
-            column="29"/>
+            line="774"
+            column="37"/>
     </issue>
 
 </issues>
