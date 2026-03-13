@@ -3,11 +3,11 @@
     <!-- ============================= -->
     <!-- APP IDENTITY                  -->
     <!-- ============================= -->
-    <string name="app_name">简单笔记</string>
+    <string name="app_name">Simple Notes</string>
     <!-- ============================= -->
     <!-- MAIN SCREEN                   -->
     <!-- ============================= -->
-    <string name="main_title">简单笔记</string>
+    <string name="main_title">Simple Notes</string>
     <string name="no_notes_yet">没有笔记。\n点击 + 新建一个。</string>
     <string name="add_note">添加笔记</string>
     <string name="sync">同步</string>
@@ -118,7 +118,7 @@
     <string name="cancel">取消</string>
     <string name="ok">确定</string>
     <string name="legacy_delete_dialog_title">删除笔记</string>
-    <string name="legacy_delete_dialog_message">“%s”会仅本地删除。\n\n要从服务器删除吗？</string>
+    <string name="legacy_delete_dialog_message">“%s”会被本地删除。\n\n要从服务器删除吗？</string>
     <string name="legacy_delete_from_server">从服务器删除</string>
     <string name="legacy_delete_with_server">“%s”会在本地和服务器删除</string>
     <string name="legacy_delete_local_only">“%s”已在本地删除（仍在服务器）</string>
@@ -160,7 +160,7 @@
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
     <string name="error_http_local_only">HTTP 仅允许用于本地服务器（例如 192.168.x.x、10.x.x.x、nas.local）。公共服务器请使用 HTTPS。</string>
-    <string name="error_invalid_protocol">无效的协议：%s。请使用HTTP 或 HTTPS。</string>
+    <string name="error_invalid_protocol">无效的协议：%s。请使用 HTTP 或 HTTPS。</string>
     <string name="error_invalid_url">无效的 URL：%s</string>
     <string name="error_server_not_configured">未完全配置 WebDAV 服务器</string>
     <string name="error_sardine_client_failed">不能创建沙丁鱼客户端</string>
@@ -390,7 +390,7 @@
     <string name="debug_privacy_info">🔒 隐私：日志仅存储在你的设备上并且绝对不会发送到外部服务器。日志包含同步活动用于排查错误。你可以在任何时间删除或导出它们。</string>
     <string name="debug_log_actions_section">日志操作</string>
     <string name="debug_export_logs">📤 导出和分享日志</string>
-    <string name="debug_logs_subject">简单笔记同步日志</string>
+    <string name="debug_logs_subject">SimpleNotes 同步日志</string>
     <string name="debug_logs_share_via">分享日志通过……</string>
     <string name="debug_delete_logs">🗑️ 删除日志</string>
     <string name="debug_delete_logs_title">删除日志？</string>
@@ -399,7 +399,7 @@
     <string name="debug_reset_changelog">重置更新日志对话框</string>
     <string name="debug_reset_changelog_desc">在下一次打开应用时显示更新日志</string>
     <string name="debug_changelog_reset">在下一次打开时会显示更新日志</string>
-    <string name="developer_options_countdown">%d 点击以解锁开发者选项</string>
+    <string name="developer_options_countdown">%d 次点击以解锁开发者选项</string>
     <string name="developer_options_unlocked">🔧 解锁了开发者选项</string>
     <string name="developer_options_already_unlocked">已经解锁了开发者选项</string>
     <!-- Legacy -->
@@ -427,8 +427,8 @@
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">应用标题</string>
     <string name="custom_app_title_label">自定义标题</string>
-    <string name="custom_app_title_placeholder">简单笔记</string>
-    <string name="custom_app_title_info">设置主屏幕的自定义标题。留空以使用默认“简单笔记”标题。最多三十个字符。</string>
+    <string name="custom_app_title_placeholder">Simple Notes</string>
+    <string name="custom_app_title_info">设置主屏幕的自定义标题。留空以使用默认“Simple Notes”标题。最多三十个字符。</string>
     <string name="custom_app_title_char_count">%1$d / %2$d</string>
     <string name="autosave_section">编辑器</string>
     <string name="autosave_toggle">自动保存</string>
@@ -534,9 +534,9 @@
     <string name="toast_sync_interval_changed">⏱️ 同步间隔更改为 %s</string>
     <string name="version_not_available">版本不可用</string>
     <string name="status_checking">🔍 正在检查……</string>
-    <string name="battery_optimization_dialog_message">请为简单笔记选择“不优化”。</string>
+    <string name="battery_optimization_dialog_message">请为 Simple Notes 选择“不优化”。</string>
     <string name="battery_optimization_dialog_title">后台同步</string>
-    <string name="battery_optimization_dialog_full_message">为使应用在后台同步，必须禁用电池优化。\n\n请为简单笔记选择“不优化”。</string>
+    <string name="battery_optimization_dialog_full_message">为使应用在后台同步，必须禁用电池优化。\n\n请为 Simple Notes 选择“不优化”。</string>
     <string name="battery_optimization_open_settings">打开设置</string>
     <string name="battery_optimization_later">稍后</string>
     <string name="error_invalid_backup_file">无效的备份文件</string>
@@ -577,7 +577,7 @@
     <string name="notification_sync_progress_message">正在同步笔记</string>
     <string name="notification_sync_conflict_title">检测到笔记冲突</string>
     <plurals name="notification_sync_conflict_message">
-        <item quantity="other">%d 笔记有冲突</item>
+        <item quantity="other">%d 个笔记有冲突</item>
     </plurals>
     <string name="notification_sync_warning_title">⚠️ 同步警告</string>
     <string name="notification_sync_warning_message">服务器连不上 %d 小时</string>
@@ -629,7 +629,7 @@
     <!-- ============================= -->
     <!-- WIDGETS v1.8.0                -->
     <!-- ============================= -->
-    <string name="widget_name">简单笔记</string>
+    <string name="widget_name">Simple Notes</string>
     <string name="widget_description">在主屏幕上显示一个笔记或清单</string>
     <string name="widget_config_title">选择笔记</string>
     <string name="widget_config_hint">点击一个笔记添加它为微件</string>
@@ -656,4 +656,7 @@
     <string name="sync_auto_sync_info">🔄 自动同步：\n• 每 30 分钟检查能否连上服务器\n• 在任何 WiFi 连接上工作\n• 在后台运行\n• 最小的耗电量（~0.4%/天）</string>
     <string name="sync_interval_info">决定应用在后台同步的频率。同步间隔越短，数据越新，但耗电量也会略高。\n\n⏱️ 注意：手机处于待机状态时，Android 系统可能会延迟同步（最多 60 分钟）以节省电量。这是正常现象，会影响所有后台应用。</string>
     <string name="content_description_back">后退</string>
+    <string name="settings_sync_notifications_enabled">已启用通知</string>
+    <string name="settings_sync_notifications_errors_only">仅错误和警告</string>
+    <string name="settings_sync_notifications_disabled">已禁用通知</string>
 </resources>
