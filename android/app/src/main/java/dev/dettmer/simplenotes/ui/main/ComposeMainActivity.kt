@@ -102,6 +102,8 @@ class ComposeMainActivity : ComponentActivity() {
 
     // Phase 3: Track if coming from editor to scroll to top
     private var cameFromEditor = false
+    // v2.0.0: Track if coming from settings (to suppress onResume sync)
+    private var cameFromSettings = false
     
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
@@ -223,14 +225,22 @@ class ComposeMainActivity : ComponentActivity() {
         viewModel.loadNotes()
         
         // Phase 3: Scroll to top if coming from editor (new/edited note)
+        // v2.0.0: Track whether we're returning from an in-app child activity
+        val returningFromChild = cameFromEditor || cameFromSettings
         if (cameFromEditor) {
             viewModel.scrollToTop()
             cameFromEditor = false
             Logger.d(TAG, "📜 Came from editor - scrolling to top")
         }
+        if (cameFromSettings) {
+            cameFromSettings = false
+            Logger.d(TAG, "📜 Came from settings")
+        }
         
-        // Trigger Auto-Sync on app resume
-        viewModel.triggerAutoSync("onResume")
+        // Trigger Auto-Sync on app resume — but not when returning from editor/settings
+        if (!returningFromChild) {
+            viewModel.triggerAutoSync("onResume")
+        }
 
         // 🆕 v1.10.0-P2: Show one-time hint if last sync was stopped by quota/standby
         val quotaReason = SyncStateManager.consumeQuotaStopNotification()
@@ -348,6 +358,7 @@ class ComposeMainActivity : ComponentActivity() {
     }
     
     private fun openSettings() {
+        cameFromSettings = true
         val intent = Intent(this, ComposeSettingsActivity::class.java)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
