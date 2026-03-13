@@ -90,6 +90,7 @@ class WebDavSyncService(
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val gateChecker = SyncGateChecker(context, prefs, ioDispatcher)
     private val eTagCache = ETagCache(prefs)
+    private val timestampManager = SyncTimestampManager(prefs)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
@@ -1814,26 +1815,11 @@ class WebDavSyncService(
         )
     }
     
-    private fun saveLastSyncTimestamp() {
-        val now = System.currentTimeMillis()
-        
-        // ⚡ v1.3.1: Simplified - file-level E-Tags cached individually in downloadRemoteNotes()
-        // No need for collection E-Tag (doesn't work reliably across WebDAV servers)
-        prefs.edit()
-            .putLong(Constants.KEY_LAST_SYNC, now)
-            .putLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, now)
-            .apply()
-        
-        Logger.d(TAG, "💾 Saved sync timestamp (file E-Tags cached individually)")
-    }
-    
-    fun getLastSyncTimestamp(): Long {
-        return prefs.getLong(Constants.KEY_LAST_SYNC, 0)
-    }
-    
-    fun getLastSuccessfulSyncTimestamp(): Long {
-        return prefs.getLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, 0)
-    }
+    private fun saveLastSyncTimestamp() = timestampManager.save()
+
+    fun getLastSyncTimestamp(): Long = timestampManager.getLast()
+
+    fun getLastSuccessfulSyncTimestamp(): Long = timestampManager.getLastSuccessful()
 
     /**
      * 🆕 v1.10.0: Zentrale Exception-zu-Fehlermeldung-Konvertierung.
