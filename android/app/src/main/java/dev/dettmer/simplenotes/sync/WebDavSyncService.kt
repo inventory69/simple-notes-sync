@@ -1,8 +1,6 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
@@ -35,9 +33,6 @@ import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
 import java.io.IOException
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.net.URL
 import java.util.Date
 
 /**
@@ -60,7 +55,7 @@ data class UploadBatchResult(
 )
 
 @Suppress("LargeClass", "TooManyFunctions")
-// TODO v2.0.0: Split into SyncOrchestrator, NoteUploader, NoteDownloader, ConflictResolver
+// TODO v2.1.0: Split into NoteUploader, NoteDownloader, MarkdownSyncManager
 class WebDavSyncService(
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -93,6 +88,8 @@ class WebDavSyncService(
     
     private val storage: NotesStorage
     private val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    private val gateChecker = SyncGateChecker(context, prefs, ioDispatcher)
+    private val eTagCache = ETagCache(prefs)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
@@ -490,93 +487,12 @@ class WebDavSyncService(
      * 
      * @return true wenn Server erreichbar ist, false sonst
      */
-    suspend fun isServerReachable(): Boolean = withContext(ioDispatcher) {
-        return@withContext try {
-            val serverUrl = getServerUrl()
-            if (serverUrl == null) {
-                Logger.d(TAG, "❌ Server URL not configured")
-                return@withContext false
-            }
-            
-            val url = URL(serverUrl)
-            val host = url.host
-            val port = if (url.port > 0) url.port else url.defaultPort
-            
-            Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
-            
-            // Socket-Check mit konfiguriertem Timeout
-            // Gibt dem Netzwerk Zeit für Initialisierung (DHCP, Routing, Gateway)
-            // 🛡️ v1.8.2: Socket.use{} garantiert close() auch bei connect-Fehler (SNS-182-15)
-            // 🔧 v1.10.0: Nutzt den konfigurierbaren Timeout statt Hardcoded
-            val socketTimeoutMs = getTimeoutMs().toInt()
-            Socket().use { socket ->
-                socket.connect(InetSocketAddress(host, port), socketTimeoutMs)
-            }
-            
-            Logger.d(TAG, "✅ Server is reachable")
-            true
-        } catch (e: Exception) {
-            Logger.d(TAG, "❌ Server not reachable: ${e.message}")
-            false
-        }
-    }
+    suspend fun isServerReachable(): Boolean = gateChecker.isServerReachable()
     
-    /**
-     * 🆕 v1.7.0: Prüft ob Gerät aktuell im WLAN ist
-     * Für schnellen Pre-Check VOR dem langsamen Socket-Check
-     * 
-     * @return true wenn WLAN verbunden, false sonst (mobil oder kein Netzwerk)
-     */
-    fun isOnWiFi(): Boolean {
-        return try {
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) 
-                as? ConnectivityManager ?: return false
-            val network = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to check WiFi state", e)
-            false
-        }
-    }
-    
-    /**
-     * 🆕 v1.7.0: Zentrale Sync-Gate Prüfung
-     * Prüft ALLE Voraussetzungen bevor ein Sync gestartet wird.
-     * Diese Funktion sollte VOR jedem syncNotes() Aufruf verwendet werden.
-     * 
-     * @return SyncGateResult mit canSync flag und optionalem Blockierungsgrund
-     */
-    fun canSync(): SyncGateResult {
-        // 1. Offline Mode Check
-        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
-            return SyncGateResult(canSync = false, blockReason = null) // Silent skip
-        }
-        
-        // 2. Server configured?
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        if (serverUrl.isNullOrEmpty() || serverUrl == "http://" || serverUrl == "https://") {
-            return SyncGateResult(canSync = false, blockReason = null) // Silent skip
-        }
-        
-        // 3. WiFi-Only Check
-        val wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
-        if (wifiOnlySync && !isOnWiFi()) {
-            return SyncGateResult(canSync = false, blockReason = "wifi_only")
-        }
-        
-        return SyncGateResult(canSync = true, blockReason = null)
-    }
-    
-    /**
-     * 🆕 v1.7.0: Result-Klasse für canSync()
-     */
-    data class SyncGateResult(
-        val canSync: Boolean,
-        val blockReason: String? = null
-    ) {
-        val isBlockedByWifiOnly: Boolean get() = blockReason == "wifi_only"
-    }
+    fun isOnWiFi(): Boolean = gateChecker.isOnWiFi()
+
+    fun canSync(): SyncGateResult = gateChecker.canSync()
+
     
     suspend fun testConnection(): SyncResult = withContext(ioDispatcher) {
         return@withContext try {
@@ -1025,12 +941,12 @@ class WebDavSyncService(
                     }
                 }
 
-                batchUpdateETags(batchEtagUpdates)
+                eTagCache.batchUpdate(batchEtagUpdates)
             } catch (e: Exception) {
                 Logger.e(TAG, "⚠️ Batch E-Tag fetch failed: ${e.message}")
                 // Fallback: Invalidiere alle E-Tags → nächster Sync holt sie einzeln
                 val invalidationMap = successfulNoteIds.associate { "etag_json_$it" to null as String? }
-                batchUpdateETags(invalidationMap)
+                eTagCache.batchUpdate(invalidationMap)
             }
         }
 
@@ -1083,7 +999,7 @@ class WebDavSyncService(
                 // 🆕 v1.9.0 (Opt 5): Skip-Logik per Content-Hash
                 val currentHash = computeNoteContentHash(note)
                 val cachedHash = prefs.getString("content_hash_${note.id}", null)
-                val cachedETag = prefs.getString("etag_json_${note.id}", null)
+                val cachedETag = eTagCache.getJsonETag(note.id)
 
                 if (currentHash == cachedHash && cachedETag != null) {
                     Logger.d(TAG, "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})")
@@ -1188,28 +1104,7 @@ class WebDavSyncService(
      * 
      * @param updates Map von E-Tag Keys zu Values (null = remove)
      */
-    private fun batchUpdateETags(updates: Map<String, String?>) {
-        try {
-            val editor = prefs.edit()
-            var putCount = 0
-            var removeCount = 0
-            
-            updates.forEach { (key, value) ->
-                if (value != null) {
-                    editor.putString(key, value)
-                    putCount++
-                } else {
-                    editor.remove(key)
-                    removeCount++
-                }
-            }
-            
-            editor.apply()
-            Logger.d(TAG, "⚡ Batch-updated E-Tags: $putCount saved, $removeCount removed")
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to batch-update E-Tags", e)
-        }
-    }
+
     
     /**
      * Exportiert einzelne Note als Markdown (Task #1.2.0-11)
@@ -1249,7 +1144,7 @@ class WebDavSyncService(
             .digest(mdContentBytes)
             .joinToString("") { "%02x".format(it) }
         val cachedMdHash = prefs.getString("content_hash_md_${note.id}", null)
-        val cachedMdETag = prefs.getString("etag_md_${note.id}", null)
+        val cachedMdETag = eTagCache.getMdETag(note.id)
 
         if (mdHash == cachedMdHash && cachedMdETag != null) {
             Logger.d(TAG, "   ⏭️ MD skip: ${note.title} (content unchanged)")
@@ -1576,7 +1471,7 @@ class WebDavSyncService(
 
                     // ⚡ v1.3.1: HYBRID PERFORMANCE - Timestamp + E-Tag (like Markdown!)
                     val serverETag = resource.etag
-                    val cachedETag = prefs.getString("etag_json_$noteId", null)
+                    val cachedETag = eTagCache.getJsonETag(noteId)
                     val serverModified = resource.modified?.time ?: 0L
 
                     // 🐛 DEBUG: Log every file check to diagnose performance
@@ -1782,10 +1677,7 @@ class WebDavSyncService(
 
                     // ⚡ Batch-save E-Tags (IMPL_004 optimization)
                     if (etagUpdates.isNotEmpty()) {
-                        prefs.edit().apply {
-                            etagUpdates.forEach { (key, value) -> putString(key, value) }
-                        }.apply()
-                        Logger.d(TAG, "   💾 Batch-saved ${etagUpdates.size} E-Tags")
+                        eTagCache.batchUpdate(etagUpdates)
                     }
                 }
 
@@ -2025,18 +1917,13 @@ class WebDavSyncService(
             Logger.d(TAG, "🔄 Cleared lastSyncTimestamp (was: $previousSyncTime) - will download all files")
             
             // ⚡ v1.3.1 FIX: Clear E-Tag caches to force re-download
-            val editor = prefs.edit()
-            prefs.all.keys.filter { it.startsWith("etag_json_") }.forEach { key ->
-                editor.remove(key)
-            }
+            eTagCache.clearAll()
             // 🆕 v1.9.0: Auch Content-Hashes löschen (damit alle Notizen neu hochgeladen werden)
+            val contentHashEditor = prefs.edit()
             prefs.all.keys.filter { it.startsWith("content_hash_") }.forEach { key ->
-                editor.remove(key)
+                contentHashEditor.remove(key)
             }
-            prefs.all.keys.filter { it.startsWith("etag_md_") }.forEach { key ->
-                editor.remove(key)
-            }
-            editor.apply()
+            contentHashEditor.apply()
             Logger.d(TAG, "🔄 Cleared E-Tag + content hash caches - will re-download all files")
             
             // Determine forceOverwrite flag
@@ -2665,10 +2552,9 @@ class WebDavSyncService(
             }
 
             // 🆕 v1.9.0 (Opt 5): Content-Hash und E-Tag bei Deletion invalidieren
+            eTagCache.clearForNote(noteId)
             prefs.edit()
-                .remove("etag_json_$noteId")
                 .remove("content_hash_$noteId")
-                .remove("etag_md_$noteId")
                 .remove("content_hash_md_$noteId")
                 .apply()
             Logger.d(TAG, "🗑️ Cleared E-Tag + content hash for deleted note: $noteId")
