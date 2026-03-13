@@ -63,8 +63,6 @@ class WebDavSyncService(
     
     companion object {
         private const val TAG = "WebDavSyncService"
-        // 🔧 v1.10.0: Fallback-Wert wenn SharedPreferences nicht verfügbar (z.B. in companion)
-        private const val FALLBACK_TIMEOUT_MS = 8000L
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
@@ -87,8 +85,7 @@ class WebDavSyncService(
     private val timestampManager = SyncTimestampManager(prefs)
     private val exceptionMapper = SyncExceptionMapper(context)
     private val urlBuilder = SyncUrlBuilder(prefs)
-    private var markdownDirEnsured = false  // Cache für Ordner-Existenz
-    private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
+    private val connectionManager = ConnectionManager(prefs)
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
     private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
 
@@ -96,24 +93,8 @@ class WebDavSyncService(
      * 🆕 v1.10.0: Liest den konfigurierten Timeout aus SharedPreferences.
      * Konvertiert Sekunden → Millisekunden. Clamped auf [MIN..MAX].
      */
-    private fun getTimeoutMs(): Long {
-        return try {
-            val seconds = prefs.getInt(
-                Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
-                Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
-            ).coerceIn(
-                Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
-                Constants.MAX_CONNECTION_TIMEOUT_SECONDS
-            )
-            seconds * 1000L
-        } catch (_: Exception) {
-            FALLBACK_TIMEOUT_MS
-        }
-    }
+    private fun getTimeoutMs(): Long = connectionManager.getTimeoutMs()
 
-    // ⚡ v1.3.1 Performance: Session-Caches (werden am Ende von syncNotes() geleert)
-    private var sessionSardine: SafeSardineWrapper? = null
-    
     init {
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "═══════════════════════════════════════")
@@ -149,66 +130,14 @@ class WebDavSyncService(
      * Spart ~100ms pro Aufruf durch Wiederverwendung
      * 🆕 Issue #21: internal für NotesImportWizard-Zugriff
      */
-    internal fun getOrCreateSardine(): Sardine? {
-        // Return cached if available
-        sessionSardine?.let { 
-            Logger.d(TAG, "⚡ Reusing cached Sardine client")
-            return it 
-        }
-        
-        // Create new client
-        val sardine = createSardineClient()
-        sessionSardine = sardine
-        return sardine
-    }
-    
-    /**
-     * Erstellt einen neuen Sardine-Client (intern)
-     * 
-     * 🆕 v1.7.2: Intelligentes Routing basierend auf Ziel-Adresse
-     * - Lokale Server: WiFi-Binding (bypass VPN)
-     * - Externe Server: Default-Routing (nutzt VPN wenn aktiv)
-     * 
-     * 🔧 v1.7.1: Verwendet SafeSardineWrapper statt OkHttpSardine
-     * - Verhindert Connection Leaks durch proper Response-Cleanup
-     * - Preemptive Authentication für weniger 401-Round-Trips
-     */
-    private fun createSardineClient(): SafeSardineWrapper? {
-        val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
-        val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
-        
-        Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
-        
-        // 🛡️ v1.8.2: readTimeout ergänzt (SNS-182-19c) — verhindert endloses Warten bei hängenden Servern
-        // 🔧 v1.10.0: Konfigurierbarer Timeout aus SharedPreferences
-        val timeoutMs = getTimeoutMs()
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .build()
-        
-        return SafeSardineWrapper.create(okHttpClient, username, password)
-    }
+    internal fun getOrCreateSardine(): Sardine? = connectionManager.getOrCreateClient()
     
     /**
      * ⚡ v1.3.1: Session-Caches leeren (am Ende von syncNotes)
      * 🔧 v1.7.2 (IMPL_003): Schließt Sardine-Client explizit für Resource-Cleanup
      */
     private fun clearSessionCache() {
-        // 🆕 v1.7.2: Explizites Schließen des Sardine-Clients
-        sessionSardine?.let { sardine ->
-            try {
-                sardine.close()
-                Logger.d(TAG, "🧹 Sardine client closed")
-            } catch (e: Exception) {
-                Logger.w(TAG, "Failed to close Sardine client: ${e.message}")
-            }
-        }
-        
-        sessionSardine = null
-        notesDirEnsured = false
-        markdownDirEnsured = false
+        connectionManager.clearSession()
         Logger.d(TAG, "🧹 Session caches cleared")
     }
     
@@ -228,7 +157,7 @@ class WebDavSyncService(
      * Cached in Memory - nur einmal pro App-Session.
      */
     private fun ensureMarkdownDirectoryExists(sardine: Sardine, serverUrl: String) {
-        if (markdownDirEnsured) return
+        if (connectionManager.markdownDirEnsured) return
         
         try {
             val mdUrl = getMarkdownUrl(serverUrl)
@@ -238,7 +167,7 @@ class WebDavSyncService(
                 Logger.d(TAG, "📁 Created notes-md/ directory (for future use)")
             }
             
-            markdownDirEnsured = true
+            connectionManager.markdownDirEnsured = true
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to create notes-md/: ${e.message}")
             // Nicht kritisch - User kann später manuell erstellen
@@ -251,7 +180,7 @@ class WebDavSyncService(
      * Spart ~500ms pro Sync durch Caching
      */
     private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
-        if (notesDirEnsured) {
+        if (connectionManager.notesDirEnsured) {
             Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
             return
         }
@@ -263,7 +192,7 @@ class WebDavSyncService(
                 sardine.createDirectory(notesUrl)
             }
             Logger.d(TAG, "    ✅ $activeSyncFolderName/ directory ready")
-            notesDirEnsured = true
+            connectionManager.notesDirEnsured = true
         } catch (e: Exception) {
             Logger.e(TAG, "💥 CRASH checking/creating $activeSyncFolderName/ directory!", e)
             throw e
