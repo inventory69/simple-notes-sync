@@ -86,6 +86,7 @@ class WebDavSyncService(
     private val eTagCache = ETagCache(prefs)
     private val timestampManager = SyncTimestampManager(prefs)
     private val exceptionMapper = SyncExceptionMapper(context)
+    private val urlBuilder = SyncUrlBuilder(prefs)
     private var markdownDirEnsured = false  // Cache für Ordner-Existenz
     private var notesDirEnsured = false     // ⚡ v1.3.1: Cache für /notes/ Ordner-Existenz
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
@@ -211,49 +212,14 @@ class WebDavSyncService(
         Logger.d(TAG, "🧹 Session caches cleared")
     }
     
-    internal fun getServerUrl(): String? {
-        return prefs.getString(Constants.KEY_SERVER_URL, null)
-    }
-    
     /**
-     * Erzeugt notes/ URL aus Base-URL mit Smart Detection (Task #1.2.1-12)
-     * 
-     * Beispiele:
-     * - http://server:8080/ → http://server:8080/notes/
-     * - http://server:8080/notes/ → http://server:8080/notes/
-     * - http://server:8080/notes → http://server:8080/notes/
-     * - http://server:8080/my-path/ → http://server:8080/my-path/notes/
-     * 
-     * @param baseUrl Base Server-URL
-     * @return notes/ Ordner-URL (mit trailing /)
+     * 🆕 v2.0.0: Delegiert an SyncUrlBuilder (extrahiert in Commit 17).
      */
-    private fun getNotesUrl(baseUrl: String): String {
-        val folderName = activeSyncFolderName
-        val normalized = baseUrl.trimEnd('/')
-        return if (normalized.endsWith("/$folderName")) {
-            "$normalized/"
-        } else {
-            "$normalized/$folderName/"
-        }
-    }
-    
-    /**
-     * Erzeugt Markdown-Ordner-URL basierend auf getNotesUrl() (Task #1.2.1-14)
-     * 
-     * Beispiele:
-     * - http://server:8080/ → http://server:8080/notes-md/
-     * - http://server:8080/notes/ → http://server:8080/notes-md/
-     * - http://server:8080/notes → http://server:8080/notes-md/
-     * 
-     * @param baseUrl Base Server-URL
-     * @return Markdown-Ordner-URL (mit trailing /)
-     */
-    private fun getMarkdownUrl(baseUrl: String): String {
-        val folderName = activeSyncFolderName
-        val notesUrl = getNotesUrl(baseUrl)
-        val normalized = notesUrl.trimEnd('/')
-        return normalized.replace("/$folderName", "/$folderName-md") + "/"
-    }
+    internal fun getServerUrl(): String? = urlBuilder.getServerUrl()
+
+    private fun getNotesUrl(baseUrl: String): String = urlBuilder.getNotesUrl(baseUrl)
+
+    private fun getMarkdownUrl(baseUrl: String): String = urlBuilder.getMarkdownUrl(baseUrl)
     
     /**
      * Stellt sicher dass notes-md/ Ordner existiert
