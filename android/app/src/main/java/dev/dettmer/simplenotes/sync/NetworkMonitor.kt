@@ -20,6 +20,8 @@ class NetworkMonitor(private val context: Context) {
     companion object {
         private const val TAG = "NetworkMonitor"
         private const val AUTO_SYNC_WORK_NAME = "auto_sync_periodic"
+        // 🛡️ Kaltstart-Guard: Verhindert Sync-Trigger direkt nach Package-Update/Prozess-Neustart
+        private const val COLD_START_GUARD_MS = 5_000L
     }
     
     private val prefs by lazy {
@@ -32,7 +34,12 @@ class NetworkMonitor(private val context: Context) {
     
     // 🔥 Track last connected network ID to detect network changes (SSID wechsel, WiFi an/aus)
     // null = kein Netzwerk, sonst Network.toString() als eindeutiger Identifier
+    // @Volatile: NetworkCallback läuft auf ConnectivityThread, initializeWifiState() auf Main
+    @Volatile
     private var lastConnectedNetworkId: String? = null
+
+    // 🛡️ Kaltstart-Guard: Zeitpunkt des Monitoring-Starts
+    private var monitoringStartTime: Long = 0L
     
     /**
      * NetworkCallback: Erkennt WiFi-Verbindung und triggert WorkManager
@@ -68,20 +75,28 @@ class NetworkMonitor(private val context: Context) {
                     
                     lastConnectedNetworkId = currentNetworkId
                     
-                    // WiFi-Connect Trigger prüfen - NICHT KEY_AUTO_SYNC!
-                    // Der Callback ist registriert WEIL KEY_SYNC_TRIGGER_WIFI_CONNECT = true
-                    // Aber defensive Prüfung für den Fall, dass Settings sich geändert haben
-                    val wifiConnectEnabled = prefs.getBoolean(
-                        Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
-                        Constants.DEFAULT_TRIGGER_WIFI_CONNECT
-                    )
-                    Logger.d(TAG, "    WiFi-Connect trigger enabled: $wifiConnectEnabled")
-                    
-                    if (wifiConnectEnabled) {
-                        Logger.d(TAG, "    ✅ Triggering WiFi-Connect sync...")
-                        triggerWifiConnectSync()
+                    // 🛡️ Kaltstart-Guard: Nach Package-Update/Prozess-Neustart
+                    // feuert onAvailable() sofort für das bestehende WiFi.
+                    // In den ersten 5s keinen Sync auslösen.
+                    val msSinceStart = System.currentTimeMillis() - monitoringStartTime
+                    if (msSinceStart < COLD_START_GUARD_MS) {
+                        Logger.d(TAG, "    ⏭️ Cold-start guard active (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms) - ignoring")
                     } else {
-                        Logger.d(TAG, "    ⏭️ WiFi-Connect trigger disabled in settings")
+                        // WiFi-Connect Trigger prüfen - NICHT KEY_AUTO_SYNC!
+                        // Der Callback ist registriert WEIL KEY_SYNC_TRIGGER_WIFI_CONNECT = true
+                        // Aber defensive Prüfung für den Fall, dass Settings sich geändert haben
+                        val wifiConnectEnabled = prefs.getBoolean(
+                            Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
+                            Constants.DEFAULT_TRIGGER_WIFI_CONNECT
+                        )
+                        Logger.d(TAG, "    WiFi-Connect trigger enabled: $wifiConnectEnabled")
+                        
+                        if (wifiConnectEnabled) {
+                            Logger.d(TAG, "    ✅ Triggering WiFi-Connect sync...")
+                            triggerWifiConnectSync()
+                        } else {
+                            Logger.d(TAG, "    ⏭️ WiFi-Connect trigger disabled in settings")
+                        }
                     }
                 } else {
                     Logger.d(TAG, "    ⚠️ Same WiFi network as before - ignoring (no network change)")
@@ -255,6 +270,12 @@ class NetworkMonitor(private val context: Context) {
         try {
             Logger.d(TAG, "🚀 Starting WiFi monitoring...")
             
+            // 🛡️ Kaltstart-Guard Zeitpunkt setzen + WiFi-State initialisieren
+            // WICHTIG: VOR registerNetworkCallback() — sonst Race-Condition,
+            // weil onAvailable() asynchron auf ConnectivityThread feuert
+            monitoringStartTime = System.currentTimeMillis()
+            initializeWifiState()
+            
             val request = NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -265,10 +286,6 @@ class NetworkMonitor(private val context: Context) {
             connectivityManager.registerNetworkCallback(request, networkCallback)
             Logger.d(TAG, "✅✅✅ WiFi NetworkCallback registered successfully")
             Logger.d(TAG, "    Callback will trigger on WiFi connect/disconnect")
-            
-            // 🔥 FIX: Initialisiere wasWifiConnected State beim Start
-            // onAvailable() wird nur bei NEUEN Verbindungen getriggert!
-            initializeWifiState()
             
         } catch (e: Exception) {
             Logger.e(TAG, "❌❌❌ Failed to register NetworkCallback", e)
