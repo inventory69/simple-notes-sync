@@ -590,6 +590,7 @@ class NoteEditorViewModel(
      *
      * @return true wenn gespeichert wurde (oder nichts zu speichern war), false bei Fehler
      */
+    @Suppress("ReturnCount")
     fun saveOnBack(): Boolean {
         if (!autosaveEnabled) {
             Logger.d(TAG, "⏭️ saveOnBack: autosave disabled — skipping")

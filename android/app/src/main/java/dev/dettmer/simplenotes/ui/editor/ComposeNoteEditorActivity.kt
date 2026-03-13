@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.provider.CalendarContract
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -66,27 +67,35 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         
         enableEdgeToEdge()
 
-        // v2.0.0: Register enter/exit transitions in onCreate for Predictive Back (API 34+)
+        // v2.0.0: Register both OPEN and CLOSE transitions for consistent
+        // Shared Axis X animation on all back paths (arrow button + swipe gesture).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_OPEN,
-                R.anim.slide_in_right,
-                R.anim.slide_out_left
+                R.anim.shared_axis_x_enter,
+                R.anim.shared_axis_x_exit
             )
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_CLOSE,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.shared_axis_x_pop_enter,
+                R.anim.shared_axis_x_pop_exit
             )
         }
+
+        // v2.0.0: On API 35+ (mandatory predictive back), overrideActivityTransition(CLOSE)
+        // is only respected for explicit finish() calls — the system uses its own animation
+        // for gesture-driven back. Routing through OnBackPressedCallback + finish() fixes this.
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finishWithTransition()
+            }
+        })
 
         setContent {
             SimpleNotesTheme {
                 NoteEditorScreen(
                     viewModel = viewModel,
-                    onNavigateBack = {
-                        finishWithSlideAnimation()
-                    }
+                    onNavigateBack = { finishWithTransition() }
                 )
             }
         }
@@ -106,7 +115,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                             putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
                         }
                         setResult(RESULT_NOTE_DELETED, resultIntent)
-                        finishWithSlideAnimation()
+                        finishWithTransition()
                     }
                     else -> { /* handled by Composable */ }
                 }
@@ -134,13 +143,16 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         viewModel.saveOnBack()
     }
 
-    private fun finishWithSlideAnimation() {
+    private fun finishWithTransition() {
         finish()
+        // API < 34: overrideActivityTransition not available, use deprecated API
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             @Suppress("DEPRECATION")
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+            overridePendingTransition(
+                R.anim.shared_axis_x_pop_enter,
+                R.anim.shared_axis_x_pop_exit
+            )
         }
-        // API 34+: overrideActivityTransition(CLOSE, ...) registered in onCreate handles this
     }
 
     // ═══════════════════════════════════════════════════════════════════════
