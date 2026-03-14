@@ -288,7 +288,7 @@ class NotesImportWizard(
         val nonEmptyLines = body.lines().filter { it.isNotBlank() }
         if (nonEmptyLines.isNotEmpty() && nonEmptyLines.all { heuristicTaskRegex.matches(it.trim()) }) {
             val items = nonEmptyLines.mapIndexed { index, line ->
-                val m = heuristicTaskRegex.find(line.trim())!!
+                val m = requireNotNull(heuristicTaskRegex.find(line.trim()))
                 ChecklistItem(
                     id = UUID.randomUUID().toString(),
                     text = m.groupValues[2].trim(),

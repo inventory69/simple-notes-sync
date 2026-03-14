@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes
 
 import android.app.Application
 import android.content.Context
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
@@ -99,7 +100,7 @@ class SimpleNotesApplication : Application() {
             // If server was configured → offlineMode = false (continue syncing)
             // If no server → offlineMode = true (new users / offline users)
             val offlineModeValue = !hasServerConfig
-            prefs.edit().putBoolean(Constants.KEY_OFFLINE_MODE, offlineModeValue).apply()
+            prefs.edit { putBoolean(Constants.KEY_OFFLINE_MODE, offlineModeValue) }
             
             Logger.i(TAG, "🔄 Migrated offline_mode_enabled: hasServer=$hasServerConfig → offlineMode=$offlineModeValue")
         }

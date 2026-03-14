@@ -237,8 +237,9 @@ object PdfExporter {
             currentPage?.let { document.finishPage(it) }
             pageNumber++
             val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
-            currentPage = document.startPage(pageInfo)
-            canvas = currentPage!!.canvas
+            val page = document.startPage(pageInfo)
+            currentPage = page
+            canvas = page.canvas
             currentY = MARGIN_TOP
         }
 

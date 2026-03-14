@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -109,15 +110,16 @@ internal class MarkdownSyncManager(
         try {
             val mdResource = sardine.list(noteUrl, 0).firstOrNull()
             val mdETag = mdResource?.etag
-            val editor = prefs.edit().putString("content_hash_md_${note.id}", mdHash)
-            if (mdETag != null) {
-                editor.putString("etag_md_${note.id}", mdETag)
+            prefs.edit {
+                putString("content_hash_md_${note.id}", mdHash)
+                if (mdETag != null) {
+                    putString("etag_md_${note.id}", mdETag)
+                }
             }
-            editor.apply()
             Logger.d(TAG, "   ⚡ MD E-Tag cached: ${mdETag?.take(ETAG_PREVIEW_LENGTH)}")
         } catch (e: Exception) {
             // Non-fatal: Hash trotzdem cachen für nächsten Content-Vergleich
-            prefs.edit().putString("content_hash_md_${note.id}", mdHash).apply()
+            prefs.edit { putString("content_hash_md_${note.id}", mdHash) }
             Logger.w(TAG, "   ⚠️ MD E-Tag fetch failed: ${e.message}")
         }
     }
@@ -193,7 +195,7 @@ internal class MarkdownSyncManager(
             // ⚡ v1.3.1: Set lastSyncTimestamp to enable timestamp-based skip on next sync
             if (exportedCount > 0) {
                 val timestamp = System.currentTimeMillis()
-                prefs.edit().putLong("last_sync_timestamp", timestamp).apply()
+                prefs.edit { putLong("last_sync_timestamp", timestamp) }
                 Logger.d(TAG, "💾 Set lastSyncTimestamp after initial export (enables fast next sync)")
             }
 

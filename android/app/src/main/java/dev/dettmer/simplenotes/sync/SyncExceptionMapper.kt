@@ -37,7 +37,7 @@ class SyncExceptionMapper(private val context: Context) {
                 context.getString(R.string.snackbar_server_unreachable)
             is java.io.IOException -> {
                 // IOException kann vieles sein — prüfe ob es ein Timeout-artiger Fehler ist
-                val msg = e.message?.lowercase() ?: ""
+                val msg = e.message?.lowercase().orEmpty()
                 when {
                     msg.contains("timeout") -> context.getString(R.string.snackbar_connection_timeout)
                     msg.contains("refused") -> context.getString(R.string.snackbar_server_unreachable)

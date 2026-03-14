@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.sync
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -286,7 +287,7 @@ object SyncStateManager {
      * Aufzurufen wenn ein Sync tatsächlich startet (nach allen Checks).
      */
     fun markGlobalSyncStarted(prefs: android.content.SharedPreferences) {
-        prefs.edit().putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_GLOBAL_SYNC_TIME, System.currentTimeMillis()).apply()
+        prefs.edit { putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_GLOBAL_SYNC_TIME, System.currentTimeMillis()) }
     }
     
     // ═══════════════════════════════════════════════════════════════════════

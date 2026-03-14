@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
@@ -662,8 +663,9 @@ class NoteEditorViewModel(
                     // wurden und sich der tatsächliche Inhalt nicht geändert hat.
                     // Verhindert fälschliches PENDING-Flag beim Verlassen der Notiz.
                     if (existingNote != null) {
-                        val existingItems = existingNote!!.checklistItems.orEmpty()
-                        val noContentChange = existingNote!!.title == title &&
+                        val currentNote = requireNotNull(existingNote)
+                        val existingItems = currentNote.checklistItems.orEmpty()
+                        val noContentChange = currentNote.title == title &&
                             existingItems.size == validItems.size &&
                             existingItems.zip(validItems).all { (old, new) ->
                                 old.id == new.id &&
@@ -773,8 +775,9 @@ class NoteEditorViewModel(
                 // 🔧 v1.11.0: No-Change-Guard — kein erneutes Speichern wenn sich nichts geändert hat.
                 // Verhindert falschen Autosave-Indikator wenn nur leere Items hinzugefügt wurden.
                 if (silent && existingNote != null) {
-                    val existingItems = existingNote!!.checklistItems.orEmpty()
-                    val existingTitle = existingNote!!.title
+                    val currentNote = requireNotNull(existingNote)
+                    val existingItems = currentNote.checklistItems.orEmpty()
+                    val existingTitle = currentNote.title
                     val noContentChange = existingTitle == title &&
                         existingItems.size == validItems.size &&
                         existingItems.zip(validItems).all { (old, new) ->
@@ -836,7 +839,7 @@ class NoteEditorViewModel(
      * [Constants.UNDO_SNAPSHOT_DEBOUNCE_MS] are ignored. The window resets after the delay.
      */
     private fun pushUndoSnapshotDebounced() {
-        if (snapshotDebounceJob == null || !snapshotDebounceJob!!.isActive) {
+        if (snapshotDebounceJob?.isActive != true) {
             pushUndoSnapshot()  // Capture state BEFORE this burst of edits
         }
         snapshotDebounceJob?.cancel()
@@ -1087,7 +1090,7 @@ class NoteEditorViewModel(
         }
         
         // Update last sync time
-        prefs.edit().putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now).apply()
+        prefs.edit { putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now) }
         
         // Trigger sync via WorkManager
         Logger.d(TAG, "📤 Triggering onSave sync")

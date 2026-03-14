@@ -1,7 +1,7 @@
 package dev.dettmer.simplenotes.ui.main.components
 
-import android.graphics.Bitmap
 import android.graphics.Canvas
+import androidx.core.graphics.createBitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,7 +57,7 @@ fun EmptyState(
                     val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher_foreground)
                     drawable?.let {
                         val size = 256
-                        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                        val bitmap = createBitmap(size, size)
                         val canvas = Canvas(bitmap)
                         it.setBounds(0, 0, size, size)
                         it.draw(canvas)

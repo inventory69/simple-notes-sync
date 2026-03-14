@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityOptionsCompat
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.edit
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -310,7 +311,12 @@ class ComposeMainActivity : ComponentActivity() {
                             dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> Constants.BANNER_DELAY_COMPLETED_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.INFO -> Constants.BANNER_DELAY_INFO_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> Constants.BANNER_DELAY_ERROR_MS
-                            else -> 0L
+                            dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.DOWNLOADING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.DELETING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.IMPORTING_MARKDOWN,
+                            dev.dettmer.simplenotes.sync.SyncPhase.IDLE -> 0L
                         }
                         bannerAutoHideJob = lifecycleScope.launch {
                             kotlinx.coroutines.delay(delayMs)
@@ -411,7 +417,7 @@ class ComposeMainActivity : ComponentActivity() {
         }
         
         // Mark migration as done
-        prefs.edit().putBoolean(migrationKey, true).apply()
+        prefs.edit { putBoolean(migrationKey, true) }
     }
     
     

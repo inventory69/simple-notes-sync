@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -45,11 +46,11 @@ class DragDropListState(
     private var draggingItemInitialOffset by mutableFloatStateOf(0f)
     // 🆕 v1.8.1: Item-Größe beim Drag-Start fixieren
     // Verhindert dass Höhenänderungen die Swap-Erkennung destabilisieren
-    private var draggingItemSize by mutableStateOf(0)
+    private var draggingItemSize by mutableIntStateOf(0)
     private var overscrollJob by mutableStateOf<Job?>(null)
 
     // 🆕 v1.8.1 IMPL_14: Visual-Index des Separators (-1 = kein Separator)
-    var separatorVisualIndex by mutableStateOf(-1)
+    var separatorVisualIndex by mutableIntStateOf(-1)
 
     val draggingItemOffset: Float
         get() = draggingItemLayoutInfo?.let { item ->

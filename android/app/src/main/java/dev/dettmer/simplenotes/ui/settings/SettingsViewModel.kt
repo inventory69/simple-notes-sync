@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.ui.settings
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.edit
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -310,7 +311,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun setOfflineMode(enabled: Boolean) {
         _offlineMode.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_OFFLINE_MODE, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_OFFLINE_MODE, enabled) }
         
         if (enabled) {
             _serverStatus.value = ServerStatus.OfflineMode
@@ -340,7 +341,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (host.isEmpty()) "" else prefix + host
-        prefs.edit().putString(Constants.KEY_SERVER_URL, fullUrl).apply()
+        prefs.edit { putString(Constants.KEY_SERVER_URL, fullUrl) }
     }
     
     fun updateProtocol(useHttps: Boolean) {
@@ -352,19 +353,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
         val prefix = if (useHttps) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
-        prefs.edit().putString(Constants.KEY_SERVER_URL, fullUrl).apply()
+        prefs.edit { putString(Constants.KEY_SERVER_URL, fullUrl) }
     }
     
     fun updateUsername(value: String) {
         _username.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        prefs.edit().putString(Constants.KEY_USERNAME, value).apply()
+        prefs.edit { putString(Constants.KEY_USERNAME, value) }
     }
     
     fun updatePassword(value: String) {
         _password.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        prefs.edit().putString(Constants.KEY_PASSWORD, value).apply()
+        prefs.edit { putString(Constants.KEY_PASSWORD, value) }
     }
 
     // 🆕 v1.9.0: Update configurable sync folder name
@@ -373,7 +374,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             .replace(Regex("[^a-zA-Z0-9_-]"), "")
             .take(Constants.MAX_SYNC_FOLDER_NAME_LENGTH)
         _syncFolderName.value = sanitized
-        prefs.edit().putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }).apply()
+        prefs.edit { putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }) }
     }
 
     /**
@@ -383,7 +384,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun setAutosaveEnabled(enabled: Boolean) {
         _autosaveEnabled.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled) }
     }
 
     /**
@@ -397,7 +398,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.MAX_CONNECTION_TIMEOUT_SECONDS
         )
         _connectionTimeoutSeconds.value = validSeconds
-        prefs.edit().putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, validSeconds).apply()
+        prefs.edit { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, validSeconds) }
         Logger.d(TAG, "Connection timeout set to: ${validSeconds}s")
     }
     
@@ -456,16 +457,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * - DeletionTracker   (alte Lösch-Historie ist für neuen Server irrelevant)
      */
     private fun clearServerCaches() {
-        val editor = prefs.edit()
-        prefs.all.keys.filter {
-            it.startsWith("etag_json_") ||
-            it.startsWith("etag_md_") ||
-            it.startsWith("content_hash_") ||
-            it.startsWith("content_hash_md_")
-        }.forEach { key -> editor.remove(key) }
-        editor.remove(Constants.KEY_LAST_SYNC)
-        editor.remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
-        editor.apply()
+        prefs.edit {
+            prefs.all.keys.filter {
+                it.startsWith("etag_json_") ||
+                it.startsWith("etag_md_") ||
+                it.startsWith("content_hash_") ||
+                it.startsWith("content_hash_md_")
+            }.forEach { key -> remove(key) }
+            remove(Constants.KEY_LAST_SYNC)
+            remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
+        }
         notesStorage.clearDeletionTracker()
         Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamp, deletion tracker)")
     }
@@ -636,7 +637,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setAutoSync(enabled: Boolean) {
         _autoSyncEnabled.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_AUTO_SYNC, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_AUTO_SYNC, enabled) }
 
         viewModelScope.launch {
             if (enabled) {
@@ -653,7 +654,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     fun setSyncInterval(minutes: Long) {
         _syncInterval.value = minutes
-        prefs.edit().putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes).apply()
+        prefs.edit { putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes) }
         viewModelScope.launch {
             val text = when (minutes) {
                 15L -> getString(R.string.toast_sync_interval_15min)
@@ -671,26 +672,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.MAX_PARALLEL_CONNECTIONS
         )
         _maxParallelConnections.value = validCount
-        prefs.edit().putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, validCount).apply()
+        prefs.edit { putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, validCount) }
     }
 
     // 🌟 v1.6.0: Configurable Sync Triggers Setters
     
     fun setTriggerOnSave(enabled: Boolean) {
         _triggerOnSave.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, enabled) }
         Logger.d(TAG, "Trigger onSave: $enabled")
     }
     
     fun setTriggerOnResume(enabled: Boolean) {
         _triggerOnResume.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, enabled) }
         Logger.d(TAG, "Trigger onResume: $enabled")
     }
     
     fun setTriggerWifiConnect(enabled: Boolean) {
         _triggerWifiConnect.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, enabled) }
         viewModelScope.launch {
             _events.emit(SettingsEvent.RestartNetworkMonitor)
         }
@@ -699,7 +700,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     fun setTriggerPeriodic(enabled: Boolean) {
         _triggerPeriodic.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, enabled) }
         viewModelScope.launch {
             _events.emit(SettingsEvent.RestartNetworkMonitor)
         }
@@ -708,7 +709,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     fun setTriggerBoot(enabled: Boolean) {
         _triggerBoot.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, enabled) }
         Logger.d(TAG, "Trigger Boot: $enabled")
     }
     
@@ -718,7 +719,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun setWifiOnlySync(enabled: Boolean) {
         _wifiOnlySync.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_WIFI_ONLY_SYNC, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_WIFI_ONLY_SYNC, enabled) }
         Logger.d(TAG, "📡 WiFi-only sync: $enabled")
     }
 
@@ -726,19 +727,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setNotificationsEnabled(enabled: Boolean) {
         _notificationsEnabled.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled) }
         Logger.d(TAG, "🔔 Notifications enabled: $enabled")
     }
 
     fun setNotificationsErrorsOnly(enabled: Boolean) {
         _notificationsErrorsOnly.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, enabled) }
         Logger.d(TAG, "🔔 Notifications errors-only: $enabled")
     }
 
     fun setNotificationsServerWarning(enabled: Boolean) {
         _notificationsServerWarning.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, enabled) }
         Logger.d(TAG, "🔔 Notifications server warning: $enabled")
     }
 
@@ -832,10 +833,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         }
 
                         // Export successful — prefs persistieren (_markdownAutoSync ist bereits true)
-                        prefs.edit()
-                            .putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
-                            .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
-                            .apply()
+                        prefs.edit {
+                            putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
+                            putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
+                        }
 
                         _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
                         emitToast(getString(R.string.toast_markdown_exported, exportedCount))
@@ -847,10 +848,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     } else {
                         // No notes — feature sofort aktivieren, kein Export nötig
                         _markdownExportProgress.value = null
-                        prefs.edit()
-                            .putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
-                            .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
-                            .apply()
+                        prefs.edit {
+                            putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
+                            putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
+                        }
                         emitToast(getString(R.string.toast_markdown_enabled))
                     }
 
@@ -872,10 +873,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         } else {
             // Disable - simple
             _markdownAutoSync.value = false
-            prefs.edit()
-                .putBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
-                .putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
-                .apply()
+            prefs.edit {
+                putBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
+                putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+            }
             viewModelScope.launch {
                 emitToast(getString(R.string.toast_markdown_disabled))
             }
@@ -1021,7 +1022,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     fun setFileLogging(enabled: Boolean) {
         _fileLoggingEnabled.value = enabled
-        prefs.edit().putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, enabled).apply()
+        prefs.edit { putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, enabled) }
         Logger.setFileLoggingEnabled(enabled)
         viewModelScope.launch {
             emitToast(if (enabled) getString(R.string.toast_file_logging_enabled) else getString(R.string.toast_file_logging_disabled))
@@ -1046,9 +1047,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Used for testing the post-update changelog feature
      */
     fun resetChangelogVersion() {
-        prefs.edit()
-            .putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, 0)
-            .apply()
+        prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, 0) }
     }
     
     // ═══════════════════════════════════════════════════════════════════════
@@ -1153,7 +1152,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun setDisplayMode(mode: String) {
         _displayMode.value = mode
-        prefs.edit().putString(Constants.KEY_DISPLAY_MODE, mode).apply()
+        prefs.edit { putString(Constants.KEY_DISPLAY_MODE, mode) }
         Logger.d(TAG, "Display mode changed to: $mode")
     }
 
@@ -1164,7 +1163,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setCustomAppTitle(title: String) {
         val sanitized = title.take(Constants.MAX_CUSTOM_APP_TITLE_LENGTH)
         _customAppTitle.value = sanitized
-        prefs.edit().putString(Constants.KEY_CUSTOM_APP_TITLE, sanitized).apply()
+        prefs.edit { putString(Constants.KEY_CUSTOM_APP_TITLE, sanitized) }
         Logger.d(TAG, "Custom app title changed to: '$sanitized'")
     }
 

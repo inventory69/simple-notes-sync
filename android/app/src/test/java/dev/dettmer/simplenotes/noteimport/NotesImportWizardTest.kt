@@ -53,20 +53,15 @@ class NotesImportWizardTest {
     private fun extractTimestampHelper(
         obj: com.google.gson.JsonObject,
         vararg keys: String
-    ): Long? {
-        for (key in keys) {
-            val element = obj.get(key) ?: continue
-            try {
-                if (element.isJsonPrimitive) {
-                    val prim = element.asJsonPrimitive
-                    if (prim.isNumber) {
-                        val value = prim.asLong
-                        return if (value < 1_000_000_000_000L) value * 1000 else value
-                    }
-                }
-            } catch (_: Exception) { continue }
-        }
-        return null
+    ): Long? = keys.firstNotNullOfOrNull { key ->
+        runCatching {
+            obj.get(key)
+                ?.takeIf { it.isJsonPrimitive }
+                ?.asJsonPrimitive
+                ?.takeIf { it.isNumber }
+                ?.asLong
+                ?.let { value -> if (value < 1_000_000_000_000L) value * 1000 else value }
+        }.getOrNull()
     }
 
     // ═══════════════════════════════════════════════

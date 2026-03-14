@@ -25,10 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,12 +70,12 @@ fun ChecklistItemRow(
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onAddNewItem: () -> Unit,
+    modifier: Modifier = Modifier,
+    dragModifier: Modifier = Modifier,    // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     requestFocus: Boolean = false,
     isDragging: Boolean = false,          // 🆕 v1.8.0: IMPL_023 - Drag state
     isAnyItemDragging: Boolean = false,   // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
-    dragModifier: Modifier = Modifier,    // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     onHeightChanged: (() -> Unit)? = null,  // 🆕 v1.8.1: IMPL_05 - Auto-scroll callback
-    modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -97,11 +99,21 @@ fun ChecklistItemRow(
     // 🆕 v1.8.1: IMPL_05 - Letzte Zeilenanzahl tracken für Auto-Scroll
     var lastLineCount by remember { mutableIntStateOf(0) }
 
-    // 🆕 v1.8.1: Gradient-Sichtbarkeit direkt berechnet (kein derivedStateOf)
-    // derivedStateOf mit remember{} fängt showGradient als stale val — nie aktualisiert.
-    val showGradient = hasOverflow && collapsedHeightDp != null && !isFocused && !isAnyItemDragging
-    val showTopGradient = showGradient && scrollState.value > 0
-    val showBottomGradient = showGradient && scrollState.value < scrollState.maxValue
+    // Gradient-Sichtbarkeit via derivedStateOf: alle Conditions inline (kein stale-val Problem)
+    // rememberUpdatedState für isAnyItemDragging-Parameter, da kein Compose-State
+    val currentIsAnyItemDragging by rememberUpdatedState(isAnyItemDragging)
+    val showTopGradient by remember {
+        derivedStateOf {
+            hasOverflow && collapsedHeightDp != null &&
+                !isFocused && !currentIsAnyItemDragging && scrollState.value > 0
+        }
+    }
+    val showBottomGradient by remember {
+        derivedStateOf {
+            hasOverflow && collapsedHeightDp != null &&
+                !isFocused && !currentIsAnyItemDragging && scrollState.value < scrollState.maxValue
+        }
+    }
 
     // v1.5.0: Auto-focus AND show keyboard when requestFocus is true (new items)
     LaunchedEffect(requestFocus) {

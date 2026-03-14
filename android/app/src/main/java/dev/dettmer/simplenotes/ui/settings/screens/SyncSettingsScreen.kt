@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -415,10 +417,17 @@ private fun NotificationSettingsSection(
                 TextButton(onClick = {
                     showPermissionSettingsDialog = false
                     pendingNotificationEnable = true
-                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                        context.startActivity(intent)
+                    } else {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = "package:${context.packageName}".toUri()
+                        }
+                        context.startActivity(intent)
                     }
-                    context.startActivity(intent)
                 }) {
                     Text(stringResource(R.string.notifications_permission_open_settings))
                 }
@@ -468,9 +477,7 @@ private fun NotificationSettingsSection(
                             showPermissionSettingsDialog = true
                         } else {
                             // First time asking from settings screen
-                            prefs.edit().putBoolean(
-                                "notification_permission_requested", true
-                            ).apply()
+                            prefs.edit { putBoolean("notification_permission_requested", true) }
                             notificationPermissionLauncher.launch(
                                 Manifest.permission.POST_NOTIFICATIONS
                             )

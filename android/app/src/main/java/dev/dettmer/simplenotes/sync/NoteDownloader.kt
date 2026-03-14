@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
@@ -630,10 +631,10 @@ internal class NoteDownloader(
 
             // 🆕 v1.9.0 (Opt 5): Content-Hash und E-Tag bei Deletion invalidieren
             eTagCache.clearForNote(noteId)
-            prefs.edit()
-                .remove("content_hash_$noteId")
-                .remove("content_hash_md_$noteId")
-                .apply()
+            prefs.edit {
+                remove("content_hash_$noteId")
+                remove("content_hash_md_$noteId")
+            }
             Logger.d(TAG, "🗑️ Cleared E-Tag + content hash for deleted note: $noteId")
 
             true

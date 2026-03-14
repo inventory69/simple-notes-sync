@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
+import androidx.core.content.edit
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
@@ -765,17 +766,17 @@ class WebDavSyncService(
             // ⚡ v1.3.1 FIX: Clear lastSyncTimestamp to force download ALL files
             // Restore = "Server ist die Quelle" → Ignore lokale Sync-History
             val previousSyncTime = getLastSyncTimestamp()
-            prefs.edit().putLong("last_sync_timestamp", 0).apply()
+            prefs.edit { putLong("last_sync_timestamp", 0) }
             Logger.d(TAG, "🔄 Cleared lastSyncTimestamp (was: $previousSyncTime) - will download all files")
             
             // ⚡ v1.3.1 FIX: Clear E-Tag caches to force re-download
             eTagCache.clearAll()
             // 🆕 v1.9.0: Auch Content-Hashes löschen (damit alle Notizen neu hochgeladen werden)
-            val contentHashEditor = prefs.edit()
-            prefs.all.keys.filter { it.startsWith("content_hash_") }.forEach { key ->
-                contentHashEditor.remove(key)
+            prefs.edit {
+                prefs.all.keys.filter { it.startsWith("content_hash_") }.forEach { key ->
+                    remove(key)
+                }
             }
-            contentHashEditor.apply()
             Logger.d(TAG, "🔄 Cleared E-Tag + content hash caches - will re-download all files")
             
             // Determine forceOverwrite flag

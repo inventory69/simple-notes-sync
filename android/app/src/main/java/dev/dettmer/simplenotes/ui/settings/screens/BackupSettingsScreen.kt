@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -67,7 +68,7 @@ fun BackupSettingsScreen(
     var selectedRestoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
     
     // v1.8.0: Trigger for delayed restore execution (after dialog closes)
-    var triggerRestore by remember { mutableStateOf(0) }
+    var triggerRestore by remember { mutableIntStateOf(0) }
     var pendingRestoreAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     
     // 🔐 v1.7.0: Encryption state

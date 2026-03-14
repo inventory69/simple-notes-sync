@@ -27,10 +27,10 @@ import dev.dettmer.simplenotes.models.Note
 fun NotesList(
     notes: List<Note>,
     showSyncStatus: Boolean,
+    modifier: Modifier = Modifier,
     selectedNotes: Set<String> = emptySet(),
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
-    modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     onNoteClick: (Note) -> Unit,
     onNoteLongPress: (Note) -> Unit,

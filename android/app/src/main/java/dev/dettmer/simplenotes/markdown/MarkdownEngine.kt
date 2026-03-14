@@ -80,7 +80,7 @@ object MarkdownEngine {
                 TASK_LIST_REGEX.matches(line) -> {
                     val taskItems = mutableListOf<TaskItem>()
                     while (i < lines.size && TASK_LIST_REGEX.matches(lines[i])) {
-                        val m = TASK_LIST_REGEX.find(lines[i])!!
+                        val m = TASK_LIST_REGEX.find(lines[i]) ?: break
                         taskItems.add(TaskItem(
                             text = m.groupValues[2].trim(),
                             isChecked = m.groupValues[1].lowercase() == "x"
@@ -94,7 +94,7 @@ object MarkdownEngine {
                 LIST_ITEM_REGEX.matches(line) -> {
                     val items = mutableListOf<String>()
                     while (i < lines.size && LIST_ITEM_REGEX.matches(lines[i])) {
-                        val itemText = LIST_ITEM_REGEX.find(lines[i])?.groupValues?.get(1)?.trim() ?: ""
+                        val itemText = LIST_ITEM_REGEX.find(lines[i])?.groupValues?.get(1)?.trim().orEmpty()
                         items.add(itemText)
                         i++
                     }

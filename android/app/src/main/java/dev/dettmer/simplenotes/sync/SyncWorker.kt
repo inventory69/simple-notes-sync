@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.sync
 import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.ServiceInfo
+import androidx.core.content.edit
 import android.os.Build
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -469,9 +470,7 @@ class SyncWorker(
             NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync)
             
             // Speichere Zeitpunkt der Warnung
-            prefs.edit()
-                .putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now)
-                .apply()
+            prefs.edit { putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now) }
             
             Logger.d(TAG, "⚠️ Sync warning shown: Server unreachable for ${hoursSinceLastSync}h")
             

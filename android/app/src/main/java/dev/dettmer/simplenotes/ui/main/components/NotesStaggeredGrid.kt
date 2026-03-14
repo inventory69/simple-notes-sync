@@ -30,8 +30,8 @@ fun NotesStaggeredGrid(
     showSyncStatus: Boolean,
     selectedNoteIds: Set<String>,
     isSelectionMode: Boolean,
-    timestampTicker: Long = 0L,
     modifier: Modifier = Modifier,
+    timestampTicker: Long = 0L,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {

@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -131,7 +132,7 @@ fun MainScreen(
     val gridState = rememberLazyStaggeredGridState()
     
     // ⏱️ Timestamp ticker - increments every 30 seconds to trigger recomposition of relative times
-    var timestampTicker by remember { mutableStateOf(0L) }
+    var timestampTicker by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(TIMESTAMP_UPDATE_INTERVAL_MS)

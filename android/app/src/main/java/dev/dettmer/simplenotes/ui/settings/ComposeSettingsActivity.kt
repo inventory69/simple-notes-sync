@@ -2,7 +2,7 @@ package dev.dettmer.simplenotes.ui.settings
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -174,7 +174,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
     private fun openBatteryOptimizationSettings() {
         try {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            intent.data = Uri.parse("package:$packageName")
+            intent.data = "package:$packageName".toUri()
             startActivity(intent)
         } catch (e: Exception) {
             Logger.w(TAG, "Failed to open battery optimization settings: ${e.message}")

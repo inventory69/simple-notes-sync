@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.utils
 
 import android.content.Context
 import android.provider.Settings
+import androidx.core.content.edit
 import java.util.UUID
 
 object DeviceIdGenerator {
@@ -31,7 +32,7 @@ object DeviceIdGenerator {
             deviceId = "android-$deviceId"
             
             // Save for future use
-            prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
+            prefs.edit { putString(KEY_DEVICE_ID, deviceId) }
         }
         
         return deviceId

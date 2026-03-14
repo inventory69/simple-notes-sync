@@ -61,10 +61,10 @@ import dev.dettmer.simplenotes.utils.toReadableTime
 fun NoteCard(
     note: Note,
     showSyncStatus: Boolean,
+    modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {

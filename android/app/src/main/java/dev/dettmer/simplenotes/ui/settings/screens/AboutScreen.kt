@@ -1,9 +1,9 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.net.Uri
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -136,7 +136,7 @@ fun AboutScreen(
                         drawable?.let {
                             // Use fixed size for consistent quality (256x256)
                             val size = 256
-                            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                            val bitmap = createBitmap(size, size)
                             val canvas = Canvas(bitmap)
                             it.setBounds(0, 0, size, size)
                             it.draw(canvas)
@@ -180,7 +180,7 @@ fun AboutScreen(
                 title = stringResource(R.string.about_github_title),
                 subtitle = stringResource(R.string.about_github_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubRepoUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, githubRepoUrl.toUri())
                     context.startActivity(intent)
                 }
             )
@@ -191,7 +191,7 @@ fun AboutScreen(
                 title = stringResource(R.string.about_developer_title),
                 subtitle = stringResource(R.string.about_developer_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubProfileUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, githubProfileUrl.toUri())
                     context.startActivity(intent)
                 }
             )
@@ -202,7 +202,7 @@ fun AboutScreen(
                 title = stringResource(R.string.about_license_title),
                 subtitle = stringResource(R.string.about_license_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(licenseUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, licenseUrl.toUri())
                     context.startActivity(intent)
                 }
             )
@@ -213,7 +213,7 @@ fun AboutScreen(
                 title = stringResource(R.string.about_changelog_title),
                 subtitle = stringResource(R.string.about_changelog_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(changelogUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, changelogUrl.toUri())
                     context.startActivity(intent)
                 }
             )

@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.main
 
 import android.app.Application
 import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
@@ -942,7 +943,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setSortOption(option: SortOption) {
         _sortOption.value = option
-        prefs.edit().putString(Constants.KEY_SORT_OPTION, option.prefsValue).apply()
+        prefs.edit { putString(Constants.KEY_SORT_OPTION, option.prefsValue) }
         Logger.d(TAG, "🔀 Sort option changed to: ${option.prefsValue}")
     }
     
@@ -951,7 +952,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setSortDirection(direction: SortDirection) {
         _sortDirection.value = direction
-        prefs.edit().putString(Constants.KEY_SORT_DIRECTION, direction.prefsValue).apply()
+        prefs.edit { putString(Constants.KEY_SORT_DIRECTION, direction.prefsValue) }
         Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue}")
     }
     
@@ -960,7 +961,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setNoteFilter(filter: NoteFilter) {
         _noteFilter.value = filter
-        prefs.edit().putString(Constants.KEY_NOTE_FILTER, filter.prefsValue).apply()
+        prefs.edit { putString(Constants.KEY_NOTE_FILTER, filter.prefsValue) }
         Logger.d(TAG, "🔍 Note filter changed to: ${filter.prefsValue}")
     }
 

@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.main
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -73,9 +74,7 @@ fun UpdateChangelogSheet() {
     ModalBottomSheet(
         onDismissRequest = {
             showSheet = false
-            prefs.edit()
-                .putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode)
-                .apply()
+            prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
         },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -142,9 +141,7 @@ fun UpdateChangelogSheet() {
                         sheetState.hide()
                     }.invokeOnCompletion {
                         showSheet = false
-                        prefs.edit()
-                            .putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode)
-                            .apply()
+                        prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
                     }
                 },
                 modifier = Modifier

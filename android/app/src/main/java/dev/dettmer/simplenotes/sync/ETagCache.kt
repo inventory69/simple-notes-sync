@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.utils.Logger
 
 /**
@@ -29,21 +30,20 @@ class ETagCache(private val prefs: SharedPreferences) {
      */
     fun batchUpdate(updates: Map<String, String?>) {
         try {
-            val editor = prefs.edit()
             var putCount = 0
             var removeCount = 0
 
-            updates.forEach { (key, value) ->
-                if (value != null) {
-                    editor.putString(key, value)
-                    putCount++
-                } else {
-                    editor.remove(key)
-                    removeCount++
+            prefs.edit {
+                updates.forEach { (key, value) ->
+                    if (value != null) {
+                        putString(key, value)
+                        putCount++
+                    } else {
+                        remove(key)
+                        removeCount++
+                    }
                 }
             }
-
-            editor.apply()
             Logger.d(TAG, "⚡ Batch-updated E-Tags: $putCount saved, $removeCount removed")
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to batch-update E-Tags", e)
@@ -53,10 +53,10 @@ class ETagCache(private val prefs: SharedPreferences) {
     /** Removes all cached E-Tags (json + markdown). Used before a full restore. */
     fun clearAll() {
         try {
-            val editor = prefs.edit()
-            prefs.all.keys.filter { it.startsWith(PREFIX_JSON) }.forEach { editor.remove(it) }
-            prefs.all.keys.filter { it.startsWith(PREFIX_MD) }.forEach { editor.remove(it) }
-            editor.apply()
+            prefs.edit {
+                prefs.all.keys.filter { it.startsWith(PREFIX_JSON) }.forEach { remove(it) }
+                prefs.all.keys.filter { it.startsWith(PREFIX_MD) }.forEach { remove(it) }
+            }
             Logger.d(TAG, "🔄 Cleared all E-Tag caches")
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to clear E-Tag caches", e)
@@ -65,9 +65,9 @@ class ETagCache(private val prefs: SharedPreferences) {
 
     /** Removes cached E-Tags for a specific note (json + markdown). */
     fun clearForNote(noteId: String) {
-        prefs.edit()
-            .remove("$PREFIX_JSON$noteId")
-            .remove("$PREFIX_MD$noteId")
-            .apply()
+        prefs.edit {
+            remove("$PREFIX_JSON$noteId")
+            remove("$PREFIX_MD$noteId")
+        }
     }
 }
