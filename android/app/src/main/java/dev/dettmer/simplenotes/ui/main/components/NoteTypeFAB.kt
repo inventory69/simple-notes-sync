@@ -32,6 +32,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -61,6 +63,7 @@ fun NoteTypeFAB(
     onCreateNote: (NoteType) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var navigating by remember { mutableStateOf(false) }
 
     // Main FAB icon rotation: 0° → 45° (+ becomes ×)
     val rotation by animateFloatAsState(
@@ -80,9 +83,21 @@ fun NoteTypeFAB(
         val scrimAlpha = remember { Animatable(0f) }
         LaunchedEffect(expanded) {
             if (expanded) {
+                navigating = false
                 scrimAlpha.animateTo(1f, animationSpec = tween(durationMillis = 250))
-            } else {
+            } else if (navigating) {
+                // ON_STOP → Activity abgedeckt → sofort unsichtbar
                 scrimAlpha.snapTo(0f)
+            } else {
+                // Scrim-Tap oder FAB-Toggle → sanft ausblenden
+                scrimAlpha.animateTo(0f, animationSpec = tween(durationMillis = 200))
+            }
+        }
+        // Scrim aufräumen wenn Activity stoppt (Editor-Window deckt Screen bereits ab)
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+            if (expanded) {
+                navigating = true
+                expanded = false
             }
         }
         if (expanded || scrimAlpha.value > 0f) {
@@ -148,7 +163,6 @@ fun NoteTypeFAB(
                         scale = animatedScale,
                         alpha = animatedAlpha,
                         onClick = {
-                            expanded = false
                             onCreateNote(action.noteType)
                         }
                     )
