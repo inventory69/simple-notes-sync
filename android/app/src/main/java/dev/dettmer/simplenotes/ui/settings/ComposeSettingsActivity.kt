@@ -7,8 +7,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
  * - Navigation with back button in each screen
  * - Clean separation of concerns with SettingsViewModel
  */
-class ComposeSettingsActivity : ComponentActivity() {
+class ComposeSettingsActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "ComposeSettingsActivity"
