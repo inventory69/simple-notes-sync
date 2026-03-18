@@ -450,7 +450,7 @@
     <string name="editor_mode_preview">预览</string>
     <string name="editor_toggle_preview">切换 Markdown 预览</string>
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
-    <string name="md_toolbar_bold">加粗</string>
+    <string name="md_toolbar_bold">粗体</string>
     <string name="md_toolbar_italic">斜体</string>
     <string name="md_toolbar_strikethrough">删除线</string>
     <string name="md_toolbar_heading">标题</string>
