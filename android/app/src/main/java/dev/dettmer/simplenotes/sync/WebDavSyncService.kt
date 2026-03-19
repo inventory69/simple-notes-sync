@@ -147,7 +147,21 @@ class WebDavSyncService(
         try {
             val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
-            if (!sardine.exists(mdUrl)) {
+            // 🔧 v2.0.0 (Issue #44): exists() may throw IOException on servers with auth quirks.
+            // Fallback: try list() — if it succeeds, the directory exists.
+            val dirExists = try {
+                sardine.exists(mdUrl)
+            } catch (e: IOException) {
+                Logger.w(TAG, "⚠️ notes-md/ exists() check failed: ${e.message}, trying list()")
+                try {
+                    sardine.list(mdUrl)
+                    true
+                } catch (_: IOException) {
+                    false
+                }
+            }
+
+            if (!dirExists) {
                 sardine.createDirectory(mdUrl)
                 Logger.d(TAG, "📁 Created notes-md/ directory (for future use)")
             }
@@ -163,6 +177,7 @@ class WebDavSyncService(
      * ⚡ v1.3.1: Stellt sicher dass notes/ Ordner existiert (mit Cache)
      * 
      * Spart ~500ms pro Sync durch Caching
+     * 🔧 v2.0.0 (Issue #44): Fallback auf list() wenn exists() fehlschlägt
      */
     private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
         if (connectionManager.notesDirEnsured) {
@@ -172,7 +187,20 @@ class WebDavSyncService(
         
         try {
             Logger.d(TAG, "🔍 Checking if $activeSyncFolderName/ directory exists...")
-            if (!sardine.exists(notesUrl)) {
+            // 🔧 v2.0.0 (Issue #44): exists() may throw if server returns unexpected HTTP code.
+            // Fallback: try list() — PROPFIND works universally (Jianguoyun, Nextcloud, Apache).
+            val dirExists = try {
+                sardine.exists(notesUrl)
+            } catch (e: IOException) {
+                Logger.w(TAG, "⚠️ exists() check failed: ${e.message}, trying list()")
+                try {
+                    sardine.list(notesUrl)
+                    true
+                } catch (_: IOException) {
+                    false
+                }
+            }
+            if (!dirExists) {
                 Logger.d(TAG, "📁 Creating $activeSyncFolderName/ directory...")
                 sardine.createDirectory(notesUrl)
             }
@@ -215,7 +243,14 @@ class WebDavSyncService(
             // 🐛 Fix #21: Wenn /notes/ nicht existiert → true zurückgeben, damit syncNotes()
             // aufgerufen wird und ensureNotesDirectoryExists() das Verzeichnis anlegen kann.
             // Vorher: return false → Deadlock (Verzeichnis wird nie erstellt, Sync nie gestartet)
-            if (!sardine.exists(notesUrl)) {
+            // 🔧 v2.0.0 (Issue #44): Catch IOException from exists() to avoid masking real errors
+            val notesExistCheck = try {
+                sardine.exists(notesUrl)
+            } catch (e: IOException) {
+                Logger.w(TAG, "⚠️ Server check failed: ${e.message}")
+                return true // Trigger sync anyway — let syncNotes() handle errors
+            }
+            if (!notesExistCheck) {
                 Logger.d(TAG, "📁 /notes/ doesn't exist yet - will create on sync")
                 return true
             }
@@ -239,8 +274,14 @@ class WebDavSyncService(
                 Logger.d(TAG, "⏭️ Markdown check skipped (auto-import disabled)")
             } else {
                 val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
-                
-                if (!sardine.exists(mdUrl)) {
+
+                // 🔧 v2.0.0 (Issue #44): Use listOrNull() to avoid 403 false-negative on Jianguoyun
+                val mdResources: List<com.thegrizzlylabs.sardineandroid.DavResource>? = when (sardine) {
+                    is SafeSardineWrapper -> sardine.listOrNull(mdUrl)
+                    else -> try { sardine.list(mdUrl) } catch (_: IOException) { null }
+                }
+
+                if (mdResources == null) {
                     Logger.d(TAG, "📁 /notes-md/ doesn't exist - no markdown changes")
                 } else {
                     Logger.d(TAG, "📝 Checking Markdown files (hybrid approach)...")
@@ -248,7 +289,6 @@ class WebDavSyncService(
                     // Strategy: Timestamp-based check (reliable, always works)
                     // Note: If-Modified-Since support varies by WebDAV server
                     // We use timestamp comparison which is universal
-                    val mdResources = sardine.list(mdUrl, 1)
                     val mdHasNewer = mdResources.any { resource ->
                         !resource.isDirectory && 
                         resource.name.endsWith(".md") &&
@@ -383,6 +423,8 @@ class WebDavSyncService(
             )
             
             // Only test if directory exists or can be created
+            // 🔧 v2.0.0 (Issue #44): exists() may throw on Jianguoyun — let it propagate;
+            // the outer catch maps it to an error message properly.
             val exists = sardine.exists(serverUrl)
             if (!exists) {
                 sardine.createDirectory(serverUrl)

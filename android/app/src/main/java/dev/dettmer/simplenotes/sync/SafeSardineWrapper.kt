@@ -13,21 +13,30 @@ import java.io.Closeable
 import java.io.InputStream
 
 private const val HTTP_METHOD_NOT_ALLOWED = 405
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_FORBIDDEN = 403
+private const val HTTP_GONE = 410
+private const val HTTP_UNAUTHORIZED = 401
 
 /**
  * 🔧 v1.7.1: Wrapper für Sardine der Connection Leaks verhindert
  * 🔧 v1.7.2 (IMPL_003): Implementiert Closeable für explizites Resource-Management
+ * 🔧 v2.0.0 (Issue #44): exists() behandelt 403 korrekt (Jianguoyun-Kompatibilität)
  *
  * Hintergrund:
  * - OkHttpSardine.exists() schließt den Response-Body nicht
  * - Dies führt zu "connection leaked" Warnungen im Log
  * - Kann bei vielen Requests zu Socket-Exhaustion führen
  * - Session-Cache hält Referenzen ohne explizites Cleanup
+ * - Jianguoyun WebDAV antwortet mit 403 auf HEAD-Requests für Verzeichnisse
+ *   → vorher wurde 403 als "nicht gefunden" behandelt → Download komplett übersprungen
  *
  * Lösung:
  * - Eigene exists()-Implementation mit korrektem Response-Cleanup
  * - Preemptive Authentication um 401-Round-Trips zu vermeiden
  * - Closeable Pattern für explizite Resource-Freigabe
+ * - 403 wird als "existiert" gewertet (Ressource vorhanden, HEAD nicht erlaubt)
+ * - listOrNull() als saubere Alternative zu exists()+list()
  *
  * @see <a href="https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/">OkHttp Response Body Docs</a>
  */
@@ -55,7 +64,6 @@ class SafeSardineWrapper private constructor(
             return SafeSardineWrapper(delegate, okHttpClient, authHeader)
         }
     }
-    
     // 🆕 v1.7.2 (IMPL_003): Track ob bereits geschlossen
     @Volatile
     private var isClosed = false
@@ -63,9 +71,18 @@ class SafeSardineWrapper private constructor(
     /**
      * ✅ Sichere exists()-Implementation mit Response Cleanup
      *
+     * 🔧 v2.0.0 (Issue #44): Jianguoyun-Kompatibilität
+     * - 2xx → true (existiert)
+     * - 403 → true (existiert, HEAD auf Collection nicht erlaubt — Jianguoyun-Verhalten)
+     * - 404 → false (existiert nicht)
+     * - 410 → false (wurde gelöscht)
+     * - 401 → IOException (Auth-Fehler, soll propagiert werden)
+     * - Sonstiges → IOException (unerwarteter Fehler)
+     *
      * Im Gegensatz zu OkHttpSardine.exists() wird hier:
      * 1. Preemptive Auth-Header gesendet (kein 401 Round-Trip)
      * 2. Response.use{} für garantiertes Cleanup verwendet
+     * 3. 403 korrekt als "existiert" behandelt (statt false)
      */
     override fun exists(url: String): Boolean {
         val request = Request.Builder()
@@ -74,15 +91,41 @@ class SafeSardineWrapper private constructor(
             .header("Authorization", authHeader)
             .build()
 
-        return try {
-            okHttpClient.newCall(request).execute().use { response ->
-                val isSuccess = response.isSuccessful
-                Logger.d(TAG, "exists($url) → $isSuccess (${response.code})")
-                isSuccess
+        return okHttpClient.newCall(request).execute().use { response ->
+            val code = response.code
+            Logger.d(TAG, "exists($url) → ${response.isSuccessful} ($code)")
+            when {
+                response.isSuccessful -> true
+                code == HTTP_NOT_FOUND -> false
+                code == HTTP_FORBIDDEN -> true  // Resource exists (Jianguoyun: HEAD on Collection → 403)
+                code == HTTP_GONE -> false
+                code == HTTP_UNAUTHORIZED -> throw java.io.IOException(
+                    "Authentication failed ($code) for $url"
+                )
+                else -> throw java.io.IOException(
+                    "Unexpected HTTP $code for exists($url): ${response.message}"
+                )
             }
-        } catch (e: Exception) {
-            Logger.d(TAG, "exists($url) failed: ${e.message}")
-            false
+        }
+    }
+
+    /**
+     * 🆕 v2.0.0 (Issue #44): Listet Ressourcen oder gibt null zurück wenn 404.
+     *
+     * Ersetzt das Pattern `if (exists(url)) { list(url) }` durch eine einzelne Operation.
+     * Funktioniert auf allen WebDAV-Servern da PROPFIND universell unterstützt wird,
+     * auch auf Servern die HEAD auf Collections ablehnen (z.B. Jianguoyun).
+     *
+     * @return Liste der Ressourcen, oder null wenn URL nicht existiert (404)
+     * @throws IOException für andere Fehler (Netzwerk, Auth, 5xx)
+     */
+    fun listOrNull(url: String): List<DavResource>? {
+        return try {
+            list(url)
+        } catch (e: com.thegrizzlylabs.sardineandroid.impl.SardineException) {
+            if (e.statusCode == HTTP_NOT_FOUND) null else throw e
+        } catch (e: java.io.IOException) {
+            if (e.message?.contains("404") == true) null else throw e
         }
     }
 

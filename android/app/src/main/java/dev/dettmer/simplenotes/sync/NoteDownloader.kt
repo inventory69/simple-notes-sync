@@ -107,9 +107,17 @@ internal class NoteDownloader(
             val lastSyncTime = prefs.getLong("last_sync_timestamp", 0L)
             var skippedUnchanged = 0
 
-            if (sardine.exists(notesUrl)) {
+            // 🔧 v2.0.0 (Issue #44): Use listOrNull() instead of exists()+list() to avoid
+            // false-negative exists() on servers that return 403 for HEAD on collections (Jianguoyun).
+            // PROPFIND (list) works universally on all WebDAV servers.
+            val notesResources: List<com.thegrizzlylabs.sardineandroid.DavResource>? = when (sardine) {
+                is SafeSardineWrapper -> sardine.listOrNull(notesUrl)
+                else -> try { sardine.list(notesUrl) } catch (_: java.io.IOException) { null }
+            }
+
+            if (notesResources != null) {
                 Logger.d(TAG, "   ✅ /$activeSyncFolderName/ exists, scanning...")
-                val resources = sardine.list(notesUrl)
+                val resources = notesResources
                 val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
 
@@ -353,7 +361,7 @@ internal class NoteDownloader(
                         "$skippedDeleted skipped (deleted), $skippedUnchanged skipped (unchanged)"
                 )
             } else {
-                Logger.w(TAG, "   ⚠️ /notes/ does not exist, skipping Phase 1")
+                Logger.w(TAG, "   ⚠️ /$activeSyncFolderName/ does not exist (404), skipping Phase 1")
             }
 
             // 🆕 PHASE 2: BACKWARD-COMPATIBILITY - Download from Root (old structure v1.2.0)
@@ -571,19 +579,28 @@ internal class NoteDownloader(
             var deletedMd = false
 
             // v1.4.1: Try to delete JSON from configured sync folder first (standard path)
+            // 🔧 v2.0.0 (Issue #44): Use try/delete instead of exists()+delete() to avoid
+            // false-negative exists() on servers returning 403 for HEAD on collections.
             val jsonUrl = urlBuilder.getNotesUrl(serverUrl) + "$noteId.json"
-            if (sardine.exists(jsonUrl)) {
+            try {
                 sardine.delete(jsonUrl)
                 deletedJson = true
                 Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /$activeSyncFolderName/)")
-            } else {
-                // v1.4.1: Fallback - check ROOT folder for v1.2.0 compatibility
-                val rootJsonUrl = serverUrl.trimEnd('/') + "/$noteId.json"
-                Logger.d(TAG, "🔍 JSON not in /notes/, checking ROOT: $rootJsonUrl")
-                if (sardine.exists(rootJsonUrl)) {
-                    sardine.delete(rootJsonUrl)
-                    deletedJson = true
-                    Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from ROOT - v1.2.0 compat)")
+            } catch (e: java.io.IOException) {
+                if (e.message?.contains("404") == true) {
+                    // v1.4.1: Fallback - check ROOT folder for v1.2.0 compatibility
+                    val rootJsonUrl = serverUrl.trimEnd('/') + "/$noteId.json"
+                    Logger.d(TAG, "🔍 JSON not in /$activeSyncFolderName/, checking ROOT: $rootJsonUrl")
+                    try {
+                        sardine.delete(rootJsonUrl)
+                        deletedJson = true
+                        Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from ROOT - v1.2.0 compat)")
+                    } catch (e2: java.io.IOException) {
+                        if (e2.message?.contains("404") != true) throw e2
+                        Logger.d(TAG, "ℹ️ $noteId.json not found on server (already gone)")
+                    }
+                } else {
+                    throw e
                 }
             }
 
@@ -604,12 +621,17 @@ internal class NoteDownloader(
 
             if (mdFilenameToDelete != null) {
                 val mdUrl = mdBaseUrl.trimEnd('/') + "/" + mdFilenameToDelete
-                if (sardine.exists(mdUrl)) {
+                // 🔧 v2.0.0 (Issue #44): try/delete instead of exists()+delete()
+                try {
                     sardine.delete(mdUrl)
                     deletedMd = true
                     Logger.d(TAG, "🗑️ Deleted from server: $mdFilenameToDelete")
-                } else {
-                    Logger.w(TAG, "⚠️ MD file not found: $mdFilenameToDelete")
+                } catch (e: java.io.IOException) {
+                    if (e.message?.contains("404") == true) {
+                        Logger.w(TAG, "⚠️ MD file not found on server: $mdFilenameToDelete")
+                    } else {
+                        throw e
+                    }
                 }
             } else {
                 Logger.w(TAG, "⚠️ Could not determine MD filename for note $noteId")
