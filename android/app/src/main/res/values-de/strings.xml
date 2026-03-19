@@ -126,6 +126,7 @@
     </plurals>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d von %2$d Notizen vom Server gelöscht</string>
     <string name="snackbar_server_delete_failed">Server-Löschung fehlgeschlagen</string>
+    <string name="snackbar_delete_queued_for_sync">Server nicht erreichbar – Löschung wird beim nächsten Sync ausgeführt</string>
     <string name="snackbar_server_error">Server-Fehler: %s</string>
     <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
     <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
