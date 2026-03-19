@@ -13,7 +13,6 @@ import org.junit.Test
  * - Filtering / Counting (wie in uploadLocalNotes verwendet)
  */
 class UploadTaskResultTest {
-
     // ═══════════════════════════════════════════════
     // Success
     // ═══════════════════════════════════════════════

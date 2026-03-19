@@ -15,7 +15,6 @@ import org.junit.Test
  * which are not currently in the project dependencies.
  */
 class ParallelDownloadTest {
-
     // Note: DownloadTask tests require mocking DavResource, skipping for now
     // Full integration tests would require MockK or Mockito
 

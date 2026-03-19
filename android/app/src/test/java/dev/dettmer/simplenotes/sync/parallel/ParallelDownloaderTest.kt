@@ -3,12 +3,12 @@ package dev.dettmer.simplenotes.sync.parallel
 import com.thegrizzlylabs.sardineandroid.DavResource
 import com.thegrizzlylabs.sardineandroid.Sardine
 import io.mockk.*
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
-import java.io.ByteArrayInputStream
-import java.io.IOException
 
 /**
  * Unit-Tests für ParallelDownloader mit MockK.
@@ -16,17 +16,15 @@ import java.io.IOException
  * Testet die echte Download-Logik mit gemocktem Sardine-Client.
  */
 class ParallelDownloaderTest {
-
     private fun mockSardine(): Sardine = mockk(relaxed = true)
 
-    private fun createTask(noteId: String, url: String = "https://server/notes/$noteId.json") =
-        DownloadTask(
-            noteId = noteId,
-            url = url,
-            resource = mockk<DavResource>(relaxed = true),
-            serverETag = "etag-$noteId",
-            serverModified = System.currentTimeMillis()
-        )
+    private fun createTask(noteId: String, url: String = "https://server/notes/$noteId.json") = DownloadTask(
+        noteId = noteId,
+        url = url,
+        resource = mockk<DavResource>(relaxed = true),
+        serverETag = "etag-$noteId",
+        serverModified = System.currentTimeMillis()
+    )
 
     // ═══════════════════════════════════════════════
     // Leere Task-Liste

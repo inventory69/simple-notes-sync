@@ -1,5 +1,7 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +42,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -49,8 +52,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import android.util.Log
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
+import kotlinx.coroutines.delay
 
 /**
  * A single row in the checklist editor with drag handle, checkbox, text input, and delete button.
@@ -79,6 +85,7 @@ fun ChecklistItemRow(
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
     var textFieldValue by remember(item.id) {
         mutableStateOf(TextFieldValue(text = item.text, selection = TextRange(0)))
@@ -102,6 +109,8 @@ fun ChecklistItemRow(
     // Gradient-Sichtbarkeit via derivedStateOf: alle Conditions inline (kein stale-val Problem)
     // rememberUpdatedState für isAnyItemDragging-Parameter, da kein Compose-State
     val currentIsAnyItemDragging by rememberUpdatedState(isAnyItemDragging)
+    // IMPL_29e: Per-item isDragging — nur DAS gedraggte Item expandiert (Bug 3 Fix)
+    val currentIsDragging by rememberUpdatedState(isDragging)
     val showTopGradient by remember {
         derivedStateOf {
             hasOverflow && collapsedHeightDp != null &&
@@ -123,6 +132,14 @@ fun ChecklistItemRow(
         }
     }
 
+    // IMPL_29d: Clear focus when drag starts on THIS item.
+    // Prevents oversize (424px instead of 271px) which causes viewport overflow after separator crossing.
+    LaunchedEffect(isDragging) {
+        if (isDragging && isFocused) {
+            focusManager.clearFocus()
+        }
+    }
+
     // 🆕 v1.8.0: Cursor ans Ende setzen wenn fokussiert (für Bearbeitung)
     LaunchedEffect(isFocused) {
         if (isFocused && textFieldValue.selection.start == 0) {
@@ -141,6 +158,33 @@ fun ChecklistItemRow(
             )
         }
     }
+
+    // IMPL_29b: Force gradient state refresh after drag ends.
+    // During drag, onTextLayout guard prevents hasOverflow/collapsedHeightDp updates.
+    // After drag, onTextLayout may not refire (no text change).
+    // Coercing scroll position triggers scrollState change → gradient derivedStateOf re-evaluates.
+    LaunchedEffect(isAnyItemDragging) {
+        if (!isAnyItemDragging && hasOverflow && !isFocused) {
+            // IMPL_29d: Wait for layout pass to re-establish scrollState.maxValue after
+            // verticalScroll modifier is re-added. Without delay, maxValue may still be 0.
+            delay(DRAG_END_LAYOUT_DELAY_MS)
+            if (scrollState.maxValue > 0) {
+                scrollState.scrollTo(scrollState.value.coerceIn(0, scrollState.maxValue))
+            }
+        }
+    }
+
+    // IMPL_29d: Animated alpha for gradient fade-in/out (~200ms)
+    val topGradientAlpha by animateFloatAsState(
+        targetValue = if (showTopGradient) 1f else 0f,
+        animationSpec = tween(GRADIENT_FADE_DURATION_MS),
+        label = "topGradientAlpha"
+    )
+    val bottomGradientAlpha by animateFloatAsState(
+        targetValue = if (showBottomGradient) 1f else 0f,
+        animationSpec = tween(GRADIENT_FADE_DURATION_MS),
+        label = "bottomGradientAlpha"
+    )
 
     val alpha = if (item.isChecked) 0.6f else 1.0f
     val textDecoration = if (item.isChecked) TextDecoration.LineThrough else TextDecoration.None
@@ -182,13 +226,24 @@ fun ChecklistItemRow(
 
         // 🆕 v1.8.0: Text Input mit dynamischem Overflow-Gradient
         Box(modifier = Modifier.weight(1f)) {
-            // Scrollbarer Wrapper: begrenzt Höhe auf ~5 Zeilen wenn collapsed
+            // Scrollbarer Wrapper: begrenzt Höhe auf ~5 Zeilen wenn collapsed.
+            // IMPL_29f F1: Gedraggtes Item behält IMMER seine collapsed Höhe.
+            // Height-Change während Drag → Layout-Repass → Pointer-Verlust (RC-1).
+            // Expansion erst nach Drop (isDragging → false).
             Box(
-                modifier = collapsedHeightDp?.takeIf { !isFocused && hasOverflow }?.let { height ->
-                    Modifier
-                        .heightIn(max = height)
-                        .verticalScroll(scrollState)
-                } ?: Modifier
+                modifier = if (currentIsDragging) {
+                    // Collapsed bleiben (gleiche heightIn), aber ohne verticalScroll
+                    // (unnötig, da Item während Drag nicht interaktiv ist).
+                    collapsedHeightDp?.takeIf { hasOverflow }?.let { height ->
+                        Modifier.heightIn(max = height)
+                    } ?: Modifier
+                } else {
+                    collapsedHeightDp?.takeIf { !isFocused && hasOverflow }?.let { height ->
+                        Modifier
+                            .heightIn(max = height)
+                            .verticalScroll(scrollState)
+                    } ?: Modifier
+                }
             ) {
                 BasicTextField(
                     value = textFieldValue,
@@ -235,7 +290,9 @@ fun ChecklistItemRow(
                     onTextLayout = { textLayoutResult ->
                         // 🆕 v1.8.1: lineCount ist jetzt akkurat (maxLines=MAX_VALUE deckelt nicht)
                         val lineCount = textLayoutResult.lineCount
-                        if (!isAnyItemDragging) {
+                        // IMPL_29e: Nur das gedraggte Item pausiert Overflow-Erkennung.
+                        // Nicht-gedraggte Items dürfen auch während eines Drags aktualisieren (Bug 2).
+                        if (!isDragging) {
                             val overflow = lineCount > COLLAPSED_MAX_LINES
                             hasOverflow = overflow
                             // Höhe der ersten 5 Zeilen berechnen (einmalig)
@@ -248,6 +305,11 @@ fun ChecklistItemRow(
                             if (!overflow) {
                                 collapsedHeightDp = null
                             }
+                        }
+                        if (BuildConfig.DEBUG && lineCount > COLLAPSED_MAX_LINES) {
+                            Log.d("DragDrop", "[GRADIENT:${item.id.takeLast(6)}] " +
+                                "lines=$lineCount overflow=$hasOverflow " +
+                                "collapsed=$collapsedHeightDp isDrag=$isDragging focused=$isFocused")
                         }
                         // 🆕 v1.8.1 (IMPL_05): Höhenänderung bei Zeilenumbruch melden
                         if (isFocused && lineCount > lastLineCount && lastLineCount > 0) {
@@ -272,18 +334,19 @@ fun ChecklistItemRow(
             }
 
             // 🆕 v1.8.0: Dynamischer Gradient basierend auf Scroll-Position
+            // IMPL_29d: animateFloatAsState für sanften Fade-Effekt (~200ms)
             // Oben: sichtbar wenn nach unten gescrollt (Text oberhalb versteckt)
-            if (showTopGradient) {
+            if (topGradientAlpha > 0f) {
                 OverflowGradient(
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier.align(Alignment.TopCenter).alpha(topGradientAlpha),
                     isTopGradient = true
                 )
             }
 
             // Unten: sichtbar wenn noch Text unterhalb vorhanden
-            if (showBottomGradient) {
+            if (bottomGradientAlpha > 0f) {
                 OverflowGradient(
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier.align(Alignment.BottomCenter).alpha(bottomGradientAlpha),
                     isTopGradient = false
                 )
             }
@@ -310,6 +373,10 @@ fun ChecklistItemRow(
 
 // 🆕 v1.8.0: Maximum lines when collapsed (not focused)
 private const val COLLAPSED_MAX_LINES = 5
+// IMPL_29d: Duration for gradient fade animation (ms)
+private const val GRADIENT_FADE_DURATION_MS = 200
+// IMPL_29d: Delay after drag ends to allow layout pass before reading scrollState.maxValue
+private const val DRAG_END_LAYOUT_DELAY_MS = 50L
 
 // ════════════════════════════════════════════════════════════════
 // 🆕 v1.8.0: Preview Composables for Manual Testing

@@ -19,10 +19,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,7 +73,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.ImeAction
@@ -83,7 +83,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
@@ -99,7 +99,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.showToast
-import kotlin.math.roundToInt
+import android.util.Log
+import dev.dettmer.simplenotes.BuildConfig
+
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
@@ -588,7 +590,6 @@ private fun TextNoteContent(
 @Composable
 private fun LazyItemScope.DraggableChecklistItem(
     item: ChecklistItemState,
-    visualIndex: Int,
     dragDropState: DragDropListState,
     focusNewItemId: String?,
     onTextChange: (String, String) -> Unit,
@@ -598,9 +599,11 @@ private fun LazyItemScope.DraggableChecklistItem(
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit,  // 🆕 v1.8.1 (IMPL_05)
 ) {
-    // 🆕 v1.8.2 (IMPL_11): Drag nur visuell anzeigen wenn tatsächlich bestätigt.
-    // Verhindert Glitch beim schnellen Scrollen (kurzzeitiges onDragStart ohne onDrag).
-    val isDragging = dragDropState.draggingItemIndex == visualIndex && dragDropState.isDragConfirmed
+    // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
+    // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
+    // visualIndex (aus Composition, NEW) für 1-2 Frames nach jedem Swap → sichtbarer Sprung.
+    // Key-basiert ist immun gegen Layout/Composition-Desync.
+    val isDragging = dragDropState.isDraggingItem(item.id) && dragDropState.isDragConfirmed
     val elevation by animateDpAsState(
         targetValue = if (isDragging) DRAGGING_ELEVATION_DP else 0.dp,
         label = "elevation"
@@ -622,8 +625,11 @@ private fun LazyItemScope.DraggableChecklistItem(
         onAddNewItem = { onAddNewItemAfter(item.id) },
         requestFocus = shouldFocus,
         isDragging = isDragging,
-        isAnyItemDragging = dragDropState.draggingItemIndex != null,
-        dragModifier = Modifier.dragContainer(dragDropState, visualIndex),
+        isAnyItemDragging = dragDropState.isAnyItemDragging,
+        dragModifier = Modifier.dragContainer(
+            dragDropState = dragDropState,
+            itemKey = item.id
+        ),
         onHeightChanged = onHeightChanged,  // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
             // 🆕 v1.8.2 (IMPL_11): animateItem() NUR während bestätigtem Drag anwenden.
@@ -636,14 +642,13 @@ private fun LazyItemScope.DraggableChecklistItem(
                 else
                     Modifier
             )
-            .offset {
-                IntOffset(
-                    0,
-                    if (isDragging) dragDropState.draggingItemOffset.roundToInt() else 0
-                )
-            }
             .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
-            .shadow(elevation, shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp))
+            .graphicsLayer {
+                if (isDragging) translationY = dragDropState.draggingItemOffset
+                shadowElevation = elevation.toPx()
+                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
+                clip = isDragging || elevation > 0.dp
+            }
             .background(
                 color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
@@ -652,6 +657,7 @@ private fun LazyItemScope.DraggableChecklistItem(
 }
 
 @Suppress("LongParameterList") // Compose functions commonly have many callback parameters
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ChecklistEditor(
     items: List<ChecklistItemState>,
@@ -669,7 +675,10 @@ private fun ChecklistEditor(
     onSortClick: () -> Unit,  // 🔀 v1.8.0
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
+    // IMPL_29q Q1: LazyLayoutCacheWindow ersetzt beyondBoundsItemCount (entfernt in Compose 1.10+).
+    // Hält 0.55 × Viewport auf jeder Seite composiert → 865px Buffer (3 große Items à 271px).
+    // Verhindert Composable-Recycling beim Auto-Scroll+Swap → kein toter Pointer-Scope.
+    val listState = rememberLazyListState(LazyLayoutCacheWindow(0.55f, 0.55f))
     val dragDropState = rememberDragDropListState(
         lazyListState = listState,
         scope = scope,
@@ -763,7 +772,7 @@ private fun ChecklistEditor(
         // draggingItemIndex zeigt auf falschen Slot → Drag bricht ab.
         // dragDropState.separatorVisualIndex hat noch den Wert der VORHERIGEN Composition
         // (SideEffect läuft erst nach Composition) → >= 0 = Separator war vorher sichtbar.
-        (dragDropState.draggingItemIndex != null && dragDropState.separatorVisualIndex >= 0)
+        (dragDropState.isAnyItemDragging && dragDropState.separatorVisualIndex >= 0)
     )
 
     Column(modifier = modifier) {
@@ -773,6 +782,9 @@ private fun ChecklistEditor(
         val separatorVisualIndex = if (showSeparator) uncheckedCount else -1
         SideEffect {
             dragDropState.separatorVisualIndex = separatorVisualIndex
+            if (BuildConfig.DEBUG && dragDropState.isAnyItemDragging) {
+                Log.d("DragDrop", "[SEPARATOR] idx=$separatorVisualIndex")
+            }
         }
 
         // 🆕 v1.8.1 + v1.8.2 (IMPL_10): Viewport-aware Auto-Scroll bei Zeilenwachstum
@@ -798,7 +810,11 @@ private fun ChecklistEditor(
             state = listState,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            // IMPL_29f F2: Während Drag: User-Scroll deaktivieren.
+            // Verhindert Gesture-Konkurrenz zwischen LazyColumn-Scroll und Drag-Gesture (RC-2).
+            // Scrollen erfolgt ausschließlich über programmatisches Auto-Scroll.
+            userScrollEnabled = !dragDropState.isAnyItemDragging,
         ) {
             // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
             // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
@@ -832,14 +848,13 @@ private fun ChecklistEditor(
                 if (showSeparator && visualIndex == separatorVisualIndex) {
                     CheckedItemsSeparator(
                         checkedCount = checkedCount,
-                        isDragActive = dragDropState.draggingItemIndex != null
+                        isDragActive = dragDropState.isAnyItemDragging
                     )
                 } else {
                     val dataIndex = localVisualToDataIndex(visualIndex)
                     val item = items[dataIndex]
                     DraggableChecklistItem(
                         item = item,
-                        visualIndex = visualIndex,
                         dragDropState = dragDropState,
                         focusNewItemId = focusNewItemId,
                         onTextChange = onTextChange,

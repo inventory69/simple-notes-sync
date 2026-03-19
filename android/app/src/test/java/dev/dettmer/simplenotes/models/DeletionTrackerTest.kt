@@ -8,7 +8,6 @@ import org.junit.Test
  * Unit-Tests für DeletionTracker und DeletionRecord.
  */
 class DeletionTrackerTest {
-
     // ═══════════════════════════════════════════════
     // DeletionRecord
     // ═══════════════════════════════════════════════
@@ -38,7 +37,7 @@ class DeletionTrackerTest {
     fun `addDeletion does not add duplicate`() {
         val tracker = DeletionTracker()
         tracker.addDeletion("note-1", "device-1")
-        tracker.addDeletion("note-1", "device-2")  // Same note ID
+        tracker.addDeletion("note-1", "device-2") // Same note ID
 
         assertEquals(1, tracker.deletedNotes.size)
     }
@@ -131,7 +130,9 @@ class DeletionTrackerTest {
     // ═══════════════════════════════════════════════
 
     @Suppress("MaxLineLength")
-    @Ignore("org.json.JSONObject is Android-stubbed: toString(2) returns null, triggering Kotlin null-safety NPE. Covered by instrumentation tests.")
+    @Ignore(
+        "org.json.JSONObject is Android-stubbed: toString(2) returns null, triggering Kotlin null-safety NPE. Covered by instrumentation tests."
+    )
     @Test
     fun `toJson produces valid JSON structure`() {
         val tracker = DeletionTracker()
@@ -139,7 +140,9 @@ class DeletionTrackerTest {
         tracker.toJson()
     }
 
-    @Ignore("org.json.JSONObject is Android-stubbed: toJson() crashes with NPE. Roundtrip covered by instrumentation tests.")
+    @Ignore(
+        "org.json.JSONObject is Android-stubbed: toJson() crashes with NPE. Roundtrip covered by instrumentation tests."
+    )
     @Test
     fun `fromJson roundtrip preserves data`() {
         val original = DeletionTracker()
@@ -182,7 +185,9 @@ class DeletionTrackerTest {
     }
 
     @Suppress("MaxLineLength")
-    @Ignore("org.json.JSONObject is Android-stubbed: toString(2) returns null, triggering Kotlin null-safety NPE. Covered by instrumentation tests.")
+    @Ignore(
+        "org.json.JSONObject is Android-stubbed: toString(2) returns null, triggering Kotlin null-safety NPE. Covered by instrumentation tests."
+    )
     @Test
     fun `toJson empty tracker does not crash`() {
         val tracker = DeletionTracker()

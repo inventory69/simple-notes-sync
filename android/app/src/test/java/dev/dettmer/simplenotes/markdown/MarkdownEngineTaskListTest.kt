@@ -11,7 +11,6 @@ import org.junit.Test
  * statt als NoteType.CHECKLIST importiert zu werden.
  */
 class MarkdownEngineTaskListTest {
-
     @Test
     fun `task list items are parsed as TaskList block`() {
         val md = "- [ ] Unchecked item\n- [x] Checked item\n- [X] Also checked"
@@ -36,10 +35,14 @@ class MarkdownEngineTaskListTest {
         val blocks = MarkdownEngine.parse(md)
 
         assertEquals(2, blocks.size)
-        assertTrue("First block should be UnorderedList",
-            blocks[0] is MarkdownEngine.MarkdownBlock.UnorderedList)
-        assertTrue("Second block should be TaskList",
-            blocks[1] is MarkdownEngine.MarkdownBlock.TaskList)
+        assertTrue(
+            "First block should be UnorderedList",
+            blocks[0] is MarkdownEngine.MarkdownBlock.UnorderedList
+        )
+        assertTrue(
+            "Second block should be TaskList",
+            blocks[1] is MarkdownEngine.MarkdownBlock.TaskList
+        )
     }
 
     @Test
@@ -57,12 +60,18 @@ class MarkdownEngineTaskListTest {
 
         val blocks = MarkdownEngine.parse(md)
 
-        assertTrue("Should contain Heading",
-            blocks.any { it is MarkdownEngine.MarkdownBlock.Heading })
-        assertTrue("Should contain Paragraph",
-            blocks.any { it is MarkdownEngine.MarkdownBlock.Paragraph })
-        assertTrue("Should contain TaskList",
-            blocks.any { it is MarkdownEngine.MarkdownBlock.TaskList })
+        assertTrue(
+            "Should contain Heading",
+            blocks.any { it is MarkdownEngine.MarkdownBlock.Heading }
+        )
+        assertTrue(
+            "Should contain Paragraph",
+            blocks.any { it is MarkdownEngine.MarkdownBlock.Paragraph }
+        )
+        assertTrue(
+            "Should contain TaskList",
+            blocks.any { it is MarkdownEngine.MarkdownBlock.TaskList }
+        )
 
         val taskList = blocks.filterIsInstance<MarkdownEngine.MarkdownBlock.TaskList>().first()
         assertEquals(2, taskList.items.size)
@@ -76,8 +85,10 @@ class MarkdownEngineTaskListTest {
         val blocks = MarkdownEngine.parse(md)
 
         assertEquals(1, blocks.size)
-        assertTrue("Should be UnorderedList, not TaskList",
-            blocks[0] is MarkdownEngine.MarkdownBlock.UnorderedList)
+        assertTrue(
+            "Should be UnorderedList, not TaskList",
+            blocks[0] is MarkdownEngine.MarkdownBlock.UnorderedList
+        )
     }
 
     @Test

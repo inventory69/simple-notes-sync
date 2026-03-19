@@ -124,7 +124,9 @@ style:
   ReturnCount:
     active: true
     max: 4
-    excludedFunctions: []
+    excludedFunctions:
+      - 'moveDraggingItemToEnd'  # IMPL_29k: 7 early-return guard clauses (viewport/flapping/mutex checks)
+      - 'trySwapOnDrag'  # IMPL_29o O2: +1 cascade guard return (now 5 returns)
     excludeLabeled: true
     excludeReturnFromLambda: true
     excludeGuardClauses: true

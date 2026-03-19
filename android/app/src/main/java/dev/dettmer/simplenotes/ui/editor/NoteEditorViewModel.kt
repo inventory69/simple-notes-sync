@@ -485,7 +485,7 @@ class NoteEditorViewModel(
     }
     
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
-        pushUndoSnapshot()  // 🆕 v1.10.0
+        pushUndoSnapshotDebounced()  // IMPL_29: debounce per gesture (was: per-swap snapshot)
         isDirty = true  // 🆕 v1.10.0-P2: Moving an item is an edit
         hasUnsavedChecklistEdits = true  // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->

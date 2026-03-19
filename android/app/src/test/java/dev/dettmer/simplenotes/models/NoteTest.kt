@@ -16,7 +16,6 @@ import org.junit.Test
  */
 @Suppress("LargeClass")
 class NoteTest {
-
     // ═══════════════════════════════════════════════
     // Hilfsfunktionen
     // ═══════════════════════════════════════════════
@@ -666,7 +665,7 @@ type: text
 Content.
         """.trimIndent()
 
-        val serverMtime = System.currentTimeMillis()  // "now"
+        val serverMtime = System.currentTimeMillis() // "now"
         val note = Note.fromMarkdown(md, serverModifiedTime = serverMtime)
 
         assertNotNull(note)

@@ -9,42 +9,38 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Logger
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * BackupManager: Lokale Backup & Restore Funktionalität
- * 
+ *
  * Features:
  * - Backup aller Notizen in JSON-Datei
  * - Restore mit 3 Modi (Merge, Replace, Overwrite Duplicates)
  * - Auto-Backup vor Restore (Sicherheitsnetz)
  * - Backup-Validierung
  */
-class BackupManager(
-    private val context: Context,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
-    
+class BackupManager(private val context: Context, private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     companion object {
         private const val TAG = "BackupManager"
         private const val BACKUP_VERSION = 1
         private const val AUTO_BACKUP_DIR = "auto_backups"
         private const val AUTO_BACKUP_RETENTION_DAYS = 7
-        private const val MAGIC_BYTES_LENGTH = 4  // v1.7.0: For encryption check
+        private const val MAGIC_BYTES_LENGTH = 4 // v1.7.0: For encryption check
     }
-    
+
     private val storage = NotesStorage(context)
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
-    private val encryptionManager = EncryptionManager()  // 🔐 v1.7.0
-    
+    private val encryptionManager = EncryptionManager() // 🔐 v1.7.0
+
     /**
      * Erstellt Backup aller Notizen
-     * 
+     *
      * @param uri Output-URI (via Storage Access Framework)
      * @param password Optional password for encryption (null = unencrypted)
      * @return BackupResult mit Erfolg/Fehler Info
@@ -53,10 +49,10 @@ class BackupManager(
         return@withContext try {
             val encryptedSuffix = if (password != null) " (encrypted)" else ""
             Logger.d(TAG, "📦 Creating backup$encryptedSuffix to: $uri")
-            
+
             val allNotes = storage.loadAllNotes()
             Logger.d(TAG, "   Found ${allNotes.size} notes to backup")
-            
+
             val backupData = BackupData(
                 backupVersion = BACKUP_VERSION,
                 createdAt = System.currentTimeMillis(),
@@ -64,27 +60,26 @@ class BackupManager(
                 appVersion = BuildConfig.VERSION_NAME,
                 notes = allNotes
             )
-            
+
             val jsonString = gson.toJson(backupData)
-            
+
             // 🔐 v1.7.0: Encrypt if password is provided
             val dataToWrite = if (password != null) {
                 encryptionManager.encrypt(jsonString.toByteArray(), password)
             } else {
                 jsonString.toByteArray()
             }
-            
+
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(dataToWrite)
                 Logger.d(TAG, "✅ Backup created successfully$encryptedSuffix")
             }
-            
+
             BackupResult(
                 success = true,
                 notesCount = allNotes.size,
                 message = "Backup erstellt: ${allNotes.size} Notizen$encryptedSuffix"
             )
-            
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to create backup", e)
             BackupResult(
@@ -93,11 +88,11 @@ class BackupManager(
             )
         }
     }
-    
+
     /**
      * Erstellt automatisches Backup (vor Restore)
      * Gespeichert in app-internem Storage
-     * 
+     *
      * @return Uri des Auto-Backups oder null bei Fehler
      */
     suspend fun createAutoBackup(): Uri? = withContext(ioDispatcher) {
@@ -105,14 +100,14 @@ class BackupManager(
             val autoBackupDir = File(context.filesDir, AUTO_BACKUP_DIR).apply {
                 if (!exists()) mkdirs()
             }
-            
+
             val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
                 .format(Date())
             val filename = "auto_backup_before_restore_$timestamp.json"
             val file = File(autoBackupDir, filename)
-            
+
             Logger.d(TAG, "📦 Creating auto-backup: ${file.absolutePath}")
-            
+
             val allNotes = storage.loadAllNotes()
             val backupData = BackupData(
                 backupVersion = BACKUP_VERSION,
@@ -121,99 +116,98 @@ class BackupManager(
                 appVersion = BuildConfig.VERSION_NAME,
                 notes = allNotes
             )
-            
+
             file.writeText(gson.toJson(backupData))
-            
+
             // Cleanup alte Auto-Backups
             cleanupOldAutoBackups(autoBackupDir)
-            
+
             Logger.d(TAG, "✅ Auto-backup created: ${file.absolutePath}")
             Uri.fromFile(file)
-            
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to create auto-backup", e)
             null
         }
     }
-    
+
     /**
      * Stellt Notizen aus Backup wieder her
-     * 
+     *
      * @param uri Backup-Datei URI
      * @param mode Wiederherstellungs-Modus (Merge/Replace/Overwrite)
      * @param password Optional password if backup is encrypted
      * @return RestoreResult mit Details
      */
-    suspend fun restoreBackup(uri: Uri, mode: RestoreMode, password: String? = null): RestoreResult = withContext(ioDispatcher) {
-        return@withContext try {
-            Logger.d(TAG, "📥 Restoring backup from: $uri (mode: $mode)")
-            
-            // 1. Backup-Datei lesen
-            val fileData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.readBytes()
-            } ?: return@withContext RestoreResult(
-                success = false,
-                error = "Datei konnte nicht gelesen werden"
-            )
-            
-            // 🔐 v1.7.0: Check if encrypted and decrypt if needed
-            val jsonString = try {
-                if (encryptionManager.isEncrypted(fileData)) {
-                    if (password == null) {
-                        return@withContext RestoreResult(
-                            success = false,
-                            error = "Backup ist verschlüsselt. Bitte Passwort eingeben."
-                        )
+    suspend fun restoreBackup(uri: Uri, mode: RestoreMode, password: String? = null): RestoreResult =
+        withContext(ioDispatcher) {
+            return@withContext try {
+                Logger.d(TAG, "📥 Restoring backup from: $uri (mode: $mode)")
+
+                // 1. Backup-Datei lesen
+                val fileData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.readBytes()
+                } ?: return@withContext RestoreResult(
+                    success = false,
+                    error = "Datei konnte nicht gelesen werden"
+                )
+
+                // 🔐 v1.7.0: Check if encrypted and decrypt if needed
+                val jsonString = try {
+                    if (encryptionManager.isEncrypted(fileData)) {
+                        if (password == null) {
+                            return@withContext RestoreResult(
+                                success = false,
+                                error = "Backup ist verschlüsselt. Bitte Passwort eingeben."
+                            )
+                        }
+                        val decrypted = encryptionManager.decrypt(fileData, password)
+                        String(decrypted)
+                    } else {
+                        String(fileData)
                     }
-                    val decrypted = encryptionManager.decrypt(fileData, password)
-                    String(decrypted)
-                } else {
-                    String(fileData)
+                } catch (e: EncryptionException) {
+                    return@withContext RestoreResult(
+                        success = false,
+                        error = "Entschlüsselung fehlgeschlagen: ${e.message}"
+                    )
                 }
-            } catch (e: EncryptionException) {
-                return@withContext RestoreResult(
+
+                // 2. Backup validieren & parsen
+                val validationResult = validateBackup(jsonString)
+                if (!validationResult.isValid) {
+                    return@withContext RestoreResult(
+                        success = false,
+                        error = validationResult.errorMessage ?: context.getString(R.string.error_invalid_backup_file)
+                    )
+                }
+
+                val backupData = gson.fromJson(jsonString, BackupData::class.java)
+                Logger.d(TAG, "   Backup valid: ${backupData.notesCount} notes, version ${backupData.backupVersion}")
+
+                // 3. Auto-Backup erstellen (Sicherheitsnetz)
+                val autoBackupUri = createAutoBackup()
+                if (autoBackupUri == null) {
+                    Logger.w(TAG, "⚠️ Auto-backup failed, but continuing with restore")
+                }
+
+                // 4. Restore durchführen (je nach Modus)
+                val result = when (mode) {
+                    RestoreMode.MERGE -> restoreMerge(backupData.notes)
+                    RestoreMode.REPLACE -> restoreReplace(backupData.notes)
+                    RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(backupData.notes)
+                }
+
+                Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
+                result
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to restore backup", e)
+                RestoreResult(
                     success = false,
-                    error = "Entschlüsselung fehlgeschlagen: ${e.message}"
+                    error = context.getString(R.string.error_restore_failed, e.message.orEmpty())
                 )
             }
-            
-            // 2. Backup validieren & parsen
-            val validationResult = validateBackup(jsonString)
-            if (!validationResult.isValid) {
-                return@withContext RestoreResult(
-                    success = false,
-                    error = validationResult.errorMessage ?: context.getString(R.string.error_invalid_backup_file)
-                )
-            }
-            
-            val backupData = gson.fromJson(jsonString, BackupData::class.java)
-            Logger.d(TAG, "   Backup valid: ${backupData.notesCount} notes, version ${backupData.backupVersion}")
-            
-            // 3. Auto-Backup erstellen (Sicherheitsnetz)
-            val autoBackupUri = createAutoBackup()
-            if (autoBackupUri == null) {
-                Logger.w(TAG, "⚠️ Auto-backup failed, but continuing with restore")
-            }
-            
-            // 4. Restore durchführen (je nach Modus)
-            val result = when (mode) {
-                RestoreMode.MERGE -> restoreMerge(backupData.notes)
-                RestoreMode.REPLACE -> restoreReplace(backupData.notes)
-                RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(backupData.notes)
-            }
-            
-            Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
-            result
-            
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to restore backup", e)
-            RestoreResult(
-                success = false,
-                error = context.getString(R.string.error_restore_failed, e.message.orEmpty())
-            )
         }
-    }
-    
+
     /**
      * 🔐 v1.7.0: Check if backup file is encrypted
      */
@@ -229,22 +223,26 @@ class BackupManager(
             false
         }
     }
-    
+
     /**
      * Validiert Backup-Datei
      */
     private fun validateBackup(jsonString: String): ValidationResult {
         return try {
             val backupData = gson.fromJson(jsonString, BackupData::class.java)
-            
+
             // Version kompatibel?
             if (backupData.backupVersion > BACKUP_VERSION) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = context.getString(R.string.error_backup_version_unsupported, backupData.backupVersion, BACKUP_VERSION)
+                    errorMessage = context.getString(
+                        R.string.error_backup_version_unsupported,
+                        backupData.backupVersion,
+                        BACKUP_VERSION
+                    )
                 )
             }
-            
+
             // Notizen-Array vorhanden?
             if (backupData.notes.isEmpty()) {
                 return ValidationResult(
@@ -252,21 +250,20 @@ class BackupManager(
                     errorMessage = context.getString(R.string.error_backup_empty)
                 )
             }
-            
+
             // Alle Notizen haben ID, title, content?
             val invalidNotes = backupData.notes.filter { note ->
                 note.id.isBlank() || note.title.isBlank()
             }
-            
+
             if (invalidNotes.isNotEmpty()) {
                 return ValidationResult(
                     isValid = false,
                     errorMessage = context.getString(R.string.error_backup_invalid_notes, invalidNotes.size)
                 )
             }
-            
+
             ValidationResult(isValid = true)
-            
         } catch (e: Exception) {
             ValidationResult(
                 isValid = false,
@@ -274,7 +271,7 @@ class BackupManager(
             )
         }
     }
-    
+
     /**
      * Restore-Modus: MERGE
      * Fügt neue Notizen hinzu, behält bestehende
@@ -282,14 +279,14 @@ class BackupManager(
     private fun restoreMerge(backupNotes: List<Note>): RestoreResult {
         val existingNotes = storage.loadAllNotes()
         val existingIds = existingNotes.map { it.id }.toSet()
-        
+
         val newNotes = backupNotes.filter { it.id !in existingIds }
         val skippedNotes = backupNotes.size - newNotes.size
-        
+
         newNotes.forEach { note ->
             storage.saveNote(note)
         }
-        
+
         return RestoreResult(
             success = true,
             importedNotes = newNotes.size,
@@ -297,7 +294,7 @@ class BackupManager(
             message = context.getString(R.string.restore_merge_result, newNotes.size, skippedNotes)
         )
     }
-    
+
     /**
      * Restore-Modus: REPLACE
      * Löscht alle bestehenden Notizen, importiert Backup
@@ -305,12 +302,12 @@ class BackupManager(
     private fun restoreReplace(backupNotes: List<Note>): RestoreResult {
         // Alle bestehenden Notizen löschen
         storage.deleteAllNotes()
-        
+
         // Backup-Notizen importieren
         backupNotes.forEach { note ->
             storage.saveNote(note)
         }
-        
+
         return RestoreResult(
             success = true,
             importedNotes = backupNotes.size,
@@ -326,15 +323,15 @@ class BackupManager(
     private fun restoreOverwriteDuplicates(backupNotes: List<Note>): RestoreResult {
         val existingNotes = storage.loadAllNotes()
         val existingIds = existingNotes.map { it.id }.toSet()
-        
+
         val newNotes = backupNotes.filter { it.id !in existingIds }
         val overwrittenNotes = backupNotes.filter { it.id in existingIds }
-        
+
         // Alle Backup-Notizen speichern (überschreibt automatisch)
         backupNotes.forEach { note ->
             storage.saveNote(note)
         }
-        
+
         return RestoreResult(
             success = true,
             importedNotes = newNotes.size,
@@ -343,7 +340,7 @@ class BackupManager(
             message = context.getString(R.string.restore_overwrite_result, newNotes.size, overwrittenNotes.size)
         )
     }
-    
+
     /**
      * Löscht Auto-Backups älter als RETENTION_DAYS
      */
@@ -351,7 +348,7 @@ class BackupManager(
         try {
             val retentionTimeMs = AUTO_BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000L
             val cutoffTime = System.currentTimeMillis() - retentionTimeMs
-            
+
             autoBackupDir.listFiles()?.forEach { file ->
                 if (file.lastModified() < cutoffTime) {
                     Logger.d(TAG, "🗑️ Deleting old auto-backup: ${file.name}")
@@ -384,9 +381,9 @@ data class BackupData(
  * Wiederherstellungs-Modi
  */
 enum class RestoreMode {
-    MERGE,                  // Bestehende + Neue (Standard)
-    REPLACE,                // Alles löschen + Importieren
-    OVERWRITE_DUPLICATES    // Backup überschreibt bei ID-Konflikten
+    MERGE, // Bestehende + Neue (Standard)
+    REPLACE, // Alles löschen + Importieren
+    OVERWRITE_DUPLICATES // Backup überschreibt bei ID-Konflikten
 }
 
 /**
@@ -414,7 +411,4 @@ data class RestoreResult(
 /**
  * Validierungs-Ergebnis
  */
-data class ValidationResult(
-    val isValid: Boolean,
-    val errorMessage: String? = null
-)
+data class ValidationResult(val isValid: Boolean, val errorMessage: String? = null)

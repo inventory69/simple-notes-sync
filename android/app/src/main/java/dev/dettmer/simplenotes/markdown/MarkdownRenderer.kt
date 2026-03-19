@@ -40,10 +40,7 @@ import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
  * and inline formatting (bold, italic, strikethrough, inline code, links).
  */
 @Composable
-fun MarkdownPreview(
-    blocks: List<MarkdownBlock>,
-    modifier: Modifier = Modifier
-) {
+fun MarkdownPreview(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -174,7 +171,6 @@ private fun CodeBlockSurface(codeBlock: MarkdownBlock.CodeBlock) {
     }
 }
 
-
 /**
  * Parses inline Markdown formatting into a Compose [AnnotatedString].
  *
@@ -244,11 +240,13 @@ fun parseInlineFormatting(text: String): AnnotatedString {
                     }
                 }
                 InlinePattern.INLINE_CODE -> {
-                    withStyle(SpanStyle(
-                        fontFamily = FontFamily.Monospace,
-                        background = codeBackground,
-                        color = codeColor
-                    )) {
+                    withStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily.Monospace,
+                            background = codeBackground,
+                            color = codeColor
+                        )
+                    ) {
                         append(earliestMatch.groupValues[1])
                     }
                 }

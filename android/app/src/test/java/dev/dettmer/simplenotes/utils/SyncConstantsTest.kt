@@ -8,7 +8,6 @@ import org.junit.Test
  * Stellt sicher, dass wichtige Konstanten korrekte Werte haben.
  */
 class SyncConstantsTest {
-
     // ═══════════════════════════════════════════════
     // SyncConstants
     // ═══════════════════════════════════════════════

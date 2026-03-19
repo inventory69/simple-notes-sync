@@ -4,9 +4,9 @@ import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import java.security.MessageDigest
 import org.junit.Assert.*
 import org.junit.Test
-import java.security.MessageDigest
 
 /**
  * 🆕 v1.9.0: Unit-Tests für Content-Hash-Berechnung (Opt. 5).
@@ -23,7 +23,6 @@ import java.security.MessageDigest
  * hier als pure JVM-Funktion repliziert (Option B gemäß Implementierungsplan §12.7).
  */
 class ContentHashTest {
-
     /**
      * Repliziert computeNoteContentHash() aus WebDavSyncService.
      * Identische Logik: SyncStatus → SYNCED, toJson(), SHA-256.
@@ -166,12 +165,17 @@ class ContentHashTest {
     @Test
     fun `changed checklist item produces different hash`() {
         val items1 = listOf(ChecklistItem("item-1", "Milk", false, 0))
-        val items2 = listOf(ChecklistItem("item-1", "Milk", true, 0))  // isChecked changed
+        val items2 = listOf(ChecklistItem("item-1", "Milk", true, 0)) // isChecked changed
 
         val note1 = Note(
-            id = "cl-1", title = "List", content = "", deviceId = "d",
-            createdAt = 1000L, updatedAt = 2000L,
-            noteType = NoteType.CHECKLIST, checklistItems = items1
+            id = "cl-1",
+            title = "List",
+            content = "",
+            deviceId = "d",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+            noteType = NoteType.CHECKLIST,
+            checklistItems = items1
         )
         val note2 = note1.copy(checklistItems = items2)
 
@@ -187,9 +191,14 @@ class ContentHashTest {
         )
 
         val note1 = Note(
-            id = "cl-2", title = "List", content = "", deviceId = "d",
-            createdAt = 1000L, updatedAt = 2000L,
-            noteType = NoteType.CHECKLIST, checklistItems = items1
+            id = "cl-2",
+            title = "List",
+            content = "",
+            deviceId = "d",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+            noteType = NoteType.CHECKLIST,
+            checklistItems = items1
         )
         val note2 = note1.copy(checklistItems = items2)
 
