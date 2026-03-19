@@ -36,7 +36,7 @@ fun NotesStaggeredGrid(
     onNoteLongClick: (Note) -> Unit
 ) {
     LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Adaptive(180.dp),  // 🆕 v1.10.0-P2: Adaptive columns for tablets
+        columns = StaggeredGridCells.Adaptive(150.dp),  // v2.0.0: 150dp keeps 2-col on large font scaling (was 180dp)
         modifier = modifier.fillMaxSize(),
         state = gridState,
         // 🎨 v1.7.0: Konsistente Abstände - 16dp horizontal wie Liste, mehr Platz für FAB

@@ -429,7 +429,7 @@
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">All</string>
     <string name="filter_text_only">Text</string>
-    <string name="filter_checklist_only">Checklists</string>
+    <string name="filter_checklist_only">Lists</string>
 
     <!-- v1.9.0 (F10): Search -->
     <string name="search_notes_placeholder">Search…</string>

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -243,7 +245,9 @@ private fun ScanResultsCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+            val density = LocalDensity.current
+            val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
+            LazyColumn(modifier = Modifier.heightIn(max = screenHeight * 0.35f)) {
                 items(scanResults.indices.toList()) { index ->
                     val candidate = scanResults[index]
                     Row(
