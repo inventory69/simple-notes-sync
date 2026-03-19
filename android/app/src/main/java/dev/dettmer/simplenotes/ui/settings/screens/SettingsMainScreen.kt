@@ -1,5 +1,9 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,8 +26,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsRoute
@@ -42,6 +48,7 @@ fun SettingsMainScreen(
     onNavigate: (SettingsRoute) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val serverUrl by viewModel.serverUrl.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
     val autoSyncEnabled by viewModel.autoSyncEnabled.collectAsState()
@@ -93,7 +100,21 @@ fun SettingsMainScreen(
                     icon = Icons.Default.Language,
                     title = stringResource(R.string.settings_language),
                     subtitle = languageSubtitle,
-                    onClick = { onNavigate(SettingsRoute.Language) }
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            try {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_APP_LOCALE_SETTINGS).apply {
+                                        data = "package:${context.packageName}".toUri()
+                                    }
+                                )
+                            } catch (_: ActivityNotFoundException) {
+                                onNavigate(SettingsRoute.Language)
+                            }
+                        } else {
+                            onNavigate(SettingsRoute.Language)
+                        }
+                    }
                 )
             }
             
