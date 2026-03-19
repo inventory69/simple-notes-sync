@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 26  // 🆕 v1.12.0: i18n, Notification Status, Liberapay
-        versionName = "1.12.0"  // 🆕 v1.12.0: Chinese translation, Plural fixes, Settings polish
+        versionCode = 27  // 🆕 v2.0.0
+        versionName = "2.0.0"  // 🆕 v2.0.0
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
