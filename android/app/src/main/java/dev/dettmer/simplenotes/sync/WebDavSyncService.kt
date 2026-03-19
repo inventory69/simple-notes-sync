@@ -528,7 +528,6 @@ class WebDavSyncService(
             // Ensure notes-md/ directory exists (for Markdown export)
             ensureMarkdownDirectoryExists(sardine, serverUrl)
             
-            // 🆕 v1.8.0: Phase 2 - Uploading (Phase wird nur bei echten Uploads gesetzt)
             Logger.d(TAG, "📍 Step 4: Uploading local notes")
             // Upload local notes
             // 🆕 v1.11.0: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
@@ -555,7 +554,35 @@ class WebDavSyncService(
                 e.printStackTrace()
                 throw e
             }
-            
+
+            // Step 4.5: Process pending server deletions (queued from offline deletes)
+            Logger.d(TAG, "📍 Step 4.5: Processing pending server deletions")
+            try {
+                val pendingDeletions = PendingServerDeletions(context)
+                val pendingIds = pendingDeletions.getAll()
+                if (pendingIds.isNotEmpty()) {
+                    Logger.d(TAG, "🗑️ Processing ${pendingIds.size} pending server deletions")
+                    val successIds = mutableListOf<String>()
+                    pendingIds.forEach { noteId ->
+                        try {
+                            val deleted = noteDownloader.deleteFromServer(noteId)
+                            if (deleted) successIds.add(noteId)
+                        } catch (e: Exception) {
+                            Logger.w(TAG, "⚠️ Failed to delete pending note $noteId from server: ${e.message}")
+                        }
+                    }
+                    if (successIds.isNotEmpty()) {
+                        pendingDeletions.remove(successIds)
+                        Logger.d(TAG, "✅ Deleted ${successIds.size}/${pendingIds.size} pending notes from server")
+                    }
+                } else {
+                    Logger.d(TAG, "    ✅ No pending deletions")
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ Pending deletions step failed (non-fatal)", e)
+                // Non-fatal: pending deletions will be retried on next sync
+            }
+
             // 🆕 v1.8.0: Phase 3 - Downloading (Phase wird nur bei echten Downloads gesetzt)
             Logger.d(TAG, "📍 Step 5: Downloading remote notes")
             // Download remote notes

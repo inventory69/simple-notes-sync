@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncStateManager
@@ -55,6 +56,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    private val pendingServerDeletions = PendingServerDeletions(application)
     
     // ═══════════════════════════════════════════════════════════════════════
     // Notes State
@@ -431,7 +433,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Only delete if not restored (check if still in pending)
                 val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
                 if (idsToDelete.isNotEmpty()) {
-                    deleteMultipleNotesFromServer(idsToDelete)
+                    attemptServerDeletion(idsToDelete)
                 }
             } else {
                 // Just finalize local deletion
@@ -528,7 +530,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
                 // Only delete if not restored (check if still in pending)
                 if (note.id in _pendingDeletions.value) {
-                    deleteNoteFromServer(note.id)
+                    attemptServerDeletion(listOf(note.id))
                 }
             } else {
                 // Just finalize local deletion
@@ -561,6 +563,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         loadNotes()
     }
     
+    /**
+     * Attempts to delete notes from the server.
+     * If the server is not reachable, queues the deletions for the next sync.
+     */
+    private suspend fun attemptServerDeletion(noteIds: List<String>) {
+        val webdavService = WebDavSyncService(getApplication())
+        val isReachable = try {
+            withContext(ioDispatcher) { webdavService.isServerReachable() }
+        } catch (_: Exception) {
+            false
+        }
+        if (!isReachable) {
+            // Queue for next sync — server not reachable right now
+            pendingServerDeletions.add(noteIds)
+            noteIds.forEach { finalizeDeletion(it) }
+            SyncStateManager.showInfo(getString(R.string.snackbar_delete_queued_for_sync))
+            return
+        }
+        // Server reachable → delete immediately
+        if (noteIds.size == 1) {
+            deleteNoteFromServer(noteIds[0])
+        } else {
+            deleteMultipleNotesFromServer(noteIds)
+        }
+    }
+
     /**
      * Actually delete note from server after snackbar dismissed
      */
