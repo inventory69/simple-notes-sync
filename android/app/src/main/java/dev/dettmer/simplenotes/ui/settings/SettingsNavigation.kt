@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
@@ -178,6 +179,7 @@ fun SettingsNavHost(
         }
 
         // Snackbar über NavHost rendern (sichtbar über NavHost-Transitions).
+        // imePadding() stellt sicher, dass die Snackbar oberhalb der Tastatur erscheint.
         // navigationBarsPadding() + padding(bottom) kompensiert enableEdgeToEdge()
         // in ComposeSettingsActivity, damit die Snackbar oberhalb der Navigationsleiste
         // mit ausreichend Abstand erscheint.
@@ -185,6 +187,7 @@ fun SettingsNavHost(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .imePadding()
                 .navigationBarsPadding()
                 .padding(bottom = 8.dp)
         )
