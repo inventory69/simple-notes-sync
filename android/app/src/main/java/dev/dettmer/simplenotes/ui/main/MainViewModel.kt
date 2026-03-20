@@ -44,7 +44,10 @@ import kotlinx.coroutines.withContext
  * 
  * Manages notes list, sync state, and deletion with undo.
  */
-@Suppress("TooManyFunctions")  // 🔧 v1.10.0: Detekt compliance — class has many features
+@Suppress(
+    "TooManyFunctions",  // 🔧 v1.10.0: Detekt compliance — class has many features
+    "LargeClass"         // 🔧 v2.1.0 (F46): Extended with grid column control state
+)
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -120,6 +123,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val newValue = prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
         _displayMode.value = newValue
         Logger.d(TAG, "🔄 refreshDisplayMode: displayMode=${_displayMode.value} → $newValue")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v2.1.0 (F46): Grid Column Control State
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _gridAdaptiveScaling = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, Constants.DEFAULT_GRID_ADAPTIVE_SCALING)
+    )
+    val gridAdaptiveScaling: StateFlow<Boolean> = _gridAdaptiveScaling.asStateFlow()
+
+    private val _gridManualColumns = MutableStateFlow(
+        prefs.getInt(Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS)
+    )
+    val gridManualColumns: StateFlow<Int> = _gridManualColumns.asStateFlow()
+
+    /**
+     * Refresh grid settings from SharedPreferences.
+     * Called when returning from Settings screen.
+     */
+    fun refreshGridSettings() {
+        _gridAdaptiveScaling.value = prefs.getBoolean(
+            Constants.KEY_GRID_ADAPTIVE_SCALING, Constants.DEFAULT_GRID_ADAPTIVE_SCALING
+        )
+        _gridManualColumns.value = prefs.getInt(
+            Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS
+        )
+        Logger.d(TAG, "🔄 refreshGridSettings: adaptive=${_gridAdaptiveScaling.value}, columns=${_gridManualColumns.value}")
     }
 
     // ═══════════════════════════════════════════════════════════════════════

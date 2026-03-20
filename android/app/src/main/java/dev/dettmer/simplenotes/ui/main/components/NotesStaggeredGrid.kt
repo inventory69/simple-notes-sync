@@ -23,10 +23,13 @@ import dev.dettmer.simplenotes.models.Note
  * - Efficient LazyVerticalStaggeredGrid
  * - ⏱️ timestampTicker triggers recomposition for relative time updates
  */
+@Suppress("LongParameterList")  // 🔧 v2.1.0 (F46): Compose grid needs adaptiveScaling + manualColumns
 @Composable
 fun NotesStaggeredGrid(
     notes: List<Note>,
     gridState: LazyStaggeredGridState,
+    adaptiveScaling: Boolean,
+    manualColumns: Int,
     showSyncStatus: Boolean,
     selectedNoteIds: Set<String>,
     isSelectionMode: Boolean,
@@ -36,7 +39,11 @@ fun NotesStaggeredGrid(
     onNoteLongClick: (Note) -> Unit
 ) {
     LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Adaptive(150.dp),  // v2.0.0: 150dp keeps 2-col on large font scaling (was 180dp)
+        columns = if (adaptiveScaling) {
+            StaggeredGridCells.Adaptive(150.dp)  // v2.0.0: 150dp keeps 2-col on large font scaling (was 180dp)
+        } else {
+            StaggeredGridCells.Fixed(manualColumns)
+        },
         modifier = modifier.fillMaxSize(),
         state = gridState,
         // 🎨 v1.7.0: Konsistente Abstände - 16dp horizontal wie Liste, mehr Platz für FAB

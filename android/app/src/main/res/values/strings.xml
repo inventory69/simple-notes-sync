@@ -420,6 +420,13 @@
     <string name="display_mode_grid">Grid View</string>
     <string name="display_mode_info">Grid view arranges notes in multiple columns. The number of columns adapts automatically to your device\'s display size and text scale settings.</string>
 
+    <!-- 🆕 v2.1.0 (F46): Grid Column Control -->
+    <string name="grid_scaling_title">Grid Column Scaling</string>
+    <string name="grid_adaptive_scaling_title">Automatic scaling</string>
+    <string name="grid_adaptive_scaling_subtitle">Columns adapt to display size and text scale</string>
+    <string name="grid_manual_columns_title">Column count</string>
+    <string name="grid_scaling_info">With automatic scaling, the number of columns adapts to your device\'s display size and text scale. When disabled, a fixed column count is used regardless of display settings.</string>
+
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App Title</string>
     <string name="custom_app_title_label">Custom title</string>

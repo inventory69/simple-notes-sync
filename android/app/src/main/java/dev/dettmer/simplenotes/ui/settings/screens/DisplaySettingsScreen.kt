@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,6 +61,8 @@ fun DisplaySettingsScreen(
     onBack: () -> Unit
 ) {
     val displayMode by viewModel.displayMode.collectAsState()
+    val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
+    val gridManualColumns by viewModel.gridManualColumns.collectAsState()
     val customAppTitle by viewModel.customAppTitle.collectAsState()
     val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
@@ -107,6 +111,39 @@ fun DisplaySettingsScreen(
             SettingsInfoCard(
                 text = stringResource(R.string.display_mode_info)
             )
+
+            // 🆕 v2.1.0 (F46): Grid column control — only visible when grid mode is active
+            if (displayMode == "grid") {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                SettingsSectionHeader(text = stringResource(R.string.grid_scaling_title))
+
+                SettingsSwitch(
+                    title = stringResource(R.string.grid_adaptive_scaling_title),
+                    subtitle = stringResource(R.string.grid_adaptive_scaling_subtitle),
+                    checked = gridAdaptiveScaling,
+                    onCheckedChange = { viewModel.setGridAdaptiveScaling(it) }
+                )
+
+                AnimatedVisibility(visible = !gridAdaptiveScaling) {
+                    Column {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        SettingsSectionHeader(text = stringResource(R.string.grid_manual_columns_title))
+
+                        GridColumnSelector(
+                            currentColumns = gridManualColumns,
+                            onColumnsSelected = { viewModel.setGridManualColumns(it) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                SettingsInfoCard(
+                    text = stringResource(R.string.grid_scaling_info)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -251,6 +288,92 @@ private fun DisplayModeChip(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GridColumnSelector + GridColumnChip — Schritt 7 (F46)
+// Chip-Row for manual grid column count (1–5). Only shown when adaptive scaling
+// is disabled. Visually consistent with DisplayModeChip.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GridColumnSelector(
+    currentColumns: Int,
+    onColumnsSelected: (Int) -> Unit
+) {
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        for (count in Constants.GRID_MIN_COLUMNS..Constants.GRID_MAX_COLUMNS) {
+            GridColumnChip(
+                columns = count,
+                selected = currentColumns == count,
+                onClick = { onColumnsSelected(count) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun GridColumnChip(
+    columns: Int,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Mini-grid preview: N small squares side by side
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                repeat(columns) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(
+                                color = if (selected)
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                shape = RoundedCornerShape(2.dp)
+                            )
+                    )
+                }
+            }
+            Text(
+                text = "$columns",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

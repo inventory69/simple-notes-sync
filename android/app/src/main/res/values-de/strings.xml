@@ -380,6 +380,14 @@
     <string name="display_mode_list">Listen-Ansicht</string>
     <string name="display_mode_grid">Raster-Ansicht</string>
     <string name="display_mode_info">Die Raster-Ansicht ordnet Notizen in mehreren Spalten an. Die Spaltenanzahl passt sich automatisch an die Displaygröße und Textskalierung des Geräts an.</string>
+
+    <!-- 🆕 v2.1.0 (F46): Grid Column Control -->
+    <string name="grid_scaling_title">Raster-Spaltensteuerung</string>
+    <string name="grid_adaptive_scaling_title">Automatische Skalierung</string>
+    <string name="grid_adaptive_scaling_subtitle">Spalten passen sich an Displaygröße und Textskalierung an</string>
+    <string name="grid_manual_columns_title">Spaltenanzahl</string>
+    <string name="grid_scaling_info">Bei automatischer Skalierung passt sich die Spaltenanzahl an die Displaygröße und Textskalierung des Geräts an. Bei deaktivierter Skalierung wird eine feste Spaltenanzahl verwendet.</string>
+
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App-Titel</string>
     <string name="custom_app_title_label">Eigener Titel</string>

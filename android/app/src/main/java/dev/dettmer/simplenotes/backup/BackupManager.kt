@@ -102,7 +102,10 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     // Notifications
                     notificationsEnabled = prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, true).takeIf { prefs.contains(Constants.KEY_NOTIFICATIONS_ENABLED) },
                     notificationsErrorsOnly = prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, false).takeIf { prefs.contains(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY) },
-                    notificationsServerWarning = prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, true).takeIf { prefs.contains(Constants.KEY_NOTIFICATIONS_SERVER_WARNING) }
+                    notificationsServerWarning = prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, true).takeIf { prefs.contains(Constants.KEY_NOTIFICATIONS_SERVER_WARNING) },
+                    // Grid column control
+                    gridAdaptiveScaling = prefs.getBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, true).takeIf { prefs.contains(Constants.KEY_GRID_ADAPTIVE_SCALING) },
+                    gridManualColumns = prefs.getInt(Constants.KEY_GRID_MANUAL_COLUMNS, -1).takeIf { it >= 0 }
                 )
             } else {
                 Logger.d(TAG, "   includeServerSettings=false – no app settings in backup")
@@ -286,6 +289,9 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                         s.notificationsEnabled?.let { putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, it) }
                         s.notificationsErrorsOnly?.let { putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, it) }
                         s.notificationsServerWarning?.let { putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, it) }
+                        // Grid column control
+                        s.gridAdaptiveScaling?.let { putBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, it) }
+                        s.gridManualColumns?.let { putInt(Constants.KEY_GRID_MANUAL_COLUMNS, it) }
                     }
                     Logger.d(TAG, "✅ App settings restored from backup")
                 }
@@ -580,7 +586,12 @@ data class AppSettings(
     @com.google.gson.annotations.SerializedName("notifications_errors_only")
     val notificationsErrorsOnly: Boolean? = null,
     @com.google.gson.annotations.SerializedName("notifications_server_warning")
-    val notificationsServerWarning: Boolean? = null
+    val notificationsServerWarning: Boolean? = null,
+    // 🆕 v2.1.0 (F46): Grid column control
+    @com.google.gson.annotations.SerializedName("grid_adaptive_scaling")
+    val gridAdaptiveScaling: Boolean? = null,
+    @com.google.gson.annotations.SerializedName("grid_manual_columns")
+    val gridManualColumns: Int? = null
 )
 
 /**

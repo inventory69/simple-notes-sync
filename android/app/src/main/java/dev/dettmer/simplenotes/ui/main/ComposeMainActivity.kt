@@ -236,6 +236,7 @@ class ComposeMainActivity : ComponentActivity() {
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
         viewModel.refreshCustomAppTitle()  // 🆕 v1.9.0 (F05)
+        viewModel.refreshGridSettings()    // 🆕 v2.1.0 (F46)
         
         // Reload notes
         viewModel.loadNotes()

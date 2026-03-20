@@ -277,6 +277,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val displayMode: StateFlow<String> = _displayMode.asStateFlow()
 
+    // 🆕 v2.1.0 (F46): Grid column control
+    private val _gridAdaptiveScaling = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, Constants.DEFAULT_GRID_ADAPTIVE_SCALING)
+    )
+    val gridAdaptiveScaling: StateFlow<Boolean> = _gridAdaptiveScaling.asStateFlow()
+
+    private val _gridManualColumns = MutableStateFlow(
+        prefs.getInt(Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS)
+    )
+    val gridManualColumns: StateFlow<Int> = _gridManualColumns.asStateFlow()
+
     // 🆕 v1.9.0 (F05): Custom App Title
     private val _customAppTitle = MutableStateFlow(
         prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
@@ -1034,6 +1045,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _triggerBoot.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, Constants.DEFAULT_TRIGGER_BOOT)
         _syncInterval.value = prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
         _displayMode.value = prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+        _gridAdaptiveScaling.value = prefs.getBoolean(
+            Constants.KEY_GRID_ADAPTIVE_SCALING, Constants.DEFAULT_GRID_ADAPTIVE_SCALING
+        )
+        _gridManualColumns.value = prefs.getInt(
+            Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS
+        )
         _themeMode.value = ThemePreferences.getThemeMode(prefs)
         _colorTheme.value = ThemePreferences.getColorTheme(prefs)
         _customAppTitle.value =
@@ -1259,6 +1276,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _displayMode.value = mode
         prefs.edit { putString(Constants.KEY_DISPLAY_MODE, mode) }
         Logger.d(TAG, "Display mode changed to: $mode")
+    }
+
+    // 🆕 v2.1.0 (F46): Grid column control setters
+    fun setGridAdaptiveScaling(enabled: Boolean) {
+        _gridAdaptiveScaling.value = enabled
+        prefs.edit { putBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, enabled) }
+        Logger.d(TAG, "Grid adaptive scaling: $enabled")
+    }
+
+    fun setGridManualColumns(columns: Int) {
+        val clamped = columns.coerceIn(Constants.GRID_MIN_COLUMNS, Constants.GRID_MAX_COLUMNS)
+        _gridManualColumns.value = clamped
+        prefs.edit { putInt(Constants.KEY_GRID_MANUAL_COLUMNS, clamped) }
+        Logger.d(TAG, "Grid manual columns: $clamped")
     }
 
     /**

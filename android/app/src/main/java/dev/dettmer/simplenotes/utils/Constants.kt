@@ -139,4 +139,12 @@ object Constants {
     
     // 🆕 v1.8.1 (IMPL_08B): onSave-Sync Worker-Tag (bypassed globalen Cooldown)
     const val SYNC_ONSAVE_TAG = "onsave"
+
+    // 🆕 v2.1.0 (F46): Grid column control
+    const val KEY_GRID_ADAPTIVE_SCALING = "grid_adaptive_scaling"
+    const val DEFAULT_GRID_ADAPTIVE_SCALING = true
+    const val KEY_GRID_MANUAL_COLUMNS = "grid_manual_columns"
+    const val DEFAULT_GRID_MANUAL_COLUMNS = 2
+    const val GRID_MIN_COLUMNS = 1
+    const val GRID_MAX_COLUMNS = 5
 }

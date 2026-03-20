@@ -104,6 +104,9 @@ fun MainScreen(
     
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
+    // 🆕 v2.1.0 (F46): Grid column control
+    val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
+    val gridManualColumns by viewModel.gridManualColumns.collectAsState()
     // 🆕 v1.9.0 (F05): Custom App Title
     val customAppTitle by viewModel.customAppTitle.collectAsState()
     
@@ -278,6 +281,8 @@ fun MainScreen(
                             NotesStaggeredGrid(
                                 notes = notes,
                                 gridState = gridState,
+                                adaptiveScaling = gridAdaptiveScaling,
+                                manualColumns = gridManualColumns,
                                 showSyncStatus = viewModel.isServerConfigured(),
                                 selectedNoteIds = selectedNotes,
                                 isSelectionMode = isSelectionMode,
