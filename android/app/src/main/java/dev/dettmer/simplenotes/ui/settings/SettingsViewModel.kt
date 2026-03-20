@@ -3,8 +3,8 @@ package dev.dettmer.simplenotes.ui.settings
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import androidx.core.content.edit
 import android.util.Log
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
@@ -12,14 +12,18 @@ import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.ThemeMode
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,57 +35,54 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
-import dev.dettmer.simplenotes.ui.theme.ColorTheme
-import dev.dettmer.simplenotes.ui.theme.ThemeMode
-import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import kotlinx.coroutines.withTimeout
 
 /**
  * ViewModel for Settings screens
  * v1.5.0: Jetpack Compose Settings Redesign
- * 
+ *
  * Manages all settings state and actions across the Settings navigation graph.
  */
 @Suppress("TooManyFunctions") // v1.7.0: 35 Funktionen durch viele kleine Setter (setTrigger*, set*)
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 
     companion object {
         private const val TAG = "SettingsViewModel"
         private const val CONNECTION_TIMEOUT_MS = 3000
-        private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L  // 2s for successful operations
-        private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L    // 3s for errors (more important)
+        private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L // 2s for successful operations
+        private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L // 3s for errors (more important)
         private const val PROGRESS_CLEAR_DELAY_MS = 500L
+
         // 🆕 v1.10.0: Overhead-Timeout für Markdown-Export (Ordner-Erstellung, Listing etc.)
         private const val EXPORT_OVERHEAD_TIMEOUT_MS = 10_000L
     }
-    
+
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     val backupManager = BackupManager(application)
     private val notesStorage = NotesStorage(application) // v1.7.0: For server change detection
-    
+
     // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
     // This prevents false-positive "server changed" toasts during text input
     private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+
     // 🆕 v1.9.0: Track last confirmed sync folder name for change detection
     private var confirmedSyncFolderName: String =
         prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
             ?: Constants.DEFAULT_SYNC_FOLDER_NAME
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     // v1.5.0 Fix: Initialize URL with protocol prefix if empty
     private val storedUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
-    
+
     // 🌟 v1.6.0: Separate host from prefix for better UX
     // isHttps determines the prefix, serverHost is the editable part
     private val _isHttps = MutableStateFlow(storedUrl.startsWith("https://"))
     val isHttps: StateFlow<Boolean> = _isHttps.asStateFlow()
-    
+
     // Extract host part (everything after http:// or https://)
     private fun extractHostFromUrl(url: String): String {
         return when {
@@ -90,26 +91,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             else -> url
         }
     }
-    
+
     // 🌟 v1.6.0: Only the host part is editable (without protocol prefix)
     private val _serverHost = MutableStateFlow(extractHostFromUrl(storedUrl))
     val serverHost: StateFlow<String> = _serverHost.asStateFlow()
-    
+
     // 🌟 v1.6.0: Full URL for display purposes (computed from prefix + host)
     val serverUrl: StateFlow<String> = combine(_isHttps, _serverHost) { https, host ->
         val prefix = if (https) "https://" else "http://"
         if (host.isEmpty()) "" else prefix + host
     }.stateIn(viewModelScope, SharingStarted.Eagerly, storedUrl)
-    
+
     private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "").orEmpty())
     val username: StateFlow<String> = _username.asStateFlow()
-    
+
     private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "").orEmpty())
     val password: StateFlow<String> = _password.asStateFlow()
-    
+
     private val _serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Unknown)
     val serverStatus: StateFlow<ServerStatus> = _serverStatus.asStateFlow()
-    
+
     // 🌟 v1.6.0: Offline Mode Toggle
     // Default: true for new users (no server), false for existing users (has server config)
     private val _offlineMode = MutableStateFlow(
@@ -121,40 +122,42 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     )
     val offlineMode: StateFlow<Boolean> = _offlineMode.asStateFlow()
-    
+
     private fun hasExistingServerConfig(): Boolean {
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        return !serverUrl.isNullOrEmpty() && 
-               serverUrl != "http://" && 
-               serverUrl != "https://"
+        return !serverUrl.isNullOrEmpty() &&
+            serverUrl != "http://" &&
+            serverUrl != "https://"
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Events (for Activity-level actions like dialogs, intents)
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _events = MutableSharedFlow<SettingsEvent>()
     val events: SharedFlow<SettingsEvent> = _events.asSharedFlow()
 
     private val _showBatteryOptimizationDialog = MutableStateFlow(false)
     val showBatteryOptimizationDialog: StateFlow<Boolean> = _showBatteryOptimizationDialog.asStateFlow()
 
-    fun dismissBatteryOptimizationDialog() { _showBatteryOptimizationDialog.value = false }
-    
+    fun dismissBatteryOptimizationDialog() {
+        _showBatteryOptimizationDialog.value = false
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Export Progress State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _markdownExportProgress = MutableStateFlow<MarkdownExportProgress?>(null)
     val markdownExportProgress: StateFlow<MarkdownExportProgress?> = _markdownExportProgress.asStateFlow()
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Sync Settings State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _autoSyncEnabled = MutableStateFlow(prefs.getBoolean(Constants.KEY_AUTO_SYNC, false))
     val autoSyncEnabled: StateFlow<Boolean> = _autoSyncEnabled.asStateFlow()
-    
+
     private val _syncInterval = MutableStateFlow(
         prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
     )
@@ -172,27 +175,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)
     )
     val triggerOnSave: StateFlow<Boolean> = _triggerOnSave.asStateFlow()
-    
+
     private val _triggerOnResume = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)
     )
     val triggerOnResume: StateFlow<Boolean> = _triggerOnResume.asStateFlow()
-    
+
     private val _triggerWifiConnect = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)
     )
     val triggerWifiConnect: StateFlow<Boolean> = _triggerWifiConnect.asStateFlow()
-    
+
     private val _triggerPeriodic = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)
     )
     val triggerPeriodic: StateFlow<Boolean> = _triggerPeriodic.asStateFlow()
-    
+
     private val _triggerBoot = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, Constants.DEFAULT_TRIGGER_BOOT)
     )
     val triggerBoot: StateFlow<Boolean> = _triggerBoot.asStateFlow()
-    
+
     // 🎉 v1.7.0: WiFi-Only Sync Toggle
     private val _wifiOnlySync = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
@@ -221,17 +224,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Settings State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _markdownAutoSync = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) &&
-        prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+            prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
     )
     val markdownAutoSync: StateFlow<Boolean> = _markdownAutoSync.asStateFlow()
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Debug Settings State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _fileLoggingEnabled = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
     )
@@ -271,7 +274,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     // 🎨 v1.7.0: Display Settings State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _displayMode = MutableStateFlow(
         prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
     )
@@ -290,13 +293,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     // 🆕 v1.9.0 (F05): Custom App Title
     private val _customAppTitle = MutableStateFlow(
-        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE) ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
+            ?: Constants.DEFAULT_CUSTOM_APP_TITLE
     )
     val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
 
     // 🆕 v1.9.0: Configurable WebDAV Sync Folder
     private val _syncFolderName = MutableStateFlow(
-        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
     )
     val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
 
@@ -317,31 +322,31 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         )
     )
     val connectionTimeoutSeconds: StateFlow<Int> = _connectionTimeoutSeconds.asStateFlow()
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // UI State
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
-    
+
     private val _isBackupInProgress = MutableStateFlow(false)
     val isBackupInProgress: StateFlow<Boolean> = _isBackupInProgress.asStateFlow()
-    
+
     // v1.8.0: Descriptive backup status text
     private val _backupStatusText = MutableStateFlow("")
     val backupStatusText: StateFlow<String> = _backupStatusText.asStateFlow()
-    
+
     private val _showSnackbar = MutableSharedFlow<String>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val showSnackbar: SharedFlow<String> = _showSnackbar.asSharedFlow()
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings Actions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /**
      * v1.6.0: Set offline mode on/off
      * When enabled, all network features are disabled
@@ -349,7 +354,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setOfflineMode(enabled: Boolean) {
         _offlineMode.value = enabled
         prefs.edit { putBoolean(Constants.KEY_OFFLINE_MODE, enabled) }
-        
+
         if (enabled) {
             _serverStatus.value = ServerStatus.OfflineMode
         } else {
@@ -357,14 +362,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             checkServerStatus()
         }
     }
-    
+
     fun updateServerUrl(url: String) {
         // 🌟 v1.6.0: Deprecated - use updateServerHost instead
         // This function is kept for compatibility but now delegates to updateServerHost
         val host = extractHostFromUrl(url)
         updateServerHost(host)
     }
-    
+
     /**
      * 🌟 v1.6.0: Update only the host part of the server URL
      * The protocol prefix is handled separately by updateProtocol()
@@ -374,31 +379,31 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun updateServerHost(host: String) {
         _serverHost.value = host
-        
+
         // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (host.isEmpty()) "" else prefix + host
         prefs.edit { putString(Constants.KEY_SERVER_URL, fullUrl) }
     }
-    
+
     fun updateProtocol(useHttps: Boolean) {
         _isHttps.value = useHttps
         // 🌟 v1.6.0: Host stays the same, only prefix changes
         // 🔧 v1.7.0 Hotfix: Removed auto-save to prevent false server-change detection
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        
+
         // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
         val prefix = if (useHttps) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
         prefs.edit { putString(Constants.KEY_SERVER_URL, fullUrl) }
     }
-    
+
     fun updateUsername(value: String) {
         _username.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
         prefs.edit { putString(Constants.KEY_USERNAME, value) }
     }
-    
+
     fun updatePassword(value: String) {
         _password.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
@@ -411,7 +416,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             .replace(Regex("[^a-zA-Z0-9_-]"), "")
             .take(Constants.MAX_SYNC_FOLDER_NAME_LENGTH)
         _syncFolderName.value = sanitized
-        prefs.edit { putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }) }
+        prefs.edit {
+            putString(Constants.KEY_SYNC_FOLDER_NAME, sanitized.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME })
+        }
     }
 
     /**
@@ -426,7 +433,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     /**
      * 🆕 v1.10.0: Set connection timeout in seconds.
-     * Clamped to [MIN_CONNECTION_TIMEOUT_SECONDS..MAX_CONNECTION_TIMEOUT_SECONDS].
+     * Clamped to MIN_CONNECTION_TIMEOUT_SECONDS..MAX_CONNECTION_TIMEOUT_SECONDS range.
      * WebDavSyncService reads this at each sync start via SharedPreferences.
      */
     fun setConnectionTimeoutSeconds(seconds: Int) {
@@ -438,7 +445,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.edit { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, validSeconds) }
         Logger.d(TAG, "Connection timeout set to: ${validSeconds}s")
     }
-    
+
     /**
      * 🔧 v1.7.0 Hotfix: Manual save function - only called when leaving settings screen
      * This prevents false "server changed" detection during text input
@@ -449,17 +456,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // 🌟 v1.6.0: Construct full URL from prefix + host
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
-        
+
         // 🆕 v1.9.0: Folder change counts as server change (different data location)
         val currentFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
         val folderChanged = currentFolder != confirmedSyncFolderName
 
         // 🔄 v1.7.0: Detect server change ONLY against last confirmed URL
         val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl) || folderChanged
-        
+
         // ✅ Settings are already saved in updateServerHost/Protocol/Username/Password
         // This function now ONLY handles server-change detection
-        
+
         // Reset sync status if server actually changed
         if (serverChanged) {
             viewModelScope.launch {
@@ -467,7 +474,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // Verhindert Upload-Skip durch veraltete Cache-Einträge des alten Servers
                 clearServerCaches()
                 val count = notesStorage.resetAllSyncStatusToPending()
-                Logger.d(TAG, "🔄 Server changed from '$confirmedServerUrl' to '$fullUrl': Reset $count notes to PENDING")
+                Logger.d(
+                    TAG,
+                    "🔄 Server changed from '$confirmedServerUrl' to '$fullUrl': Reset $count notes to PENDING"
+                )
                 emitToast(getString(R.string.toast_server_changed_sync_reset, count))
             }
             // Update confirmed state after reset
@@ -497,9 +507,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.edit {
             prefs.all.keys.filter {
                 it.startsWith("etag_json_") ||
-                it.startsWith("etag_md_") ||
-                it.startsWith("content_hash_") ||
-                it.startsWith("content_hash_md_")
+                    it.startsWith("etag_md_") ||
+                    it.startsWith("content_hash_") ||
+                    it.startsWith("content_hash_md_")
             }.forEach { key -> remove(key) }
             remove(Constants.KEY_LAST_SYNC)
             remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
@@ -507,10 +517,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         notesStorage.clearDeletionTracker()
         Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamp, deletion tracker)")
     }
-    
+
     /**
      * � v1.7.0 Hotfix: Improved server change detection
-     * 
+     *
      * Only returns true if the server URL actually changed in a meaningful way.
      * Handles edge cases:
      * - First setup (empty → filled) = NOT a change
@@ -525,23 +535,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Logger.d(TAG, "First server setup detected (no reset needed)")
             return false
         }
-        
+
         // Both empty = No change
         if (confirmedUrl.isEmpty() && newUrl.isEmpty()) {
             return false
         }
-        
+
         // Non-empty → Empty = Server removed (keep notes local, no reset)
         if (confirmedUrl.isNotEmpty() && newUrl.isEmpty()) {
             Logger.d(TAG, "Server removed (notes stay local, no reset needed)")
             return false
         }
-        
+
         // Same URL = No change
         if (confirmedUrl == newUrl) {
             return false
         }
-        
+
         // Normalize URLs for comparison (ignore protocol, trailing slash, case)
         val normalize = { url: String ->
             url.trim()
@@ -550,20 +560,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 .removeSuffix("/")
                 .lowercase()
         }
-        
+
         val confirmedNormalized = normalize(confirmedUrl)
         val newNormalized = normalize(newUrl)
-        
+
         // Check if normalized URLs differ
         val changed = confirmedNormalized != newNormalized
-        
+
         if (changed) {
             Logger.d(TAG, "Server URL changed: '$confirmedNormalized' → '$newNormalized'")
         }
-        
+
         return changed
     }
-    
+
     fun testConnection() {
         viewModelScope.launch {
             _serverStatus.value = ServerStatus.Checking
@@ -588,25 +598,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
+
     fun checkServerStatus() {
         // 🌟 v1.6.0: Respect offline mode first
         if (_offlineMode.value) {
             _serverStatus.value = ServerStatus.OfflineMode
             return
         }
-        
+
         // 🌟 v1.6.0: Check if host is configured
         val serverHost = _serverHost.value
         if (serverHost.isEmpty()) {
             _serverStatus.value = ServerStatus.NotConfigured
             return
         }
-        
+
         // Construct full URL
         val prefix = if (_isHttps.value) "https://" else "http://"
         val serverUrl = prefix + serverHost
-        
+
         viewModelScope.launch {
             _serverStatus.value = ServerStatus.Checking
             val isReachable = withContext(ioDispatcher) {
@@ -629,14 +639,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _serverStatus.value = if (isReachable) ServerStatus.Reachable else ServerStatus.Unreachable(null)
         }
     }
-    
+
     fun syncNow() {
         if (_isSyncing.value) return
         viewModelScope.launch {
             _isSyncing.value = true
             try {
                 val syncService = WebDavSyncService(getApplication())
-                
+
                 // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung
                 val gateResult = syncService.canSync()
                 if (!gateResult.canSync) {
@@ -647,14 +657,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     }
                     return@launch
                 }
-                
+
                 emitToast(getString(R.string.toast_syncing))
-                
+
                 if (!syncService.hasUnsyncedChanges()) {
                     emitToast(getString(R.string.toast_already_synced))
                     return@launch
                 }
-                
+
                 val result = syncService.syncNotes()
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
@@ -668,8 +678,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
-    fun showBatteryOptimizationDialogRequest() { _showBatteryOptimizationDialog.value = true }
+
+    fun showBatteryOptimizationDialogRequest() {
+        _showBatteryOptimizationDialog.value = true
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // Sync Settings Actions
@@ -691,7 +703,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
+
     fun setSyncInterval(minutes: Long) {
         _syncInterval.value = minutes
         prefs.edit { putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes) }
@@ -716,19 +728,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // 🌟 v1.6.0: Configurable Sync Triggers Setters
-    
+
     fun setTriggerOnSave(enabled: Boolean) {
         _triggerOnSave.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, enabled) }
         Logger.d(TAG, "Trigger onSave: $enabled")
     }
-    
+
     fun setTriggerOnResume(enabled: Boolean) {
         _triggerOnResume.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, enabled) }
         Logger.d(TAG, "Trigger onResume: $enabled")
     }
-    
+
     fun setTriggerWifiConnect(enabled: Boolean) {
         _triggerWifiConnect.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, enabled) }
@@ -737,7 +749,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         Logger.d(TAG, "Trigger WiFi-Connect: $enabled")
     }
-    
+
     fun setTriggerPeriodic(enabled: Boolean) {
         _triggerPeriodic.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, enabled) }
@@ -746,13 +758,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         Logger.d(TAG, "Trigger Periodic: $enabled")
     }
-    
+
     fun setTriggerBoot(enabled: Boolean) {
         _triggerBoot.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, enabled) }
         Logger.d(TAG, "Trigger Boot: $enabled")
     }
-    
+
     /**
      * 🎉 v1.7.0: Set WiFi-only sync mode
      * When enabled, sync only happens when connected to WiFi
@@ -786,7 +798,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
     // Markdown Settings Actions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /**
      * 🔧 v1.10.0: Timeout-Absicherung + konsistente Fehlermeldung.
      * - withTimeout() verhindert endloses Hängen bei Server-Problemen
@@ -868,7 +880,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         if (exportedCount == 0) {
                             _markdownAutoSync.value = false
                             _markdownExportProgress.value = null
-                            emitToast(getString(R.string.toast_export_failed, getString(R.string.snackbar_server_unreachable)))
+                            emitToast(
+                                getString(R.string.toast_export_failed, getString(R.string.snackbar_server_unreachable))
+                            )
                             return@launch
                         }
 
@@ -884,7 +898,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         // Clear progress after short delay
                         kotlinx.coroutines.delay(PROGRESS_CLEAR_DELAY_MS)
                         _markdownExportProgress.value = null
-
                     } else {
                         // No notes — feature sofort aktivieren, kein Export nötig
                         _markdownExportProgress.value = null
@@ -894,7 +907,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         }
                         emitToast(getString(R.string.toast_markdown_enabled))
                     }
-
                 } catch (e: TimeoutCancellationException) {
                     // 🆕 v1.10.0: Gesamt-Export-Timeout überschritten — Toggle zurücksetzen
                     Logger.w(TAG, "Markdown export timed out: ${e.message}")
@@ -922,14 +934,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
+
     fun performManualMarkdownSync() {
         // 🌟 v1.6.0: Block in offline mode
         if (_offlineMode.value) {
             Logger.d(TAG, "⏭️ Manual Markdown sync blocked: Offline mode enabled")
             return
         }
-        
+
         viewModelScope.launch {
             try {
                 emitToast(getString(R.string.toast_markdown_syncing))
@@ -941,28 +953,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Backup Actions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     fun createBackup(uri: Uri, password: String? = null, includeServerSettings: Boolean = false) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
             _backupStatusText.value = getString(R.string.backup_progress_creating)
             try {
                 val result = backupManager.createBackup(uri, password, includeServerSettings)
-                
+
                 // Phase 2: Show completion status
                 _backupStatusText.value = if (result.success) {
                     getString(R.string.backup_progress_complete)
                 } else {
                     getString(R.string.backup_progress_failed)
                 }
-                
+
                 // Phase 3: Clear after delay
                 delay(if (result.success) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
-                
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to create backup", e)
                 _backupStatusText.value = getString(R.string.backup_progress_failed)
@@ -973,13 +984,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
-    fun restoreFromFile(
-        uri: Uri,
-        mode: RestoreMode,
-        password: String? = null,
-        restoreServerSettings: Boolean = false
-    ) {
+
+    fun restoreFromFile(uri: Uri, mode: RestoreMode, password: String? = null, restoreServerSettings: Boolean = false) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
             _backupStatusText.value = getString(R.string.backup_progress_restoring)
@@ -990,17 +996,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (restoreServerSettings && result.success) {
                     reloadServerSettingsFromPrefs()
                 }
-                
+
                 // Phase 2: Show completion status
                 _backupStatusText.value = if (result.success) {
                     getString(R.string.restore_progress_complete)
                 } else {
                     getString(R.string.restore_progress_failed)
                 }
-                
+
                 // Phase 3: Clear after delay
                 delay(if (result.success) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
-                
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to restore backup from file", e)
                 _backupStatusText.value = getString(R.string.restore_progress_failed)
@@ -1024,14 +1029,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _password.value = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
         confirmedServerUrl = url
         confirmedSyncFolderName = prefs.getString(
-            Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME
+            Constants.KEY_SYNC_FOLDER_NAME,
+            Constants.DEFAULT_SYNC_FOLDER_NAME
         ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
         _syncFolderName.value = confirmedSyncFolderName
         _connectionTimeoutSeconds.value = prefs.getInt(
-            Constants.KEY_CONNECTION_TIMEOUT_SECONDS, Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+            Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
+            Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
         ).coerceIn(Constants.MIN_CONNECTION_TIMEOUT_SECONDS, Constants.MAX_CONNECTION_TIMEOUT_SECONDS)
         _maxParallelConnections.value = prefs.getInt(
-            Constants.KEY_MAX_PARALLEL_CONNECTIONS, Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
+            Constants.KEY_MAX_PARALLEL_CONNECTIONS,
+            Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
         ).coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
         _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
         _autoSyncEnabled.value = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
@@ -1039,17 +1047,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _markdownAutoSync.value = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) &&
             prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
         _triggerOnSave.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)
-        _triggerOnResume.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)
-        _triggerWifiConnect.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)
-        _triggerPeriodic.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)
+        _triggerOnResume.value =
+            prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)
+        _triggerWifiConnect.value =
+            prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)
+        _triggerPeriodic.value =
+            prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)
         _triggerBoot.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, Constants.DEFAULT_TRIGGER_BOOT)
-        _syncInterval.value = prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
-        _displayMode.value = prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+        _syncInterval.value =
+            prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
+        _displayMode.value =
+            prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE)
+                ?: Constants.DEFAULT_DISPLAY_MODE
         _gridAdaptiveScaling.value = prefs.getBoolean(
-            Constants.KEY_GRID_ADAPTIVE_SCALING, Constants.DEFAULT_GRID_ADAPTIVE_SCALING
+            Constants.KEY_GRID_ADAPTIVE_SCALING,
+            Constants.DEFAULT_GRID_ADAPTIVE_SCALING
         )
         _gridManualColumns.value = prefs.getInt(
-            Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS
+            Constants.KEY_GRID_MANUAL_COLUMNS,
+            Constants.DEFAULT_GRID_MANUAL_COLUMNS
         )
         _themeMode.value = ThemePreferences.getThemeMode(prefs)
         _colorTheme.value = ThemePreferences.getColorTheme(prefs)
@@ -1057,7 +1073,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
                 ?: Constants.DEFAULT_CUSTOM_APP_TITLE
         _autosaveEnabled.value = prefs.getBoolean(Constants.KEY_AUTOSAVE_ENABLED, Constants.DEFAULT_AUTOSAVE_ENABLED)
-        _notificationsEnabled.value = prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, Constants.DEFAULT_NOTIFICATIONS_ENABLED)
+        _notificationsEnabled.value =
+            prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, Constants.DEFAULT_NOTIFICATIONS_ENABLED)
         _notificationsErrorsOnly.value =
             prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, Constants.DEFAULT_NOTIFICATIONS_ERRORS_ONLY)
         _notificationsServerWarning.value =
@@ -1065,25 +1082,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         Logger.d(TAG, "🔄 App settings reloaded from prefs after backup restore")
     }
 
-    fun checkBackupContainsAppSettings(
-        uri: Uri,
-        password: String? = null,
-        onResult: (Boolean) -> Unit
-    ) {
+    fun checkBackupContainsAppSettings(uri: Uri, password: String? = null, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val result = backupManager.backupContainsAppSettings(uri, password)
             onResult(result)
         }
     }
-    
+
     /**
      * 🔐 v1.7.0: Check if backup is encrypted and call appropriate callback
      */
-    fun checkBackupEncryption(
-        uri: Uri,
-        onEncrypted: () -> Unit,
-        onPlaintext: () -> Unit
-    ) {
+    fun checkBackupEncryption(uri: Uri, onEncrypted: () -> Unit, onPlaintext: () -> Unit) {
         viewModelScope.launch {
             try {
                 val isEncrypted = backupManager.isBackupEncrypted(uri)
@@ -1094,11 +1103,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to check encryption status", e)
-                onPlaintext()  // Assume plaintext on error
+                onPlaintext() // Assume plaintext on error
             }
         }
     }
-    
+
     fun restoreFromServer(mode: RestoreMode) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
@@ -1108,17 +1117,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = withContext(ioDispatcher) {
                     syncService.restoreFromServer(mode)
                 }
-                
+
                 // Phase 2: Show completion status
                 _backupStatusText.value = if (result.isSuccess) {
                     getString(R.string.restore_server_progress_complete)
                 } else {
                     getString(R.string.restore_server_progress_failed)
                 }
-                
+
                 // Phase 3: Clear after delay
                 delay(if (result.isSuccess) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
-                
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to restore from server", e)
                 _backupStatusText.value = getString(R.string.restore_server_progress_failed)
@@ -1129,33 +1137,43 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Debug Settings Actions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     fun setFileLogging(enabled: Boolean) {
         _fileLoggingEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, enabled) }
         Logger.setFileLoggingEnabled(enabled)
         viewModelScope.launch {
-            emitToast(if (enabled) getString(R.string.toast_file_logging_enabled) else getString(R.string.toast_file_logging_disabled))
+            emitToast(
+                if (enabled) {
+                    getString(
+                        R.string.toast_file_logging_enabled
+                    )
+                } else {
+                    getString(R.string.toast_file_logging_disabled)
+                }
+            )
         }
     }
-    
+
     fun clearLogs() {
         viewModelScope.launch {
             try {
                 val cleared = Logger.clearLogFile(getApplication())
-                emitToast(if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted))
+                emitToast(
+                    if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted)
+                )
             } catch (e: Exception) {
                 emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
     }
-    
+
     fun getLogFile() = Logger.getLogFile(getApplication())
-    
+
     /**
      * v1.8.0: Reset changelog version to force showing the changelog dialog on next start
      * Used for testing the post-update changelog feature
@@ -1163,11 +1181,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun resetChangelogVersion() {
         prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, 0) }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Helper
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /**
      * Check if server is configured AND not in offline mode
      * v1.6.0: Returns false if offline mode is enabled
@@ -1175,16 +1193,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun isServerConfigured(): Boolean {
         // Offline mode takes priority
         if (_offlineMode.value) return false
-        
+
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        return !serverUrl.isNullOrEmpty() && 
-               serverUrl != "http://" && 
-               serverUrl != "https://"
+        return !serverUrl.isNullOrEmpty() &&
+            serverUrl != "http://" &&
+            serverUrl != "https://"
     }
-    
+
     /**
      * 🌍 v1.7.1: Get string resources with correct app locale
-     * 
+     *
      * AndroidViewModel uses Application context which may not have the correct locale
      * applied when using per-app language settings. We need to get a Context that
      * respects AppCompatDelegate.getApplicationLocales().
@@ -1203,7 +1221,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         return context.getString(resId)
     }
-    
+
     private fun getString(resId: Int, vararg formatArgs: Any): String {
         // Get context with correct locale configuration from AppCompatDelegate
         val appLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
@@ -1218,7 +1236,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
         return context.getString(resId, *formatArgs)
     }
-    
+
     /**
      * Zeigt eine Snackbar über den SettingsNavHost-Collector an.
      * Aufrufbar aus synchronen Click-Handlern (kein suspend).
@@ -1230,30 +1248,37 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private suspend fun emitToast(message: String) {
         _showSnackbar.emit(message)
     }
-    
+
     /**
      * Server status states
      * v1.6.0: Added OfflineMode state
      */
     sealed class ServerStatus {
         data object Unknown : ServerStatus()
-        data object OfflineMode : ServerStatus()  // 🌟 v1.6.0
+
+        data object OfflineMode : ServerStatus() // 🌟 v1.6.0
+
         data object NotConfigured : ServerStatus()
+
         data object Checking : ServerStatus()
+
         data object Reachable : ServerStatus()
+
         data class Unreachable(val error: String?) : ServerStatus()
     }
-    
+
     /**
      * Events for Activity-level actions (dialogs, intents, etc.)
      * v1.5.0: Ported from old SettingsActivity
      */
     sealed class SettingsEvent {
         data object RequestBatteryOptimization : SettingsEvent()
+
         data object RestartNetworkMonitor : SettingsEvent()
+
         data object ShowBatteryOptimizationDialog : SettingsEvent()
     }
-    
+
     /**
      * Progress state for Markdown export
      * v1.5.0: For initial export progress dialog
@@ -1262,13 +1287,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val current: Int,
         val total: Int,
         val isComplete: Boolean = false,
-        val isChecking: Boolean = false  // 🆕 v1.10.0: Server-Check-Phase (indeterminate)
+        val isChecking: Boolean = false // 🆕 v1.10.0: Server-Check-Phase (indeterminate)
     )
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // 🎨 v1.7.0: Display Mode Functions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /**
      * Set display mode (list or grid)
      */
@@ -1339,29 +1364,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /**
      * Importiert lokale Dateien via Android Content-URI.
      */
-    suspend fun importLocalFiles(
-        uris: List<Uri>
-    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(ioDispatcher) {
-        val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
-        val candidates = uris.mapNotNull { uri ->
-            try {
-                val name = getFileName(uri) ?: "unknown.txt"
-                val size = getFileSize(uri)
-                val fileType = wizard.detectFileType(name)
-                dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate(
-                    name = name,
-                    source = dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSource.LocalFile(uri),
-                    size = size,
-                    modified = System.currentTimeMillis(),
-                    fileType = fileType
-                )
-            } catch (e: Exception) {
-                Logger.w(TAG, "Cannot process URI $uri: ${e.message}")
-                null
+    suspend fun importLocalFiles(uris: List<Uri>): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary =
+        withContext(ioDispatcher) {
+            val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
+            val candidates = uris.mapNotNull { uri ->
+                try {
+                    val name = getFileName(uri) ?: "unknown.txt"
+                    val size = getFileSize(uri)
+                    val fileType = wizard.detectFileType(name)
+                    dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate(
+                        name = name,
+                        source = dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSource.LocalFile(uri),
+                        size = size,
+                        modified = System.currentTimeMillis(),
+                        fileType = fileType
+                    )
+                } catch (e: Exception) {
+                    Logger.w(TAG, "Cannot process URI $uri: ${e.message}")
+                    null
+                }
             }
+            wizard.importFiles(candidates)
         }
-        wizard.importFiles(candidates)
-    }
 
     private fun getFileName(uri: Uri): String? {
         val cursor = getApplication<android.app.Application>()

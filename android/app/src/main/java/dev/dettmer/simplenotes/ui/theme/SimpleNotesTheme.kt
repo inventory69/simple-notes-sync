@@ -40,8 +40,8 @@ fun SimpleNotesTheme(
 ) {
     val isDark = when (themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT  -> false
-        ThemeMode.DARK   -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
         ThemeMode.AMOLED -> true
     }
 
@@ -53,7 +53,7 @@ fun SimpleNotesTheme(
         SideEffect {
             val window = (view.context as Activity).window
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars     = !isDark
+                isAppearanceLightStatusBars = !isDark
                 isAppearanceLightNavigationBars = !isDark
             }
         }
@@ -73,8 +73,8 @@ fun SimpleNotesTheme(
         val context = LocalContext.current
         val dark = when (mode) {
             ThemeMode.SYSTEM -> isSystemInDarkTheme()
-            ThemeMode.LIGHT  -> false
-            ThemeMode.DARK   -> true
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
             ThemeMode.AMOLED -> true
         }
         val colorScheme = ColorPalettes.getColorScheme(

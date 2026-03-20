@@ -2,34 +2,34 @@ package dev.dettmer.simplenotes.ui.settings
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import androidx.core.net.toUri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.SimpleNotesApplication
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Logger
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 /**
  * Settings Activity with Jetpack Compose UI
  * v1.5.0: Complete Settings Redesign with grouped screens
- * 
+ *
  * Replaces the old 1147-line SettingsActivity.kt with a modern
  * Compose-based implementation featuring:
  * - 6 logical settings groups as separate screens
@@ -38,19 +38,18 @@ import kotlinx.coroutines.launch
  * - Clean separation of concerns with SettingsViewModel
  */
 class ComposeSettingsActivity : AppCompatActivity() {
-    
     companion object {
         private const val TAG = "ComposeSettingsActivity"
     }
-    
+
     private val viewModel: SettingsViewModel by viewModels()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
-        
+
         // Enable edge-to-edge display
         enableEdgeToEdge()
 
@@ -72,18 +71,21 @@ class ComposeSettingsActivity : AppCompatActivity() {
         // v2.0.0: On API 35+ (mandatory predictive back), overrideActivityTransition(CLOSE)
         // is only respected for explicit finish() calls — the system uses its own animation
         // for gesture-driven back. Routing through OnBackPressedCallback + finish() fixes this.
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                finishWithTransition()
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    finishWithTransition()
+                }
             }
-        })
+        )
 
         // v2.0.0: Default result for Back gesture
         setResult(RESULT_OK)
 
         // Collect events from ViewModel (for Activity-level actions)
         collectViewModelEvents()
-        
+
         setContent {
             // Live theme preview: theme state flows from SettingsViewModel so that
             // changes in DisplaySettingsScreen are immediately reflected here.
@@ -129,7 +131,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun finishWithTransition() {
         finish()
         // API < 34: overrideActivityTransition not available, use deprecated API
@@ -158,11 +160,11 @@ class ComposeSettingsActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     /**
      * Open system battery optimization settings
      * v1.5.0: Ported from old SettingsActivity
-     * 
+     *
      * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
      * For Play Store builds, this would need to be changed to
      * ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (shows list, doesn't request directly).
@@ -185,7 +187,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     /**
      * Restart the network monitor after sync settings change
      * v1.5.0: Ported from old SettingsActivity
@@ -201,7 +203,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
             Logger.e(TAG, "❌ Failed to restart NetworkMonitor: ${e.message}")
         }
     }
-    
+
     /**
      * Handle configuration changes (e.g., locale) without recreating activity
      * v1.8.0: Prevents flickering during language changes by avoiding full recreate

@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
@@ -47,12 +47,12 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import android.util.Log
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
@@ -77,11 +77,11 @@ fun ChecklistItemRow(
     onDelete: () -> Unit,
     onAddNewItem: () -> Unit,
     modifier: Modifier = Modifier,
-    dragModifier: Modifier = Modifier,    // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
+    dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     requestFocus: Boolean = false,
-    isDragging: Boolean = false,          // 🆕 v1.8.0: IMPL_023 - Drag state
-    isAnyItemDragging: Boolean = false,   // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
-    onHeightChanged: (() -> Unit)? = null,  // 🆕 v1.8.1: IMPL_05 - Auto-scroll callback
+    isDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Drag state
+    isAnyItemDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
+    onHeightChanged: (() -> Unit)? = null // 🆕 v1.8.1: IMPL_05 - Auto-scroll callback
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -113,14 +113,20 @@ fun ChecklistItemRow(
     val currentIsDragging by rememberUpdatedState(isDragging)
     val showTopGradient by remember {
         derivedStateOf {
-            hasOverflow && collapsedHeightDp != null &&
-                !isFocused && !currentIsAnyItemDragging && scrollState.value > 0
+            hasOverflow &&
+                collapsedHeightDp != null &&
+                !isFocused &&
+                !currentIsAnyItemDragging &&
+                scrollState.value > 0
         }
     }
     val showBottomGradient by remember {
         derivedStateOf {
-            hasOverflow && collapsedHeightDp != null &&
-                !isFocused && !currentIsAnyItemDragging && scrollState.value < scrollState.maxValue
+            hasOverflow &&
+                collapsedHeightDp != null &&
+                !isFocused &&
+                !currentIsAnyItemDragging &&
+                scrollState.value < scrollState.maxValue
         }
     }
 
@@ -193,22 +199,22 @@ fun ChecklistItemRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp),  // 🆕 v1.8.0: IMPL_023 - links kein Padding (Handle hat eigene Fläche)
-        verticalAlignment = if (hasOverflow) Alignment.Top else Alignment.CenterVertically  // 🆕 v1.8.0: Dynamisch
+            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp), // 🆕 v1.8.0: IMPL_023 - links kein Padding (Handle hat eigene Fläche)
+        verticalAlignment = if (hasOverflow) Alignment.Top else Alignment.CenterVertically // 🆕 v1.8.0: Dynamisch
     ) {
         // 🆕 v1.8.0: IMPL_023 - Vergrößerter Drag Handle (48dp Touch-Target)
         Box(
             modifier = dragModifier
-                .size(48.dp)  // Material Design minimum touch target
-                .alpha(if (isDragging) 1.0f else 0.6f),  // Visual feedback beim Drag
+                .size(48.dp) // Material Design minimum touch target
+                .alpha(if (isDragging) 1.0f else 0.6f), // Visual feedback beim Drag
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.DragHandle,
                 contentDescription = stringResource(R.string.drag_to_reorder),
-                modifier = Modifier.size(28.dp),  // Icon größer als vorher (24dp → 28dp)
+                modifier = Modifier.size(28.dp), // Icon größer als vorher (24dp → 28dp)
                 tint = if (isDragging) {
-                    MaterialTheme.colorScheme.primary  // Primary color während Drag
+                    MaterialTheme.colorScheme.primary // Primary color während Drag
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
@@ -307,9 +313,12 @@ fun ChecklistItemRow(
                             }
                         }
                         if (BuildConfig.DEBUG && lineCount > COLLAPSED_MAX_LINES) {
-                            Log.d("DragDrop", "[GRADIENT:${item.id.takeLast(6)}] " +
-                                "lines=$lineCount overflow=$hasOverflow " +
-                                "collapsed=$collapsedHeightDp isDrag=$isDragging focused=$isFocused")
+                            Log.d(
+                                "DragDrop",
+                                "[GRADIENT:${item.id.takeLast(6)}] " +
+                                    "lines=$lineCount overflow=$hasOverflow " +
+                                    "collapsed=$collapsedHeightDp isDrag=$isDragging focused=$isFocused"
+                            )
                         }
                         // 🆕 v1.8.1 (IMPL_05): Höhenänderung bei Zeilenumbruch melden
                         if (isFocused && lineCount > lastLineCount && lastLineCount > 0) {
@@ -359,7 +368,7 @@ fun ChecklistItemRow(
             onClick = onDelete,
             modifier = Modifier
                 .size(36.dp)
-                .padding(top = 4.dp)  // 🆕 v1.8.0: Ausrichtung mit Top-aligned Text
+                .padding(top = 4.dp) // 🆕 v1.8.0: Ausrichtung mit Top-aligned Text
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
@@ -373,8 +382,10 @@ fun ChecklistItemRow(
 
 // 🆕 v1.8.0: Maximum lines when collapsed (not focused)
 private const val COLLAPSED_MAX_LINES = 5
+
 // IMPL_29d: Duration for gradient fade animation (ms)
 private const val GRADIENT_FADE_DURATION_MS = 200
+
 // IMPL_29d: Delay after drag ends to allow layout pass before reading scrollState.maxValue
 private const val DRAG_END_LAYOUT_DELAY_MS = 50L
 

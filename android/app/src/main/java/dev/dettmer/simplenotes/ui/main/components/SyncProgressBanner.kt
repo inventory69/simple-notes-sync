@@ -54,10 +54,7 @@ import dev.dettmer.simplenotes.sync.SyncProgress
  * Silent Syncs (onResume) zeigen kein Banner (progress.isVisible == false)
  */
 @Composable
-fun SyncProgressBanner(
-    progress: SyncProgress,
-    modifier: Modifier = Modifier
-) {
+fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
     // Farben werden nur aktualisiert während der Banner sichtbar ist.
     // Dadurch bleiben sie während der Exit-Animation eingefroren und verhindern
     // den Farbflash beim Ausblenden (z.B. rot→blau beim Dismiss eines Error-Banners).
@@ -223,6 +220,6 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.IMPORTING_MARKDOWN -> stringResource(R.string.sync_phase_importing_markdown)
         SyncPhase.COMPLETED -> stringResource(R.string.sync_phase_completed)
         SyncPhase.ERROR -> stringResource(R.string.sync_phase_error)
-        SyncPhase.INFO -> ""  // 🆕 v1.8.1 (IMPL_12): INFO nutzt immer resultMessage
+        SyncPhase.INFO -> "" // 🆕 v1.8.1 (IMPL_12): INFO nutzt immer resultMessage
     }
 }

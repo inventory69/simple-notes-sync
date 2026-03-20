@@ -4,9 +4,9 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.File
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.File
 
 /**
  * Persistent queue for server deletions that couldn't be executed
@@ -16,7 +16,6 @@ import java.io.File
  * Processed during the next successful sync (Step 4.5 in syncNotes()).
  */
 class PendingServerDeletions(context: Context) {
-
     private val file = File(context.filesDir, FILENAME)
     private val mutex = Mutex()
     private val gson = Gson()

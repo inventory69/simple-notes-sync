@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.asSharedFlow
  * v2.0.0: Migration from deprecated LocalBroadcastManager to SharedFlow.
  */
 object SyncEventBus {
-
     private val _events = MutableSharedFlow<SyncEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<SyncEvent> = _events.asSharedFlow()
 

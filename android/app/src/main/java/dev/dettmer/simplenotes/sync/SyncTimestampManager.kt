@@ -11,7 +11,6 @@ import dev.dettmer.simplenotes.utils.Logger
  * Extracted from WebDavSyncService in v2.0.0 (Commit 15).
  */
 class SyncTimestampManager(private val prefs: SharedPreferences) {
-
     companion object {
         private const val TAG = "SyncTimestampManager"
     }

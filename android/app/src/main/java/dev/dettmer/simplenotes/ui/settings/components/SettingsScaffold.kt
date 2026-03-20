@@ -35,12 +35,7 @@ import dev.dettmer.simplenotes.R
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScaffold(
-    title: String,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable (PaddingValues) -> Unit
-) {
+fun SettingsScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Modifier, content: @Composable (PaddingValues) -> Unit) {
     Scaffold(
         modifier = modifier.imePadding(),
         topBar = {

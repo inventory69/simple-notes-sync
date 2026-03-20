@@ -52,7 +52,7 @@ import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
  * 🎨 v1.7.0: Unified Note Card for Grid Layout
- * 
+ *
  * Einheitliche Card für ALLE Notizen im Grid:
  * - Dynamische maxLines basierend auf NoteSize
  * - LARGE notes: 6 Zeilen Preview
@@ -71,17 +71,17 @@ fun NoteCardGrid(
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     // 🚀 Performance: Cache noteSize - nur bei note-Änderung neu berechnen
     val noteSize = remember(note.id, note.content, note.checklistItems) { note.getSize() }
-    
+
     // ⏱️ Reading timestampTicker triggers recomposition only for visible cards
     @Suppress("UNUSED_VARIABLE")
     val ticker = timestampTicker
-    
+
     // Dynamische maxLines basierend auf Größe
     val previewMaxLines = if (noteSize == NoteSize.LARGE) 6 else 3
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,7 +93,9 @@ fun NoteCardGrid(
                         color = MaterialTheme.colorScheme.primary,
                         shape = RoundedCornerShape(12.dp)
                     )
-                } else Modifier
+                } else {
+                    Modifier
+                }
             )
             .pointerInput(note.id, isSelectionMode) {
                 detectTapGestures(
@@ -115,7 +117,7 @@ fun NoteCardGrid(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp)  // Einheitliches internes Padding
+                    .padding(12.dp) // Einheitliches internes Padding
             ) {
                 // Header row
                 Row(
@@ -133,18 +135,19 @@ fun NoteCardGrid(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (note.noteType == NoteType.TEXT) 
-                                Icons.Outlined.Description 
-                            else 
-                                Icons.AutoMirrored.Outlined.List,
+                            imageVector = if (note.noteType == NoteType.TEXT) {
+                                Icons.Outlined.Description
+                            } else {
+                                Icons.AutoMirrored.Outlined.List
+                            },
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(12.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     // Title
                     Text(
                         text = note.title.ifEmpty { stringResource(R.string.untitled) },
@@ -155,9 +158,9 @@ fun NoteCardGrid(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 // Preview - Dynamische Zeilen basierend auf NoteSize
                 Text(
                     text = when (note.noteType) {
@@ -171,12 +174,12 @@ fun NoteCardGrid(
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = previewMaxLines,  // 🎯 Dynamisch: LARGE=6, SMALL=3
+                    maxLines = previewMaxLines, // 🎯 Dynamisch: LARGE=6, SMALL=3
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 // Footer
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -188,23 +191,23 @@ fun NoteCardGrid(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     if (showSyncStatus) {
                         Spacer(modifier = Modifier.width(4.dp))
-                        
+
                         Icon(
                             imageVector = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> Icons.Outlined.CloudDone
                                 SyncStatus.PENDING -> Icons.Outlined.CloudSync
                                 SyncStatus.CONFLICT -> Icons.Default.Warning
                                 SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
-                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff // 🆕 v1.8.0
                             },
                             contentDescription = null,
                             tint = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
                                 SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
-                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) // 🆕 v1.8.0
                                 else -> MaterialTheme.colorScheme.outline
                             },
                             modifier = Modifier.size(14.dp)
@@ -212,7 +215,7 @@ fun NoteCardGrid(
                     }
                 }
             }
-            
+
             // Selection indicator checkbox (top-right)
             androidx.compose.animation.AnimatedVisibility(
                 visible = isSelectionMode,

@@ -4,13 +4,13 @@ import com.thegrizzlylabs.sardineandroid.DavResource
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.Closeable
+import java.io.InputStream
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.Closeable
-import java.io.InputStream
 
 private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val HTTP_NOT_FOUND = 404
@@ -44,19 +44,15 @@ class SafeSardineWrapper private constructor(
     private val delegate: OkHttpSardine,
     private val okHttpClient: OkHttpClient,
     private val authHeader: String
-) : Sardine by delegate, Closeable {
-
+) : Sardine by delegate,
+    Closeable {
     companion object {
         private const val TAG = "SafeSardine"
 
         /**
          * Factory-Methode für SafeSardineWrapper
          */
-        fun create(
-            okHttpClient: OkHttpClient,
-            username: String,
-            password: String
-        ): SafeSardineWrapper {
+        fun create(okHttpClient: OkHttpClient, username: String, password: String): SafeSardineWrapper {
             val delegate = OkHttpSardine(okHttpClient).apply {
                 setCredentials(username, password)
             }
@@ -64,6 +60,7 @@ class SafeSardineWrapper private constructor(
             return SafeSardineWrapper(delegate, okHttpClient, authHeader)
         }
     }
+
     // 🆕 v1.7.2 (IMPL_003): Track ob bereits geschlossen
     @Volatile
     private var isClosed = false
@@ -97,7 +94,7 @@ class SafeSardineWrapper private constructor(
             when {
                 response.isSuccessful -> true
                 code == HTTP_NOT_FOUND -> false
-                code == HTTP_FORBIDDEN -> true  // Resource exists (Jianguoyun: HEAD on Collection → 403)
+                code == HTTP_FORBIDDEN -> true // Resource exists (Jianguoyun: HEAD on Collection → 403)
                 code == HTTP_GONE -> false
                 code == HTTP_UNAUTHORIZED -> throw java.io.IOException(
                     "Authentication failed ($code) for $url"
@@ -165,7 +162,7 @@ class SafeSardineWrapper private constructor(
     override fun put(url: String, data: ByteArray, contentType: String?) {
         val mediaType = contentType?.toMediaTypeOrNull()
         val body = data.toRequestBody(mediaType)
-        
+
         val request = Request.Builder()
             .url(url)
             .put(body)
@@ -222,10 +219,10 @@ class SafeSardineWrapper private constructor(
             Logger.d(TAG, "createDirectory($url) → ${response.code}")
         }
     }
-    
+
     /**
      * 🆕 v1.7.2 (IMPL_003): Schließt alle offenen Verbindungen
-     * 
+     *
      * Wichtig: Nach close() darf der Client nicht mehr verwendet werden!
      * Eviction von Connection Pool Einträgen und Cleanup von internen Ressourcen.
      */
@@ -234,14 +231,14 @@ class SafeSardineWrapper private constructor(
             Logger.d(TAG, "Already closed, skipping")
             return
         }
-        
+
         try {
             // OkHttpClient Connection Pool räumen
             okHttpClient.connectionPool.evictAll()
-            
+
             // Dispatcher shutdown (beendet laufende Calls)
             okHttpClient.dispatcher.cancelAll()
-            
+
             isClosed = true
             Logger.d(TAG, "✅ Closed successfully (connections evicted)")
         } catch (e: Exception) {

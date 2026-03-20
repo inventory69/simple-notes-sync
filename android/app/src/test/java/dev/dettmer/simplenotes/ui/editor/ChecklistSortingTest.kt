@@ -200,10 +200,7 @@ class ChecklistSortingTest {
      * 2. Insert new item
      * 3. Reassign order values
      */
-    private fun simulateAddItemAtEnd(
-        items: List<ChecklistItemState>,
-        sortOption: ChecklistSortOption
-    ): List<ChecklistItemState> {
+    private fun simulateAddItemAtEnd(items: List<ChecklistItemState>, sortOption: ChecklistSortOption): List<ChecklistItemState> {
         val newItem = ChecklistItemState(id = "new", text = "", isChecked = false, order = 0)
         val insertIndex = calculateInsertIndexForNewItem(items, sortOption)
         val newList = items.toMutableList()

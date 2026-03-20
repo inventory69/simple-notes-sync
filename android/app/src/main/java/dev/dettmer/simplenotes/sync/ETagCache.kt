@@ -13,7 +13,6 @@ import dev.dettmer.simplenotes.utils.Logger
  * - Markdown files: "etag_md_<noteId>"
  */
 class ETagCache(private val prefs: SharedPreferences) {
-
     companion object {
         private const val TAG = "ETagCache"
         private const val PREFIX_JSON = "etag_json_"

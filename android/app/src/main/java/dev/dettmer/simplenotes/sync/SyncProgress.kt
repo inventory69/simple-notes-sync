@@ -2,12 +2,12 @@ package dev.dettmer.simplenotes.sync
 
 /**
  * 🆕 v1.8.0: Detaillierter Sync-Fortschritt für UI
- * 
+ *
  * Einziges Banner-System für den gesamten Sync-Lebenszyklus:
  * - PREPARING: Sofort beim Klick, bleibt während Vor-Checks und Server-Prüfung
  * - UPLOADING / DOWNLOADING / IMPORTING_MARKDOWN: Nur bei echten Aktionen
  * - COMPLETED / ERROR: Ergebnis mit Nachricht + Auto-Hide
- * 
+ *
  * Ersetzt das alte duale Banner-System (SyncStatusBanner + SyncProgressBanner)
  */
 data class SyncProgress(
@@ -24,19 +24,19 @@ data class SyncProgress(
      */
     val progress: Float
         get() = if (total > 0) current.toFloat() / total else 0f
-    
+
     /**
      * Fortschritt als Prozent (0-100)
      */
     val percentComplete: Int
         get() = (progress * 100).toInt()
-    
+
     /**
      * Vergangene Zeit seit Start in Millisekunden
      */
     val elapsedMs: Long
         get() = System.currentTimeMillis() - startTime
-    
+
     /**
      * Geschätzte verbleibende Zeit in Millisekunden
      * Basiert auf durchschnittlicher Zeit pro Item
@@ -48,7 +48,7 @@ data class SyncProgress(
             val remaining = total - current
             return avgTimePerItem * remaining
         }
-    
+
     /**
      * Ob das Banner sichtbar sein soll
      * Silent syncs zeigen nie ein Banner
@@ -56,7 +56,7 @@ data class SyncProgress(
      */
     val isVisible: Boolean
         get() = phase == SyncPhase.INFO || (!silent && phase != SyncPhase.IDLE)
-    
+
     /**
      * Ob gerade ein aktiver Sync läuft (mit Spinner)
      */
@@ -68,7 +68,7 @@ data class SyncProgress(
             SyncPhase.DELETING,
             SyncPhase.IMPORTING_MARKDOWN
         )
-    
+
     companion object {
         val IDLE = SyncProgress(phase = SyncPhase.IDLE)
     }
@@ -80,13 +80,13 @@ data class SyncProgress(
 enum class SyncPhase {
     /** Kein Sync aktiv */
     IDLE,
-    
+
     /** Sync wurde gestartet, Vor-Checks laufen (hasUnsyncedChanges, isReachable, Server-Verzeichnis) */
     PREPARING,
-    
+
     /** Lädt lokale Änderungen auf den Server hoch */
     UPLOADING,
-    
+
     /** Lädt Server-Änderungen herunter */
     DOWNLOADING,
 
@@ -95,13 +95,13 @@ enum class SyncPhase {
 
     /** Importiert Markdown-Dateien vom Server */
     IMPORTING_MARKDOWN,
-    
+
     /** Sync erfolgreich abgeschlossen */
     COMPLETED,
-    
+
     /** Sync mit Fehler abgebrochen */
     ERROR,
-    
+
     /** 🆕 v1.8.1 (IMPL_12): Kurzfristige Info-Meldung (nicht sync-bezogen) */
     INFO
 }

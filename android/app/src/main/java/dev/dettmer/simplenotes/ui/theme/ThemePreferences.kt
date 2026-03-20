@@ -15,8 +15,8 @@ import dev.dettmer.simplenotes.R
 @Suppress("MagicNumber") // Color hex values for preview swatches
 enum class ThemeMode(val displayNameResId: Int, val previewColor: Color) {
     SYSTEM(R.string.theme_mode_system, Color(0xFF808080)),
-    LIGHT(R.string.theme_mode_light,   Color(0xFFFFFBFE)),
-    DARK(R.string.theme_mode_dark,     Color(0xFF1C1B1F)),
+    LIGHT(R.string.theme_mode_light, Color(0xFFFFFBFE)),
+    DARK(R.string.theme_mode_dark, Color(0xFF1C1B1F)),
     AMOLED(R.string.theme_mode_amoled, Color.Black)
 }
 
@@ -29,11 +29,11 @@ enum class ThemeMode(val displayNameResId: Int, val previewColor: Color) {
  */
 enum class ColorTheme(val displayNameResId: Int, val previewColor: Color) {
     DEFAULT(R.string.theme_color_default, Color(0xFF6750A4)),
-    BLUE(R.string.theme_color_blue,       Color(0xFF0062A1)),
-    GREEN(R.string.theme_color_green,     Color(0xFF276A25)),
-    RED(R.string.theme_color_red,         Color(0xFFB3261E)),
-    PURPLE(R.string.theme_color_purple,   Color(0xFF7B1FA2)),
-    ORANGE(R.string.theme_color_orange,   Color(0xFF8B4500)),
+    BLUE(R.string.theme_color_blue, Color(0xFF0062A1)),
+    GREEN(R.string.theme_color_green, Color(0xFF276A25)),
+    RED(R.string.theme_color_red, Color(0xFFB3261E)),
+    PURPLE(R.string.theme_color_purple, Color(0xFF7B1FA2)),
+    ORANGE(R.string.theme_color_orange, Color(0xFF8B4500)),
     DYNAMIC(R.string.theme_color_dynamic, Color(0xFF6750A4))
 }
 
@@ -43,13 +43,16 @@ enum class ColorTheme(val displayNameResId: Int, val previewColor: Color) {
  * v2.0.0: Multi-theme system
  */
 object ThemePreferences {
-
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_COLOR_THEME = "color_theme"
 
     fun getThemeMode(prefs: SharedPreferences): ThemeMode {
         val stored = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
-        return try { ThemeMode.valueOf(stored!!) } catch (_: Exception) { ThemeMode.SYSTEM }
+        return try {
+            ThemeMode.valueOf(stored!!)
+        } catch (_: Exception) {
+            ThemeMode.SYSTEM
+        }
     }
 
     fun setThemeMode(prefs: SharedPreferences, mode: ThemeMode) {
@@ -58,7 +61,11 @@ object ThemePreferences {
 
     fun getColorTheme(prefs: SharedPreferences): ColorTheme {
         val stored = prefs.getString(KEY_COLOR_THEME, ColorTheme.DYNAMIC.name)
-        return try { ColorTheme.valueOf(stored!!) } catch (_: Exception) { ColorTheme.DYNAMIC }
+        return try {
+            ColorTheme.valueOf(stored!!)
+        } catch (_: Exception) {
+            ColorTheme.DYNAMIC
+        }
     }
 
     fun setColorTheme(prefs: SharedPreferences, theme: ColorTheme) {

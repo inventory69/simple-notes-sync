@@ -2,8 +2,6 @@ package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.content.Intent
 import android.graphics.Canvas
-import androidx.core.graphics.createBitmap
-import androidx.core.net.toUri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -42,6 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
@@ -54,10 +54,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun AboutScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
+fun AboutScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
 
@@ -72,8 +69,8 @@ fun AboutScreen(
     val githubRepoUrl = "https://github.com/inventory69/simple-notes-sync"
     val githubProfileUrl = "https://github.com/inventory69"
     val licenseUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
-    val changelogUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md"  // v1.8.0
-    
+    val changelogUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md" // v1.8.0
+
     SettingsScaffold(
         title = stringResource(R.string.about_settings_title),
         onBack = onBack
@@ -85,7 +82,7 @@ fun AboutScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // App Info Card — 🔧 v1.11.0: Easter-Egg-Target (5× tippen → Entwickleroptionen)
             Card(
                 modifier = Modifier
@@ -134,7 +131,7 @@ fun AboutScreen(
                             bitmap.asImageBitmap()
                         }
                     }
-                    
+
                     appIcon?.let {
                         Image(
                             bitmap = it,
@@ -142,29 +139,33 @@ fun AboutScreen(
                             modifier = Modifier.size(96.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = stringResource(R.string.about_app_name),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
-                        text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                        text = stringResource(
+                            R.string.about_version,
+                            BuildConfig.VERSION_NAME,
+                            BuildConfig.VERSION_CODE
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             SettingsSectionHeader(text = stringResource(R.string.about_links_section))
-            
+
             // GitHub Repository
             AboutLinkItem(
                 icon = Icons.Default.Code,
@@ -175,7 +176,7 @@ fun AboutScreen(
                     context.startActivity(intent)
                 }
             )
-            
+
             // Developer
             AboutLinkItem(
                 icon = Icons.Default.Person,
@@ -186,7 +187,7 @@ fun AboutScreen(
                     context.startActivity(intent)
                 }
             )
-            
+
             // License
             AboutLinkItem(
                 icon = Icons.Default.Policy,
@@ -197,7 +198,7 @@ fun AboutScreen(
                     context.startActivity(intent)
                 }
             )
-            
+
             // v1.8.0: Changelog
             AboutLinkItem(
                 icon = Icons.Default.History,
@@ -208,9 +209,9 @@ fun AboutScreen(
                     context.startActivity(intent)
                 }
             )
-            
+
             SettingsDivider()
-            
+
             // Data Privacy Info
             Card(
                 modifier = Modifier
@@ -235,7 +236,7 @@ fun AboutScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -245,12 +246,7 @@ fun AboutScreen(
  * Clickable link item for About section
  */
 @Composable
-private fun AboutLinkItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
+private fun AboutLinkItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -264,9 +260,9 @@ private fun AboutLinkItem(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -279,7 +275,7 @@ private fun AboutLinkItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
+
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,

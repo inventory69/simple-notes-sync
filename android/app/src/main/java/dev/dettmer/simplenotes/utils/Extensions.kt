@@ -20,7 +20,7 @@ fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
 fun Long.toReadableTime(): String {
     val now = System.currentTimeMillis()
     val diff = now - this
-    
+
     return when {
         diff < TimeUnit.MINUTES.toMillis(1) -> "Gerade eben"
         diff < TimeUnit.HOURS.toMillis(1) -> {
@@ -46,7 +46,7 @@ fun Long.toReadableTime(): String {
 fun Long.toReadableTime(context: Context): String {
     val now = System.currentTimeMillis()
     val diff = now - this
-    
+
     return when {
         diff < TimeUnit.MINUTES.toMillis(1) -> context.getString(R.string.time_just_now)
         diff < TimeUnit.HOURS.toMillis(1) -> {

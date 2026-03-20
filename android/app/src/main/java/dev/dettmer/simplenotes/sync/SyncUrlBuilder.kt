@@ -10,9 +10,7 @@ import dev.dettmer.simplenotes.utils.Constants
  * Reads the configured sync folder name from SharedPreferences on each call
  * so it always reflects the current user setting without caching.
  */
-class SyncUrlBuilder(
-    private val prefs: SharedPreferences
-) {
+class SyncUrlBuilder(private val prefs: SharedPreferences) {
     companion object {
         private const val MARKDOWN_SUFFIX = "-md"
     }

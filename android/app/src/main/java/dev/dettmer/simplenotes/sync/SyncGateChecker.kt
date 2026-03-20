@@ -6,12 +6,12 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 🆕 v2.0.0: Extracted from WebDavSyncService.
@@ -121,9 +121,6 @@ class SyncGateChecker(
 /**
  * Result of a canSync() check.
  */
-data class SyncGateResult(
-    val canSync: Boolean,
-    val blockReason: String? = null
-) {
+data class SyncGateResult(val canSync: Boolean, val blockReason: String? = null) {
     val isBlockedByWifiOnly: Boolean get() = blockReason == "wifi_only"
 }

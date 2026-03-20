@@ -56,10 +56,7 @@ import dev.dettmer.simplenotes.utils.Constants
  * and setting a custom app title for the main screen.
  */
 @Composable
-fun DisplaySettingsScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
+fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val displayMode by viewModel.displayMode.collectAsState()
     val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
     val gridManualColumns by viewModel.gridManualColumns.collectAsState()
@@ -218,10 +215,7 @@ fun DisplaySettingsScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DisplayModeSelector(
-    currentMode: String,
-    onModeSelected: (String) -> Unit
-) {
+private fun DisplayModeSelector(currentMode: String, onModeSelected: (String) -> Unit) {
     FlowRow(
         modifier = Modifier.padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -243,12 +237,7 @@ private fun DisplayModeSelector(
 }
 
 @Composable
-private fun DisplayModeChip(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+private fun DisplayModeChip(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, selected: Boolean, onClick: () -> Unit) {
     val borderColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -307,10 +296,7 @@ private fun DisplayModeChip(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun GridColumnSelector(
-    currentColumns: Int,
-    onColumnsSelected: (Int) -> Unit
-) {
+private fun GridColumnSelector(currentColumns: Int, onColumnsSelected: (Int) -> Unit) {
     FlowRow(
         modifier = Modifier.padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -327,11 +313,7 @@ private fun GridColumnSelector(
 }
 
 @Composable
-private fun GridColumnChip(
-    columns: Int,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+private fun GridColumnChip(columns: Int, selected: Boolean, onClick: () -> Unit) {
     val borderColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -366,10 +348,11 @@ private fun GridColumnChip(
                         modifier = Modifier
                             .size(8.dp)
                             .background(
-                                color = if (selected)
+                                color = if (selected) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                                 shape = RoundedCornerShape(2.dp)
                             )
                     )
@@ -378,8 +361,11 @@ private fun GridColumnChip(
             Text(
                 text = "$columns",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         }
     }
@@ -392,10 +378,7 @@ private fun GridColumnChip(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ThemeModeSelector(
-    currentMode: ThemeMode,
-    onModeSelected: (ThemeMode) -> Unit
-) {
+private fun ThemeModeSelector(currentMode: ThemeMode, onModeSelected: (ThemeMode) -> Unit) {
     FlowRow(
         modifier = Modifier.padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -417,11 +400,7 @@ private fun ThemeModeSelector(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ThemeModeChip(
-    mode: ThemeMode,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+private fun ThemeModeChip(mode: ThemeMode, selected: Boolean, onClick: () -> Unit) {
     val borderColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -481,10 +460,7 @@ private fun ThemeModeChip(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ColorThemeSelector(
-    currentTheme: ColorTheme,
-    onThemeSelected: (ColorTheme) -> Unit
-) {
+private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (ColorTheme) -> Unit) {
     val dynamicUnavailable = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
 
     FlowRow(
@@ -520,12 +496,7 @@ private fun ColorThemeSelector(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ColorThemeChip(
-    theme: ColorTheme,
-    selected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit
-) {
+private fun ColorThemeChip(theme: ColorTheme, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val borderColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {

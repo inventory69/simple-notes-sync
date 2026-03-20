@@ -14,7 +14,7 @@ import dev.dettmer.simplenotes.models.Note
 
 /**
  * Notes list - v1.5.0 with Multi-Select Support
- * 
+ *
  * ULTRA SIMPLE + SELECTION:
  * - NO remember() anywhere
  * - NO caching tricks
@@ -47,7 +47,7 @@ fun NotesList(
             contentType = { "NoteCard" }
         ) { note ->
             val isSelected = note.id in selectedNotes
-            
+
             NoteCard(
                 note = note,
                 showSyncStatus = showSyncStatus,

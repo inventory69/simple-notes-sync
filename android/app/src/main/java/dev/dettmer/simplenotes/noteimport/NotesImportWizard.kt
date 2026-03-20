@@ -49,13 +49,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     // Data Classes
     // ══════════════════════════════════════════════════════════════
 
-    data class ImportCandidate(
-        val name: String,
-        val source: ImportSource,
-        val size: Long,
-        val modified: Long,
-        val fileType: FileType
-    )
+    data class ImportCandidate(val name: String, val source: ImportSource, val size: Long, val modified: Long, val fileType: FileType)
 
     enum class FileType {
         MARKDOWN,
@@ -77,13 +71,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
         data class Failed(val sourceName: String, val error: String) : ImportResult()
     }
 
-    data class ImportSummary(
-        val totalScanned: Int,
-        val imported: Int,
-        val skipped: Int,
-        val failed: Int,
-        val results: List<ImportResult>
-    )
+    data class ImportSummary(val totalScanned: Int, val imported: Int, val skipped: Int, val failed: Int, val results: List<ImportResult>)
 
     // ══════════════════════════════════════════════════════════════
     // Scanning — WebDAV-Ordner nach importierbaren Dateien durchsuchen

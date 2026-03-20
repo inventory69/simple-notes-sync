@@ -10,7 +10,6 @@ import dev.dettmer.simplenotes.R
  * Centralizes all Sardine/IO/SSL exception handling in one place.
  */
 class SyncExceptionMapper(private val context: Context) {
-
     companion object {
         // HTTP Status codes for SardineException mapping
         private const val HTTP_UNAUTHORIZED = 401

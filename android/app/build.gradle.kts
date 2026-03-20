@@ -178,12 +178,13 @@ dependencies {
 ktlint {
     android = true
     outputToConsole = true
-    ignoreFailures = true  // Parser-Probleme in WebDavSyncService.kt und build.gradle.kts
+    ignoreFailures = false
     enableExperimentalRules = false
     
     filter {
         exclude("**/generated/**")
         exclude("**/build/**")
+        exclude("**/*.kts")
     }
 }
 

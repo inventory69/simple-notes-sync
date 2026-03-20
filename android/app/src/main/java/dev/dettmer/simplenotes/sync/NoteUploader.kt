@@ -8,6 +8,8 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,8 +19,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import java.security.MessageDigest
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 🆕 v2.0.0: Extrahiert Upload-Logik aus WebDavSyncService.
@@ -32,7 +32,6 @@ internal class NoteUploader(
     private val ioDispatcher: CoroutineDispatcher,
     private val markdownExporter: ((Sardine, String, Note, Boolean) -> Unit)? = null
 ) {
-
     companion object {
         private const val TAG = "NoteUploader"
         private const val ETAG_PREVIEW_LENGTH = 8
@@ -167,7 +166,10 @@ internal class NoteUploader(
                 val foundIds = batchEtagUpdates.keys.map { it.removePrefix("etag_json_") }.toSet()
                 val missingEtags = successfulNoteIds - foundIds
                 if (missingEtags.isNotEmpty()) {
-                    Logger.w(TAG, "⚠️ No E-Tag found for ${missingEtags.size} notes: ${missingEtags.take(LOG_PREVIEW_IDS_MAX)}")
+                    Logger.w(
+                        TAG,
+                        "⚠️ No E-Tag found for ${missingEtags.size} notes: ${missingEtags.take(LOG_PREVIEW_IDS_MAX)}"
+                    )
                     for (noteId in missingEtags) {
                         batchEtagUpdates["etag_json_$noteId"] = null
                     }
@@ -198,7 +200,10 @@ internal class NoteUploader(
             .toSet()
 
         if (mdExportedIds.isNotEmpty()) {
-            Logger.d(TAG, "📝 Markdown exported for ${mdExportedIds.size} notes: ${mdExportedIds.take(LOG_PREVIEW_IDS_MAX)}")
+            Logger.d(
+                TAG,
+                "📝 Markdown exported for ${mdExportedIds.size} notes: ${mdExportedIds.take(LOG_PREVIEW_IDS_MAX)}"
+            )
         }
 
         return UploadBatchResult(
@@ -242,7 +247,10 @@ internal class NoteUploader(
                 val cachedETag = eTagCache.getJsonETag(note.id)
 
                 if (currentHash == cachedHash && cachedETag != null) {
-                    Logger.d(TAG, "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})")
+                    Logger.d(
+                        TAG,
+                        "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})"
+                    )
                     // Status trotzdem auf SYNCED setzen (war evtl. fälschlich PENDING)
                     if (note.syncStatus != SyncStatus.SYNCED) {
                         storageMutex.withLock {
@@ -270,12 +278,12 @@ internal class NoteUploader(
                 // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
                 // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
                 // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
-                var didExportMarkdown = false  // 🆕 v1.11.0
+                var didExportMarkdown = false // 🆕 v1.11.0
                 if (markdownExportEnabled && markdownExporter != null) {
                     mdExportMutex.withLock {
                         try {
                             markdownExporter.invoke(sardine, serverUrl, noteToUpload, markdownDirExists)
-                            didExportMarkdown = true  // 🆕 v1.11.0
+                            didExportMarkdown = true // 🆕 v1.11.0
                             Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
                         } catch (e: Exception) {
                             Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
@@ -289,7 +297,6 @@ internal class NoteUploader(
                     etag = null,
                     markdownExported = didExportMarkdown
                 )
-
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // 🛡️ Cancellation nie verschlucken — sofort propagieren
                 throw e

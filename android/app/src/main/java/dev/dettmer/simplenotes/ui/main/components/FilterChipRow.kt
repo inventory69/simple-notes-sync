@@ -17,9 +17,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.FilterChip
@@ -35,9 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteFilter
@@ -67,7 +67,10 @@ fun FilterChipRow(
             FilterChip(
                 modifier = Modifier.weight(1f),
                 selected = false,
-                onClick = { focusManager.clearFocus(); onSortClick() },
+                onClick = {
+                    focusManager.clearFocus()
+                    onSortClick()
+                },
                 label = {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Icon(
@@ -82,7 +85,10 @@ fun FilterChipRow(
             FilterChip(
                 modifier = Modifier.weight(1f),
                 selected = currentFilter == NoteFilter.ALL,
-                onClick = { focusManager.clearFocus(); onFilterSelected(NoteFilter.ALL) },
+                onClick = {
+                    focusManager.clearFocus()
+                    onFilterSelected(NoteFilter.ALL)
+                },
                 label = {
                     Text(
                         text = stringResource(R.string.filter_all),
@@ -97,7 +103,10 @@ fun FilterChipRow(
             FilterChip(
                 modifier = Modifier.weight(1f),
                 selected = currentFilter == NoteFilter.TEXT_ONLY,
-                onClick = { focusManager.clearFocus(); onFilterSelected(NoteFilter.TEXT_ONLY) },
+                onClick = {
+                    focusManager.clearFocus()
+                    onFilterSelected(NoteFilter.TEXT_ONLY)
+                },
                 label = {
                     Text(
                         text = stringResource(R.string.filter_text_only),
@@ -109,13 +118,18 @@ fun FilterChipRow(
                 },
                 leadingIcon = if (currentFilter == NoteFilter.TEXT_ONLY) {
                     { Icon(imageVector = Icons.AutoMirrored.Outlined.Notes, contentDescription = null) }
-                } else null
+                } else {
+                    null
+                }
             )
 
             FilterChip(
                 modifier = Modifier.weight(1f),
                 selected = currentFilter == NoteFilter.CHECKLIST_ONLY,
-                onClick = { focusManager.clearFocus(); onFilterSelected(NoteFilter.CHECKLIST_ONLY) },
+                onClick = {
+                    focusManager.clearFocus()
+                    onFilterSelected(NoteFilter.CHECKLIST_ONLY)
+                },
                 label = {
                     Text(
                         text = stringResource(R.string.filter_checklist_only),
@@ -127,7 +141,9 @@ fun FilterChipRow(
                 },
                 leadingIcon = if (currentFilter == NoteFilter.CHECKLIST_ONLY) {
                     { Icon(imageVector = Icons.Outlined.Checklist, contentDescription = null) }
-                } else null
+                } else {
+                    null
+                }
             )
         }
 
@@ -197,4 +213,3 @@ fun FilterChipRow(
         Spacer(modifier = Modifier.height(4.dp))
     }
 }
-

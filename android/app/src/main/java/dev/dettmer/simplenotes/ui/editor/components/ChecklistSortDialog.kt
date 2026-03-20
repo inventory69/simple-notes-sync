@@ -41,17 +41,17 @@ import dev.dettmer.simplenotes.models.ChecklistSortOption
  * │  (●) Unchecked first            │
  * │  ( ) Checked first              │
  * ├─────────────────────────────────┤
- * │               [Cancel] [Apply]  │
+ * │ [Cancel] [Apply]  │
  * └─────────────────────────────────┘
  */
 @Composable
 fun ChecklistSortDialog(
-    currentOption: ChecklistSortOption,  // 🔀 v1.8.0: Aktuelle Auswahl merken
+    currentOption: ChecklistSortOption, // 🔀 v1.8.0: Aktuelle Auswahl merken
     onOptionSelected: (ChecklistSortOption) -> Unit,
     onDismiss: () -> Unit
 ) {
     var selectedOption by remember { mutableStateOf(currentOption) }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -89,11 +89,7 @@ fun ChecklistSortDialog(
 }
 
 @Composable
-private fun SortOptionRow(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun SortOptionRow(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

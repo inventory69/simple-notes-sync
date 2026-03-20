@@ -20,7 +20,6 @@ import java.io.FileOutputStream
  * No external dependencies — uses only android.graphics.pdf.PdfDocument and Canvas.
  */
 object PdfExporter {
-
     // ═══════════════════════════════════════════════════════════════════════
     // Page Layout Constants (A4 at 72 DPI)
     // ═══════════════════════════════════════════════════════════════════════
@@ -104,7 +103,7 @@ object PdfExporter {
         textSize = CHECKLIST_FONT_SIZE
         typeface = Typeface.DEFAULT
         color = android.graphics.Color.GRAY
-        isStrikeThruText = true  // Visual distinction for completed items
+        isStrikeThruText = true // Visual distinction for completed items
     }
 
     private val uncheckedTextPaint = Paint().apply {

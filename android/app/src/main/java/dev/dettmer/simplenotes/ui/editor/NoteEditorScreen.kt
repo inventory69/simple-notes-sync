@@ -1,10 +1,12 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -16,20 +18,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.placeCursorAtEnd
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
@@ -44,9 +47,6 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
-
-import dev.dettmer.simplenotes.markdown.MarkdownEngine
-import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -74,19 +74,20 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
@@ -94,14 +95,11 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
+import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.showToast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
-import dev.dettmer.simplenotes.utils.Constants
-import dev.dettmer.simplenotes.utils.showToast
-import android.util.Log
-import dev.dettmer.simplenotes.BuildConfig
-
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
@@ -111,7 +109,7 @@ private val DRAGGING_ELEVATION_DP = 8.dp
 
 /**
  * Main Composable for the Note Editor screen.
- * 
+ *
  * v1.5.0: Jetpack Compose NoteEditor Redesign
  * - Supports both TEXT and CHECKLIST notes
  * - Drag & Drop reordering for checklist items
@@ -120,34 +118,31 @@ private val DRAGGING_ELEVATION_DP = 8.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod")
 @Composable
-fun NoteEditorScreen(
-    viewModel: NoteEditorViewModel,
-    onNavigateBack: () -> Unit
-) {
+fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val checklistItems by viewModel.checklistItems.collectAsState()
-    
+
     // 🌟 v1.6.0: Offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
-    
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     // 🆕 v1.9.0 (F07): Markdown Preview toggle (only for TEXT notes)
     var isPreviewMode by remember { mutableStateOf(false) }
-    var showChecklistSortDialog by remember { mutableStateOf(false) }  // 🔀 v1.8.0
-    val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState()  // 🔀 v1.8.0
-    val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState()  // 🆕 v1.9.0
-    val canUndo by viewModel.canUndo.collectAsState()  // 🆕 v1.10.0
-    val canRedo by viewModel.canRedo.collectAsState()  // 🆕 v1.10.0
-    var showOverflowMenu by remember { mutableStateOf(false) }  // 🆕 v1.10.0-Papa
+    var showChecklistSortDialog by remember { mutableStateOf(false) } // 🔀 v1.8.0
+    val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState() // 🔀 v1.8.0
+    val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState() // 🆕 v1.9.0
+    val canUndo by viewModel.canUndo.collectAsState() // 🆕 v1.10.0
+    val canRedo by viewModel.canRedo.collectAsState() // 🆕 v1.10.0
+    var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    
+
     // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
     val msgNoteSaved = stringResource(R.string.note_saved)
     val msgNoteDeleted = stringResource(R.string.note_deleted)
-    
+
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
     val titleFocusRequester = remember { FocusRequester() }
@@ -202,7 +197,7 @@ fun NoteEditorScreen(
             }
         }
     }
-    
+
     // Handle events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -217,7 +212,7 @@ fun NoteEditorScreen(
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
                 is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
-                is NoteEditorEvent.RestoreContent -> {  // 🆕 v1.10.0: Undo/Redo
+                is NoteEditorEvent.RestoreContent -> { // 🆕 v1.10.0: Undo/Redo
                     textFieldState.edit {
                         replace(0, length, event.content)
                         placeCursorAtEnd()
@@ -232,7 +227,7 @@ fun NoteEditorScreen(
             }
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -298,88 +293,88 @@ fun NoteEditorScreen(
                     // not to the full actions block (fixes position inconsistency
                     // between text and checklist note types)
                     Box {
-                    IconButton(onClick = { showOverflowMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(R.string.share_overflow_menu)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showOverflowMenu,
-                        onDismissRequest = { showOverflowMenu = false },
-                        shape = MaterialTheme.shapes.large,  // 🆕 v1.10.0-P2: Rounded corners
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,  // 🆕 v1.10.0-P2
-                        shadowElevation = 6.dp,  // 🆕 v1.10.0-P2
-                        tonalElevation = 2.dp  // 🆕 v1.10.0-P2
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.share_to_calendar)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Outlined.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                showOverflowMenu = false
-                                viewModel.openInCalendar()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.share_as_text)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Outlined.Share,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                showOverflowMenu = false
-                                viewModel.shareAsText()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.share_as_pdf)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Outlined.PictureAsPdf,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                showOverflowMenu = false
-                                viewModel.shareAsPdf()
-                            }
-                        )
-                        if (viewModel.canDelete()) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.share_overflow_menu)
                             )
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false },
+                            shape = MaterialTheme.shapes.large, // 🆕 v1.10.0-P2: Rounded corners
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, // 🆕 v1.10.0-P2
+                            shadowElevation = 6.dp, // 🆕 v1.10.0-P2
+                            tonalElevation = 2.dp // 🆕 v1.10.0-P2
+                        ) {
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = stringResource(R.string.delete),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
+                                text = { Text(stringResource(R.string.share_to_calendar)) },
                                 leadingIcon = {
                                     Icon(
-                                        Icons.Default.Delete,
+                                        Icons.Outlined.CalendarMonth,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 },
                                 onClick = {
                                     showOverflowMenu = false
-                                    showDeleteDialog = true
+                                    viewModel.openInCalendar()
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share_as_text)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Share,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    viewModel.shareAsText()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share_as_pdf)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.PictureAsPdf,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    viewModel.shareAsPdf()
+                                }
+                            )
+                            if (viewModel.canDelete()) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.delete),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
                         }
-                    }
                     } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -393,9 +388,9 @@ fun NoteEditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .wrapContentWidth(align = Alignment.CenterHorizontally)  // 🆕 v1.10.0-P2: Center on tablets
-                .widthIn(max = 720.dp)  // 🆕 v1.10.0-P2: Constrain width for readability
-                .fillMaxWidth()  // 🆕 v1.10.0-P2: Fill up to constrained width
+                .wrapContentWidth(align = Alignment.CenterHorizontally) // 🆕 v1.10.0-P2: Center on tablets
+                .widthIn(max = 720.dp) // 🆕 v1.10.0-P2: Constrain width for readability
+                .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
                 .padding(16.dp)
         ) {
             // Title Input (for both types)
@@ -406,11 +401,11 @@ fun NoteEditorScreen(
                     .fillMaxWidth()
                     .focusRequester(titleFocusRequester),
                 label = { Text(stringResource(R.string.title)) },
-                singleLine = true,  // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
+                singleLine = true, // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
                 // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
-                    imeAction = ImeAction.Next  // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
+                    imeAction = ImeAction.Next // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
                 ),
                 // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
                 keyboardActions = KeyboardActions(
@@ -432,9 +427,9 @@ fun NoteEditorScreen(
                 ),
                 shape = RoundedCornerShape(16.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             when (uiState.noteType) {
                 NoteType.TEXT -> {
                     if (isPreviewMode) {
@@ -465,21 +460,21 @@ fun NoteEditorScreen(
                         )
                     }
                 }
-                
+
                 NoteType.CHECKLIST -> {
                     // Checklist Editor
                     ChecklistEditor(
                         items = checklistItems,
                         scope = scope,
                         focusNewItemId = focusNewItemId,
-                        currentSortOption = lastChecklistSortOption,  // 🔀 v1.8.0
-                        checklistScrollAction = viewModel.checklistScrollAction,  // 🆕 v1.9.0 (F14)
+                        currentSortOption = lastChecklistSortOption, // 🔀 v1.8.0
+                        checklistScrollAction = viewModel.checklistScrollAction, // 🆕 v1.9.0 (F14)
                         onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
                         onCheckedChange = { id, checked ->
                             viewModel.updateChecklistItemChecked(id, checked)
                         },
                         onDelete = { id -> viewModel.deleteChecklistItem(id) },
-                        onAddNewItemAfter = { id -> 
+                        onAddNewItemAfter = { id ->
                             val newId = viewModel.addChecklistItemAfter(id)
                             focusNewItemId = newId
                         },
@@ -489,7 +484,7 @@ fun NoteEditorScreen(
                         },
                         onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
                         onFocusHandled = { focusNewItemId = null },
-                        onSortClick = { showChecklistSortDialog = true },  // 🔀 v1.8.0
+                        onSortClick = { showChecklistSortDialog = true }, // 🔀 v1.8.0
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -498,7 +493,7 @@ fun NoteEditorScreen(
             }
         }
     }
-    
+
     // Delete Confirmation Dialog - v1.5.0: Use shared component with server/local options
     if (showDeleteDialog) {
         DeleteConfirmationDialog(
@@ -515,7 +510,7 @@ fun NoteEditorScreen(
             }
         )
     }
-    
+
     // 🔀 v1.8.0: Checklist Sort Dialog
     if (showChecklistSortDialog) {
         ChecklistSortDialog(
@@ -539,20 +534,20 @@ private fun TextNoteContent(
     // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
     // v1.9.0 (F07): TextFieldState now provided from parent for toolbar access
     val scrollState = rememberScrollState()
-    
+
     // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
     var isFocused by remember { mutableStateOf(false) }
-    
+
     // Text-Änderungen an ViewModel propagieren
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
-            .drop(1)  // 🆕 v1.9.0: skip initial emission — snapshotFlow always emits current
-                      // value on first collect, but that's hydration, not a user edit
+            .drop(1) // 🆕 v1.9.0: skip initial emission — snapshotFlow always emits current
+            // value on first collect, but that's hydration, not a user edit
             .collect { newText ->
                 onContentChange(newText)
             }
     }
-    
+
     // 🆕 v1.8.2 (IMPL_07): Auto-Scroll zum Ende wenn Fokus erhalten (Tastatur öffnet sich)
     // Delay gibt dem Layout Zeit, sich nach imePadding-Resize zu stabilisieren
     LaunchedEffect(isFocused) {
@@ -561,7 +556,7 @@ private fun TextNoteContent(
             scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
-    
+
     OutlinedTextField(
         state = textFieldState,
         modifier = modifier
@@ -595,7 +590,7 @@ private fun LazyItemScope.DraggableChecklistItem(
     onDelete: (String) -> Unit,
     onAddNewItemAfter: (String) -> Unit,
     onFocusHandled: () -> Unit,
-    onHeightChanged: () -> Unit,  // 🆕 v1.8.1 (IMPL_05)
+    onHeightChanged: () -> Unit // 🆕 v1.8.1 (IMPL_05)
 ) {
     // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
     // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
@@ -628,17 +623,18 @@ private fun LazyItemScope.DraggableChecklistItem(
             dragDropState = dragDropState,
             itemKey = item.id
         ),
-        onHeightChanged = onHeightChanged,  // 🆕 v1.8.1 (IMPL_05)
+        onHeightChanged = onHeightChanged, // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
             // 🆕 v1.8.2 (IMPL_11): animateItem() NUR während bestätigtem Drag anwenden.
             // Vorher: animateItem() auf ALLEN Items permanent → Fade-In/Out-Animationen
             // verursachten visuelles Flackern bei langen Items beim schnellen Scrollen.
             // Jetzt: Nur placement-Animation für nicht-gedraggte Items während Reorder.
             .then(
-                if (dragDropState.isDragConfirmed && !isDragging)
+                if (dragDropState.isDragConfirmed && !isDragging) {
                     Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
-                else
+                } else {
                     Modifier
+                }
             )
             .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
             .graphicsLayer {
@@ -661,8 +657,8 @@ private fun ChecklistEditor(
     items: List<ChecklistItemState>,
     scope: kotlinx.coroutines.CoroutineScope,
     focusNewItemId: String?,
-    currentSortOption: ChecklistSortOption,  // 🔀 v1.8.0: Aktuelle Sortierung
-    checklistScrollAction: SharedFlow<NoteEditorViewModel.ChecklistScrollAction>,  // 🆕 v1.9.0 (F14): Scroll action on check/un-check
+    currentSortOption: ChecklistSortOption, // 🔀 v1.8.0: Aktuelle Sortierung
+    checklistScrollAction: SharedFlow<NoteEditorViewModel.ChecklistScrollAction>, // 🆕 v1.9.0 (F14): Scroll action on check/un-check
     onTextChange: (String, String) -> Unit,
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
@@ -670,7 +666,7 @@ private fun ChecklistEditor(
     onAddItemAtEnd: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onFocusHandled: () -> Unit,
-    onSortClick: () -> Unit,  // 🔀 v1.8.0
+    onSortClick: () -> Unit, // 🔀 v1.8.0
     modifier: Modifier = Modifier
 ) {
     // IMPL_29q Q1: LazyLayoutCacheWindow ersetzt beyondBoundsItemCount (entfernt in Compose 1.10+).
@@ -746,7 +742,7 @@ private fun ChecklistEditor(
                     currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
                 val unchecked = items.count { !it.isChecked }
                 val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
-                    dataIndex + 1  // +1 für Separator
+                    dataIndex + 1 // +1 für Separator
                 } else {
                     dataIndex
                 }
@@ -758,20 +754,21 @@ private fun ChecklistEditor(
     // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL, UNCHECKED_FIRST und CREATION_DATE anzeigen
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
-    val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL || 
-                              currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
-                              currentSortOption == ChecklistSortOption.CREATION_DATE ||
-                              currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
-    val showSeparator = shouldShowSeparator && (
-        (uncheckedCount > 0 && checkedCount > 0) ||
-        // 🆕 v1.8.2 (IMPL_26): Separator während Drag beibehalten wenn er vorher sichtbar war.
-        // Wenn das letzte Item einer Seite über den Separator gezogen wird, wird ein Count 0.
-        // Ohne diesen Guard verschwindet der Separator → visualItemCount ändert sich →
-        // draggingItemIndex zeigt auf falschen Slot → Drag bricht ab.
-        // dragDropState.separatorVisualIndex hat noch den Wert der VORHERIGEN Composition
-        // (SideEffect läuft erst nach Composition) → >= 0 = Separator war vorher sichtbar.
-        (dragDropState.isAnyItemDragging && dragDropState.separatorVisualIndex >= 0)
-    )
+    val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
+        currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
+        currentSortOption == ChecklistSortOption.CREATION_DATE ||
+        currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
+    val showSeparator = shouldShowSeparator &&
+        (
+            (uncheckedCount > 0 && checkedCount > 0) ||
+                // 🆕 v1.8.2 (IMPL_26): Separator während Drag beibehalten wenn er vorher sichtbar war.
+                // Wenn das letzte Item einer Seite über den Separator gezogen wird, wird ein Count 0.
+                // Ohne diesen Guard verschwindet der Separator → visualItemCount ändert sich →
+                // draggingItemIndex zeigt auf falschen Slot → Drag bricht ab.
+                // dragDropState.separatorVisualIndex hat noch den Wert der VORHERIGEN Composition
+                // (SideEffect läuft erst nach Composition) → >= 0 = Separator war vorher sichtbar.
+                (dragDropState.isAnyItemDragging && dragDropState.separatorVisualIndex >= 0)
+            )
 
     Column(modifier = modifier) {
         // 🆕 v1.8.1 IMPL_14: Separator-Position für DragDropState aktualisieren
@@ -789,7 +786,7 @@ private fun ChecklistEditor(
         // Scrollt pixel-genau um die Differenz, statt zum nächsten Item zu springen
         LaunchedEffect(scrollToItemIndex) {
             scrollToItemIndex?.let { index ->
-                delay(AUTO_SCROLL_DELAY_MS)  // Warten bis Layout-Pass abgeschlossen
+                delay(AUTO_SCROLL_DELAY_MS) // Warten bis Layout-Pass abgeschlossen
                 val visibleItems = listState.layoutInfo.visibleItemsInfo
                 val itemInfo = visibleItems.find { it.index == index }
                 if (itemInfo != null) {
@@ -812,7 +809,7 @@ private fun ChecklistEditor(
             // IMPL_29f F2: Während Drag: User-Scroll deaktivieren.
             // Verhindert Gesture-Konkurrenz zwischen LazyColumn-Scroll und Drag-Gesture (RC-2).
             // Scrollen erfolgt ausschließlich über programmatisches Auto-Scroll.
-            userScrollEnabled = !dragDropState.isAnyItemDragging,
+            userScrollEnabled = !dragDropState.isAnyItemDragging
         ) {
             // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
             // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
@@ -824,9 +821,13 @@ private fun ChecklistEditor(
             // Lokale Konvertierung mit aktuellem separatorVisualIndex (nicht vom dragDropState,
             // der hat ggf. noch den alten Wert bis SideEffect läuft)
             val localVisualToDataIndex = { visualIndex: Int ->
-                if (!showSeparator || separatorVisualIndex < 0) visualIndex
-                else if (visualIndex > separatorVisualIndex) visualIndex - 1
-                else visualIndex
+                if (!showSeparator || separatorVisualIndex < 0) {
+                    visualIndex
+                } else if (visualIndex > separatorVisualIndex) {
+                    visualIndex - 1
+                } else {
+                    visualIndex
+                }
             }
 
             items(
@@ -839,8 +840,11 @@ private fun ChecklistEditor(
                     }
                 },
                 contentType = { visualIndex ->
-                    if (showSeparator && visualIndex == separatorVisualIndex) "separator"
-                    else "checklist_item"
+                    if (showSeparator && visualIndex == separatorVisualIndex) {
+                        "separator"
+                    } else {
+                        "checklist_item"
+                    }
                 }
             ) { visualIndex ->
                 if (showSeparator && visualIndex == separatorVisualIndex) {
@@ -891,7 +895,7 @@ private fun ChecklistEditor(
                 )
                 Text(stringResource(R.string.add_item))
             }
-            
+
             IconButton(onClick = onSortClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Sort,
@@ -907,10 +911,7 @@ private fun ChecklistEditor(
 
 /** 🆕 v1.9.0: TopAppBar title with optional autosave confirmation indicator. */
 @Composable
-private fun NoteEditorToolbarTitle(
-    toolbarTitle: ToolbarTitle,
-    autosaveIndicatorVisible: Boolean
-) {
+private fun NoteEditorToolbarTitle(toolbarTitle: ToolbarTitle, autosaveIndicatorVisible: Boolean) {
     Column {
         Text(
             text = when (toolbarTitle) {

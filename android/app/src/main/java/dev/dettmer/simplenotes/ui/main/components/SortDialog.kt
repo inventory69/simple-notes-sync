@@ -34,7 +34,7 @@ import dev.dettmer.simplenotes.models.SortOption
 
 /**
  * 🔀 v1.8.0: Dialog zur Auswahl der Sortierung für die Notizliste.
- * 
+ *
  * Zeigt RadioButtons für die Sortieroption und einen Toggle für die Richtung.
  *
  * ┌─────────────────────────────────┐
@@ -45,7 +45,7 @@ import dev.dettmer.simplenotes.models.SortOption
  * │  ( ) Name                       │
  * │  ( ) Type                       │
  * ├─────────────────────────────────┤
- * │                        [Close]  │
+ * │ [Close]  │
  * └─────────────────────────────────┘
  */
 @Composable
@@ -68,7 +68,7 @@ fun SortDialog(
                     text = stringResource(R.string.sort_notes),
                     style = MaterialTheme.typography.headlineSmall
                 )
-                
+
                 // Direction Toggle Button
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -108,7 +108,7 @@ fun SortDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 SortOption.entries.forEach { option ->
                     SortOptionRow(
                         label = stringResource(option.toStringRes()),
@@ -127,11 +127,7 @@ fun SortDialog(
 }
 
 @Composable
-private fun SortOptionRow(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun SortOptionRow(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

@@ -76,15 +76,15 @@ internal class NoteDownloader(
     suspend fun downloadAll(
         sardine: Sardine,
         serverUrl: String,
-        includeRootFallback: Boolean = false,  // 🆕 v1.2.2: Only for restore from server
-        forceOverwrite: Boolean = false,  // 🆕 v1.3.0: For OVERWRITE_DUPLICATES mode
-        deletionTracker: DeletionTracker = storage.loadDeletionTracker(),  // 🆕 v1.3.0: Allow passing fresh tracker
-        onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }  // 🆕 v1.8.0
+        includeRootFallback: Boolean = false, // 🆕 v1.2.2: Only for restore from server
+        forceOverwrite: Boolean = false, // 🆕 v1.3.0: For OVERWRITE_DUPLICATES mode
+        deletionTracker: DeletionTracker = storage.loadDeletionTracker(), // 🆕 v1.3.0: Allow passing fresh tracker
+        onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> } // 🆕 v1.8.0
     ): DownloadResult {
         var downloadedCount = 0
         var conflictCount = 0
-        var skippedDeleted = 0  // Track skipped deleted notes
-        val processedIds = mutableSetOf<String>()  // 🆕 v1.2.2: Track already loaded notes
+        var skippedDeleted = 0 // Track skipped deleted notes
+        val processedIds = mutableSetOf<String>() // 🆕 v1.2.2: Track already loaded notes
 
         Logger.d(TAG, "📥 downloadAll() called:")
         Logger.d(TAG, "   includeRootFallback: $includeRootFallback")
@@ -112,7 +112,11 @@ internal class NoteDownloader(
             // PROPFIND (list) works universally on all WebDAV servers.
             val notesResources: List<com.thegrizzlylabs.sardineandroid.DavResource>? = when (sardine) {
                 is SafeSardineWrapper -> sardine.listOrNull(notesUrl)
-                else -> try { sardine.list(notesUrl) } catch (_: java.io.IOException) { null }
+                else -> try {
+                    sardine.list(notesUrl)
+                } catch (_: java.io.IOException) {
+                    null
+                }
             }
 
             if (notesResources != null) {
@@ -133,7 +137,7 @@ internal class NoteDownloader(
                 val downloadTasks = mutableListOf<DownloadTask>()
 
                 for (resource in jsonFiles) {
-                    currentCoroutineContext().ensureActive()  // 🆕 v1.10.0-P2: FGS cancel checkpoint
+                    currentCoroutineContext().ensureActive() // 🆕 v1.10.0-P2: FGS cancel checkpoint
                     val noteId = resource.name.removeSuffix(".json")
                     val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
 
@@ -194,8 +198,11 @@ internal class NoteDownloader(
 
                     // SECONDARY: Timestamp fallback — nur wenn kein E-Tag vorhanden
                     // (Erster Sync oder Server liefert keine E-Tags)
-                    val noETagAndTimestampUnchanged = !forceOverwrite && fileExistsLocally &&
-                        serverETag == null && lastSyncTime > 0 && serverModified <= lastSyncTime
+                    val noETagAndTimestampUnchanged = !forceOverwrite &&
+                        fileExistsLocally &&
+                        serverETag == null &&
+                        lastSyncTime > 0 &&
+                        serverModified <= lastSyncTime
                     if (noETagAndTimestampUnchanged) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)")
@@ -221,17 +228,22 @@ internal class NoteDownloader(
                     Logger.d(TAG, "   📥 Downloading $noteId: $downloadReason")
 
                     // 🆕 v1.8.0: Add to download tasks
-                    downloadTasks.add(DownloadTask(
-                        noteId = noteId,
-                        url = noteUrl,
-                        resource = resource,
-                        serverETag = serverETag,
-                        serverModified = serverModified
-                    ))
+                    downloadTasks.add(
+                        DownloadTask(
+                            noteId = noteId,
+                            url = noteUrl,
+                            resource = resource,
+                            serverETag = serverETag,
+                            serverModified = serverModified
+                        )
+                    )
                 }
 
-                Logger.d(TAG, "   📋 ${downloadTasks.size} files to download, $skippedDeleted skipped (deleted), " +
-                    "$skippedUnchanged skipped (unchanged)")
+                Logger.d(
+                    TAG,
+                    "   📋 ${downloadTasks.size} files to download, $skippedDeleted skipped (deleted), " +
+                        "$skippedUnchanged skipped (unchanged)"
+                )
 
                 // ════════════════════════════════════════════════════════════════
                 // 🆕 v1.8.0: PHASE 1B - Parallel Download
@@ -278,9 +290,12 @@ internal class NoteDownloader(
                                 // Legitimate notes: filename = "{noteId}.json" → parsed ID == filename
                                 // Foreign JSON (e.g. google-services.json) → random UUID ≠ filename
                                 if (remoteNote.id != result.noteId) {
-                                    Logger.w(TAG, "   ⚠️ Skipping foreign JSON: ${result.noteId}.json " +
-                                        "(parsed ID '${remoteNote.id}' doesn't match filename)")
-                                    processedIds.add(result.noteId)  // Prevent re-download attempts
+                                    Logger.w(
+                                        TAG,
+                                        "   ⚠️ Skipping foreign JSON: ${result.noteId}.json " +
+                                            "(parsed ID '${remoteNote.id}' doesn't match filename)"
+                                    )
+                                    processedIds.add(result.noteId) // Prevent re-download attempts
                                     continue
                                 }
 
@@ -303,7 +318,10 @@ internal class NoteDownloader(
                                         // OVERWRITE mode: Always replace regardless of timestamps
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
-                                        Logger.d(TAG, "   ♻️ Overwritten from /$activeSyncFolderName/: ${remoteNote.id}")
+                                        Logger.d(
+                                            TAG,
+                                            "   ♻️ Overwritten from /$activeSyncFolderName/: ${remoteNote.id}"
+                                        )
 
                                         if (result.etag != null) {
                                             etagUpdates["etag_json_${result.noteId}"] = result.etag
@@ -376,9 +394,10 @@ internal class NoteDownloader(
 
                     val oldNotes = rootResources.filter { resource ->
                         !resource.isDirectory &&
-                        resource.name.endsWith(".json") &&
-                        !resource.path.contains("/notes/") &&  // Not from /notes/ subdirectory
-                        !resource.path.contains("/notes-md/")  // Not from /notes-md/
+                            resource.name.endsWith(".json") &&
+                            !resource.path.contains("/notes/") &&
+                            // Not from /notes/ subdirectory
+                            !resource.path.contains("/notes-md/") // Not from /notes-md/
                     }
 
                     Logger.d(TAG, "   🔎 Filtered to ${oldNotes.size} .json files (excluding /notes/ and /notes-md/)")
@@ -456,7 +475,6 @@ internal class NoteDownloader(
             } else {
                 Logger.d(TAG, "⏭️ Skipping Phase 2 (Root scan) - only enabled for restore from server")
             }
-
         } catch (e: Exception) {
             Logger.e(TAG, "❌ downloadAll failed", e)
             // 🛡️ v1.8.2 (IMPL_21): Exception merken statt verschlucken —
@@ -499,19 +517,19 @@ internal class NoteDownloader(
      * @param localNotes Alle lokalen Notizen
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
      */
-    fun detectDeletions(
-        serverNoteIds: Set<String>,
-        localNotes: List<Note>
-    ): Int {
+    fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
         val syncedNotes = localNotes.filter { it.syncStatus == SyncStatus.SYNCED }
 
         // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
         // Ein leeres Set bedeutet wahrscheinlich: PROPFIND fehlgeschlagen, /notes/ nicht gefunden,
         // oder Netzwerkfehler — NICHT dass alle Notizen gelöscht wurden.
         if (serverNoteIds.isEmpty()) {
-            Logger.w(TAG, "⚠️ detectDeletions: serverNoteIds is EMPTY! " +
-                "Skipping deletion detection to prevent data loss. " +
-                "localSynced=${syncedNotes.size}, localTotal=${localNotes.size}")
+            Logger.w(
+                TAG,
+                "⚠️ detectDeletions: serverNoteIds is EMPTY! " +
+                    "Skipping deletion detection to prevent data loss. " +
+                    "localSynced=${syncedNotes.size}, localTotal=${localNotes.size}"
+            )
             return 0
         }
 
@@ -521,17 +539,23 @@ internal class NoteDownloader(
         // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
         val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
         if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
-            Logger.e(TAG, "🚨 detectDeletions: ALL ${syncedNotes.size} synced notes " +
-                "would be marked as deleted! This is almost certainly a bug. " +
-                "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection.")
+            Logger.e(
+                TAG,
+                "🚨 detectDeletions: ALL ${syncedNotes.size} synced notes " +
+                    "would be marked as deleted! This is almost certainly a bug. " +
+                    "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection."
+            )
             return 0
         }
 
         // 🆕 v1.8.0 (IMPL_022): Statistik-Log für Debugging
-        Logger.d(TAG, "🔍 detectDeletions: " +
-            "serverNotes=${serverNoteIds.size}, " +
-            "localSynced=${syncedNotes.size}, " +
-            "localTotal=${localNotes.size}")
+        Logger.d(
+            TAG,
+            "🔍 detectDeletions: " +
+                "serverNotes=${serverNoteIds.size}, " +
+                "localSynced=${syncedNotes.size}, " +
+                "localTotal=${localNotes.size}"
+        )
 
         var deletedCount = 0
         syncedNotes.forEach { note ->
@@ -545,14 +569,20 @@ internal class NoteDownloader(
                 storage.saveNote(updatedNote)
                 deletedCount++
 
-                Logger.d(TAG, "🗑️ Note '${note.title}' (${note.id}) " +
-                    "was deleted on server, marked as DELETED_ON_SERVER")
+                Logger.d(
+                    TAG,
+                    "🗑️ Note '${note.title}' (${note.id}) " +
+                        "was deleted on server, marked as DELETED_ON_SERVER"
+                )
             }
         }
 
         if (deletedCount > 0) {
-            Logger.d(TAG, "📊 Server deletion detection complete: " +
-                "$deletedCount of ${syncedNotes.size} synced notes deleted on server")
+            Logger.d(
+                TAG,
+                "📊 Server deletion detection complete: " +
+                    "$deletedCount of ${syncedNotes.size} synced notes deleted on server"
+            )
         }
 
         return deletedCount

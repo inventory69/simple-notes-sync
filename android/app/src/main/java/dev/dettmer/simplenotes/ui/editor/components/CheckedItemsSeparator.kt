@@ -24,7 +24,7 @@ import dev.dettmer.simplenotes.R
 fun CheckedItemsSeparator(
     checkedCount: Int,
     modifier: Modifier = Modifier,
-    isDragActive: Boolean = false  // 🆕 v1.8.1 IMPL_14
+    isDragActive: Boolean = false // 🆕 v1.8.1 IMPL_14
 ) {
     Row(
         modifier = modifier
@@ -34,10 +34,11 @@ fun CheckedItemsSeparator(
     ) {
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = if (isDragActive)
+            color = if (isDragActive) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            else
+            } else {
                 MaterialTheme.colorScheme.outlineVariant
+            }
         )
 
         Text(
@@ -47,19 +48,21 @@ fun CheckedItemsSeparator(
                 checkedCount
             ),
             style = MaterialTheme.typography.labelSmall,
-            color = if (isDragActive)
+            color = if (isDragActive) {
                 MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.outline,
+            } else {
+                MaterialTheme.colorScheme.outline
+            },
             modifier = Modifier.padding(horizontal = 12.dp)
         )
 
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = if (isDragActive)
+            color = if (isDragActive) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            else
+            } else {
                 MaterialTheme.colorScheme.outlineVariant
+            }
         )
     }
 }

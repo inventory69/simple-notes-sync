@@ -8,11 +8,11 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Logger
+import java.security.MessageDigest
+import java.util.Date
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import java.security.MessageDigest
-import java.util.Date
 
 /**
  * 🆕 v2.0.0: Extrahiert Markdown-Export/-Import-Logik aus WebDavSyncService.
@@ -28,7 +28,6 @@ internal class MarkdownSyncManager(
     private val timestampManager: SyncTimestampManager,
     private val ioDispatcher: CoroutineDispatcher
 ) {
-
     companion object {
         private const val TAG = "MarkdownSyncManager"
         private const val MAX_FILENAME_LENGTH = 200
@@ -46,12 +45,7 @@ internal class MarkdownSyncManager(
      * 🔧 v1.9.0 (Opt 1): markdownDirExists-Parameter eliminiert redundanten exists()-Call
      * 🔧 v1.9.0 (Opt 6): MD-Content-Hash-Cache für Skip bei unverändertem Inhalt
      */
-    fun exportSingle(
-        sardine: Sardine,
-        serverUrl: String,
-        note: Note,
-        markdownDirExists: Boolean = true
-    ) {
+    fun exportSingle(sardine: Sardine, serverUrl: String, note: Note, markdownDirExists: Boolean = true) {
         val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
         // 🔧 v1.9.0 (Opt 1): Nur prüfen/erstellen wenn Caller nicht bereits bestätigt hat
@@ -183,7 +177,6 @@ internal class MarkdownSyncManager(
 
                     exportedCount++
                     Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
-
                 } catch (e: Exception) {
                     Logger.e(TAG, "❌ Failed to export ${note.title}: ${e.message}")
                     // Continue mit nächster Note (keine Abbruch bei Einzelfehlern)
@@ -214,11 +207,7 @@ internal class MarkdownSyncManager(
      * Manueller Markdown-Sync: Import aller Server-Markdown-Dateien.
      * Erstellt seinen eigenen Sardine-Client für eigenständige Aufrufe.
      */
-    suspend fun syncAll(
-        serverUrl: String,
-        username: String,
-        password: String
-    ): Int = withContext(ioDispatcher) {
+    suspend fun syncAll(serverUrl: String, username: String, password: String): Int = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
 
@@ -287,7 +276,6 @@ internal class MarkdownSyncManager(
                 // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
                 sardine.close()
             }
-
         } catch (e: Exception) {
             Logger.e(TAG, "Markdown sync failed", e)
             0
@@ -305,11 +293,7 @@ internal class MarkdownSyncManager(
      * 🆕 v1.11.0: excludeNoteIds verhindert Re-Import von soeben exportierten Dateien.
      */
     @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
-    fun importAll(
-        sardine: Sardine,
-        serverUrl: String,
-        excludeNoteIds: Set<String> = emptySet()
-    ): Int {
+    fun importAll(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")
 
@@ -397,7 +381,10 @@ internal class MarkdownSyncManager(
                     // 🆕 v1.11.0: Skip Markdown files whose note ID was just exported in this sync cycle.
                     if (mdNote.id in excludeNoteIds) {
                         skippedCount++
-                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle (ID=${mdNote.id})")
+                        Logger.d(
+                            TAG,
+                            "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle (ID=${mdNote.id})"
+                        )
                         continue
                     }
 
@@ -405,7 +392,9 @@ internal class MarkdownSyncManager(
                     val localNote = storage.loadNote(mdNote.id)
                     if (mdNote.noteType == NoteType.TEXT &&
                         mdNote.content.isBlank() &&
-                        localNote != null && localNote.content.isNotBlank()) {
+                        localNote != null &&
+                        localNote.content.isNotBlank()
+                    ) {
                         Logger.w(
                             TAG,
                             "      ⚠️ Skipping ${resource.name}: " +
@@ -449,15 +438,16 @@ internal class MarkdownSyncManager(
                     }
 
                     // 🔧 v1.8.2 (IMPL_025 Edit 25.8): Für Checklisten NUR checklistItems vergleichen!
-                    val contentChanged = localNote != null && when (mdNote.noteType) {
-                        NoteType.CHECKLIST -> {
-                            mdNote.title != localNote.title || !checklistContentEqual
+                    val contentChanged = localNote != null &&
+                        when (mdNote.noteType) {
+                            NoteType.CHECKLIST -> {
+                                mdNote.title != localNote.title || !checklistContentEqual
+                            }
+                            else -> {
+                                mdNote.content.trim() != localNote.content.trim() ||
+                                    mdNote.title != localNote.title
+                            }
                         }
-                        else -> {
-                            mdNote.content.trim() != localNote.content.trim() ||
-                                mdNote.title != localNote.title
-                        }
-                    }
 
                     if (contentChanged) {
                         Logger.d(TAG, "      📝 Content differs from local!")
@@ -482,7 +472,10 @@ internal class MarkdownSyncManager(
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
                             storage.saveNote(mdNote.copy(syncStatus = SyncStatus.PENDING))
                             importedCount++
-                            Logger.d(TAG, "   ✅ Imported changed content (marked PENDING for JSON sync): ${mdNote.title}")
+                            Logger.d(
+                                TAG,
+                                "   ✅ Imported changed content (marked PENDING for JSON sync): ${mdNote.title}"
+                            )
                         }
                         mdNote.updatedAt > localNote.updatedAt -> {
                             Logger.d(TAG, "      Decision: Markdown has newer timestamp!")
@@ -512,7 +505,6 @@ internal class MarkdownSyncManager(
 
             Logger.d(TAG, "   📊 Markdown import complete: $importedCount imported, $skippedCount skipped (unchanged)")
             importedCount
-
         } catch (e: Exception) {
             Logger.e(TAG, "❌ Markdown import failed", e)
             0
@@ -557,11 +549,7 @@ internal class MarkdownSyncManager(
      * Finds a Markdown file by scanning YAML frontmatter for note ID.
      * Used when local note is deleted and title is unavailable.
      */
-    suspend fun findByNoteId(
-        sardine: Sardine,
-        mdUrl: String,
-        noteId: String
-    ): String? = withContext(ioDispatcher) {
+    suspend fun findByNoteId(sardine: Sardine, mdUrl: String, noteId: String): String? = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "🔍 Scanning MD files for ID: $noteId")
             val resources = sardine.list(mdUrl)
@@ -608,7 +596,7 @@ internal class MarkdownSyncManager(
                 Logger.d(
                     TAG,
                     "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
-                    "isDir=${res.isDirectory}, href=${res.href}"
+                        "isDir=${res.isDirectory}, href=${res.href}"
                 )
             }
             val staleSlashDir = rootResources.find { res -> res.isDirectory && res.name == "/" }

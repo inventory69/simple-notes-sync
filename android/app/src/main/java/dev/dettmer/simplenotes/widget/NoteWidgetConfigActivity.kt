@@ -34,7 +34,6 @@ import kotlinx.coroutines.launch
  * 🆕 v1.8.0 (IMPL_025): Auto-Save bei Back-Navigation + Save-FAB
  */
 class NoteWidgetConfigActivity : ComponentActivity() {
-
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
     // 🆕 v1.8.0 (IMPL_025): State-Tracking für Auto-Save bei Back-Navigation
@@ -49,14 +48,17 @@ class NoteWidgetConfigActivity : ComponentActivity() {
         setResult(RESULT_CANCELED)
 
         // 🆕 v1.8.0 (IMPL_025): Auto-Save bei Back-Navigation
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // Auto-Save nur bei Reconfigure (wenn bereits eine Note konfiguriert war)
-                currentSelectedNoteId?.also { noteId ->
-                    configureWidget(noteId, currentLockState, currentOpacity)
-                } ?: finish()
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    // Auto-Save nur bei Reconfigure (wenn bereits eine Note konfiguriert war)
+                    currentSelectedNoteId?.also { noteId ->
+                        configureWidget(noteId, currentLockState, currentOpacity)
+                    } ?: finish()
+                }
             }
-        })
+        )
 
         // Widget-ID aus Intent
         appWidgetId = intent?.extras?.getInt(
@@ -146,10 +148,11 @@ class NoteWidgetConfigActivity : ComponentActivity() {
 
             // Erfolg melden
             val resultIntent = Intent().putExtra(
-                AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId
+                AppWidgetManager.EXTRA_APPWIDGET_ID,
+                appWidgetId
             )
             setResult(RESULT_OK, resultIntent)
-            
+
             // 🐛 FIX: Zurück zum Homescreen statt zur MainActivity
             // moveTaskToBack() bringt den Task in den Hintergrund → Homescreen wird sichtbar
             if (!isTaskRoot) {

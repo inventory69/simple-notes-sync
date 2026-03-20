@@ -44,11 +44,7 @@ import kotlinx.coroutines.withTimeout
  * Adaptiert von: Calvin-LL/Reorderable v3.0.0 (Apache 2.0)
  * Custom: Separator-Logik, Adjazenz-Filter, Visual/Data-Index-Konvertierung
  */
-class DragDropListState(
-    private val state: LazyListState,
-    private val scope: CoroutineScope,
-    private val onMove: (Int, Int) -> Unit,
-) {
+class DragDropListState(private val state: LazyListState, private val scope: CoroutineScope, private val onMove: (Int, Int) -> Unit) {
     // --- Primary Drag State ---
     internal var draggingItemKey by mutableStateOf<Any?>(null)
         private set
@@ -69,8 +65,10 @@ class DragDropListState(
     private var draggingItemInitialOffset = 0
     private var draggingItemSize = 0
     private var lastKnownDraggingOffset = 0f
+
     // IMPL_29d: Predicted offset — überbrückt Frames zwischen Swap und Layout-Update
     private var predictedItemOffset: Int? = null
+
     // IMPL_29e: Letzter bekannter Index VOR dem Swap — für Prediction-Gating im Offset-Getter
     private var oldDraggingItemIndex: Int? = null
 
@@ -79,14 +77,18 @@ class DragDropListState(
 
     // --- Auto-Scroll ---
     private var autoScrollJob: Job? = null
+
     // IMPL_29h H2: Speed-Variable statt cancel/restart; laufender Job liest diesen Wert direkt
     private var autoScrollSpeed by mutableFloatStateOf(0f)
     private var lastSwapTimeMs = 0L
+
     // IMPL_29f F3: Serialisiert Swap-Operationen (verhindert Race-Condition RC-3)
     private val swapMutex = Mutex()
+
     // IMPL_29k K3: Anti-Flapping — verhindert Swap-Oscillation
     private var lastSwapFromIndex = -1
     private var lastSwapToIndex = -1
+
     // IMPL_29q Q3: Flag für Immunity-Recovery im Auto-Scroll-Loop
     private var immunityFiredNeedsCleanCancel = false
 
@@ -154,10 +156,13 @@ class DragDropListState(
         val autoScrollActive = autoScrollJob?.isActive == true
         val mutexLocked = swapMutex.isLocked
         val timeSinceLastSwap = System.currentTimeMillis() - lastSwapTimeMs
-        logD("DRAG_INTERRUPTION", "key=$draggingItemKey confirmed=$isDragConfirmed " +
-            "autoScrollActive=$autoScrollActive swapMutexLocked=$mutexLocked " +
-            "lastSwapAgo=${timeSinceLastSwap}ms compOff=$draggingItemOffset " +
-            "oldDragIdx=$oldDraggingItemIndex dragIdx=${draggingItemIndex}")
+        logD(
+            "DRAG_INTERRUPTION",
+            "key=$draggingItemKey confirmed=$isDragConfirmed " +
+                "autoScrollActive=$autoScrollActive swapMutexLocked=$mutexLocked " +
+                "lastSwapAgo=${timeSinceLastSwap}ms compOff=$draggingItemOffset " +
+                "oldDragIdx=$oldDraggingItemIndex dragIdx=$draggingItemIndex"
+        )
         stopAutoScroll()
         draggingItemDraggedDelta = 0f
         draggingItemKey = null
@@ -189,8 +194,11 @@ class DragDropListState(
             // IMPL_29q Q4: Immunity-Sicherheitsnetz
             // beyondBoundsItemCount sollte das verhindern, aber falls doch Recycling:
             // Speed sofort auf 0 → kein Runaway
-            logD("POINTER_EVENT", "DRAG_CANCEL_IGNORED reason=POST_SWAP_IMMUNITY " +
-                "key=$draggingItemKey timeSinceSwap=${timeSinceSwap}ms immunityMs=$immunityMs")
+            logD(
+                "POINTER_EVENT",
+                "DRAG_CANCEL_IGNORED reason=POST_SWAP_IMMUNITY " +
+                    "key=$draggingItemKey timeSinceSwap=${timeSinceSwap}ms immunityMs=$immunityMs"
+            )
             autoScrollSpeed = 0f
             immunityFiredNeedsCleanCancel = true
         } else {
@@ -245,20 +253,23 @@ class DragDropListState(
         val targetItem = state.layoutInfo.visibleItemsInfo
             .filter { item ->
                 item.index != separatorVisualIndex &&
-                item.index != currentIndex &&
-                isAdjacentSkippingSeparator(currentIndex, item.index) &&
-                run {
-                    val targetCenter = item.offset + item.size / 2
-                    startOffset < targetCenter && endOffset > targetCenter
-                }
+                    item.index != currentIndex &&
+                    isAdjacentSkippingSeparator(currentIndex, item.index) &&
+                    run {
+                        val targetCenter = item.offset + item.size / 2
+                        startOffset < targetCenter && endOffset > targetCenter
+                    }
             }
             .minByOrNull { kotlin.math.abs(it.index - currentIndex) }
 
         if (targetItem == null) {
             swapMutex.unlock()
             if (!shouldThrottleLog()) {
-                logD("SWAP_SKIP", "reason=NO_TARGET dragIdx=$currentIndex " +
-                    "start=$startOffset end=$endOffset sep=$separatorVisualIndex")
+                logD(
+                    "SWAP_SKIP",
+                    "reason=NO_TARGET dragIdx=$currentIndex " +
+                        "start=$startOffset end=$endOffset sep=$separatorVisualIndex"
+                )
             }
             return
         }
@@ -325,22 +336,22 @@ class DragDropListState(
         val viewportEnd = state.layoutInfo.viewportEndOffset
         val itemsInContentArea = visibleItems.filter { item ->
             item.offset >= viewportStart &&
-            item.offset + item.size <= viewportEnd
+                item.offset + item.size <= viewportEnd
         }
 
         // Candidates: Items in Scroll-Richtung, Content-Area bevorzugt
         val contentAreaCandidates = itemsInContentArea.filter { item ->
             item.index != currentIndex &&
-            item.index != separatorVisualIndex &&
-            (if (scrollDirection > 0) item.index > currentIndex else item.index < currentIndex)
+                item.index != separatorVisualIndex &&
+                (if (scrollDirection > 0) item.index > currentIndex else item.index < currentIndex)
         }
 
         // Fallback auf alle sichtbaren Items wenn Content-Area leer
         val candidates = contentAreaCandidates.ifEmpty {
             visibleItems.filter { item ->
                 item.index != currentIndex &&
-                item.index != separatorVisualIndex &&
-                (if (scrollDirection > 0) item.index > currentIndex else item.index < currentIndex)
+                    item.index != separatorVisualIndex &&
+                    (if (scrollDirection > 0) item.index > currentIndex else item.index < currentIndex)
             }
         }
 
@@ -364,15 +375,21 @@ class DragDropListState(
             targetItem = candidates
                 .filter { isAdjacentSkippingSeparator(currentIndex, it.index) }
                 .let { adjacent ->
-                    if (scrollDirection > 0) adjacent.minByOrNull { it.index }
-                    else adjacent.maxByOrNull { it.index }
+                    if (scrollDirection > 0) {
+                        adjacent.minByOrNull { it.index }
+                    } else {
+                        adjacent.maxByOrNull { it.index }
+                    }
                 }
         }
 
         if (targetItem == null) {
             if (!shouldThrottleLog()) {
-                logD("SCROLL_SWAP_SKIP", "reason=NO_ADJACENT dragIdx=$currentIndex " +
-                    "scrollDir=$scrollDirection candidates=${candidates.size}")
+                logD(
+                    "SCROLL_SWAP_SKIP",
+                    "reason=NO_ADJACENT dragIdx=$currentIndex " +
+                        "scrollDir=$scrollDirection candidates=${candidates.size}"
+                )
             }
             swapMutex.unlock()
             return
@@ -416,10 +433,7 @@ class DragDropListState(
      * physisch nicht weiter geschoben werden können. Ohne diese Ausnahme wäre Index 0
      * permanent blockiert (predicted=0 < margin=16).
      */
-    private fun isSwapViewportSafe(
-        currentIndex: Int,
-        targetItem: LazyListItemInfo,
-    ): Boolean {
+    private fun isSwapViewportSafe(currentIndex: Int, targetItem: LazyListItemInfo): Boolean {
         val predicted = if (targetItem.index > currentIndex) {
             (targetItem.offset + targetItem.size) - draggingItemSize
         } else {
@@ -436,10 +450,13 @@ class DragDropListState(
 
         val isSafe = predicted in minSafe..maxSafe
         if (!isSafe) {
-            logD("SWAP_BLOCKED", "reason=VIEWPORT_UNSAFE currentIdx=$currentIndex " +
-                "targetIdx=${targetItem.index} predicted=$predicted " +
-                "safeRange=$minSafe..$maxSafe viewport=$viewportHeight" +
-                " topBound=$isTopBoundary bottomBound=$isBottomBoundary")
+            logD(
+                "SWAP_BLOCKED",
+                "reason=VIEWPORT_UNSAFE currentIdx=$currentIndex " +
+                    "targetIdx=${targetItem.index} predicted=$predicted " +
+                    "safeRange=$minSafe..$maxSafe viewport=$viewportHeight" +
+                    " topBound=$isTopBoundary bottomBound=$isBottomBoundary"
+            )
         }
         return isSafe
     }
@@ -458,8 +475,11 @@ class DragDropListState(
         val timeSinceSwap = System.currentTimeMillis() - lastSwapTimeMs
         val isReversal = fromIndex == lastSwapToIndex && toIndex == lastSwapFromIndex
         if (isReversal && timeSinceSwap < SWAP_COOLDOWN_MS) {
-            logD("SWAP_BLOCKED", "reason=FLAPPING from=$fromIndex to=$toIndex " +
-                "lastFrom=$lastSwapFromIndex lastTo=$lastSwapToIndex ago=${timeSinceSwap}ms")
+            logD(
+                "SWAP_BLOCKED",
+                "reason=FLAPPING from=$fromIndex to=$toIndex " +
+                    "lastFrom=$lastSwapFromIndex lastTo=$lastSwapToIndex ago=${timeSinceSwap}ms"
+            )
             return true
         }
         return false
@@ -476,10 +496,7 @@ class DragDropListState(
      * - Item-Verschwinden aus visibleItemsInfo (→ DRAG_CANCEL)
      * - Pointer-Scope-Invalidierung durch Recomposition
      */
-    private suspend fun performSwapWithLayoutWait(
-        draggingItem: LazyListItemInfo,
-        targetItem: LazyListItemInfo,
-    ) {
+    private suspend fun performSwapWithLayoutWait(draggingItem: LazyListItemInfo, targetItem: LazyListItemInfo) {
         val currentIndex = draggingItem.index
         try {
             if (!isAnyItemDragging) return
@@ -496,8 +513,10 @@ class DragDropListState(
 
             // Separator-Crossing Scroll-Adjust
             val isSeparatorCrossing = separatorVisualIndex >= 0 &&
-                ((currentIndex < separatorVisualIndex && targetItem.index > separatorVisualIndex) ||
-                 (currentIndex > separatorVisualIndex && targetItem.index < separatorVisualIndex))
+                (
+                    (currentIndex < separatorVisualIndex && targetItem.index > separatorVisualIndex) ||
+                        (currentIndex > separatorVisualIndex && targetItem.index < separatorVisualIndex)
+                    )
             if (isSeparatorCrossing && targetItem.index < state.firstVisibleItemIndex) {
                 state.requestScrollToItem(targetItem.index, 0)
                 logD("SCROLL_ADJUST", "sepCross=UP newIdx=${targetItem.index}")
@@ -516,9 +535,12 @@ class DragDropListState(
             // Swap ausführen
             val fromDataIndex = visualToDataIndex(currentIndex)
             val toDataIndex = visualToDataIndex(targetItem.index)
-            logD("SWAP_EXEC", "fromVis=$currentIndex toVis=${targetItem.index} " +
-                "fromData=$fromDataIndex toData=$toDataIndex sep=$separatorVisualIndex " +
-                "predicted=$predictedItemOffset")
+            logD(
+                "SWAP_EXEC",
+                "fromVis=$currentIndex toVis=${targetItem.index} " +
+                    "fromData=$fromDataIndex toData=$toDataIndex sep=$separatorVisualIndex " +
+                    "predicted=$predictedItemOffset"
+            )
             lastSwapFromIndex = currentIndex
             lastSwapToIndex = targetItem.index
             lastSwapTimeMs = System.currentTimeMillis()
@@ -589,8 +611,10 @@ class DragDropListState(
         return if (scrollDirection > 0) {
             (draggingItem.offset + draggingItem.size - 1f).coerceAtLeast(0f)
         } else {
-            val viewportHeight = (state.layoutInfo.viewportEndOffset -
-                state.layoutInfo.viewportStartOffset).toFloat()
+            val viewportHeight = (
+                state.layoutInfo.viewportEndOffset -
+                    state.layoutInfo.viewportStartOffset
+                ).toFloat()
             (viewportHeight - draggingItem.offset - 1f).coerceAtLeast(0f)
         }
     }
@@ -621,11 +645,16 @@ class DragDropListState(
                     if (immunityFiredNeedsCleanCancel) {
                         immunityFiredNeedsCleanCancel = false
                         val targetIdx = maxOf(0, lastSwapToIndex - 1)
-                        logD("IMMUNITY_CLEAN_CANCEL", "requestScrollToItem idx=$targetIdx " +
-                            "lastSwapTo=$lastSwapToIndex")
+                        logD(
+                            "IMMUNITY_CLEAN_CANCEL",
+                            "requestScrollToItem idx=$targetIdx " +
+                                "lastSwapTo=$lastSwapToIndex"
+                        )
                         try {
                             state.requestScrollToItem(targetIdx)
-                        } catch (_: Exception) { /* Best effort */ }
+                        } catch (_: Exception) {
+                            // Best effort
+                        }
                         delay(AUTO_SCROLL_FRAME_MS) // 1 Frame für Layout-Settle
                         onDragInterrupted()
                         break
@@ -650,8 +679,11 @@ class DragDropListState(
                             try {
                                 val scrolled = state.scrollBy(clampedSpeed)
                                 if (!shouldThrottleLog()) {
-                                    logD("AUTO_SCROLL", "speed=$speed maxDist=$maxDist " +
-                                        "clamped=$clampedSpeed scrolled=$scrolled")
+                                    logD(
+                                        "AUTO_SCROLL",
+                                        "speed=$speed maxDist=$maxDist " +
+                                            "clamped=$clampedSpeed scrolled=$scrolled"
+                                    )
                                 }
                             } catch (_: CancellationException) {
                                 if (!isActive) return@launch
@@ -720,14 +752,17 @@ class DragDropListState(
         const val MAX_SPEED_MULTIPLIER = 7f
         const val MIN_SPEED_MULTIPLIER = 0.3f
         const val SCROLL_THRESHOLD_FRACTION = 0.25f
-        const val LAYOUT_WAIT_TIMEOUT_MS = 1000L    // IMPL_29h H3: Layout-Wait Timeout
+        const val LAYOUT_WAIT_TIMEOUT_MS = 1000L // IMPL_29h H3: Layout-Wait Timeout
         const val MS_PER_SECOND = 1000f
         const val LOG_TAG = "DragDrop"
         const val LOG_THROTTLE_MS = 100L
+
         // IMPL_29k K3: Anti-Flapping
-        const val SWAP_COOLDOWN_MS = 80L          // Minimum ms zwischen zwei Swaps
+        const val SWAP_COOLDOWN_MS = 80L // Minimum ms zwischen zwei Swaps
+
         // IMPL_29k K1: Viewport-Safety Margin
-        const val VIEWPORT_SAFETY_MARGIN_PX = 16  // Min. Pixel Abstand zum Viewport-Rand
+        const val VIEWPORT_SAFETY_MARGIN_PX = 16 // Min. Pixel Abstand zum Viewport-Rand
+
         // IMPL_29q Q2: Post-Swap Immunity — Sicherheitsnetz falls beyondBoundsItemCount
         // in einem Extremfall nicht ausreicht und Recycling doch passiert.
         const val POST_SWAP_IMMUNITY_MS = 200L
@@ -736,52 +771,61 @@ class DragDropListState(
 }
 
 @Composable
-fun rememberDragDropListState(
-    lazyListState: LazyListState,
-    scope: CoroutineScope,
-    onMove: (Int, Int) -> Unit
-): DragDropListState {
+fun rememberDragDropListState(lazyListState: LazyListState, scope: CoroutineScope, onMove: (Int, Int) -> Unit): DragDropListState {
     return remember(lazyListState, scope) {
         DragDropListState(
             state = lazyListState,
             scope = scope,
-            onMove = onMove,
+            onMove = onMove
         )
     }
 }
 
 @Composable
-fun Modifier.dragContainer(
-    dragDropState: DragDropListState,
-    itemKey: Any
-): Modifier {
+fun Modifier.dragContainer(dragDropState: DragDropListState, itemKey: Any): Modifier {
     val currentKey = rememberUpdatedState(itemKey)
     return this.pointerInput(dragDropState) {
         detectDragGesturesAfterLongPress(
             onDragStart = { _ ->
-                if (BuildConfig.DEBUG) Log.d("DragDrop",
-                    "[POINTER_EVENT] type=DRAG_START key=${currentKey.value}")
+                if (BuildConfig.DEBUG) {
+                    Log.d(
+                        "DragDrop",
+                        "[POINTER_EVENT] type=DRAG_START key=${currentKey.value}"
+                    )
+                }
                 dragDropState.onDragStart(currentKey.value)
             },
             onDragEnd = {
-                if (BuildConfig.DEBUG) Log.d("DragDrop",
-                    "[POINTER_EVENT] type=DRAG_END key=${currentKey.value} " +
-                    "draggingKey=${dragDropState.draggingItemKey}")
+                if (BuildConfig.DEBUG) {
+                    Log.d(
+                        "DragDrop",
+                        "[POINTER_EVENT] type=DRAG_END key=${currentKey.value} " +
+                            "draggingKey=${dragDropState.draggingItemKey}"
+                    )
+                }
                 dragDropState.onDragInterrupted()
             },
             onDragCancel = {
                 val eventKey = currentKey.value
                 val activeKey = dragDropState.draggingItemKey
-                if (BuildConfig.DEBUG) Log.d("DragDrop",
-                    "[POINTER_EVENT] type=DRAG_CANCEL key=$eventKey " +
-                    "draggingKey=$activeKey")
+                if (BuildConfig.DEBUG) {
+                    Log.d(
+                        "DragDrop",
+                        "[POINTER_EVENT] type=DRAG_CANCEL key=$eventKey " +
+                            "draggingKey=$activeKey"
+                    )
+                }
                 if (activeKey == null) {
                     // Kein aktiver Drag — no-op (harmlos)
                 } else if (eventKey != activeKey) {
                     // IMPL_29l L1: Stale Cancel von anderem Item's Pointer-Scope
-                    if (BuildConfig.DEBUG) Log.d("DragDrop",
-                        "[POINTER_EVENT] DRAG_CANCEL_IGNORED reason=STALE_KEY " +
-                        "staleKey=$eventKey activeKey=$activeKey")
+                    if (BuildConfig.DEBUG) {
+                        Log.d(
+                            "DragDrop",
+                            "[POINTER_EVENT] DRAG_CANCEL_IGNORED reason=STALE_KEY " +
+                                "staleKey=$eventKey activeKey=$activeKey"
+                        )
+                    }
                 } else {
                     // Same-Key Cancel: Entweder echt oder durch Viewport-Edge Recycling
                     // IMPL_29q Q4: Immunity-Check an DragDropListState delegieren

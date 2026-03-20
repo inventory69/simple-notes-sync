@@ -10,12 +10,7 @@ import dev.dettmer.simplenotes.models.Note
  * @param markdownExportEnabled Ob Markdown-Export für diese Notiz aktiviert ist
  * @param markdownDirExists Ob notes-md/ Ordner bereits existiert
  */
-data class UploadTask(
-    val note: Note,
-    val noteUrl: String,
-    val markdownExportEnabled: Boolean,
-    val markdownDirExists: Boolean
-)
+data class UploadTask(val note: Note, val noteUrl: String, val markdownExportEnabled: Boolean, val markdownDirExists: Boolean)
 
 /**
  * 🆕 v1.9.0: Ergebnis eines einzelnen Uploads
@@ -31,7 +26,7 @@ sealed class UploadTaskResult {
     data class Success(
         val noteId: String,
         val etag: String?,
-        val markdownExported: Boolean = false  // 🆕 v1.11.0: Flag ob MD-Export durchgeführt wurde
+        val markdownExported: Boolean = false // 🆕 v1.11.0: Flag ob MD-Export durchgeführt wurde
     ) : UploadTaskResult()
 
     /**
@@ -40,10 +35,7 @@ sealed class UploadTaskResult {
      * @param noteId Die ID der nicht hochgeladenen Notiz
      * @param error Der aufgetretene Fehler
      */
-    data class Failure(
-        val noteId: String,
-        val error: Throwable
-    ) : UploadTaskResult()
+    data class Failure(val noteId: String, val error: Throwable) : UploadTaskResult()
 
     /**
      * Upload übersprungen (z.B. Content unverändert)
@@ -51,8 +43,5 @@ sealed class UploadTaskResult {
      * @param noteId Die ID der übersprungenen Notiz
      * @param reason Grund für das Überspringen
      */
-    data class Skipped(
-        val noteId: String,
-        val reason: String
-    ) : UploadTaskResult()
+    data class Skipped(val noteId: String, val reason: String) : UploadTaskResult()
 }

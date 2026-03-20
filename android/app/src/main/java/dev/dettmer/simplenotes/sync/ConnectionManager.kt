@@ -5,8 +5,8 @@ import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
-import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 /**
  * 🆕 v2.0.0: Extracted from WebDavSyncService (Commit 18).
@@ -15,9 +15,7 @@ import java.util.concurrent.TimeUnit
  * - Session caching (one client per sync operation)
  * - Session cleanup (close client + reset caches)
  */
-class ConnectionManager(
-    private val prefs: SharedPreferences
-) {
+class ConnectionManager(private val prefs: SharedPreferences) {
     companion object {
         private const val TAG = "ConnectionManager"
         private const val FALLBACK_TIMEOUT_MS = 8000L
@@ -95,7 +93,7 @@ class ConnectionManager(
 
     /**
      * Reads the configured connection timeout from SharedPreferences.
-     * Converts seconds → milliseconds, clamped to [MIN..MAX].
+     * Converts seconds to milliseconds, clamped to MIN..MAX range.
      */
     fun getTimeoutMs(): Long {
         return try {

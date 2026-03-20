@@ -14,18 +14,18 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.lifecycleScope
+import androidx.core.content.FileProvider
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.google.android.material.color.DynamicColors
-import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
-import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
-import dev.dettmer.simplenotes.ui.theme.ThemePreferences
-import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
+import dev.dettmer.simplenotes.ui.theme.ThemeMode
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.PdfExporter
@@ -33,27 +33,27 @@ import kotlinx.coroutines.launch
 
 /**
  * Compose-based Note Editor Activity
- * 
+ *
  * v1.5.0: Jetpack Compose NoteEditor Redesign
  * Replaces the old NoteEditorActivity with a modern Compose implementation.
- * 
+ *
  * Supports:
  * - TEXT notes with title and content
  * - CHECKLIST notes with drag & drop reordering
  * - Auto-keyboard focus for new checklist items
  */
 class ComposeNoteEditorActivity : ComponentActivity() {
-    
     companion object {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
-        private const val TAG = "ComposeNoteEditorActivity"  // 🆕 v1.10.0-Papa
+        private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
+
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
         const val RESULT_EXTRA_NOTE_ID = "result_note_id"
         const val RESULT_EXTRA_DELETE_FROM_SERVER = "result_delete_from_server"
     }
-    
+
     private val viewModel: NoteEditorViewModel by viewModels {
         viewModelFactory {
             initializer {
@@ -70,7 +70,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     private val editorPrefs by lazy { getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE) }
     private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
     private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -80,7 +80,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
 
         // Apply Dynamic Colors for Android 12+ (Material You)
         DynamicColors.applyToActivityIfAvailable(this)
-        
+
         enableEdgeToEdge()
 
         // v2.0.0: Register both OPEN and CLOSE transitions for consistent
@@ -101,11 +101,14 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         // v2.0.0: On API 35+ (mandatory predictive back), overrideActivityTransition(CLOSE)
         // is only respected for explicit finish() calls — the system uses its own animation
         // for gesture-driven back. Routing through OnBackPressedCallback + finish() fixes this.
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                finishWithTransition()
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    finishWithTransition()
+                }
             }
-        })
+        )
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
@@ -184,7 +187,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
      */
     private fun handleCalendarExport(event: NoteEditorEvent.OpenCalendar) {
         val beginTime = System.currentTimeMillis()
-        val endTime = beginTime + 60 * 60 * 1000L  // +1 hour
+        val endTime = beginTime + 60 * 60 * 1000L // +1 hour
         val intent = Intent(Intent.ACTION_INSERT).apply {
             data = CalendarContract.Events.CONTENT_URI
             putExtra(CalendarContract.Events.TITLE, event.title)
@@ -262,5 +265,3 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         }
     }
 }
-
-

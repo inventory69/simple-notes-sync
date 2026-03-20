@@ -32,8 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -44,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 
@@ -58,10 +58,7 @@ import dev.dettmer.simplenotes.models.NoteType
  *                Semi-transparent scrim covers entire screen (incl. status bar).
  */
 @Composable
-fun NoteTypeFAB(
-    modifier: Modifier = Modifier,
-    onCreateNote: (NoteType) -> Unit
-) {
+fun NoteTypeFAB(modifier: Modifier = Modifier, onCreateNote: (NoteType) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var navigating by remember { mutableStateOf(false) }
 
@@ -201,13 +198,7 @@ fun NoteTypeFAB(
  * 🆕 v1.11.0-P4: Kein separates FAB-Icon, alles in einer einzigen Pill.
  */
 @Composable
-private fun FabSubActionRow(
-    label: String,
-    icon: ImageVector,
-    scale: Float,
-    alpha: Float,
-    onClick: () -> Unit
-) {
+private fun FabSubActionRow(label: String, icon: ImageVector, scale: Float, alpha: Float, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
@@ -241,8 +232,4 @@ private fun FabSubActionRow(
 /**
  * Data class for sub-action configuration.
  */
-private data class FabSubAction(
-    val label: String,
-    val icon: ImageVector,
-    val noteType: NoteType
-)
+private data class FabSubAction(val label: String, val icon: ImageVector, val noteType: NoteType)

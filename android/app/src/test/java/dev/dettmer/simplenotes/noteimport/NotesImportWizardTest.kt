@@ -49,17 +49,16 @@ class NotesImportWizardTest {
         }
     }
 
-    private fun extractTimestampHelper(obj: com.google.gson.JsonObject, vararg keys: String): Long? =
-        keys.firstNotNullOfOrNull { key ->
-            runCatching {
-                obj.get(key)
-                    ?.takeIf { it.isJsonPrimitive }
-                    ?.asJsonPrimitive
-                    ?.takeIf { it.isNumber }
-                    ?.asLong
-                    ?.let { value -> if (value < 1_000_000_000_000L) value * 1000 else value }
-            }.getOrNull()
-        }
+    private fun extractTimestampHelper(obj: com.google.gson.JsonObject, vararg keys: String): Long? = keys.firstNotNullOfOrNull { key ->
+        runCatching {
+            obj.get(key)
+                ?.takeIf { it.isJsonPrimitive }
+                ?.asJsonPrimitive
+                ?.takeIf { it.isNumber }
+                ?.asLong
+                ?.let { value -> if (value < 1_000_000_000_000L) value * 1000 else value }
+        }.getOrNull()
+    }
 
     // ═══════════════════════════════════════════════
     // File Type Detection
