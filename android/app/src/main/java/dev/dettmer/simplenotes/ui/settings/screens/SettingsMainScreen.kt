@@ -121,11 +121,16 @@ fun SettingsMainScreen(
             // 🎨 v1.7.0: Display Settings
             item {
                 val displayMode by viewModel.displayMode.collectAsState()
-                val displaySubtitle = when (displayMode) {
+                val themeMode by viewModel.themeMode.collectAsState()
+                val colorTheme by viewModel.colorTheme.collectAsState()
+                val displayModeLabel = when (displayMode) {
                     "grid" -> stringResource(R.string.display_mode_grid)
                     else -> stringResource(R.string.display_mode_list)
                 }
-                
+                val themeModeLabel = stringResource(themeMode.displayNameResId)
+                val colorThemeLabel = stringResource(colorTheme.displayNameResId)
+                val displaySubtitle = "$displayModeLabel · $themeModeLabel · $colorThemeLabel"
+
                 SettingsCard(
                     icon = Icons.Default.GridView,
                     title = stringResource(R.string.display_settings_title),

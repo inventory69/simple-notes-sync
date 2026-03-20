@@ -412,9 +412,9 @@
     <!-- ============================= -->
     <string name="display_settings_title">Display</string>
     <string name="display_mode_title">Note Display Mode</string>
-    <string name="display_mode_list">📋 List View</string>
-    <string name="display_mode_grid">🎨 Grid View</string>
-    <string name="display_mode_info">Grid view shows notes in a two-column layout. All notes appear side-by-side in a clean, compact overview.</string>
+    <string name="display_mode_list">List View</string>
+    <string name="display_mode_grid">Grid View</string>
+    <string name="display_mode_info">Grid view arranges notes in multiple columns. The number of columns adapts automatically to your device\'s display size and text scale settings.</string>
 
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App Title</string>

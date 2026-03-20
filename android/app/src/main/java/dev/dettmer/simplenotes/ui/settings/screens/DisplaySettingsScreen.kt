@@ -18,6 +18,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -33,9 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
-import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
-import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
@@ -97,21 +99,9 @@ fun DisplaySettingsScreen(
             // ── Display Mode Section ──
             SettingsSectionHeader(text = stringResource(R.string.display_mode_title))
 
-            SettingsRadioGroup(
-                options = listOf(
-                    RadioOption(
-                        value = "list",
-                        title = stringResource(R.string.display_mode_list),
-                        subtitle = null
-                    ),
-                    RadioOption(
-                        value = "grid",
-                        title = stringResource(R.string.display_mode_grid),
-                        subtitle = null
-                    )
-                ),
-                selectedValue = displayMode,
-                onValueSelected = { viewModel.setDisplayMode(it) }
+            DisplayModeSelector(
+                currentMode = displayMode,
+                onModeSelected = { viewModel.setDisplayMode(it) }
             )
 
             SettingsInfoCard(
@@ -174,6 +164,94 @@ fun DisplaySettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DisplayModeSelector — FlowRow grid matching ThemeModeSelector / ColorThemeSelector
+// Two items with preview icons (list lines vs grid squares).
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DisplayModeSelector(
+    currentMode: String,
+    onModeSelected: (String) -> Unit
+) {
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        DisplayModeChip(
+            label = stringResource(R.string.display_mode_list),
+            icon = Icons.AutoMirrored.Outlined.List,
+            selected = currentMode == "list",
+            onClick = { onModeSelected("list") }
+        )
+        DisplayModeChip(
+            label = stringResource(R.string.display_mode_grid),
+            icon = Icons.Outlined.GridView,
+            selected = currentMode == "grid",
+            onClick = { onModeSelected("grid") }
+        )
+    }
+}
+
+@Composable
+private fun DisplayModeChip(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
         }
     }
 }
