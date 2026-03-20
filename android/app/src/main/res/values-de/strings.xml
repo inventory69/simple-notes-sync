@@ -344,6 +344,10 @@
     <string name="debug_delete_logs">🗑️ Logs löschen</string>
     <string name="debug_delete_logs_title">Logs löschen?</string>
     <string name="debug_delete_logs_message">Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.</string>
+    <string name="debug_after_export_title">Datei-Logging deaktivieren?</string>
+    <string name="debug_after_export_message">Du kannst das Datei-Logging jetzt deaktivieren, da du die Logs bereits geteilt hast. Es kann hier jederzeit wieder aktiviert werden.</string>
+    <string name="debug_after_export_disable">Logging deaktivieren</string>
+    <string name="debug_after_export_keep">Aktiviert lassen</string>
     <string name="debug_test_section">Test-Modus</string>
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>

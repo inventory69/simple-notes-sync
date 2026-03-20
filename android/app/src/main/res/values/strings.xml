@@ -380,6 +380,10 @@
     <string name="debug_delete_logs">🗑️ Delete Logs</string>
     <string name="debug_delete_logs_title">Delete logs?</string>
     <string name="debug_delete_logs_message">All saved sync logs will be permanently deleted.</string>
+    <string name="debug_after_export_title">Disable File Logging?</string>
+    <string name="debug_after_export_message">You can disable file logging now that you\'ve shared the logs. File logging can be re-enabled here at any time.</string>
+    <string name="debug_after_export_disable">Disable Logging</string>
+    <string name="debug_after_export_keep">Keep Enabled</string>
     <string name="debug_test_section">Test Mode</string>
     <string name="debug_reset_changelog">Reset Changelog Dialog</string>
     <string name="debug_reset_changelog_desc">Show changelog on next app start</string>
