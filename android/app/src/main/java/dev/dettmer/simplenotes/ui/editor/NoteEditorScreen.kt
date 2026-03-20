@@ -265,7 +265,25 @@ fun NoteEditorScreen(
                         }
                     }
 
-                    // Delete button (only for existing notes) — moved to overflow menu
+                    // v2.1.0: Undo/Redo promoted to direct actions for quick access
+                    IconButton(
+                        onClick = { viewModel.undo() },
+                        enabled = canUndo
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = stringResource(R.string.editor_undo)
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.redo() },
+                        enabled = canRedo
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Redo,
+                            contentDescription = stringResource(R.string.editor_redo)
+                        )
+                    }
 
                     // Save button
                     IconButton(onClick = { viewModel.saveNote() }) {
@@ -294,40 +312,6 @@ fun NoteEditorScreen(
                         shadowElevation = 6.dp,  // 🆕 v1.10.0-P2
                         tonalElevation = 2.dp  // 🆕 v1.10.0-P2
                     ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.editor_undo)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Undo,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                viewModel.undo()
-                                showOverflowMenu = false
-                            },
-                            enabled = canUndo
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.editor_redo)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Redo,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                viewModel.redo()
-                                showOverflowMenu = false
-                            },
-                            enabled = canRedo
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.share_to_calendar)) },
                             leadingIcon = {
