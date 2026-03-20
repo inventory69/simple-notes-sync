@@ -387,6 +387,8 @@
     <string name="custom_app_title_info">Lege einen eigenen Titel für den Hauptbildschirm fest. Leer lassen für den Standard-Titel \"Simple Notes\". Maximal 30 Zeichen.</string>
     <string name="custom_app_title_char_count">%1$d / %2$d</string>
     <!-- 🆕 v1.9.0: Autosave -->
+    <string name="settings_subtitle_autosave_on">Automatisch speichern</string>
+    <string name="settings_subtitle_autosave_off">Manuell speichern</string>
     <string name="autosave_section">Editor</string>
     <string name="autosave_toggle">Automatisches Speichern</string>
     <string name="autosave_description">Speichert nach 3 s Inaktivität und beim Verlassen des Editors</string>

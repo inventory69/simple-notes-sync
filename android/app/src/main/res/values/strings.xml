@@ -427,6 +427,8 @@
     <string name="custom_app_title_info">Set a custom title for the main screen. Leave empty to use the default \"Simple Notes\" title. Maximum 30 characters.</string>
     <string name="custom_app_title_char_count">%1$d / %2$d</string>
     <!-- 🆕 v1.9.0: Autosave -->
+    <string name="settings_subtitle_autosave_on">Auto-save</string>
+    <string name="settings_subtitle_autosave_off">Manual save</string>
     <string name="autosave_section">Editor</string>
     <string name="autosave_toggle">Autosave</string>
     <string name="autosave_description">Saves after 3 s of inactivity and when leaving the editor</string>

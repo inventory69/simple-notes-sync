@@ -121,15 +121,17 @@ fun SettingsMainScreen(
             // 🎨 v1.7.0: Display Settings
             item {
                 val displayMode by viewModel.displayMode.collectAsState()
-                val themeMode by viewModel.themeMode.collectAsState()
-                val colorTheme by viewModel.colorTheme.collectAsState()
+                val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
                 val displayModeLabel = when (displayMode) {
                     "grid" -> stringResource(R.string.display_mode_grid)
                     else -> stringResource(R.string.display_mode_list)
                 }
-                val themeModeLabel = stringResource(themeMode.displayNameResId)
-                val colorThemeLabel = stringResource(colorTheme.displayNameResId)
-                val displaySubtitle = "$displayModeLabel · $themeModeLabel · $colorThemeLabel"
+                val autosaveLabel = if (autosaveEnabled) {
+                    stringResource(R.string.settings_subtitle_autosave_on)
+                } else {
+                    stringResource(R.string.settings_subtitle_autosave_off)
+                }
+                val displaySubtitle = "$displayModeLabel · $autosaveLabel"
 
                 SettingsCard(
                     icon = Icons.Default.GridView,
