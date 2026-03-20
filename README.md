@@ -65,7 +65,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 ## ✨ Highlights
 
 - 📝 **Offline-first** - Works without internet
-- 📊 **Flexible views** - Switch between list and grid layout
+- 📊 **Flexible views** - Switch between list and grid layout, 1–5 column scaling
 - ✅ **Checklists** - Tap-to-check, drag & drop
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
 - 📌 **Widgets** - Home screen quick-note and note list widgets
@@ -77,7 +77,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
 - 📤 **Share & export** - Share as text or PDF, export to calendar
 - ↩️ **Undo/Redo** - Full undo/redo history in the note editor
-- 🎨 **Material Design 3** - Dynamic dark/light mode & colors based on system settings
+- 🎨 **Material Design 3** - 7 color schemes incl. AMOLED & Dynamic Color, animated theme transitions
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
 
@@ -167,6 +167,6 @@ Apache License 2.0 - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.12.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.0.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

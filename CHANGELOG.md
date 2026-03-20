@@ -8,6 +8,127 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.0] - 2026-03-20
+
+### 🎨 Complete Compose Rewrite, Multi-Theme System & Architecture Overhaul
+
+Major release: full migration to Jetpack Compose, removal of all legacy View-based code (~2,300 lines deleted), complete WebDavSyncService refactoring into focused modules, multi-theme system with 7 color schemes and animated transitions, Material 3 shared axis navigation, checklist drag-and-drop rewrite, comprehensive sync reliability fixes, and modernized dependencies.
+
+### ✨ New Features
+
+**Multi-Theme System with Animated Transitions and Tinted Surfaces** ([315c0a5](https://github.com/inventory69/simple-notes-sync/commit/315c0a5))
+- New ThemeMode selector: System, Light, Dark, AMOLED
+- 7 color schemes: Default, Blue, Green, Red, Purple, Orange, Dynamic (Material You on API 31+)
+- Live preview with color swatches in Display Settings
+- Crossfade theme transitions (500 ms) — smooth even in debug builds
+- Tinted surface palettes for all color schemes (note cards match selected theme)
+- Status bar and navigation bar colors sync at runtime on theme change
+
+**Grid Column Scaling Control** ([3d4c2e0](https://github.com/inventory69/simple-notes-sync/commit/3d4c2e0))
+- Toggle between automatic grid scaling (adaptive 150dp) and fixed column count
+- Manual column count 1–5 via chip selector with mini-grid preview
+- Section only visible when grid mode is active
+- Included in backup/restore
+
+**Undo/Redo Promoted to TopAppBar** ([75edf00](https://github.com/inventory69/simple-notes-sync/commit/75edf00))
+- Undo and Redo moved from overflow menu to direct TopAppBar actions
+- Buttons respect canUndo/canRedo state and appear dimmed when unavailable
+
+**Display Mode Chip Selector** ([046f325](https://github.com/inventory69/simple-notes-sync/commit/046f325))
+- Replace radio group with icon-above-label chips (consistent with theme/color selectors)
+- Settings subtitle shows display mode, theme mode, and color theme (e.g. "List View · Dark · Default")
+
+**Full App Settings Backup/Restore** ([4d07c11](https://github.com/inventory69/simple-notes-sync/commit/4d07c11))
+- Backup/restore now includes all settings: server, sync, markdown, display, notes behaviour, notifications
+
+**Autosave Status in Display Settings** ([92da701](https://github.com/inventory69/simple-notes-sync/commit/92da701))
+- Display settings subtitle shows autosave status instead of theme info
+
+**Disable-Logging-After-Export Dialog** ([2525a85](https://github.com/inventory69/simple-notes-sync/commit/2525a85))
+- After sharing debug logs, a dialog asks whether to disable file logging
+
+**Material 3 Shared Axis Transitions** ([3f5d19d](https://github.com/inventory69/simple-notes-sync/commit/3f5d19d), [365b0dd](https://github.com/inventory69/simple-notes-sync/commit/365b0dd))
+- Horizontal shared axis (slide + fade) transitions for all navigation
+- Consistent animations for both back-arrow and swipe-gesture on API 34+
+
+### 🐛 Bug Fixes
+
+**Checklist Drag-and-Drop Rewrite** ([89cc9a6](https://github.com/inventory69/simple-notes-sync/commit/89cc9a6))
+- Complete rewrite of DragDropListState (~200 → 797 lines) fixing runaway auto-scroll, index desync during separator crossings, concurrent swap race conditions, and swap oscillation at viewport edges
+- Key-based item tracking, continuous auto-scroll loop with mutex-locked swaps, anti-flapping guard, viewport-safety checks
+
+**Offline Server Deletions Queued** ([1a5c889](https://github.com/inventory69/simple-notes-sync/commit/1a5c889))
+- Notes deleted with "Delete everywhere" while server unreachable are now queued and processed on next sync instead of silently lost
+
+**WebDAV 403 Compatibility** ([9523733](https://github.com/inventory69/simple-notes-sync/commit/9523733))
+- Jianguoyun WebDAV returns 403 for HEAD on collections — now correctly treated as "exists" instead of "not found". Thanks [@james0336](https://github.com/james0336) for reporting!
+
+**Thread-Safety and Resource Leaks** ([2ab04d1](https://github.com/inventory69/simple-notes-sync/commit/2ab04d1), [3c31f61](https://github.com/inventory69/simple-notes-sync/commit/3c31f61))
+- Fix Activity leaks in NetworkMonitor, migrate syncStatus to StateFlow, add fileLock to Logger, eliminate race conditions in MainViewModel with StateFlow.update{}
+- Close all InputStream/connection leaks in sardine calls, move file I/O off main thread, fix HttpURLConnection leak in server status check
+
+**Sync Reliability** ([ec4bb1c](https://github.com/inventory69/simple-notes-sync/commit/ec4bb1c), [3d02118](https://github.com/inventory69/simple-notes-sync/commit/3d02118), [150543c](https://github.com/inventory69/simple-notes-sync/commit/150543c))
+- Fix onResume sync throttle surviving process restarts (now in-memory)
+- Prevent spurious sync after package update (race condition in NetworkMonitor)
+- Skip auto-sync on resume from editor and settings
+
+**Layout Scaling for Small Screens and Large Fonts** ([ef38a0e](https://github.com/inventory69/simple-notes-sync/commit/ef38a0e))
+- Responsive fixes: scrollable dialogs, FilterChipRow column layout, adaptive grid threshold reduced 180→150dp. Danke an Mama <3
+
+**Empty Plural Strings in de/tr/uk** ([2db80a4](https://github.com/inventory69/simple-notes-sync/commit/2db80a4))
+- Fill missing plural forms for time-ago strings — timestamps were invisible on note cards in German, Turkish, Ukrainian
+
+**Language Selector on API 33+** ([f54ef49](https://github.com/inventory69/simple-notes-sync/commit/f54ef49))
+- Redirect to native Per-App Language Settings on API 33+ instead of in-app selector (eliminates activity-recreate flash)
+
+**Save-on-Back Race Condition** ([afbef19](https://github.com/inventory69/simple-notes-sync/commit/afbef19))
+- Flush TextFieldState and save in onPause to prevent data loss on back navigation
+
+**Banner Color Flash** ([9b7a285](https://github.com/inventory69/simple-notes-sync/commit/9b7a285))
+- Freeze last visible banner colors during dismiss animation to prevent wrong-color flash
+
+**Splash Screen Flash** ([a5e0899](https://github.com/inventory69/simple-notes-sync/commit/a5e0899))
+- Keep splash screen visible until notes are loaded — no more empty screen flash on cold start
+
+**FAB Scrim Transition Artifact** ([833c30e](https://github.com/inventory69/simple-notes-sync/commit/833c30e), [2f75467](https://github.com/inventory69/simple-notes-sync/commit/2f75467))
+- Snap FAB scrim to invisible before activity transition capture, restore fade-out animation
+
+**Snackbar in Settings** ([24c62b8](https://github.com/inventory69/simple-notes-sync/commit/24c62b8), [0c76087](https://github.com/inventory69/simple-notes-sync/commit/0c76087))
+- Replace unreliable Toast with Snackbar in all settings screens, show above keyboard
+
+### 🏗️ Architecture & Refactoring
+
+**WebDavSyncService Split** ([e0abff4](https://github.com/inventory69/simple-notes-sync/commit/e0abff4) → [7f467d7](https://github.com/inventory69/simple-notes-sync/commit/7f467d7))
+- Split monolithic 2,735-line WebDavSyncService into 8 focused modules: SyncGateChecker, ETagCache, SyncTimestampManager, SyncExceptionMapper, SyncUrlBuilder, ConnectionManager, NoteUploader, NoteDownloader, MarkdownSyncManager (8 commits, 15→22/22)
+
+**Legacy Code Removal** ([901ca77](https://github.com/inventory69/simple-notes-sync/commit/901ca77), [39b6e9f](https://github.com/inventory69/simple-notes-sync/commit/39b6e9f), [fb64a31](https://github.com/inventory69/simple-notes-sync/commit/fb64a31))
+- Delete SettingsActivity (1,072 lines), MainActivity (857 lines), NoteEditorActivity (344 lines), all XML layouts/menus/drawables
+- Compose Activities are now the sole implementations
+
+**Modernization** ([dfd3b33](https://github.com/inventory69/simple-notes-sync/commit/dfd3b33), [ad137c3](https://github.com/inventory69/simple-notes-sync/commit/ad137c3), [65b6a26](https://github.com/inventory69/simple-notes-sync/commit/65b6a26), [9e547d2](https://github.com/inventory69/simple-notes-sync/commit/9e547d2), [07a7502](https://github.com/inventory69/simple-notes-sync/commit/07a7502))
+- Replace LocalBroadcastManager with SharedFlow, migrate to viewModelFactory DSL, replace overridePendingTransition with ActivityOptions (API 34+), remove all @Suppress("DEPRECATION"), replace AlertDialog.Builder with Compose AlertDialog
+
+### 📦 Dependencies & Build
+
+**Dependency Updates** ([b57512f](https://github.com/inventory69/simple-notes-sync/commit/b57512f))
+- Kotlin 2.0.21 → 2.1.0, Compose BOM 2026.01 → 2026.03, lifecycle 2.7 → 2.8.7, coroutines 1.7 → 1.9, navigation 2.7 → 2.8.5, activity 1.8 → 1.9.3, and 15+ more
+
+**Code Quality** ([cf95fcd](https://github.com/inventory69/simple-notes-sync/commit/cf95fcd), [3933df0](https://github.com/inventory69/simple-notes-sync/commit/3933df0))
+- Resolve all lint and detekt warnings, 500 unused strings deleted, ktlint formatting across 91 files, Kotlin 2.3.20
+
+**APK Size Optimization** ([ce86b68](https://github.com/inventory69/simple-notes-sync/commit/ce86b68))
+- Tighten R8/ProGuard keep rules — APK size 5.4 MB → 5.2 MB (-200 KB, classes.dex -507 KB)
+
+**CI/CD** ([c6a3f25](https://github.com/inventory69/simple-notes-sync/commit/c6a3f25))
+- Tag-based GitHub Actions release workflow for draft releases
+
+### 📄 License
+
+**License Change** ([6baaeda](https://github.com/inventory69/simple-notes-sync/commit/6baaeda))
+- Changed from MIT to Apache 2.0
+
+---
+
 ## [1.12.0] - 2026-03-12
 
 ### 🌍 i18n, Settings Polish & Community

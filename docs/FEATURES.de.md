@@ -27,6 +27,7 @@
 - ✅ **Material Design 3** - Moderne, saubere UI
 - ✅ **Dark Mode** - Automatisch je nach System-Einstellung
 - ✅ **Dynamic Colors** - Passt sich deinem Android-Theme an
+- ✅ **Multi-Theme** _(NEU in v2.0.0)_ - 7 Farbschemata mit animierten Übergängen und getönten Oberflächen
 - ✅ **Benutzerdefinierter App-Titel** _(NEU in v1.9.0)_ - Konfigurierbarer App-Name
 
 ### Editor
@@ -51,6 +52,7 @@
 - ✅ **Rasteransicht** _(NEU in v1.7.0)_ - Pinterest-artiges Staggered Grid mit dynamischen Vorschauzeilen
 - ✅ **Layout-Umschalter** - Zwischen Listen- und Grid-Ansicht wechseln
 - ✅ **Adaptive Spalten** - 2-3 Spalten basierend auf Bildschirmgröße
+- ✅ **Grid-Spaltensteuerung** _(NEU in v2.0.0)_ - 1–5 Spalten konfigurierbar in Anzeigeeinstellungen
 - ✅ **Grid als Standard** _(v1.8.0)_ - Neue Installationen starten im Grid-Modus
 
 ### Notiz-Sortierung _(NEU in v1.8.0)_
@@ -221,7 +223,7 @@
 - ✅ **Keine Cloud** - Keine Drittanbieter
 - ✅ **Kein Tracking** - Keine Analytik, keine Telemetrie
 - ✅ **Kein Account** - Nur Server-Zugangsdaten
-- ✅ **100% Open Source** - MIT Lizenz
+- ✅ **100% Open Source** - Apache 2.0 Lizenz
 
 ### Daten-Sicherheit
 - ✅ **Lokale Speicherung** - App-Private Storage (Android)
@@ -255,7 +257,7 @@
 ### App-Performance
 - ✅ **Offline-First** - Funktioniert ohne Internet
 - ✅ **Instant-Load** - Notizen laden in <100ms
-- ✅ **Smooth Scrolling** - RecyclerView mit ViewHolder
+- ✅ **Smooth Scrolling** - LazyColumn mit Compose
 - ✅ **Material Design 3** - Native Android UI
 - ✅ **Kotlin Coroutines** - Asynchrone Operationen
 - ✅ **Minimale APK-Größe** - ~2 MB
@@ -270,6 +272,7 @@
 - ✅ **Kotlin** - Moderne Programmiersprache
 - ✅ **Jetpack Compose** - Deklaratives UI-Framework
 - ✅ **Material Design 3** - Neueste Design-Richtlinien
+- ✅ **Multi-Theme-System** _(v2.0.0)_ - 7 Farbschemata inkl. AMOLED & Dynamic Color
 - ✅ **Jetpack Glance** _(v1.8.0)_ - Widget-Framework
 
 ### Architektur
@@ -320,11 +323,6 @@
 
 Geplant für kommende Versionen – siehe [UPCOMING.md](UPCOMING.md) für die vollständige Roadmap.
 
-### v2.0.0 - Legacy Cleanup
-- ⏳ **Veraltete Activities entfernen** - Durch Compose-Varianten ersetzen
-- ⏳ **LocalBroadcastManager → SharedFlow** - Moderne Event-Architektur
-- ⏳ **WebDavSyncService aufteilen** - SyncOrchestrator, NoteUploader, NoteDownloader
-
 ---
 
 ## 📊 Vergleich mit anderen Apps
@@ -338,7 +336,7 @@ Geplant für kommende Versionen – siehe [UPCOMING.md](UPCOMING.md) für die vo
 | Desktop-Zugriff | ✅ (WebDAV) | ✅ (Web) | ✅ (Web + WebDAV) |
 | Lokales Backup | ✅ | ❌ | ⚠️ Server-Backup |
 | Kein Google-Account | ✅ | ❌ | ✅ |
-| Open Source | ✅ MIT | ❌ | ✅ AGPL |
+| Open Source | ✅ Apache 2.0 | ❌ | ✅ AGPL |
 | APK-Größe | ~2 MB | ~50 MB | ~8 MB |
 | Akku-Verbrauch | ~0.4%/Tag | ~1-2%/Tag | ~0.5%/Tag |
 
@@ -366,4 +364,4 @@ A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v1.11.0 (2026-03-10)
+**Letzte Aktualisierung:** v2.0.0 (2026-03-20)

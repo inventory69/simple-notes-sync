@@ -1,0 +1,15 @@
+🎨 v2.0.0 — Compose-Rewrite & Multi-Theme
+
+• 7 Farbschemata (inkl. AMOLED & Dynamisch)
+• Grid-Spalten (1–5)
+• App-Einstellungen-Backup
+• Material 3 Übergänge
+• Fix: Checklisten-Drag-and-Drop in großen Listen
+• Fix: Offline-Löschungen eingereiht
+• Fix: WebDAV-403-Kompatibilität
+• Fix: Thread-Sicherheit & Ressourcen-Lecks
+• Legacy-Code entfernt, komplett Compose
+• Lizenz: Apache 2.0
+
+Vollständiges Changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

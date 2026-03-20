@@ -33,20 +33,26 @@ app/
 ├── storage/
 │   └── NotesStorage.kt      # Local JSON file storage
 ├── sync/
-│   ├── WebDavSyncService.kt # WebDAV sync logic
+│   ├── WebDavSyncService.kt # Sync facade (delegates to modules)
+│   ├── SyncGateChecker.kt   # Pre-sync validation
+│   ├── ETagCache.kt         # E-Tag caching
+│   ├── SyncTimestampManager.kt # Timestamp tracking
+│   ├── ConnectionManager.kt # HTTP connection lifecycle
+│   ├── NoteUploader.kt      # Upload logic
+│   ├── NoteDownloader.kt    # Download logic
+│   ├── MarkdownSyncManager.kt # Markdown bidirectional sync
 │   ├── NetworkMonitor.kt    # WiFi detection
 │   ├── SyncWorker.kt        # WorkManager background worker
 │   └── BootReceiver.kt      # Device reboot handler
-├── adapters/
-│   └── NotesAdapter.kt      # RecyclerView adapter
-├── utils/
-│   ├── Constants.kt         # App constants
-│   ├── NotificationHelper.kt# Notification management
-│   └── Logger.kt            # Debug/release logging
-└── activities/
-    ├── MainActivity.kt      # Main view with list
-    ├── NoteEditorActivity.kt# Note editor
-    └── SettingsActivity.kt  # Server configuration
+├── ui/
+│   ├── main/                # Main screen (Compose)
+│   ├── editor/              # Note editor (Compose)
+│   ├── settings/            # Settings screens (Compose)
+│   └── widget/              # Homescreen widgets (Glance)
+└── utils/
+    ├── Constants.kt         # App constants
+    ├── NotificationHelper.kt# Notification management
+    └── Logger.kt            # Debug/release logging
 ```
 
 ---
@@ -124,8 +130,8 @@ The app uses **4 different sync triggers** with different use cases:
 
 | Trigger | File | Function | When? | Pre-Check? |
 |---------|------|----------|-------|------------|
-| **1. Manual Sync** | `MainActivity.kt` | `triggerManualSync()` | User clicks sync button in menu | ✅ Yes |
-| **2. Auto-Sync (onResume)** | `MainActivity.kt` | `triggerAutoSync()` | App opened/resumed | ✅ Yes |
+| **1. Manual Sync** | `ComposeMainActivity` | `triggerManualSync()` | User clicks sync button in menu | ✅ Yes |
+| **2. Auto-Sync (onResume)** | `ComposeMainActivity` | `triggerAutoSync()` | App opened/resumed | ✅ Yes |
 | **3. Background Sync (Periodic)** | `SyncWorker.kt` | `doWork()` | Every 15/30/60 minutes (configurable) | ✅ Yes |
 | **4. WiFi-Connect Sync** | `NetworkMonitor.kt` → `SyncWorker.kt` | `triggerWifiConnectSync()` | WiFi connected | ✅ Yes |
 
@@ -167,8 +173,8 @@ suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
 |---------|--------------------------|-------------------|------------|
 | Manual Sync | Toast: "Server not reachable" | Toast: "✅ Synced: X notes" | None |
 | Auto-Sync (onResume) | Silent abort (no toast) | Toast: "✅ Synced: X notes" | Max. 1x/min |
-| Background Sync | Silent abort (no toast) | Silent (LocalBroadcast only) | 15/30/60 min |
-| WiFi-Connect Sync | Silent abort (no toast) | Silent (LocalBroadcast only) | WiFi-based |
+| Background Sync | Silent abort (no toast) | Silent (SharedFlow only) | 15/30/60 min |
+| WiFi-Connect Sync | Silent abort (no toast) | Silent (SharedFlow only) | WiFi-based |
 
 ---
 
@@ -521,9 +527,6 @@ com.google.android.material:material:1.11.0
 // Lifecycle
 androidx.lifecycle:lifecycle-runtime-ktx:2.7.0
 
-// RecyclerView
-androidx.recyclerview:recyclerview:1.3.2
-
 // Coroutines
 org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3
 
@@ -532,9 +535,6 @@ androidx.work:work-runtime-ktx:2.9.0
 
 // WebDAV Client
 com.github.thegrizzlylabs:sardine-android:0.8
-
-// Broadcast (deprecated but working)
-androidx.localbroadcastmanager:localbroadcastmanager:1.1.0
 ```
 
 ---
