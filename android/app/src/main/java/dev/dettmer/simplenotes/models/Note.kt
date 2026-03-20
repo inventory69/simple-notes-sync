@@ -111,13 +111,13 @@ type: ${noteType.name.lowercase()}$sortLine
         """.trimIndent()
 
         return when (noteType) {
-            NoteType.TEXT -> header + content
+            NoteType.TEXT -> header + "\n" + content
             NoteType.CHECKLIST -> {
                 val checklistMarkdown = checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
                     val checkbox = if (item.isChecked) "[x]" else "[ ]"
                     "- $checkbox ${item.text}"
                 }.orEmpty()
-                header + checklistMarkdown
+                header + "\n" + checklistMarkdown
             }
         }
     }

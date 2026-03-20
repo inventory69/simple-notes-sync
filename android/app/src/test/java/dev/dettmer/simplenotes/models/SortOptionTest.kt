@@ -77,8 +77,8 @@ class SortOptionTest {
     // ═══════════════════════════════════════════════
 
     @Test
-    fun `ChecklistSortOption has all 5 values`() {
-        assertEquals(5, ChecklistSortOption.entries.size)
+    fun `ChecklistSortOption has all 7 values`() {
+        assertEquals(7, ChecklistSortOption.entries.size)
     }
 
     @Test
