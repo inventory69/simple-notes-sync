@@ -108,6 +108,8 @@ fun DisplaySettingsScreen(
                 onModeSelected = { viewModel.setDisplayMode(it) }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             SettingsInfoCard(
                 text = stringResource(R.string.display_mode_info)
             )
@@ -180,6 +182,8 @@ fun DisplaySettingsScreen(
                     .padding(horizontal = 16.dp)
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             SettingsInfoCard(
                 text = stringResource(R.string.custom_app_title_info)
             )
@@ -195,6 +199,8 @@ fun DisplaySettingsScreen(
                 checked = autosaveEnabled,
                 onCheckedChange = { viewModel.setAutosaveEnabled(it) }
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             SettingsInfoCard(
                 text = stringResource(R.string.autosave_info)
