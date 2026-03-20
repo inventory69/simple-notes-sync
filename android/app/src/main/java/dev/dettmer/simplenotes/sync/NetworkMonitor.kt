@@ -15,7 +15,9 @@ import java.util.concurrent.TimeUnit
  * - Periodic WorkManager für Auto-Sync alle 30min
  * - NetworkCallback für WiFi-Connect Detection → WorkManager OneTime Sync
  */
-class NetworkMonitor(private val context: Context) {
+class NetworkMonitor(context: Context) {
+
+    private val context: Context = context.applicationContext
     
     companion object {
         private const val TAG = "NetworkMonitor"

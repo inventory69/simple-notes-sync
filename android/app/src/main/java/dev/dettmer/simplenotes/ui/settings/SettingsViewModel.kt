@@ -781,7 +781,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                     // Check if there are notes to export
                     val noteStorage = dev.dettmer.simplenotes.storage.NotesStorage(getApplication())
-                    val noteCount = noteStorage.loadAllNotes().size
+                    val noteCount = withContext(ioDispatcher) { noteStorage.loadAllNotes().size }
 
                     if (noteCount > 0) {
                         val syncService = WebDavSyncService(getApplication())

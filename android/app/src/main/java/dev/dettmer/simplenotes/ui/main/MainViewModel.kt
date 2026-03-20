@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -353,11 +354,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Toggle selection of a note
      */
     fun toggleNoteSelection(noteId: String) {
-        _selectedNotes.value = if (noteId in _selectedNotes.value) {
-            _selectedNotes.value - noteId
-        } else {
-            _selectedNotes.value + noteId
-        }
+        _selectedNotes.update { if (noteId in it) it - noteId else it + noteId }
     }
     
     /**
@@ -395,7 +392,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         if (selectedNotes.isEmpty()) return
 
-        _pendingDeletions.value = _pendingDeletions.value + selectedIds.toSet()
+        _pendingDeletions.update { it + selectedIds.toSet() }
 
         val count = selectedNotes.size
         val message = if (deleteFromServer) {
@@ -433,7 +430,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Undo deletion of multiple notes
      */
     private fun undoDeleteMultiple(notes: List<Note>) {
-        _pendingDeletions.value = _pendingDeletions.value - notes.map { it.id }.toSet()
+        _pendingDeletions.update { it - notes.map { note -> note.id }.toSet() }
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
@@ -483,7 +480,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Confirm note deletion (from dialog or auto-delete)
      */
     fun deleteNoteConfirmed(note: Note, deleteFromServer: Boolean) {
-        _pendingDeletions.value = _pendingDeletions.value + note.id
+        _pendingDeletions.update { it + note.id }
 
         val message = if (deleteFromServer) {
             getString(R.string.snackbar_note_deleted_server, note.title)
@@ -528,7 +525,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Undo note deletion
      */
     fun undoDelete(note: Note) {
-        _pendingDeletions.value = _pendingDeletions.value - note.id
+        _pendingDeletions.update { it - note.id }
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
@@ -585,7 +582,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message.orEmpty()))
             } finally {
                 // Remove from pending deletions
-                _pendingDeletions.value = _pendingDeletions.value - noteId
+                _pendingDeletions.update { it - noteId }
             }
         }
     }
@@ -626,7 +623,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Logger.w(TAG, "Failed to delete note $noteId from server: ${e.message}")
                     failCount++
                 } finally {
-                    _pendingDeletions.value = _pendingDeletions.value - noteId
+                    _pendingDeletions.update { it - noteId }
                 }
             }
             
@@ -652,7 +649,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Finalize deletion (remove from pending set)
      */
     fun finalizeDeletion(noteId: String) {
-        _pendingDeletions.value = _pendingDeletions.value - noteId
+        _pendingDeletions.update { it - noteId }
     }
     
     // ═══════════════════════════════════════════════════════════════════════

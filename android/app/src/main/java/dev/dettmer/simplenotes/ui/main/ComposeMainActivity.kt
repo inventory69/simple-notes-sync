@@ -293,8 +293,12 @@ class ComposeMainActivity : ComponentActivity() {
 
     private fun setupSyncStateObserver() {
         // 🆕 v1.8.0: SyncStatus nur noch für PullToRefresh-Indikator (intern)
-        SyncStateManager.syncStatus.observe(this) { status ->
-            viewModel.updateSyncState(status)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SyncStateManager.syncStatus.collect { status ->
+                    viewModel.updateSyncState(status)
+                }
+            }
         }
 
         // 🆕 v1.10.0: Auto-Hide via separatem Job — garantierte Mindest-Anzeigedauer

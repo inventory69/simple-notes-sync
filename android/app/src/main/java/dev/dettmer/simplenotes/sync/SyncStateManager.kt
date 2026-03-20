@@ -1,7 +1,5 @@
 package dev.dettmer.simplenotes.sync
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,8 +46,8 @@ object SyncStateManager {
     )
     
     // Intern: Mutex + PullToRefresh State
-    private val _syncStatus = MutableLiveData(SyncStatus())
-    val syncStatus: LiveData<SyncStatus> = _syncStatus
+    private val _syncStatus = MutableStateFlow(SyncStatus())
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
     
     // 🆕 v1.8.0: Einziges Banner-System - SyncProgress
     private val _syncProgress = MutableStateFlow(SyncProgress.IDLE)
@@ -62,7 +60,7 @@ object SyncStateManager {
      */
     val isSyncing: Boolean
         get() {
-            val state = _syncStatus.value?.state
+            val state = _syncStatus.value.state
             return state == SyncState.SYNCING || state == SyncState.SYNCING_SILENT
         }
     
@@ -79,8 +77,8 @@ object SyncStateManager {
                 val elapsed = System.currentTimeMillis() - syncStartTime
                 
                 if (syncStartTime > 0 && elapsed > SYNC_TIMEOUT_MS) {
-                    Logger.e(TAG, "⏰ Stale sync detected (${elapsed / 1000}s old from: ${_syncStatus.value?.source}) - force-resetting")
-                    _syncStatus.postValue(SyncStatus())
+                    Logger.e(TAG, "⏰ Stale sync detected (${elapsed / 1000}s old from: ${_syncStatus.value.source}) - force-resetting")
+                    _syncStatus.value = SyncStatus()
                     _syncProgress.value = SyncProgress.IDLE
                     // Fall-through: Neuer Sync wird unten gestartet
                 } else {
@@ -92,13 +90,11 @@ object SyncStateManager {
             val syncState = if (silent) SyncState.SYNCING_SILENT else SyncState.SYNCING
             Logger.d(TAG, "🔄 Starting sync from: $source (silent=$silent)")
             
-            _syncStatus.postValue(
-                SyncStatus(
+            _syncStatus.value = SyncStatus(
                     state = syncState,
                     source = source,
                     silent = silent
                 )
-            )
             
             // 🆕 v1.8.0: Sofort PREPARING-Phase setzen (Banner erscheint instant)
             _syncProgress.value = SyncProgress(
@@ -119,20 +115,18 @@ object SyncStateManager {
     fun markCompleted(message: String? = null) {
         synchronized(lock) {
             val current = _syncStatus.value
-            val wasSilent = current?.silent == true
-            val currentSource = current?.source
-            
+            val wasSilent = current.silent
+            val currentSource = current.source
+
             Logger.d(TAG, "✅ Sync completed from: $currentSource (silent=$wasSilent)")
             
             if (wasSilent) {
                 // Silent-Sync: Direkt auf IDLE - kein Banner
-                _syncStatus.postValue(SyncStatus())
+                _syncStatus.value = SyncStatus()
                 _syncProgress.value = SyncProgress.IDLE
             } else {
                 // Normaler Sync: COMPLETED mit Nachricht anzeigen
-                _syncStatus.postValue(
-                    SyncStatus(state = SyncState.COMPLETED, message = message, source = currentSource)
-                )
+                _syncStatus.value = SyncStatus(state = SyncState.COMPLETED, message = message, source = currentSource)
                 _syncProgress.value = SyncProgress(
                     phase = SyncPhase.COMPLETED,
                     resultMessage = message
@@ -150,16 +144,16 @@ object SyncStateManager {
      */
     fun promoteToVisible(): Boolean {
         synchronized(lock) {
-            val current = _syncStatus.value ?: return false
-            
+            val current = _syncStatus.value
+
             if (current.state != SyncState.SYNCING_SILENT) return false
-            
+
             Logger.d(TAG, "📢 Promoting silent sync to visible (user pulled to refresh)")
-            
-            _syncStatus.postValue(current.copy(
+
+            _syncStatus.value = current.copy(
                 state = SyncState.SYNCING,
                 silent = false
-            ))
+            )
             
             // Progress-Banner sichtbar machen
             val currentProgress = _syncProgress.value
@@ -176,14 +170,12 @@ object SyncStateManager {
     fun markError(errorMessage: String?) {
         synchronized(lock) {
             val current = _syncStatus.value
-            val wasSilent = current?.silent == true
-            val currentSource = current?.source
-            
+            val wasSilent = current.silent
+            val currentSource = current.source
+
             Logger.e(TAG, "❌ Sync failed from: $currentSource - $errorMessage")
-            
-            _syncStatus.postValue(
-                SyncStatus(state = SyncState.ERROR, message = errorMessage, source = currentSource)
-            )
+
+            _syncStatus.value = SyncStatus(state = SyncState.ERROR, message = errorMessage, source = currentSource)
             
             // Fehler immer anzeigen (auch bei Silent-Sync)
             _syncProgress.value = SyncProgress(
@@ -199,7 +191,7 @@ object SyncStateManager {
      */
     fun reset() {
         synchronized(lock) {
-            _syncStatus.postValue(SyncStatus())
+            _syncStatus.value = SyncStatus()
             _syncProgress.value = SyncProgress.IDLE
         }
     }

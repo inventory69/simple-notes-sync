@@ -20,6 +20,7 @@ object Logger {
     private var logFile: File? = null
     private var appContext: Context? = null
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT)
+    private val fileLock = Any()
     
     /**
      * Setzt den File-Logging Status (für UI Toggle)
@@ -114,27 +115,29 @@ object Logger {
         }
         
         if (logFile == null) return
-        
-        try {
-            val timestamp = dateFormat.format(Date())
-            val logEntry = buildString {
-                append("$timestamp [$level] $tag: $message\n")
-                throwable?.let {
-                    append("  Exception: ${it.message}\n")
-                    append("  ${it.stackTraceToString()}\n")
+
+        synchronized(fileLock) {
+            try {
+                val timestamp = dateFormat.format(Date())
+                val logEntry = buildString {
+                    append("$timestamp [$level] $tag: $message\n")
+                    throwable?.let {
+                        append("  Exception: ${it.message}\n")
+                        append("  ${it.stackTraceToString()}\n")
+                    }
                 }
+
+                // Append to file
+                FileWriter(logFile, true).use { writer ->
+                    writer.write(logEntry)
+                }
+
+                // Trim file if too large
+                trimLogFile()
+
+            } catch (e: Exception) {
+                Log.e("Logger", "Failed to write to log file", e)
             }
-            
-            // Append to file
-            FileWriter(logFile, true).use { writer ->
-                writer.write(logEntry)
-            }
-            
-            // Trim file if too large
-            trimLogFile()
-            
-        } catch (e: Exception) {
-            Log.e("Logger", "Failed to write to log file", e)
         }
     }
     
