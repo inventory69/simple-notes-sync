@@ -576,11 +576,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 try {
                     val url = URL(serverUrl)
                     val connection = url.openConnection() as HttpURLConnection
-                    connection.connectTimeout = CONNECTION_TIMEOUT_MS
-                    connection.readTimeout = CONNECTION_TIMEOUT_MS
-                    val code = connection.responseCode
-                    connection.disconnect()
-                    code in 200..299 || code == 401
+                    try {
+                        connection.connectTimeout = CONNECTION_TIMEOUT_MS
+                        connection.readTimeout = CONNECTION_TIMEOUT_MS
+                        val code = connection.responseCode
+                        code in 200..299 || code == 401
+                    } finally {
+                        connection.disconnect()
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Server check failed: ${e.message}")
                     false

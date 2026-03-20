@@ -85,7 +85,7 @@ internal class MarkdownSyncManager(
         try {
             if (sardine.exists(noteUrl)) {
                 // Lese existierende Datei und prüfe ID im YAML-Header
-                val existingContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
+                val existingContent = sardine.get(noteUrl).use { it.bufferedReader().readText() }
                 val existingIdMatch = Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
                     .find(existingContent)
                 val existingId = existingIdMatch?.groupValues?.get(1)
@@ -249,7 +249,7 @@ internal class MarkdownSyncManager(
                     try {
                         // Download MD-File
                         val mdContent = sardine.get(resource.href.toString())
-                            .bufferedReader().use { it.readText() }
+                            .use { it.bufferedReader().readText() }
 
                         // Parse zu Note
                         val mdNote = Note.fromMarkdown(mdContent) ?: continue
@@ -384,7 +384,7 @@ internal class MarkdownSyncManager(
                     val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
 
                     // Download MD content
-                    val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
+                    val mdContent = sardine.get(mdFileUrl).use { it.bufferedReader().readText() }
                     Logger.d(TAG, "      Downloaded ${mdContent.length} chars")
 
                     // 🔧 v1.7.2 (IMPL_014): Server mtime übergeben für korrekte Timestamp-Sync
@@ -573,7 +573,7 @@ internal class MarkdownSyncManager(
 
                 try {
                     val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
-                    val mdContent = sardine.get(mdFileUrl).bufferedReader().use { it.readText() }
+                    val mdContent = sardine.get(mdFileUrl).use { it.bufferedReader().readText() }
 
                     val idMatch = Regex("""^---\s*\n.*?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
                         .find(mdContent)

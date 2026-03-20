@@ -392,72 +392,55 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteSelectedNotes(deleteFromServer: Boolean) {
         val selectedIds = _selectedNotes.value.toList()
         val selectedNotes = _notes.value.filter { it.id in selectedIds }
-        
+
         if (selectedNotes.isEmpty()) return
-        
-        // Add to pending deletions
+
         _pendingDeletions.value = _pendingDeletions.value + selectedIds.toSet()
-        
-        // Delete from storage
-        selectedNotes.forEach { note ->
-            storage.deleteNote(note.id)
-        }
-        
-        // Clear selection
-        clearSelection()
-        
-        // Reload notes
-        loadNotes()
-        
-        // Show snackbar with undo
+
         val count = selectedNotes.size
         val message = if (deleteFromServer) {
             getQuantityString(R.plurals.snackbar_notes_deleted_server, count, count)
         } else {
             getQuantityString(R.plurals.snackbar_notes_deleted_local, count, count)
         }
-        
+
         viewModelScope.launch {
+            withContext(ioDispatcher) {
+                selectedNotes.forEach { note -> storage.deleteNote(note.id) }
+            }
+            clearSelection()
+            loadNotes()
+
             _showSnackbar.emit(SnackbarData(
                 message = message,
                 actionLabel = getString(R.string.snackbar_undo),
-                onAction = {
-                    undoDeleteMultiple(selectedNotes)
-                }
+                onAction = { undoDeleteMultiple(selectedNotes) }
             ))
-            
-            // If delete from server, actually delete after a short delay
-            // (to allow undo action before server deletion)
+
             if (deleteFromServer) {
-                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
-                // Only delete if not restored (check if still in pending)
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
                 val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
                 if (idsToDelete.isNotEmpty()) {
                     attemptServerDeletion(idsToDelete)
                 }
             } else {
-                // Just finalize local deletion
-                selectedIds.forEach { noteId ->
-                    finalizeDeletion(noteId)
-                }
+                selectedIds.forEach { noteId -> finalizeDeletion(noteId) }
             }
         }
     }
-    
+
     /**
      * Undo deletion of multiple notes
      */
     private fun undoDeleteMultiple(notes: List<Note>) {
-        // Remove from pending deletions
         _pendingDeletions.value = _pendingDeletions.value - notes.map { it.id }.toSet()
-        
-        // Restore to storage
-        notes.forEach { note ->
-            storage.saveNote(note)
+
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                notes.forEach { note -> storage.saveNote(note) }
+            }
+            loadNotes()
         }
-        
-        // Reload notes
-        loadNotes()
     }
 
     /**
@@ -500,40 +483,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Confirm note deletion (from dialog or auto-delete)
      */
     fun deleteNoteConfirmed(note: Note, deleteFromServer: Boolean) {
-        // Add to pending deletions
         _pendingDeletions.value = _pendingDeletions.value + note.id
-        
-        // Delete from storage
-        storage.deleteNote(note.id)
-        
-        // Reload notes
-        loadNotes()
-        
-        // Show snackbar with undo
+
         val message = if (deleteFromServer) {
             getString(R.string.snackbar_note_deleted_server, note.title)
         } else {
             getString(R.string.snackbar_note_deleted_local, note.title)
         }
-        
+
         viewModelScope.launch {
+            withContext(ioDispatcher) {
+                storage.deleteNote(note.id)
+            }
+            loadNotes()
+
             _showSnackbar.emit(SnackbarData(
                 message = message,
                 actionLabel = getString(R.string.snackbar_undo),
-                onAction = {
-                    undoDelete(note)
-                }
+                onAction = { undoDelete(note) }
             ))
-            
-            // If delete from server, actually delete after snackbar timeout
+
             if (deleteFromServer) {
-                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS) // Snackbar shows for ~3s
-                // Only delete if not restored (check if still in pending)
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
                 if (note.id in _pendingDeletions.value) {
                     attemptServerDeletion(listOf(note.id))
                 }
             } else {
-                // Just finalize local deletion
                 finalizeDeletion(note.id)
             }
         }
@@ -553,14 +528,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Undo note deletion
      */
     fun undoDelete(note: Note) {
-        // Remove from pending deletions
         _pendingDeletions.value = _pendingDeletions.value - note.id
-        
-        // Restore to storage
-        storage.saveNote(note)
-        
-        // Reload notes
-        loadNotes()
+
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                storage.saveNote(note)
+            }
+            loadNotes()
+        }
     }
     
     /**

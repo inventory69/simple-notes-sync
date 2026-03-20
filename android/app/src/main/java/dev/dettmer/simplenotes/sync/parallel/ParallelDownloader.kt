@@ -113,7 +113,7 @@ class ParallelDownloader(
 
         repeat(retryCount + 1) { attempt ->
             try {
-                val content = sardine.get(task.url).bufferedReader().use { it.readText() }
+                val content = sardine.get(task.url).use { it.bufferedReader().readText() }
 
                 Logger.d(TAG, "✅ Downloaded ${task.noteId} (attempt ${attempt + 1})")
 

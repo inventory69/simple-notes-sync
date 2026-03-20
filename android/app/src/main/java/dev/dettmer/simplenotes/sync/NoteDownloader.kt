@@ -391,7 +391,7 @@ internal class NoteDownloader(
                             val noteUrl = rootUrl.trimEnd('/') + "/" + resource.name
                             Logger.d(TAG, "   📄 Processing: ${resource.name} from ${resource.path}")
 
-                            val jsonContent = sardine.get(noteUrl).bufferedReader().use { it.readText() }
+                            val jsonContent = sardine.get(noteUrl).use { it.bufferedReader().readText() }
                             val remoteNote = Note.fromJson(jsonContent) ?: continue
 
                             // Skip if already loaded from /notes/
