@@ -373,9 +373,9 @@
     <!-- ============================= -->
     <string name="display_settings_title">Anzeige</string>
     <string name="display_mode_title">Notizen-Ansicht</string>
-    <string name="display_mode_list">📋 Listen-Ansicht</string>
-    <string name="display_mode_grid">🎨 Raster-Ansicht</string>
-    <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
+    <string name="display_mode_list">Listen-Ansicht</string>
+    <string name="display_mode_grid">Raster-Ansicht</string>
+    <string name="display_mode_info">Die Raster-Ansicht ordnet Notizen in mehreren Spalten an. Die Spaltenanzahl passt sich automatisch an die Displaygröße und Textskalierung des Geräts an.</string>
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App-Titel</string>
     <string name="custom_app_title_label">Eigener Titel</string>
