@@ -7,7 +7,7 @@ import dev.dettmer.simplenotes.models.ChecklistSortOption
  * 🆕 v1.8.1 (IMPL_03): Helper-Funktionen für die Checklisten-Vorschau in Main Activity.
  *
  * Stellt sicher, dass die Sortierung aus dem Editor konsistent
- * in allen Preview-Components (NoteCard, NoteCardCompact, NoteCardGrid) 
+ * in allen Preview-Components (NoteCard, NoteCardCompact, NoteCardGrid)
  * angezeigt wird.
  */
 
@@ -15,10 +15,7 @@ import dev.dettmer.simplenotes.models.ChecklistSortOption
  * Sortiert Checklist-Items für die Vorschau basierend auf der
  * gespeicherten Sortier-Option.
  */
-fun sortChecklistItemsForPreview(
-    items: List<ChecklistItem>,
-    sortOptionName: String?
-): List<ChecklistItem> {
+fun sortChecklistItemsForPreview(items: List<ChecklistItem>, sortOptionName: String?): List<ChecklistItem> {
     val sortOption = try {
         sortOptionName?.let { ChecklistSortOption.valueOf(it) }
     } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
@@ -65,10 +62,7 @@ fun sortChecklistItemsForPreview(
  *
  * 🆕 v1.8.1 (IMPL_06): Emoji-Änderung (☑️ statt ✅ für checked items)
  */
-fun generateChecklistPreview(
-    items: List<ChecklistItem>,
-    sortOptionName: String?
-): String {
+fun generateChecklistPreview(items: List<ChecklistItem>, sortOptionName: String?): String {
     val sorted = sortChecklistItemsForPreview(items, sortOptionName)
     return sorted.joinToString("\n") { item ->
         val prefix = if (item.isChecked) "☑️" else "☐"

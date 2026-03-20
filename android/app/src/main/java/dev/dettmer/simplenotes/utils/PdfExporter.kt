@@ -20,7 +20,6 @@ import java.io.FileOutputStream
  * No external dependencies — uses only android.graphics.pdf.PdfDocument and Canvas.
  */
 object PdfExporter {
-
     // ═══════════════════════════════════════════════════════════════════════
     // Page Layout Constants (A4 at 72 DPI)
     // ═══════════════════════════════════════════════════════════════════════
@@ -104,7 +103,7 @@ object PdfExporter {
         textSize = CHECKLIST_FONT_SIZE
         typeface = Typeface.DEFAULT
         color = android.graphics.Color.GRAY
-        isStrikeThruText = true  // Visual distinction for completed items
+        isStrikeThruText = true // Visual distinction for completed items
     }
 
     private val uncheckedTextPaint = Paint().apply {
@@ -237,8 +236,9 @@ object PdfExporter {
             currentPage?.let { document.finishPage(it) }
             pageNumber++
             val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
-            currentPage = document.startPage(pageInfo)
-            canvas = currentPage!!.canvas
+            val page = document.startPage(pageInfo)
+            currentPage = page
+            canvas = page.canvas
             currentY = MARGIN_TOP
         }
 

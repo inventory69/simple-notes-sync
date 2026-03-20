@@ -202,17 +202,43 @@
 
 ---
 
-## v2.0.0 - Legacy Cleanup
+## v2.0.0 - Compose Rewrite & Multi-Theme ✅
 
-> **Status:** Planned 📝
+> **Status:** Released 🎉 (March 2026)
+
+### 🎨 Multi-Theme System
+- ✅ **7 color schemes** - Including AMOLED & Dynamic Color with animated transitions and tinted surfaces
+- ✅ **Grid column scaling** - 1–5 columns configurable in display settings
+- ✅ **Grid chips** - Replace radio buttons in display settings
+
+### ✨ Editor & Settings
+- ✅ **Full backup/restore** - Includes all app settings, not just notes
+- ✅ **Material 3 shared axis transitions** - For all navigation and back gestures
+- ✅ **Autosave status** - Shown in display settings subtitle
+- ✅ **Debug logging dialog** - Disable logging after export
+
+### 🐛 Bug Fixes
+- ✅ **Checklist drag-and-drop** - Rewritten for stability in long lists
+- ✅ **Offline deletions** - Queued for next sync
+- ✅ **WebDAV 403 compatibility** - HTTP 403 treated as existing
+- ✅ **Thread-safety** - State inconsistency and dispatcher issues fixed
+- ✅ **Resource leaks** - InputStreams closed, file I/O off main thread
+- ✅ **Save-on-back race condition** - TextFieldState flush + onPause save
 
 ### 🗑️ Legacy Code Removal
+- ✅ **SettingsActivity removed** - Replaced by Compose settings
+- ✅ **MainActivity removed** - Replaced by ComposeMainActivity
+- ✅ **NoteEditorActivity removed** - Replaced by Compose editor
+- ✅ **XML layouts, menus, drawables removed** - Full Compose UI
+- ✅ **LocalBroadcastManager → SharedFlow** - Modern event architecture
+- ✅ **viewModelFactory DSL** - Modern ViewModel creation
 
-- **Remove SettingsActivity** - Replaced by ComposeSettingsActivity
-- **Remove MainActivity** - Replaced by ComposeMainActivity
-- **LocalBroadcastManager → SharedFlow** - Modern event architecture
-- **ProgressDialog → Material Dialog** - Full Material 3 compliance
-- **AbstractSavedStateViewModelFactory → viewModelFactory** - Modern ViewModel creation
+### 🏗️ Architecture
+- ✅ **WebDavSyncService → Facade pattern** - Split into 9 extracted modules
+- ✅ **R8/ProGuard optimized** - Reduced APK size
+
+### 📄 License
+- ✅ **MIT → Apache 2.0** - License changed
 
 ---
 
@@ -227,7 +253,8 @@
 
 ### 🎨 UI Features
 
-- **Categories/Tags** - Organize notes
+- **Folders / Tags / Notebooks** - Organize notes into directories or with tags for better separation (e.g. personal vs. shared recipes). Subdirectories on WebDAV could also enable per-folder access control. ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) by @happy-turtle)
+- **Hide completed checklists** - Option to hide checklists where all items are checked, with a separate view to recover them later. ([#45](https://github.com/inventory69/simple-notes-sync/discussions/45) by @isawaway)
 - **Search** - Full-text search in notes
 
 ### 🌍 Community

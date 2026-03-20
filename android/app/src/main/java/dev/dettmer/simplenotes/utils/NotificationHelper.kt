@@ -2,7 +2,6 @@ package dev.dettmer.simplenotes.utils
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import dev.dettmer.simplenotes.R
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -11,15 +10,15 @@ import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
 
 object NotificationHelper {
-    
     private const val TAG = "NotificationHelper"
     private const val CHANNEL_ID = "notes_sync_channel"
     private const val NOTIFICATION_ID = 1001
     private const val SYNC_NOTIFICATION_ID = 2
-    const val SYNC_PROGRESS_NOTIFICATION_ID = 1003  // v1.7.2: For expedited work foreground notification
+    const val SYNC_PROGRESS_NOTIFICATION_ID = 1003 // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
 
     // 🆕 v1.11.0: Notification preference checks
@@ -46,7 +45,10 @@ object NotificationHelper {
      */
     private fun isServerWarningEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING)
+        return prefs.getBoolean(
+            Constants.KEY_NOTIFICATIONS_SERVER_WARNING,
+            Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING
+        )
     }
 
     /**
@@ -58,36 +60,36 @@ object NotificationHelper {
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channelName = context.getString(R.string.notification_channel_name)
             val channelDescription = context.getString(R.string.notification_channel_desc)
-            
+
             val channel = NotificationChannel(CHANNEL_ID, channelName, importance).apply {
                 description = channelDescription
                 enableVibration(true)
                 enableLights(true)
             }
-            
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE)
                 as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
-    
+
     /**
      * Löscht alle Sync-Notifications
      * Sollte beim App-Start aufgerufen werden um alte Notifications zu entfernen
      */
     fun clearSyncNotifications(context: Context) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         manager.cancel(SYNC_NOTIFICATION_ID)
         Logger.d(TAG, "🗑️ Cleared old sync notifications")
     }
-    
+
     /**
      * 🔧 v1.7.2: Erstellt Notification für Sync-Progress (Expedited Work)
-     * 
+     *
      * Wird von SyncWorker.getForegroundInfo() aufgerufen auf Android 9-11.
      * Muss eine gültige, sichtbare Notification zurückgeben.
-     * 
+     *
      * @return Notification (nicht anzeigen, nur erstellen)
      */
     fun createSyncProgressNotification(context: Context): android.app.Notification {
@@ -97,11 +99,11 @@ object NotificationHelper {
             .setContentText(context.getString(R.string.sync_in_progress_text))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
-            .setProgress(0, 0, true)  // Indeterminate progress
+            .setProgress(0, 0, true) // Indeterminate progress
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .build()
     }
-    
+
     /**
      * Zeigt Erfolgs-Notification nach Sync
      */
@@ -109,27 +111,35 @@ object NotificationHelper {
         val intent = Intent(context, ComposeMainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        
+
         val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
+            context,
+            0,
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_upload)
             .setContentTitle(context.getString(R.string.notification_sync_success_title))
-            .setContentText(context.resources.getQuantityString(R.plurals.notification_sync_success_message, syncedCount, syncedCount))
+            .setContentText(
+                context.resources.getQuantityString(
+                    R.plurals.notification_sync_success_message,
+                    syncedCount,
+                    syncedCount
+                )
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
-        
+
         with(NotificationManagerCompat.from(context)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (androidx.core.app.ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
                     notify(NOTIFICATION_ID, notification)
                 }
@@ -138,7 +148,7 @@ object NotificationHelper {
             }
         }
     }
-    
+
     /**
      * Zeigt Fehler-Notification bei fehlgeschlagenem Sync
      */
@@ -147,18 +157,20 @@ object NotificationHelper {
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_sync_failed_title))
             .setContentText(errorMessage)
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(errorMessage))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(errorMessage)
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
-        
+
         with(NotificationManagerCompat.from(context)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (androidx.core.app.ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
                     notify(NOTIFICATION_ID, notification)
                 }
@@ -167,7 +179,7 @@ object NotificationHelper {
             }
         }
     }
-    
+
     /**
      * Zeigt Progress-Notification während Sync läuft
      */
@@ -180,13 +192,13 @@ object NotificationHelper {
             .setOngoing(true)
             .setProgress(0, 0, true)
             .build()
-        
+
         with(NotificationManagerCompat.from(context)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (androidx.core.app.ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
                     notify(NOTIFICATION_ID, notification)
                 }
@@ -194,35 +206,43 @@ object NotificationHelper {
                 notify(NOTIFICATION_ID, notification)
             }
         }
-        
+
         return NOTIFICATION_ID
     }
-    
+
     /**
      * Zeigt Notification bei erkanntem Konflikt
      */
     fun showConflictNotification(context: Context, conflictCount: Int) {
         val intent = Intent(context, ComposeMainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
+            context,
+            0,
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(context.getString(R.string.notification_sync_conflict_title))
-            .setContentText(context.resources.getQuantityString(R.plurals.notification_sync_conflict_message, conflictCount, conflictCount))
+            .setContentText(
+                context.resources.getQuantityString(
+                    R.plurals.notification_sync_conflict_message,
+                    conflictCount,
+                    conflictCount
+                )
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
-        
+
         with(NotificationManagerCompat.from(context)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (androidx.core.app.ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
                     notify(NOTIFICATION_ID + 1, notification)
                 }
@@ -231,7 +251,7 @@ object NotificationHelper {
             }
         }
     }
-    
+
     /**
      * Entfernt aktive Notification
      */
@@ -240,7 +260,7 @@ object NotificationHelper {
             cancel(notificationId)
         }
     }
-    
+
     /**
      * Prüft ob Notification-Permission vorhanden (Android 13+)
      */
@@ -254,7 +274,7 @@ object NotificationHelper {
             true
         }
     }
-    
+
     /**
      * Zeigt Notification dass Sync startet
      */
@@ -266,12 +286,12 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()
-        
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         manager.notify(SYNC_NOTIFICATION_ID, notification)
     }
-    
+
     /**
      * Zeigt Erfolgs-Notification
      */
@@ -290,22 +310,24 @@ object NotificationHelper {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle(context.getString(R.string.notification_sync_success_title))
-            .setContentText(context.resources.getQuantityString(R.plurals.notification_sync_success_message, count, count))
+            .setContentText(
+                context.resources.getQuantityString(R.plurals.notification_sync_success_message, count, count)
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setContentIntent(pendingIntent)  // Click öffnet App
-            .setAutoCancel(true)  // Dismiss beim Click
+            .setContentIntent(pendingIntent) // Click öffnet App
+            .setAutoCancel(true) // Dismiss beim Click
             .build()
-        
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         manager.notify(SYNC_NOTIFICATION_ID, notification)
     }
-    
+
     /**
      * Zeigt Fehler-Notification
      * Auto-Cancel nach 30 Sekunden
@@ -324,28 +346,28 @@ object NotificationHelper {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle(context.getString(R.string.notification_sync_error_title))
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_ERROR)
-            .setContentIntent(pendingIntent)  // Click öffnet App
-            .setAutoCancel(true)  // Dismiss beim Click
+            .setContentIntent(pendingIntent) // Click öffnet App
+            .setAutoCancel(true) // Dismiss beim Click
             .build()
-        
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         manager.notify(SYNC_NOTIFICATION_ID, notification)
-        
+
         // ⭐ NEU: Auto-Cancel nach 30 Sekunden
         Handler(Looper.getMainLooper()).postDelayed({
             manager.cancel(SYNC_NOTIFICATION_ID)
             Logger.d(TAG, "🗑️ Auto-cancelled error notification after 30s timeout")
         }, AUTO_CANCEL_TIMEOUT_MS)
     }
-    
+
     /**
      * Zeigt Warnung wenn Server längere Zeit nicht erreichbar (v1.1.2)
      * Throttling: Max. 1 Warnung pro 24h
@@ -365,23 +387,25 @@ object NotificationHelper {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle(context.getString(R.string.notification_sync_warning_title))
             .setContentText(context.getString(R.string.notification_sync_warning_message, hoursSinceLastSync.toInt()))
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(context.getString(R.string.notification_sync_warning_detail, hoursSinceLastSync.toInt())))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(context.getString(R.string.notification_sync_warning_detail, hoursSinceLastSync.toInt()))
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
-        
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
             as NotificationManager
         manager.notify(SYNC_NOTIFICATION_ID, notification)
-        
+
         Logger.d(TAG, "⚠️ Showed sync warning: Server unreachable for ${hoursSinceLastSync}h")
     }
 }

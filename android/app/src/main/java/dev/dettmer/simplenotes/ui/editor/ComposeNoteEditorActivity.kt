@@ -1,9 +1,8 @@
-@file:Suppress("DEPRECATION") // AbstractSavedStateViewModelFactory deprecated, will migrate to viewModelFactory in v2.0.0
-
 package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.CalendarContract
 import android.widget.Toast
@@ -12,87 +11,110 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.lifecycleScope
-import androidx.savedstate.SavedStateRegistryOwner
-import com.google.android.material.color.DynamicColors
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
+import dev.dettmer.simplenotes.ui.theme.ThemeMode
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.PdfExporter
 import kotlinx.coroutines.launch
 
 /**
  * Compose-based Note Editor Activity
- * 
+ *
  * v1.5.0: Jetpack Compose NoteEditor Redesign
  * Replaces the old NoteEditorActivity with a modern Compose implementation.
- * 
+ *
  * Supports:
  * - TEXT notes with title and content
  * - CHECKLIST notes with drag & drop reordering
  * - Auto-keyboard focus for new checklist items
  */
 class ComposeNoteEditorActivity : ComponentActivity() {
-    
     companion object {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
-        private const val TAG = "ComposeNoteEditorActivity"  // 🆕 v1.10.0-Papa
+        private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
+
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
         const val RESULT_EXTRA_NOTE_ID = "result_note_id"
         const val RESULT_EXTRA_DELETE_FROM_SERVER = "result_delete_from_server"
     }
-    
+
     private val viewModel: NoteEditorViewModel by viewModels {
-        NoteEditorViewModelFactory(
-            application = application,
-            owner = this,
-            noteId = intent.getStringExtra(EXTRA_NOTE_ID),
-            noteType = intent.getStringExtra(EXTRA_NOTE_TYPE) ?: NoteType.TEXT.name
-        )
+        viewModelFactory {
+            initializer {
+                val handle = createSavedStateHandle()
+                handle[NoteEditorViewModel.ARG_NOTE_ID] = intent.getStringExtra(EXTRA_NOTE_ID)
+                handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
+                    intent.getStringExtra(EXTRA_NOTE_TYPE) ?: NoteType.TEXT.name
+                NoteEditorViewModel(application, handle)
+            }
+        }
     }
-    
+
+    // v2.0.0: Theme state — initialized in onCreate, refreshed in onResume after returning from Settings
+    private val editorPrefs by lazy { getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE) }
+    private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
+    private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // v2.0.0: Load theme from prefs (context available after super.onCreate)
+        themeMode = ThemePreferences.getThemeMode(editorPrefs)
+        colorTheme = ThemePreferences.getColorTheme(editorPrefs)
+
         // Apply Dynamic Colors for Android 12+ (Material You)
         DynamicColors.applyToActivityIfAvailable(this)
-        
+
         enableEdgeToEdge()
-        
-        // v1.5.0: Handle back button with slide animation
-        // 🔧 v1.10.0: Save unsaved changes before navigating back
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
-                finish()
-                @Suppress("DEPRECATION")
-                overridePendingTransition(
-                    dev.dettmer.simplenotes.R.anim.slide_in_left,
-                    dev.dettmer.simplenotes.R.anim.slide_out_right
-                )
+
+        // v2.0.0: Register both OPEN and CLOSE transitions for consistent
+        // Shared Axis X animation on all back paths (arrow button + swipe gesture).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                R.anim.shared_axis_x_enter,
+                R.anim.shared_axis_x_exit
+            )
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.shared_axis_x_pop_enter,
+                R.anim.shared_axis_x_pop_exit
+            )
+        }
+
+        // v2.0.0: On API 35+ (mandatory predictive back), overrideActivityTransition(CLOSE)
+        // is only respected for explicit finish() calls — the system uses its own animation
+        // for gesture-driven back. Routing through OnBackPressedCallback + finish() fixes this.
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    finishWithTransition()
+                }
             }
-        })
-        
+        )
+
         setContent {
-            SimpleNotesTheme {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
                 NoteEditorScreen(
                     viewModel = viewModel,
-                    onNavigateBack = {
-                        viewModel.saveOnBack()  // 🆕 v1.10.0: Silent save before exit
-                        finish()
-                        @Suppress("DEPRECATION")
-                        overridePendingTransition(
-                            dev.dettmer.simplenotes.R.anim.slide_in_left,
-                            dev.dettmer.simplenotes.R.anim.slide_out_right
-                        )
-                    }
+                    onNavigateBack = { finishWithTransition() }
                 )
             }
         }
@@ -112,12 +134,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                             putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
                         }
                         setResult(RESULT_NOTE_DELETED, resultIntent)
-                        finish()
-                        @Suppress("DEPRECATION")
-                        overridePendingTransition(
-                            dev.dettmer.simplenotes.R.anim.slide_in_left,
-                            dev.dettmer.simplenotes.R.anim.slide_out_right
-                        )
+                        finishWithTransition()
                     }
                     else -> { /* handled by Composable */ }
                 }
@@ -134,7 +151,30 @@ class ComposeNoteEditorActivity : ComponentActivity() {
      */
     override fun onResume() {
         super.onResume()
+        // v2.0.0: Refresh theme in case user returned from Settings
+        themeMode = ThemePreferences.getThemeMode(editorPrefs)
+        colorTheme = ThemePreferences.getColorTheme(editorPrefs)
         viewModel.reloadFromStorage()
+    }
+
+    // v2.0.0: Save unsaved changes when activity pauses (Back gesture, Home, task switch).
+    // Must happen in onPause (not onStop) so data is on disk BEFORE the parent
+    // activity's onResume reloads the note list.
+    override fun onPause() {
+        super.onPause()
+        viewModel.saveOnBack()
+    }
+
+    private fun finishWithTransition() {
+        finish()
+        // API < 34: overrideActivityTransition not available, use deprecated API
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                R.anim.shared_axis_x_pop_enter,
+                R.anim.shared_axis_x_pop_exit
+            )
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -147,7 +187,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
      */
     private fun handleCalendarExport(event: NoteEditorEvent.OpenCalendar) {
         val beginTime = System.currentTimeMillis()
-        val endTime = beginTime + 60 * 60 * 1000L  // +1 hour
+        val endTime = beginTime + 60 * 60 * 1000L // +1 hour
         val intent = Intent(Intent.ACTION_INSERT).apply {
             data = CalendarContract.Events.CONTENT_URI
             putExtra(CalendarContract.Events.TITLE, event.title)
@@ -223,29 +263,5 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             Logger.w(TAG, "No PDF share target found: ${e.message}")
             Toast.makeText(this, getString(R.string.share_error), Toast.LENGTH_SHORT).show()
         }
-    }
-}
-
-/**
- * Custom ViewModelFactory to pass SavedStateHandle with intent extras
- */
-class NoteEditorViewModelFactory(
-    private val application: android.app.Application,
-    owner: SavedStateRegistryOwner,
-    private val noteId: String?,
-    private val noteType: String
-) : AbstractSavedStateViewModelFactory(owner, null) {
-    
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        key: String,
-        modelClass: Class<T>,
-        handle: SavedStateHandle
-    ): T {
-        // Populate SavedStateHandle with intent extras
-        handle[NoteEditorViewModel.ARG_NOTE_ID] = noteId
-        handle[NoteEditorViewModel.ARG_NOTE_TYPE] = noteType
-        
-        return NoteEditorViewModel(application, handle) as T
     }
 }

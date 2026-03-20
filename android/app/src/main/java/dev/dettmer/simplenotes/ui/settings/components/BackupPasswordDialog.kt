@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -38,29 +40,24 @@ private const val MIN_PASSWORD_LENGTH = 8
  * 🔒 v1.7.0: Password input dialog for backup encryption/decryption
  */
 @Composable
-fun BackupPasswordDialog(
-    title: String,
-    onDismiss: () -> Unit,
-    onConfirm: (password: String) -> Unit,
-    requireConfirmation: Boolean = true
-) {
+fun BackupPasswordDialog(title: String, onDismiss: () -> Unit, onConfirm: (password: String) -> Unit, requireConfirmation: Boolean = true) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+
     val focusRequester = remember { FocusRequester() }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 // Password field
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { 
+                    onValueChange = {
                         password = it
                         errorMessage = null
                     },
@@ -82,7 +79,9 @@ fun BackupPasswordDialog(
                     keyboardActions = KeyboardActions(
                         onDone = if (!requireConfirmation) {
                             { validateAndConfirm(password, null, onConfirm) { errorMessage = it } }
-                        } else null
+                        } else {
+                            null
+                        }
                     ),
                     singleLine = true,
                     isError = errorMessage != null,
@@ -90,14 +89,14 @@ fun BackupPasswordDialog(
                         .fillMaxWidth()
                         .focusRequester(focusRequester)
                 )
-                
+
                 // Confirm password field (only for encryption, not decryption)
                 if (requireConfirmation) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedTextField(
                         value = confirmPassword,
-                        onValueChange = { 
+                        onValueChange = {
                             confirmPassword = it
                             errorMessage = null
                         },
@@ -124,7 +123,7 @@ fun BackupPasswordDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                
+
                 // Error message
                 errorMessage?.let { msg ->
                     Spacer(modifier = Modifier.height(4.dp))
@@ -160,12 +159,7 @@ fun BackupPasswordDialog(
 /**
  * Validate password and call onConfirm if valid
  */
-private fun validateAndConfirm(
-    password: String,
-    confirmPassword: String?,
-    onConfirm: (String) -> Unit,
-    onError: (String) -> Unit
-) {
+private fun validateAndConfirm(password: String, confirmPassword: String?, onConfirm: (String) -> Unit, onError: (String) -> Unit) {
     when {
         password.length < MIN_PASSWORD_LENGTH -> {
             onError("Password too short (min. $MIN_PASSWORD_LENGTH characters)")

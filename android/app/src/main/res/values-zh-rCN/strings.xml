@@ -8,10 +8,6 @@
     <!-- MAIN SCREEN                   -->
     <!-- ============================= -->
     <string name="main_title">简单笔记</string>
-    <string name="no_notes_yet">没有笔记。\n点击 + 新建一个。</string>
-    <string name="add_note">添加笔记</string>
-    <string name="sync">同步</string>
-    <string name="settings">设置</string>
     <string name="action_sync">同步</string>
     <string name="action_settings">设置</string>
     <string name="action_close_selection">关闭选择</string>
@@ -21,7 +17,6 @@
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
-    <string name="empty_state_emoji">📝</string>
     <string name="empty_state_title">没有笔记</string>
     <string name="empty_state_message">点击 + 新建一个笔记</string>
     <!-- ============================= -->
@@ -31,25 +26,14 @@
     <string name="fab_close">关闭菜单</string>
     <string name="fab_text_note">笔记</string>
     <string name="fab_checklist">清单</string>
-    <string name="create_text_note">笔记</string>
-    <string name="create_checklist">清单</string>
     <!-- ============================= -->
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
-    <string name="note_title_placeholder">笔记标题</string>
-    <string name="note_content_placeholder">笔记内容预览……</string>
-    <string name="note_timestamp_placeholder">两小时之前</string>
     <string name="untitled">无标题</string>
     <string name="checklist_progress">%1$d/%2$d 完成</string>
-    <string name="empty_checklist">无条目</string>
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
-    <string name="sync_status">同步状态</string>
-    <string name="sync_syncing">正在同步……</string>
-    <string name="sync_completed">已同步</string>
-    <string name="sync_error">错误</string>
-    <string name="sync_status_syncing">正在同步……</string>
     <string name="sync_status_completed">同步完成</string>
     <string name="sync_status_error">同步失败</string>
     <string name="sync_already_running">同步已在进行中</string>
@@ -77,7 +61,6 @@
     <string name="sync_deleted_on_server_count">%d 已在服务器上删除</string>
     <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
     <string name="sync_phase_preparing">正在同步……</string>
-    <string name="sync_phase_checking">正在检查服务器……</string>
     <string name="sync_phase_uploading">正在上传……</string>
     <string name="sync_phase_downloading">正在下载……</string>
     <string name="sync_phase_deleting">正在从服务器删除……</string>
@@ -101,7 +84,6 @@
     <string name="sort_checklist_checked_first">已勾选的优先</string>
     <string name="apply">应用</string>
     <string name="sync_phase_importing_markdown">正在导入 Markdown…</string>
-    <string name="sync_phase_saving">正在保存……</string>
     <string name="sync_phase_completed">同步完成</string>
     <string name="sync_phase_error">同步失败</string>
     <!-- ============================= -->
@@ -120,8 +102,6 @@
     <string name="legacy_delete_dialog_title">删除笔记</string>
     <string name="legacy_delete_dialog_message">“%s”会仅本地删除。\n\n要从服务器删除吗？</string>
     <string name="legacy_delete_from_server">从服务器删除</string>
-    <string name="legacy_delete_with_server">“%s”会在本地和服务器删除</string>
-    <string name="legacy_delete_local_only">“%s”已在本地删除（仍在服务器）</string>
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
@@ -132,10 +112,8 @@
     <string name="snackbar_notes_deleted_from_server_partial">已经从服务器删除 %1$d 个笔记总数 %2$d</string>
     <string name="snackbar_server_delete_failed">服务器删除失败</string>
     <string name="snackbar_server_error">服务器错误：%s</string>
-    <string name="snackbar_already_synced">已经同步</string>
     <string name="snackbar_server_unreachable">连不上服务器</string>
     <string name="snackbar_connection_timeout">连接超时</string>
-    <string name="snackbar_synced_count">✅ 已经同步：%d 个笔记</string>
     <string name="snackbar_nothing_to_sync">ℹ️ 没有东西要同步</string>
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
@@ -187,27 +165,18 @@
     <!-- ============================= -->
     <string name="settings_title">设置</string>
     <string name="settings_language">语言</string>
-    <string name="settings_language_subtitle">%s</string>
     <string name="settings_server">服务器设置</string>
     <string name="settings_server_status_reachable">✅ 可连上</string>
     <string name="settings_server_status_unreachable">❌ 连不上</string>
     <string name="settings_server_status_checking">🔍 正在检查……</string>
-    <string name="settings_server_status_not_configured">⚠️ 未配置</string>
     <string name="settings_server_status_offline_mode">📴 离线模式</string>
     <string name="settings_sync">同步和通知</string>
-    <string name="settings_sync_auto_on">自动同步：开 • %s</string>
-    <string name="settings_sync_auto_off">自动同步：关</string>
     <string name="settings_sync_offline_mode">📴 离线模式</string>
     <string name="settings_sync_manual_only">仅手动同步</string>
     <string name="settings_sync_triggers_active">%d 触发器已激活</string>
-    <string name="settings_interval_15min">15 分钟</string>
-    <string name="settings_interval_30min">30 分钟</string>
-    <string name="settings_interval_60min">60 分钟</string>
     <string name="settings_markdown">Markdown 桌面集成</string>
     <string name="settings_markdown_auto_on">自动同步：开</string>
     <string name="settings_markdown_auto_off">自动同步：关</string>
-    <string name="settings_markdown_manual_hint">或手动同步 markdown 文件：</string>
-    <string name="settings_markdown_manual_button">同步 Markdown</string>
     <string name="settings_backup">备份和恢复</string>
     <string name="settings_backup_subtitle">本地或服务器备份</string>
     <!-- Issue #21: Notes Import -->
@@ -227,26 +196,13 @@
     <string name="import_server_info">扫描你的 WebDAV 服务器以在所有子文件夹中寻找可导入的笔记文件。有匹配笔记 ID 的 JSON 文件会直接同步。</string>
     <string name="import_local_info">直接从你的设备存储中选择 .md、.json、.txt 文件。</string>
     <string name="import_cancel">取消</string>
-    <string name="settings_backup_info">📦 每一次恢复前自动创建一个安全备份。</string>
-    <string name="settings_backup_local_title">本地备份</string>
-    <string name="settings_backup_server_title">服务器备份</string>
     <string name="settings_about">关于这个应用</string>
-    <string name="settings_about_app_version">📱应用版本</string>
-    <string name="settings_about_app_version_loading">正在载入版本……</string>
-    <string name="settings_about_github">🌐 GitHub 仓库</string>
-    <string name="settings_about_developer">👤 开发者</string>
-    <string name="settings_about_license">⚖️ 许可证</string>
     <string name="settings_debug">调试和诊断</string>
     <string name="settings_debug_logging_on">日志：开</string>
     <string name="settings_debug_logging_off">日志：关</string>
-    <string name="settings_debug_file_logging">📝 日志文件</string>
-    <string name="settings_debug_file_logging_desc">保存同步日志到文件</string>
-    <string name="settings_debug_export_logs">📤 导出和分享日志</string>
-    <string name="settings_debug_delete_logs">🗑️ 删除日志</string>
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
     <!-- ============================= -->
-    <string name="server_settings">服务器设置</string>
     <string name="server_settings_title">服务器设置</string>
     <string name="server_connection_type">连接类型</string>
     <string name="server_connection_http">🏠 内网 (HTTP)</string>
@@ -260,7 +216,6 @@
     <string name="sync_folder_name_hint">WebDAV 服务器上的文件夹名字（默认：notes）。这个也影响 Markdown 文件夹（例如 notes → notes-md）。只有当你知道你在做什么时才能更改这个。</string>
     <string name="server_timeout_label">连接超时：%d 秒</string>
     <string name="server_timeout_description">认为尝试连接是失败之前的等待时间。当连不上服务器时，更低的数值会给出更快的反馈。</string>
-    <string name="server_url">服务器 URL</string>
     <string name="username">用户名</string>
     <string name="password">密码</string>
     <string name="server_password_show">显示</string>
@@ -269,7 +224,6 @@
     <string name="server_status_reachable">✅ 可连上</string>
     <string name="server_status_unreachable">❌ 连不上</string>
     <string name="server_status_checking">🔍 正在检查……</string>
-    <string name="server_status_not_configured">⚠️ 未配置</string>
     <string name="server_status_offline_mode">📴 离线模式已激活</string>
     <string name="server_status_unknown">❓ 未知</string>
     <string name="server_offline_mode_title">📴 离线模式</string>
@@ -279,24 +233,12 @@
     <!-- ============================= -->
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
-    <string name="sync_settings">同步设置</string>
     <string name="sync_settings_title">同步和通知</string>
-    <string name="auto_sync">已启用自动同步</string>
-    <string name="sync_auto_sync_enabled">已启用自动同步</string>
-    <string name="sync_interval_section">同步间隔</string>
     <string name="sync_interval_15min_title">⚡ 每 15 分钟</string>
-    <string name="sync_interval_15min_subtitle">最快的同步 • ~0.8%% 电池/天（~23 毫安）</string>
     <string name="sync_interval_30min_title">✓ 每 30 分钟（推荐）</string>
-    <string name="sync_interval_30min_subtitle">平衡的比例• ~0.4%% 电池/天（~12 毫安）</string>
     <string name="sync_interval_60min_title">🔋 每 60 分钟</string>
-    <string name="sync_interval_60min_subtitle">最大的电池寿命 • ~0.2%% 电池/天（~6 毫安）</string>
     <!-- Legacy -->
-    <string name="auto_sync_info">ℹ️ 自动同步：\n\n• 每 30 分钟检查能否连上服务器\n• 在任何 WiFi 连接上工作\n• 在后台运行\n• 最小的耗电量（~0.4%%/天）</string>
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
-    <string name="sync_section_network">📶 网络限制</string>
-    <string name="sync_section_instant">📲 即时同步</string>
-    <string name="sync_section_background">📡 后台同步</string>
-    <string name="sync_section_advanced">⚙️ 高级</string>
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">同步触发器</string>
     <string name="sync_section_network_performance">网络</string>
@@ -315,10 +257,8 @@
     <!-- 🆕 v1.7.0: WiFi-Only Sync -->
     <string name="sync_wifi_only_title">仅 WiFi 同步</string>
     <string name="sync_wifi_only_subtitle">仅在已连接到 WiFi 时同步。节省数据并防止长等待时间。</string>
-    <string name="sync_wifi_only_blocked">同步仅在已连接到 WiFi 时工作</string>
     <string name="sync_manual_hint">手动同步也可用（工具栏/下拉刷新）。</string>
     <string name="sync_manual_hint_disabled">同步在离线模式不可用。</string>
-    <string name="sync_offline_mode_title">离线模式</string>
     <string name="sync_offline_mode_message">你在离线模式中使用本应用。设置一个服务器以同步笔记。</string>
     <string name="sync_offline_mode_button">设置服务器</string>
     <!-- ============================= -->
@@ -338,7 +278,6 @@
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
     <string name="backup_settings_title">备份和恢复</string>
-    <string name="backup_restore_title">备份和恢复</string>
     <string name="backup_auto_info">📦 每一次恢复前自动创建一个安全备份。</string>
     <string name="backup_local_section">本地备份</string>
     <string name="backup_create">💾 创建备份</string>
@@ -350,11 +289,7 @@
     <string name="backup_encryption_password_hint">输入密码（最少八个字符）</string>
     <string name="backup_encryption_confirm">确认密码</string>
     <string name="backup_encryption_confirm_hint">重新输入密码</string>
-    <string name="backup_encryption_error_mismatch">密码不匹配</string>
-    <string name="backup_encryption_error_too_short">密码太短（最少八个字符）</string>
     <string name="backup_decryption_required">🔒 已加密的备份</string>
-    <string name="backup_decryption_password">输入密码以解密</string>
-    <string name="backup_decryption_error">❌ 解密失败。错误的密码？</string>
     <string name="backup_server_section">服务器备份</string>
     <string name="backup_restore_server">☁️ 从服务器恢复</string>
     <string name="backup_restore_dialog_title">⚠️ 恢复备份？</string>
@@ -364,23 +299,12 @@
     <string name="backup_restore_mode_label">恢复模式：</string>
     <string name="backup_mode_merge_title">⚪ 合并（默认）</string>
     <string name="backup_mode_merge_subtitle">添加新的，保持已存在的</string>
-    <string name="backup_mode_merge_full">⚪ 合并（默认）\n → 添加新的，保持已存在的</string>
     <string name="backup_mode_replace_title">⚪ 替换</string>
     <string name="backup_mode_replace_subtitle">删除所有并导入备份</string>
-    <string name="backup_mode_replace_full">⚪ 替换\n → 删除所有并导入备份</string>
     <string name="backup_mode_overwrite_title">⚪ 覆盖重复</string>
     <string name="backup_mode_overwrite_subtitle">冲突时备份获胜</string>
-    <string name="backup_mode_overwrite_full">⚪ 覆盖重复\n → 冲突时备份获胜</string>
     <string name="backup_restore_info">ℹ️ 恢复前自动创建一个安全备份。</string>
     <string name="backup_restore_button">恢复</string>
-    <string name="backup_restore_warning">⚠️ 警告：\n\n恢复会使用来自服务器的数据覆盖所有本地笔记。这个操作不能撤销！</string>
-    <string name="restore_from_server">从服务器恢复</string>
-    <string name="restore_confirmation_title">⚠️ 从服务器恢复？</string>
-    <string name="restore_confirmation_message">警告：所有本地笔记会被删除并且替换为来自服务器的笔记。\n\n这个操作不能撤销！</string>
-    <string name="restore_button">恢复</string>
-    <string name="restore_progress">正在恢复笔记……</string>
-    <string name="restore_success">✓ 恢复了 %d 个笔记</string>
-    <string name="restore_error">错误：%s</string>
     <!-- ============================= -->
     <!-- SETTINGS - DEBUG              -->
     <!-- ============================= -->
@@ -403,7 +327,6 @@
     <string name="developer_options_unlocked">🔧 解锁了开发者选项</string>
     <string name="developer_options_already_unlocked">已经解锁了开发者选项</string>
     <!-- Legacy -->
-    <string name="file_logging_privacy_notice">ℹ️ 隐私：日志仅存储在你的设备上并且绝对不会发送到外部服务器。日志包含同步活动用于排查错误。你可以在任何时间删除或导出它们。</string>
     <!-- ============================= -->
     <!-- SETTINGS - LANGUAGE           -->
     <!-- ============================= -->
@@ -415,7 +338,6 @@
     <string name="language_ukrainian">乌克兰语</string>
     <string name="language_chinese_simplified">中文 (简体)</string>
     <string name="language_info">ℹ️ 选择你偏好的语言。视图会短暂刷新以应用更改。</string>
-    <string name="language_changed_restart">已更改语言。重新启动……</string>
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -446,8 +368,6 @@
     <!-- v1.9.0 (F11): Filter row toggle -->
     <string name="toggle_filter_row">切换过滤栏</string>
     <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
-    <string name="editor_mode_edit">编辑</string>
-    <string name="editor_mode_preview">预览</string>
     <string name="editor_toggle_preview">切换 Markdown 预览</string>
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
     <string name="md_toolbar_bold">加粗</string>
@@ -517,24 +437,12 @@
     <string name="toast_markdown_result">✅ 导出：%1$d • 导入：%2$d</string>
     <string name="toast_export_failed">❌ 导出失败：%s</string>
     <string name="toast_export_timeout">⏱️ 导出超时 - 服务器太慢或连不上。请检查连接再试一次。</string>
-    <string name="toast_backup_success">✅ %s</string>
-    <string name="toast_backup_failed">❌ 备份失败：%s</string>
-    <string name="toast_restore_success">✅ 已恢复 %d 个笔记</string>
-    <string name="toast_restore_failed">❌ 恢复失败：%s</string>
     <string name="toast_notifications_enabled">已启用通知</string>
     <string name="toast_notifications_disabled">已禁用通知。你可以在设置中启用它们。</string>
-    <string name="toast_battery_optimization">请手动禁用电池优化</string>
     <string name="toast_logs_deleted">🗑️ 已删除日志</string>
-    <string name="toast_no_logs_to_delete">📭 没有日志可删除</string>
-    <string name="toast_logs_delete_error">❌ 删除出错：%s</string>
     <string name="toast_server_changed_sync_reset">🔄 已更改服务器。下一次同步会上传 %d 个笔记。</string>
-    <string name="toast_link_error">❌ 打开链接出错</string>
     <string name="toast_file_logging_enabled">📝 已启用日志文件</string>
     <string name="toast_file_logging_disabled">📝 已禁用日志文件</string>
-    <string name="toast_sync_interval_changed">⏱️ 同步间隔更改为 %s</string>
-    <string name="version_not_available">版本不可用</string>
-    <string name="status_checking">🔍 正在检查……</string>
-    <string name="battery_optimization_dialog_message">请为简单笔记选择“不优化”。</string>
     <string name="battery_optimization_dialog_title">后台同步</string>
     <string name="battery_optimization_dialog_full_message">为使应用在后台同步，必须禁用电池优化。\n\n请为简单笔记选择“不优化”。</string>
     <string name="battery_optimization_open_settings">打开设置</string>
@@ -601,18 +509,6 @@
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
-    <plurals name="notes_count">
-        <item quantity="other">%d 个笔记</item>
-    </plurals>
-    <plurals name="notes_deleted_local">
-        <item quantity="other">已经本地删除 %d 个笔记</item>
-    </plurals>
-    <plurals name="notes_deleted_server">
-        <item quantity="other">会从服务器删除 %d 个笔记</item>
-    </plurals>
-    <plurals name="notes_synced">
-        <item quantity="other">已同步 %d 个笔记</item>
-    </plurals>
     <!-- v1.8.0 (IMPL_017): Checklist separator -->
     <plurals name="checked_items_count">
         <item quantity="other">已完成 %d</item>
@@ -636,7 +532,6 @@
     <string name="widget_config_save">保存</string>
     <string name="widget_lock_label">锁定微件</string>
     <string name="widget_lock_description">防止意外编辑</string>
-    <string name="widget_note_not_found">未找到笔记</string>
     <string name="widget_opacity_label">背景不透明度</string>
     <string name="widget_opacity_description">调整微件背景的透明度</string>
     <string name="widget_preview_title">购物清单</string>
@@ -651,9 +546,6 @@
     <string name="share_pdf_error">不能创建 PDF</string>
     <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation">创建日期 ↑</string>
     <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation">创建日期 ↓</string>
-    <string name="reorder_item">重新排序项目</string>
     <string name="drag_to_reorder">拖动以重新排序</string>
-    <string name="sync_auto_sync_info">🔄 自动同步：\n• 每 30 分钟检查能否连上服务器\n• 在任何 WiFi 连接上工作\n• 在后台运行\n• 最小的耗电量（~0.4%/天）</string>
-    <string name="sync_interval_info">决定应用在后台同步的频率。同步间隔越短，数据越新，但耗电量也会略高。\n\n⏱️ 注意：手机处于待机状态时，Android 系统可能会延迟同步（最多 60 分钟）以节省电量。这是正常现象，会影响所有后台应用。</string>
     <string name="content_description_back">后退</string>
 </resources>

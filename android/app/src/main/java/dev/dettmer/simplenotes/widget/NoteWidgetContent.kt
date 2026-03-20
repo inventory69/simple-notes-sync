@@ -56,20 +56,20 @@ import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 // ── Size Classification ──
 
 private val WIDGET_HEIGHT_SMALL_THRESHOLD = 110.dp
-private val WIDGET_HEIGHT_SCROLL_THRESHOLD = 150.dp   // 🆕 v1.8.1: Scrollbare Ansicht
+private val WIDGET_HEIGHT_SCROLL_THRESHOLD = 150.dp // 🆕 v1.8.1: Scrollbare Ansicht
 private val WIDGET_SIZE_MEDIUM_THRESHOLD = 250.dp
 
 private fun DpSize.toSizeClass(): WidgetSizeClass = when {
     height < WIDGET_HEIGHT_SMALL_THRESHOLD -> WidgetSizeClass.SMALL
-    
+
     // 🆕 v1.8.1: Neue ScrollView-Schwelle bei 150dp Höhe
     width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_HEIGHT_SCROLL_THRESHOLD -> WidgetSizeClass.NARROW_MED
-    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD   -> WidgetSizeClass.NARROW_SCROLL
-    width < WIDGET_SIZE_MEDIUM_THRESHOLD                                             -> WidgetSizeClass.NARROW_TALL
-    
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD && height < WIDGET_SIZE_MEDIUM_THRESHOLD -> WidgetSizeClass.NARROW_SCROLL
+    width < WIDGET_SIZE_MEDIUM_THRESHOLD -> WidgetSizeClass.NARROW_TALL
+
     height < WIDGET_HEIGHT_SCROLL_THRESHOLD -> WidgetSizeClass.WIDE_MED
-    height < WIDGET_SIZE_MEDIUM_THRESHOLD   -> WidgetSizeClass.WIDE_SCROLL
-    else                                    -> WidgetSizeClass.WIDE_TALL
+    height < WIDGET_SIZE_MEDIUM_THRESHOLD -> WidgetSizeClass.WIDE_SCROLL
+    else -> WidgetSizeClass.WIDE_TALL
 }
 
 /**
@@ -98,9 +98,8 @@ private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
 // ── Background Color Helpers ──
 
 // 🆕 v1.9.0 (F01): Fallback-Farben für Geräte ohne Dynamic Color (vor Android 12)
-private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L   // Helles Material-Surface
+private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L // Helles Material-Surface
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL // Dunkles Material-Surface
-
 
 /**
  * 🆕 v1.9.0 (F01): Löst die Monet/Dynamic-Color widgetBackground auf und wendet
@@ -135,13 +134,7 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
 }
 
 @Composable
-fun NoteWidgetContent(
-    note: Note?,
-    isLocked: Boolean,
-    showOptions: Boolean,
-    bgOpacity: Float,
-    glanceId: GlanceId
-) {
+fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOpacity: Float, glanceId: GlanceId) {
     val size = LocalSize.current
     val context = LocalContext.current
     val sizeClass = size.toSizeClass()
@@ -318,11 +311,7 @@ fun NoteWidgetContent(
  * 🆕 v1.9.0 (F02): Kein eigener Hintergrund, nahtlos in Widget-Surface integriert.
  */
 @Composable
-private fun OptionsBar(
-    isLocked: Boolean,
-    noteId: String,
-    glanceId: GlanceId
-) {
+private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
     val context = LocalContext.current
 
     Row(
@@ -433,8 +422,8 @@ private fun TextNoteFullView(note: Note) {
                         color = GlanceTheme.colors.onSurface,
                         fontSize = 14.sp
                     ),
-                    maxLines = 5,  // Allow wrapping but prevent single-item overflow
-                    modifier = GlanceModifier.padding(bottom = 4.dp)  // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
+                    maxLines = 5, // Allow wrapping but prevent single-item overflow
+                    modifier = GlanceModifier.padding(bottom = 4.dp) // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
                 )
             }
         }
@@ -448,29 +437,29 @@ private fun TextNoteFullView(note: Note) {
  * Zeigt maxItems interaktive Checkboxen + Zusammenfassung.
  */
 @Composable
-private fun ChecklistCompactView(
-    note: Note,
-    maxItems: Int,
-    isLocked: Boolean,
-    glanceId: GlanceId
-) {
+private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, glanceId: GlanceId) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
     val items = note.checklistItems?.let { rawItems ->
         sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
     } ?: return
-    
+
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+        null
+    }
         ?: ChecklistSortOption.MANUAL
-    
-    val showSeparator = (sortOption == ChecklistSortOption.MANUAL ||
-                         sortOption == ChecklistSortOption.UNCHECKED_FIRST) &&
-                        uncheckedCount > 0 && checkedCount > 0
-    
+
+    val showSeparator = (
+        sortOption == ChecklistSortOption.MANUAL ||
+            sortOption == ChecklistSortOption.UNCHECKED_FIRST
+        ) &&
+        uncheckedCount > 0 &&
+        checkedCount > 0
+
     val visibleItems = items.take(maxItems)
     val remainingCount = items.size - visibleItems.size
 
@@ -483,16 +472,16 @@ private fun ChecklistCompactView(
                 WidgetCheckedItemsSeparator(checkedCount = checkedCount)
                 separatorShown = true
             }
-            
+
             if (isLocked) {
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),  // 🆕 v1.8.2 (IMPL_08): 2dp → 4dp
+                        .padding(vertical = 4.dp), // 🆕 v1.8.2 (IMPL_08): 2dp → 4dp
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (item.isChecked) "☑️" else "☐",  // 🆕 v1.8.1 (IMPL_06)
+                        text = if (item.isChecked) "☑️" else "☐", // 🆕 v1.8.1 (IMPL_06)
                         style = TextStyle(fontSize = 14.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
@@ -500,11 +489,17 @@ private fun ChecklistCompactView(
                     Text(
                         text = item.text,
                         style = TextStyle(
-                            color = if (item.isChecked) GlanceTheme.colors.outline
-                            else GlanceTheme.colors.onSurface,
+                            color = if (item.isChecked) {
+                                GlanceTheme.colors.outline
+                            } else {
+                                GlanceTheme.colors.onSurface
+                            },
                             fontSize = 13.sp,
-                            textDecoration = if (item.isChecked) TextDecoration.LineThrough
-                            else TextDecoration.None
+                            textDecoration = if (item.isChecked) {
+                                TextDecoration.LineThrough
+                            } else {
+                                TextDecoration.None
+                            }
                         ),
                         maxLines = 1
                     )
@@ -522,15 +517,21 @@ private fun ChecklistCompactView(
                     text = item.text,
                     // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
-                        color = if (item.isChecked) GlanceTheme.colors.outline
-                        else GlanceTheme.colors.onSurface,
+                        color = if (item.isChecked) {
+                            GlanceTheme.colors.outline
+                        } else {
+                            GlanceTheme.colors.onSurface
+                        },
                         fontSize = 13.sp,
-                        textDecoration = if (item.isChecked) TextDecoration.LineThrough
-                        else TextDecoration.None
+                        textDecoration = if (item.isChecked) {
+                            TextDecoration.LineThrough
+                        } else {
+                            TextDecoration.None
+                        }
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 3.dp)  // 🆕 v1.8.2 (IMPL_08): 1dp → 3dp
+                        .padding(vertical = 3.dp) // 🆕 v1.8.2 (IMPL_08): 1dp → 3dp
                 )
             }
         }
@@ -552,27 +553,28 @@ private fun ChecklistCompactView(
  * Vollständige Checklist-Ansicht für LARGE-Größen.
  */
 @Composable
-private fun ChecklistFullView(
-    note: Note,
-    isLocked: Boolean,
-    glanceId: GlanceId
-) {
+private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
     val items = note.checklistItems?.let { rawItems ->
         sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
     } ?: return
-    
+
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
     val uncheckedCount = items.count { !it.isChecked }
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) { null }
+    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+        null
+    }
         ?: ChecklistSortOption.MANUAL
 
-    val showSeparator = (sortOption == ChecklistSortOption.MANUAL ||
-                         sortOption == ChecklistSortOption.UNCHECKED_FIRST) &&
-                        uncheckedCount > 0 && checkedCount > 0
+    val showSeparator = (
+        sortOption == ChecklistSortOption.MANUAL ||
+            sortOption == ChecklistSortOption.UNCHECKED_FIRST
+        ) &&
+        uncheckedCount > 0 &&
+        checkedCount > 0
 
     // 🆕 v1.8.1: Berechne die Gesamtanzahl der Elemente inklusive Separator
     val totalItems = items.size + if (showSeparator) 1 else 0
@@ -598,11 +600,11 @@ private fun ChecklistFullView(
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),  // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
+                        .padding(vertical = 4.dp), // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (item.isChecked) "☑️" else "☐",  // 🆕 v1.8.1 (IMPL_06)
+                        text = if (item.isChecked) "☑️" else "☐", // 🆕 v1.8.1 (IMPL_06)
                         style = TextStyle(fontSize = 16.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))
@@ -610,11 +612,17 @@ private fun ChecklistFullView(
                     Text(
                         text = item.text,
                         style = TextStyle(
-                            color = if (item.isChecked) GlanceTheme.colors.outline
-                            else GlanceTheme.colors.onSurface,
+                            color = if (item.isChecked) {
+                                GlanceTheme.colors.outline
+                            } else {
+                                GlanceTheme.colors.onSurface
+                            },
                             fontSize = 14.sp,
-                            textDecoration = if (item.isChecked) TextDecoration.LineThrough
-                            else TextDecoration.None
+                            textDecoration = if (item.isChecked) {
+                                TextDecoration.LineThrough
+                            } else {
+                                TextDecoration.None
+                            }
                         ),
                         maxLines = 2
                     )
@@ -632,15 +640,21 @@ private fun ChecklistFullView(
                     text = item.text,
                     // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
-                        color = if (item.isChecked) GlanceTheme.colors.outline
-                        else GlanceTheme.colors.onSurface,
+                        color = if (item.isChecked) {
+                            GlanceTheme.colors.outline
+                        } else {
+                            GlanceTheme.colors.onSurface
+                        },
                         fontSize = 14.sp,
-                        textDecoration = if (item.isChecked) TextDecoration.LineThrough
-                        else TextDecoration.None
+                        textDecoration = if (item.isChecked) {
+                            TextDecoration.LineThrough
+                        } else {
+                            TextDecoration.None
+                        }
                     ),
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 3.dp)  // 🆕 v1.8.2 (IMPL_12): 1dp → 3dp
+                        .padding(vertical = 3.dp) // 🆕 v1.8.2 (IMPL_12): 1dp → 3dp
                 )
             }
         }

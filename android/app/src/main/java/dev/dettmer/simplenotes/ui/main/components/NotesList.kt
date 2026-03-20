@@ -14,7 +14,7 @@ import dev.dettmer.simplenotes.models.Note
 
 /**
  * Notes list - v1.5.0 with Multi-Select Support
- * 
+ *
  * ULTRA SIMPLE + SELECTION:
  * - NO remember() anywhere
  * - NO caching tricks
@@ -27,10 +27,10 @@ import dev.dettmer.simplenotes.models.Note
 fun NotesList(
     notes: List<Note>,
     showSyncStatus: Boolean,
+    modifier: Modifier = Modifier,
     selectedNotes: Set<String> = emptySet(),
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
-    modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     onNoteClick: (Note) -> Unit,
     onNoteLongPress: (Note) -> Unit,
@@ -47,7 +47,7 @@ fun NotesList(
             contentType = { "NoteCard" }
         ) { note ->
             val isSelected = note.id in selectedNotes
-            
+
             NoteCard(
                 note = note,
                 showSyncStatus = showSyncStatus,

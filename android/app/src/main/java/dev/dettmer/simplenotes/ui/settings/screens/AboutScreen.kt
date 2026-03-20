@@ -1,10 +1,7 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -33,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
@@ -56,16 +54,12 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun AboutScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
+fun AboutScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
 
     // 🔧 v1.11.0: Easter-Egg-Tap-Counter für Entwickleroptionen
     var tapCount by remember { mutableIntStateOf(0) }
-    var currentToast by remember { mutableStateOf<Toast?>(null) }
     val requiredTaps = 5
     // Strings bei Composable-Scope laden (nicht innerhalb von Lambdas per context.getString)
     val msgAlreadyUnlocked = stringResource(R.string.developer_options_already_unlocked)
@@ -75,8 +69,8 @@ fun AboutScreen(
     val githubRepoUrl = "https://github.com/inventory69/simple-notes-sync"
     val githubProfileUrl = "https://github.com/inventory69"
     val licenseUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
-    val changelogUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md"  // v1.8.0
-    
+    val changelogUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md" // v1.8.0
+
     SettingsScaffold(
         title = stringResource(R.string.about_settings_title),
         onBack = onBack
@@ -88,7 +82,7 @@ fun AboutScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // App Info Card — 🔧 v1.11.0: Easter-Egg-Target (5× tippen → Entwickleroptionen)
             Card(
                 modifier = Modifier
@@ -96,26 +90,20 @@ fun AboutScreen(
                     .padding(horizontal = 16.dp)
                     .clickable {
                         if (developerOptionsUnlocked) {
-                            Toast.makeText(context, msgAlreadyUnlocked, Toast.LENGTH_SHORT).show()
+                            viewModel.showSnackbar(msgAlreadyUnlocked)
                             return@clickable
                         }
                         tapCount++
                         val remaining = requiredTaps - tapCount
                         when {
                             remaining == 0 -> {
-                                currentToast?.cancel()
                                 viewModel.unlockDeveloperOptions()
-                                Toast.makeText(context, msgUnlocked, Toast.LENGTH_LONG).show()
+                                viewModel.showSnackbar(msgUnlocked)
                             }
                             remaining in 1..2 -> {
-                                currentToast?.cancel()
-                                val toast = Toast.makeText(
-                                    context,
-                                    String.format(msgCountdownFormat, remaining),
-                                    Toast.LENGTH_SHORT
+                                viewModel.showSnackbar(
+                                    String.format(msgCountdownFormat, remaining)
                                 )
-                                currentToast = toast
-                                toast.show()
                             }
                             // Taps 1-2: kein Feedback (wie Android-Entwickleroptionen)
                         }
@@ -136,14 +124,14 @@ fun AboutScreen(
                         drawable?.let {
                             // Use fixed size for consistent quality (256x256)
                             val size = 256
-                            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                            val bitmap = createBitmap(size, size)
                             val canvas = Canvas(bitmap)
                             it.setBounds(0, 0, size, size)
                             it.draw(canvas)
                             bitmap.asImageBitmap()
                         }
                     }
-                    
+
                     appIcon?.let {
                         Image(
                             bitmap = it,
@@ -151,75 +139,79 @@ fun AboutScreen(
                             modifier = Modifier.size(96.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = stringResource(R.string.about_app_name),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
-                        text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                        text = stringResource(
+                            R.string.about_version,
+                            BuildConfig.VERSION_NAME,
+                            BuildConfig.VERSION_CODE
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             SettingsSectionHeader(text = stringResource(R.string.about_links_section))
-            
+
             // GitHub Repository
             AboutLinkItem(
                 icon = Icons.Default.Code,
                 title = stringResource(R.string.about_github_title),
                 subtitle = stringResource(R.string.about_github_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubRepoUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, githubRepoUrl.toUri())
                     context.startActivity(intent)
                 }
             )
-            
+
             // Developer
             AboutLinkItem(
                 icon = Icons.Default.Person,
                 title = stringResource(R.string.about_developer_title),
                 subtitle = stringResource(R.string.about_developer_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubProfileUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, githubProfileUrl.toUri())
                     context.startActivity(intent)
                 }
             )
-            
+
             // License
             AboutLinkItem(
                 icon = Icons.Default.Policy,
                 title = stringResource(R.string.about_license_title),
                 subtitle = stringResource(R.string.about_license_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(licenseUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, licenseUrl.toUri())
                     context.startActivity(intent)
                 }
             )
-            
+
             // v1.8.0: Changelog
             AboutLinkItem(
                 icon = Icons.Default.History,
                 title = stringResource(R.string.about_changelog_title),
                 subtitle = stringResource(R.string.about_changelog_subtitle),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(changelogUrl))
+                    val intent = Intent(Intent.ACTION_VIEW, changelogUrl.toUri())
                     context.startActivity(intent)
                 }
             )
-            
+
             SettingsDivider()
-            
+
             // Data Privacy Info
             Card(
                 modifier = Modifier
@@ -244,7 +236,7 @@ fun AboutScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -254,12 +246,7 @@ fun AboutScreen(
  * Clickable link item for About section
  */
 @Composable
-private fun AboutLinkItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
+private fun AboutLinkItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,9 +260,9 @@ private fun AboutLinkItem(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -288,7 +275,7 @@ private fun AboutLinkItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
+
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,

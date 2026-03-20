@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.CloudDone
@@ -30,14 +32,12 @@ import dev.dettmer.simplenotes.R
 
 /**
  * 🆕 v1.8.0: Dialog showing the sync status icon legend
- * 
- * Displays all 5 SyncStatus values with their icons, colors, 
+ *
+ * Displays all 5 SyncStatus values with their icons, colors,
  * and descriptions. Helps users understand what each icon means.
  */
 @Composable
-fun SyncStatusLegendDialog(
-    onDismiss: () -> Unit
-) {
+fun SyncStatusLegendDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -48,6 +48,7 @@ fun SyncStatusLegendDialog(
         },
         text = {
             Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Optional: Kurze Einleitung
@@ -56,9 +57,9 @@ fun SyncStatusLegendDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 HorizontalDivider()
-                
+
                 // ☁️✓ SYNCED
                 LegendRow(
                     icon = Icons.Outlined.CloudDone,
@@ -66,7 +67,7 @@ fun SyncStatusLegendDialog(
                     label = stringResource(R.string.sync_legend_synced_label),
                     description = stringResource(R.string.sync_legend_synced_desc)
                 )
-                
+
                 // ☁️↻ PENDING
                 LegendRow(
                     icon = Icons.Outlined.CloudSync,
@@ -74,7 +75,7 @@ fun SyncStatusLegendDialog(
                     label = stringResource(R.string.sync_legend_pending_label),
                     description = stringResource(R.string.sync_legend_pending_desc)
                 )
-                
+
                 // ⚠️ CONFLICT
                 LegendRow(
                     icon = Icons.Default.Warning,
@@ -82,7 +83,7 @@ fun SyncStatusLegendDialog(
                     label = stringResource(R.string.sync_legend_conflict_label),
                     description = stringResource(R.string.sync_legend_conflict_desc)
                 )
-                
+
                 // ☁️✗ LOCAL_ONLY
                 LegendRow(
                     icon = Icons.Outlined.CloudOff,
@@ -90,7 +91,7 @@ fun SyncStatusLegendDialog(
                     label = stringResource(R.string.sync_legend_local_only_label),
                     description = stringResource(R.string.sync_legend_local_only_desc)
                 )
-                
+
                 // ☁️✗ DELETED_ON_SERVER
                 LegendRow(
                     icon = Icons.Outlined.CloudOff,
@@ -113,19 +114,14 @@ fun SyncStatusLegendDialog(
  * Shows icon + label + description
  */
 @Composable
-private fun LegendRow(
-    icon: ImageVector,
-    tint: Color,
-    label: String,
-    description: String
-) {
+private fun LegendRow(icon: ImageVector, tint: Color, label: String, description: String) {
     Row(
         verticalAlignment = Alignment.Top,
         modifier = Modifier.fillMaxWidth()
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,  // Dekorativ, Label reicht
+            contentDescription = null, // Dekorativ, Label reicht
             tint = tint,
             modifier = Modifier
                 .size(20.dp)

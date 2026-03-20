@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 26  // 🆕 v1.12.0: i18n, Notification Status, Liberapay
-        versionName = "1.12.0"  // 🆕 v1.12.0: Chinese translation, Plural fixes, Settings polish
+        versionCode = 27  // 🆕 v2.0.0
+        versionName = "2.0.0"  // 🆕 v2.0.0
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -72,9 +72,6 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
-            
-            // Optionales separates Icon-Label für Debug-Builds
-            resValue("string", "app_name_debug", "Simple Notes (Debug)")
         }
         
         release {
@@ -98,7 +95,20 @@ android {
         buildConfig = true  // Enable BuildConfig generation
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }
-    
+
+    // v2.1.0: Remove debug artifacts from release APK
+    packaging {
+        resources {
+            excludes += setOf(
+                "DebugProbesKt.bin",
+                "kotlin-tooling-metadata.json",
+                "kotlin/**/*.kotlin_builtins",
+                "META-INF/*.kotlin_module",
+                "META-INF/versions/**",
+            )
+        }
+    }
+
     // v1.7.0: Mock Android framework classes in unit tests (Log, etc.)
     testOptions {
         unitTests.isReturnDefaultValues = true
@@ -112,12 +122,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
 
     lint {
         baseline = file("lint-baseline.xml")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
@@ -129,27 +142,20 @@ dependencies {
     implementation(libs.androidx.activity)
 
     // Splash Screen API (Android 12+)
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.core.splashscreen)
 
-    // Unsere Dependencies (DIREKT mit Versionen - viel einfacher!)
-    implementation("com.github.thegrizzlylabs:sardine-android:0.8") {
+    // WebDAV
+    implementation(libs.sardine.android) {
         exclude(group = "xpp3", module = "xpp3")
     }
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-
-    // LocalBroadcastManager für UI Refresh
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
-
-    // SwipeRefreshLayout für Pull-to-Refresh
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.gson)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // 🔐 v1.7.0: AndroidX Security Crypto für Backup-Verschlüsselung
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation(libs.androidx.security.crypto)
 
     // ═══════════════════════════════════════════════════════════════════════
     // v1.5.0: Jetpack Compose für Settings Redesign
@@ -168,8 +174,8 @@ dependencies {
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.8.0: Homescreen Widgets
     // ═══════════════════════════════════════════════════════════════════════
-    implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 
     // Testing (bleiben so)
     testImplementation(libs.junit)
@@ -185,15 +191,13 @@ dependencies {
 ktlint {
     android = true
     outputToConsole = true
-    ignoreFailures = true  // Parser-Probleme in WebDavSyncService.kt und build.gradle.kts
+    ignoreFailures = false
     enableExperimentalRules = false
     
     filter {
         exclude("**/generated/**")
         exclude("**/build/**")
-        // Legacy adapters with ktlint parser issues
-        exclude("**/adapters/NotesAdapter.kt")
-        exclude("**/SettingsActivity.kt")
+        exclude("**/*.kts")
     }
 }
 

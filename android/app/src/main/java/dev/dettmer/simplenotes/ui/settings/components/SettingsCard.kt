@@ -74,9 +74,9 @@ fun SettingsCard(
                     modifier = Modifier.size(20.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             // Content
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -101,7 +101,7 @@ fun SettingsCard(
                     )
                 }
             }
-            
+
             // Arrow
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

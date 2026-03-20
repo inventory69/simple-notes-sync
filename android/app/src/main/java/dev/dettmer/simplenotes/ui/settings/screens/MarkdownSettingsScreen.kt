@@ -35,17 +35,14 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun MarkdownSettingsScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
+fun MarkdownSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val exportProgress by viewModel.markdownExportProgress.collectAsState()
-    
+
     // 🌟 v1.6.0: Check offline mode
     val offlineMode by viewModel.offlineMode.collectAsState()
     val isServerConfigured = viewModel.isServerConfigured()
-    
+
     // v1.5.0 Fix: Progress Dialog for initial export
     exportProgress?.let { progress ->
         AlertDialog(
@@ -74,7 +71,9 @@ fun MarkdownSettingsScreen(
                             progress = {
                                 if (progress.total > 0) {
                                     progress.current.toFloat() / progress.total.toFloat()
-                                } else 0f
+                                } else {
+                                    0f
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -84,7 +83,7 @@ fun MarkdownSettingsScreen(
             confirmButton = { /* No button - auto dismiss */ }
         )
     }
-    
+
     SettingsScaffold(
         title = stringResource(R.string.markdown_settings_title),
         onBack = onBack
@@ -96,14 +95,14 @@ fun MarkdownSettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Info Card
             SettingsInfoCard(
                 text = stringResource(R.string.markdown_info)
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Markdown Auto-Sync Toggle
             // 🌟 v1.6.0: Disabled when offline mode active
             SettingsSwitch(
@@ -118,25 +117,25 @@ fun MarkdownSettingsScreen(
                 icon = Icons.Default.Description,
                 enabled = isServerConfigured
             )
-            
+
             // Manual sync button (only visible when auto-sync is off)
             // 🌟 v1.6.0: Also disabled in offline mode
             if (!markdownAutoSync) {
                 SettingsDivider()
-                
+
                 SettingsInfoCard(
                     text = stringResource(R.string.markdown_manual_sync_info)
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 SettingsButton(
                     text = stringResource(R.string.markdown_manual_sync_button),
                     onClick = { viewModel.performManualMarkdownSync() },
                     enabled = isServerConfigured,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                
+
                 // 🌟 v1.6.0: Show hint when offline
                 if (!isServerConfigured) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -148,7 +147,7 @@ fun MarkdownSettingsScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

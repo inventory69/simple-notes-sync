@@ -7,7 +7,6 @@ import org.junit.Test
  * Unit-Tests für SyncException und ValidationException.
  */
 class SyncExceptionTest {
-
     @Test
     fun `SyncException with message only`() {
         val ex = SyncException("Sync failed")

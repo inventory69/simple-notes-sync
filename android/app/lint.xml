@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- PluralsCandidate: String-zu-Plurals-Migration → v2.1.0    -->
+    <!-- Größerer Umbau, Risiko für Community-Übersetzungen         -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="PluralsCandidate" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- MissingTranslation: Community-Sprachen (uk, tr, zh)        -->
+    <!-- Nur DE + EN werden vom Entwickler gepflegt.                -->
+    <!-- Community-Übersetzer ergänzen ihre Sprachen selbstständig. -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="MissingTranslation" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- AppBundleLocaleChanges: F-Droid nutzt kein Play Core       -->
+    <!-- Dynamic Locale via AppCompatDelegate funktioniert ohne es  -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="AppBundleLocaleChanges" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- UnusedAttribute: API-Level-Attribute für Widget + Manifest -->
+    <!-- localeConfig (API 33), Widget-Attrs (API 31), Preview etc. -->
+    <!-- Graceful Degradation: ignoriert auf älteren APIs           -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="UnusedAttribute" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- IconDuplicates: monochrome == foreground ist Design-Wahl   -->
+    <!-- Monochrome Icon soll dem Launcher-Foreground entsprechen   -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="IconDuplicates" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- AcceptsUserCertificates: Bewusste Entscheidung (v1.8.2)    -->
+    <!-- WebDAV-Sync mit selbstsignierten Zertifikaten erfordert    -->
+    <!-- User-installierte CAs auch im Release-Build.               -->
+    <!-- Nutzer muss CA-Zertifikat bewusst im System installieren.  -->
+    <!-- Ohne dies wäre self-hosted WebDAV mit eigenem SSL           -->
+    <!-- nicht nutzbar — Kernfeature der App.                       -->
+    <!-- Risiko: Akzeptabel. User-CAs erfordern physischen Zugang   -->
+    <!-- oder MDM-Enrollment. Kein Remote-Exploit-Vektor.           -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="AcceptsUserCertificates" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- HardwareIds: DeviceIdGenerator nutzt ANDROID_ID als Seed   -->
+    <!-- Nicht als Tracking-ID, sondern als Sync-Device-Identität.  -->
+    <!-- Wird mit "android-" Prefix versehen und in SharedPrefs     -->
+    <!-- persistiert. UUID-Fallback wenn ANDROID_ID nicht verfügbar.-->
+    <!-- Alternative (InstanceId) ist deprecated, Firebase braucht  -->
+    <!-- Play Services (F-Droid-inkompatibel).                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="HardwareIds" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- AndroidGradlePluginVersion: AGP 9.x ist Major-Version      -->
+    <!-- → Migration geplant für v2.1.0                             -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+</lint>

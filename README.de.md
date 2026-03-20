@@ -12,7 +12,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
 [![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
-[![License](https://img.shields.io/badge/License-MIT-F5C400?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-D22128?style=for-the-badge&logo=apache)](LICENSE)
 [![Spenden](https://img.shields.io/liberapay/receives/inventory?style=for-the-badge&logo=liberapay&logoColor=white&label=Spenden)](https://liberapay.com/inventory/)
 
 </div>
@@ -65,7 +65,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 ## ✨ Highlights
 
 - 📝 **Offline-first** – Funktioniert ohne Internet
-- 📊 **Flexible Ansichten** – Listen- und Grid-Layout
+- 📊 **Flexible Ansichten** – Listen- und Grid-Layout, 1–5 Spalten konfigurierbar
 - ✅ **Checklisten** – Tap-to-Check, Drag & Drop
 - 🔄 **Konfigurierbare Sync-Trigger** – onSave, onResume, WiFi, periodisch (15/30/60 Min), Boot
 - 📌 **Widgets** – Home-Screen Quick-Note und Notizlisten-Widget
@@ -77,7 +77,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 - 🖥️ **Desktop-Integration** – Markdown-Export für Obsidian, VS Code, Typora
 - 📤 **Teilen & Exportieren** – Als Text oder PDF teilen, in Kalender exportieren
 - ↩️ **Rückgängig/Wiederherstellen** – Vollständige Undo/Redo-Historie im Notiz-Editor
-- 🎨 **Material Design 3** – Dynamischer Dark/Light Mode & Farben
+- 🎨 **Material Design 3** - 7 Farbschemata inkl. AMOLED & Dynamic Color, animierte Theme-Übergänge
 
 ➡️ **Vollständige Feature-Liste:** [docs/FEATURES.de.md](docs/FEATURES.de.md)
 
@@ -152,11 +152,11 @@ Wenn du die App nützlich findest, kannst du die Entwicklung unterstützen:
 
 ## 📄 Lizenz
 
-MIT License – siehe [LICENSE](LICENSE)
+Apache License 2.0 – siehe [LICENSE](LICENSE)
 
 <div align="center">
 <br /><br />
 
-**v1.12.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.0.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

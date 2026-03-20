@@ -8,7 +8,6 @@ import org.junit.Test
  * Reine Datenklassen-Tests ohne Android-Abhängigkeiten.
  */
 class BackupDataClassesTest {
-
     // ═══════════════════════════════════════════════
     // BackupResult
     // ═══════════════════════════════════════════════

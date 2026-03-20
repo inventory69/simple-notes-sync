@@ -1,34 +1,35 @@
 package dev.dettmer.simplenotes.ui.settings
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.SimpleNotesApplication
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.Logger
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 /**
  * Settings Activity with Jetpack Compose UI
  * v1.5.0: Complete Settings Redesign with grouped screens
- * 
+ *
  * Replaces the old 1147-line SettingsActivity.kt with a modern
  * Compose-based implementation featuring:
  * - 6 logical settings groups as separate screens
@@ -37,67 +38,112 @@ import kotlinx.coroutines.launch
  * - Clean separation of concerns with SettingsViewModel
  */
 class ComposeSettingsActivity : AppCompatActivity() {
-    
     companion object {
         private const val TAG = "ComposeSettingsActivity"
     }
-    
+
     private val viewModel: SettingsViewModel by viewModels()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
-        
+
         // Enable edge-to-edge display
         enableEdgeToEdge()
-        
-        // Handle back button with slide animation
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                setResult(RESULT_OK)
-                finish()
-                @Suppress("DEPRECATION")
-                overridePendingTransition(
-                    dev.dettmer.simplenotes.R.anim.slide_in_left,
-                    dev.dettmer.simplenotes.R.anim.slide_out_right
-                )
+
+        // v2.0.0: Register both OPEN and CLOSE transitions for consistent
+        // Shared Axis X animation on all back paths (arrow button + swipe gesture).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                R.anim.shared_axis_x_enter,
+                R.anim.shared_axis_x_exit
+            )
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.shared_axis_x_pop_enter,
+                R.anim.shared_axis_x_pop_exit
+            )
+        }
+
+        // v2.0.0: On API 35+ (mandatory predictive back), overrideActivityTransition(CLOSE)
+        // is only respected for explicit finish() calls — the system uses its own animation
+        // for gesture-driven back. Routing through OnBackPressedCallback + finish() fixes this.
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    finishWithTransition()
+                }
             }
-        })
-        
+        )
+
+        // v2.0.0: Default result for Back gesture
+        setResult(RESULT_OK)
+
         // Collect events from ViewModel (for Activity-level actions)
         collectViewModelEvents()
-        
+
         setContent {
-            SimpleNotesTheme {
-                val navController = rememberNavController()
-                val context = LocalContext.current
-                
-                // Toast handling from ViewModel
-                LaunchedEffect(Unit) {
-                    viewModel.showToast.collect { message ->
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    }
+            // Live theme preview: theme state flows from SettingsViewModel so that
+            // changes in DisplaySettingsScreen are immediately reflected here.
+            val themeMode by viewModel.themeMode.collectAsState()
+            val colorTheme by viewModel.colorTheme.collectAsState()
+            // v2.1.0: NavController must live ABOVE SimpleNotesTheme so it survives
+            // the Crossfade composition recreation on theme changes — otherwise
+            // navigation resets to the start destination on every theme switch.
+            val navController = rememberNavController()
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
+                val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
+
+                // Battery optimization dialog (state-driven)
+                if (showBatteryDialog) {
+                    AlertDialog(
+                        onDismissRequest = { viewModel.dismissBatteryOptimizationDialog() },
+                        title = { Text(getString(R.string.battery_optimization_dialog_title)) },
+                        text = { Text(getString(R.string.battery_optimization_dialog_full_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                viewModel.dismissBatteryOptimizationDialog()
+                                openBatteryOptimizationSettings()
+                            }) {
+                                Text(getString(R.string.battery_optimization_open_settings))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { viewModel.dismissBatteryOptimizationDialog() }) {
+                                Text(getString(R.string.battery_optimization_later))
+                            }
+                        }
+                    )
                 }
-                
+
                 SettingsNavHost(
                     navController = navController,
                     viewModel = viewModel,
                     onFinish = {
                         setResult(RESULT_OK)
-                        finish()
-                        @Suppress("DEPRECATION")
-                        overridePendingTransition(
-                            dev.dettmer.simplenotes.R.anim.slide_in_left,
-                            dev.dettmer.simplenotes.R.anim.slide_out_right
-                        )
+                        finishWithTransition()
                     }
                 )
             }
         }
     }
-    
+
+    private fun finishWithTransition() {
+        finish()
+        // API < 34: overrideActivityTransition not available, use deprecated API
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                R.anim.shared_axis_x_pop_enter,
+                R.anim.shared_axis_x_pop_exit
+            )
+        }
+    }
+
     /**
      * Collect events from ViewModel for Activity-level actions
      * v1.5.0: Ported from old SettingsActivity
@@ -106,51 +152,19 @@ class ComposeSettingsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.events.collect { event ->
                 when (event) {
-                    is SettingsViewModel.SettingsEvent.RequestBatteryOptimization -> {
-                        checkBatteryOptimization()
-                    }
                     is SettingsViewModel.SettingsEvent.RestartNetworkMonitor -> {
                         restartNetworkMonitor()
                     }
+                    else -> { /* handled via state */ }
                 }
             }
         }
     }
-    
-    /**
-     * Check if battery optimization is disabled for this app
-     * v1.5.0: Ported from old SettingsActivity
-     */
-    private fun checkBatteryOptimization() {
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        
-        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            showBatteryOptimizationDialog()
-        }
-    }
-    
-    /**
-     * Show dialog asking user to disable battery optimization
-     * v1.5.0: Ported from old SettingsActivity
-     */
-    private fun showBatteryOptimizationDialog() {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.battery_optimization_dialog_title))
-            .setMessage(getString(R.string.battery_optimization_dialog_full_message))
-            .setPositiveButton(getString(R.string.battery_optimization_open_settings)) { _, _ ->
-                openBatteryOptimizationSettings()
-            }
-            .setNegativeButton(getString(R.string.battery_optimization_later)) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setCancelable(false)
-            .show()
-    }
-    
+
     /**
      * Open system battery optimization settings
      * v1.5.0: Ported from old SettingsActivity
-     * 
+     *
      * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
      * For Play Store builds, this would need to be changed to
      * ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (shows list, doesn't request directly).
@@ -159,7 +173,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
     private fun openBatteryOptimizationSettings() {
         try {
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            intent.data = Uri.parse("package:$packageName")
+            intent.data = "package:$packageName".toUri()
             startActivity(intent)
         } catch (e: Exception) {
             Logger.w(TAG, "Failed to open battery optimization settings: ${e.message}")
@@ -173,7 +187,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     /**
      * Restart the network monitor after sync settings change
      * v1.5.0: Ported from old SettingsActivity
@@ -189,7 +203,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
             Logger.e(TAG, "❌ Failed to restart NetworkMonitor: ${e.message}")
         }
     }
-    
+
     /**
      * Handle configuration changes (e.g., locale) without recreating activity
      * v1.8.0: Prevents flickering during language changes by avoiding full recreate

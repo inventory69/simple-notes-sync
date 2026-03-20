@@ -26,13 +26,11 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 /**
  * Language selection settings screen
  * v1.5.0: Internationalization feature
- * 
+ *
  * Uses Android's Per-App Language API (Android 13+) with AppCompat fallback
  */
 @Composable
-fun LanguageSettingsScreen(
-    onBack: () -> Unit
-) {
+fun LanguageSettingsScreen(onBack: () -> Unit) {
     // Get current app locale - fresh value each time (no remember, always reads current state)
     val currentLocale = AppCompatDelegate.getApplicationLocales()
     val currentLanguageCode = if (currentLocale.isEmpty) {
@@ -40,9 +38,9 @@ fun LanguageSettingsScreen(
     } else {
         currentLocale.get(0)?.language.orEmpty()
     }
-    
+
     var selectedLanguage by remember(currentLanguageCode) { mutableStateOf(currentLanguageCode) }
-    
+
     // Language options
     val languageOptions = listOf(
         RadioOption(
@@ -76,7 +74,7 @@ fun LanguageSettingsScreen(
             subtitle = "Chinese (Simplified)"
         )
     )
-    
+
     SettingsScaffold(
         title = stringResource(R.string.language_settings_title),
         onBack = onBack
@@ -88,14 +86,14 @@ fun LanguageSettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Info card
             SettingsInfoCard(
                 text = stringResource(R.string.language_info)
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Language selection radio group
             SettingsRadioGroup(
                 options = languageOptions,
@@ -114,7 +112,7 @@ fun LanguageSettingsScreen(
 /**
  * Set app language using AppCompatDelegate
  * v1.8.0: Smooth language change without activity recreate
- * 
+ *
  * ComposeSettingsActivity handles locale changes via android:configChanges="locale"
  * in AndroidManifest.xml, preventing full activity recreate and eliminating flicker.
  * Compose automatically recomposes when the configuration changes.
@@ -125,7 +123,7 @@ private fun setAppLanguage(languageCode: String) {
     } else {
         LocaleListCompat.forLanguageTags(languageCode)
     }
-    
+
     // Sets the app locale - triggers onConfigurationChanged() instead of recreate()
     AppCompatDelegate.setApplicationLocales(localeList)
 }

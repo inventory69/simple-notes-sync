@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * Stack size is bounded by [Constants.UNDO_STACK_MAX_SIZE].
  */
 class UndoRedoManager {
-
     private val undoStack = ArrayDeque<EditorSnapshot>()
     private val redoStack = ArrayDeque<EditorSnapshot>()
 
@@ -33,7 +32,7 @@ class UndoRedoManager {
      * Clears the redo stack on every new user edit.
      */
     fun pushUndo(snapshot: EditorSnapshot) {
-        if (undoStack.lastOrNull() == snapshot) return  // Deduplicate
+        if (undoStack.lastOrNull() == snapshot) return // Deduplicate
         undoStack.addLast(snapshot)
         if (undoStack.size > Constants.UNDO_STACK_MAX_SIZE) {
             undoStack.removeFirst()
@@ -85,8 +84,4 @@ class UndoRedoManager {
  * Immutable snapshot of the note editor state at a point in time.
  * Used as the unit stored in [UndoRedoManager]'s stacks.
  */
-data class EditorSnapshot(
-    val title: String,
-    val content: String,
-    val checklistItems: List<ChecklistItemState>
-)
+data class EditorSnapshot(val title: String, val content: String, val checklistItems: List<ChecklistItemState>)

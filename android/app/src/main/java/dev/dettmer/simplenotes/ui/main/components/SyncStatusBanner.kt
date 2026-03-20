@@ -24,16 +24,12 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
  * v1.8.0: Nur noch COMPLETED/ERROR States - SYNCING wird von SyncProgressBanner übernommen
  */
 @Composable
-fun SyncStatusBanner(
-    syncState: SyncStateManager.SyncState,
-    message: String?,
-    modifier: Modifier = Modifier
-) {
+fun SyncStatusBanner(syncState: SyncStateManager.SyncState, message: String?, modifier: Modifier = Modifier) {
     // v1.8.0: Nur COMPLETED/ERROR anzeigen (SYNCING wird von SyncProgressBanner übernommen)
     // IDLE und SYNCING_SILENT werden ignoriert
-    val isVisible = syncState == SyncStateManager.SyncState.COMPLETED 
-                    || syncState == SyncStateManager.SyncState.ERROR
-    
+    val isVisible = syncState == SyncStateManager.SyncState.COMPLETED ||
+        syncState == SyncStateManager.SyncState.ERROR
+
     AnimatedVisibility(
         visible = isVisible,
         enter = expandVertically(),
@@ -48,7 +44,7 @@ fun SyncStatusBanner(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // v1.8.0: Kein Loading-Icon mehr - wird von SyncProgressBanner übernommen
-            
+
             Text(
                 text = when (syncState) {
                     SyncStateManager.SyncState.COMPLETED -> message ?: stringResource(R.string.sync_status_completed)

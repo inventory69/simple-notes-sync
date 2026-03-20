@@ -15,7 +15,6 @@ import org.junit.Test
  * InstantTaskExecutorRule sorgt dafür, dass LiveData.postValue() synchron ausgeführt wird.
  */
 class SyncStateManagerTest {
-
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 

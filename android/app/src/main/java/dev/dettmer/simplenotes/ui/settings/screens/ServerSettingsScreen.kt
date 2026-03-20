@@ -48,8 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -71,19 +71,19 @@ fun ServerSettingsScreen(
     onBack: () -> Unit
 ) {
     val offlineMode by viewModel.offlineMode.collectAsState()
-    val serverHost by viewModel.serverHost.collectAsState()  // 🌟 v1.6.0: Only host part
-    val serverUrl by viewModel.serverUrl.collectAsState()    // Full URL for display
+    val serverHost by viewModel.serverHost.collectAsState() // 🌟 v1.6.0: Only host part
+    val serverUrl by viewModel.serverUrl.collectAsState() // Full URL for display
     val username by viewModel.username.collectAsState()
     val password by viewModel.password.collectAsState()
     val isHttps by viewModel.isHttps.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
-    val syncFolderName by viewModel.syncFolderName.collectAsState()  // 🆕 v1.9.0
-    val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState()  // 🆕 v1.10.0
-    
+    val syncFolderName by viewModel.syncFolderName.collectAsState() // 🆕 v1.9.0
+    val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState() // 🆕 v1.10.0
+
     var passwordVisible by remember { mutableStateOf(false) }
-    var showAdvanced by remember { mutableStateOf(false) }  // 🆕 v1.9.0
-    
+    var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
+
     // 🔧 v1.7.0 Hotfix: Save server settings when leaving this screen
     // This prevents false "server changed" detection during text input
     DisposableEffect(Unit) {
@@ -91,14 +91,14 @@ fun ServerSettingsScreen(
             viewModel.saveServerSettingsManually()
         }
     }
-    
+
     // Check server status on load (only if not in offline mode)
     LaunchedEffect(offlineMode) {
         if (!offlineMode) {
             viewModel.checkServerStatus()
         }
     }
-    
+
     SettingsScaffold(
         title = stringResource(R.string.server_settings_title),
         onBack = onBack
@@ -113,7 +113,7 @@ fun ServerSettingsScreen(
             // ═══════════════════════════════════════════════════════════════
             // 🌟 v1.6.0: Offline-Modus Toggle (TOP)
             // ═══════════════════════════════════════════════════════════════
-            
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -150,16 +150,16 @@ fun ServerSettingsScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // ═══════════════════════════════════════════════════════════════
             // Server Configuration (grayed out when offline mode)
             // ═══════════════════════════════════════════════════════════════
-            
+
             val fieldsEnabled = !offlineMode
             val fieldsAlpha = if (offlineMode) 0.5f else 1f
-            
+
             Column(modifier = Modifier.alpha(fieldsAlpha)) {
                 // Verbindungstyp
                 Text(
@@ -167,7 +167,7 @@ fun ServerSettingsScreen(
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -187,7 +187,7 @@ fun ServerSettingsScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                
+
                 Text(
                     text = if (!isHttps) {
                         stringResource(R.string.server_connection_http_hint)
@@ -198,10 +198,10 @@ fun ServerSettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
-                
+
                 // 🌟 v1.6.0: Server-Adresse with non-editable prefix
                 OutlinedTextField(
-                    value = serverHost,  // Only host part is editable
+                    value = serverHost, // Only host part is editable
                     onValueChange = { viewModel.updateServerHost(it) },
                     label = { Text(stringResource(R.string.server_address)) },
                     supportingText = { Text(stringResource(R.string.server_address_hint)) },
@@ -223,9 +223,9 @@ fun ServerSettingsScreen(
                     enabled = fieldsEnabled,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // Benutzername
                 OutlinedTextField(
                     value = username,
@@ -236,9 +236,9 @@ fun ServerSettingsScreen(
                     singleLine = true,
                     enabled = fieldsEnabled
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // Passwort
                 OutlinedTextField(
                     value = password,
@@ -338,8 +338,8 @@ fun ServerSettingsScreen(
                         Slider(
                             value = connectionTimeoutSeconds.toFloat(),
                             onValueChange = { viewModel.setConnectionTimeoutSeconds(it.toInt()) },
-                            valueRange = Constants.MIN_CONNECTION_TIMEOUT_SECONDS.toFloat()
-                                ..Constants.MAX_CONNECTION_TIMEOUT_SECONDS.toFloat(),
+                            valueRange =
+                            Constants.MIN_CONNECTION_TIMEOUT_SECONDS.toFloat()..Constants.MAX_CONNECTION_TIMEOUT_SECONDS.toFloat(),
                             steps = Constants.MAX_CONNECTION_TIMEOUT_SECONDS -
                                 Constants.MIN_CONNECTION_TIMEOUT_SECONDS - 1,
                             enabled = fieldsEnabled,
@@ -363,9 +363,9 @@ fun ServerSettingsScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Server-Status
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -383,11 +383,21 @@ fun ServerSettingsScreen(
                     Text(stringResource(R.string.server_status_label), style = MaterialTheme.typography.labelLarge)
                     Text(
                         text = when (serverStatus) {
-                            is SettingsViewModel.ServerStatus.OfflineMode -> stringResource(R.string.server_status_offline_mode)
-                            is SettingsViewModel.ServerStatus.Reachable -> stringResource(R.string.server_status_reachable)
-                            is SettingsViewModel.ServerStatus.Unreachable -> stringResource(R.string.server_status_unreachable)
-                            is SettingsViewModel.ServerStatus.Checking -> stringResource(R.string.server_status_checking)
-                            is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(R.string.server_status_offline_mode)
+                            is SettingsViewModel.ServerStatus.OfflineMode -> stringResource(
+                                R.string.server_status_offline_mode
+                            )
+                            is SettingsViewModel.ServerStatus.Reachable -> stringResource(
+                                R.string.server_status_reachable
+                            )
+                            is SettingsViewModel.ServerStatus.Unreachable -> stringResource(
+                                R.string.server_status_unreachable
+                            )
+                            is SettingsViewModel.ServerStatus.Checking -> stringResource(
+                                R.string.server_status_checking
+                            )
+                            is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(
+                                R.string.server_status_offline_mode
+                            )
                             else -> stringResource(R.string.server_status_unknown)
                         },
                         color = when (serverStatus) {
@@ -400,9 +410,9 @@ fun ServerSettingsScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Action Buttons (disabled in offline mode)
             Row(
                 modifier = Modifier
@@ -417,7 +427,7 @@ fun ServerSettingsScreen(
                 ) {
                     Text(stringResource(R.string.test_connection))
                 }
-                
+
                 Button(
                     onClick = { viewModel.syncNow() },
                     enabled = fieldsEnabled && !isSyncing,

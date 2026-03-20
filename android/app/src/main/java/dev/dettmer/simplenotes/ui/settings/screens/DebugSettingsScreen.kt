@@ -14,6 +14,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
@@ -40,15 +44,28 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun DebugSettingsScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
+fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
-    
+
     var showClearLogsDialog by remember { mutableStateOf(false) }
-    
+    var showDisableAfterExportDialog by remember { mutableStateOf(false) }
+    // True after export while waiting for the share sheet to be dismissed
+    var pendingDisableDialog by remember { mutableStateOf(false) }
+
+    // Show the disable-after-export dialog only once the screen resumes (share sheet closed)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && pendingDisableDialog) {
+                pendingDisableDialog = false
+                showDisableAfterExportDialog = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     SettingsScaffold(
         title = stringResource(R.string.debug_settings_title),
         onBack = onBack
@@ -60,7 +77,7 @@ fun DebugSettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // File Logging Toggle
             SettingsSwitch(
                 title = stringResource(R.string.debug_file_logging_title),
@@ -69,22 +86,22 @@ fun DebugSettingsScreen(
                 onCheckedChange = { viewModel.setFileLogging(it) },
                 icon = Icons.AutoMirrored.Filled.Notes
             )
-            
+
             // Privacy Info
             SettingsInfoCard(
                 text = stringResource(R.string.debug_privacy_info)
             )
-            
+
             SettingsDivider()
-            
+
             SettingsSectionHeader(text = stringResource(R.string.debug_log_actions_section))
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Export Logs Button
             val logsSubject = stringResource(R.string.debug_logs_subject)
             val logsShareVia = stringResource(R.string.debug_logs_share_via)
-            
+
             SettingsButton(
                 text = stringResource(R.string.debug_export_logs),
                 onClick = {
@@ -95,50 +112,51 @@ fun DebugSettingsScreen(
                             "${BuildConfig.APPLICATION_ID}.fileprovider",
                             logFile
                         )
-                        
+
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_STREAM, logUri)
                             putExtra(Intent.EXTRA_SUBJECT, logsSubject)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        
+
                         context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
+                        if (fileLoggingEnabled) pendingDisableDialog = true
                     }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Clear Logs Button
             SettingsDangerButton(
                 text = stringResource(R.string.debug_delete_logs),
                 onClick = { showClearLogsDialog = true },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             SettingsDivider()
-            
+
             // v1.8.0: Test Mode Section
             SettingsSectionHeader(text = stringResource(R.string.debug_test_section))
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Info about test mode
             SettingsInfoCard(
                 text = stringResource(R.string.debug_reset_changelog_desc)
             )
-            
+
             val changelogResetToast = stringResource(R.string.debug_changelog_reset)
-            
+
             SettingsButton(
                 text = stringResource(R.string.debug_reset_changelog),
                 onClick = {
                     viewModel.resetChangelogVersion()
-                    android.widget.Toast.makeText(context, changelogResetToast, android.widget.Toast.LENGTH_SHORT).show()
+                    viewModel.showSnackbar(changelogResetToast)
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -146,7 +164,7 @@ fun DebugSettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-    
+
     // Clear Logs Confirmation Dialog
     if (showClearLogsDialog) {
         AlertDialog(
@@ -168,6 +186,30 @@ fun DebugSettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showClearLogsDialog = false }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Disable Logging After Export Dialog
+    if (showDisableAfterExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisableAfterExportDialog = false },
+            title = { Text(stringResource(R.string.debug_after_export_title)) },
+            text = { Text(stringResource(R.string.debug_after_export_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDisableAfterExportDialog = false
+                        viewModel.setFileLogging(false)
+                    }
+                ) {
+                    Text(stringResource(R.string.debug_after_export_disable))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisableAfterExportDialog = false }) {
+                    Text(stringResource(R.string.debug_after_export_keep))
                 }
             }
         )

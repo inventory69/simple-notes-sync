@@ -10,7 +10,6 @@ import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
  * Used by NoteEditorViewModel (calendar/share events) and PdfExporter (PDF generation).
  */
 object NoteShareHelper {
-
     /**
      * Formats note content as plain text for sharing/calendar description.
      *
@@ -25,11 +24,7 @@ object NoteShareHelper {
      * @param checklistItems The checklist items (for CHECKLIST notes)
      * @return Formatted plain-text string
      */
-    fun formatAsPlainText(
-        noteType: NoteType,
-        textContent: String,
-        checklistItems: List<ChecklistItemState>,
-    ): String {
+    fun formatAsPlainText(noteType: NoteType, textContent: String, checklistItems: List<ChecklistItemState>): String {
         return when (noteType) {
             NoteType.TEXT -> textContent.trim()
             NoteType.CHECKLIST -> {
@@ -52,9 +47,7 @@ object NoteShareHelper {
      * @param checklistItems The raw checklist items from the editor
      * @return List of (text, isChecked) pairs, sorted by order
      */
-    fun formatChecklistForPdf(
-        checklistItems: List<ChecklistItemState>,
-    ): List<Pair<String, Boolean>> {
+    fun formatChecklistForPdf(checklistItems: List<ChecklistItemState>): List<Pair<String, Boolean>> {
         return checklistItems
             .filter { it.text.isNotBlank() }
             .sortedBy { it.order }

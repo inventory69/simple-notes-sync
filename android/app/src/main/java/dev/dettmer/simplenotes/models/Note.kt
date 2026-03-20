@@ -38,26 +38,26 @@ data class Note(
         val gson = com.google.gson.GsonBuilder()
             .setPrettyPrinting()
             .create()
-        
+
         // v1.4.1: Für Checklisten den Fallback-Content generieren
         val noteToSerialize = if (noteType == NoteType.CHECKLIST && checklistItems != null) {
             this.copy(content = generateChecklistFallbackContent())
         } else {
             this
         }
-        
+
         return gson.toJson(noteToSerialize)
     }
-    
+
     /**
      * v1.4.1: Generiert einen lesbaren Text-Fallback aus Checklist-Items.
      * Format: GitHub-Style Task-Listen (kompatibel mit Markdown)
-     * 
+     *
      * Beispiel:
      * [ ] Milch kaufen
      * [x] Brot gekauft
      * [ ] Eier
-     * 
+     *
      * Wird von älteren App-Versionen (v1.3.x) als normaler Text angezeigt.
      */
     private fun generateChecklistFallbackContent(): String {
@@ -66,7 +66,7 @@ data class Note(
             "$checkbox ${item.text}"
         }.orEmpty()
     }
-    
+
     /**
      * Exports this note as a Markdown file with YAML frontmatter.
      * Format kompatibel mit Obsidian, Joplin, Typora (Task #1.2.0-08)
@@ -97,7 +97,7 @@ data class Note(
         } else {
             ""
         }
-        
+
         val header = """
 ---
 id: $id
@@ -108,9 +108,8 @@ type: ${noteType.name.lowercase()}$sortLine
 ---
 
 # $title
+        """.trimIndent()
 
-""".trimIndent()
-        
         return when (noteType) {
             NoteType.TEXT -> header + content
             NoteType.CHECKLIST -> {
@@ -122,10 +121,10 @@ type: ${noteType.name.lowercase()}$sortLine
             }
         }
     }
-    
+
     companion object {
         private const val TAG = "Note"
-        
+
         /**
          * Parst JSON zu Note-Objekt mit Backward Compatibility für alte Notizen ohne noteType
          */
@@ -133,7 +132,7 @@ type: ${noteType.name.lowercase()}$sortLine
             return try {
                 val gson = com.google.gson.Gson()
                 val jsonObject = com.google.gson.JsonParser.parseString(json).asJsonObject
-                
+
                 // Backward Compatibility: Alte Notizen ohne noteType bekommen TEXT
                 val noteType = if (jsonObject.has("noteType") && !jsonObject.get("noteType").isJsonNull) {
                     try {
@@ -145,18 +144,19 @@ type: ${noteType.name.lowercase()}$sortLine
                 } else {
                     NoteType.TEXT
                 }
-                
+
                 // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
-                val checklistSortOption = if (jsonObject.has("checklistSortOption") && 
-                    !jsonObject.get("checklistSortOption").isJsonNull) {
+                val checklistSortOption = if (jsonObject.has("checklistSortOption") &&
+                    !jsonObject.get("checklistSortOption").isJsonNull
+                ) {
                     jsonObject.get("checklistSortOption").asString
                 } else {
                     null
                 }
-                
+
                 // Parsen der Basis-Note
                 val rawNote = gson.fromJson(json, NoteRaw::class.java)
-                
+
                 // Checklist-Items parsen (kann null sein)
                 val checklistItemsType = object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
                 var checklistItems: List<ChecklistItem>? = if (jsonObject.has("checklistItems") &&
@@ -169,20 +169,20 @@ type: ${noteType.name.lowercase()}$sortLine
                 } else {
                     null
                 }
-                
-                // v1.4.1: Recovery-Mode - Falls Checkliste aber keine Items, 
+
+                // v1.4.1: Recovery-Mode - Falls Checkliste aber keine Items,
                 // versuche Content als Fallback zu parsen
-                if (noteType == NoteType.CHECKLIST && 
+                if (noteType == NoteType.CHECKLIST &&
                     checklistItems.isNullOrEmpty() &&
-                    rawNote.content.isNotBlank()) {
-                    
+                    rawNote.content.isNotBlank()
+                ) {
                     val recoveredItems = parseChecklistFromContent(rawNote.content)
                     if (recoveredItems.isNotEmpty()) {
                         Logger.d(TAG, "🔄 Recovered ${recoveredItems.size} checklist items from content fallback")
                         checklistItems = recoveredItems
                     }
                 }
-                
+
                 // Note mit korrekten Werten erstellen
                 Note(
                     id = rawNote.id,
@@ -194,14 +194,14 @@ type: ${noteType.name.lowercase()}$sortLine
                     syncStatus = rawNote.syncStatus ?: SyncStatus.LOCAL_ONLY,
                     noteType = noteType,
                     checklistItems = checklistItems,
-                    checklistSortOption = checklistSortOption  // 🆕 v1.8.1 (IMPL_03)
+                    checklistSortOption = checklistSortOption // 🆕 v1.8.1 (IMPL_03)
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
                 null
             }
         }
-        
+
         /**
          * Hilfsklasse für Gson-Parsing mit nullable Feldern
          */
@@ -214,18 +214,18 @@ type: ${noteType.name.lowercase()}$sortLine
             val deviceId: String = "",
             val syncStatus: SyncStatus? = null
         )
-        
+
         /**
          * v1.4.1: Parst GitHub-Style Checklisten aus Text (Recovery-Mode).
-         * 
+         *
          * Unterstützte Formate:
          * - [ ] Unchecked item
          * - [x] Checked item
          * - [X] Checked item (case insensitive)
-         * 
+         *
          * Wird verwendet, wenn eine v1.4.0 Checkliste von einer älteren
          * App-Version (v1.3.x) bearbeitet wurde und die checklistItems verloren gingen.
-         * 
+         *
          * @param content Der Text-Content der Notiz
          * @return Liste von ChecklistItems oder leere Liste
          */
@@ -242,12 +242,12 @@ type: ${noteType.name.lowercase()}$sortLine
                 )
             }.toList()
         }
-        
+
         /**
          * Parst Markdown zurück zu Note-Objekt (Task #1.2.0-09)
          * v1.4.0: Unterstützt jetzt auch Checklisten-Format
          * 🔧 v1.7.2 (IMPL_014): Optional serverModifiedTime für korrekte Timestamp-Sync
-         * 
+         *
          * @param md Markdown-String mit YAML Frontmatter
          * @param serverModifiedTime Optionaler Server-Datei mtime (Priorität über YAML timestamp)
          * @return Note-Objekt oder null bei Parse-Fehler
@@ -257,34 +257,36 @@ type: ${noteType.name.lowercase()}$sortLine
                 // Parse YAML Frontmatter + Markdown Content
                 val frontmatterRegex = Regex("^---\\n(.+?)\\n---\\n(.*)$", RegexOption.DOT_MATCHES_ALL)
                 val match = frontmatterRegex.find(md) ?: return null
-                
+
                 val yamlBlock = match.groupValues[1]
                 val contentBlock = match.groupValues[2]
-                
+
                 // Parse YAML (einfach per String-Split für MVP)
                 val metadata = yamlBlock.lines()
                     .mapNotNull { line ->
                         val parts = line.split(":", limit = 2)
                         if (parts.size == 2) {
                             parts[0].trim() to parts[1].trim()
-                        } else null
+                        } else {
+                            null
+                        }
                     }.toMap()
-                
+
                 // Extract title from first # heading
                 val title = contentBlock.lines()
                     .firstOrNull { it.startsWith("# ") }
                     ?.removePrefix("# ")?.trim() ?: "Untitled"
-                
+
                 // v1.4.0: Prüfe ob type: checklist im Frontmatter
                 val noteTypeStr = metadata["type"]?.lowercase() ?: "text"
                 val noteType = when (noteTypeStr) {
                     "checklist" -> NoteType.CHECKLIST
                     else -> NoteType.TEXT
                 }
-                
+
                 // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung aus YAML laden
                 val checklistSortOption = metadata["sort"]
-                
+
                 // v1.4.0: Parse Content basierend auf Typ
                 // FIX: Robusteres Parsing - suche nach dem Titel-Header und extrahiere den Rest
                 val titleLineIndex = contentBlock.lines().indexOfFirst { it.startsWith("# ") }
@@ -299,10 +301,10 @@ type: ${noteType.name.lowercase()}$sortLine
                     // Fallback: Gesamter Content (kein Titel gefunden)
                     contentBlock.trim()
                 }
-                
+
                 val content: String
                 val checklistItems: List<ChecklistItem>?
-                
+
                 if (noteType == NoteType.CHECKLIST) {
                     // Parse Checklist Items
                     // 🆕 v1.10.0-P2: More lenient regex — supports `*` prefix and extra spaces
@@ -320,7 +322,7 @@ type: ${noteType.name.lowercase()}$sortLine
                     content = contentAfterTitle
                     checklistItems = null
                 }
-                
+
                 // 🔧 v1.8.2 (IMPL_025): YAML-Timestamp ist autoritativ
                 // Server mtime nur verwenden wenn YAML-Timestamp fehlt/ungültig (= 0)
                 // IMPL_014-Logik entfernt: Server mtime nach eigenem Export ist immer "jetzt",
@@ -334,12 +336,15 @@ type: ${noteType.name.lowercase()}$sortLine
                     }
                     else -> {
                         if (serverModifiedTime != null && serverModifiedTime > yamlUpdatedAt) {
-                            Logger.d(TAG, "Ignoring server mtime ($serverModifiedTime) — using YAML ($yamlUpdatedAt) to prevent loop")
+                            Logger.d(
+                                TAG,
+                                "Ignoring server mtime ($serverModifiedTime) — using YAML ($yamlUpdatedAt) to prevent loop"
+                            )
                         }
                         yamlUpdatedAt
                     }
                 }
-                
+
                 Note(
                     id = metadata["id"] ?: UUID.randomUUID().toString(),
                     title = title,
@@ -347,17 +352,17 @@ type: ${noteType.name.lowercase()}$sortLine
                     createdAt = parseISO8601(metadata["created"].orEmpty()),
                     updatedAt = effectiveUpdatedAt,
                     deviceId = metadata["device"] ?: "desktop",
-                    syncStatus = SyncStatus.SYNCED,  // Annahme: Vom Server importiert
+                    syncStatus = SyncStatus.SYNCED, // Annahme: Vom Server importiert
                     noteType = noteType,
                     checklistItems = checklistItems,
-                    checklistSortOption = checklistSortOption  // 🆕 v1.8.1 (IMPL_03)
+                    checklistSortOption = checklistSortOption // 🆕 v1.8.1 (IMPL_03)
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse Markdown: ${e.message}")
                 null
             }
         }
-        
+
         /**
          * Formatiert Timestamp zu ISO8601 (Task #1.2.0-10)
          * Format: 2024-12-21T18:00:00Z (UTC)
@@ -367,10 +372,10 @@ type: ${noteType.name.lowercase()}$sortLine
             sdf.timeZone = TimeZone.getTimeZone("UTC")
             return sdf.format(Date(timestamp))
         }
-        
+
         /**
          * 🔧 v1.7.2 (IMPL_002): Robustes ISO8601 Parsing mit Multi-Format Unterstützung
-         * 
+         *
          * Unterstützte Formate (in Prioritätsreihenfolge):
          * 1. 2024-12-21T18:00:00Z (UTC mit Z)
          * 2. 2024-12-21T18:00:00+01:00 (mit Offset)
@@ -378,9 +383,9 @@ type: ${noteType.name.lowercase()}$sortLine
          * 4. 2024-12-21T18:00:00.123Z (mit Millisekunden)
          * 5. 2024-12-21T18:00:00.123+01:00 (Millisekunden + Offset)
          * 6. 2024-12-21 18:00:00 (Leerzeichen statt T)
-         * 
+         *
          * Fallback: Aktueller Timestamp bei Fehler
-         * 
+         *
          * @param dateString ISO8601 Datum-String
          * @return Unix Timestamp in Millisekunden
          */
@@ -388,29 +393,26 @@ type: ${noteType.name.lowercase()}$sortLine
             if (dateString.isBlank()) {
                 return System.currentTimeMillis()
             }
-            
+
             // Normalisiere: Leerzeichen → T
             val normalized = dateString.trim().replace(' ', 'T')
-            
+
             // Format-Patterns in Prioritätsreihenfolge
             val patterns = listOf(
                 // Mit Timezone Z
                 "yyyy-MM-dd'T'HH:mm:ss'Z'",
                 "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                
                 // Mit Offset XXX (+01:00)
                 "yyyy-MM-dd'T'HH:mm:ssXXX",
                 "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
-                
                 // Mit Offset ohne Doppelpunkt (+0100)
                 "yyyy-MM-dd'T'HH:mm:ssZ",
                 "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-                
                 // Ohne Timezone (interpretiere als UTC)
                 "yyyy-MM-dd'T'HH:mm:ss",
                 "yyyy-MM-dd'T'HH:mm:ss.SSS"
             )
-            
+
             // Versuche alle Patterns nacheinander
             for (pattern in patterns) {
                 @Suppress("SwallowedException") // Intentional: try all patterns before logging
@@ -435,7 +437,7 @@ type: ${noteType.name.lowercase()}$sortLine
                     continue
                 }
             }
-            
+
             // Fallback wenn kein Pattern passt
             Logger.w(TAG, "Failed to parse ISO8601 date '$dateString' with any pattern, using current time")
             return System.currentTimeMillis()
@@ -447,12 +449,12 @@ type: ${noteType.name.lowercase()}$sortLine
  * 🎨 v1.7.0: Note size classification for Staggered Grid Layout
  */
 enum class NoteSize {
-    SMALL,  // Compact display (< 80 chars or ≤ 4 checklist items)
-    LARGE;  // Full-width display
-    
+    SMALL, // Compact display (< 80 chars or ≤ 4 checklist items)
+    LARGE; // Full-width display
+
     companion object {
-        const val SMALL_TEXT_THRESHOLD = 80  // Max characters for compact text note
-        const val SMALL_CHECKLIST_THRESHOLD = 4  // Max items for compact checklist
+        const val SMALL_TEXT_THRESHOLD = 80 // Max characters for compact text note
+        const val SMALL_CHECKLIST_THRESHOLD = 4 // Max items for compact checklist
     }
 }
 

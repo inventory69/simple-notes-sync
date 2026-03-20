@@ -11,7 +11,6 @@ import org.junit.Test
  * indirekt über die public Note-Methoden und die companion constants.
  */
 class NotesImportWizardParserTest {
-
     // ═══════════════════════════════════════════════
     // FileType Detection (via companion values)
     // ═══════════════════════════════════════════════
@@ -44,7 +43,9 @@ class NotesImportWizardParserTest {
     @Test
     fun `ImportResult Success holds data`() {
         val note = dev.dettmer.simplenotes.models.Note(
-            title = "Test", content = "C", deviceId = "d"
+            title = "Test",
+            content = "C",
+            deviceId = "d"
         )
         val result = NotesImportWizard.ImportResult.Success(note, "test.md")
         assertEquals("test.md", result.sourceName)
@@ -111,7 +112,7 @@ type: checklist
         assertNotNull(note)
         assertEquals(NoteType.CHECKLIST, note!!.noteType)
         assertEquals(4, note.checklistItems!!.size)
-        assertTrue(note.checklistItems!![0].isChecked)  // Milch
+        assertTrue(note.checklistItems!![0].isChecked) // Milch
         assertFalse(note.checklistItems!![1].isChecked) // Brot
     }
 

@@ -2,11 +2,11 @@ package dev.dettmer.simplenotes.sync.parallel
 
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.utils.Logger
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 🆕 v1.8.0: Paralleler Download-Handler für Notizen
@@ -57,10 +57,7 @@ class ParallelDownloader(
      * @param tasks Liste der Download-Tasks
      * @return Liste der Ergebnisse (Success, Failure, Skipped)
      */
-    suspend fun downloadAll(
-        tasks: List<DownloadTask>
-    ): List<DownloadTaskResult> = coroutineScope {
-
+    suspend fun downloadAll(tasks: List<DownloadTask>): List<DownloadTaskResult> = coroutineScope {
         if (tasks.isEmpty()) {
             Logger.d(TAG, "⏭️ No tasks to download")
             return@coroutineScope emptyList()
@@ -113,7 +110,7 @@ class ParallelDownloader(
 
         repeat(retryCount + 1) { attempt ->
             try {
-                val content = sardine.get(task.url).bufferedReader().use { it.readText() }
+                val content = sardine.get(task.url).use { it.bufferedReader().readText() }
 
                 Logger.d(TAG, "✅ Downloaded ${task.noteId} (attempt ${attempt + 1})")
 
@@ -122,7 +119,6 @@ class ParallelDownloader(
                     content = content,
                     etag = task.serverETag
                 )
-
             } catch (e: CancellationException) {
                 // 🛡️ v1.8.2: Cancellation nie verschlucken — sofort propagieren (SNS-182-16)
                 throw e
@@ -132,7 +128,7 @@ class ParallelDownloader(
 
                 // Retry nach Delay (außer beim letzten Versuch)
                 if (attempt < retryCount) {
-                    delay(RETRY_DELAY_MS * (attempt + 1))  // Exponential backoff
+                    delay(RETRY_DELAY_MS * (attempt + 1)) // Exponential backoff
                 }
             }
         }

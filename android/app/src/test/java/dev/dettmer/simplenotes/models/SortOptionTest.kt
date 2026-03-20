@@ -7,7 +7,6 @@ import org.junit.Test
  * Unit-Tests für SortOption, SortDirection und ChecklistSortOption.
  */
 class SortOptionTest {
-
     // ═══════════════════════════════════════════════
     // SortOption
     // ═══════════════════════════════════════════════

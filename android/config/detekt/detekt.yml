@@ -23,7 +23,7 @@ complexity:
     threshold: 5
   CyclomaticComplexMethod:
     active: true
-    threshold: 65  # v1.5.0: Increased for sync methods (TODO: refactor in v1.6.0)
+    threshold: 65  # v2.0.0: Still required for WebDavSyncService (refactored in Commit 13)
     ignoreSingleWhenExpression: true
   LargeClass:
     active: true
@@ -124,7 +124,9 @@ style:
   ReturnCount:
     active: true
     max: 4
-    excludedFunctions: []
+    excludedFunctions:
+      - 'moveDraggingItemToEnd'  # IMPL_29k: 7 early-return guard clauses (viewport/flapping/mutex checks)
+      - 'trySwapOnDrag'  # IMPL_29o O2: +1 cascade guard return (now 5 returns)
     excludeLabeled: true
     excludeReturnFromLambda: true
     excludeGuardClauses: true

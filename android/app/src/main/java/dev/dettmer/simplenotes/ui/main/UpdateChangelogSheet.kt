@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.utils.Constants
@@ -39,7 +40,7 @@ import kotlinx.coroutines.launch
 
 /**
  * v1.8.0: Post-Update Changelog Bottom Sheet
- * 
+ *
  * Shows a subtle changelog on first launch after an update.
  * - Reads changelog from raw resources (supports DE/EN)
  * - Only shows once per versionCode (stored in SharedPreferences)
@@ -53,29 +54,27 @@ fun UpdateChangelogSheet() {
     val prefs = remember {
         context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
-    
+
     val currentVersionCode = BuildConfig.VERSION_CODE
     val lastShownVersion = prefs.getInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, 0)
-    
+
     // Only show if this is a new version
     var showSheet by remember { mutableStateOf(currentVersionCode > lastShownVersion) }
-    
+
     if (!showSheet) return
-    
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    
+
     // Load changelog text based on current locale
     val changelogText = remember {
         loadChangelog(context)
     }
-    
+
     ModalBottomSheet(
         onDismissRequest = {
             showSheet = false
-            prefs.edit()
-                .putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode)
-                .apply()
+            prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
         },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -96,9 +95,9 @@ fun UpdateChangelogSheet() {
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Changelog content with clickable links
             val annotatedText = buildAnnotatedString {
                 val lines = changelogText.split("\n")
@@ -124,7 +123,7 @@ fun UpdateChangelogSheet() {
                     if (index < lines.size - 1) append("\n")
                 }
             }
-            
+
             Text(
                 text = annotatedText,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -132,9 +131,9 @@ fun UpdateChangelogSheet() {
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Dismiss button
             Button(
                 onClick = {
@@ -142,9 +141,7 @@ fun UpdateChangelogSheet() {
                         sheetState.hide()
                     }.invokeOnCompletion {
                         showSheet = false
-                        prefs.edit()
-                            .putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode)
-                            .apply()
+                        prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
                     }
                 },
                 modifier = Modifier
@@ -153,7 +150,7 @@ fun UpdateChangelogSheet() {
             ) {
                 Text(stringResource(R.string.update_changelog_dismiss))
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -173,16 +170,16 @@ private fun loadChangelog(context: Context): String {
     } else {
         currentLocale.get(0)?.language ?: "en"
     }
-    
+
     // Map language code to F-Droid locale directory
     val localeDir = when (languageCode) {
         "de" -> "de-DE"
         else -> "en-US"
     }
-    
+
     val versionCode = BuildConfig.VERSION_CODE
     val changelogPath = "changelogs/$localeDir/$versionCode.txt"
-    
+
     return try {
         context.assets.open(changelogPath)
             .bufferedReader()

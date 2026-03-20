@@ -49,7 +49,7 @@ import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
  * 🎨 v1.7.0: Compact Note Card for Grid Layout
- * 
+ *
  * COMPACT DESIGN für kleine Notizen:
  * - Reduzierter Padding (12dp statt 16dp)
  * - Kleinere Icons (24dp statt 32dp)
@@ -61,14 +61,14 @@ import dev.dettmer.simplenotes.utils.toReadableTime
 fun NoteCardCompact(
     note: Note,
     showSyncStatus: Boolean,
+    modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -79,7 +79,9 @@ fun NoteCardCompact(
                         color = MaterialTheme.colorScheme.primary,
                         shape = RoundedCornerShape(12.dp)
                     )
-                } else Modifier
+                } else {
+                    Modifier
+                }
             )
             .pointerInput(note.id, isSelectionMode) {
                 detectTapGestures(
@@ -119,18 +121,19 @@ fun NoteCardCompact(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (note.noteType == NoteType.TEXT) 
-                                Icons.Outlined.Description 
-                            else 
-                                Icons.AutoMirrored.Outlined.List,
+                            imageVector = if (note.noteType == NoteType.TEXT) {
+                                Icons.Outlined.Description
+                            } else {
+                                Icons.AutoMirrored.Outlined.List
+                            },
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(12.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     // Title - COMPACT Typography
                     Text(
                         text = note.title.ifEmpty { stringResource(R.string.untitled) },
@@ -141,9 +144,9 @@ fun NoteCardCompact(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 // Preview - MAX 3 ZEILEN
                 Text(
                     text = when (note.noteType) {
@@ -160,9 +163,9 @@ fun NoteCardCompact(
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 // Bottom row - KOMPAKT
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -175,24 +178,24 @@ fun NoteCardCompact(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     // Sync Status - KOMPAKT
                     if (showSyncStatus) {
                         Spacer(modifier = Modifier.width(4.dp))
-                        
+
                         Icon(
                             imageVector = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> Icons.Outlined.CloudDone
                                 SyncStatus.PENDING -> Icons.Outlined.CloudSync
                                 SyncStatus.CONFLICT -> Icons.Default.Warning
                                 SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
-                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff // 🆕 v1.8.0
                             },
                             contentDescription = null,
                             tint = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
                                 SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
-                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) // 🆕 v1.8.0
                                 else -> MaterialTheme.colorScheme.outline
                             },
                             modifier = Modifier.size(14.dp)
@@ -200,7 +203,7 @@ fun NoteCardCompact(
                     }
                 }
             }
-            
+
             // Selection indicator checkbox (top-right)
             androidx.compose.animation.AnimatedVisibility(
                 visible = isSelectionMode,

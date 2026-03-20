@@ -7,7 +7,6 @@ import org.junit.Test
  * Unit-Tests für SyncResult.
  */
 class SyncResultTest {
-
     @Test
     fun `successful result with defaults`() {
         val result = SyncResult(isSuccess = true)

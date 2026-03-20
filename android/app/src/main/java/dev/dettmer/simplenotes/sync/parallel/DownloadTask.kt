@@ -11,13 +11,7 @@ import com.thegrizzlylabs.sardineandroid.DavResource
  * @param serverETag E-Tag vom Server (für Caching)
  * @param serverModified Letztes Änderungsdatum vom Server (Unix timestamp)
  */
-data class DownloadTask(
-    val noteId: String,
-    val url: String,
-    val resource: DavResource,
-    val serverETag: String?,
-    val serverModified: Long
-)
+data class DownloadTask(val noteId: String, val url: String, val resource: DavResource, val serverETag: String?, val serverModified: Long)
 
 /**
  * 🆕 v1.8.0: Ergebnis eines einzelnen Downloads
@@ -33,11 +27,7 @@ sealed class DownloadTaskResult {
      * @param content JSON-Inhalt der Notiz
      * @param etag E-Tag vom Server (für zukünftiges Caching)
      */
-    data class Success(
-        val noteId: String,
-        val content: String,
-        val etag: String?
-    ) : DownloadTaskResult()
+    data class Success(val noteId: String, val content: String, val etag: String?) : DownloadTaskResult()
 
     /**
      * Download fehlgeschlagen
@@ -45,10 +35,7 @@ sealed class DownloadTaskResult {
      * @param noteId Die ID der Notiz, die nicht heruntergeladen werden konnte
      * @param error Der aufgetretene Fehler
      */
-    data class Failure(
-        val noteId: String,
-        val error: Throwable
-    ) : DownloadTaskResult()
+    data class Failure(val noteId: String, val error: Throwable) : DownloadTaskResult()
 
     /**
      * Download übersprungen (z.B. wegen gelöschter Notiz)
@@ -56,8 +43,5 @@ sealed class DownloadTaskResult {
      * @param noteId Die ID der übersprungenen Notiz
      * @param reason Grund für das Überspringen
      */
-    data class Skipped(
-        val noteId: String,
-        val reason: String
-    ) : DownloadTaskResult()
+    data class Skipped(val noteId: String, val reason: String) : DownloadTaskResult()
 }

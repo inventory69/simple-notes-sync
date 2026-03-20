@@ -33,7 +33,7 @@ import dev.dettmer.simplenotes.R
 
 private const val TOOLBAR_ICON_SIZE = 22
 private const val LINK_URL_PLACEHOLDER = "url"
-private const val LINK_BRACKET_OFFSET = 3  // "](".length + accounts for indexing
+private const val LINK_BRACKET_OFFSET = 3 // "](".length + accounts for indexing
 
 /**
  * 🆕 v1.9.0 (F07): Markdown formatting toolbar for TEXT notes.
@@ -44,10 +44,7 @@ private const val LINK_BRACKET_OFFSET = 3  // "](".length + accounts for indexin
  * Wraps selected text or inserts placeholder at cursor position.
  */
 @Composable
-fun MarkdownToolbar(
-    textFieldState: TextFieldState,
-    modifier: Modifier = Modifier
-) {
+fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
@@ -105,11 +102,7 @@ fun MarkdownToolbar(
 }
 
 @Composable
-private fun ToolbarButton(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
+private fun ToolbarButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         colors = IconButtonDefaults.iconButtonColors(

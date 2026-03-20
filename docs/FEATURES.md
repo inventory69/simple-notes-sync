@@ -27,6 +27,7 @@
 - ✅ **Material Design 3** - Modern, clean UI
 - ✅ **Dark mode** - Automatically based on system settings
 - ✅ **Dynamic colors** - Adapts to your Android theme
+- ✅ **Multi-theme** _(NEW in v2.0.0)_ - 7 color schemes with animated transitions and tinted surfaces
 - ✅ **Custom app title** _(NEW in v1.9.0)_ - Configurable app name
 
 ### Editor
@@ -51,6 +52,7 @@
 - ✅ **Grid View** _(NEW in v1.7.0)_ - Pinterest-style staggered grid with dynamic preview lines
 - ✅ **Layout toggle** - Switch between list and grid in settings
 - ✅ **Adaptive columns** - 2-3 columns based on screen size
+- ✅ **Grid column scaling** _(NEW in v2.0.0)_ - 1–5 columns configurable in display settings
 - ✅ **Grid as default** _(v1.8.0)_ - New installations default to grid view
 
 ### Note Sorting _(NEW in v1.8.0)_
@@ -221,7 +223,7 @@
 - ✅ **No cloud** - No third parties
 - ✅ **No tracking** - No analytics, no telemetry
 - ✅ **No account** - Only server credentials
-- ✅ **100% open source** - MIT License
+- ✅ **100% open source** - Apache 2.0 License
 
 ### Data Security
 - ✅ **Local storage** - App-private storage (Android)
@@ -255,7 +257,7 @@
 ### App Performance
 - ✅ **Offline-first** - Works without internet
 - ✅ **Instant-load** - Notes load in <100ms
-- ✅ **Smooth scrolling** - RecyclerView with ViewHolder
+- ✅ **Smooth scrolling** - LazyColumn with Compose
 - ✅ **Material Design 3** - Native Android UI
 - ✅ **Kotlin Coroutines** - Asynchronous operations
 - ✅ **Minimal APK size** - ~2 MB
@@ -270,6 +272,7 @@
 - ✅ **Kotlin** - Modern programming language
 - ✅ **Jetpack Compose** - Declarative UI framework
 - ✅ **Material Design 3** - Latest design guidelines
+- ✅ **Multi-theme system** _(v2.0.0)_ - 7 color schemes incl. AMOLED & Dynamic Color
 - ✅ **Jetpack Glance** _(v1.8.0)_ - Widget framework
 
 ### Architecture
@@ -320,11 +323,6 @@
 
 Planned for upcoming versions – see [UPCOMING.md](UPCOMING.md) for the full roadmap.
 
-### v2.0.0 - Legacy Cleanup
-- ⏳ **Remove deprecated Activities** - Replace with Compose equivalents
-- ⏳ **LocalBroadcastManager → SharedFlow** - Modern event architecture
-- ⏳ **WebDavSyncService split** - SyncOrchestrator, NoteUploader, NoteDownloader
-
 ---
 
 ## 📊 Comparison with Other Apps
@@ -338,7 +336,7 @@ Planned for upcoming versions – see [UPCOMING.md](UPCOMING.md) for the full ro
 | Desktop access | ✅ (WebDAV) | ✅ (Web) | ✅ (Web + WebDAV) |
 | Local backup | ✅ | ❌ | ⚠️ Server backup |
 | No Google account | ✅ | ❌ | ✅ |
-| Open source | ✅ MIT | ❌ | ✅ AGPL |
+| Open Source | ✅ Apache 2.0 | ❌ | ✅ AGPL |
 | APK size | ~2 MB | ~50 MB | ~8 MB |
 | Battery usage | ~0.4%/day | ~1-2%/day | ~0.5%/day |
 
@@ -366,4 +364,4 @@ A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Last update:** v1.11.0 (2026-03-10)
+**Last update:** v2.0.0 (2026-03-20)

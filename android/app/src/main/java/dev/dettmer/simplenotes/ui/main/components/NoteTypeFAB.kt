@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.main.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -26,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 
@@ -54,11 +58,9 @@ import dev.dettmer.simplenotes.models.NoteType
  *                Semi-transparent scrim covers entire screen (incl. status bar).
  */
 @Composable
-fun NoteTypeFAB(
-    modifier: Modifier = Modifier,
-    onCreateNote: (NoteType) -> Unit
-) {
+fun NoteTypeFAB(modifier: Modifier = Modifier, onCreateNote: (NoteType) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    var navigating by remember { mutableStateOf(false) }
 
     // Main FAB icon rotation: 0° → 45° (+ becomes ×)
     val rotation by animateFloatAsState(
@@ -73,17 +75,34 @@ fun NoteTypeFAB(
     Box(modifier = modifier.fillMaxSize()) {
         // 🆕 v1.11.0: Semi-transparent scrim overlay — smooth animated, fullscreen inkl. Statusbar
         // Orientiert an Aegis Authenticator: dunkler Scrim hinter dem geöffneten FAB-Menü
-        val scrimAlpha by animateFloatAsState(
-            targetValue = if (expanded) 1f else 0f,
-            animationSpec = tween(durationMillis = 250),
-            label = "scrim_alpha"
-        )
-        if (expanded || scrimAlpha > 0f) {
+        // v2.0.0: Animatable statt animateFloatAsState — snapTo(0f) beim Schließen verhindert
+        // Scrim-Artefakte im Activity-Transition-Snapshot.
+        val scrimAlpha = remember { Animatable(0f) }
+        LaunchedEffect(expanded) {
+            if (expanded) {
+                navigating = false
+                scrimAlpha.animateTo(1f, animationSpec = tween(durationMillis = 250))
+            } else if (navigating) {
+                // ON_STOP → Activity abgedeckt → sofort unsichtbar
+                scrimAlpha.snapTo(0f)
+            } else {
+                // Scrim-Tap oder FAB-Toggle → sanft ausblenden
+                scrimAlpha.animateTo(0f, animationSpec = tween(durationMillis = 200))
+            }
+        }
+        // Scrim aufräumen wenn Activity stoppt (Editor-Window deckt Screen bereits ab)
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+            if (expanded) {
+                navigating = true
+                expanded = false
+            }
+        }
+        if (expanded || scrimAlpha.value > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .drawBehind {
-                        drawRect(color = Color.Black.copy(alpha = 0.5f * scrimAlpha))
+                        drawRect(color = Color.Black.copy(alpha = 0.5f * scrimAlpha.value))
                     }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
@@ -141,7 +160,6 @@ fun NoteTypeFAB(
                         scale = animatedScale,
                         alpha = animatedAlpha,
                         onClick = {
-                            expanded = false
                             onCreateNote(action.noteType)
                         }
                     )
@@ -180,13 +198,7 @@ fun NoteTypeFAB(
  * 🆕 v1.11.0-P4: Kein separates FAB-Icon, alles in einer einzigen Pill.
  */
 @Composable
-private fun FabSubActionRow(
-    label: String,
-    icon: ImageVector,
-    scale: Float,
-    alpha: Float,
-    onClick: () -> Unit
-) {
+private fun FabSubActionRow(label: String, icon: ImageVector, scale: Float, alpha: Float, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
@@ -220,8 +232,4 @@ private fun FabSubActionRow(
 /**
  * Data class for sub-action configuration.
  */
-private data class FabSubAction(
-    val label: String,
-    val icon: ImageVector,
-    val noteType: NoteType
-)
+private data class FabSubAction(val label: String, val icon: ImageVector, val noteType: NoteType)

@@ -9,7 +9,7 @@ end_of_line = lf
 indent_size = 4
 indent_style = space
 insert_final_newline = true
-max_line_length = 120
+max_line_length = 140
 trim_trailing_whitespace = true
 
 [*.{kt,kts}]
@@ -19,7 +19,7 @@ ktlint_standard_no-wildcard-imports = disabled
 ktlint_standard_package-name = enabled
 ktlint_standard_filename = enabled
 ktlint_standard_class-naming = enabled
-ktlint_standard_function-naming = enabled
+ktlint_standard_function-naming = disabled
 ktlint_standard_property-naming = enabled
 ktlint_standard_backing-property-naming = enabled
 ktlint_standard_enum-entry-name-case = enabled
@@ -46,7 +46,9 @@ ktlint_standard_try-catch-finally-spacing = enabled
 ktlint_standard_type-argument-list-spacing = enabled
 ktlint_standard_type-parameter-list-spacing = enabled
 ktlint_standard_value-argument-comment = enabled
-ktlint_standard_value-parameter-comment = enabled
+ktlint_standard_value-parameter-comment = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_class-signature = disabled
 
 [*.md]
 trim_trailing_whitespace = false

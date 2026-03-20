@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +33,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -61,11 +61,7 @@ private const val BYTES_PER_MB = 1024L * 1024L
  * v1.9.0: Issue #21
  */
 @Composable
-fun ImportSettingsScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
-    val context = LocalContext.current
+fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     val isServerConfigured = viewModel.isServerConfigured()
@@ -131,7 +127,7 @@ fun ImportSettingsScreen(
                         showScanResults = scanResults.isNotEmpty()
                         isScanning = false
                         if (scanResults.isEmpty()) {
-                            Toast.makeText(context, noFilesFoundText, Toast.LENGTH_SHORT).show()
+                            viewModel.showSnackbar(noFilesFoundText)
                         }
                     }
                 },
@@ -159,12 +155,14 @@ fun ImportSettingsScreen(
             LocalImportSection(
                 isImporting = isImporting,
                 onPickFiles = {
-                    filePickerLauncher.launch(arrayOf(
-                        "text/markdown",
-                        "text/plain",
-                        "application/json",
-                        "application/octet-stream"
-                    ))
+                    filePickerLauncher.launch(
+                        arrayOf(
+                            "text/markdown",
+                            "text/plain",
+                            "application/json",
+                            "application/octet-stream"
+                        )
+                    )
                 }
             )
 
@@ -178,6 +176,7 @@ fun ImportSettingsScreen(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun WebDavImportSection(
     isServerConfigured: Boolean,
@@ -189,7 +188,7 @@ private fun WebDavImportSection(
     onScanClick: () -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
-    onImportSelected: () -> Unit,
+    onImportSelected: () -> Unit
 ) {
     SettingsSectionHeader(text = stringResource(R.string.import_section_server))
     Spacer(modifier = Modifier.height(8.dp))
@@ -218,7 +217,7 @@ private fun WebDavImportSection(
             selectedCandidates = selectedCandidates,
             onSelectionChange = onSelectionChange,
             onCancelScan = onCancelScan,
-            onImportSelected = onImportSelected,
+            onImportSelected = onImportSelected
         )
     }
 }
@@ -229,7 +228,7 @@ private fun ScanResultsCard(
     selectedCandidates: Set<Int>,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
-    onImportSelected: () -> Unit,
+    onImportSelected: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -243,7 +242,9 @@ private fun ScanResultsCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+            val density = LocalDensity.current
+            val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
+            LazyColumn(modifier = Modifier.heightIn(max = screenHeight * 0.35f)) {
                 items(scanResults.indices.toList()) { index ->
                     val candidate = scanResults[index]
                     Row(
@@ -284,10 +285,7 @@ private fun ScanResultsCard(
 }
 
 @Composable
-private fun LocalImportSection(
-    isImporting: Boolean,
-    onPickFiles: () -> Unit,
-) {
+private fun LocalImportSection(isImporting: Boolean, onPickFiles: () -> Unit) {
     SettingsSectionHeader(text = stringResource(R.string.import_section_local))
     Spacer(modifier = Modifier.height(8.dp))
     SettingsInfoCard(text = stringResource(R.string.import_local_info))
@@ -307,21 +305,27 @@ private fun ImportSummarySection(summary: NotesImportWizard.ImportSummary) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (summary.failed > 0)
+            containerColor = if (summary.failed > 0) {
                 MaterialTheme.colorScheme.errorContainer
-            else
+            } else {
                 MaterialTheme.colorScheme.primaryContainer
+            }
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(
                     R.string.import_dialog_complete,
-                    summary.imported, summary.skipped, summary.failed
+                    summary.imported,
+                    summary.skipped,
+                    summary.failed
                 ),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (summary.failed > 0) MaterialTheme.colorScheme.onErrorContainer
-                else MaterialTheme.colorScheme.onPrimaryContainer
+                color = if (summary.failed > 0) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                }
             )
             if (summary.failed > 0) {
                 Spacer(modifier = Modifier.height(8.dp))

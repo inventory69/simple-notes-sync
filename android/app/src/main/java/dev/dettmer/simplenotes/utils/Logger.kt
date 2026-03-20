@@ -13,14 +13,14 @@ import java.util.*
  * Release builds zeigen nur Errors/Warnings
  */
 object Logger {
-    
     private const val MAX_LOG_ENTRIES = 500 // Nur letzte 500 Einträge
-    
+
     private var fileLoggingEnabled = false
     private var logFile: File? = null
     private var appContext: Context? = null
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT)
-    
+    private val fileLock = Any()
+
     /**
      * Setzt den File-Logging Status (für UI Toggle)
      */
@@ -30,19 +30,19 @@ object Logger {
             logFile = null
         }
     }
-    
+
     /**
      * Gibt zurück, ob File-Logging aktiviert ist
      */
     fun isFileLoggingEnabled(): Boolean = fileLoggingEnabled
-    
+
     /**
      * Initialisiert den Logger mit App-Context
      */
     fun init(context: Context) {
         appContext = context.applicationContext
     }
-    
+
     /**
      * Aktiviert File-Logging für Debugging
      */
@@ -50,16 +50,16 @@ object Logger {
         try {
             logFile = File(context.filesDir, "simplenotes_debug.log")
             fileLoggingEnabled = true
-            
+
             // Clear old log
             logFile?.writeText("")
-            
+
             i("Logger", "📝 File logging enabled: ${logFile?.absolutePath}")
         } catch (e: Exception) {
             Log.e("Logger", "Failed to enable file logging", e)
         }
     }
-    
+
     /**
      * Deaktiviert File-Logging
      */
@@ -67,12 +67,12 @@ object Logger {
         fileLoggingEnabled = false
         i("Logger", "📝 File logging disabled")
     }
-    
+
     /**
      * Gibt Log-Datei zurück
      */
     fun getLogFile(): File? = logFile
-    
+
     /**
      * Gibt Log-Datei mit Context zurück (für SettingsActivity)
      */
@@ -82,7 +82,7 @@ object Logger {
         }
         return logFile
     }
-    
+
     /**
      * Löscht die Log-Datei
      */
@@ -101,43 +101,44 @@ object Logger {
             false
         }
     }
-    
+
     /**
      * Schreibt Log-Eintrag in Datei
      */
     private fun writeToFile(level: String, tag: String, message: String, throwable: Throwable? = null) {
         if (!fileLoggingEnabled) return
-        
+
         // Lazy-init logFile mit appContext
         if (logFile == null) {
             appContext?.let { ctx -> logFile = File(ctx.filesDir, "simplenotes_debug.log") }
         }
-        
+
         if (logFile == null) return
-        
-        try {
-            val timestamp = dateFormat.format(Date())
-            val logEntry = buildString {
-                append("$timestamp [$level] $tag: $message\n")
-                throwable?.let {
-                    append("  Exception: ${it.message}\n")
-                    append("  ${it.stackTraceToString()}\n")
+
+        synchronized(fileLock) {
+            try {
+                val timestamp = dateFormat.format(Date())
+                val logEntry = buildString {
+                    append("$timestamp [$level] $tag: $message\n")
+                    throwable?.let {
+                        append("  Exception: ${it.message}\n")
+                        append("  ${it.stackTraceToString()}\n")
+                    }
                 }
+
+                // Append to file
+                FileWriter(logFile, true).use { writer ->
+                    writer.write(logEntry)
+                }
+
+                // Trim file if too large
+                trimLogFile()
+            } catch (e: Exception) {
+                Log.e("Logger", "Failed to write to log file", e)
             }
-            
-            // Append to file
-            FileWriter(logFile, true).use { writer ->
-                writer.write(logEntry)
-            }
-            
-            // Trim file if too large
-            trimLogFile()
-            
-        } catch (e: Exception) {
-            Log.e("Logger", "Failed to write to log file", e)
         }
     }
-    
+
     /**
      * Begrenzt Log-Datei auf MAX_LOG_ENTRIES
      */
@@ -152,7 +153,7 @@ object Logger {
             Log.e("Logger", "Failed to trim log file", e)
         }
     }
-    
+
     fun d(tag: String, message: String) {
         // Logcat nur in DEBUG builds
         if (BuildConfig.DEBUG) {
@@ -161,7 +162,7 @@ object Logger {
         // File-Logging IMMER (wenn enabled)
         writeToFile("DEBUG", tag, message)
     }
-    
+
     fun v(tag: String, message: String) {
         // Logcat nur in DEBUG builds
         if (BuildConfig.DEBUG) {
@@ -170,14 +171,14 @@ object Logger {
         // File-Logging IMMER (wenn enabled)
         writeToFile("VERBOSE", tag, message)
     }
-    
+
     fun i(tag: String, message: String) {
         // INFO logs IMMER zeigen (auch in Release) - wichtige Events
         Log.i(tag, message)
         // File-Logging IMMER (wenn enabled)
         writeToFile("INFO", tag, message)
     }
-    
+
     // Errors und Warnings IMMER zeigen (auch in Release)
     fun e(tag: String, message: String, throwable: Throwable? = null) {
         if (throwable != null) {
@@ -187,7 +188,7 @@ object Logger {
         }
         writeToFile("ERROR", tag, message, throwable)
     }
-    
+
     fun w(tag: String, message: String) {
         Log.w(tag, message)
         writeToFile("WARN", tag, message)
