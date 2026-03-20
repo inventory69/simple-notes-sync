@@ -34,7 +34,7 @@
     </style>
 
     <style name="Theme.SimpleNotes" parent="Base.Theme.SimpleNotes" />
-    
+
     <!-- Splash Screen Theme (Android 12+) -->
     <style name="Theme.SimpleNotes.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">?attr/colorPrimary</item>

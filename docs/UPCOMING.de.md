@@ -202,17 +202,43 @@
 
 ---
 
-## v2.0.0 - Legacy Cleanup
+## v2.0.0 - Compose-Rewrite & Multi-Theme ✅
 
-> **Status:** Geplant 📝
+> **Status:** Released 🎉 (März 2026)
 
-### 🗑️ Legacy Code Entfernung
+### 🎨 Multi-Theme-System
+- ✅ **7 Farbschemata** - Inkl. AMOLED & Dynamic Color mit animierten Übergängen und getönten Oberflächen
+- ✅ **Grid-Spaltensteuerung** - 1–5 Spalten konfigurierbar in Anzeigeeinstellungen
+- ✅ **Grid-Chips** - Ersetzen Radio-Buttons in Anzeigeeinstellungen
 
-- **SettingsActivity entfernen** - Ersetzt durch ComposeSettingsActivity
-- **MainActivity entfernen** - Ersetzt durch ComposeMainActivity
-- **LocalBroadcastManager → SharedFlow** - Moderne Event-Architektur
-- **ProgressDialog → Material Dialog** - Volle Material 3 Konformität
-- **AbstractSavedStateViewModelFactory → viewModelFactory** - Moderne ViewModel-Erstellung
+### ✨ Editor & Einstellungen
+- ✅ **Vollständiges Backup/Restore** - Beinhaltet alle App-Einstellungen, nicht nur Notizen
+- ✅ **Material 3 Shared-Axis-Übergänge** - Für alle Navigationen und Back-Gesten
+- ✅ **Autosave-Status** - In Anzeigeeinstellungen-Untertitel angezeigt
+- ✅ **Debug-Logging-Dialog** - Logging nach Export automatisch deaktivieren
+
+### 🐛 Bug Fixes
+- ✅ **Checklisten Drag-and-Drop** - Für Stabilität in langen Listen neu geschrieben
+- ✅ **Offline-Löschungen** - Für nächsten Sync eingereiht
+- ✅ **WebDAV-403-Kompatibilität** - HTTP 403 als existierend behandelt
+- ✅ **Thread-Safety** - State-Inkonsistenz und Dispatcher-Probleme behoben
+- ✅ **Ressourcen-Lecks** - InputStreams geschlossen, File I/O vom Main Thread
+- ✅ **Save-on-Back Race-Condition** - TextFieldState flush + onPause-Save
+
+### 🗑️ Legacy-Code Entfernung
+- ✅ **SettingsActivity entfernt** - Durch Compose-Settings ersetzt
+- ✅ **MainActivity entfernt** - Durch ComposeMainActivity ersetzt
+- ✅ **NoteEditorActivity entfernt** - Durch Compose-Editor ersetzt
+- ✅ **XML-Layouts, Menüs, Drawables entfernt** - Komplettes Compose UI
+- ✅ **LocalBroadcastManager → SharedFlow** - Moderne Event-Architektur
+- ✅ **viewModelFactory DSL** - Moderne ViewModel-Erstellung
+
+### 🏗️ Architektur
+- ✅ **WebDavSyncService → Facade-Pattern** - Aufgeteilt in 9 extrahierte Module
+- ✅ **R8/ProGuard optimiert** - APK-Größe reduziert
+
+### 📄 Lizenz
+- ✅ **MIT → Apache 2.0** - Lizenzwechsel
 
 ---
 
@@ -227,7 +253,8 @@
 
 ### 🎨 UI Features
 
-- **Kategorien/Tags** - Notizen organisieren
+- **Ordner / Tags / Notebooks** - Notizen in Verzeichnisse oder mit Tags organisieren für bessere Trennung (z.B. persönliche Notizen vs. geteilte Rezepte). Unterverzeichnisse auf WebDAV ermöglichen auch ordnerbezogene Zugriffskontrolle. ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) von @happy-turtle)
+- **Erledigte Checklisten ausblenden** - Option, Checklisten bei denen alle Items abgehakt sind auszublenden, mit separater Ansicht zum späteren Wiederherstellen. ([#45](https://github.com/inventory69/simple-notes-sync/discussions/45) von @isawaway)
 - **Suche** - Volltextsuche in Notizen
 
 ### 🌍 Community

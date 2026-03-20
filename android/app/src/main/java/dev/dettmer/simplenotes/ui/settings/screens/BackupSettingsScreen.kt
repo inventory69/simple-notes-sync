@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,9 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,31 +55,35 @@ private const val DIALOG_CLOSE_DELAY_MS = 200L
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun BackupSettingsScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit
-) {
+fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val isBackupInProgress by viewModel.isBackupInProgress.collectAsState()
-    
+
     // 🌟 v1.6.0: Check if server restore is available
     val isServerConfigured = viewModel.isServerConfigured()
-    
+
     // Restore dialog state
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreSource by remember { mutableStateOf<RestoreSource>(RestoreSource.LocalFile) }
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
     var selectedRestoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
-    
+
     // v1.8.0: Trigger for delayed restore execution (after dialog closes)
-    var triggerRestore by remember { mutableStateOf(0) }
+    var triggerRestore by remember { mutableIntStateOf(0) }
     var pendingRestoreAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-    
+
     // 🔐 v1.7.0: Encryption state
     var encryptBackup by remember { mutableStateOf(false) }
     var showEncryptionPasswordDialog by remember { mutableStateOf(false) }
     var showDecryptionPasswordDialog by remember { mutableStateOf(false) }
     var pendingBackupUri by remember { mutableStateOf<Uri?>(null) }
-    
+
+    // v1.9.0: Include server settings in backup
+    var includeServerSettings by remember { mutableStateOf(false) }
+    var pendingIncludeServerSettings by remember { mutableStateOf(false) }
+    // Whether the restore target (file) contains server settings
+    var backupHasServerSettings by remember { mutableStateOf(false) }
+    var restoreServerSettings by remember { mutableStateOf(false) }
+
     // File picker launchers
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -86,21 +94,27 @@ fun BackupSettingsScreen(
                 pendingBackupUri = it
                 showEncryptionPasswordDialog = true
             } else {
-                viewModel.createBackup(it, password = null)
+                viewModel.createBackup(it, password = null, includeServerSettings = pendingIncludeServerSettings)
             }
         }
     }
-    
+
     val restoreFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
             pendingRestoreUri = it
             restoreSource = RestoreSource.LocalFile
+            backupHasServerSettings = false
+            restoreServerSettings = false
+            // v1.9.0: Check if the backup contains server settings (plaintext only; encrypted checked after password)
+            viewModel.checkBackupContainsAppSettings(it) { hasSettings ->
+                backupHasServerSettings = hasSettings
+            }
             showRestoreDialog = true
         }
     }
-    
+
     // v1.8.0: Delayed restore execution after dialog closes
     LaunchedEffect(triggerRestore) {
         if (triggerRestore > 0) {
@@ -109,7 +123,7 @@ fun BackupSettingsScreen(
             pendingRestoreAction = null
         }
     }
-    
+
     SettingsScaffold(
         title = stringResource(R.string.backup_settings_title),
         onBack = onBack
@@ -121,29 +135,29 @@ fun BackupSettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Info Card
             SettingsInfoCard(
                 text = stringResource(R.string.backup_auto_info)
             )
-            
+
             // v1.8.0: Progress indicator (visible during backup/restore)
             if (isBackupInProgress) {
                 val backupStatus by viewModel.backupStatusText.collectAsState()
                 BackupProgressCard(
-                    statusText = backupStatus.ifEmpty { 
-                        stringResource(R.string.backup_progress_creating) 
+                    statusText = backupStatus.ifEmpty {
+                        stringResource(R.string.backup_progress_creating)
                     }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Local Backup Section
             SettingsSectionHeader(text = stringResource(R.string.backup_local_section))
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // 🔐 v1.7.0: Encryption toggle
             SettingsSwitch(
                 title = stringResource(R.string.backup_encryption_title),
@@ -151,23 +165,41 @@ fun BackupSettingsScreen(
                 checked = encryptBackup,
                 onCheckedChange = { encryptBackup = it }
             )
-            
+
+            // v1.9.0: Include server settings option
+            SettingsSwitch(
+                title = stringResource(R.string.backup_include_server_settings_title),
+                subtitle = stringResource(R.string.backup_include_server_settings_subtitle),
+                checked = includeServerSettings,
+                onCheckedChange = { includeServerSettings = it }
+            )
+
+            if (includeServerSettings && !encryptBackup) {
+                Spacer(modifier = Modifier.height(4.dp))
+                SettingsInfoCard(
+                    text = stringResource(R.string.backup_server_settings_encryption_hint)
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             SettingsButton(
                 text = stringResource(R.string.backup_create),
                 onClick = {
                     val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
                         .format(Date())
                     val filename = "simplenotes_backup_$timestamp.json"
+                    // v1.9.0: Snapshot state before launching file picker
+                    // to prevent Activity lifecycle from causing a stale read
+                    pendingIncludeServerSettings = includeServerSettings
                     createBackupLauncher.launch(filename)
                 },
                 isLoading = isBackupInProgress,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             SettingsOutlinedButton(
                 text = stringResource(R.string.backup_restore_file),
                 onClick = {
@@ -176,14 +208,14 @@ fun BackupSettingsScreen(
                 isLoading = isBackupInProgress,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            
+
             SettingsDivider()
-            
+
             // Server Backup Section
             SettingsSectionHeader(text = stringResource(R.string.backup_server_section))
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // 🌟 v1.6.0: Disabled when offline mode active
             SettingsOutlinedButton(
                 text = stringResource(R.string.backup_restore_server),
@@ -195,7 +227,7 @@ fun BackupSettingsScreen(
                 enabled = isServerConfigured,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            
+
             // 🌟 v1.6.0: Show hint when offline
             if (!isServerConfigured) {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -206,11 +238,11 @@ fun BackupSettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-    
+
     // 🔐 v1.7.0: Encryption password dialog (for backup creation)
     if (showEncryptionPasswordDialog) {
         BackupPasswordDialog(
@@ -222,14 +254,14 @@ fun BackupSettingsScreen(
             onConfirm = { password ->
                 showEncryptionPasswordDialog = false
                 pendingBackupUri?.let { uri ->
-                    viewModel.createBackup(uri, password)
+                    viewModel.createBackup(uri, password, pendingIncludeServerSettings)
                 }
                 pendingBackupUri = null
             },
             requireConfirmation = true
         )
     }
-    
+
     // 🔐 v1.7.0: Decryption password dialog (for restore)
     if (showDecryptionPasswordDialog) {
         BackupPasswordDialog(
@@ -242,7 +274,12 @@ fun BackupSettingsScreen(
                 showDecryptionPasswordDialog = false
                 pendingRestoreUri?.let { uri ->
                     when (restoreSource) {
-                        RestoreSource.LocalFile -> viewModel.restoreFromFile(uri, selectedRestoreMode, password)
+                        RestoreSource.LocalFile -> viewModel.restoreFromFile(
+                            uri,
+                            selectedRestoreMode,
+                            password,
+                            restoreServerSettings
+                        )
                         RestoreSource.Server -> { /* Server restore doesn't support encryption */ }
                     }
                 }
@@ -251,13 +288,16 @@ fun BackupSettingsScreen(
             requireConfirmation = false
         )
     }
-    
+
     // Restore Mode Dialog
     if (showRestoreDialog) {
         RestoreModeDialog(
             source = restoreSource,
             selectedMode = selectedRestoreMode,
             onModeSelected = { selectedRestoreMode = it },
+            showServerSettingsOption = restoreSource == RestoreSource.LocalFile,
+            restoreServerSettings = restoreServerSettings,
+            onRestoreServerSettingsChanged = { restoreServerSettings = it },
             onConfirm = {
                 showRestoreDialog = false
                 when (restoreSource) {
@@ -272,7 +312,12 @@ fun BackupSettingsScreen(
                                         showDecryptionPasswordDialog = true
                                     },
                                     onPlaintext = {
-                                        viewModel.restoreFromFile(uri, selectedRestoreMode, password = null)
+                                        viewModel.restoreFromFile(
+                                            uri,
+                                            selectedRestoreMode,
+                                            password = null,
+                                            restoreServerSettings = restoreServerSettings
+                                        )
                                         pendingRestoreUri = null
                                     }
                                 )
@@ -313,6 +358,9 @@ private fun RestoreModeDialog(
     source: RestoreSource,
     selectedMode: RestoreMode,
     onModeSelected: (RestoreMode) -> Unit,
+    showServerSettingsOption: Boolean,
+    restoreServerSettings: Boolean,
+    onRestoreServerSettingsChanged: (Boolean) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -320,7 +368,7 @@ private fun RestoreModeDialog(
         RestoreSource.LocalFile -> stringResource(R.string.backup_restore_source_file)
         RestoreSource.Server -> stringResource(R.string.backup_restore_source_server)
     }
-    
+
     val modeOptions = listOf(
         RadioOption(
             value = RestoreMode.MERGE,
@@ -338,7 +386,7 @@ private fun RestoreModeDialog(
             subtitle = stringResource(R.string.backup_mode_overwrite_subtitle)
         )
     )
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.backup_restore_dialog_title)) },
@@ -348,29 +396,46 @@ private fun RestoreModeDialog(
                     text = stringResource(R.string.backup_restore_source, sourceText),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Text(
                     text = stringResource(R.string.backup_restore_mode_label),
                     style = MaterialTheme.typography.labelLarge
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 SettingsRadioGroup(
                     options = modeOptions,
                     selectedValue = selectedMode,
                     onValueSelected = onModeSelected
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
                     text = stringResource(R.string.backup_restore_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // v1.9.0: Option to restore server settings if backup contains them
+                if (showServerSettingsOption) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = restoreServerSettings,
+                            onCheckedChange = onRestoreServerSettingsChanged
+                        )
+                        Text(
+                            text = stringResource(R.string.backup_restore_server_settings_label),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
         },
         confirmButton = {

@@ -18,7 +18,6 @@ import org.junit.Test
  * v1.9.0: Issue #21
  */
 class NotesImportWizardTest {
-
     // ═══════════════════════════════════════════════
     // Hilfsfunktionen (gespiegelt von NotesImportWizard)
     // ═══════════════════════════════════════════════
@@ -50,23 +49,15 @@ class NotesImportWizardTest {
         }
     }
 
-    private fun extractTimestampHelper(
-        obj: com.google.gson.JsonObject,
-        vararg keys: String
-    ): Long? {
-        for (key in keys) {
-            val element = obj.get(key) ?: continue
-            try {
-                if (element.isJsonPrimitive) {
-                    val prim = element.asJsonPrimitive
-                    if (prim.isNumber) {
-                        val value = prim.asLong
-                        return if (value < 1_000_000_000_000L) value * 1000 else value
-                    }
-                }
-            } catch (_: Exception) { continue }
-        }
-        return null
+    private fun extractTimestampHelper(obj: com.google.gson.JsonObject, vararg keys: String): Long? = keys.firstNotNullOfOrNull { key ->
+        runCatching {
+            obj.get(key)
+                ?.takeIf { it.isJsonPrimitive }
+                ?.asJsonPrimitive
+                ?.takeIf { it.isNumber }
+                ?.asLong
+                ?.let { value -> if (value < 1_000_000_000_000L) value * 1000 else value }
+        }.getOrNull()
     }
 
     // ═══════════════════════════════════════════════
@@ -262,9 +253,11 @@ This is the content of my test note.
 
     @Test
     fun `generic JSON with title and content fields`() {
-        val json = com.google.gson.JsonParser.parseString("""
+        val json = com.google.gson.JsonParser.parseString(
+            """
             {"title": "Shopping List", "content": "Buy eggs and milk"}
-        """).asJsonObject
+        """
+        ).asJsonObject
 
         val title = listOf("title", "name", "subject")
             .firstNotNullOfOrNull { key -> json.get(key)?.asString?.takeIf { it.isNotBlank() } }
@@ -277,9 +270,11 @@ This is the content of my test note.
 
     @Test
     fun `generic JSON with body field instead of content`() {
-        val json = com.google.gson.JsonParser.parseString("""
+        val json = com.google.gson.JsonParser.parseString(
+            """
             {"name": "My Note", "body": "Note body text"}
-        """).asJsonObject
+        """
+        ).asJsonObject
 
         val title = listOf("title", "name", "subject")
             .firstNotNullOfOrNull { key -> json.get(key)?.asString?.takeIf { it.isNotBlank() } }
@@ -292,9 +287,11 @@ This is the content of my test note.
 
     @Test
     fun `generic JSON with no recognizable fields returns null`() {
-        val json = com.google.gson.JsonParser.parseString("""
+        val json = com.google.gson.JsonParser.parseString(
+            """
             {"foo": "bar", "baz": 42}
-        """).asJsonObject
+        """
+        ).asJsonObject
 
         val title = listOf("title", "name", "subject", "header")
             .firstNotNullOfOrNull { key -> json.get(key)?.asString?.takeIf { it.isNotBlank() } }

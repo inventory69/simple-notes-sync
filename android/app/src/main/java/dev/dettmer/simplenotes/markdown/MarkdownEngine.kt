@@ -9,7 +9,6 @@ package dev.dettmer.simplenotes.markdown
  * per-block by [MarkdownRenderer].
  */
 object MarkdownEngine {
-
     /**
      * Sealed class representing block-level Markdown elements.
      */
@@ -80,11 +79,13 @@ object MarkdownEngine {
                 TASK_LIST_REGEX.matches(line) -> {
                     val taskItems = mutableListOf<TaskItem>()
                     while (i < lines.size && TASK_LIST_REGEX.matches(lines[i])) {
-                        val m = TASK_LIST_REGEX.find(lines[i])!!
-                        taskItems.add(TaskItem(
-                            text = m.groupValues[2].trim(),
-                            isChecked = m.groupValues[1].lowercase() == "x"
-                        ))
+                        val m = TASK_LIST_REGEX.find(lines[i]) ?: break
+                        taskItems.add(
+                            TaskItem(
+                                text = m.groupValues[2].trim(),
+                                isChecked = m.groupValues[1].lowercase() == "x"
+                            )
+                        )
                         i++
                     }
                     blocks.add(MarkdownBlock.TaskList(taskItems))
@@ -94,7 +95,7 @@ object MarkdownEngine {
                 LIST_ITEM_REGEX.matches(line) -> {
                     val items = mutableListOf<String>()
                     while (i < lines.size && LIST_ITEM_REGEX.matches(lines[i])) {
-                        val itemText = LIST_ITEM_REGEX.find(lines[i])?.groupValues?.get(1)?.trim() ?: ""
+                        val itemText = LIST_ITEM_REGEX.find(lines[i])?.groupValues?.get(1)?.trim().orEmpty()
                         items.add(itemText)
                         i++
                     }
@@ -139,10 +140,14 @@ object MarkdownEngine {
 
     private fun isHorizontalRule(line: String): Boolean {
         val trimmed = line.trim()
-        return trimmed.length >= HORIZONTAL_RULE_MIN_CHARS && (
-            trimmed.all { it == '-' || it == ' ' } && trimmed.count { it == '-' } >= HORIZONTAL_RULE_MIN_CHARS ||
-            trimmed.all { it == '*' || it == ' ' } && trimmed.count { it == '*' } >= HORIZONTAL_RULE_MIN_CHARS ||
-            trimmed.all { it == '_' || it == ' ' } && trimmed.count { it == '_' } >= HORIZONTAL_RULE_MIN_CHARS
-        )
+        return trimmed.length >= HORIZONTAL_RULE_MIN_CHARS &&
+            (
+                trimmed.all { it == '-' || it == ' ' } &&
+                    trimmed.count { it == '-' } >= HORIZONTAL_RULE_MIN_CHARS ||
+                    trimmed.all { it == '*' || it == ' ' } &&
+                    trimmed.count { it == '*' } >= HORIZONTAL_RULE_MIN_CHARS ||
+                    trimmed.all { it == '_' || it == ' ' } &&
+                    trimmed.count { it == '_' } >= HORIZONTAL_RULE_MIN_CHARS
+                )
     }
 }

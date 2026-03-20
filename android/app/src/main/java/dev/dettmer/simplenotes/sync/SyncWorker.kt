@@ -1,13 +1,10 @@
-@file:Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional, will migrate in v2.0.0
-
 package dev.dettmer.simplenotes.sync
 
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.core.content.edit
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
@@ -20,14 +17,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class SyncWorker(
-    context: Context,
-    params: WorkerParameters
-) : CoroutineWorker(context, params) {
-    
+class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     companion object {
         private const val TAG = "SyncWorker"
-        const val ACTION_SYNC_COMPLETED = "dev.dettmer.simplenotes.SYNC_COMPLETED"
 
         // WorkManager stop reason codes (mirrors WorkInfo.STOP_REASON_* constants, API 31+)
         private const val STOP_REASON_QUOTA = 10
@@ -36,21 +28,21 @@ class SyncWorker(
     }
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-    
+
     /**
      * 🔧 v1.7.2: Required for expedited work on Android 9-11
-     * 
+     *
      * WorkManager ruft diese Methode auf um die Foreground-Notification zu erstellen
      * wenn der Worker als Expedited Work gestartet wird.
-     * 
+     *
      * Ab Android 12+ wird diese Methode NICHT aufgerufen (neue Expedited API).
      * Auf Android 9-11 MUSS diese Methode implementiert sein!
-     * 
+     *
      * @see https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#foregroundinfo
      */
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = NotificationHelper.createSyncProgressNotification(applicationContext)
-        
+
         // Android 10+ benötigt foregroundServiceType
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
@@ -74,13 +66,13 @@ class SyncWorker(
         val activityManager = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appProcesses = activityManager.runningAppProcesses ?: return false
         val packageName = applicationContext.packageName
-        
+
         return appProcesses.any { process ->
             process.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
-            process.processName == packageName
+                process.processName == packageName
         }
     }
-    
+
     @Suppress("LongMethod") // Linear sync flow with debug logging — splitting would hurt readability
     override suspend fun doWork(): Result = withContext(ioDispatcher) {
         if (BuildConfig.DEBUG) {
@@ -90,12 +82,12 @@ class SyncWorker(
             Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
             Logger.d(TAG, "RunAttempt: $runAttemptCount")
         }
-        
+
         return@withContext try {
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 1: Before WebDavSyncService creation")
             }
-            
+
             // Try-catch um Service-Creation
             val syncService = try {
                 if (BuildConfig.DEBUG) {
@@ -111,20 +103,20 @@ class SyncWorker(
                 Logger.e(TAG, "Exception: ${e.javaClass.name}: ${e.message}")
                 throw e
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 2: SyncStateManager coordination & global cooldown (v1.8.1)")
             }
-            
+
             // 🆕 v1.8.1 (IMPL_08): SyncStateManager-Koordination
             // Verhindert dass Foreground und Background gleichzeitig syncing-State haben
             val prefs = applicationContext.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-            
+
             // 🆕 v1.8.1 (IMPL_08B): onSave-Syncs bypassen den globalen Cooldown
             // Grund: User hat explizit gespeichert → erwartet zeitnahen Sync
             // Der eigene 5s-Throttle + isSyncing-Mutex reichen als Schutz
             val isOnSaveSync = tags.contains(Constants.SYNC_ONSAVE_TAG)
-            
+
             // Globaler Cooldown-Check (nicht für onSave-Syncs)
             if (!isOnSaveSync && !SyncStateManager.canSyncGlobally(prefs)) {
                 Logger.d(TAG, "⏭️ SyncWorker: Global sync cooldown active - skipping")
@@ -134,7 +126,7 @@ class SyncWorker(
                 }
                 return@withContext Result.success()
             }
-            
+
             if (!SyncStateManager.tryStartSync("worker-${tags.firstOrNull() ?: "unknown"}", silent = true)) {
                 Logger.d(TAG, "⏭️ SyncWorker: Another sync already in progress - skipping")
                 if (BuildConfig.DEBUG) {
@@ -143,35 +135,35 @@ class SyncWorker(
                 }
                 return@withContext Result.success()
             }
-            
+
             // Globalen Cooldown markieren
             SyncStateManager.markGlobalSyncStarted(prefs)
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 3: Checking for unsynced changes (Performance Pre-Check)")
             }
-            
+
             // 🔥 v1.1.2: Performance-Optimierung - Skip Sync wenn keine lokalen Änderungen
             // Spart Batterie + Netzwerk-Traffic + Server-Last
             if (!syncService.hasUnsyncedChanges()) {
                 Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
                 Logger.d(TAG, "   Saves battery, network traffic, and server load")
-                
+
                 // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
                 SyncStateManager.reset()
-                
+
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
                     Logger.d(TAG, "═══════════════════════════════════════")
                 }
-                
+
                 return@withContext Result.success()
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 4: Checking sync gate (canSync)")
             }
-            
+
             // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (WiFi-Only, Offline Mode, Server Config)
             val gateResult = syncService.canSync()
             if (!gateResult.canSync) {
@@ -180,22 +172,22 @@ class SyncWorker(
                 } else {
                     Logger.d(TAG, "⏭️ Sync blocked by gate: ${gateResult.blockReason ?: "offline/no server"}")
                 }
-                
+
                 // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
                 SyncStateManager.reset()
-                
+
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (gate blocked)")
                     Logger.d(TAG, "═══════════════════════════════════════")
                 }
-                
+
                 return@withContext Result.success()
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 5: Checking server reachability (Pre-Check)")
             }
-            
+
             // ⭐ KRITISCH: Server-Erreichbarkeits-Check VOR Sync
             // Verhindert Fehler-Notifications in fremden WiFi-Netzen
             // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway)
@@ -203,27 +195,27 @@ class SyncWorker(
                 Logger.d(TAG, "⏭️ Server not reachable - skipping sync (no error)")
                 Logger.d(TAG, "   Reason: Server offline/wrong network/network not ready/not configured")
                 Logger.d(TAG, "   This is normal in foreign WiFi or during network initialization")
-                
+
                 // 🔥 v1.1.2: Check if we should show warning (server unreachable for >24h)
                 checkAndShowSyncWarning(syncService)
-                
+
                 // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
                 SyncStateManager.reset()
-                
+
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (silent skip)")
                     Logger.d(TAG, "═══════════════════════════════════════")
                 }
-                
+
                 // Success zurückgeben (kein Fehler, Server ist halt nicht erreichbar)
                 return@withContext Result.success()
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 6: Server reachable - proceeding with sync")
                 Logger.d(TAG, "    SyncService: $syncService")
             }
-            
+
             // Try-catch um syncNotes
             val result = try {
                 if (BuildConfig.DEBUG) {
@@ -239,7 +231,7 @@ class SyncWorker(
                 Logger.e(TAG, "Exception: ${e.javaClass.name}: ${e.message}")
                 throw e
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "📍 Step 7: Processing result")
                 Logger.d(
@@ -248,16 +240,16 @@ class SyncWorker(
                         "count=${result.syncedCount}, error=${result.errorMessage}"
                 )
             }
-            
+
             if (result.isSuccess) {
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "📍 Step 8: Success path")
                 }
                 Logger.i(TAG, "✅ Sync successful: ${result.syncedCount} notes")
-                
+
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 SyncStateManager.markCompleted()
-                
+
                 // Nur Notification zeigen wenn tatsächlich etwas gesynct wurde
                 // UND die App nicht im Vordergrund ist (sonst sieht User die Änderungen direkt)
                 if (result.syncedCount > 0) {
@@ -276,12 +268,12 @@ class SyncWorker(
                 } else {
                     Logger.d(TAG, "ℹ️ No changes to sync - no notification")
                 }
-                
-                // **UI REFRESH**: Broadcast für MainActivity
+
+                // **UI REFRESH**: SyncEventBus für ComposeMainActivity
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "    Broadcasting sync completed...")
                 }
-                broadcastSyncCompleted(true, result.syncedCount)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = true, count = result.syncedCount))
 
                 // 🆕 v1.8.0: Alle Widgets aktualisieren nach Sync
                 try {
@@ -307,18 +299,18 @@ class SyncWorker(
                     Logger.d(TAG, "📍 Step 8: Failure path")
                 }
                 Logger.e(TAG, "❌ Sync failed: ${result.errorMessage}")
-                
+
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 SyncStateManager.markError(result.errorMessage)
-                
+
                 NotificationHelper.showSyncError(
                     applicationContext,
                     result.errorMessage ?: "Unbekannter Fehler"
                 )
-                
-                // Broadcast auch bei Fehler (damit UI refresht)
-                broadcastSyncCompleted(false, 0)
-                
+
+                // Notify UI auch bei Fehler
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
+
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "❌ SyncWorker.doWork() FAILURE")
                     Logger.d(TAG, "═══════════════════════════════════════")
@@ -336,23 +328,22 @@ class SyncWorker(
                 Logger.d(TAG, "⏹️ Job was cancelled (normal - update/doze/constraints)")
             }
             Logger.d(TAG, "   This is expected Android behavior - not an error!")
-            
+
             try {
-                // UI-Refresh trotzdem triggern (falls MainActivity geöffnet)
-                broadcastSyncCompleted(false, 0)
+                // UI-Refresh trotzdem triggern (falls ComposeMainActivity geöffnet)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
             } catch (broadcastError: Exception) {
-                Logger.e(TAG, "Failed to broadcast after cancellation", broadcastError)
+                Logger.e(TAG, "Failed to emit SyncEvent after cancellation", broadcastError)
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (cancelled, no error)")
                 Logger.d(TAG, "═══════════════════════════════════════")
             }
-            
+
             // ⚠️ Cancellation ist KEIN Fehler → kein markError(), kein Error-Banner
             // Result.success() damit WorkManager kein exponentielles Backoff auslöst
             Result.success()
-            
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "═══════════════════════════════════════")
@@ -361,10 +352,10 @@ class SyncWorker(
             Logger.e(TAG, "Exception type: ${e.javaClass.name}")
             Logger.e(TAG, "Exception message: ${e.message}")
             Logger.e(TAG, "Stack trace:", e)
-            
+
             // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
             SyncStateManager.markError(e.message)
-            
+
             try {
                 NotificationHelper.showSyncError(
                     applicationContext,
@@ -373,19 +364,20 @@ class SyncWorker(
             } catch (notifError: Exception) {
                 Logger.e(TAG, "Failed to show error notification", notifError)
             }
-            
+
             try {
-                broadcastSyncCompleted(false, 0)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
             } catch (broadcastError: Exception) {
-                Logger.e(TAG, "Failed to broadcast", broadcastError)
+                Logger.e(TAG, "Failed to emit SyncEvent", broadcastError)
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Logger.d(TAG, "═══════════════════════════════════════")
             }
             Result.failure()
         }
     }
+
     /**
      * 🆕 v1.10.0-P2: Maps WorkManager stopReason code to a human-readable name and tracks
      * quota/standby stops for user-facing notification on next app resume.
@@ -415,24 +407,14 @@ class SyncWorker(
         }
         Logger.d(TAG, "⏹️ Job was cancelled — stop reason: $reasonName (code: $reason)")
 
-        if (reason == STOP_REASON_QUOTA || reason == STOP_REASON_BACKGROUND_RESTRICTION || reason == STOP_REASON_APP_STANDBY) {
+        if (reason == STOP_REASON_QUOTA ||
+            reason == STOP_REASON_BACKGROUND_RESTRICTION ||
+            reason == STOP_REASON_APP_STANDBY
+        ) {
             SyncStateManager.recordQuotaStop(reasonName)
         }
     }
 
-    /**
-     * Sendet Broadcast an MainActivity für UI Refresh
-     */
-    @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but still functional, will migrate in v2.0.0
-    private fun broadcastSyncCompleted(success: Boolean, count: Int) {
-        val intent = Intent(ACTION_SYNC_COMPLETED).apply {
-            putExtra("success", success)
-            putExtra("count", count)
-        }
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
-        Logger.d(TAG, "📡 Broadcast sent: success=$success, count=$count")
-    }
-    
     /**
      * Prüft ob Server längere Zeit unreachable und zeigt ggf. Warnung (v1.1.2)
      * - Nur wenn Auto-Sync aktiviert
@@ -446,7 +428,7 @@ class SyncWorker(
                 dev.dettmer.simplenotes.utils.Constants.PREFS_NAME,
                 android.content.Context.MODE_PRIVATE
             )
-            
+
             // Check 1: Auto-Sync aktiviert?
             val autoSyncEnabled = prefs.getBoolean(
                 dev.dettmer.simplenotes.utils.Constants.KEY_AUTO_SYNC,
@@ -456,14 +438,14 @@ class SyncWorker(
                 Logger.d(TAG, "⏭️ Auto-Sync disabled - no warning needed")
                 return
             }
-            
+
             // Check 2: Schon mal erfolgreich gesynct?
             val lastSuccessfulSync = syncService.getLastSuccessfulSyncTimestamp()
             if (lastSuccessfulSync == 0L) {
                 Logger.d(TAG, "⏭️ Never synced successfully - no warning needed")
                 return
             }
-            
+
             // Check 3: >24h seit letztem erfolgreichen Sync?
             val now = System.currentTimeMillis()
             val timeSinceLastSync = now - lastSuccessfulSync
@@ -471,7 +453,7 @@ class SyncWorker(
                 Logger.d(TAG, "⏭️ Last successful sync <24h ago - no warning needed")
                 return
             }
-            
+
             // Check 4: Throttling - schon Warnung in letzten 24h gezeigt?
             val lastWarningShown = prefs.getLong(
                 dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN,
@@ -481,18 +463,15 @@ class SyncWorker(
                 Logger.d(TAG, "⏭️ Warning already shown in last 24h - throttling")
                 return
             }
-            
+
             // Zeige Warnung
             val hoursSinceLastSync = timeSinceLastSync / (1000 * 60 * 60)
             NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync)
-            
+
             // Speichere Zeitpunkt der Warnung
-            prefs.edit()
-                .putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now)
-                .apply()
-            
+            prefs.edit { putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now) }
+
             Logger.d(TAG, "⚠️ Sync warning shown: Server unreachable for ${hoursSinceLastSync}h")
-            
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to check/show sync warning", e)
         }

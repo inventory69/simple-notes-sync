@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.ui.settings.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,6 +18,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -24,17 +26,18 @@ import dev.dettmer.simplenotes.R
 /**
  * Reusable Scaffold with back-navigation TopAppBar
  * v1.5.0: Jetpack Compose Settings Redesign
+ * v2.1.0: TopAppBar uses transparent container to prevent double-animation.
+ *         M3 TopAppBar internally wraps containerColor in its own
+ *         animateColorAsState(spring) — when used together with our
+ *         theme-level updateTransition, the TopAppBar lags behind.
+ *         Transparent container + Scaffold's containerColor as visual
+ *         background bypasses this and keeps everything perfectly in sync.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScaffold(
-    title: String,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable (PaddingValues) -> Unit
-) {
+fun SettingsScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Modifier, content: @Composable (PaddingValues) -> Unit) {
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = {
@@ -52,7 +55,8 @@ fun SettingsScaffold(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )

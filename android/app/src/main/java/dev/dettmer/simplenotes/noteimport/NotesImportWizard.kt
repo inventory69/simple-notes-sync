@@ -28,10 +28,7 @@ import java.util.UUID
  *
  * v1.9.0: Issue #21
  */
-class NotesImportWizard(
-    private val storage: NotesStorage,
-    private val context: Context
-) {
+class NotesImportWizard(private val storage: NotesStorage, private val context: Context) {
     companion object {
         private const val TAG = "NotesImportWizard"
 
@@ -52,36 +49,29 @@ class NotesImportWizard(
     // Data Classes
     // ══════════════════════════════════════════════════════════════
 
-    data class ImportCandidate(
-        val name: String,
-        val source: ImportSource,
-        val size: Long,
-        val modified: Long,
-        val fileType: FileType
-    )
+    data class ImportCandidate(val name: String, val source: ImportSource, val size: Long, val modified: Long, val fileType: FileType)
 
     enum class FileType {
-        MARKDOWN, JSON, PLAINTEXT
+        MARKDOWN,
+        JSON,
+        PLAINTEXT
     }
 
     sealed class ImportSource {
         data class WebDav(val url: String, val sardine: Sardine) : ImportSource()
+
         data class LocalFile(val uri: Uri) : ImportSource()
     }
 
     sealed class ImportResult {
         data class Success(val note: Note, val sourceName: String) : ImportResult()
+
         data class Skipped(val sourceName: String, val reason: String) : ImportResult()
+
         data class Failed(val sourceName: String, val error: String) : ImportResult()
     }
 
-    data class ImportSummary(
-        val totalScanned: Int,
-        val imported: Int,
-        val skipped: Int,
-        val failed: Int,
-        val results: List<ImportResult>
-    )
+    data class ImportSummary(val totalScanned: Int, val imported: Int, val skipped: Int, val failed: Int, val results: List<ImportResult>)
 
     // ══════════════════════════════════════════════════════════════
     // Scanning — WebDAV-Ordner nach importierbaren Dateien durchsuchen
@@ -106,8 +96,8 @@ class NotesImportWizard(
             resources
                 .filter { res ->
                     !res.isDirectory &&
-                    res.contentLength <= MAX_FILE_SIZE &&
-                    SUPPORTED_EXTENSIONS.any { ext -> res.name.endsWith(ext, ignoreCase = true) }
+                        res.contentLength <= MAX_FILE_SIZE &&
+                        SUPPORTED_EXTENSIONS.any { ext -> res.name.endsWith(ext, ignoreCase = true) }
                 }
                 .mapTo(results) { resource ->
                     ImportCandidate(
@@ -128,8 +118,8 @@ class NotesImportWizard(
             resources
                 .filter { res ->
                     res.isDirectory &&
-                    res.name != baseName &&
-                    !isSyncFolder(res.name)
+                        res.name != baseName &&
+                        !isSyncFolder(res.name)
                 }
                 .forEach { subDir ->
                     val subUrl = "$baseUrl/${subDir.name}"
@@ -138,8 +128,8 @@ class NotesImportWizard(
                         subResources
                             .filter { res ->
                                 !res.isDirectory &&
-                                res.contentLength <= MAX_FILE_SIZE &&
-                                SUPPORTED_EXTENSIONS.any { ext -> res.name.endsWith(ext, ignoreCase = true) }
+                                    res.contentLength <= MAX_FILE_SIZE &&
+                                    SUPPORTED_EXTENSIONS.any { ext -> res.name.endsWith(ext, ignoreCase = true) }
                             }
                             .mapTo(results) { resource ->
                                 ImportCandidate(
@@ -229,7 +219,6 @@ class NotesImportWizard(
 
             Logger.d(TAG, "✅ Imported: ${candidate.name} → ${noteToSave.id} ('${noteToSave.title}')")
             ImportResult.Success(noteToSave, candidate.name)
-
         } catch (e: Exception) {
             Logger.e(TAG, "Import failed for ${candidate.name}: ${e.message}")
             ImportResult.Failed(candidate.name, e.message ?: "Unknown error")
@@ -257,8 +246,11 @@ class NotesImportWizard(
             failed = results.count { it is ImportResult.Failed },
             results = results
         ).also {
-            Logger.d(TAG, "📊 Import complete: ${it.imported} imported, " +
-                "${it.skipped} skipped, ${it.failed} failed")
+            Logger.d(
+                TAG,
+                "📊 Import complete: ${it.imported} imported, " +
+                    "${it.skipped} skipped, ${it.failed} failed"
+            )
         }
     }
 
@@ -288,7 +280,7 @@ class NotesImportWizard(
         val nonEmptyLines = body.lines().filter { it.isNotBlank() }
         if (nonEmptyLines.isNotEmpty() && nonEmptyLines.all { heuristicTaskRegex.matches(it.trim()) }) {
             val items = nonEmptyLines.mapIndexed { index, line ->
-                val m = heuristicTaskRegex.find(line.trim())!!
+                val m = requireNotNull(heuristicTaskRegex.find(line.trim()))
                 ChecklistItem(
                     id = UUID.randomUUID().toString(),
                     text = m.groupValues[2].trim(),
@@ -336,7 +328,7 @@ class NotesImportWizard(
         }
         return when {
             jsonElement.isJsonObject -> parseJsonObject(jsonElement.asJsonObject, candidate)
-            jsonElement.isJsonArray  -> parseJsonArray(jsonElement.asJsonArray, candidate)
+            jsonElement.isJsonArray -> parseJsonArray(jsonElement.asJsonArray, candidate)
             else -> null
         }
     }
@@ -349,10 +341,7 @@ class NotesImportWizard(
         return folderName == syncFolder || folderName == "$syncFolder-md"
     }
 
-    private fun parseJsonObject(
-        obj: com.google.gson.JsonObject,
-        candidate: ImportCandidate
-    ): Note? {
+    private fun parseJsonObject(obj: com.google.gson.JsonObject, candidate: ImportCandidate): Note? {
         if (obj.has("id") && obj.has("title") && obj.has("createdAt")) {
             try {
                 val note = Note.fromJson(com.google.gson.Gson().toJson(obj))
@@ -360,15 +349,14 @@ class NotesImportWizard(
                     Logger.d(TAG, "   📋 ${candidate.name}: Simple Notes JSON (id=${note.id})")
                     return note
                 }
-            } catch (_: Exception) { /* Fallthrough to generic parsing */ }
+            } catch (_: Exception) {
+                // Fallthrough to generic parsing
+            }
         }
         return parseGenericJsonObject(obj, candidate)
     }
 
-    private fun parseJsonArray(
-        array: com.google.gson.JsonArray,
-        candidate: ImportCandidate
-    ): Note? {
+    private fun parseJsonArray(array: com.google.gson.JsonArray, candidate: ImportCandidate): Note? {
         if (array.size() == 0) return null
         Logger.d(TAG, "   📋 ${candidate.name}: JSON array with ${array.size()} entries")
         val firstElement = array[0]
@@ -378,16 +366,15 @@ class NotesImportWizard(
     /**
      * Versucht ein generisches JSON-Objekt als Notiz zu interpretieren.
      */
-    internal fun parseGenericJsonObject(
-        obj: com.google.gson.JsonObject,
-        candidate: ImportCandidate
-    ): Note? {
+    internal fun parseGenericJsonObject(obj: com.google.gson.JsonObject, candidate: ImportCandidate): Note? {
         val title = listOf("title", "name", "subject", "header", "Title", "Name")
             .firstNotNullOfOrNull { key -> obj.get(key)?.asString?.takeIf { it.isNotBlank() } }
             ?: candidate.name.removeSuffix(".json")
 
-        val content = listOf("content", "body", "text", "note", "description",
-                             "Content", "Body", "Text", "markdown")
+        val content = listOf(
+            "content", "body", "text", "note", "description",
+            "Content", "Body", "Text", "markdown"
+        )
             .firstNotNullOfOrNull { key -> obj.get(key)?.asString?.takeIf { it.isNotBlank() } }
             .orEmpty()
 
@@ -396,11 +383,24 @@ class NotesImportWizard(
             return null
         }
 
-        val createdAt = extractTimestamp(obj, "createdAt", "created", "created_at",
-                                         "dateCreated", "createTime")
+        val createdAt = extractTimestamp(
+            obj,
+            "createdAt",
+            "created",
+            "created_at",
+            "dateCreated",
+            "createTime"
+        )
             ?: candidate.modified
-        val updatedAt = extractTimestamp(obj, "updatedAt", "updated", "updated_at",
-                                         "dateModified", "modifyTime", "modified")
+        val updatedAt = extractTimestamp(
+            obj,
+            "updatedAt",
+            "updated",
+            "updated_at",
+            "dateModified",
+            "modifyTime",
+            "modified"
+        )
             ?: candidate.modified
 
         val id = obj.get("id")?.asString?.takeIf { it.isNotBlank() }
@@ -515,6 +515,8 @@ class NotesImportWizard(
                 prim.isString -> Note.parseISO8601(prim.asString).takeIf { it > 0L }
                 else -> null
             }
-        } catch (_: Exception) { null }
+        } catch (_: Exception) {
+            null
+        }
     }
 }

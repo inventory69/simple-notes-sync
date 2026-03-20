@@ -7,7 +7,6 @@ import org.junit.Test
  * Unit-Tests für SyncProgress und SyncPhase.
  */
 class SyncProgressTest {
-
     // ═══════════════════════════════════════════════
     // SyncPhase
     // ═══════════════════════════════════════════════

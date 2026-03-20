@@ -7,16 +7,16 @@ package dev.dettmer.simplenotes.models
 enum class ChecklistSortOption {
     /** Manuelle Reihenfolge (Drag & Drop) — kein Re-Sort */
     MANUAL,
-    
+
     /** Alphabetisch A→Z */
     ALPHABETICAL_ASC,
-    
+
     /** Alphabetisch Z→A */
     ALPHABETICAL_DESC,
-    
+
     /** Unchecked zuerst, dann Checked */
     UNCHECKED_FIRST,
-    
+
     /** Checked zuerst, dann Unchecked */
     CHECKED_FIRST,
 

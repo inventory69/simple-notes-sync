@@ -1,4 +1,5 @@
 @file:Suppress("MatchingDeclarationName")
+
 package dev.dettmer.simplenotes.ui.settings.components
 
 import androidx.compose.foundation.layout.Column
@@ -21,11 +22,7 @@ import androidx.compose.ui.unit.dp
 /**
  * Data class for radio option
  */
-data class RadioOption<T>(
-    val value: T,
-    val title: String,
-    val subtitle: String? = null
-)
+data class RadioOption<T>(val value: T, val title: String, val subtitle: String? = null)
 
 /**
  * Settings radio group for selecting one option
@@ -52,7 +49,7 @@ fun <T> SettingsRadioGroup(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
-        
+
         options.forEach { option ->
             Row(
                 modifier = Modifier
@@ -69,7 +66,7 @@ fun <T> SettingsRadioGroup(
                     selected = option.value == selectedValue,
                     onClick = null // handled by selectable
                 )
-                
+
                 Column(
                     modifier = Modifier
                         .padding(start = 16.dp)

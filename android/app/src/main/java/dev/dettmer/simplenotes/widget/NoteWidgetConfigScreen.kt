@@ -66,7 +66,7 @@ fun NoteWidgetConfigScreen(
     onNoteSelected: (noteId: String, isLocked: Boolean, opacity: Float) -> Unit,
     onSave: ((noteId: String, isLocked: Boolean, opacity: Float) -> Unit)? = null,
     onSettingsChanged: ((noteId: String?, isLocked: Boolean, opacity: Float) -> Unit)? = null,
-    @Suppress("UNUSED_PARAMETER") onCancel: () -> Unit  // Reserved for future use
+    @Suppress("UNUSED_PARAMETER") onCancel: () -> Unit // Reserved for future use
 ) {
     val allNotes = remember { storage.loadAllNotes().sortedByDescending { it.updatedAt } }
     var lockWidget by remember { mutableStateOf(initialLock) }
@@ -203,11 +203,7 @@ fun NoteWidgetConfigScreen(
 }
 
 @Composable
-private fun NoteSelectionCard(
-    note: Note,
-    isSelected: Boolean = false,
-    onClick: () -> Unit
-) {
+private fun NoteSelectionCard(note: Note, isSelected: Boolean = false, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

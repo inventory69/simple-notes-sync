@@ -44,6 +44,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -66,11 +68,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
  * 3. Notifications (global toggle + sub-options + permission linking)
  */
 @Composable
-fun SyncSettingsScreen(
-    viewModel: SettingsViewModel,
-    onBack: () -> Unit,
-    onNavigateToServerSettings: () -> Unit
-) {
+fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigateToServerSettings: () -> Unit) {
     val isServerConfigured = viewModel.isServerConfigured()
 
     SettingsScaffold(
@@ -148,10 +146,7 @@ fun SyncSettingsScreen(
  * Own recomposition scope: changes to trigger states only recompose this section.
  */
 @Composable
-private fun SyncTriggersSection(
-    viewModel: SettingsViewModel,
-    isServerConfigured: Boolean
-) {
+private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
     val triggerOnSave by viewModel.triggerOnSave.collectAsState()
     val triggerOnResume by viewModel.triggerOnResume.collectAsState()
     val triggerWifiConnect by viewModel.triggerWifiConnect.collectAsState()
@@ -254,10 +249,7 @@ private fun SyncTriggersSection(
  * Own recomposition scope: changes to network states only recompose this section.
  */
 @Composable
-private fun NetworkSection(
-    viewModel: SettingsViewModel,
-    isServerConfigured: Boolean
-) {
+private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
     val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
     val maxParallelConnections by viewModel.maxParallelConnections.collectAsState()
 
@@ -309,10 +301,7 @@ private fun NetworkSection(
 }
 
 @Composable
-private fun NotificationSettingsSection(
-    viewModel: SettingsViewModel,
-    isServerConfigured: Boolean
-) {
+private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notificationsErrorsOnly by viewModel.notificationsErrorsOnly.collectAsState()
     val notificationsServerWarning by viewModel.notificationsServerWarning.collectAsState()
@@ -326,7 +315,8 @@ private fun NotificationSettingsSection(
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.POST_NOTIFICATIONS
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED
             } else {
                 true // Pre-Android 13: no runtime permission needed
@@ -341,7 +331,8 @@ private fun NotificationSettingsSection(
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasNotificationPermission.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.POST_NOTIFICATIONS
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
                     ) == PackageManager.PERMISSION_GRANTED
                 } else {
                     true
@@ -415,10 +406,17 @@ private fun NotificationSettingsSection(
                 TextButton(onClick = {
                     showPermissionSettingsDialog = false
                     pendingNotificationEnable = true
-                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                        context.startActivity(intent)
+                    } else {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = "package:${context.packageName}".toUri()
+                        }
+                        context.startActivity(intent)
                     }
-                    context.startActivity(intent)
                 }) {
                     Text(stringResource(R.string.notifications_permission_open_settings))
                 }
@@ -449,7 +447,8 @@ private fun NotificationSettingsSection(
                         viewModel.setNotificationsEnabled(true)
                     } else if (activity != null &&
                         ActivityCompat.shouldShowRequestPermissionRationale(
-                            activity, Manifest.permission.POST_NOTIFICATIONS
+                            activity,
+                            Manifest.permission.POST_NOTIFICATIONS
                         )
                     ) {
                         // Permission denied once — show rationale, then re-ask
@@ -461,16 +460,15 @@ private fun NotificationSettingsSection(
                             Context.MODE_PRIVATE
                         )
                         val wasPermissionRequested = prefs.getBoolean(
-                            "notification_permission_requested", false
+                            "notification_permission_requested",
+                            false
                         )
                         if (wasPermissionRequested) {
                             // Permanently denied — redirect to system settings
                             showPermissionSettingsDialog = true
                         } else {
                             // First time asking from settings screen
-                            prefs.edit().putBoolean(
-                                "notification_permission_requested", true
-                            ).apply()
+                            prefs.edit { putBoolean("notification_permission_requested", true) }
                             notificationPermissionLauncher.launch(
                                 Manifest.permission.POST_NOTIFICATIONS
                             )

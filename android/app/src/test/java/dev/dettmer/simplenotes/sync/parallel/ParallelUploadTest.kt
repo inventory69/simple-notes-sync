@@ -3,6 +3,9 @@ package dev.dettmer.simplenotes.sync.parallel
 import com.thegrizzlylabs.sardineandroid.DavResource
 import com.thegrizzlylabs.sardineandroid.Sardine
 import io.mockk.*
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -12,9 +15,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
-import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 🆕 v1.9.0: Unit-Tests für parallele Upload-Logik.
@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger
  * - notes-md/ Exists-Cache (einmalige Prüfung)
  */
 class ParallelUploadTest {
-
     private fun mockSardine(): Sardine = mockk(relaxed = true)
 
     /**
@@ -127,7 +126,9 @@ class ParallelUploadTest {
 
         assertTrue(result is UploadTaskResult.Success)
         assertEquals("note-1", (result as UploadTaskResult.Success).noteId)
-        verify(exactly = 1) { sardine.put(match<String> { it.contains("note-1.json") }, any<ByteArray>(), any<String>()) }
+        verify(exactly = 1) {
+            sardine.put(match<String> { it.contains("note-1.json") }, any<ByteArray>(), any<String>())
+        }
         assertEquals(listOf("note-1"), storageWrites)
     }
 
@@ -215,8 +216,12 @@ class ParallelUploadTest {
         }
 
         val result = simulateUploadWithRetry(
-            sardine, "note-retry", storageMutex, storageWrites,
-            maxRetries = 2, retryDelayMs = 1L
+            sardine,
+            "note-retry",
+            storageMutex,
+            storageWrites,
+            maxRetries = 2,
+            retryDelayMs = 1L
         )
 
         assertTrue("Should succeed after retry", result is UploadTaskResult.Success)
@@ -233,8 +238,12 @@ class ParallelUploadTest {
         every { sardine.put(any<String>(), any<ByteArray>(), any<String>()) } throws IOException("Persistent failure")
 
         val result = simulateUploadWithRetry(
-            sardine, "note-fail", storageMutex, storageWrites,
-            maxRetries = 2, retryDelayMs = 1L
+            sardine,
+            "note-fail",
+            storageMutex,
+            storageWrites,
+            maxRetries = 2,
+            retryDelayMs = 1L
         )
 
         assertTrue("Should fail after all retries", result is UploadTaskResult.Failure)
@@ -252,10 +261,14 @@ class ParallelUploadTest {
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
 
-        every { sardine.put(any<String>(), any<ByteArray>(), any<String>()) } throws CancellationException("Job cancelled")
+        every { sardine.put(any<String>(), any<ByteArray>(), any<String>()) } throws
+            CancellationException("Job cancelled")
 
         simulateUploadWithRetry(
-            sardine, "note-cancel", storageMutex, storageWrites,
+            sardine,
+            "note-cancel",
+            storageMutex,
+            storageWrites,
             maxRetries = 2
         )
     }
@@ -359,13 +372,13 @@ class ParallelUploadTest {
                 every { etag } returns "\"etag-ccc\""
             },
             mockk<DavResource>(relaxed = true).apply {
-                every { name } returns ""  // Parent directory entry
+                every { name } returns "" // Parent directory entry
                 every { etag } returns null
             }
         )
         every { sardine.list(any(), eq(1)) } returns resources
 
-        val successfulNoteIds = setOf("note-1", "note-3")  // note-2 war kein Upload
+        val successfulNoteIds = setOf("note-1", "note-3") // note-2 war kein Upload
         val allResources = sardine.list("https://server/notes/", 1)
 
         val batchEtagUpdates = mutableMapOf<String, String?>()
@@ -431,7 +444,7 @@ class ParallelUploadTest {
 
         val invalidationMap = try {
             sardine.list("https://server/notes/", 1)
-            emptyMap<String, String?>()  // Sollte nicht erreicht werden
+            emptyMap<String, String?>() // Sollte nicht erreicht werden
         } catch (e: Exception) {
             successfulNoteIds.associate { "etag_json_$it" to null as String? }
         }
@@ -461,7 +474,10 @@ class ParallelUploadTest {
                 async(dispatcher) {
                     semaphore.withPermit {
                         simulateUpload(
-                            sardine, noteId, storageMutex, storageWrites,
+                            sardine,
+                            noteId,
+                            storageMutex,
+                            storageWrites,
                             markdownExportEnabled = true,
                             markdownDirExists = markdownDirExists
                         )
@@ -485,7 +501,10 @@ class ParallelUploadTest {
         every { sardine.exists(match<String> { it.contains("notes-md") }) } returns true
 
         simulateUpload(
-            sardine, "note-1", storageMutex, storageWrites,
+            sardine,
+            "note-1",
+            storageMutex,
+            storageWrites,
             markdownExportEnabled = true,
             markdownDirExists = false
         )

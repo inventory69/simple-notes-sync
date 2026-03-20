@@ -8,10 +8,6 @@
     <!-- MAIN SCREEN                   -->
     <!-- ============================= -->
     <string name="main_title">Simple Notes</string>
-    <string name="no_notes_yet">Noch keine Notizen.\nTippe + um eine zu erstellen.</string>
-    <string name="add_note">Notiz hinzufügen</string>
-    <string name="sync">Synchronisieren</string>
-    <string name="settings">Einstellungen</string>
     <string name="action_sync">Synchronisieren</string>
     <string name="action_settings">Einstellungen</string>
     <string name="action_close_selection">Auswahl beenden</string>
@@ -21,7 +17,6 @@
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
-    <string name="empty_state_emoji">📝</string>
     <string name="empty_state_title">Noch keine Notizen</string>
     <string name="empty_state_message">Tippe + um eine neue Notiz zu erstellen</string>
     <!-- ============================= -->
@@ -31,25 +26,14 @@
     <string name="fab_close">Menü schließen</string>
     <string name="fab_text_note">Text-Notiz</string>
     <string name="fab_checklist">Checkliste</string>
-    <string name="create_text_note">Notiz</string>
-    <string name="create_checklist">Liste</string>
     <!-- ============================= -->
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
-    <string name="note_title_placeholder">Notiz-Titel</string>
-    <string name="note_content_placeholder">Notiz-Vorschau…</string>
-    <string name="note_timestamp_placeholder">Vor 2 Std</string>
     <string name="untitled">Ohne Titel</string>
     <string name="checklist_progress">%1$d/%2$d erledigt</string>
-    <string name="empty_checklist">Keine Einträge</string>
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
-    <string name="sync_status">Sync-Status</string>
-    <string name="sync_syncing">Synchronisiere…</string>
-    <string name="sync_completed">Synchronisiert</string>
-    <string name="sync_error">Fehler</string>
-    <string name="sync_status_syncing">Synchronisiere…</string>
     <string name="sync_status_completed">Synchronisierung abgeschlossen</string>
     <string name="sync_status_error">Synchronisierung fehlgeschlagen</string>
     <string name="sync_already_running">Synchronisierung läuft bereits</string>
@@ -77,14 +61,12 @@
     <string name="sync_deleted_on_server_count">%d auf Server gelöscht</string>
     <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
     <string name="sync_phase_preparing">Synchronisiere…</string>
-    <string name="sync_phase_checking">Prüfe Server…</string>
     <string name="sync_phase_uploading">Hochladen…</string>
     <string name="sync_phase_downloading">Herunterladen…</string>
     <string name="sync_phase_deleting">Vom Server löschen…</string>
     <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
     <string name="sync_quota_warning">⚠️ Sync wurde durch Androids Energieverwaltung verzögert. Öffne die App regelmäßig oder deaktiviere die Akku-Optimierung für zuverlässigen Hintergrund-Sync.</string>
     <string name="sync_phase_importing_markdown">Markdown importieren…</string>
-    <string name="sync_phase_saving">Speichern…</string>
     <string name="sync_phase_completed">Sync abgeschlossen</string>
     <string name="sync_phase_error">Sync fehlgeschlagen</string>
     <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Notizliste -->
@@ -123,8 +105,6 @@
     <string name="legacy_delete_dialog_title">Notiz löschen</string>
     <string name="legacy_delete_dialog_message">\"%s\" wird lokal gelöscht.\n\nAuch vom Server löschen?</string>
     <string name="legacy_delete_from_server">Vom Server löschen</string>
-    <string name="legacy_delete_with_server">\"%s\" wird lokal und vom Server gelöscht</string>
-    <string name="legacy_delete_local_only">\"%s\" lokal gelöscht (Server bleibt)</string>
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
@@ -146,11 +126,10 @@
     </plurals>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d von %2$d Notizen vom Server gelöscht</string>
     <string name="snackbar_server_delete_failed">Server-Löschung fehlgeschlagen</string>
+    <string name="snackbar_delete_queued_for_sync">Server nicht erreichbar – Löschung wird beim nächsten Sync ausgeführt</string>
     <string name="snackbar_server_error">Server-Fehler: %s</string>
-    <string name="snackbar_already_synced">Bereits synchronisiert</string>
     <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
     <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
-    <string name="snackbar_synced_count">✅ Gesynct: %d Notizen</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
@@ -184,7 +163,6 @@
     <string name="save">Speichern</string>
     <string name="add_item">Element hinzufügen</string>
     <string name="item_placeholder">Neues Element…</string>
-    <string name="reorder_item">Element verschieben</string>
     <string name="drag_to_reorder">Ziehen zum Sortieren</string>
     <string name="delete_item">Element löschen</string>
     <string name="note_is_empty">Notiz ist leer</string>
@@ -195,30 +173,21 @@
     <!-- ============================= -->
     <string name="settings_title">Einstellungen</string>
     <string name="settings_language">Sprache</string>
-    <string name="settings_language_subtitle">%s</string>
     <string name="settings_server">Server-Einstellungen</string>
     <string name="settings_server_status_reachable">✅ Erreichbar</string>
     <string name="settings_server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="settings_server_status_checking">🔍 Prüfe…</string>
-    <string name="settings_server_status_not_configured">⚠️ Nicht konfiguriert</string>
     <string name="settings_server_status_offline_mode">📴 Offline-Modus</string>
     <string name="settings_sync">Sync &amp; Benachrichtigungen</string>
-    <string name="settings_sync_auto_on">Auto-Sync: An • %s</string>
-    <string name="settings_sync_auto_off">Auto-Sync: Aus</string>
     <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
     <string name="settings_sync_manual_only">Nur manueller Sync</string>
     <string name="settings_sync_triggers_active">%d Trigger aktiv</string>
     <string name="settings_sync_notifications_enabled">Benachrichtigungen aktiv</string>
     <string name="settings_sync_notifications_errors_only">Nur Fehler und Warnungen</string>
     <string name="settings_sync_notifications_disabled">Benachrichtigungen deaktiviert</string>
-    <string name="settings_interval_15min">15 Min</string>
-    <string name="settings_interval_30min">30 Min</string>
-    <string name="settings_interval_60min">60 Min</string>
     <string name="settings_markdown">Markdown Desktop-Integration</string>
     <string name="settings_markdown_auto_on">Auto-Sync: An</string>
     <string name="settings_markdown_auto_off">Auto-Sync: Aus</string>
-    <string name="settings_markdown_manual_hint">Oder synchronisiere Markdown-Dateien manuell:</string>
-    <string name="settings_markdown_manual_button">Markdown synchronisieren</string>
     <string name="settings_backup">Backup &amp; Wiederherstellung</string>
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
     <!-- Issue #21: Notizen importieren -->
@@ -238,26 +207,13 @@
     <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
     <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
     <string name="import_cancel">Abbrechen</string>
-    <string name="settings_backup_info">📦 Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
-    <string name="settings_backup_local_title">Lokales Backup</string>
-    <string name="settings_backup_server_title">Server-Backup</string>
     <string name="settings_about">Über diese App</string>
-    <string name="settings_about_app_version">📱 App-Version</string>
-    <string name="settings_about_app_version_loading">Version wird geladen…</string>
-    <string name="settings_about_github">🌐 GitHub Repository</string>
-    <string name="settings_about_developer">👤 Entwickler</string>
-    <string name="settings_about_license">⚖️ Lizenz</string>
     <string name="settings_debug">Debug &amp; Diagnose</string>
     <string name="settings_debug_logging_on">Logging: An</string>
     <string name="settings_debug_logging_off">Logging: Aus</string>
-    <string name="settings_debug_file_logging">📝 Datei-Logging</string>
-    <string name="settings_debug_file_logging_desc">Sync-Logs in Datei speichern</string>
-    <string name="settings_debug_export_logs">📤 Logs exportieren &amp; teilen</string>
-    <string name="settings_debug_delete_logs">🗑️ Logs löschen</string>
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
     <!-- ============================= -->
-    <string name="server_settings">Server-Einstellungen</string>
     <string name="server_settings_title">Server-Einstellungen</string>
     <string name="server_connection_type">Verbindungstyp</string>
     <string name="server_connection_http">🏠 Intern (HTTP)</string>
@@ -272,7 +228,6 @@
     <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Verbindungs-Timeout: %d Sekunden</string>
     <string name="server_timeout_description">Wartezeit bevor ein Verbindungsversuch als fehlgeschlagen gilt. Niedrigere Werte geben schnellere Rückmeldung wenn der Server nicht erreichbar ist.</string>
-    <string name="server_url">Server URL</string>
     <string name="username">Benutzername</string>
     <string name="password">Passwort</string>
     <string name="server_password_show">Anzeigen</string>
@@ -281,7 +236,6 @@
     <string name="server_status_reachable">✅ Erreichbar</string>
     <string name="server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="server_status_checking">🔍 Prüfe…</string>
-    <string name="server_status_not_configured">⚠️ Nicht konfiguriert</string>
     <string name="server_status_offline_mode">📴 Offline-Modus aktiv</string>
     <string name="server_status_unknown">❓ Unbekannt</string>
     <string name="server_offline_mode_title">📴 Offline-Modus</string>
@@ -291,26 +245,12 @@
     <!-- ============================= -->
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
-    <string name="sync_settings">Sync-Einstellungen</string>
     <string name="sync_settings_title">Sync &amp; Benachrichtigungen</string>
-    <string name="auto_sync">Auto-Sync aktiviert</string>
-    <string name="sync_auto_sync_info">🔄 Auto-Sync:\n• Prüft alle 30 Min. ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%/Tag)</string>
-    <string name="sync_auto_sync_enabled">Auto-Sync aktiviert</string>
-    <string name="sync_interval_section">Sync-Intervall</string>
-    <string name="sync_interval_info">Legt fest, wie oft die App im Hintergrund synchronisiert. Kürzere Intervalle bedeuten aktuellere Daten, verbrauchen aber etwas mehr Akku.\n\n⏱️ Hinweis: Wenn dein Smartphone im Standby ist, kann Android die Synchronisation verzögern (bis zu 60 Min.), um Akku zu sparen. Das ist normal und betrifft alle Hintergrund-Apps.</string>
     <string name="sync_interval_15min_title">⚡ Alle 15 Minuten</string>
-    <string name="sync_interval_15min_subtitle">Schnellste Synchronisation • ~0.8%% Akku/Tag (~23 mAh)</string>
     <string name="sync_interval_30min_title">✓ Alle 30 Minuten (Empfohlen)</string>
-    <string name="sync_interval_30min_subtitle">Ausgewogenes Verhältnis • ~0.4%% Akku/Tag (~12 mAh)</string>
     <string name="sync_interval_60min_title">🔋 Alle 60 Minuten</string>
-    <string name="sync_interval_60min_subtitle">Maximale Akkulaufzeit • ~0.2%% Akku/Tag (~6 mAh geschätzt)</string>
     <!-- Legacy -->
-    <string name="auto_sync_info">ℹ️ Auto-Sync:\n\n• Prüft alle 30 Min ob Server erreichbar\n• Funktioniert bei jeder WiFi-Verbindung\n• Läuft auch im Hintergrund\n• Minimaler Akkuverbrauch (~0.4%%/Tag)</string>
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
-    <string name="sync_section_network">📶 Netzwerk-Einschränkung</string>
-    <string name="sync_section_instant">📲 Sofort-Sync</string>
-    <string name="sync_section_background">📡 Hintergrund-Sync</string>
-    <string name="sync_section_advanced">⚙️ Erweitert</string>
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">Sync-Auslöser</string>
     <string name="sync_section_network_performance">Netzwerk</string>
@@ -341,10 +281,8 @@
     <!-- 🆕 v1.7.0: WiFi-Only Sync -->
     <string name="sync_wifi_only_title">Sync nur im WLAN</string>
     <string name="sync_wifi_only_subtitle">Sync wird nur durchgeführt wenn WLAN verbunden ist. Spart mobiles Datenvolumen und verhindert lange Wartezeit.</string>
-    <string name="sync_wifi_only_blocked">Sync nur im WLAN möglich</string>
     <string name="sync_manual_hint">Manueller Sync (Toolbar/Pull-to-Refresh) ist ebenfalls verfügbar.</string>
     <string name="sync_manual_hint_disabled">Sync ist im Offline-Modus nicht verfügbar.</string>
-    <string name="sync_offline_mode_title">Offline-Modus</string>
     <string name="sync_offline_mode_message">Du nutzt die App im Offline-Modus. Richte einen Server ein, um Notizen zu synchronisieren.</string>
     <string name="sync_offline_mode_button">Server einrichten</string>
     <!-- ============================= -->
@@ -364,7 +302,6 @@
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
     <string name="backup_settings_title">Backup &amp; Wiederherstellung</string>
-    <string name="backup_restore_title">Backup &amp; Wiederherstellung</string>
     <string name="backup_auto_info">📦 Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
     <string name="backup_local_section">Lokales Backup</string>
     <string name="backup_create">💾 Backup erstellen</string>
@@ -372,15 +309,15 @@
     <!-- 🔐 v1.7.0: Verschlüsselung -->
     <string name="backup_encryption_title">Backup verschlüsseln</string>
     <string name="backup_encryption_subtitle">Schütze deine Backup-Datei mit Passwort</string>
+    <string name="backup_include_server_settings_title">App-Einstellungen einschließen</string>
+    <string name="backup_include_server_settings_subtitle">Server-Verbindung, Sync, Darstellung und Benachrichtigungseinstellungen mit sichern</string>
+    <string name="backup_server_settings_encryption_hint">App-Einstellungen enthalten Server-Zugangsdaten im Klartext. Verschlüsselung wird dringend empfohlen.</string>
+    <string name="backup_restore_server_settings_label">App-Einstellungen wiederherstellen (wenn im Backup enthalten)</string>
     <string name="backup_encryption_password">Passwort</string>
     <string name="backup_encryption_password_hint">Passwort eingeben (min. 8 Zeichen)</string>
     <string name="backup_encryption_confirm">Passwort bestätigen</string>
     <string name="backup_encryption_confirm_hint">Passwort erneut eingeben</string>
-    <string name="backup_encryption_error_mismatch">Passwörter stimmen nicht überein</string>
-    <string name="backup_encryption_error_too_short">Passwort zu kurz (min. 8 Zeichen)</string>
     <string name="backup_decryption_required">🔒 Verschlüsseltes Backup</string>
-    <string name="backup_decryption_password">Passwort zum Entschlüsseln eingeben</string>
-    <string name="backup_decryption_error">❌ Entschlüsselung fehlgeschlagen. Falsches Passwort?</string>
     <string name="backup_server_section">Server-Backup</string>
     <string name="backup_restore_server">☁️ Vom Server wiederherstellen</string>
     <string name="backup_restore_dialog_title">⚠️ Backup wiederherstellen?</string>
@@ -390,24 +327,13 @@
     <string name="backup_restore_mode_label">Wiederherstellungs-Modus:</string>
     <string name="backup_mode_merge_title">⚪ Zusammenführen (Standard)</string>
     <string name="backup_mode_merge_subtitle">Neue hinzufügen, Bestehende behalten</string>
-    <string name="backup_mode_merge_full">⚪ Zusammenführen (Standard)\n → Neue hinzufügen, Bestehende behalten</string>
     <string name="backup_mode_replace_title">⚪ Ersetzen</string>
     <string name="backup_mode_replace_subtitle">Alle löschen &amp; Backup importieren</string>
-    <string name="backup_mode_replace_full">⚪ Ersetzen\n → Alle löschen &amp; Backup importieren</string>
     <string name="backup_mode_overwrite_title">⚪ Duplikate überschreiben</string>
     <string name="backup_mode_overwrite_subtitle">Backup gewinnt bei Konflikten</string>
-    <string name="backup_mode_overwrite_full">⚪ Duplikate überschreiben\n → Backup gewinnt bei Konflikten</string>
     <string name="backup_restore_info">ℹ️ Ein Sicherheits-Backup wird vor dem Wiederherstellen automatisch erstellt.</string>
     <string name="backup_restore_button">Wiederherstellen</string>
     <!-- Legacy -->
-    <string name="backup_restore_warning">⚠️ Achtung:\n\nDie Wiederherstellung überschreibt ALLE lokalen Notizen mit den Daten vom Server. Diese Aktion kann nicht rückgängig gemacht werden!</string>
-    <string name="restore_from_server">Vom Server wiederherstellen</string>
-    <string name="restore_confirmation_title">⚠️ Vom Server wiederherstellen?</string>
-    <string name="restore_confirmation_message">WARNUNG: Alle lokalen Notizen werden gelöscht und durch die Notizen vom Server ersetzt.\n\nDieser Vorgang kann nicht rückgängig gemacht werden!</string>
-    <string name="restore_button">Wiederherstellen</string>
-    <string name="restore_progress">Stelle Notizen wieder her…</string>
-    <string name="restore_success">✓ %d Notizen wiederhergestellt</string>
-    <string name="restore_error">Fehler: %s</string>
     <!-- ============================= -->
     <!-- SETTINGS - DEBUG              -->
     <!-- ============================= -->
@@ -422,6 +348,10 @@
     <string name="debug_delete_logs">🗑️ Logs löschen</string>
     <string name="debug_delete_logs_title">Logs löschen?</string>
     <string name="debug_delete_logs_message">Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.</string>
+    <string name="debug_after_export_title">Datei-Logging deaktivieren?</string>
+    <string name="debug_after_export_message">Du kannst das Datei-Logging jetzt deaktivieren, da du die Logs bereits geteilt hast. Es kann hier jederzeit wieder aktiviert werden.</string>
+    <string name="debug_after_export_disable">Logging deaktivieren</string>
+    <string name="debug_after_export_keep">Aktiviert lassen</string>
     <string name="debug_test_section">Test-Modus</string>
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>
@@ -431,7 +361,6 @@
     <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>
     <string name="developer_options_already_unlocked">Entwickleroptionen sind bereits freigeschaltet</string>
     <!-- Legacy -->
-    <string name="file_logging_privacy_notice">ℹ️ Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
     <!-- ============================= -->
     <!-- SETTINGS - LANGUAGE           -->
     <!-- ============================= -->
@@ -443,15 +372,22 @@
     <string name="language_ukrainian">Ukrainisch</string>
     <string name="language_chinese_simplified">Chinesisch (vereinfacht)</string>
     <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
-    <string name="language_changed_restart">Sprache geändert. Neustart…</string>
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
     <string name="display_settings_title">Anzeige</string>
     <string name="display_mode_title">Notizen-Ansicht</string>
-    <string name="display_mode_list">📋 Listen-Ansicht</string>
-    <string name="display_mode_grid">🎨 Raster-Ansicht</string>
-    <string name="display_mode_info">Die Raster-Ansicht zeigt Notizen in zwei Spalten. Alle Notizen erscheinen nebeneinander in einer kompakten Übersicht.</string>
+    <string name="display_mode_list">Listen-Ansicht</string>
+    <string name="display_mode_grid">Raster-Ansicht</string>
+    <string name="display_mode_info">Die Raster-Ansicht ordnet Notizen in mehreren Spalten an. Die Spaltenanzahl passt sich automatisch an die Displaygröße und Textskalierung des Geräts an.</string>
+
+    <!-- 🆕 v2.1.0 (F46): Grid Column Control -->
+    <string name="grid_scaling_title">Raster-Spaltensteuerung</string>
+    <string name="grid_adaptive_scaling_title">Automatische Skalierung</string>
+    <string name="grid_adaptive_scaling_subtitle">Spalten passen sich an Displaygröße und Textskalierung an</string>
+    <string name="grid_manual_columns_title">Spaltenanzahl</string>
+    <string name="grid_scaling_info">Bei automatischer Skalierung passt sich die Spaltenanzahl an die Displaygröße und Textskalierung des Geräts an. Bei deaktivierter Skalierung wird eine feste Spaltenanzahl verwendet.</string>
+
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App-Titel</string>
     <string name="custom_app_title_label">Eigener Titel</string>
@@ -459,10 +395,27 @@
     <string name="custom_app_title_info">Lege einen eigenen Titel für den Hauptbildschirm fest. Leer lassen für den Standard-Titel \"Simple Notes\". Maximal 30 Zeichen.</string>
     <string name="custom_app_title_char_count">%1$d / %2$d</string>
     <!-- 🆕 v1.9.0: Autosave -->
+    <string name="settings_subtitle_autosave_on">Automatisch speichern</string>
+    <string name="settings_subtitle_autosave_off">Manuell speichern</string>
     <string name="autosave_section">Editor</string>
     <string name="autosave_toggle">Automatisches Speichern</string>
     <string name="autosave_description">Speichert nach 3 s Inaktivität und beim Verlassen des Editors</string>
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
+    <!-- v2.0.0: Theme System -->
+    <string name="theme_mode_title">Erscheinungsbild</string>
+    <string name="theme_mode_system">System (wie Gerät)</string>
+    <string name="theme_mode_light">Hell</string>
+    <string name="theme_mode_dark">Dunkel</string>
+    <string name="theme_mode_amoled">AMOLED (Reines Schwarz)</string>
+    <string name="theme_color_title">Farbschema</string>
+    <string name="theme_color_default">Standard</string>
+    <string name="theme_color_blue">Blau</string>
+    <string name="theme_color_green">Grün</string>
+    <string name="theme_color_red">Rot</string>
+    <string name="theme_color_purple">Lila</string>
+    <string name="theme_color_orange">Orange</string>
+    <string name="theme_color_dynamic">Dynamisch</string>
+    <string name="theme_color_dynamic_unavailable">Dynamische Farben erfordern Android 12+</string>
     <string name="autosave_indicator">✓ Gespeichert</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Rükgängig</string>
@@ -470,15 +423,13 @@
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
     <string name="filter_all">Alle</string>
     <string name="filter_text_only">Text</string>
-    <string name="filter_checklist_only">Checklisten</string>
+    <string name="filter_checklist_only">Listen</string>
     <!-- v1.9.0 (F10): Suche -->
     <string name="search_notes_placeholder">Suchen…</string>
     <string name="search_clear">Suche leeren</string>
     <!-- v1.9.0 (F11): Filterleiste Toggle -->
     <string name="toggle_filter_row">Filterleiste ein-/ausblenden</string>
     <!-- 🆕 v1.9.0 (F07): Markdown-Vorschau -->
-    <string name="editor_mode_edit">Bearbeiten</string>
-    <string name="editor_mode_preview">Vorschau</string>
     <string name="editor_toggle_preview">Markdown-Vorschau umschalten</string>
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
     <string name="md_toolbar_bold">Fett</string>
@@ -501,7 +452,7 @@
     <string name="about_developer_title">Entwickler</string>
     <string name="about_developer_subtitle">GitHub Profil: @inventory69</string>
     <string name="about_license_title">Lizenz</string>
-    <string name="about_license_subtitle">MIT License - Open Source</string>
+    <string name="about_license_subtitle">Apache 2.0 License - Open Source</string>
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Vollständige Versionshistorie</string>
@@ -550,25 +501,13 @@
     <string name="toast_export_failed">❌ Export fehlgeschlagen: %s</string>
     <!-- v1.10.0: Markdown Export Timeout -->
     <string name="toast_export_timeout">⏱️ Export-Zeitüberschreitung – Server zu langsam oder nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.</string>
-    <string name="toast_backup_success">✅ %s</string>
-    <string name="toast_backup_failed">❌ Backup fehlgeschlagen: %s</string>
-    <string name="toast_restore_success">✅ %d Notizen wiederhergestellt</string>
-    <string name="toast_restore_failed">❌ Wiederherstellung fehlgeschlagen: %s</string>
     <string name="toast_notifications_enabled">Benachrichtigungen aktiviert</string>
     <string name="toast_notifications_disabled">Benachrichtigungen deaktiviert. Du kannst sie in den Einstellungen aktivieren.</string>
-    <string name="toast_battery_optimization">Bitte Akku-Optimierung manuell deaktivieren</string>
     <string name="toast_logs_deleted">🗑️ Logs gelöscht</string>
-    <string name="toast_no_logs_to_delete">📭 Keine Logs zum Löschen</string>
-    <string name="toast_logs_delete_error">❌ Fehler beim Löschen: %s</string>
     <!-- 🔄 v1.7.0: Server change notification -->
     <string name="toast_server_changed_sync_reset">🔄 Server geändert. %d Notizen werden beim nächsten Sync hochgeladen.</string>
-    <string name="toast_link_error">❌ Fehler beim Öffnen des Links</string>
     <string name="toast_file_logging_enabled">📝 Datei-Logging aktiviert</string>
     <string name="toast_file_logging_disabled">📝 Datei-Logging deaktiviert</string>
-    <string name="toast_sync_interval_changed">⏱️ Sync-Intervall auf %s geändert</string>
-    <string name="version_not_available">Version nicht verfügbar</string>
-    <string name="status_checking">🔍 Prüfe…</string>
-    <string name="battery_optimization_dialog_message">Bitte wähle \'Nicht optimieren\' für Simple Notes.</string>
     <string name="battery_optimization_dialog_title">Hintergrund-Synchronisation</string>
     <string name="battery_optimization_dialog_full_message">Damit die App im Hintergrund synchronisieren kann, muss die Akku-Optimierung deaktiviert werden.\n\nBitte wähle \'Nicht optimieren\' für Simple Notes.</string>
     <string name="battery_optimization_open_settings">Einstellungen öffnen</string>
@@ -589,15 +528,15 @@
     <string name="time_just_now">Gerade eben</string>
     <plurals name="time_minutes_ago">
         <item quantity="one">Vor %d Min</item>
-        <item quantity="other"></item>
+        <item quantity="other">Vor %d Min</item>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">Vor %d Std</item>
-        <item quantity="other"></item>
+        <item quantity="other">Vor %d Std</item>
     </plurals>
     <plurals name="time_days_ago">
-        <item quantity="one">Vor %d Tagen</item>
-        <item quantity="other"></item>
+        <item quantity="one">Vor %d Tag</item>
+        <item quantity="other">Vor %d Tagen</item>
     </plurals>
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->
@@ -628,22 +567,6 @@
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
-    <plurals name="notes_count">
-        <item quantity="one">%d Notiz</item>
-        <item quantity="other">%d Notizen</item>
-    </plurals>
-    <plurals name="notes_deleted_local">
-        <item quantity="one">%d Notiz lokal gelöscht</item>
-        <item quantity="other">%d Notizen lokal gelöscht</item>
-    </plurals>
-    <plurals name="notes_deleted_server">
-        <item quantity="one">%d Notiz wird vom Server gelöscht</item>
-        <item quantity="other">%d Notizen werden vom Server gelöscht</item>
-    </plurals>
-    <plurals name="notes_synced">
-        <item quantity="one">%d Notiz synchronisiert</item>
-        <item quantity="other">%d Notizen synchronisiert</item>
-    </plurals>
     <!-- v1.8.0 (IMPL_017): Checklist separator -->
     <plurals name="checked_items_count">
         <item quantity="one">%d erledigt</item>
@@ -668,7 +591,6 @@
     <string name="widget_config_save">Speichern</string>
     <string name="widget_lock_label">Widget sperren</string>
     <string name="widget_lock_description">Versehentliches Bearbeiten verhindern</string>
-    <string name="widget_note_not_found">Notiz nicht gefunden</string>
     <string name="widget_opacity_label">Hintergrund-Transparenz</string>
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
     <string name="widget_preview_title">Einkaufsliste</string>

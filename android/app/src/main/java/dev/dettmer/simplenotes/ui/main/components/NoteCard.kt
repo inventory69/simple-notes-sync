@@ -49,7 +49,7 @@ import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
  * Note card - v1.5.0 with Multi-Select Support
- * 
+ *
  * ULTRA SIMPLE + SELECTION:
  * - NO remember() anywhere
  * - Direct MaterialTheme access
@@ -61,19 +61,19 @@ import dev.dettmer.simplenotes.utils.toReadableTime
 fun NoteCard(
     note: Note,
     showSyncStatus: Boolean,
+    modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     // ⏱️ Reading timestampTicker triggers recomposition only for visible cards
     @Suppress("UNUSED_VARIABLE")
     val ticker = timestampTicker
-    
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -85,7 +85,9 @@ fun NoteCard(
                         color = MaterialTheme.colorScheme.primary,
                         shape = RoundedCornerShape(16.dp)
                     )
-                } else Modifier
+                } else {
+                    Modifier
+                }
             )
             .pointerInput(note.id, isSelectionMode) {
                 detectTapGestures(
@@ -125,18 +127,19 @@ fun NoteCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (note.noteType == NoteType.TEXT) 
-                                Icons.Outlined.Description 
-                            else 
-                                Icons.AutoMirrored.Outlined.List,
+                            imageVector = if (note.noteType == NoteType.TEXT) {
+                                Icons.Outlined.Description
+                            } else {
+                                Icons.AutoMirrored.Outlined.List
+                            },
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.width(12.dp))
-                    
+
                     // Title
                     Text(
                         text = note.title.ifEmpty { stringResource(R.string.untitled) },
@@ -147,9 +150,9 @@ fun NoteCard(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Preview
                 Text(
                     text = when (note.noteType) {
@@ -164,9 +167,9 @@ fun NoteCard(
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Footer
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -178,7 +181,7 @@ fun NoteCard(
                         color = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     if (showSyncStatus) {
                         Icon(
                             imageVector = when (note.syncStatus) {
@@ -186,19 +189,19 @@ fun NoteCard(
                                 SyncStatus.PENDING -> Icons.Outlined.CloudSync
                                 SyncStatus.CONFLICT -> Icons.Default.Warning
                                 SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
-                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff // 🆕 v1.8.0
                             },
                             contentDescription = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> stringResource(R.string.sync_status_synced)
                                 SyncStatus.PENDING -> stringResource(R.string.sync_status_pending)
                                 SyncStatus.CONFLICT -> stringResource(R.string.sync_status_conflict)
                                 SyncStatus.LOCAL_ONLY -> stringResource(R.string.sync_status_local_only)
-                                SyncStatus.DELETED_ON_SERVER -> stringResource(R.string.sync_status_deleted_on_server)  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> stringResource(R.string.sync_status_deleted_on_server) // 🆕 v1.8.0
                             },
                             tint = when (note.syncStatus) {
                                 SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
                                 SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
-                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)  // 🆕 v1.8.0
+                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) // 🆕 v1.8.0
                                 else -> MaterialTheme.colorScheme.outline
                             },
                             modifier = Modifier.size(16.dp)
@@ -206,7 +209,7 @@ fun NoteCard(
                     }
                 }
             }
-            
+
             // Selection indicator checkbox (top-right)
             androidx.compose.animation.AnimatedVisibility(
                 visible = isSelectionMode,

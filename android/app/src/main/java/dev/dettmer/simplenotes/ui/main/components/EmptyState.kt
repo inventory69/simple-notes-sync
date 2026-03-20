@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.main.components
 
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import dev.dettmer.simplenotes.R
 
 /**
@@ -32,9 +32,7 @@ import dev.dettmer.simplenotes.R
  * v1.5.0: Jetpack Compose MainActivity Redesign
  */
 @Composable
-fun EmptyState(
-    modifier: Modifier = Modifier
-) {
+fun EmptyState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -57,14 +55,14 @@ fun EmptyState(
                     val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher_foreground)
                     drawable?.let {
                         val size = 256
-                        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                        val bitmap = createBitmap(size, size)
                         val canvas = Canvas(bitmap)
                         it.setBounds(0, 0, size, size)
                         it.draw(canvas)
                         bitmap.asImageBitmap()
                     }
                 }
-                
+
                 appIcon?.let {
                     Image(
                         bitmap = it,
@@ -72,9 +70,9 @@ fun EmptyState(
                         modifier = Modifier.size(96.dp)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Title
                 Text(
                     text = stringResource(R.string.empty_state_title),
@@ -82,9 +80,9 @@ fun EmptyState(
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Message
                 Text(
                     text = stringResource(R.string.empty_state_message),

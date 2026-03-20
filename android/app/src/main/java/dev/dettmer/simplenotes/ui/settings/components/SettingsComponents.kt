@@ -25,13 +25,7 @@ import androidx.compose.ui.unit.dp
  * v1.8.0: Button keeps text during loading, just becomes disabled
  */
 @Composable
-fun SettingsButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    isLoading: Boolean = false
-) {
+fun SettingsButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, isLoading: Boolean = false) {
     Button(
         onClick = onClick,
         enabled = enabled && !isLoading,
@@ -66,12 +60,7 @@ fun SettingsOutlinedButton(
  * Danger/destructive button for settings actions
  */
 @Composable
-fun SettingsDangerButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
+fun SettingsDangerButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
@@ -89,11 +78,7 @@ fun SettingsDangerButton(
  * v1.6.0: Added isWarning parameter for offline mode warning
  */
 @Composable
-fun SettingsInfoCard(
-    text: String,
-    modifier: Modifier = Modifier,
-    isWarning: Boolean = false
-) {
+fun SettingsInfoCard(text: String, modifier: Modifier = Modifier, isWarning: Boolean = false) {
     androidx.compose.material3.Card(
         modifier = modifier
             .fillMaxWidth()
@@ -124,10 +109,7 @@ fun SettingsInfoCard(
  * Section header text
  */
 @Composable
-fun SettingsSectionHeader(
-    text: String,
-    modifier: Modifier = Modifier
-) {
+fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
@@ -140,9 +122,7 @@ fun SettingsSectionHeader(
  * Divider between settings groups
  */
 @Composable
-fun SettingsDivider(
-    modifier: Modifier = Modifier
-) {
+fun SettingsDivider(modifier: Modifier = Modifier) {
     Spacer(modifier = modifier.height(8.dp))
     androidx.compose.material3.HorizontalDivider(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -156,10 +136,7 @@ fun SettingsDivider(
  * Replaces the ugly in-button spinner with a clear status display
  */
 @Composable
-fun BackupProgressCard(
-    statusText: String,
-    modifier: Modifier = Modifier
-) {
+fun BackupProgressCard(statusText: String, modifier: Modifier = Modifier) {
     androidx.compose.material3.Card(
         modifier = modifier
             .fillMaxWidth()

@@ -7,7 +7,6 @@ import org.junit.Test
  * Unit-Tests für ChecklistItem.
  */
 class ChecklistItemTest {
-
     @Test
     fun `default values are correct`() {
         val item = ChecklistItem()

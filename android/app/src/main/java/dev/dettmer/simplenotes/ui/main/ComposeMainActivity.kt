@@ -1,13 +1,8 @@
-@file:Suppress("DEPRECATION") // LocalBroadcastManager & deprecated lifecycle methods, will migrate in v2.0.0
-
 package dev.dettmer.simplenotes.ui.main
 
 import android.Manifest
-import android.app.ActivityOptions
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -27,20 +23,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.app.ActivityOptionsCompat
+import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
-import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncEvent
+import dev.dettmer.simplenotes.sync.SyncEventBus
 import dev.dettmer.simplenotes.sync.SyncStateManager
-import dev.dettmer.simplenotes.sync.SyncWorker
+import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.settings.ComposeSettingsActivity
+import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
+import dev.dettmer.simplenotes.ui.theme.ThemeMode
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -50,7 +53,7 @@ import kotlinx.coroutines.launch
 /**
  * Main Activity with Jetpack Compose UI
  * v1.5.0: Complete MainActivity Redesign with Compose
- * 
+ *
  * Replaces the old 805-line MainActivity.kt with a modern
  * Compose-based implementation featuring:
  * - Notes list with swipe-to-delete
@@ -60,97 +63,134 @@ import kotlinx.coroutines.launch
  * - Design consistent with ComposeSettingsActivity
  */
 class ComposeMainActivity : ComponentActivity() {
-    
     companion object {
         private const val TAG = "ComposeMainActivity"
-        private const val REQUEST_NOTIFICATION_PERMISSION = 1001
-        private const val REQUEST_SETTINGS = 1002
-        private const val REQUEST_EDITOR_RETURN = 1003  // 🆕 v1.10.0-P2: detect note deletion from editor
     }
-    
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val messageRes = if (granted) R.string.toast_notifications_enabled else R.string.toast_notifications_disabled
+        Toast.makeText(this, getString(messageRes), Toast.LENGTH_SHORT).show()
+    }
+
+    private val editorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == ComposeNoteEditorActivity.RESULT_NOTE_DELETED) {
+            val noteId =
+                result.data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID)
+                    ?: return@registerForActivityResult
+            val deleteFromServer = result.data?.getBooleanExtra(
+                ComposeNoteEditorActivity.RESULT_EXTRA_DELETE_FROM_SERVER,
+                false
+            ) ?: false
+            viewModel.deleteNoteFromEditor(noteId, deleteFromServer)
+        }
+    }
+
+    private val settingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            viewModel.loadNotes()
+        }
+    }
+
     private val viewModel: MainViewModel by viewModels()
-    
+
     private val prefs by lazy {
         getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
-    
+
+    // v2.0.0: Theme state — initialized in onCreate, refreshed in onResume after returning from Settings
+    private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
+    private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
+
     // 🆕 v1.10.0: Separate Job for banner auto-hide — survives collect re-emissions
     private var bannerAutoHideJob: kotlinx.coroutines.Job? = null
 
     // Phase 3: Track if coming from editor to scroll to top
     private var cameFromEditor = false
-    
-    /**
-     * BroadcastReceiver for Background-Sync Completion (Periodic Sync)
-     */
-    private val syncCompletedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val success = intent?.getBooleanExtra("success", false) ?: false
-            val count = intent?.getIntExtra("count", 0) ?: 0
-            
-            Logger.d(TAG, "📡 Sync completed broadcast received: success=$success, count=$count")
-            
-            // UI refresh
-            if (success && count > 0) {
-                viewModel.loadNotes()
-                Logger.d(TAG, "🔄 Notes reloaded after background sync")
-            }
-        }
-    }
-    
+
+    // v2.0.0: Track if coming from settings (to suppress onResume sync)
+    private var cameFromSettings = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Install Splash Screen (Android 12+)
-        installSplashScreen()
-        
+        // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
+
         super.onCreate(savedInstanceState)
-        
+
+        // v2.0.0: Load theme from prefs (context available after super.onCreate)
+        themeMode = ThemePreferences.getThemeMode(prefs)
+        colorTheme = ThemePreferences.getColorTheme(prefs)
+
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
-        
+
         // Enable edge-to-edge display
         enableEdgeToEdge()
-        
+
         // Initialize Logger and enable file logging if configured
         Logger.init(this)
         if (prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)) {
             Logger.setFileLoggingEnabled(true)
         }
-        
+
         // Clear old sync notifications on app start
         NotificationHelper.clearSyncNotifications(this)
-        
+
         // Request notification permission (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestNotificationPermission()
         }
-        
+
         // v1.4.1: Migrate checklists for backwards compatibility
         migrateChecklistsForBackwardsCompat()
-        
+
         // Setup Sync State Observer
         setupSyncStateObserver()
-        
+
+        // v2.0.0: Collect SyncEventBus events (replaces LocalBroadcastManager)
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SyncEventBus.events.collect { event ->
+                    when (event) {
+                        is SyncEvent.SyncCompleted -> {
+                            Logger.d(TAG, "📡 Sync completed event: success=${event.success}, count=${event.count}")
+                            if (event.success && event.count > 0) {
+                                viewModel.loadNotes()
+                                Logger.d(TAG, "🔄 Notes reloaded after background sync")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         setContent {
-            SimpleNotesTheme {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
                 val context = LocalContext.current
-                
+
                 // Dialog state for delete confirmation
                 var deleteDialogData by remember { mutableStateOf<MainViewModel.DeleteDialogData?>(null) }
-                
+
                 // Handle delete dialog events
                 LaunchedEffect(Unit) {
                     viewModel.showDeleteDialog.collect { data ->
                         deleteDialogData = data
                     }
                 }
-                
+
                 // Handle toast events
                 LaunchedEffect(Unit) {
                     viewModel.showToast.collect { message ->
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
-                
+
                 // Delete confirmation dialog
                 deleteDialogData?.let { data ->
                     DeleteConfirmationDialog(
@@ -169,54 +209,58 @@ class ComposeMainActivity : ComponentActivity() {
                         }
                     )
                 }
-                
+
                 MainScreen(
                     viewModel = viewModel,
                     onOpenNote = { noteId -> openNoteEditor(noteId) },
                     onOpenSettings = { openSettings() },
                     onCreateNote = { noteType -> createNote(noteType) }
                 )
-                
+
                 // v1.8.0: Post-Update Changelog (shows once after update)
                 UpdateChangelogSheet()
             }
         }
     }
-    
+
     override fun onResume() {
         super.onResume()
-        
-        Logger.d(TAG, "📱 ComposeMainActivity.onResume() - Registering receivers")
-        
+
+        Logger.d(TAG, "📱 ComposeMainActivity.onResume()")
+
+        // v2.0.0: Refresh theme state when returning from Settings
+        themeMode = ThemePreferences.getThemeMode(prefs)
+        colorTheme = ThemePreferences.getColorTheme(prefs)
+
         // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
         // This ensures UI reflects current offline mode when returning from Settings
         viewModel.refreshOfflineModeState()
-        
+
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
-        viewModel.refreshCustomAppTitle()  // 🆕 v1.9.0 (F05)
-        
-        // Register BroadcastReceiver for Background-Sync
-        @Suppress("DEPRECATION") // LocalBroadcastManager deprecated but functional
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            syncCompletedReceiver,
-            IntentFilter(SyncWorker.ACTION_SYNC_COMPLETED)
-        )
-        
-        Logger.d(TAG, "📡 BroadcastReceiver registered (sync-completed)")
-        
+        viewModel.refreshCustomAppTitle() // 🆕 v1.9.0 (F05)
+        viewModel.refreshGridSettings() // 🆕 v2.1.0 (F46)
+
         // Reload notes
         viewModel.loadNotes()
-        
+
         // Phase 3: Scroll to top if coming from editor (new/edited note)
+        // v2.0.0: Track whether we're returning from an in-app child activity
+        val returningFromChild = cameFromEditor || cameFromSettings
         if (cameFromEditor) {
             viewModel.scrollToTop()
             cameFromEditor = false
             Logger.d(TAG, "📜 Came from editor - scrolling to top")
         }
-        
-        // Trigger Auto-Sync on app resume
-        viewModel.triggerAutoSync("onResume")
+        if (cameFromSettings) {
+            cameFromSettings = false
+            Logger.d(TAG, "📜 Came from settings")
+        }
+
+        // Trigger Auto-Sync on app resume — but not when returning from editor/settings
+        if (!returningFromChild) {
+            viewModel.triggerAutoSync("onResume")
+        }
 
         // 🆕 v1.10.0-P2: Show one-time hint if last sync was stopped by quota/standby
         val quotaReason = SyncStateManager.consumeQuotaStopNotification()
@@ -224,15 +268,6 @@ class ComposeMainActivity : ComponentActivity() {
             Logger.w(TAG, "⚠️ Showing quota-stop notification (reason: $quotaReason)")
             SyncStateManager.showInfo(getString(R.string.sync_quota_warning))
         }
-    }
-    
-    override fun onPause() {
-        super.onPause()
-        
-        // Unregister BroadcastReceiver
-        @Suppress("DEPRECATION")
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(syncCompletedReceiver)
-        Logger.d(TAG, "📡 BroadcastReceiver unregistered")
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -277,8 +312,12 @@ class ComposeMainActivity : ComponentActivity() {
 
     private fun setupSyncStateObserver() {
         // 🆕 v1.8.0: SyncStatus nur noch für PullToRefresh-Indikator (intern)
-        SyncStateManager.syncStatus.observe(this) { status ->
-            viewModel.updateSyncState(status)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SyncStateManager.syncStatus.collect { status ->
+                    viewModel.updateSyncState(status)
+                }
+            }
         }
 
         // 🆕 v1.10.0: Auto-Hide via separatem Job — garantierte Mindest-Anzeigedauer
@@ -295,7 +334,12 @@ class ComposeMainActivity : ComponentActivity() {
                             dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> Constants.BANNER_DELAY_COMPLETED_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.INFO -> Constants.BANNER_DELAY_INFO_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> Constants.BANNER_DELAY_ERROR_MS
-                            else -> 0L
+                            dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.DOWNLOADING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.DELETING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.IMPORTING_MARKDOWN,
+                            dev.dettmer.simplenotes.sync.SyncPhase.IDLE -> 0L
                         }
                         bannerAutoHideJob = lifecycleScope.launch {
                             kotlinx.coroutines.delay(delayMs)
@@ -315,84 +359,76 @@ class ComposeMainActivity : ComponentActivity() {
             }
         }
     }
-    
+
     private fun openNoteEditor(noteId: String?) {
         cameFromEditor = true
         val intent = Intent(this, ComposeNoteEditorActivity::class.java)
         noteId?.let {
             intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_ID, it)
         }
-        
-        // v1.5.0: Add slide animation
-        val options = ActivityOptions.makeCustomAnimation(
+        val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.slide_in_right,
-            dev.dettmer.simplenotes.R.anim.slide_out_left
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
         )
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_EDITOR_RETURN, options.toBundle())
+        editorLauncher.launch(intent, options)
     }
-    
+
     private fun createNote(noteType: NoteType) {
         cameFromEditor = true
         val intent = Intent(this, ComposeNoteEditorActivity::class.java)
         intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
-        
-        // v1.5.0: Add slide animation
-        val options = ActivityOptions.makeCustomAnimation(
+        val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.slide_in_right,
-            dev.dettmer.simplenotes.R.anim.slide_out_left
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
         )
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_EDITOR_RETURN, options.toBundle())
+        editorLauncher.launch(intent, options)
     }
-    
+
     private fun openSettings() {
+        cameFromSettings = true
         val intent = Intent(this, ComposeSettingsActivity::class.java)
-        val options = ActivityOptions.makeCustomAnimation(
+        val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.slide_in_right,
-            dev.dettmer.simplenotes.R.anim.slide_out_left
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
         )
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_SETTINGS, options.toBundle())
+        settingsLauncher.launch(intent, options)
     }
-    
+
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) 
-                != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    REQUEST_NOTIFICATION_PERMISSION
-                )
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
-    
+
     /**
      * v1.4.1: Migrates existing checklists for backwards compatibility.
      */
     private fun migrateChecklistsForBackwardsCompat() {
         val migrationKey = "v1.4.1_checklist_migration_done"
-        
+
         // Only run once
         if (prefs.getBoolean(migrationKey, false)) {
             return
         }
-        
+
         val storage = NotesStorage(this)
         val allNotes = storage.loadAllNotes()
         val checklistsToMigrate = allNotes.filter { note ->
-            note.noteType == NoteType.CHECKLIST && 
-            note.content.isBlank() &&
-            note.checklistItems?.isNotEmpty() == true
+            note.noteType == NoteType.CHECKLIST &&
+                note.content.isBlank() &&
+                note.checklistItems?.isNotEmpty() == true
         }
-        
+
         if (checklistsToMigrate.isNotEmpty()) {
             Logger.d(TAG, "🔄 v1.4.1 Migration: Found ${checklistsToMigrate.size} checklists without fallback content")
-            
+
             for (note in checklistsToMigrate) {
                 val updatedNote = note.copy(
                     syncStatus = SyncStatus.PENDING
@@ -400,56 +436,12 @@ class ComposeMainActivity : ComponentActivity() {
                 storage.saveNote(updatedNote)
                 Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
             }
-            
+
             Logger.d(TAG, "✅ v1.4.1 Migration: ${checklistsToMigrate.size} checklists marked for re-sync")
         }
-        
+
         // Mark migration as done
-        prefs.edit().putBoolean(migrationKey, true).apply()
-    }
-    
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        
-        if (requestCode == REQUEST_SETTINGS && resultCode == RESULT_OK) {
-            // Settings changed, reload notes
-            viewModel.loadNotes()
-        }
-        
-        // 🆕 v1.10.0-P2: Note deleted from editor — delegate to MainViewModel for undo snackbar
-        if (requestCode == REQUEST_EDITOR_RETURN &&
-            resultCode == ComposeNoteEditorActivity.RESULT_NOTE_DELETED) {
-            val noteId = data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID) ?: return
-            val deleteFromServer = data.getBooleanExtra(
-                ComposeNoteEditorActivity.RESULT_EXTRA_DELETE_FROM_SERVER, false
-            )
-            viewModel.deleteNoteFromEditor(noteId, deleteFromServer)
-        }
-    }
-    
-    @Deprecated("Deprecated in API 23", ReplaceWith("Use ActivityResultContracts"))
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        
-        when (requestCode) {
-            REQUEST_NOTIFICATION_PERMISSION -> {
-                if (grantResults.isNotEmpty() && 
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, getString(R.string.toast_notifications_enabled), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, 
-                        getString(R.string.toast_notifications_disabled), 
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        prefs.edit { putBoolean(migrationKey, true) }
     }
 }
 
@@ -457,17 +449,12 @@ class ComposeMainActivity : ComponentActivity() {
  * Delete confirmation dialog
  */
 @Composable
-private fun DeleteConfirmationDialog(
-    noteTitle: String,
-    onDismiss: () -> Unit,
-    onDeleteLocal: () -> Unit,
-    onDeleteFromServer: () -> Unit
-) {
+private fun DeleteConfirmationDialog(noteTitle: String, onDismiss: () -> Unit, onDeleteLocal: () -> Unit, onDeleteFromServer: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.legacy_delete_dialog_title)) },
-        text = { 
-            Text(stringResource(R.string.legacy_delete_dialog_message, noteTitle)) 
+        text = {
+            Text(stringResource(R.string.legacy_delete_dialog_message, noteTitle))
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {

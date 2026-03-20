@@ -27,10 +27,7 @@ import androidx.compose.ui.unit.dp
  * @param isTopGradient true = Gradient von surface→transparent (oben), false = transparent→surface (unten)
  */
 @Composable
-fun OverflowGradient(
-    modifier: Modifier = Modifier,
-    isTopGradient: Boolean = false
-) {
+fun OverflowGradient(modifier: Modifier = Modifier, isTopGradient: Boolean = false) {
     val surfaceColor = MaterialTheme.colorScheme.surface
 
     val gradientColors = if (isTopGradient) {

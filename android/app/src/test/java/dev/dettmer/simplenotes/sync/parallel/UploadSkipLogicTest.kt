@@ -2,10 +2,10 @@ package dev.dettmer.simplenotes.sync.parallel
 
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
+import java.security.MessageDigest
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import java.security.MessageDigest
 
 /**
  * 🆕 v1.9.0: Unit-Tests für Upload-Skip-Logik (Opt. 5 + 6).
@@ -19,7 +19,6 @@ import java.security.MessageDigest
  * SharedPreferences wird durch eine einfache Map simuliert (kein Android-Context nötig).
  */
 class UploadSkipLogicTest {
-
     // Simuliert SharedPreferences als einfache Map
     private lateinit var prefsCache: MutableMap<String, String?>
 
@@ -166,7 +165,7 @@ class UploadSkipLogicTest {
         prefsCache["etag_json_${note1.id}"] = "\"etag-1\""
 
         assertTrue(shouldSkipJsonUpload(note1))
-        assertFalse(shouldSkipJsonUpload(note2))  // note-2 hat keinen Cache
+        assertFalse(shouldSkipJsonUpload(note2)) // note-2 hat keinen Cache
     }
 
     // ═══════════════════════════════════════════════

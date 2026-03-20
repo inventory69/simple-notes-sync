@@ -10,7 +10,6 @@ import org.junit.Test
  * isLocalUrl() ist pure Logik und vollständig testbar.
  */
 class UrlValidatorTest {
-
     // ═══════════════════════════════════════════════
     // Localhost
     // ═══════════════════════════════════════════════

@@ -5,7 +5,7 @@ import org.junit.Test
 
 /**
  * 🐛 v1.7.2: Basic validation tests for v1.7.2 bugfixes
- * 
+ *
  * This test file validates that the critical bugfixes are working:
  * - IMPL_001: Deletion Tracker Race Condition
  * - IMPL_002: ISO8601 Timezone Parsing
@@ -15,7 +15,6 @@ import org.junit.Test
  * - IMPL_015: SyncStatus PENDING Fix
  */
 class BugfixValidationTest {
-    
     @Test
     fun `IMPL_015 - Note toJson contains all fields`() {
         val note = Note(
@@ -24,15 +23,15 @@ class BugfixValidationTest {
             content = "Content",
             deviceId = "device-1"
         )
-        
+
         val json = note.toJson()
-        
+
         // Verify JSON contains critical fields
         assertTrue("JSON should contain id", json.contains("\"id\""))
         assertTrue("JSON should contain title", json.contains("\"title\""))
         assertTrue("JSON should contain deviceId", json.contains("\"deviceId\""))
     }
-    
+
     @Test
     fun `IMPL_015 - Note copy preserves all fields`() {
         val original = Note(
@@ -42,15 +41,15 @@ class BugfixValidationTest {
             deviceId = "device-1",
             syncStatus = SyncStatus.PENDING
         )
-        
+
         val copied = original.copy(syncStatus = SyncStatus.SYNCED)
-        
+
         // Verify copy worked correctly
         assertEquals("original-123", copied.id)
         assertEquals("Original", copied.title)
         assertEquals(SyncStatus.SYNCED, copied.syncStatus)
     }
-    
+
     @Test
     fun `IMPL_014 - fromMarkdown accepts serverModifiedTime parameter`() {
         val markdown = """
@@ -66,17 +65,17 @@ class BugfixValidationTest {
             
             Content
         """.trimIndent()
-        
+
         val serverMtime = System.currentTimeMillis()
-        
+
         // This should not crash - parameter is optional
         val note1 = Note.fromMarkdown(markdown)
         assertNotNull(note1)
-        
+
         val note2 = Note.fromMarkdown(markdown, serverModifiedTime = serverMtime)
         assertNotNull(note2)
     }
-    
+
     @Test
     fun `IMPL_002 - fromMarkdown handles various timestamp formats`() {
         // UTC format with Z
@@ -91,10 +90,10 @@ class BugfixValidationTest {
             ---
             # UTC Test
         """.trimIndent()
-        
+
         val note1 = Note.fromMarkdown(markdown1)
         assertNotNull("Should parse UTC format", note1)
-        
+
         // Format with timezone offset
         val markdown2 = """
             ---
@@ -107,10 +106,10 @@ class BugfixValidationTest {
             ---
             # Timezone Test
         """.trimIndent()
-        
+
         val note2 = Note.fromMarkdown(markdown2)
         assertNotNull("Should parse timezone offset format", note2)
-        
+
         // Format without timezone (should be treated as UTC)
         val markdown3 = """
             ---
@@ -123,11 +122,11 @@ class BugfixValidationTest {
             ---
             # No TZ Test
         """.trimIndent()
-        
+
         val note3 = Note.fromMarkdown(markdown3)
         assertNotNull("Should parse format without timezone", note3)
     }
-    
+
     @Test
     fun `Note data class has all required fields`() {
         val note = Note(
@@ -136,7 +135,7 @@ class BugfixValidationTest {
             content = "Content",
             deviceId = "device-1"
         )
-        
+
         // Verify all critical fields exist
         assertNotNull(note.id)
         assertNotNull(note.title)
@@ -147,7 +146,7 @@ class BugfixValidationTest {
         assertNotNull(note.createdAt)
         assertNotNull(note.updatedAt)
     }
-    
+
     @Test
     fun `SyncStatus enum has all required values`() {
         // Verify all sync states exist
@@ -156,7 +155,7 @@ class BugfixValidationTest {
         assertNotNull(SyncStatus.LOCAL_ONLY)
         assertNotNull(SyncStatus.CONFLICT)
     }
-    
+
     @Test
     fun `Note toJson and fromJson roundtrip works`() {
         val original = Note(
@@ -165,10 +164,10 @@ class BugfixValidationTest {
             content = "Test Content",
             deviceId = "device-1"
         )
-        
+
         val json = original.toJson()
         val restored = Note.fromJson(json)
-        
+
         assertNotNull(restored)
         assertEquals(original.id, restored!!.id)
         assertEquals(original.title, restored.title)

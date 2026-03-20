@@ -139,7 +139,7 @@ Weblate-Übersetzungen werden automatisch als Pull Requests eingereicht und nach
 
 ### 📄 Lizenz
 
-Indem du contributest, stimmst du zu dass dein Code unter der [MIT License](LICENSE) veröffentlicht wird.
+Indem du contributest, stimmst du zu dass dein Code unter der [Apache 2.0 License](LICENSE) veröffentlicht wird.
 
 ---
 
@@ -276,7 +276,7 @@ Weblate translations are automatically submitted as pull requests and merged aft
 
 ### 📄 License
 
-By contributing, you agree that your code will be published under the [MIT License](LICENSE).
+By contributing, you agree that your code will be published under the [Apache 2.0 License](LICENSE).
 
 ---
 
