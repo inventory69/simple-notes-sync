@@ -24,11 +24,11 @@ Synchronisation:
 
 UI & Design:
 • Moderne Jetpack Compose Oberfläche
-• Material Design 3, Dynamic Colors, Dark Mode
+• Material Design 3, 7 Farbschemata (inkl. AMOLED & Dynamisch), Dark Mode
 • Notiz- und Checklisten-Sortierung (Titel, Datum, Typ, alphabetisch)
 
 Mehrsprachig:
 • Deutsch und Englisch, automatische Erkennung, App-Sprachauswahl
 
-Open Source unter MIT-Lizenz
+Open Source unter Apache 2.0 Lizenz
 Quellcode: https://github.com/inventory69/simple-notes-sync

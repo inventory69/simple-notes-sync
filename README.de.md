@@ -65,7 +65,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 ## ✨ Highlights
 
 - 📝 **Offline-first** – Funktioniert ohne Internet
-- 📊 **Flexible Ansichten** – Listen- und Grid-Layout
+- 📊 **Flexible Ansichten** – Listen- und Grid-Layout, 1–5 Spalten konfigurierbar
 - ✅ **Checklisten** – Tap-to-Check, Drag & Drop
 - 🔄 **Konfigurierbare Sync-Trigger** – onSave, onResume, WiFi, periodisch (15/30/60 Min), Boot
 - 📌 **Widgets** – Home-Screen Quick-Note und Notizlisten-Widget
@@ -77,7 +77,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 - 🖥️ **Desktop-Integration** – Markdown-Export für Obsidian, VS Code, Typora
 - 📤 **Teilen & Exportieren** – Als Text oder PDF teilen, in Kalender exportieren
 - ↩️ **Rückgängig/Wiederherstellen** – Vollständige Undo/Redo-Historie im Notiz-Editor
-- 🎨 **Material Design 3** – Dynamischer Dark/Light Mode & Farben
+- 🎨 **Material Design 3** - 7 Farbschemata inkl. AMOLED & Dynamic Color, animierte Theme-Übergänge
 
 ➡️ **Vollständige Feature-Liste:** [docs/FEATURES.de.md](docs/FEATURES.de.md)
 
@@ -157,6 +157,6 @@ Apache License 2.0 – siehe [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v1.12.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.0.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
