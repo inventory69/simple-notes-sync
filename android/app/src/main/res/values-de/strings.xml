@@ -387,6 +387,21 @@
     <string name="autosave_toggle">Automatisches Speichern</string>
     <string name="autosave_description">Speichert nach 3 s Inaktivität und beim Verlassen des Editors</string>
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
+    <!-- v2.0.0: Theme System -->
+    <string name="theme_mode_title">Erscheinungsbild</string>
+    <string name="theme_mode_system">System (wie Gerät)</string>
+    <string name="theme_mode_light">Hell</string>
+    <string name="theme_mode_dark">Dunkel</string>
+    <string name="theme_mode_amoled">AMOLED (Reines Schwarz)</string>
+    <string name="theme_color_title">Farbschema</string>
+    <string name="theme_color_default">Standard</string>
+    <string name="theme_color_blue">Blau</string>
+    <string name="theme_color_green">Grün</string>
+    <string name="theme_color_red">Rot</string>
+    <string name="theme_color_purple">Lila</string>
+    <string name="theme_color_orange">Orange</string>
+    <string name="theme_color_dynamic">Dynamisch</string>
+    <string name="theme_color_dynamic_unavailable">Dynamische Farben erfordern Android 12+</string>
     <string name="autosave_indicator">✓ Gespeichert</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Rükgängig</string>

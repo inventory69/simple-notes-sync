@@ -13,6 +13,8 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.utils.Constants
 import kotlinx.coroutines.launch
 
 /**
@@ -96,7 +98,11 @@ class NoteWidgetConfigActivity : ComponentActivity() {
             currentOpacity = existingOpacity
 
             setContent {
-                SimpleNotesTheme {
+                val widgetPrefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
+                SimpleNotesTheme(
+                    themeMode = ThemePreferences.getThemeMode(widgetPrefs),
+                    colorTheme = ThemePreferences.getColorTheme(widgetPrefs)
+                ) {
                     NoteWidgetConfigScreen(
                         storage = storage,
                         initialLock = existingLock,

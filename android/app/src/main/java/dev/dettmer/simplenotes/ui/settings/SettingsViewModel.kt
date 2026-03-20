@@ -33,6 +33,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.ThemeMode
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 
 /**
  * ViewModel for Settings screens
@@ -247,6 +250,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // v2.0.0: Theme Settings State
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _themeMode = MutableStateFlow(ThemePreferences.getThemeMode(prefs))
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    private val _colorTheme = MutableStateFlow(ThemePreferences.getColorTheme(prefs))
+    val colorTheme: StateFlow<ColorTheme> = _colorTheme.asStateFlow()
+
+    fun setThemeMode(mode: ThemeMode) {
+        _themeMode.value = mode
+        ThemePreferences.setThemeMode(prefs, mode)
+    }
+
+    fun setColorTheme(theme: ColorTheme) {
+        _colorTheme.value = theme
+        ThemePreferences.setColorTheme(prefs, theme)
+    }
+
     // 🎨 v1.7.0: Display Settings State
     // ═══════════════════════════════════════════════════════════════════════
     

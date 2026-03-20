@@ -427,6 +427,21 @@
     <string name="autosave_toggle">Autosave</string>
     <string name="autosave_description">Saves after 3 s of inactivity and when leaving the editor</string>
     <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
+    <!-- v2.0.0: Theme System -->
+    <string name="theme_mode_title">Appearance</string>
+    <string name="theme_mode_system">System (follow device)</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
+    <string name="theme_mode_amoled">AMOLED (pure black)</string>
+    <string name="theme_color_title">Color scheme</string>
+    <string name="theme_color_default">Default</string>
+    <string name="theme_color_blue">Blue</string>
+    <string name="theme_color_green">Green</string>
+    <string name="theme_color_red">Red</string>
+    <string name="theme_color_purple">Purple</string>
+    <string name="theme_color_orange">Orange</string>
+    <string name="theme_color_dynamic">Dynamic</string>
+    <string name="theme_color_dynamic_unavailable">Dynamic colors require Android 12+</string>
     <string name="autosave_indicator">✓ Saved</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Undo</string>

@@ -11,6 +11,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
@@ -20,6 +23,10 @@ import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.ui.theme.ThemeMode
+import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.PdfExporter
 import kotlinx.coroutines.launch
@@ -58,10 +65,19 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             }
         }
     }
+
+    // v2.0.0: Theme state — initialized in onCreate, refreshed in onResume after returning from Settings
+    private val editorPrefs by lazy { getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE) }
+    private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
+    private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // v2.0.0: Load theme from prefs (context available after super.onCreate)
+        themeMode = ThemePreferences.getThemeMode(editorPrefs)
+        colorTheme = ThemePreferences.getColorTheme(editorPrefs)
+
         // Apply Dynamic Colors for Android 12+ (Material You)
         DynamicColors.applyToActivityIfAvailable(this)
         
@@ -92,7 +108,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         })
 
         setContent {
-            SimpleNotesTheme {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
                 NoteEditorScreen(
                     viewModel = viewModel,
                     onNavigateBack = { finishWithTransition() }
@@ -132,6 +148,9 @@ class ComposeNoteEditorActivity : ComponentActivity() {
      */
     override fun onResume() {
         super.onResume()
+        // v2.0.0: Refresh theme in case user returned from Settings
+        themeMode = ThemePreferences.getThemeMode(editorPrefs)
+        colorTheme = ThemePreferences.getColorTheme(editorPrefs)
         viewModel.reloadFromStorage()
     }
 
