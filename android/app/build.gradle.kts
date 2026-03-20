@@ -95,7 +95,20 @@ android {
         buildConfig = true  // Enable BuildConfig generation
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }
-    
+
+    // v2.1.0: Remove debug artifacts from release APK
+    packaging {
+        resources {
+            excludes += setOf(
+                "DebugProbesKt.bin",
+                "kotlin-tooling-metadata.json",
+                "kotlin/**/*.kotlin_builtins",
+                "META-INF/*.kotlin_module",
+                "META-INF/versions/**",
+            )
+        }
+    }
+
     // v1.7.0: Mock Android framework classes in unit tests (Log, etc.)
     testOptions {
         unitTests.isReturnDefaultValues = true
