@@ -343,6 +343,10 @@
     <!-- 🔐 v1.7.0: Encryption -->
     <string name="backup_encryption_title">Encrypt Backup</string>
     <string name="backup_encryption_subtitle">Password-protect your backup file</string>
+    <string name="backup_include_server_settings_title">Include App Settings</string>
+    <string name="backup_include_server_settings_subtitle">Also back up server connection, sync, display, and notification settings</string>
+    <string name="backup_server_settings_encryption_hint">App settings include your server credentials in plain text. Enabling encryption is strongly recommended.</string>
+    <string name="backup_restore_server_settings_label">Restore app settings (if included in backup)</string>
     <string name="backup_encryption_password">Password</string>
     <string name="backup_encryption_password_hint">Enter password (min. 8 characters)</string>
     <string name="backup_encryption_confirm">Confirm Password</string>

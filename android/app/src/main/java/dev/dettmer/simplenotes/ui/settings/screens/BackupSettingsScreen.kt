@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +24,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -76,6 +79,13 @@ fun BackupSettingsScreen(
     var showEncryptionPasswordDialog by remember { mutableStateOf(false) }
     var showDecryptionPasswordDialog by remember { mutableStateOf(false) }
     var pendingBackupUri by remember { mutableStateOf<Uri?>(null) }
+
+    // v1.9.0: Include server settings in backup
+    var includeServerSettings by remember { mutableStateOf(false) }
+    var pendingIncludeServerSettings by remember { mutableStateOf(false) }
+    // Whether the restore target (file) contains server settings
+    var backupHasServerSettings by remember { mutableStateOf(false) }
+    var restoreServerSettings by remember { mutableStateOf(false) }
     
     // File picker launchers
     val createBackupLauncher = rememberLauncherForActivityResult(
@@ -87,7 +97,7 @@ fun BackupSettingsScreen(
                 pendingBackupUri = it
                 showEncryptionPasswordDialog = true
             } else {
-                viewModel.createBackup(it, password = null)
+                viewModel.createBackup(it, password = null, includeServerSettings = pendingIncludeServerSettings)
             }
         }
     }
@@ -98,6 +108,12 @@ fun BackupSettingsScreen(
         uri?.let {
             pendingRestoreUri = it
             restoreSource = RestoreSource.LocalFile
+            backupHasServerSettings = false
+            restoreServerSettings = false
+            // v1.9.0: Check if the backup contains server settings (plaintext only; encrypted checked after password)
+            viewModel.checkBackupContainsAppSettings(it) { hasSettings ->
+                backupHasServerSettings = hasSettings
+            }
             showRestoreDialog = true
         }
     }
@@ -152,6 +168,21 @@ fun BackupSettingsScreen(
                 checked = encryptBackup,
                 onCheckedChange = { encryptBackup = it }
             )
+
+            // v1.9.0: Include server settings option
+            SettingsSwitch(
+                title = stringResource(R.string.backup_include_server_settings_title),
+                subtitle = stringResource(R.string.backup_include_server_settings_subtitle),
+                checked = includeServerSettings,
+                onCheckedChange = { includeServerSettings = it }
+            )
+
+            if (includeServerSettings && !encryptBackup) {
+                Spacer(modifier = Modifier.height(4.dp))
+                SettingsInfoCard(
+                    text = stringResource(R.string.backup_server_settings_encryption_hint)
+                )
+            }
             
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -161,6 +192,9 @@ fun BackupSettingsScreen(
                     val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
                         .format(Date())
                     val filename = "simplenotes_backup_$timestamp.json"
+                    // v1.9.0: Snapshot state before launching file picker
+                    // to prevent Activity lifecycle from causing a stale read
+                    pendingIncludeServerSettings = includeServerSettings
                     createBackupLauncher.launch(filename)
                 },
                 isLoading = isBackupInProgress,
@@ -223,7 +257,7 @@ fun BackupSettingsScreen(
             onConfirm = { password ->
                 showEncryptionPasswordDialog = false
                 pendingBackupUri?.let { uri ->
-                    viewModel.createBackup(uri, password)
+                    viewModel.createBackup(uri, password, pendingIncludeServerSettings)
                 }
                 pendingBackupUri = null
             },
@@ -243,7 +277,7 @@ fun BackupSettingsScreen(
                 showDecryptionPasswordDialog = false
                 pendingRestoreUri?.let { uri ->
                     when (restoreSource) {
-                        RestoreSource.LocalFile -> viewModel.restoreFromFile(uri, selectedRestoreMode, password)
+                        RestoreSource.LocalFile -> viewModel.restoreFromFile(uri, selectedRestoreMode, password, restoreServerSettings)
                         RestoreSource.Server -> { /* Server restore doesn't support encryption */ }
                     }
                 }
@@ -259,6 +293,9 @@ fun BackupSettingsScreen(
             source = restoreSource,
             selectedMode = selectedRestoreMode,
             onModeSelected = { selectedRestoreMode = it },
+            showServerSettingsOption = restoreSource == RestoreSource.LocalFile,
+            restoreServerSettings = restoreServerSettings,
+            onRestoreServerSettingsChanged = { restoreServerSettings = it },
             onConfirm = {
                 showRestoreDialog = false
                 when (restoreSource) {
@@ -273,7 +310,12 @@ fun BackupSettingsScreen(
                                         showDecryptionPasswordDialog = true
                                     },
                                     onPlaintext = {
-                                        viewModel.restoreFromFile(uri, selectedRestoreMode, password = null)
+                                        viewModel.restoreFromFile(
+                                            uri,
+                                            selectedRestoreMode,
+                                            password = null,
+                                            restoreServerSettings = restoreServerSettings
+                                        )
                                         pendingRestoreUri = null
                                     }
                                 )
@@ -314,6 +356,9 @@ private fun RestoreModeDialog(
     source: RestoreSource,
     selectedMode: RestoreMode,
     onModeSelected: (RestoreMode) -> Unit,
+    showServerSettingsOption: Boolean,
+    restoreServerSettings: Boolean,
+    onRestoreServerSettingsChanged: (Boolean) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -372,6 +417,23 @@ private fun RestoreModeDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // v1.9.0: Option to restore server settings if backup contains them
+                if (showServerSettingsOption) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = restoreServerSettings,
+                            onCheckedChange = onRestoreServerSettingsChanged
+                        )
+                        Text(
+                            text = stringResource(R.string.backup_restore_server_settings_label),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
         },
         confirmButton = {

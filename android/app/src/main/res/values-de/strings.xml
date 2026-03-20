@@ -309,6 +309,10 @@
     <!-- 🔐 v1.7.0: Verschlüsselung -->
     <string name="backup_encryption_title">Backup verschlüsseln</string>
     <string name="backup_encryption_subtitle">Schütze deine Backup-Datei mit Passwort</string>
+    <string name="backup_include_server_settings_title">App-Einstellungen einschließen</string>
+    <string name="backup_include_server_settings_subtitle">Server-Verbindung, Sync, Darstellung und Benachrichtigungseinstellungen mit sichern</string>
+    <string name="backup_server_settings_encryption_hint">App-Einstellungen enthalten Server-Zugangsdaten im Klartext. Verschlüsselung wird dringend empfohlen.</string>
+    <string name="backup_restore_server_settings_label">App-Einstellungen wiederherstellen (wenn im Backup enthalten)</string>
     <string name="backup_encryption_password">Passwort</string>
     <string name="backup_encryption_password_hint">Passwort eingeben (min. 8 Zeichen)</string>
     <string name="backup_encryption_confirm">Passwort bestätigen</string>

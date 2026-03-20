@@ -935,12 +935,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Backup Actions
     // ═══════════════════════════════════════════════════════════════════════
     
-    fun createBackup(uri: Uri, password: String? = null) {
+    fun createBackup(uri: Uri, password: String? = null, includeServerSettings: Boolean = false) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
             _backupStatusText.value = getString(R.string.backup_progress_creating)
             try {
-                val result = backupManager.createBackup(uri, password)
+                val result = backupManager.createBackup(uri, password, includeServerSettings)
                 
                 // Phase 2: Show completion status
                 _backupStatusText.value = if (result.success) {
@@ -963,12 +963,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
     
-    fun restoreFromFile(uri: Uri, mode: RestoreMode, password: String? = null) {
+    fun restoreFromFile(
+        uri: Uri,
+        mode: RestoreMode,
+        password: String? = null,
+        restoreServerSettings: Boolean = false
+    ) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
             _backupStatusText.value = getString(R.string.backup_progress_restoring)
             try {
-                val result = backupManager.restoreBackup(uri, mode, password)
+                val result = backupManager.restoreBackup(uri, mode, password, restoreServerSettings)
+
+                // v1.9.0: Reload server settings StateFlows if they were restored
+                if (restoreServerSettings && result.success) {
+                    reloadServerSettingsFromPrefs()
+                }
                 
                 // Phase 2: Show completion status
                 _backupStatusText.value = if (result.success) {
@@ -988,6 +998,64 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _isBackupInProgress.value = false
                 _backupStatusText.value = ""
             }
+        }
+    }
+
+    /**
+     * v1.9.0: Reloads all app settings from SharedPreferences into ViewModel StateFlows.
+     * Called after a backup restore that includes app settings.
+     */
+    private fun reloadServerSettingsFromPrefs() {
+        val url = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+        _isHttps.value = url.startsWith("https://")
+        _serverHost.value = extractHostFromUrl(url)
+        _username.value = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
+        _password.value = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+        confirmedServerUrl = url
+        confirmedSyncFolderName = prefs.getString(
+            Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME
+        ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+        _syncFolderName.value = confirmedSyncFolderName
+        _connectionTimeoutSeconds.value = prefs.getInt(
+            Constants.KEY_CONNECTION_TIMEOUT_SECONDS, Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+        ).coerceIn(Constants.MIN_CONNECTION_TIMEOUT_SECONDS, Constants.MAX_CONNECTION_TIMEOUT_SECONDS)
+        _maxParallelConnections.value = prefs.getInt(
+            Constants.KEY_MAX_PARALLEL_CONNECTIONS, Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
+        ).coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
+        _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        _autoSyncEnabled.value = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
+        _wifiOnlySync.value = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
+        _markdownAutoSync.value = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) &&
+            prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+        _triggerOnSave.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)
+        _triggerOnResume.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)
+        _triggerWifiConnect.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, Constants.DEFAULT_TRIGGER_WIFI_CONNECT)
+        _triggerPeriodic.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)
+        _triggerBoot.value = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, Constants.DEFAULT_TRIGGER_BOOT)
+        _syncInterval.value = prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
+        _displayMode.value = prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+        _themeMode.value = ThemePreferences.getThemeMode(prefs)
+        _colorTheme.value = ThemePreferences.getColorTheme(prefs)
+        _customAppTitle.value =
+            prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
+                ?: Constants.DEFAULT_CUSTOM_APP_TITLE
+        _autosaveEnabled.value = prefs.getBoolean(Constants.KEY_AUTOSAVE_ENABLED, Constants.DEFAULT_AUTOSAVE_ENABLED)
+        _notificationsEnabled.value = prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, Constants.DEFAULT_NOTIFICATIONS_ENABLED)
+        _notificationsErrorsOnly.value =
+            prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, Constants.DEFAULT_NOTIFICATIONS_ERRORS_ONLY)
+        _notificationsServerWarning.value =
+            prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING)
+        Logger.d(TAG, "🔄 App settings reloaded from prefs after backup restore")
+    }
+
+    fun checkBackupContainsAppSettings(
+        uri: Uri,
+        password: String? = null,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = backupManager.backupContainsAppSettings(uri, password)
+            onResult(result)
         }
     }
     
