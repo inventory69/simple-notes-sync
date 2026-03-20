@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.Canvas
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,7 +63,6 @@ fun AboutScreen(
 
     // 🔧 v1.11.0: Easter-Egg-Tap-Counter für Entwickleroptionen
     var tapCount by remember { mutableIntStateOf(0) }
-    var currentToast by remember { mutableStateOf<Toast?>(null) }
     val requiredTaps = 5
     // Strings bei Composable-Scope laden (nicht innerhalb von Lambdas per context.getString)
     val msgAlreadyUnlocked = stringResource(R.string.developer_options_already_unlocked)
@@ -96,26 +93,20 @@ fun AboutScreen(
                     .padding(horizontal = 16.dp)
                     .clickable {
                         if (developerOptionsUnlocked) {
-                            Toast.makeText(context, msgAlreadyUnlocked, Toast.LENGTH_SHORT).show()
+                            viewModel.showSnackbar(msgAlreadyUnlocked)
                             return@clickable
                         }
                         tapCount++
                         val remaining = requiredTaps - tapCount
                         when {
                             remaining == 0 -> {
-                                currentToast?.cancel()
                                 viewModel.unlockDeveloperOptions()
-                                Toast.makeText(context, msgUnlocked, Toast.LENGTH_LONG).show()
+                                viewModel.showSnackbar(msgUnlocked)
                             }
                             remaining in 1..2 -> {
-                                currentToast?.cancel()
-                                val toast = Toast.makeText(
-                                    context,
-                                    String.format(msgCountdownFormat, remaining),
-                                    Toast.LENGTH_SHORT
+                                viewModel.showSnackbar(
+                                    String.format(msgCountdownFormat, remaining)
                                 )
-                                currentToast = toast
-                                toast.show()
                             }
                             // Taps 1-2: kein Feedback (wie Android-Entwickleroptionen)
                         }

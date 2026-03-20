@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +35,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -67,7 +65,6 @@ fun ImportSettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val isServerConfigured = viewModel.isServerConfigured()
@@ -133,7 +130,7 @@ fun ImportSettingsScreen(
                         showScanResults = scanResults.isNotEmpty()
                         isScanning = false
                         if (scanResults.isEmpty()) {
-                            Toast.makeText(context, noFilesFoundText, Toast.LENGTH_SHORT).show()
+                            viewModel.showSnackbar(noFilesFoundText)
                         }
                     }
                 },

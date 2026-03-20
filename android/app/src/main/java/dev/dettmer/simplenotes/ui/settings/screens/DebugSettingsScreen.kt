@@ -138,7 +138,7 @@ fun DebugSettingsScreen(
                 text = stringResource(R.string.debug_reset_changelog),
                 onClick = {
                     viewModel.resetChangelogVersion()
-                    android.widget.Toast.makeText(context, changelogResetToast, android.widget.Toast.LENGTH_SHORT).show()
+                    viewModel.showSnackbar(changelogResetToast)
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )

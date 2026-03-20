@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -298,8 +299,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _backupStatusText = MutableStateFlow("")
     val backupStatusText: StateFlow<String> = _backupStatusText.asStateFlow()
     
-    private val _showToast = MutableSharedFlow<String>()
-    val showToast: SharedFlow<String> = _showToast.asSharedFlow()
+    private val _showSnackbar = MutableSharedFlow<String>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val showSnackbar: SharedFlow<String> = _showSnackbar.asSharedFlow()
     
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings Actions
@@ -1108,8 +1112,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         return context.getString(resId, *formatArgs)
     }
     
+    /**
+     * Zeigt eine Snackbar über den SettingsNavHost-Collector an.
+     * Aufrufbar aus synchronen Click-Handlern (kein suspend).
+     */
+    fun showSnackbar(message: String) {
+        _showSnackbar.tryEmit(message)
+    }
+
     private suspend fun emitToast(message: String) {
-        _showToast.emit(message)
+        _showSnackbar.emit(message)
     }
     
     /**

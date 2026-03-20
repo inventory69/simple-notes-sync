@@ -15,10 +15,8 @@ import androidx.activity.viewModels
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
@@ -89,15 +87,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
         setContent {
             SimpleNotesTheme {
                 val navController = rememberNavController()
-                val context = LocalContext.current
                 val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
-
-                // Toast handling from ViewModel
-                LaunchedEffect(Unit) {
-                    viewModel.showToast.collect { message ->
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    }
-                }
 
                 // Battery optimization dialog (state-driven)
                 if (showBatteryDialog) {

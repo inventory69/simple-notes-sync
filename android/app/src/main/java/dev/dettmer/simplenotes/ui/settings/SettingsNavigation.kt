@@ -6,12 +6,23 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import kotlinx.coroutines.launch
 import dev.dettmer.simplenotes.ui.settings.screens.AboutScreen
 import dev.dettmer.simplenotes.ui.settings.screens.BackupSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DebugSettingsScreen
@@ -36,6 +47,25 @@ fun SettingsNavHost(
     viewModel: SettingsViewModel,
     onFinish: () -> Unit
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Snackbar-Collector — ersetzt den Toast-LaunchedEffect aus ComposeSettingsActivity.
+    // scope.launch macht collect nicht-blockierend: neue Messages können sofort empfangen
+    // werden, ohne auf das Ende der aktuell angezeigten Snackbar zu warten.
+    // dismiss() entfernt die vorherige Snackbar sofort, damit der Countdown sichtbar bleibt.
+    LaunchedEffect(Unit) {
+        viewModel.showSnackbar.collect { message ->
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(
+                    message = message,
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
+
     // Opaque background prevents the translucent Activity window from
     // showing the note list through during internal NavHost fade transitions.
     Box(
@@ -146,5 +176,17 @@ fun SettingsNavHost(
             )
         }
         }
+
+        // Snackbar über NavHost rendern (sichtbar über NavHost-Transitions).
+        // navigationBarsPadding() + padding(bottom) kompensiert enableEdgeToEdge()
+        // in ComposeSettingsActivity, damit die Snackbar oberhalb der Navigationsleiste
+        // mit ausreichend Abstand erscheint.
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 8.dp)
+        )
     }
 }
