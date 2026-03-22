@@ -125,7 +125,7 @@ Major-Release: vollständige Migration zu Jetpack Compose, Entfernung aller Lega
 ### 📄 Lizenz
 
 **Lizenzwechsel** ([6baaeda](https://github.com/inventory69/simple-notes-sync/commit/6baaeda))
-- Von MIT zu Apache 2.0 gewechselt
+- Von MIT zu AGPL v3 gewechselt
 
 ---
 

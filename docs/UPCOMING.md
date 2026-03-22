@@ -238,7 +238,7 @@
 - ✅ **R8/ProGuard optimized** - Reduced APK size
 
 ### 📄 License
-- ✅ **MIT → Apache 2.0** - License changed
+- ✅ **MIT → AGPL v3** - License changed
 
 ---
 

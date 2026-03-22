@@ -223,7 +223,7 @@
 - ✅ **No cloud** - No third parties
 - ✅ **No tracking** - No analytics, no telemetry
 - ✅ **No account** - Only server credentials
-- ✅ **100% open source** - Apache 2.0 License
+- ✅ **100% open source** - AGPL v3 License
 
 ### Data Security
 - ✅ **Local storage** - App-private storage (Android)
@@ -336,7 +336,7 @@ Planned for upcoming versions – see [UPCOMING.md](UPCOMING.md) for the full ro
 | Desktop access | ✅ (WebDAV) | ✅ (Web) | ✅ (Web + WebDAV) |
 | Local backup | ✅ | ❌ | ⚠️ Server backup |
 | No Google account | ✅ | ❌ | ✅ |
-| Open Source | ✅ Apache 2.0 | ❌ | ✅ AGPL |
+| Open Source | ✅ AGPL v3 | ❌ | ✅ AGPL |
 | APK size | ~2 MB | ~50 MB | ~8 MB |
 | Battery usage | ~0.4%/day | ~1-2%/day | ~0.5%/day |
 

@@ -125,7 +125,7 @@ Major release: full migration to Jetpack Compose, removal of all legacy View-bas
 ### 📄 License
 
 **License Change** ([6baaeda](https://github.com/inventory69/simple-notes-sync/commit/6baaeda))
-- Changed from MIT to Apache 2.0
+- Changed from MIT to AGPL v3
 
 ---
 

@@ -317,7 +317,7 @@
     <string name="about_developer_title">Розробник</string>
     <string name="about_developer_subtitle">Профіль GitHub: @inventory69</string>
     <string name="about_license_title">Ліцензія</string>
-    <string name="about_license_subtitle">Ліцензія MIT — Відкритий Код</string>
+    <string name="about_license_subtitle">Ліцензія AGPL v3 — Відкритий Код</string>
     <string name="about_changelog_title">Список змін</string>
     <string name="about_changelog_subtitle">Повна історія версій</string>
     <string name="update_changelog_title">Що нового</string>

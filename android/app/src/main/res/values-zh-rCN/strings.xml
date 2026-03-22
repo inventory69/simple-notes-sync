@@ -390,7 +390,7 @@
     <string name="about_developer_title">开发者</string>
     <string name="about_developer_subtitle">GitHub 个人资料：@inventory69</string>
     <string name="about_license_title">许可证</string>
-    <string name="about_license_subtitle">MIT 许可证 - 开源</string>
+    <string name="about_license_subtitle">AGPL v3 许可证 - 开源</string>
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">更新日志</string>
     <string name="about_changelog_subtitle">完整版本历史</string>

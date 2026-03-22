@@ -396,7 +396,7 @@
     <string name="about_developer_title">Geliştirici</string>
     <string name="about_developer_subtitle">GitHub Profili: @inventory69</string>
     <string name="about_license_title">Lisans</string>
-    <string name="about_license_subtitle">MIT Lisansı - Açık Kaynak</string>
+    <string name="about_license_subtitle">AGPL v3 Lisansı - Açık Kaynak</string>
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Değişiklik Günlüğü</string>
     <string name="about_changelog_subtitle">Tam sürüm geçmişi</string>

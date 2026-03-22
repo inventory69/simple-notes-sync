@@ -238,7 +238,7 @@
 - ✅ **R8/ProGuard optimiert** - APK-Größe reduziert
 
 ### 📄 Lizenz
-- ✅ **MIT → Apache 2.0** - Lizenzwechsel
+- ✅ **MIT → AGPL v3** - Lizenzwechsel
 
 ---
 

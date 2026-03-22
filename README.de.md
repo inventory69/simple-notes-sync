@@ -12,7 +12,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
 [![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-D22128?style=for-the-badge&logo=apache)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu)](LICENSE)
 [![Spenden](https://img.shields.io/liberapay/receives/inventory?style=for-the-badge&logo=liberapay&logoColor=white&label=Spenden)](https://liberapay.com/inventory/)
 
 </div>
@@ -152,7 +152,7 @@ Wenn du die App nützlich findest, kannst du die Entwicklung unterstützen:
 
 ## 📄 Lizenz
 
-Apache License 2.0 – siehe [LICENSE](LICENSE)
+GNU Affero General Public License v3.0 – siehe [LICENSE](LICENSE)
 
 <div align="center">
 <br /><br />

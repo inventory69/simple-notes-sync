@@ -30,5 +30,5 @@ UI & Design:
 Multilingual:
 • English and German, automatic detection, in-app language selector
 
-Open Source under Apache 2.0 License
+Open Source under AGPL v3 License
 Source code: https://github.com/inventory69/simple-notes-sync
