@@ -1,14 +1,14 @@
 blank_issues_enabled: true
 contact_links:
-  - name: "📖 Dokumentation / Documentation"
+  - name: "📖 Documentation"
     url: https://github.com/inventory69/simple-notes-sync/blob/main/README.md
-    about: Schau zuerst in die Dokumentation / Check documentation first
+    about: Check documentation first
   - name: "🚀 Quick Start Guide"
     url: https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md
-    about: Schritt-für-Schritt Anleitung / Step-by-step guide
+    about: Step-by-step setup guide
   - name: "🐛 Troubleshooting"
     url: https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#-troubleshooting
-    about: Häufige Probleme und Lösungen / Common issues and solutions
+    about: Common issues and solutions
   - name: "✨ Feature Requests & Ideas"
     url: https://github.com/inventory69/simple-notes-sync/discussions/categories/ideas
-    about: Diskutiere neue Features in Discussions / Discuss new features in Discussions
+    about: Discuss new features in Discussions
