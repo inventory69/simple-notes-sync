@@ -17,4 +17,12 @@
     <string name="untitled">बिना शीर्षक</string>
     <string name="checklist_progress">%1$d/%2$d पूरा हुआ</string>
     <string name="sync_status_completed">सिंक पूरा हुआ</string>
+    <string name="sync_status_error">सिंक विफल हुआ</string>
+    <string name="sync_already_running">सिंक पहले से चल रहा है</string>
+    <string name="sync_status_synced">सर्वर के साथ सिंक हो गया</string>
+    <string name="sync_status_pending">सिंक का इंतजार हो रहा है</string>
+    <string name="sync_status_conflict">सिंक में टकराव पाया गया</string>
+    <string name="sync_status_local_only">अभी तक सिंक नहीं हुआ</string>
+    <string name="sync_status_deleted_on_server">सर्वर पर हटाया गया</string>
+    <string name="sync_legend_button">सिंक स्थिति सहायता</string>
 </resources>
