@@ -127,8 +127,14 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
-    // 🆕 v1.9.0 (F07): Markdown Preview toggle (only for TEXT notes)
-    var isPreviewMode by remember { mutableStateOf(false) }
+    // 🆕 v2.0.1: Markdown Preview default for existing TEXT notes
+    // New notes start in edit mode (user wants to type immediately),
+    // existing TEXT notes start in preview mode (read-first workflow).
+    var isPreviewMode by remember {
+        mutableStateOf(
+            !uiState.isNewNote && uiState.noteType == NoteType.TEXT
+        )
+    }
     var showChecklistSortDialog by remember { mutableStateOf(false) } // 🔀 v1.8.0
     val lastChecklistSortOption by viewModel.lastChecklistSortOption.collectAsState() // 🔀 v1.8.0
     val autosaveIndicatorVisible by viewModel.autosaveIndicatorVisible.collectAsState() // 🆕 v1.9.0
@@ -182,6 +188,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     }
 
     // v1.5.0: Auto-focus and show keyboard
+    // v2.0.1: Skip auto-focus for existing TEXT notes (they start in preview mode)
     LaunchedEffect(uiState.isNewNote, uiState.noteType) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
@@ -190,11 +197,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 titleFocusRequester.requestFocus()
                 keyboardController?.show()
             }
-            !uiState.isNewNote && uiState.noteType == NoteType.TEXT -> {
-                // Editing text note: focus content
-                contentFocusRequester.requestFocus()
-                keyboardController?.show()
-            }
+            // v2.0.1: Existing TEXT notes start in preview mode — keyboard opens
+            // when user switches to edit via the LaunchedEffect(isPreviewMode) above
         }
     }
 
