@@ -173,6 +173,8 @@
     <string name="edit_note">Edit Note</string>
     <string name="new_checklist">New List</string>
     <string name="edit_checklist">Edit List</string>
+    <string name="toolbar_title_new">New</string>
+    <string name="toolbar_title_edit">Edit</string>
     <string name="title">Title</string>
     <string name="content">Content</string>
     <string name="back">Back</string>

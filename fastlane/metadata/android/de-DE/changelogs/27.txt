@@ -9,7 +9,7 @@
 • Fix: WebDAV-403-Kompatibilität
 • Fix: Thread-Sicherheit & Ressourcen-Lecks
 • Legacy-Code entfernt, komplett Compose
-• Lizenz: Apache 2.0
+• Lizenz: AGPL v3
 
 Vollständiges Changelog:
 https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
