@@ -242,6 +242,29 @@
 
 ---
 
+## v2.2.0 - Share-Intent, Widgets & Editor-Verbesserungen
+
+> **Status:** Geplant 📋
+
+### 📤 Share-Intent
+
+- **Geteilte Inhalte empfangen** - Text und URLs aus anderen Apps per Android Share-Intent empfangen ([Discussion #46](https://github.com/inventory69/simple-notes-sync/discussions/46) von [@madelgijs](https://github.com/madelgijs))
+- **Notiz aus geteiltem Text erstellen** - Geteilter Inhalt erstellt eine neue Notiz oder hängt an eine bestehende an
+- **URL-Verarbeitung** - URLs aus Browsern werden als klickbare Markdown-Links formatiert
+
+### 📌 Neue-Notiz-Shortcut-Widget
+
+- **Ein-Tipp neue Notiz** - Home-Screen-Widget das sofort den Editor für eine neue Notiz öffnet ([Discussion #49](https://github.com/inventory69/simple-notes-sync/discussions/49) von [@Stowaway2979](https://github.com/Stowaway2979))
+- **Minimaler Platzbedarf** - Kleines 1×1 Widget mit App-Icon und `+`-Badge
+- **Sofort tippen** - Editor öffnet mit Tastatur-Fokus auf dem Titel-Feld
+
+### ✏️ Editor-Verbesserungen
+
+- **Markdown-Checklisten-Button** - Neuer Toolbar-Button zum Einfügen von `- [ ]` / `- [x]` Markdown-Checkbox-Syntax, mit Toggle-Unterstützung für bestehende Zeilen
+- **Checklisten-Item kopieren & duplizieren** - Long-Press-Kontextmenü auf Checklisten-Items: Text in Zwischenablage kopieren oder Item darunter duplizieren
+
+---
+
 ## 📋 Backlog
 
 > Features für zukünftige Überlegungen

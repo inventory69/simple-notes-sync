@@ -364,4 +364,4 @@ A: Yes! Download the APK directly from GitHub or use F-Droid.
 
 ---
 
-**Last update:** v2.0.0 (2026-03-20)
+**Last update:** v2.1.0 (2026-03-26)
