@@ -242,6 +242,29 @@
 
 ---
 
+## v2.2.0 - Share Intent, Widgets & Editor Polish
+
+> **Status:** Planned 📋
+
+### 📤 Share Intent
+
+- **Receive shared content** - Accept text and URLs from other apps via Android Share Intent ([Discussion #46](https://github.com/inventory69/simple-notes-sync/discussions/46) by [@madelgijs](https://github.com/madelgijs))
+- **Create note from shared text** - Shared content creates a new note or appends to an existing one
+- **URL handling** - URLs shared from browsers are formatted as clickable Markdown links
+
+### 📌 New Note Shortcut Widget
+
+- **One-tap new note** - Home screen widget that opens the editor immediately for a new note ([Discussion #49](https://github.com/inventory69/simple-notes-sync/discussions/49) by [@Stowaway2979](https://github.com/Stowaway2979))
+- **Minimal footprint** - Small 1×1 widget with the app icon and a `+` badge
+- **Instant typing** - Editor opens with keyboard focused on the title field
+
+### ✏️ Editor Enhancements
+
+- **Markdown checklist button** - New toolbar button to insert `- [ ]` / `- [x]` Markdown checkbox syntax, with toggle support for existing lines
+- **Checklist item copy & duplicate** - Long-press context menu on checklist items: copy text to clipboard or duplicate item below
+
+---
+
 ## 📋 Backlog
 
 > Features for future consideration
