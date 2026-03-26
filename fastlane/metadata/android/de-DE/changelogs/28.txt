@@ -1,0 +1,12 @@
+🔧 v2.1.0 — Editor-Verbesserungen & Metadaten
+
+• Markdown-Vorschau als Standard für bestehende Notizen
+• Adaptive Toolbar: gekürzte Titel + Undo/Redo im Overflow auf schmalen Displays
+• Lizenz-Metadaten korrigiert (AGPL v3)
+• Issue-Templates vereinfacht (nur Englisch)
+• v2.2.0 Roadmap: Share-Intent, Neue-Notiz-Widget
+
+Danke an @xdpirate, @james0336, @isawaway und MrsMinchen!
+
+Vollständiges Changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
