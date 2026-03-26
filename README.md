@@ -167,6 +167,6 @@ GNU Affero General Public License v3.0 - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v2.0.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.1.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
