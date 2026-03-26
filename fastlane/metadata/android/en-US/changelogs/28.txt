@@ -1,0 +1,12 @@
+🔧 v2.1.0 — Editor Polish & Metadata
+
+• Markdown preview as default view for existing notes
+• Adaptive toolbar: shortened titles + Undo/Redo in overflow on narrow displays
+• License metadata corrected (AGPL v3)
+• Issue templates simplified (English-only)
+• v2.2.0 roadmap: Share Intent, New Note Widget
+
+Thanks to @xdpirate, @james0336, @isawaway, and MrsMinchen!
+
+Full changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

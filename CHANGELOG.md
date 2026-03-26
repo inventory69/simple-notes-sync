@@ -8,6 +8,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.1.0] - 2026-03-26
+
+### 🐛 Bug Fixes & UX Improvements
+
+**Editor Toolbar Scaling for Narrow Displays** ([9b6ee8a](https://github.com/inventory69/simple-notes-sync/commit/9b6ee8a))
+- Adaptive toolbar: on wide displays full titles + Undo/Redo in toolbar; on narrow displays / large font scale: shortened titles ("Edit", "New") + Undo/Redo in overflow menu
+- Prevents text wrapping on small screens and high accessibility font scales
+- Thanks to [@xdpirate](https://github.com/xdpirate) for reporting! ([#48](https://github.com/inventory69/simple-notes-sync/issues/48))
+
+**Markdown Preview as Default View** ([f8b15a5](https://github.com/inventory69/simple-notes-sync/commit/f8b15a5))
+- Existing text notes now open in Markdown preview mode by default
+- New notes still open in edit mode with auto-keyboard focus
+- Thanks to [@james0336](https://github.com/james0336), [@isawaway](https://github.com/isawaway), and MrsMinchen for the suggestion!
+
+### 📝 Documentation & Metadata
+
+**License Metadata Corrected** ([89667d1](https://github.com/inventory69/simple-notes-sync/commit/89667d1))
+- Fixed remaining Apache 2.0 references in F-Droid changelogs (versionCode 27) — now all correctly show AGPL v3
+
+**Issue Templates Simplified** ([5a56cf4](https://github.com/inventory69/simple-notes-sync/commit/5a56cf4))
+- Bug report and question templates rewritten: English-only, fewer required fields, cleaner layout
+- Thanks to [@xdpirate](https://github.com/xdpirate) for the feedback! ([#48](https://github.com/inventory69/simple-notes-sync/issues/48))
+
+**Upcoming Features v2.2.0** ([5e9168b](https://github.com/inventory69/simple-notes-sync/commit/5e9168b))
+- Added Share Intent ([Discussion #46](https://github.com/inventory69/simple-notes-sync/discussions/46) by [@madelgijs](https://github.com/madelgijs)), New Note Shortcut Widget ([Discussion #49](https://github.com/inventory69/simple-notes-sync/discussions/49) by [@Stowaway2979](https://github.com/Stowaway2979)), Markdown checklist button, and checklist item copy/duplicate to the roadmap
+
+### 📦 Code Quality
+
+**Detekt / Lint / ProGuard Audit** ([b9e6782](https://github.com/inventory69/simple-notes-sync/commit/b9e6782))
+- Full code quality audit: detekt, lint, ktlint, ProGuard, and unit tests verified clean after all v2.1.0 changes
+
+---
+
 ## [2.0.0] - 2026-03-20
 
 ### 🎨 Complete Compose Rewrite, Multi-Theme System & Architecture Overhaul

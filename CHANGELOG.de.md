@@ -8,6 +8,39 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.1.0] - 2026-03-26
+
+### 🐛 Fehlerbehebungen & UX-Verbesserungen
+
+**Editor-Toolbar-Skalierung für schmale Displays** ([9b6ee8a](https://github.com/inventory69/simple-notes-sync/commit/9b6ee8a))
+- Adaptive Toolbar: auf breiten Displays volle Titel + Undo/Redo in der Toolbar; auf schmalen Displays / großer Schriftskalierung: gekürzte Titel („Bearbeiten", „Neu") + Undo/Redo im Overflow-Menü
+- Verhindert Textumbruch auf kleinen Bildschirmen und bei hoher Barrierefreiheits-Schriftskalierung
+- Danke an [@xdpirate](https://github.com/xdpirate) für die Meldung! ([#48](https://github.com/inventory69/simple-notes-sync/issues/48))
+
+**Markdown-Vorschau als Standardansicht** ([f8b15a5](https://github.com/inventory69/simple-notes-sync/commit/f8b15a5))
+- Bestehende Textnotizen öffnen jetzt standardmäßig in der Markdown-Vorschau
+- Neue Notizen starten weiterhin im Bearbeitungsmodus mit automatischem Tastatur-Fokus
+- Danke an [@james0336](https://github.com/james0336), [@isawaway](https://github.com/isawaway) und MrsMinchen für den Vorschlag!
+
+### 📝 Dokumentation & Metadaten
+
+**Lizenz-Metadaten korrigiert** ([89667d1](https://github.com/inventory69/simple-notes-sync/commit/89667d1))
+- Verbleibende Apache-2.0-Referenzen in F-Droid-Changelogs (versionCode 27) korrigiert — zeigen jetzt alle korrekt AGPL v3
+
+**Issue-Templates vereinfacht** ([5a56cf4](https://github.com/inventory69/simple-notes-sync/commit/5a56cf4))
+- Bug-Report- und Frage-Templates neu geschrieben: nur Englisch, weniger Pflichtfelder, aufgeräumteres Layout
+- Danke an [@xdpirate](https://github.com/xdpirate) für das Feedback! ([#48](https://github.com/inventory69/simple-notes-sync/issues/48))
+
+**Geplante Features v2.2.0** ([5e9168b](https://github.com/inventory69/simple-notes-sync/commit/5e9168b))
+- Share-Intent ([Discussion #46](https://github.com/inventory69/simple-notes-sync/discussions/46) von [@madelgijs](https://github.com/madelgijs)), Neue-Notiz-Shortcut-Widget ([Discussion #49](https://github.com/inventory69/simple-notes-sync/discussions/49) von [@Stowaway2979](https://github.com/Stowaway2979)), Markdown-Checklisten-Button und Checklisten-Item-Kopieren zur Roadmap hinzugefügt
+
+### 📦 Code-Qualität
+
+**Detekt / Lint / ProGuard-Audit** ([b9e6782](https://github.com/inventory69/simple-notes-sync/commit/b9e6782))
+- Vollständiger Code-Qualitäts-Audit: detekt, lint, ktlint, ProGuard und Unit-Tests nach allen v2.1.0-Änderungen verifiziert
+
+---
+
 ## [2.0.0] - 2026-03-20
 
 ### 🎨 Kompletter Compose-Rewrite, Multi-Theme-System & Architektur-Überarbeitung
