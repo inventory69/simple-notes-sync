@@ -78,10 +78,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.BuildConfig
@@ -143,6 +146,13 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    // v2.0.1: Compact toolbar for narrow displays or large font scale (Issue #48)
+    // Uses LocalWindowInfo (preferred for foldable/multi-window) over LocalConfiguration.
+    // effectiveWidth = window dp / fontScale — if < 360, Undo/Redo go to overflow and title is shortened
+    val isCompactToolbar = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width.toDp().value / fontScale < 360f
+    }
 
     // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
@@ -238,7 +248,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 title = {
                     NoteEditorToolbarTitle(
                         toolbarTitle = uiState.toolbarTitle,
-                        autosaveIndicatorVisible = autosaveIndicatorVisible
+                        autosaveIndicatorVisible = autosaveIndicatorVisible,
+                        compact = isCompactToolbar
                     )
                 },
                 navigationIcon = {
@@ -264,24 +275,26 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
                     }
 
-                    // v2.1.0: Undo/Redo promoted to direct actions for quick access
-                    IconButton(
-                        onClick = { viewModel.undo() },
-                        enabled = canUndo
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Undo,
-                            contentDescription = stringResource(R.string.editor_undo)
-                        )
-                    }
-                    IconButton(
-                        onClick = { viewModel.redo() },
-                        enabled = canRedo
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Redo,
-                            contentDescription = stringResource(R.string.editor_redo)
-                        )
+                    // v2.0.1: Undo/Redo in toolbar for wide displays, overflow for narrow (Issue #48)
+                    if (!isCompactToolbar) {
+                        IconButton(
+                            onClick = { viewModel.undo() },
+                            enabled = canUndo
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = stringResource(R.string.editor_undo)
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.redo() },
+                            enabled = canRedo
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Redo,
+                                contentDescription = stringResource(R.string.editor_redo)
+                            )
+                        }
                     }
 
                     // Save button
@@ -311,6 +324,51 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                             shadowElevation = 6.dp, // 🆕 v1.10.0-P2
                             tonalElevation = 2.dp // 🆕 v1.10.0-P2
                         ) {
+                            // v2.0.1: Undo/Redo in overflow only for compact displays (Issue #48)
+                            if (isCompactToolbar) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.editor_undo)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.Undo,
+                                            contentDescription = null,
+                                            tint = if (canUndo) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                                            }
+                                        )
+                                    },
+                                    enabled = canUndo,
+                                    onClick = {
+                                        viewModel.undo()
+                                        // Don't dismiss — user may want to undo multiple times
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.editor_redo)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.Redo,
+                                            contentDescription = null,
+                                            tint = if (canRedo) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                                            }
+                                        )
+                                    },
+                                    enabled = canRedo,
+                                    onClick = {
+                                        viewModel.redo()
+                                        // Don't dismiss — user may want to redo multiple times
+                                    }
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.share_to_calendar)) },
                                 leadingIcon = {
@@ -915,15 +973,24 @@ private fun ChecklistEditor(
 
 /** 🆕 v1.9.0: TopAppBar title with optional autosave confirmation indicator. */
 @Composable
-private fun NoteEditorToolbarTitle(toolbarTitle: ToolbarTitle, autosaveIndicatorVisible: Boolean) {
+private fun NoteEditorToolbarTitle(toolbarTitle: ToolbarTitle, autosaveIndicatorVisible: Boolean, compact: Boolean = false) {
     Column {
         Text(
-            text = when (toolbarTitle) {
-                ToolbarTitle.NEW_NOTE -> stringResource(R.string.new_note)
-                ToolbarTitle.EDIT_NOTE -> stringResource(R.string.edit_note)
-                ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.new_checklist)
-                ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.edit_checklist)
-            }
+            text = if (compact) {
+                when (toolbarTitle) {
+                    ToolbarTitle.NEW_NOTE, ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.toolbar_title_new)
+                    ToolbarTitle.EDIT_NOTE, ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.toolbar_title_edit)
+                }
+            } else {
+                when (toolbarTitle) {
+                    ToolbarTitle.NEW_NOTE -> stringResource(R.string.new_note)
+                    ToolbarTitle.EDIT_NOTE -> stringResource(R.string.edit_note)
+                    ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.new_checklist)
+                    ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.edit_checklist)
+                }
+            },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         AnimatedVisibility(
             visible = autosaveIndicatorVisible,

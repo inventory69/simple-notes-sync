@@ -157,6 +157,8 @@
     <string name="edit_note">Notiz bearbeiten</string>
     <string name="new_checklist">Neue Liste</string>
     <string name="edit_checklist">Liste bearbeiten</string>
+    <string name="toolbar_title_new">Neu</string>
+    <string name="toolbar_title_edit">Bearbeiten</string>
     <string name="title">Titel</string>
     <string name="content">Inhalt</string>
     <string name="back">Zurück</string>
