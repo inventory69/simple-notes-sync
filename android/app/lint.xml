@@ -59,4 +59,11 @@
     <!-- → Migration geplant für v2.1.0                             -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <issue id="AndroidGradlePluginVersion" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- GradleDependency: Dependency-Updates werden bewusst         -->
+    <!-- batchweise in neuen Minor-Releases durchgeführt, nicht      -->
+    <!-- inkrementell pro Patch-Release (zu hohes Regressionsrisiko).-->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="GradleDependency" severity="ignore" />
 </lint>
