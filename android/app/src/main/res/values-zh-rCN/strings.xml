@@ -581,4 +581,6 @@
     <string name="theme_color_orange">橙</string>
     <string name="theme_color_dynamic">动态</string>
     <string name="theme_color_dynamic_unavailable">动态颜色需要 Android 12+</string>
+    <string name="toolbar_title_new">新建</string>
+    <string name="toolbar_title_edit">编辑</string>
 </resources>
