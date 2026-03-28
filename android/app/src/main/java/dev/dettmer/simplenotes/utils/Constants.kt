@@ -141,6 +141,10 @@ object Constants {
     // 🆕 v1.8.1 (IMPL_08B): onSave-Sync Worker-Tag (bypassed globalen Cooldown)
     const val SYNC_ONSAVE_TAG = "onsave"
 
+    // 🆕 v2.2.0: WiFi-Connect Fallback Worker — überlebt Prozess-Tod
+    const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
+    const val WIFI_FALLBACK_INTERVAL_HOURS = 6L
+
     // 🆕 v2.1.0 (F46): Grid column control
     const val KEY_GRID_ADAPTIVE_SCALING = "grid_adaptive_scaling"
     const val DEFAULT_GRID_ADAPTIVE_SCALING = true
