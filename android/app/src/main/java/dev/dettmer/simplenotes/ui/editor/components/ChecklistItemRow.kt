@@ -47,6 +47,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
@@ -169,7 +172,17 @@ fun ChecklistItemRow(
     // During drag, onTextLayout guard prevents hasOverflow/collapsedHeightDp updates.
     // After drag, onTextLayout may not refire (no text change).
     // Coercing scroll position triggers scrollState change → gradient derivedStateOf re-evaluates.
+    // 🆕 v2.2.0: Zusätzlich Auto-Collapse bei Drag-Start (isAnyItemDragging == true).
     LaunchedEffect(isAnyItemDragging) {
+        if (isAnyItemDragging && isFocused && !isDragging) {
+            // 🆕 v2.2.0: Auto-Collapse ALL expanded items when ANY drag starts.
+            // isAnyItemDragging flips to true in DragDropListState.onDragStart() (T1),
+            // BEFORE isDragConfirmed (T3). This ensures every focused item collapses
+            // before the first swap calculation uses item heights.
+            // The existing LaunchedEffect(isDragging) above handles the dragged item itself;
+            // this branch handles all OTHER focused items that aren't being dragged.
+            focusManager.clearFocus()
+        }
         if (!isAnyItemDragging && hasOverflow && !isFocused) {
             // IMPL_29d: Wait for layout pass to re-establish scrollState.maxValue after
             // verticalScroll modifier is re-added. Without delay, maxValue may still be 0.
@@ -206,7 +219,22 @@ fun ChecklistItemRow(
         Box(
             modifier = dragModifier
                 .size(48.dp) // Material Design minimum touch target
-                .alpha(if (isDragging) 1.0f else 0.6f), // Visual feedback beim Drag
+                .alpha(if (isDragging) 1.0f else 0.6f) // Visual feedback beim Drag
+                // 🆕 v2.2.0: Fokus beim ersten Antippen des Handles clearen.
+                // detectDragGesturesAfterLongPress erfasst draggingItemSize erst NACH dem
+                // Long-Press-Timeout (~500ms). Durch clearFocus() hier hat der Layout-Pass
+                // genug Zeit, die Item-Höhe auf collapsed zu aktualisieren, BEVOR
+                // DragDropListState.onDragStart() die Größe für Swap-Berechnungen erfasst.
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.type == PointerEventType.Press && isFocused) {
+                                focusManager.clearFocus()
+                            }
+                        }
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -236,6 +264,9 @@ fun ChecklistItemRow(
             // IMPL_29f F1: Gedraggtes Item behält IMMER seine collapsed Höhe.
             // Height-Change während Drag → Layout-Repass → Pointer-Verlust (RC-1).
             // Expansion erst nach Drop (isDragging → false).
+            // 🆕 v2.2.0: Auch alle anderen fokussierten Items werden bei Drag-Start sofort
+            // collapsed (synchron in der Modifier-Chain, ohne LaunchedEffect-Verzögerung).
+            // LaunchedEffect(isAnyItemDragging) setzt isFocused=false permanent (für Drop-Phase).
             Box(
                 modifier = if (currentIsDragging) {
                     // Collapsed bleiben (gleiche heightIn), aber ohne verticalScroll
@@ -244,7 +275,7 @@ fun ChecklistItemRow(
                         Modifier.heightIn(max = height)
                     } ?: Modifier
                 } else {
-                    collapsedHeightDp?.takeIf { !isFocused && hasOverflow }?.let { height ->
+                    collapsedHeightDp?.takeIf { (!isFocused || isAnyItemDragging) && hasOverflow }?.let { height ->
                         Modifier
                             .heightIn(max = height)
                             .verticalScroll(scrollState)
