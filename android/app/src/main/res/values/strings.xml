@@ -670,4 +670,10 @@
     <string name="share_error">Could not open share dialog</string>
     <string name="share_pdf_error">Could not create PDF</string>
 
+    <!-- v2.2.0: Share Intent — Note Type Chooser -->
+    <string name="share_type_dialog_title">Save as</string>
+    <string name="share_type_dialog_message">How should the shared text be saved?</string>
+    <string name="share_type_text_note">Text note</string>
+    <string name="share_type_checklist">Checklist</string>
+
 </resources>

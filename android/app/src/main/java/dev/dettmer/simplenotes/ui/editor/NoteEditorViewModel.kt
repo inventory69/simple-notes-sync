@@ -42,6 +42,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
+        const val ARG_SHARED_TEXT = "sharedText"       // 🆕 v2.2.0
+        const val ARG_SHARED_SUBJECT = "sharedSubject" // 🆕 v2.2.0
         private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50 // 🆕 v1.10.0-Papa
     }
 
@@ -222,8 +224,93 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         if (currentNoteType == NoteType.CHECKLIST) {
             _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
         }
+
+        // 🆕 v2.2.0: Share Intent — vorausgefüllter Content aus anderer App
+        val sharedText = savedStateHandle.get<String>(ARG_SHARED_TEXT)
+        val sharedSubject = savedStateHandle.get<String>(ARG_SHARED_SUBJECT)
+        if (!sharedText.isNullOrBlank() || !sharedSubject.isNullOrBlank()) {
+            val rawSubject = sharedSubject?.trim().orEmpty()
+            val rawText = sharedText?.trim().orEmpty()
+            // v2.2.0-fix: extract title from first line when EXTRA_SUBJECT is absent
+            val (titleText, bodyText) = if (rawSubject.isNotBlank()) {
+                rawSubject to rawText
+            } else {
+                extractSharedTitle(rawText, currentNoteType == NoteType.CHECKLIST)
+            }
+            if (currentNoteType == NoteType.CHECKLIST) {
+                if (bodyText.isNotBlank()) {
+                    _checklistItems.value = parseSharedTextAsChecklist(bodyText)
+                }
+                _uiState.update { state -> state.copy(title = titleText) }
+            } else {
+                // TEXT-Notiz: Title + Content setzen
+                _uiState.update { state ->
+                    state.copy(title = titleText, content = bodyText)
+                }
+            }
+            isDirty = true // Share-Content zählt als ungespeicherte Änderung
+        }
+
         undoRedoManager.clear() // 🆕 v1.10.0: No cross-note undo
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
+    }
+
+    /**
+     * v2.2.0-fix: Extracts title and body from shared text when EXTRA_SUBJECT is absent.
+     *
+     * Text notes: first line = title, rest = content (always, if 2+ lines).
+     * Checklists: first line = title only when it doesn't look like a list item AND
+     *   is followed by a blank line (“heap-newline” heading pattern). Otherwise all
+     *   lines are treated as items.
+     */
+    private fun extractSharedTitle(text: String, isChecklist: Boolean): Pair<String, String> {
+        if (text.isBlank()) return "" to text
+        val lines = text.lines()
+        val firstLine = lines.first().trim()
+        if (lines.size < 2 || firstLine.isBlank()) return "" to text
+
+        return if (isChecklist) {
+            // Don't treat a list-item line as a title
+            val listItemRegex = Regex("""^[-*]\s+.*""")
+            if (listItemRegex.matches(firstLine)) return "" to text
+            // Only extract as title when a blank line separates it from the items
+            val bodyStart = if (lines.getOrNull(1)?.isBlank() == true) 2 else null
+            if (bodyStart != null) {
+                firstLine to lines.drop(bodyStart).joinToString("\n").trim()
+            } else {
+                "" to text
+            }
+        } else {
+            // Text note: first line = title, rest = content
+            firstLine to lines.drop(1).joinToString("\n").trimStart('\n').trim()
+        }
+    }
+
+    /**
+     * 🆕 v2.2.0: Parses shared plain text into checklist items.
+     * GFM heuristic: if ALL non-empty lines match `- [ ] text` / `* [x] text`,
+     * preserves checked/unchecked state; otherwise each line becomes an unchecked item.
+     */
+    private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
+        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val nonEmptyLines = text.trim().lines().filter { it.isNotBlank() }
+        if (nonEmptyLines.isEmpty()) return _checklistItems.value
+        val allGfm = nonEmptyLines.all { gfmRegex.matches(it.trim()) }
+        return if (allGfm) {
+            // GFM-Format: checked-State aus Prefix übernehmen
+            nonEmptyLines.mapIndexed { index, line ->
+                val match = requireNotNull(gfmRegex.find(line.trim()))
+                ChecklistItemState.createEmpty(index).copy(
+                    text = match.groupValues[2].trim(),
+                    isChecked = match.groupValues[1].lowercase() != " "
+                )
+            }
+        } else {
+            // Plaintext: Jede Zeile = unchecked Item
+            nonEmptyLines.mapIndexed { index, line ->
+                ChecklistItemState.createEmpty(index).copy(text = line.trim())
+            }
+        }
     }
 
     /**

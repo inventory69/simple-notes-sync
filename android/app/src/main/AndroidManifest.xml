@@ -45,10 +45,18 @@
         </activity>
 
         <!-- Editor Activity v1.5.0 (Jetpack Compose) -->
+        <!-- 🆕 v2.2.0: Share Intent Target für text/plain -->
         <activity
             android:name=".ui.editor.ComposeNoteEditorActivity"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize"
-            android:parentActivityName=".ui.main.ComposeMainActivity" />
+            android:parentActivityName=".ui.main.ComposeMainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
 
         <!-- Settings Activity v1.5.0 (Jetpack Compose) -->
         <!-- v1.8.0: Handle locale changes without recreate for smooth language switching -->
