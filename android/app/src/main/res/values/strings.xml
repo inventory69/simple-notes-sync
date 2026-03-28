@@ -648,6 +648,14 @@
     <!-- ============================= -->
     <string name="widget_name">Simple Notes</string>
     <string name="widget_description">Display a note or checklist on your home screen</string>
+
+    <!-- v2.2.0: New Note Shortcut Widget -->
+    <string name="new_note_widget_name">New Note</string>
+    <string name="new_note_widget_description">Quickly create a new note or checklist</string>
+    <string name="new_note_widget_content_description">Create new note</string>
+    <string name="new_note_widget_checklist_description">Create new checklist</string>
+    <string name="new_note_widget_btn_note">Note</string>
+    <string name="new_note_widget_btn_checklist">List</string>
     <string name="widget_config_title">Choose a Note</string>
     <string name="widget_config_hint">Tap a note to add it as a widget</string>
     <string name="widget_config_save">Save</string>

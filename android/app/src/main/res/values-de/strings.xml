@@ -588,6 +588,14 @@
     <!-- ============================= -->
     <string name="widget_name">Simple Notes</string>
     <string name="widget_description">Zeige eine Notiz oder Checkliste auf dem Startbildschirm</string>
+
+    <!-- v2.2.0: New Note Shortcut Widget -->
+    <string name="new_note_widget_name">Neue Notiz</string>
+    <string name="new_note_widget_description">Schnell eine neue Notiz oder Checkliste erstellen</string>
+    <string name="new_note_widget_content_description">Neue Notiz erstellen</string>
+    <string name="new_note_widget_checklist_description">Neue Checkliste erstellen</string>
+    <string name="new_note_widget_btn_note">Notiz</string>
+    <string name="new_note_widget_btn_checklist">Liste</string>
     <string name="widget_config_title">Notiz auswählen</string>
     <string name="widget_config_hint">Tippe auf eine Notiz, um sie als Widget hinzuzufügen</string>
     <string name="widget_config_save">Speichern</string>
