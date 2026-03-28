@@ -106,11 +106,24 @@
                 android:resource="@xml/note_widget_info" />
         </receiver>
 
-        <!-- 🆕 v1.8.0: Widget Config Activity -->
+        <!-- v1.8.0: Widget Config Activity -->
         <activity
             android:name=".widget.NoteWidgetConfigActivity"
             android:exported="false"
             android:theme="@style/Theme.SimpleNotes" />
+
+        <!-- 🆕 v2.2.0: New-Note Shortcut Widget Receiver -->
+        <receiver
+            android:name=".widget.NewNoteWidgetReceiver"
+            android:exported="true"
+            android:label="@string/new_note_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/new_note_widget_info" />
+        </receiver>
 
     </application>
 
