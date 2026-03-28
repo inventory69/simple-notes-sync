@@ -485,6 +485,8 @@
     <string name="md_toolbar_link">Link</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
+    <!-- 🆕 v2.2.0: Markdown Checklist Button -->
+    <string name="md_toolbar_checklist">Checklist</string>
 
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->

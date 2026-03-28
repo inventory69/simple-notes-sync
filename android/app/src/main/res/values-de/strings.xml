@@ -442,6 +442,8 @@
     <string name="md_toolbar_link">Link</string>
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>
+    <!-- 🆕 v2.2.0: Markdown Checklist Button -->
+    <string name="md_toolbar_checklist">Checkliste</string>
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
