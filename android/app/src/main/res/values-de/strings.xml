@@ -608,4 +608,10 @@
     <string name="share_no_calendar_app">Keine Kalender-App gefunden</string>
     <string name="share_error">Teilen-Dialog konnte nicht geöffnet werden</string>
     <string name="share_pdf_error">PDF konnte nicht erstellt werden</string>
+
+    <!-- v2.2.0: Share Intent — Notiztyp-Auswahl -->
+    <string name="share_type_dialog_title">Speichern als</string>
+    <string name="share_type_dialog_message">Wie soll der geteilte Text gespeichert werden?</string>
+    <string name="share_type_text_note">Textnotiz</string>
+    <string name="share_type_checklist">Checkliste</string>
 </resources>

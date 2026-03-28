@@ -11,9 +11,15 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.FileProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.lifecycleScope
@@ -47,12 +53,21 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
         private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
+        private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen" // 🆕 v2.2.0
 
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
         const val RESULT_EXTRA_NOTE_ID = "result_note_id"
         const val RESULT_EXTRA_DELETE_FROM_SERVER = "result_delete_from_server"
     }
+
+    // 🆕 v2.2.0: Share Intent — Typ-Auswahl-State
+    // chosenShareNoteType wird VOR dem ersten viewModel-Zugriff gesetzt.
+    // Die viewModelFactory liest diesen Wert im initializer-Lambda.
+    private var chosenShareNoteType: String? = null
+    private var isShareTypeChosen by mutableStateOf(false)
+    private var isShareIntent = false
+    private var eventCollectionStarted = false
 
     private val viewModel: NoteEditorViewModel by viewModels {
         viewModelFactory {
@@ -61,6 +76,18 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                 handle[NoteEditorViewModel.ARG_NOTE_ID] = intent.getStringExtra(EXTRA_NOTE_ID)
                 handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
                     intent.getStringExtra(EXTRA_NOTE_TYPE) ?: NoteType.TEXT.name
+
+                // 🆕 v2.2.0: Share Intent — Text aus anderen Apps empfangen
+                if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+                    val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
+                    val sharedSubject = intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty()
+                    handle[NoteEditorViewModel.ARG_SHARED_TEXT] = sharedText
+                    handle[NoteEditorViewModel.ARG_SHARED_SUBJECT] = sharedSubject
+                    handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
+                        chosenShareNoteType ?: NoteType.TEXT.name
+                    handle[NoteEditorViewModel.ARG_NOTE_ID] = null
+                }
+
                 NoteEditorViewModel(application, handle)
             }
         }
@@ -110,36 +137,53 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             }
         )
 
-        setContent {
-            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
-                NoteEditorScreen(
-                    viewModel = viewModel,
-                    onNavigateBack = { finishWithTransition() }
-                )
-            }
+        // 🆕 v2.2.0: Share Intent Erkennung
+        isShareIntent = intent.action == Intent.ACTION_SEND && intent.type == "text/plain"
+
+        // Restore state nach Configuration Change (z.B. Rotation)
+        if (savedInstanceState != null) {
+            isShareTypeChosen = savedInstanceState.getBoolean(KEY_SHARE_TYPE_CHOSEN, false)
+        } else {
+            // Nicht-Share-Intents brauchen keinen Dialog → sofort ready
+            isShareTypeChosen = !isShareIntent
         }
 
-        // 🆕 v1.10.0-Papa: Collect calendar/share events from ViewModel
-        lifecycleScope.launch {
-            viewModel.events.collect { event ->
-                when (event) {
-                    is NoteEditorEvent.OpenCalendar -> handleCalendarExport(event)
-                    is NoteEditorEvent.ShareAsText -> handleShareAsText(event)
-                    is NoteEditorEvent.ShareAsPdf -> handleShareAsPdf(event)
-                    // 🆕 v1.10.0-P2: Forward deletion to ComposeMainActivity so it can
-                    // show the undo snackbar via MainViewModel.deleteNoteFromEditor()
-                    is NoteEditorEvent.NoteDeleteRequested -> {
-                        val resultIntent = Intent().apply {
-                            putExtra(RESULT_EXTRA_NOTE_ID, event.noteId)
-                            putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
-                        }
-                        setResult(RESULT_NOTE_DELETED, resultIntent)
-                        finishWithTransition()
-                    }
-                    else -> { /* handled by Composable */ }
+        setContent {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
+                if (isShareIntent && !isShareTypeChosen) {
+                    // 🆕 v2.2.0: Typ-Auswahl-Dialog für Share Intent
+                    ShareNoteTypeDialog(
+                        onTextNote = {
+                            chosenShareNoteType = NoteType.TEXT.name
+                            isShareTypeChosen = true
+                            startEventCollectionIfNeeded()
+                        },
+                        onChecklist = {
+                            chosenShareNoteType = NoteType.CHECKLIST.name
+                            isShareTypeChosen = true
+                            startEventCollectionIfNeeded()
+                        },
+                        onDismiss = { finishWithTransition() }
+                    )
+                } else {
+                    NoteEditorScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { finishWithTransition() }
+                    )
                 }
             }
         }
+
+        // Event Collection nur starten wenn kein Share-Dialog angezeigt wird
+        if (!isShareIntent) {
+            startEventCollectionIfNeeded()
+        }
+    }
+
+    // 🆕 v2.2.0: Persist Share-Dialog-State über Configuration Changes
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_SHARE_TYPE_CHOSEN, isShareTypeChosen)
     }
 
     /**
@@ -154,7 +198,10 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         // v2.0.0: Refresh theme in case user returned from Settings
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)
-        viewModel.reloadFromStorage()
+        // 🆕 v2.2.0: Guard — nur wenn ViewModel bereits initialisiert (Share-Dialog abgeschlossen)
+        if (isShareTypeChosen) {
+            viewModel.reloadFromStorage()
+        }
     }
 
     // v2.0.0: Save unsaved changes when activity pauses (Back gesture, Home, task switch).
@@ -162,7 +209,38 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     // activity's onResume reloads the note list.
     override fun onPause() {
         super.onPause()
-        viewModel.saveOnBack()
+        // 🆕 v2.2.0: Guard — nur wenn ViewModel bereits initialisiert
+        if (isShareTypeChosen) {
+            viewModel.saveOnBack()
+        }
+    }
+
+    /**
+     * 🆕 v2.2.0: Startet Event-Collection für Calendar/Share/Delete Events.
+     * Wird nach Share-Dialog-Auswahl oder direkt in onCreate() aufgerufen.
+     * Guard verhindert doppelten Start nach Config Change.
+     */
+    private fun startEventCollectionIfNeeded() {
+        if (eventCollectionStarted) return
+        eventCollectionStarted = true
+        lifecycleScope.launch {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is NoteEditorEvent.OpenCalendar -> handleCalendarExport(event)
+                    is NoteEditorEvent.ShareAsText -> handleShareAsText(event)
+                    is NoteEditorEvent.ShareAsPdf -> handleShareAsPdf(event)
+                    is NoteEditorEvent.NoteDeleteRequested -> {
+                        val resultIntent = Intent().apply {
+                            putExtra(RESULT_EXTRA_NOTE_ID, event.noteId)
+                            putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
+                        }
+                        setResult(RESULT_NOTE_DELETED, resultIntent)
+                        finishWithTransition()
+                    }
+                    else -> { /* handled by Composable */ }
+                }
+            }
+        }
     }
 
     private fun finishWithTransition() {
@@ -264,4 +342,49 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             Toast.makeText(this, getString(R.string.share_error), Toast.LENGTH_SHORT).show()
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🆕 v2.2.0: Share Intent — Notiztyp-Auswahl-Dialog
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Leichtgewichtiger Material3 AlertDialog zur Auswahl des Notiztyps
+ * für geteilten Text. Wird angezeigt bevor der Editor initialisiert wird.
+ *
+ * - Dismiss-Position (links): "Checkliste" (sekundäre Aktion)
+ * - Confirm-Position (rechts): "Textnotiz" (primäre/Standard-Aktion)
+ * - Back-Taste / Tap außerhalb: Activity wird geschlossen (onDismiss)
+ */
+@Composable
+private fun ShareNoteTypeDialog(
+    onTextNote: () -> Unit,
+    onChecklist: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.share_type_dialog_title),
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.share_type_dialog_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        dismissButton = {
+            TextButton(onClick = onChecklist) {
+                Text(stringResource(R.string.share_type_checklist))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onTextNote) {
+                Text(stringResource(R.string.share_type_text_note))
+            }
+        }
+    )
 }
