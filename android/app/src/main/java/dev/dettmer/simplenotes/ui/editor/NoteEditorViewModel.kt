@@ -21,6 +21,7 @@ import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * ViewModel for NoteEditor Compose Screen
@@ -36,7 +38,9 @@ import kotlinx.coroutines.launch
  *
  * Manages note editing state including title, content, and checklist items.
  */
-@Suppress("LargeClass") // 🔧 v1.10.0: Detekt compliance — many features, deliberate design
+// 🔧 v1.10.0: Detekt compliance — many features, deliberate design
+// 🔧 v2.2.0: Feature 06 adds 4 new functions
+@Suppress("LargeClass", "TooManyFunctions")
 class NoteEditorViewModel(application: Application, private val savedStateHandle: SavedStateHandle) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "NoteEditorViewModel"
@@ -569,6 +573,141 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         // 🔧 v1.11.0: Autosave nur wenn gelöschtes Item Text hatte (= auf Disk existierte)
         if (!wasEmpty) {
             scheduleAutosave()
+        }
+    }
+
+    /**
+     * 🆕 v2.2.0: Dupliziert ein Checklist-Item direkt unter dem Original.
+     * Das Duplikat ist immer unchecked (frischer Eintrag).
+     *
+     * Wenn das Quell-Item checked ist und ein Separator existiert (MANUAL/UNCHECKED_FIRST etc.),
+     * wird das Duplikat VOR dem Separator eingefügt (in die unchecked-Sektion), da es ja
+     * unchecked ist.
+     */
+    fun duplicateChecklistItem(itemId: String): String? {
+        val items = _checklistItems.value
+        val sourceItem = items.find { it.id == itemId } ?: return null
+
+        pushUndoSnapshot()
+        hasUnsavedChecklistEdits = true
+
+        val now = System.currentTimeMillis()
+        val newItem = ChecklistItemState(
+            id = UUID.randomUUID().toString(),
+            text = sourceItem.text,
+            isChecked = false,
+            order = 0,
+            originalOrder = 0,
+            createdAt = now
+        )
+
+        _checklistItems.update { currentItems ->
+            val index = currentItems.indexOfFirst { it.id == itemId }
+            if (index >= 0) {
+                val currentSort = _lastChecklistSortOption.value
+                val hasSeparator = currentSort == ChecklistSortOption.MANUAL ||
+                    currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
+                    currentSort == ChecklistSortOption.CREATION_DATE ||
+                    currentSort == ChecklistSortOption.CREATION_DATE_DESC
+
+                // Wenn Source checked → neues unchecked Item VOR checked-Sektion
+                val effectiveIndex = if (hasSeparator && sourceItem.isChecked) {
+                    val firstCheckedIndex = currentItems.indexOfFirst { it.isChecked }
+                    if (firstCheckedIndex >= 0) firstCheckedIndex else index + 1
+                } else {
+                    index + 1
+                }
+
+                val newList = currentItems.toMutableList()
+                newList.add(effectiveIndex, newItem)
+                newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
+            } else {
+                currentItems
+            }
+        }
+
+        isDirty = true
+        scheduleAutosave()
+        return newItem.id
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Liste aller anderen Checklisten-Notizen für den Auswahl-Dialog.
+     * null = Dialog nicht sichtbar, emptyList() = keine anderen Checklisten vorhanden.
+     */
+    private val _otherChecklists = MutableStateFlow<List<Note>?>(null)
+    val otherChecklists: StateFlow<List<Note>?> = _otherChecklists.asStateFlow()
+
+    /**
+     * Lädt alle Checklisten-Notizen (außer der aktuellen) vom Storage.
+     * Setzt _otherChecklists auf die Liste (oder emptyList wenn keine vorhanden).
+     * Muss auf IO-Dispatcher laufen weil NotesStorage synchron von Disk liest.
+     */
+    fun loadOtherChecklists() {
+        viewModelScope.launch {
+            val currentId = existingNote?.id
+            val checklists = withContext(Dispatchers.IO) {
+                storage.loadAllNotes()
+                    .filter { it.noteType == NoteType.CHECKLIST && it.id != currentId }
+                    .sortedBy { it.title.lowercase() }
+            }
+            _otherChecklists.value = checklists
+        }
+    }
+
+    /**
+     * Schließt den Checklisten-Auswahl-Dialog ohne Aktion.
+     */
+    fun dismissChecklistPicker() {
+        _otherChecklists.value = null
+    }
+
+    /**
+     * Kopiert den Text eines Checklist-Items in eine andere Checklisten-Notiz.
+     * Das neue Item wird als unchecked am Ende der Ziel-Checkliste eingefügt.
+     *
+     * Persistierung: Direkt via NotesStorage — Ziel-Notiz laden, Item anhängen, speichern.
+     * SyncStatus der Ziel-Notiz wird auf PENDING gesetzt, damit der nächste Sync sie hochlädt.
+     *
+     * @param itemId ID des Quell-Items in der aktuellen Checkliste
+     * @param targetNoteId ID der Ziel-Checklisten-Notiz
+     */
+    fun copyItemToChecklist(itemId: String, targetNoteId: String) {
+        val itemText = _checklistItems.value.find { it.id == itemId }?.text ?: return
+
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                val targetNote = storage.loadNote(targetNoteId) ?: return@withContext false
+                val existingItems = targetNote.checklistItems.orEmpty()
+                val maxOrder = existingItems.maxOfOrNull { it.order } ?: -1
+
+                val newItem = ChecklistItem(
+                    id = UUID.randomUUID().toString(),
+                    text = itemText,
+                    isChecked = false,
+                    order = maxOrder + 1,
+                    originalOrder = maxOrder + 1,
+                    createdAt = System.currentTimeMillis()
+                )
+
+                val updatedNote = targetNote.copy(
+                    checklistItems = existingItems + newItem,
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = SyncStatus.PENDING
+                )
+                storage.saveNote(updatedNote)
+                true
+            }
+
+            _otherChecklists.value = null // Dialog schließen
+
+            if (success) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.ITEM_COPIED_TO_CHECKLIST))
+            }
         }
     }
 
@@ -1240,7 +1379,8 @@ enum class ToolbarTitle {
 enum class ToastMessage {
     NOTE_IS_EMPTY,
     NOTE_SAVED,
-    NOTE_DELETED
+    NOTE_DELETED,
+    ITEM_COPIED_TO_CHECKLIST // 🆕 v2.2.0: Aktion 3 Bestätigung
 }
 
 sealed interface NoteEditorEvent {

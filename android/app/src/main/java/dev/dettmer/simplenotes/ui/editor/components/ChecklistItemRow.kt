@@ -18,8 +18,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -71,7 +77,7 @@ import kotlinx.coroutines.delay
  * Note: Using 10 parameters for Composable is acceptable for complex UI components.
  * @suppress LongParameterList - Composables naturally have many parameters
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod") // 🔧 v2.2.0: DropdownMenu adds lines; complex UI component, deliberate design
 @Composable
 fun ChecklistItemRow(
     item: ChecklistItemState,
@@ -79,6 +85,9 @@ fun ChecklistItemRow(
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onAddNewItem: () -> Unit,
+    onCopyText: () -> Unit,              // 🆕 v2.2.0: Aktion 1 — Text kopieren
+    onDuplicate: () -> Unit,             // 🆕 v2.2.0: Aktion 2 — Eintrag duplizieren
+    onCopyToChecklist: () -> Unit,       // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
     modifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     requestFocus: Boolean = false,
@@ -96,6 +105,7 @@ fun ChecklistItemRow(
 
     // 🆕 v1.8.0: Focus-State tracken für Expand/Collapse
     var isFocused by remember { mutableStateOf(false) }
+    var showContextMenu by remember { mutableStateOf(false) } // 🆕 v2.2.0: MoreVert-Menü
 
     // 🆕 v1.8.0: Overflow erkennen (Text länger als maxLines)
     var hasOverflow by remember { mutableStateOf(false) }
@@ -394,6 +404,73 @@ fun ChecklistItemRow(
 
         Spacer(modifier = Modifier.width(4.dp))
 
+        // 🆕 v2.2.0: MoreVert-Button — sichtbar nur bei Fokus, immer allokiert (kein Layout-Sprung)
+        Box {
+            IconButton(
+                onClick = { showContextMenu = true },
+                modifier = Modifier
+                    .size(36.dp)
+                    .alpha(if (isFocused && !isAnyItemDragging) 1f else 0f),
+                enabled = isFocused && !isAnyItemDragging
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.checklist_item_menu),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            DropdownMenu(
+                expanded = showContextMenu,
+                onDismissRequest = { showContextMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.checklist_copy_text)) },
+                    onClick = {
+                        onCopyText()
+                        showContextMenu = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.checklist_duplicate_item)) },
+                    onClick = {
+                        onDuplicate()
+                        showContextMenu = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.CopyAll,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.checklist_copy_to_checklist)) },
+                    onClick = {
+                        onCopyToChecklist()
+                        showContextMenu = false
+                    },
+                    enabled = item.text.isNotBlank(),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.PlaylistAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+            }
+        }
+
         // Delete Button
         IconButton(
             onClick = onDelete,
@@ -438,6 +515,9 @@ private fun ChecklistItemRowShortTextPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -462,6 +542,9 @@ private fun ChecklistItemRowLongTextPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -481,6 +564,9 @@ private fun ChecklistItemRowCheckedPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -501,6 +587,9 @@ private fun ChecklistItemRowDraggingPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = true,
         dragModifier = Modifier
     )
