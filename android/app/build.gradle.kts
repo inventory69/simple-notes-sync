@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 28  // 🆕 v2.1.0
-        versionName = "2.1.0"  // 🆕 v2.1.0
+        versionCode = 29  // 🆕 v2.2.0
+        versionName = "2.2.0"  // 🆕 v2.2.0
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -97,14 +97,20 @@ android {
     }
 
     // v2.1.0: Remove debug artifacts from release APK
+    // v2.2.0: kotlin_builtins direct path fix + LICENSE exclusion
     packaging {
         resources {
             excludes += setOf(
                 "DebugProbesKt.bin",
                 "kotlin-tooling-metadata.json",
                 "kotlin/**/*.kotlin_builtins",
+                "kotlin/*.kotlin_builtins",      // direct path (** may not match zero dirs)
                 "META-INF/*.kotlin_module",
                 "META-INF/versions/**",
+                "META-INF/**/LICENSE.txt",        // androidx license copies
+                "META-INF/**/LICENSE",
+                "META-INF/**/NOTICE.txt",
+                "META-INF/**/NOTICE",
             )
         }
     }
