@@ -1,10 +1,12 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatStrikethrough
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.InsertLink
 import androidx.compose.material.icons.filled.Title
@@ -55,6 +58,7 @@ fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifie
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
                 .padding(vertical = 4.dp)
         ) {
             ToolbarButton(
@@ -91,6 +95,11 @@ fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifie
                 icon = Icons.AutoMirrored.Filled.FormatListBulleted,
                 contentDescription = stringResource(R.string.md_toolbar_list),
                 onClick = { insertListItem(textFieldState) }
+            )
+            ToolbarButton(
+                icon = Icons.Filled.Checklist,
+                contentDescription = stringResource(R.string.md_toolbar_checklist),
+                onClick = { insertChecklistItem(textFieldState) }
             )
             ToolbarButton(
                 icon = Icons.Filled.HorizontalRule,
@@ -219,5 +228,40 @@ private fun insertHorizontalRule(state: TextFieldState) {
         val rule = "$prefix---\n"
         insert(cursorPos, rule)
         selection = TextRange(cursorPos + rule.length)
+    }
+}
+
+/**
+ * 🆕 v2.2.0: Inserts `- [ ] ` at the start of the current line for Markdown checklist syntax.
+ * Toggles through states:
+ * - No prefix → `- [ ] ` (unchecked checklist)
+ * - `- [ ] ` → remove prefix (toggle off)
+ * - `- [x] ` / `- [X] ` → remove prefix (toggle off)
+ * - `- ` (list) → `- [ ] ` (convert list to checklist)
+ */
+private fun insertChecklistItem(state: TextFieldState) {
+    state.edit {
+        val text = toString()
+        val cursorPos = selection.start
+        val lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1
+
+        when {
+            text.startsWith("- [x] ", lineStart) || text.startsWith("- [X] ", lineStart) -> {
+                // Checked checklist → entfernen
+                delete(lineStart, lineStart + "- [x] ".length)
+            }
+            text.startsWith("- [ ] ", lineStart) -> {
+                // Unchecked checklist → entfernen
+                delete(lineStart, lineStart + "- [ ] ".length)
+            }
+            text.startsWith("- ", lineStart) -> {
+                // Einfache Liste → zu Checklist konvertieren
+                insert(lineStart + "- ".length, "[ ] ")
+            }
+            else -> {
+                // Kein Prefix → Checklist einfügen
+                insert(lineStart, "- [ ] ")
+            }
+        }
     }
 }

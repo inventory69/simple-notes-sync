@@ -164,6 +164,50 @@ class NetworkMonitor(context: Context) {
     }
 
     /**
+     * 🆕 v2.2.0: Registriert einen periodischen WorkManager-Job als Fallback für den
+     * WiFi-Connect-Trigger nach Prozess-Tod.
+     *
+     * Hintergrund: ConnectivityManager.NetworkCallback ist prozessgebunden und geht
+     * verloren, wenn Android den Prozess im Standby killt. Dieser WorkManager-Job
+     * überlebt Prozess-Tod und prüft periodisch (alle 6h) ob ein WiFi verbunden ist.
+     *
+     * Da der Job eine UNMETERED-Constraint hat, wird er NUR ausgeführt wenn WiFi
+     * verfügbar ist — also genau dann, wenn der NetworkCallback es verpasst hätte.
+     *
+     * Der Cooldown in SyncWorker.doWork() verhindert doppelte Syncs wenn der
+     * NetworkCallback noch aktiv ist und bereits getriggert hat.
+     */
+    private fun startWifiFallbackWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .build()
+
+        val fallbackRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+            Constants.WIFI_FALLBACK_INTERVAL_HOURS, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .addTag(Constants.SYNC_WORK_TAG)
+            .addTag("wifi-fallback")
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            Constants.WIFI_FALLBACK_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            fallbackRequest
+        )
+
+        Logger.d(TAG, "✅ WiFi-Fallback worker registered (every ${Constants.WIFI_FALLBACK_INTERVAL_HOURS}h, UNMETERED only)")
+    }
+
+    /**
+     * 🆕 v2.2.0: Stoppt den WiFi-Fallback-Worker.
+     */
+    private fun stopWifiFallbackWorker() {
+        WorkManager.getInstance(context).cancelUniqueWork(Constants.WIFI_FALLBACK_WORK_NAME)
+        Logger.d(TAG, "🛑 WiFi-Fallback worker cancelled")
+    }
+
+    /**
      * Startet WorkManager mit Network Constraints + NetworkCallback
      *
      * 🆕 v1.7.0: Überarbeitete Logik - WiFi-Connect Trigger funktioniert UNABHÄNGIG von KEY_AUTO_SYNC
@@ -203,7 +247,15 @@ class NetworkMonitor(context: Context) {
             Logger.d(TAG, "⏭️ WiFi-Connect trigger disabled")
         }
 
-        // 3. Logging für Debug
+        // 3. 🆕 v2.2.0: WiFi-Fallback Worker (überlebt Prozess-Tod)
+        // Registriert parallel zum NetworkCallback — WorkManager als Sicherheitsnetz
+        if (wifiConnectEnabled) {
+            startWifiFallbackWorker()
+        } else {
+            stopWifiFallbackWorker()
+        }
+
+        // 4. Logging für Debug
         if (!autoSyncEnabled && !wifiConnectEnabled) {
             Logger.d(TAG, "🛑 No background triggers active")
         }

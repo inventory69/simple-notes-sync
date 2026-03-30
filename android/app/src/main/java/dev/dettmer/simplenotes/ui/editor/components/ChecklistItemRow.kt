@@ -18,8 +18,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -47,6 +53,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
@@ -68,7 +77,7 @@ import kotlinx.coroutines.delay
  * Note: Using 10 parameters for Composable is acceptable for complex UI components.
  * @suppress LongParameterList - Composables naturally have many parameters
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod") // 🔧 v2.2.0: DropdownMenu adds lines; complex UI component, deliberate design
 @Composable
 fun ChecklistItemRow(
     item: ChecklistItemState,
@@ -76,6 +85,9 @@ fun ChecklistItemRow(
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onAddNewItem: () -> Unit,
+    onCopyText: () -> Unit,              // 🆕 v2.2.0: Aktion 1 — Text kopieren
+    onDuplicate: () -> Unit,             // 🆕 v2.2.0: Aktion 2 — Eintrag duplizieren
+    onCopyToChecklist: () -> Unit,       // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
     modifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     requestFocus: Boolean = false,
@@ -93,6 +105,7 @@ fun ChecklistItemRow(
 
     // 🆕 v1.8.0: Focus-State tracken für Expand/Collapse
     var isFocused by remember { mutableStateOf(false) }
+    var showContextMenu by remember { mutableStateOf(false) } // 🆕 v2.2.0: MoreVert-Menü
 
     // 🆕 v1.8.0: Overflow erkennen (Text länger als maxLines)
     var hasOverflow by remember { mutableStateOf(false) }
@@ -169,7 +182,17 @@ fun ChecklistItemRow(
     // During drag, onTextLayout guard prevents hasOverflow/collapsedHeightDp updates.
     // After drag, onTextLayout may not refire (no text change).
     // Coercing scroll position triggers scrollState change → gradient derivedStateOf re-evaluates.
+    // 🆕 v2.2.0: Zusätzlich Auto-Collapse bei Drag-Start (isAnyItemDragging == true).
     LaunchedEffect(isAnyItemDragging) {
+        if (isAnyItemDragging && isFocused && !isDragging) {
+            // 🆕 v2.2.0: Auto-Collapse ALL expanded items when ANY drag starts.
+            // isAnyItemDragging flips to true in DragDropListState.onDragStart() (T1),
+            // BEFORE isDragConfirmed (T3). This ensures every focused item collapses
+            // before the first swap calculation uses item heights.
+            // The existing LaunchedEffect(isDragging) above handles the dragged item itself;
+            // this branch handles all OTHER focused items that aren't being dragged.
+            focusManager.clearFocus()
+        }
         if (!isAnyItemDragging && hasOverflow && !isFocused) {
             // IMPL_29d: Wait for layout pass to re-establish scrollState.maxValue after
             // verticalScroll modifier is re-added. Without delay, maxValue may still be 0.
@@ -206,7 +229,22 @@ fun ChecklistItemRow(
         Box(
             modifier = dragModifier
                 .size(48.dp) // Material Design minimum touch target
-                .alpha(if (isDragging) 1.0f else 0.6f), // Visual feedback beim Drag
+                .alpha(if (isDragging) 1.0f else 0.6f) // Visual feedback beim Drag
+                // 🆕 v2.2.0: Fokus beim ersten Antippen des Handles clearen.
+                // detectDragGesturesAfterLongPress erfasst draggingItemSize erst NACH dem
+                // Long-Press-Timeout (~500ms). Durch clearFocus() hier hat der Layout-Pass
+                // genug Zeit, die Item-Höhe auf collapsed zu aktualisieren, BEVOR
+                // DragDropListState.onDragStart() die Größe für Swap-Berechnungen erfasst.
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.type == PointerEventType.Press && isFocused) {
+                                focusManager.clearFocus()
+                            }
+                        }
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -236,6 +274,9 @@ fun ChecklistItemRow(
             // IMPL_29f F1: Gedraggtes Item behält IMMER seine collapsed Höhe.
             // Height-Change während Drag → Layout-Repass → Pointer-Verlust (RC-1).
             // Expansion erst nach Drop (isDragging → false).
+            // 🆕 v2.2.0: Auch alle anderen fokussierten Items werden bei Drag-Start sofort
+            // collapsed (synchron in der Modifier-Chain, ohne LaunchedEffect-Verzögerung).
+            // LaunchedEffect(isAnyItemDragging) setzt isFocused=false permanent (für Drop-Phase).
             Box(
                 modifier = if (currentIsDragging) {
                     // Collapsed bleiben (gleiche heightIn), aber ohne verticalScroll
@@ -244,7 +285,7 @@ fun ChecklistItemRow(
                         Modifier.heightIn(max = height)
                     } ?: Modifier
                 } else {
-                    collapsedHeightDp?.takeIf { !isFocused && hasOverflow }?.let { height ->
+                    collapsedHeightDp?.takeIf { (!isFocused || isAnyItemDragging) && hasOverflow }?.let { height ->
                         Modifier
                             .heightIn(max = height)
                             .verticalScroll(scrollState)
@@ -363,6 +404,73 @@ fun ChecklistItemRow(
 
         Spacer(modifier = Modifier.width(4.dp))
 
+        // 🆕 v2.2.0: MoreVert-Button — sichtbar nur bei Fokus, immer allokiert (kein Layout-Sprung)
+        Box {
+            IconButton(
+                onClick = { showContextMenu = true },
+                modifier = Modifier
+                    .size(36.dp)
+                    .alpha(if (isFocused && !isAnyItemDragging) 1f else 0f),
+                enabled = isFocused && !isAnyItemDragging
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.checklist_item_menu),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            DropdownMenu(
+                expanded = showContextMenu,
+                onDismissRequest = { showContextMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.checklist_copy_text)) },
+                    onClick = {
+                        onCopyText()
+                        showContextMenu = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.checklist_duplicate_item)) },
+                    onClick = {
+                        onDuplicate()
+                        showContextMenu = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.CopyAll,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.checklist_copy_to_checklist)) },
+                    onClick = {
+                        onCopyToChecklist()
+                        showContextMenu = false
+                    },
+                    enabled = item.text.isNotBlank(),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.PlaylistAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
+            }
+        }
+
         // Delete Button
         IconButton(
             onClick = onDelete,
@@ -407,6 +515,9 @@ private fun ChecklistItemRowShortTextPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -431,6 +542,9 @@ private fun ChecklistItemRowLongTextPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -450,6 +564,9 @@ private fun ChecklistItemRowCheckedPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -470,6 +587,9 @@ private fun ChecklistItemRowDraggingPreview() {
         onCheckedChange = {},
         onDelete = {},
         onAddNewItem = {},
+        onCopyText = {},
+        onDuplicate = {},
+        onCopyToChecklist = {},
         isDragging = true,
         dragModifier = Modifier
     )

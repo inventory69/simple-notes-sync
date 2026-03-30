@@ -8,6 +8,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.2.0] - 2026-03-30
+
+### ✨ New Features
+
+**Share Intent: Receive Text as New Note or Checklist** ([766f67e](https://github.com/inventory69/simple-notes-sync/commit/766f67e))
+- Receive text/plain share intents from other apps as new notes or checklists
+- Thanks to [@madelgijs](https://github.com/madelgijs) for the feature request! ([Discussion #46](https://github.com/inventory69/simple-notes-sync/discussions/46))
+
+**New-Note Shortcut Widget** ([5c79ab6](https://github.com/inventory69/simple-notes-sync/commit/5c79ab6))
+- Homescreen widget with auto-layout for quickly creating new notes
+- Thanks to [@Stowaway2979](https://github.com/Stowaway2979) for the feature request! ([Discussion #49](https://github.com/inventory69/simple-notes-sync/discussions/49))
+
+**Checklist Button in Markdown Toolbar** ([2157a09](https://github.com/inventory69/simple-notes-sync/commit/2157a09))
+- Insert checklist items directly from the markdown editor toolbar
+
+**Checklist Item Context Menu: Copy, Duplicate, Copy-to-Checklist** ([d98edd7](https://github.com/inventory69/simple-notes-sync/commit/d98edd7))
+- Focused MoreVert menu on checklist items with copy text, duplicate item, and copy item to another checklist
+- Thanks to freemen for the feature request!
+
+**Auto-Collapse Expanded Items on Drag** ([c030794](https://github.com/inventory69/simple-notes-sync/commit/c030794))
+- Expanded checklist items automatically collapse when drag-and-drop starts
+
+### 🐛 Bug Fixes
+
+**Fix Checklist Title Corruption from Missing Blank Line** ([c6cd50e](https://github.com/inventory69/simple-notes-sync/commit/c6cd50e))
+- **Critical fix:** `toMarkdown()` was missing a blank line between `# Title` and the first checklist item, causing progressive title corruption on every sync cycle (first item merged into title)
+- Defensive parsing in `fromMarkdown()` and `fromJson()` now detects and repairs corrupted titles
+- One-time migration repairs all locally stored corrupted checklist notes on first start after update
+- CRLF line ending normalization in Markdown parser prevents parse failures on Windows-edited files
+- Corruption warning logging in Markdown sync import for monitoring
+- Thanks to freemen for helping track down the corruption cascade!
+
+**WiFi Sync WorkManager Fallback** ([ee0b54c](https://github.com/inventory69/simple-notes-sync/commit/ee0b54c))
+- Added connectivity-change WorkManager fallback for reliable WiFi-triggered sync
+
+### 🌍 Translations
+
+- Chinese (Simplified) updated via Weblate ([9bcd4db](https://github.com/inventory69/simple-notes-sync/commit/9bcd4db), [864b23e](https://github.com/inventory69/simple-notes-sync/commit/864b23e))
+
+### 📦 Code Quality
+
+- APK packaging optimized: removed bundled kotlin_builtins and LICENSE files (−28 KB)
+
+---
+
 ## [2.1.0] - 2026-03-26
 
 ### 🐛 Bug Fixes & UX Improvements
