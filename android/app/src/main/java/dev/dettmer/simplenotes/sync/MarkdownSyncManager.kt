@@ -378,6 +378,17 @@ internal class MarkdownSyncManager(
                         continue
                     }
 
+                    // FIX-05 (v2.2.0): Checklist-Import-Logging + Korruptions-Warnung
+                    if (mdNote.noteType == NoteType.CHECKLIST) {
+                        Logger.d(TAG, "      📋 Checklist import: title='${mdNote.title}', items=${mdNote.checklistItems?.size ?: 0}")
+                        if (mdNote.title.contains("[ ]") || mdNote.title.contains("[x]") || mdNote.title.contains("[X]")) {
+                            @Suppress("MagicNumber")
+                            val previewLength = 200
+                            Logger.e(TAG, "🚨 CORRUPTION WARNING: Checklist pattern in title after parse: '${mdNote.title}'")
+                            Logger.e(TAG, "🚨 Source: ${resource.name}, first $previewLength chars: ${mdContent.take(previewLength)}")
+                        }
+                    }
+
                     // 🆕 v1.11.0: Skip Markdown files whose note ID was just exported in this sync cycle.
                     if (mdNote.id in excludeNoteIds) {
                         skippedCount++
