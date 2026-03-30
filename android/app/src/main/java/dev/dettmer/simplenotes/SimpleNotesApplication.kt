@@ -5,8 +5,10 @@ import android.content.Context
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
+import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.NoteCorruptionRepair
 import dev.dettmer.simplenotes.utils.NotificationHelper
 
 class SimpleNotesApplication : Application() {
@@ -67,6 +69,14 @@ class SimpleNotesApplication : Application() {
             SyncStateManager.reset()
         }
         Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
+
+        // 🔧 v2.2.0: Einmalige Reparatur korrupter Checklist-Titel (Bug #07)
+        try {
+            val storage = NotesStorage(this)
+            NoteCorruptionRepair.repairIfNeeded(storage, prefs)
+        } catch (e: Exception) {
+            Logger.e(TAG, "⚠️ Corruption repair failed (non-fatal)", e)
+        }
     }
 
     override fun onTerminate() {

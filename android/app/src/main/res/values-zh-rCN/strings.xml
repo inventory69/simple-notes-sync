@@ -343,9 +343,9 @@
     <!-- ============================= -->
     <string name="display_settings_title">显示</string>
     <string name="display_mode_title">笔记显示模式</string>
-    <string name="display_mode_list">📋 列表视图</string>
-    <string name="display_mode_grid">🎨 格子视图</string>
-    <string name="display_mode_info">格子视图在两列布局里显示更多笔记。所有笔记并排显示在干净、紧凑的总览中。</string>
+    <string name="display_mode_list">列表视图</string>
+    <string name="display_mode_grid">格子视图</string>
+    <string name="display_mode_info">格子视图把笔记排列成多列。列数自动适应设备尺寸和文本缩放设置。</string>
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">应用标题</string>
     <string name="custom_app_title_label">自定义标题</string>
@@ -548,4 +548,39 @@
     <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation">创建日期 ↓</string>
     <string name="drag_to_reorder">拖动以重新排序</string>
     <string name="content_description_back">后退</string>
+    <string name="snackbar_delete_queued_for_sync">连不上服务器 - 删除已排队，等待下次同步</string>
+    <string name="settings_sync_notifications_enabled">已启用通知</string>
+    <string name="settings_sync_notifications_errors_only">仅错误和警告</string>
+    <string name="settings_sync_notifications_disabled">已禁用通知</string>
+    <string name="backup_include_server_settings_title">包含应用设置</string>
+    <string name="backup_include_server_settings_subtitle">也备份服务器连接、同步、显示和通知设置</string>
+    <string name="backup_server_settings_encryption_hint">应用设置包括明文的服务器凭据。强烈推荐启用加密。</string>
+    <string name="backup_restore_server_settings_label">恢复应用设置（如果包含在备份中）</string>
+    <string name="debug_after_export_title">禁用日志文件？</string>
+    <string name="debug_after_export_message">如果你分享了日志，现在你可以禁用日志文件。在这里可以随时重新启用日志文件。</string>
+    <string name="debug_after_export_disable">禁用日志</string>
+    <string name="debug_after_export_keep">保持启用</string>
+    <string name="grid_scaling_title">格子列缩放</string>
+    <string name="grid_adaptive_scaling_title">自动缩放</string>
+    <string name="grid_adaptive_scaling_subtitle">列适应显示尺寸和文本缩放</string>
+    <string name="grid_manual_columns_title">列数</string>
+    <string name="grid_scaling_info">开了自动缩放，列数适应设备显示尺寸和文本缩放。禁用时，无论显示设置如何，都使用固定的列数。</string>
+    <string name="settings_subtitle_autosave_on">自动保存</string>
+    <string name="settings_subtitle_autosave_off">手动保存</string>
+    <string name="theme_mode_title">外观</string>
+    <string name="theme_mode_system">系统（跟随设备）</string>
+    <string name="theme_mode_light">亮</string>
+    <string name="theme_mode_dark">暗</string>
+    <string name="theme_mode_amoled">AMOLED（纯黑）</string>
+    <string name="theme_color_title">颜色方案</string>
+    <string name="theme_color_default">默认</string>
+    <string name="theme_color_blue">蓝</string>
+    <string name="theme_color_green">绿</string>
+    <string name="theme_color_red">红</string>
+    <string name="theme_color_purple">紫</string>
+    <string name="theme_color_orange">橙</string>
+    <string name="theme_color_dynamic">动态</string>
+    <string name="theme_color_dynamic_unavailable">动态颜色需要 Android 12+</string>
+    <string name="toolbar_title_new">新建</string>
+    <string name="toolbar_title_edit">编辑</string>
 </resources>

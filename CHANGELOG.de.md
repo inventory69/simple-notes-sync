@@ -8,6 +8,51 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.2.0] - 2026-03-30
+
+### ✨ Neue Features
+
+**Share-Intent: Text als neue Notiz oder Checkliste empfangen** ([766f67e](https://github.com/inventory69/simple-notes-sync/commit/766f67e))
+- Text/plain-Share-Intents aus anderen Apps als neue Notizen oder Checklisten empfangen
+- Danke an [@madelgijs](https://github.com/madelgijs) für den Feature-Wunsch! ([Discussion #46](https://github.com/inventory69/simple-notes-sync/discussions/46))
+
+**Neue-Notiz-Shortcut-Widget** ([5c79ab6](https://github.com/inventory69/simple-notes-sync/commit/5c79ab6))
+- Homescreen-Widget mit Auto-Layout zum schnellen Erstellen neuer Notizen
+- Danke an [@Stowaway2979](https://github.com/Stowaway2979) für den Feature-Wunsch! ([Discussion #49](https://github.com/inventory69/simple-notes-sync/discussions/49))
+
+**Checklisten-Button in Markdown-Toolbar** ([2157a09](https://github.com/inventory69/simple-notes-sync/commit/2157a09))
+- Checklisten-Items direkt aus der Markdown-Editor-Toolbar einfügen
+
+**Checklisten-Item-Kontextmenü: Kopieren, Duplizieren, In-Checkliste-Kopieren** ([d98edd7](https://github.com/inventory69/simple-notes-sync/commit/d98edd7))
+- Fokussiertes MoreVert-Menü an Checklisten-Items mit Text kopieren, Item duplizieren und Item in andere Checkliste kopieren
+- Danke an freemen für den Feature-Wunsch!
+
+**Auto-Einklappen erweiterter Items beim Ziehen** ([c030794](https://github.com/inventory69/simple-notes-sync/commit/c030794))
+- Erweiterte Checklisten-Items klappen automatisch ein wenn Drag-and-Drop startet
+
+### 🐛 Fehlerbehebungen
+
+**Checklisten-Titel-Korruption durch fehlende Leerzeile behoben** ([c6cd50e](https://github.com/inventory69/simple-notes-sync/commit/c6cd50e))
+- **Kritischer Fix:** `toMarkdown()` hat keine Leerzeile zwischen `# Titel` und erstem Checklisten-Item geschrieben → progressive Titel-Korruption bei jedem Sync-Zyklus (erstes Item wurde in den Titel verschluckt)
+- Defensives Parsing in `fromMarkdown()` und `fromJson()` erkennt und repariert korrupte Titel
+- Einmalige Migration repariert alle lokal gespeicherten korrupten Checklisten-Notizen beim ersten Start nach dem Update
+- CRLF-Zeilenumbruch-Normalisierung im Markdown-Parser verhindert Parse-Fehler bei Windows-bearbeiteten Dateien
+- Korruptions-Warn-Logging im Markdown-Sync-Import zur Überwachung
+- Danke an freemen für die Hilfe beim Aufspüren der Korruptions-Kaskade!
+
+**WiFi-Sync-WorkManager-Fallback** ([ee0b54c](https://github.com/inventory69/simple-notes-sync/commit/ee0b54c))
+- Connectivity-Change-WorkManager-Fallback für zuverlässigen WiFi-getriggerten Sync hinzugefügt
+
+### 🌍 Übersetzungen
+
+- Chinesisch (vereinfacht) über Weblate aktualisiert ([9bcd4db](https://github.com/inventory69/simple-notes-sync/commit/9bcd4db), [864b23e](https://github.com/inventory69/simple-notes-sync/commit/864b23e))
+
+### 📦 Code-Qualität
+
+- APK-Packaging optimiert: gebündelte kotlin_builtins und LICENSE-Dateien entfernt (−28 KB)
+
+---
+
 ## [2.1.0] - 2026-03-26
 
 ### 🐛 Fehlerbehebungen & UX-Verbesserungen

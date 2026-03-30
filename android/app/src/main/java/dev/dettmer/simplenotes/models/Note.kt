@@ -111,13 +111,25 @@ type: ${noteType.name.lowercase()}$sortLine
         """.trimIndent()
 
         return when (noteType) {
-            NoteType.TEXT -> header + "\n" + content
+            NoteType.TEXT -> {
+                // FIX-01 (v2.2.0): Leerzeile zwischen # Titel und Content (CommonMark-konform)
+                if (content.isNotBlank()) {
+                    header + "\n\n" + content
+                } else {
+                    header + "\n"
+                }
+            }
             NoteType.CHECKLIST -> {
                 val checklistMarkdown = checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
                     val checkbox = if (item.isChecked) "[x]" else "[ ]"
                     "- $checkbox ${item.text}"
                 }.orEmpty()
-                header + "\n" + checklistMarkdown
+                // FIX-01 (v2.2.0): Leerzeile zwischen # Titel und Items verhindert Titel-Korruption beim Re-Import
+                if (checklistMarkdown.isNotEmpty()) {
+                    header + "\n\n" + checklistMarkdown
+                } else {
+                    header + "\n"
+                }
             }
         }
     }
@@ -183,10 +195,39 @@ type: ${noteType.name.lowercase()}$sortLine
                     }
                 }
 
+                // FIX-03 (v2.2.0): Titel-Korrektur für CHECKLIST-Notizen aus korruptem JSON
+                var cleanTitle = rawNote.title
+                if (noteType == NoteType.CHECKLIST) {
+                    val checklistPatternInTitle = Regex("""[-*]\s*\[([ xX])\]\s+""")
+                    if (checklistPatternInTitle.containsMatchIn(cleanTitle)) {
+                        val splitMatch = checklistPatternInTitle.find(cleanTitle)!!
+                        val rescuedText = cleanTitle.substring(splitMatch.range.first)
+                        cleanTitle = cleanTitle.substring(0, splitMatch.range.first).trim()
+
+                        // Alle verschluckten Items aus dem Titel extrahieren
+                        val rescuedItems = Regex("""[-*]\s*\[([ xX])\]\s+(.+?)(?=\s*[-*]\s*\[|${'$'})""")
+                            .findAll(rescuedText).mapIndexed { idx, m ->
+                                ChecklistItem(
+                                    id = UUID.randomUUID().toString(),
+                                    text = m.groupValues[2].trim(),
+                                    isChecked = m.groupValues[1].lowercase() == "x",
+                                    order = idx
+                                )
+                            }.toList()
+
+                        if (rescuedItems.isNotEmpty()) {
+                            checklistItems = (rescuedItems + (checklistItems ?: emptyList()))
+                                .mapIndexed { i, item -> item.copy(order = i) }
+                            Logger.w(TAG, "⚠️ CORRUPTION FIX (JSON): '${rawNote.title}' → '$cleanTitle', " +
+                                "rescued ${rescuedItems.size} item(s)")
+                        }
+                    }
+                }
+
                 // Note mit korrekten Werten erstellen
                 Note(
                     id = rawNote.id,
-                    title = rawNote.title,
+                    title = cleanTitle,
                     content = rawNote.content,
                     createdAt = rawNote.createdAt,
                     updatedAt = rawNote.updatedAt,
@@ -254,9 +295,12 @@ type: ${noteType.name.lowercase()}$sortLine
          */
         fun fromMarkdown(md: String, serverModifiedTime: Long? = null): Note? {
             return try {
+                // FIX-06 (v2.2.0): Normalisiere Zeilenumbrüche vor Regex-Matching
+                val normalizedMd = md.replace("\r\n", "\n").replace("\r", "\n")
+
                 // Parse YAML Frontmatter + Markdown Content
                 val frontmatterRegex = Regex("^---\\n(.+?)\\n---\\n(.*)$", RegexOption.DOT_MATCHES_ALL)
-                val match = frontmatterRegex.find(md) ?: return null
+                val match = frontmatterRegex.find(normalizedMd) ?: return null
 
                 val yamlBlock = match.groupValues[1]
                 val contentBlock = match.groupValues[2]
@@ -273,9 +317,20 @@ type: ${noteType.name.lowercase()}$sortLine
                     }.toMap()
 
                 // Extract title from first # heading
-                val title = contentBlock.lines()
+                var title = contentBlock.lines()
                     .firstOrNull { it.startsWith("# ") }
                     ?.removePrefix("# ")?.trim() ?: "Untitled"
+
+                // FIX-02 (v2.2.0): Titel-Korrektur wenn Checklist-Pattern im Titel
+                // Bug: fehlende Leerzeile in toMarkdown() führte zu "Titel- [ ] Item" als Titelzeile
+                val checklistPatternInTitle = Regex("""[-*]\s*\[([ xX])\]\s+""")
+                var rescuedItemLine: String? = null
+                if (checklistPatternInTitle.containsMatchIn(title)) {
+                    val splitMatch = checklistPatternInTitle.find(title)!!
+                    rescuedItemLine = title.substring(splitMatch.range.first).trim()
+                    title = title.substring(0, splitMatch.range.first).trim()
+                    Logger.w(TAG, "⚠️ CORRUPTION FIX: Checklist pattern in title → cleaned to '$title', rescued: '$rescuedItemLine'")
+                }
 
                 // v1.4.0: Prüfe ob type: checklist im Frontmatter
                 val noteTypeStr = metadata["type"]?.lowercase() ?: "text"
@@ -302,6 +357,17 @@ type: ${noteType.name.lowercase()}$sortLine
                     contentBlock.trim()
                 }
 
+                // FIX-02 (v2.2.0): Gerettetes Item vor den restlichen Content einfügen
+                val effectiveContent = if (rescuedItemLine != null) {
+                    if (contentAfterTitle.isNotEmpty()) {
+                        rescuedItemLine + "\n" + contentAfterTitle
+                    } else {
+                        rescuedItemLine
+                    }
+                } else {
+                    contentAfterTitle
+                }
+
                 val content: String
                 val checklistItems: List<ChecklistItem>?
 
@@ -309,7 +375,7 @@ type: ${noteType.name.lowercase()}$sortLine
                     // Parse Checklist Items
                     // 🆕 v1.10.0-P2: More lenient regex — supports `*` prefix and extra spaces
                     val checklistRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""", RegexOption.MULTILINE)
-                    checklistItems = checklistRegex.findAll(contentAfterTitle).mapIndexed { index, matchResult ->
+                    checklistItems = checklistRegex.findAll(effectiveContent).mapIndexed { index, matchResult ->
                         ChecklistItem(
                             id = UUID.randomUUID().toString(),
                             text = matchResult.groupValues[2].trim(),
@@ -319,7 +385,7 @@ type: ${noteType.name.lowercase()}$sortLine
                     }.toList().ifEmpty { null }
                     content = "" // Checklisten haben keinen "content"
                 } else {
-                    content = contentAfterTitle
+                    content = effectiveContent
                     checklistItems = null
                 }
 

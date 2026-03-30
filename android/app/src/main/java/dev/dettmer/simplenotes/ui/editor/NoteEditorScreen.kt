@@ -96,6 +96,7 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
+import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.utils.Constants
@@ -103,6 +104,8 @@ import dev.dettmer.simplenotes.utils.showToast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
@@ -147,6 +150,11 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
+    // 🆕 v2.2.0: Checklist Item Context Menu — State für Aktion 3
+    var copyToChecklistItemId by remember { mutableStateOf<String?>(null) }
+    val otherChecklists by viewModel.otherChecklists.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
+
     // v2.0.1: Compact toolbar for narrow displays or large font scale (Issue #48)
     // Uses LocalWindowInfo (preferred for foldable/multi-window) over LocalConfiguration.
     // effectiveWidth = window dp / fontScale — if < 360, Undo/Redo go to overflow and title is shortened
@@ -158,6 +166,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
     val msgNoteSaved = stringResource(R.string.note_saved)
     val msgNoteDeleted = stringResource(R.string.note_deleted)
+    val msgItemCopiedToChecklist = stringResource(R.string.checklist_item_copied_toast) // 🆕 v2.2.0
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -221,6 +230,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         ToastMessage.NOTE_IS_EMPTY -> msgNoteIsEmpty
                         ToastMessage.NOTE_SAVED -> msgNoteSaved
                         ToastMessage.NOTE_DELETED -> msgNoteDeleted
+                        ToastMessage.ITEM_COPIED_TO_CHECKLIST -> msgItemCopiedToChecklist // 🆕 v2.2.0
                     }
                     context.showToast(message)
                 }
@@ -540,6 +550,22 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                             val newId = viewModel.addChecklistItemAfter(id)
                             focusNewItemId = newId
                         },
+                        onCopyText = { itemId ->                                     // 🆕 v2.2.0
+                            val text = checklistItems.find { it.id == itemId }?.text
+                            if (!text.isNullOrBlank()) {
+                                clipboardManager.setText(AnnotatedString(text))
+                            }
+                        },
+                        onDuplicate = { itemId ->                                    // 🆕 v2.2.0
+                            val newId = viewModel.duplicateChecklistItem(itemId)
+                            if (newId != null) {
+                                focusNewItemId = newId
+                            }
+                        },
+                        onCopyToChecklist = { itemId ->                              // 🆕 v2.2.0
+                            copyToChecklistItemId = itemId
+                            viewModel.loadOtherChecklists()
+                        },
                         onAddItemAtEnd = {
                             val newId = viewModel.addChecklistItemAtEnd()
                             focusNewItemId = newId
@@ -582,6 +608,23 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 showChecklistSortDialog = false
             },
             onDismiss = { showChecklistSortDialog = false }
+        )
+    }
+
+    // 🆕 v2.2.0: Checklist Target Picker Dialog (Aktion 3)
+    otherChecklists?.let { checklists ->
+        ChecklistTargetPickerDialog(
+            checklists = checklists,
+            onSelect = { targetNoteId ->
+                copyToChecklistItemId?.let { itemId ->
+                    viewModel.copyItemToChecklist(itemId, targetNoteId)
+                }
+                copyToChecklistItemId = null
+            },
+            onDismiss = {
+                viewModel.dismissChecklistPicker()
+                copyToChecklistItemId = null
+            }
         )
     }
 }
@@ -651,6 +694,9 @@ private fun LazyItemScope.DraggableChecklistItem(
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onAddNewItemAfter: (String) -> Unit,
+    onCopyText: (String) -> Unit,          // 🆕 v2.2.0: Aktion 1
+    onDuplicate: (String) -> Unit,         // 🆕 v2.2.0: Aktion 2
+    onCopyToChecklist: (String) -> Unit,   // 🆕 v2.2.0: Aktion 3
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit // 🆕 v1.8.1 (IMPL_05)
 ) {
@@ -678,6 +724,9 @@ private fun LazyItemScope.DraggableChecklistItem(
         onCheckedChange = { onCheckedChange(item.id, it) },
         onDelete = { onDelete(item.id) },
         onAddNewItem = { onAddNewItemAfter(item.id) },
+        onCopyText = { onCopyText(item.id) },             // 🆕 v2.2.0
+        onDuplicate = { onDuplicate(item.id) },            // 🆕 v2.2.0
+        onCopyToChecklist = { onCopyToChecklist(item.id) },// 🆕 v2.2.0
         requestFocus = shouldFocus,
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.isAnyItemDragging,
@@ -725,6 +774,9 @@ private fun ChecklistEditor(
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onAddNewItemAfter: (String) -> Unit,
+    onCopyText: (String) -> Unit,          // 🆕 v2.2.0: Aktion 1
+    onDuplicate: (String) -> Unit,         // 🆕 v2.2.0: Aktion 2
+    onCopyToChecklist: (String) -> Unit,   // 🆕 v2.2.0: Aktion 3
     onAddItemAtEnd: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onFocusHandled: () -> Unit,
@@ -934,6 +986,9 @@ private fun ChecklistEditor(
                         },
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
+                        onCopyText = onCopyText,                 // 🆕 v2.2.0
+                        onDuplicate = onDuplicate,               // 🆕 v2.2.0
+                        onCopyToChecklist = onCopyToChecklist,   // 🆕 v2.2.0
                         onFocusHandled = onFocusHandled,
                         onHeightChanged = { scrollToItemIndex = visualIndex }
                     )

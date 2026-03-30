@@ -21,6 +21,7 @@ import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * ViewModel for NoteEditor Compose Screen
@@ -36,12 +38,16 @@ import kotlinx.coroutines.launch
  *
  * Manages note editing state including title, content, and checklist items.
  */
-@Suppress("LargeClass") // 🔧 v1.10.0: Detekt compliance — many features, deliberate design
+// 🔧 v1.10.0: Detekt compliance — many features, deliberate design
+// 🔧 v2.2.0: Feature 06 adds 4 new functions
+@Suppress("LargeClass", "TooManyFunctions")
 class NoteEditorViewModel(application: Application, private val savedStateHandle: SavedStateHandle) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
+        const val ARG_SHARED_TEXT = "sharedText"       // 🆕 v2.2.0
+        const val ARG_SHARED_SUBJECT = "sharedSubject" // 🆕 v2.2.0
         private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50 // 🆕 v1.10.0-Papa
     }
 
@@ -222,8 +228,93 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         if (currentNoteType == NoteType.CHECKLIST) {
             _checklistItems.value = listOf(ChecklistItemState.createEmpty(0))
         }
+
+        // 🆕 v2.2.0: Share Intent — vorausgefüllter Content aus anderer App
+        val sharedText = savedStateHandle.get<String>(ARG_SHARED_TEXT)
+        val sharedSubject = savedStateHandle.get<String>(ARG_SHARED_SUBJECT)
+        if (!sharedText.isNullOrBlank() || !sharedSubject.isNullOrBlank()) {
+            val rawSubject = sharedSubject?.trim().orEmpty()
+            val rawText = sharedText?.trim().orEmpty()
+            // v2.2.0-fix: extract title from first line when EXTRA_SUBJECT is absent
+            val (titleText, bodyText) = if (rawSubject.isNotBlank()) {
+                rawSubject to rawText
+            } else {
+                extractSharedTitle(rawText, currentNoteType == NoteType.CHECKLIST)
+            }
+            if (currentNoteType == NoteType.CHECKLIST) {
+                if (bodyText.isNotBlank()) {
+                    _checklistItems.value = parseSharedTextAsChecklist(bodyText)
+                }
+                _uiState.update { state -> state.copy(title = titleText) }
+            } else {
+                // TEXT-Notiz: Title + Content setzen
+                _uiState.update { state ->
+                    state.copy(title = titleText, content = bodyText)
+                }
+            }
+            isDirty = true // Share-Content zählt als ungespeicherte Änderung
+        }
+
         undoRedoManager.clear() // 🆕 v1.10.0: No cross-note undo
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
+    }
+
+    /**
+     * v2.2.0-fix: Extracts title and body from shared text when EXTRA_SUBJECT is absent.
+     *
+     * Text notes: first line = title, rest = content (always, if 2+ lines).
+     * Checklists: first line = title only when it doesn't look like a list item AND
+     *   is followed by a blank line (“heap-newline” heading pattern). Otherwise all
+     *   lines are treated as items.
+     */
+    private fun extractSharedTitle(text: String, isChecklist: Boolean): Pair<String, String> {
+        if (text.isBlank()) return "" to text
+        val lines = text.lines()
+        val firstLine = lines.first().trim()
+        if (lines.size < 2 || firstLine.isBlank()) return "" to text
+
+        return if (isChecklist) {
+            // Don't treat a list-item line as a title
+            val listItemRegex = Regex("""^[-*]\s+.*""")
+            if (listItemRegex.matches(firstLine)) return "" to text
+            // Only extract as title when a blank line separates it from the items
+            val bodyStart = if (lines.getOrNull(1)?.isBlank() == true) 2 else null
+            if (bodyStart != null) {
+                firstLine to lines.drop(bodyStart).joinToString("\n").trim()
+            } else {
+                "" to text
+            }
+        } else {
+            // Text note: first line = title, rest = content
+            firstLine to lines.drop(1).joinToString("\n").trimStart('\n').trim()
+        }
+    }
+
+    /**
+     * 🆕 v2.2.0: Parses shared plain text into checklist items.
+     * GFM heuristic: if ALL non-empty lines match `- [ ] text` / `* [x] text`,
+     * preserves checked/unchecked state; otherwise each line becomes an unchecked item.
+     */
+    private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
+        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val nonEmptyLines = text.trim().lines().filter { it.isNotBlank() }
+        if (nonEmptyLines.isEmpty()) return _checklistItems.value
+        val allGfm = nonEmptyLines.all { gfmRegex.matches(it.trim()) }
+        return if (allGfm) {
+            // GFM-Format: checked-State aus Prefix übernehmen
+            nonEmptyLines.mapIndexed { index, line ->
+                val match = requireNotNull(gfmRegex.find(line.trim()))
+                ChecklistItemState.createEmpty(index).copy(
+                    text = match.groupValues[2].trim(),
+                    isChecked = match.groupValues[1].lowercase() != " "
+                )
+            }
+        } else {
+            // Plaintext: Jede Zeile = unchecked Item
+            nonEmptyLines.mapIndexed { index, line ->
+                ChecklistItemState.createEmpty(index).copy(text = line.trim())
+            }
+        }
     }
 
     /**
@@ -482,6 +573,141 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         // 🔧 v1.11.0: Autosave nur wenn gelöschtes Item Text hatte (= auf Disk existierte)
         if (!wasEmpty) {
             scheduleAutosave()
+        }
+    }
+
+    /**
+     * 🆕 v2.2.0: Dupliziert ein Checklist-Item direkt unter dem Original.
+     * Das Duplikat ist immer unchecked (frischer Eintrag).
+     *
+     * Wenn das Quell-Item checked ist und ein Separator existiert (MANUAL/UNCHECKED_FIRST etc.),
+     * wird das Duplikat VOR dem Separator eingefügt (in die unchecked-Sektion), da es ja
+     * unchecked ist.
+     */
+    fun duplicateChecklistItem(itemId: String): String? {
+        val items = _checklistItems.value
+        val sourceItem = items.find { it.id == itemId } ?: return null
+
+        pushUndoSnapshot()
+        hasUnsavedChecklistEdits = true
+
+        val now = System.currentTimeMillis()
+        val newItem = ChecklistItemState(
+            id = UUID.randomUUID().toString(),
+            text = sourceItem.text,
+            isChecked = false,
+            order = 0,
+            originalOrder = 0,
+            createdAt = now
+        )
+
+        _checklistItems.update { currentItems ->
+            val index = currentItems.indexOfFirst { it.id == itemId }
+            if (index >= 0) {
+                val currentSort = _lastChecklistSortOption.value
+                val hasSeparator = currentSort == ChecklistSortOption.MANUAL ||
+                    currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
+                    currentSort == ChecklistSortOption.CREATION_DATE ||
+                    currentSort == ChecklistSortOption.CREATION_DATE_DESC
+
+                // Wenn Source checked → neues unchecked Item VOR checked-Sektion
+                val effectiveIndex = if (hasSeparator && sourceItem.isChecked) {
+                    val firstCheckedIndex = currentItems.indexOfFirst { it.isChecked }
+                    if (firstCheckedIndex >= 0) firstCheckedIndex else index + 1
+                } else {
+                    index + 1
+                }
+
+                val newList = currentItems.toMutableList()
+                newList.add(effectiveIndex, newItem)
+                newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
+            } else {
+                currentItems
+            }
+        }
+
+        isDirty = true
+        scheduleAutosave()
+        return newItem.id
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Liste aller anderen Checklisten-Notizen für den Auswahl-Dialog.
+     * null = Dialog nicht sichtbar, emptyList() = keine anderen Checklisten vorhanden.
+     */
+    private val _otherChecklists = MutableStateFlow<List<Note>?>(null)
+    val otherChecklists: StateFlow<List<Note>?> = _otherChecklists.asStateFlow()
+
+    /**
+     * Lädt alle Checklisten-Notizen (außer der aktuellen) vom Storage.
+     * Setzt _otherChecklists auf die Liste (oder emptyList wenn keine vorhanden).
+     * Muss auf IO-Dispatcher laufen weil NotesStorage synchron von Disk liest.
+     */
+    fun loadOtherChecklists() {
+        viewModelScope.launch {
+            val currentId = existingNote?.id
+            val checklists = withContext(Dispatchers.IO) {
+                storage.loadAllNotes()
+                    .filter { it.noteType == NoteType.CHECKLIST && it.id != currentId }
+                    .sortedBy { it.title.lowercase() }
+            }
+            _otherChecklists.value = checklists
+        }
+    }
+
+    /**
+     * Schließt den Checklisten-Auswahl-Dialog ohne Aktion.
+     */
+    fun dismissChecklistPicker() {
+        _otherChecklists.value = null
+    }
+
+    /**
+     * Kopiert den Text eines Checklist-Items in eine andere Checklisten-Notiz.
+     * Das neue Item wird als unchecked am Ende der Ziel-Checkliste eingefügt.
+     *
+     * Persistierung: Direkt via NotesStorage — Ziel-Notiz laden, Item anhängen, speichern.
+     * SyncStatus der Ziel-Notiz wird auf PENDING gesetzt, damit der nächste Sync sie hochlädt.
+     *
+     * @param itemId ID des Quell-Items in der aktuellen Checkliste
+     * @param targetNoteId ID der Ziel-Checklisten-Notiz
+     */
+    fun copyItemToChecklist(itemId: String, targetNoteId: String) {
+        val itemText = _checklistItems.value.find { it.id == itemId }?.text ?: return
+
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                val targetNote = storage.loadNote(targetNoteId) ?: return@withContext false
+                val existingItems = targetNote.checklistItems.orEmpty()
+                val maxOrder = existingItems.maxOfOrNull { it.order } ?: -1
+
+                val newItem = ChecklistItem(
+                    id = UUID.randomUUID().toString(),
+                    text = itemText,
+                    isChecked = false,
+                    order = maxOrder + 1,
+                    originalOrder = maxOrder + 1,
+                    createdAt = System.currentTimeMillis()
+                )
+
+                val updatedNote = targetNote.copy(
+                    checklistItems = existingItems + newItem,
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = SyncStatus.PENDING
+                )
+                storage.saveNote(updatedNote)
+                true
+            }
+
+            _otherChecklists.value = null // Dialog schließen
+
+            if (success) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.ITEM_COPIED_TO_CHECKLIST))
+            }
         }
     }
 
@@ -1153,7 +1379,8 @@ enum class ToolbarTitle {
 enum class ToastMessage {
     NOTE_IS_EMPTY,
     NOTE_SAVED,
-    NOTE_DELETED
+    NOTE_DELETED,
+    ITEM_COPIED_TO_CHECKLIST // 🆕 v2.2.0: Aktion 3 Bestätigung
 }
 
 sealed interface NoteEditorEvent {
