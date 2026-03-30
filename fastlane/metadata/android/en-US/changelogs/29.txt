@@ -1,0 +1,14 @@
+✨ v2.2.0 — Share, Widget & Checklists
+
+• Share text from any app as note or checklist
+• New-note shortcut widget
+• Checklist button in markdown toolbar
+• Context menu: copy, duplicate, copy to checklist
+• Auto-collapse expanded items on drag
+• Fix: title corruption from missing blank line (critical, with repair)
+• WiFi sync WorkManager fallback
+
+Thanks to @madelgijs, @Stowaway2979, and freemen!
+
+Full changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

@@ -1,0 +1,14 @@
+✨ v2.2.0 — Teilen, Widget & Checklisten
+
+• Text aus jeder App als Notiz/Checkliste teilen
+• Neue-Notiz-Shortcut-Widget
+• Checklisten-Button in Markdown-Toolbar
+• Kontextmenü: Kopieren, Duplizieren, In Checkliste
+• Auto-Einklappen beim Ziehen
+• Fix: Titel-Korruption durch fehlende Leerzeile (kritisch, Reparatur)
+• WiFi-Sync-WorkManager-Fallback
+
+Danke an @madelgijs, @Stowaway2979 und freemen!
+
+Vollständiges Changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
