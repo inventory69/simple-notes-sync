@@ -637,9 +637,25 @@ internal class MarkdownSyncManager(
 
         try {
             val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
-            if (!sardine.exists(mdUrl)) {
+
+            // 🔧 v2.2.1 (Issue #50): exists() may return HTTP 405 on bewCloud/some servers,
+            // which Sardine throws as an IOException. Fallback: try list() — if it succeeds,
+            // the directory exists. Identical pattern to WebDavSyncService.ensureMarkdownDirectoryExists().
+            val dirExists = try {
+                sardine.exists(mdUrl)
+            } catch (e: java.io.IOException) {
+                Logger.w(TAG, "⚠️ notes-md/ exists() check failed: ${e.message}, trying list()")
+                try {
+                    sardine.list(mdUrl)
+                    true
+                } catch (_: java.io.IOException) {
+                    false
+                }
+            }
+
+            if (!dirExists) {
                 sardine.createDirectory(mdUrl)
-                Logger.d(TAG, "📁 Created notes-md/ directory (for future use)")
+                Logger.d(TAG, "📁 Created notes-md/ directory")
             }
             connectionManager.markdownDirEnsured = true
         } catch (e: Exception) {

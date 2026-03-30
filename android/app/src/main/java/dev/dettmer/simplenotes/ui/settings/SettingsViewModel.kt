@@ -828,6 +828,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         return@launch
                     }
 
+                    // 🔧 v2.2.1 (Issue #50): Prefs SOFORT setzen nach Server-Config-Validierung.
+                    // KEY_MARKDOWN_EXPORT wird in NoteUploader beim on-save Sync gelesen.
+                    // Wenn der Initial-Export fehlschlägt (z.B. bewCloud 405, Timeout,
+                    // Netzwerkfehler oder ViewModel-Cancellation), muss der reguläre Sync
+                    // trotzdem bei jedem Save die .md-Datei schreiben können.
+                    // Der Initial-Export ist "best effort" für Bestandsnotizen.
+                    prefs.edit {
+                        putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
+                        putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
+                    }
+
                     // Check if there are notes to export
                     val noteStorage = dev.dettmer.simplenotes.storage.NotesStorage(getApplication())
                     val noteCount = withContext(ioDispatcher) { noteStorage.loadAllNotes().size }
@@ -840,7 +851,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         // erreichbar ist. Ein einzelner Socket-Check reicht (1×timeout).
                         val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
                         if (!reachable) {
-                            _markdownAutoSync.value = false
+                            // 🔧 v2.2.1: Prefs bleiben auf true — on-save Export funktioniert
+                            // beim nächsten erfolgreichen Sync. Nur Toast als Warnung.
                             _markdownExportProgress.value = null
                             emitToast(getString(R.string.snackbar_server_unreachable))
                             return@launch
@@ -861,39 +873,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         ) * 2 * 1000L
                         val totalTimeoutMs = (noteCount * perNoteTimeoutMs) + EXPORT_OVERHEAD_TIMEOUT_MS
 
-                        val exportedCount = withTimeout(totalTimeoutMs) {
-                            withContext(ioDispatcher) {
-                                syncService.exportAllNotesToMarkdown(
-                                    serverUrl = serverUrl,
-                                    username = username,
-                                    password = password,
-                                    onProgress = { current, total ->
-                                        _markdownExportProgress.value = MarkdownExportProgress(current, total)
-                                    }
-                                )
+                        try {
+                            val exportedCount = withTimeout(totalTimeoutMs) {
+                                withContext(ioDispatcher) {
+                                    syncService.exportAllNotesToMarkdown(
+                                        serverUrl = serverUrl,
+                                        username = username,
+                                        password = password,
+                                        onProgress = { current, total ->
+                                            _markdownExportProgress.value = MarkdownExportProgress(current, total)
+                                        }
+                                    )
+                                }
                             }
-                        }
 
-                        // 🔧 v1.10.0 Fix: Safety-Net — wenn KEIN einziger Export erfolgreich war,
-                        // ist das ein Fehler (z.B. Server per Socket erreichbar aber HTTP schlägt fehl).
-                        // Toggle wird zurückgesetzt.
-                        if (exportedCount == 0) {
-                            _markdownAutoSync.value = false
+                            _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
+                            if (exportedCount > 0) {
+                                emitToast(getString(R.string.toast_markdown_exported, exportedCount))
+                            } else {
+                                // 🔧 v2.2.1: exportedCount==0 → Warnung, Feature bleibt aktiv.
+                                // Bestandsnotizen werden beim nächsten Save/Sync exportiert.
+                                emitToast(getString(R.string.toast_markdown_enabled))
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            // 🔧 v2.2.1: Timeout → Feature bleibt aktiv (Prefs bereits gesetzt).
+                            Logger.w(TAG, "Markdown initial export timed out: ${e.message}")
                             _markdownExportProgress.value = null
-                            emitToast(
-                                getString(R.string.toast_export_failed, getString(R.string.snackbar_server_unreachable))
-                            )
-                            return@launch
+                            emitToast(getString(R.string.toast_export_timeout))
                         }
-
-                        // Export successful — prefs persistieren (_markdownAutoSync ist bereits true)
-                        prefs.edit {
-                            putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
-                            putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
-                        }
-
-                        _markdownExportProgress.value = MarkdownExportProgress(noteCount, noteCount, isComplete = true)
-                        emitToast(getString(R.string.toast_markdown_exported, exportedCount))
 
                         // Clear progress after short delay
                         kotlinx.coroutines.delay(PROGRESS_CLEAR_DELAY_MS)
@@ -901,22 +908,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     } else {
                         // No notes — feature sofort aktivieren, kein Export nötig
                         _markdownExportProgress.value = null
-                        prefs.edit {
-                            putBoolean(Constants.KEY_MARKDOWN_EXPORT, true)
-                            putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, true)
-                        }
                         emitToast(getString(R.string.toast_markdown_enabled))
                     }
-                } catch (e: TimeoutCancellationException) {
-                    // 🆕 v1.10.0: Gesamt-Export-Timeout überschritten — Toggle zurücksetzen
-                    Logger.w(TAG, "Markdown export timed out: ${e.message}")
-                    _markdownAutoSync.value = false
-                    _markdownExportProgress.value = null
-                    emitToast(getString(R.string.toast_export_timeout))
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // 🔧 v2.2.1 (Issue #50): viewModelScope-Cancellation (Activity destroyed).
+                    // Prefs sind bereits gesetzt — Feature funktioniert unabhängig vom Initial-Export.
+                    throw e // CancellationException muss weiter propagiert werden
                 } catch (e: Exception) {
-                    // 🔧 v1.10.0: Toggle zurücksetzen + konsistente Fehlermeldung
+                    // 🔧 v2.2.1: Bei echtem Fehler (z.B. Auth-Problem) → Feature deaktivieren + Prefs zurücksetzen.
                     _markdownAutoSync.value = false
                     _markdownExportProgress.value = null
+                    prefs.edit {
+                        putBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
+                        putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+                    }
                     val syncService = WebDavSyncService(getApplication())
                     val userMessage = syncService.mapSyncExceptionToMessage(e)
                     emitToast(getString(R.string.toast_export_failed, userMessage))

@@ -659,7 +659,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                             // Vorher: syncedCount += reUploadedCount → führte zu Doppelzählung.
                         }
                     } else {
-                        Logger.d(TAG, "⏭️ Markdown auto-import disabled")
+                        // 🔧 v2.2.1 (Issue #50): Include pref values for easier diagnosis
+                        val mdExport = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
+                        val mdImport = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+                        Logger.d(TAG, "⏭️ Markdown auto-import disabled " +
+                            "(KEY_MARKDOWN_EXPORT=$mdExport, KEY_MARKDOWN_AUTO_IMPORT=$mdImport)")
                     }
                 } catch (e: Exception) {
                     Logger.e(TAG, "⚠️ Markdown auto-import failed (non-fatal)", e)

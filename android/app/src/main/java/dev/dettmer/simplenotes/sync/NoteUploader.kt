@@ -55,6 +55,7 @@ internal class NoteUploader(
     ): UploadBatchResult {
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
+        Logger.d(TAG, "📋 Markdown export enabled: $markdownExportEnabled") // 🔧 v2.2.1 (Issue #50)
 
         // 🆕 v1.9.0 (Opt 1): Einmalige Prüfung statt N × exists(notes-md/)
         val markdownDirExists: Boolean = if (markdownExportEnabled) {

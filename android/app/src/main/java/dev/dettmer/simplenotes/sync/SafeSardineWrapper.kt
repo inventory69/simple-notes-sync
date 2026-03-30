@@ -72,6 +72,7 @@ class SafeSardineWrapper private constructor(
      * - 2xx → true (existiert)
      * - 403 → true (existiert, HEAD auf Collection nicht erlaubt — Jianguoyun-Verhalten)
      * - 404 → false (existiert nicht)
+     * - 405 → list() fallback (bewCloud erlaubt kein HEAD — PROPFIND als Alternative)
      * - 410 → false (wurde gelöscht)
      * - 401 → IOException (Auth-Fehler, soll propagiert werden)
      * - Sonstiges → IOException (unerwarteter Fehler)
@@ -99,6 +100,27 @@ class SafeSardineWrapper private constructor(
                 code == HTTP_UNAUTHORIZED -> throw java.io.IOException(
                     "Authentication failed ($code) for $url"
                 )
+                // 🔧 v2.2.1 (Issue #50): bewCloud returns 405 for HEAD requests.
+                // Fallback: use PROPFIND (list) to check existence.
+                code == HTTP_METHOD_NOT_ALLOWED -> {
+                    Logger.d(
+                        TAG,
+                        "exists($url) → false ($code), trying list() fallback"
+                    )
+                    try {
+                        val resources = delegate.list(url)
+                        val exists = resources.isNotEmpty()
+                        Logger.d(
+                            TAG,
+                            "list() fallback → exists=$exists" +
+                                " (found ${resources.size} items)"
+                        )
+                        exists
+                    } catch (e: Exception) {
+                        Logger.d(TAG, "list() fallback failed: ${e.message}")
+                        false
+                    }
+                }
                 else -> throw java.io.IOException(
                     "Unexpected HTTP $code for exists($url): ${response.message}"
                 )
