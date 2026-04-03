@@ -130,7 +130,7 @@
     <string name="settings_sync_notifications_enabled">Уведомления включены</string>
     <string name="settings_sync_notifications_errors_only">Только ошибки и предупреждения</string>
     <string name="settings_sync_notifications_disabled">Уведомления отключены</string>
-    <string name="settings_markdown">Интеграция с Markdown для ПК</string>
+    <string name="settings_markdown">Интеграция Markdown с настольным приложением</string>
     <string name="settings_markdown_auto_on">Авто-синхронизация: Вкл</string>
     <string name="settings_markdown_auto_off">Авто-синхронизация: Выкл</string>
     <string name="settings_backup">Резервное копирование и восстановление</string>
@@ -218,7 +218,7 @@
     <string name="sync_manual_hint_disabled">Синхронизация недоступна в офлайн‑режиме.</string>
     <string name="sync_offline_mode_message">Вы используете приложение в офлайн‑режиме. Настройте сервер для синхронизации заметок.</string>
     <string name="sync_offline_mode_button">Настроить сервер</string>
-    <string name="markdown_settings_title">Интеграция с Markdown для ПК</string>
+    <string name="markdown_settings_title">Интеграция Markdown с настольным приложением</string>
     <string name="markdown_dialog_title">Авто-синхронизация Markdown</string>
     <string name="markdown_export_complete">✅ Экспорт завершён</string>
     <string name="markdown_export_progress">Экспорт %1$d/%2$d заметок…</string>
@@ -288,7 +288,7 @@
     <string name="language_turkish">Турецкий</string>
     <string name="language_ukrainian">Украинский</string>
     <string name="language_chinese_simplified">Китайский (упрощённый)</string>
-    <string name="language_info">ℹ️ Выберите предпочитаемый язык. Для применения изменений представление ненадолго обновится.</string>
+    <string name="language_info">ℹ️ Выберите предпочитаемый язык. Экран ненадолго обновится для применения изменений.</string>
     <string name="display_settings_title">Отображение</string>
     <string name="display_mode_title">Режим отображения заметок</string>
     <string name="display_mode_list">Список</string>
@@ -390,7 +390,7 @@
     <string name="toast_markdown_syncing">📝 Выполняется синхронизация Markdown…</string>
     <string name="toast_markdown_result">✅ Экспорт: %1$d • Импорт: %2$d</string>
     <string name="toast_export_failed">❌ Ошибка экспорта: %s</string>
-    <string name="toast_export_timeout">⏱️ Время экспорта истекло – сервер слишком медленный или недоступен. Пожалуйста</string>
+    <string name="toast_export_timeout">⏱️ Экспорт прерван – сервер слишком медленный или недоступен. Проверьте подключение и повторите попытку.</string>
     <string name="toast_notifications_enabled">Уведомления включены</string>
     <string name="toast_notifications_disabled">Уведомления отключены. Вы можете включить их в настройках.</string>
     <string name="toast_logs_deleted">🗑️ Журналы удалены</string>
