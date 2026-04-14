@@ -8,6 +8,37 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.3.0] - 2026-04-14
+
+### ✨ Neue Features
+
+**Akkuoptimierung-Dialog bei Sync-Aktivierung & Migration** ([190bbd2](https://github.com/inventory69/simple-notes-sync/commit/190bbd2))
+- Wenn der Nutzer den Offline-Modus deaktiviert, prüft die App sofort die Akkuoptimierungs-Ausnahme und zeigt den System-Dialog bei Bedarf
+- Einmalige Migration für bestehende Nutzer: Nutzer mit bereits aktiviertem Sync, die noch nie gefragt wurden, sehen den Dialog einmalig beim nächsten App-Start
+- Verwendet neuen SharedPreferences-Key `battery_opt_migration_shown`
+
+### 🐛 Fehlerbehebungen
+
+**Markdown-Auto-Sync löst beim Speichern nicht aus** ([1756af4](https://github.com/inventory69/simple-notes-sync/commit/1756af4))
+- SharedPreferences für Markdown-Export/Auto-Import wurden erst nach erfolgreichem Initial-Export gespeichert — bei Fehler (HTTP 405, Timeout, Netzwerkfehler) wurden die Prefs nie gesetzt und On-Save-Export hat nie ausgelöst
+- Prefs werden jetzt sofort nach Server-Konfigurations-Validierung gespeichert; Initial-Export ist Best-Effort
+- HTTP-405-Fallback in `ensureMarkdownDirExists()` hinzugefügt (List-after-failed-exists-Pattern)
+- Danke an [@minosimo](https://github.com/minosimo) für den detaillierten Bug-Report mit Logs! ([#50](https://github.com/inventory69/simple-notes-sync/issues/50))
+
+**MKCOL-404-Fehlerbehandlung und WebDAV-Validierung verbessert** ([8c947ba](https://github.com/inventory69/simple-notes-sync/commit/8c947ba))
+- `SafeSardineWrapper.createDirectory()`: 404 mit `list()`-Fallback behandeln (analog zur bestehenden 405-Behandlung)
+- `WebDavSyncService.testConnection()`: WebDAV-Fähigkeit via PROPFIND nach HEAD-Check verifizieren, um falschen „Erreichbar"-Status zu verhindern
+- `SyncExceptionMapper`: MKCOL-Fehler erkennen und benutzerfreundliche Meldung mit WebDAV-URL-Hinweis anzeigen
+- Danke an [@Ichigo-Meow](https://github.com/Ichigo-Meow) für die Meldung! ([#55](https://github.com/inventory69/simple-notes-sync/issues/55))
+
+### 🌍 Übersetzungen
+
+- Chinesisch (vereinfacht) über Weblate aktualisiert ([1be36bb](https://github.com/inventory69/simple-notes-sync/commit/1be36bb)) — danke an [@heretic43](https://github.com/heretic43)!
+
+Übersetzungs-Hosting freundlicherweise bereitgestellt von [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/) — danke für das Sponsoring von Open-Source-Projekten! 🙏
+
+---
+
 ## [2.2.0] - 2026-03-30
 
 ### ✨ Neue Features

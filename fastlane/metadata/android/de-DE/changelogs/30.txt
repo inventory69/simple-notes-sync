@@ -1,0 +1,12 @@
+🔧 v2.3.0 — Sync-Fixes & Akkuoptimierung
+
+• Akkuoptimierung-Dialog bei Sync-Aktivierung
+• Fix: Markdown-Auto-Sync löst beim Speichern nicht aus
+• Fix: MKCOL-404-Fehlerbehandlung und WebDAV-Validierung
+• Chinesisch (vereinfacht) aktualisiert
+
+Danke an @minosimo, @Ichigo-Meow und @heretic43!
+Übersetzungs-Hosting von Weblate — danke! 🙏
+
+Vollständiges Changelog:
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

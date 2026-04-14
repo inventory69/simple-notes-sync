@@ -8,6 +8,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.3.0] - 2026-04-14
+
+### ✨ New Features
+
+**Battery Optimization Prompt on Sync Enable & Migration** ([190bbd2](https://github.com/inventory69/simple-notes-sync/commit/190bbd2))
+- When the user disables offline mode, the app immediately checks battery optimization exemption and shows the system dialog if needed
+- One-time migration for existing users: users who already have sync enabled but were never prompted see the dialog once on next app start
+- Uses new SharedPreferences key `battery_opt_migration_shown`
+
+### 🐛 Bug Fixes
+
+**Fix Markdown Auto-Sync Not Firing on Save** ([1756af4](https://github.com/inventory69/simple-notes-sync/commit/1756af4))
+- SharedPreferences for markdown export/auto-import were only persisted after a successful initial export — if it failed (HTTP 405, timeout, network error), the prefs were never set and on-save export never fired
+- Prefs are now persisted immediately after server config validation; initial export is best-effort
+- HTTP 405 fallback added to `ensureMarkdownDirExists()` (list-after-failed-exists pattern)
+- Thanks to [@minosimo](https://github.com/minosimo) for the detailed bug report and logs! ([#50](https://github.com/inventory69/simple-notes-sync/issues/50))
+
+**Improve MKCOL 404 Error Handling and WebDAV Validation** ([8c947ba](https://github.com/inventory69/simple-notes-sync/commit/8c947ba))
+- `SafeSardineWrapper.createDirectory()`: handle 404 with `list()` fallback (analogous to existing 405 handling)
+- `WebDavSyncService.testConnection()`: verify WebDAV capability via PROPFIND after HEAD check to prevent false "Reachable" status
+- `SyncExceptionMapper`: detect MKCOL failures and show user-friendly message with WebDAV URL hint
+- Thanks to [@Ichigo-Meow](https://github.com/Ichigo-Meow) for reporting! ([#55](https://github.com/inventory69/simple-notes-sync/issues/55))
+
+### 🌍 Translations
+
+- Chinese (Simplified) updated via Weblate ([1be36bb](https://github.com/inventory69/simple-notes-sync/commit/1be36bb)) — thanks to [@heretic43](https://github.com/heretic43)!
+
+Translation hosting generously provided by [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/) — thank you for sponsoring open-source projects! 🙏
+
+---
+
 ## [2.2.0] - 2026-03-30
 
 ### ✨ New Features
