@@ -17,6 +17,7 @@ import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import android.os.PowerManager
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
@@ -360,6 +361,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         } else {
             // Re-check server status when disabling offline mode
             checkServerStatus()
+
+            // 🆕 v2.3.0: Prompt battery optimization when leaving offline mode.
+            // Background sync (especially WiFi-Connect Trigger) requires the app to be
+            // exempt from battery optimization, otherwise WorkManager jobs are heavily
+            // throttled or delayed.
+            checkAndPromptBatteryOptimization()
+        }
+    }
+
+    /**
+     * 🆕 v2.3.0: Checks if the app is exempt from battery optimization.
+     * If not, triggers the battery optimization dialog.
+     * Does NOT check offline mode — caller must ensure sync is relevant.
+     */
+    private fun checkAndPromptBatteryOptimization() {
+        val context = getApplication<Application>()
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        if (!powerManager.isIgnoringBatteryOptimizations(context.packageName)) {
+            _showBatteryOptimizationDialog.value = true
         }
     }
 

@@ -145,6 +145,9 @@ object Constants {
     const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
     const val WIFI_FALLBACK_INTERVAL_HOURS = 6L
 
+    // 🆕 v2.3.0: Battery optimization migration prompt (one-time)
+    const val KEY_BATTERY_OPT_MIGRATION_SHOWN = "battery_opt_migration_shown"
+
     // 🆕 v2.1.0 (F46): Grid column control
     const val KEY_GRID_ADAPTIVE_SCALING = "grid_adaptive_scaling"
     const val DEFAULT_GRID_ADAPTIVE_SCALING = true

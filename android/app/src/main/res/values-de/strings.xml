@@ -516,9 +516,10 @@
     <string name="toast_file_logging_enabled">📝 Datei-Logging aktiviert</string>
     <string name="toast_file_logging_disabled">📝 Datei-Logging deaktiviert</string>
     <string name="battery_optimization_dialog_title">Hintergrund-Synchronisation</string>
-    <string name="battery_optimization_dialog_full_message">Damit die App im Hintergrund synchronisieren kann, muss die Akku-Optimierung deaktiviert werden.\n\nBitte wähle \'Nicht optimieren\' für Simple Notes.</string>
+    <string name="battery_optimization_dialog_full_message">Damit die App im Hintergrund zuverlässig synchronisieren kann, muss die Akku-Optimierung deaktiviert werden.\n\nBitte wähle \'Nicht optimieren\' für Simple Notes.</string>
     <string name="battery_optimization_open_settings">Einstellungen öffnen</string>
     <string name="battery_optimization_later">Später</string>
+    <string name="battery_optimization_open_settings_failed">Bitte deaktiviere die Akku-Optimierung für Simple Notes manuell in den Systemeinstellungen.</string>
     <string name="content_description_back">Zurück</string>
     <string name="error_invalid_backup_file">Ungültige Backup-Datei</string>
     <string name="error_backup_version_unsupported">Backup-Version nicht unterstützt (v%1$d benötigt v%2$d+)</string>

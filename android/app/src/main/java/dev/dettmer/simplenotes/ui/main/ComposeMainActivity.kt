@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.Lifecycle
@@ -44,6 +45,9 @@ import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import android.annotation.SuppressLint
+import android.os.PowerManager
+import android.provider.Settings
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -116,6 +120,9 @@ class ComposeMainActivity : ComponentActivity() {
     // v2.0.0: Track if coming from settings (to suppress onResume sync)
     private var cameFromSettings = false
 
+    // 🆕 v2.3.0: State-driven battery optimization dialog for migration prompt
+    private var showBatteryOptDialog by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
         val splashScreen = installSplashScreen()
@@ -149,6 +156,9 @@ class ComposeMainActivity : ComponentActivity() {
 
         // v1.4.1: Migrate checklists for backwards compatibility
         migrateChecklistsForBackwardsCompat()
+
+        // 🆕 v2.3.0: One-time battery optimization migration for existing users
+        checkBatteryOptimizationMigration()
 
         // Setup Sync State Observer
         setupSyncStateObserver()
@@ -206,6 +216,28 @@ class ComposeMainActivity : ComponentActivity() {
                         onDeleteFromServer = {
                             viewModel.deleteNoteConfirmed(data.note, deleteFromServer = true)
                             deleteDialogData = null
+                        }
+                    )
+                }
+
+                // 🆕 v2.3.0: Battery optimization migration dialog
+                if (showBatteryOptDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showBatteryOptDialog = false },
+                        title = { Text(stringResource(R.string.battery_optimization_dialog_title)) },
+                        text = { Text(stringResource(R.string.battery_optimization_dialog_full_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showBatteryOptDialog = false
+                                openBatteryOptimizationSettings()
+                            }) {
+                                Text(stringResource(R.string.battery_optimization_open_settings))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showBatteryOptDialog = false }) {
+                                Text(stringResource(R.string.battery_optimization_later))
+                            }
                         }
                     )
                 }
@@ -442,6 +474,64 @@ class ComposeMainActivity : ComponentActivity() {
 
         // Mark migration as done
         prefs.edit { putBoolean(migrationKey, true) }
+    }
+
+    /**
+     * 🆕 v2.3.0: One-time battery optimization check for existing users.
+     *
+     * Existing users who already have sync enabled (offline mode disabled) but haven't
+     * been prompted for battery optimization exemption should see this dialog once.
+     * New users will be prompted via Trigger A (setOfflineMode → checkAndPromptBatteryOptimization).
+     */
+    private fun checkBatteryOptimizationMigration() {
+        // Only run if offline mode is disabled (sync is active)
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) return
+
+        // Only run once
+        if (prefs.getBoolean(Constants.KEY_BATTERY_OPT_MIGRATION_SHOWN, false)) return
+
+        // Mark as shown immediately (regardless of whether the dialog is needed)
+        prefs.edit { putBoolean(Constants.KEY_BATTERY_OPT_MIGRATION_SHOWN, true) }
+
+        // Check if already exempt from battery optimization
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            Logger.d(TAG, "🔋 Battery optimization already ignored — migration prompt not needed")
+            return
+        }
+
+        // Show migration dialog
+        Logger.d(TAG, "🔋 Showing one-time battery optimization migration prompt")
+        showBatteryOptDialog = true
+    }
+
+    /**
+     * 🆕 v2.3.0: Open system battery optimization settings.
+     * Duplicated from ComposeSettingsActivity because this dialog can now appear
+     * in ComposeMainActivity as well (migration trigger).
+     *
+     * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
+     */
+    @SuppressLint("BatteryLife")
+    private fun openBatteryOptimizationSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = "package:$packageName".toUri()
+            startActivity(intent)
+        } catch (e: Exception) {
+            Logger.w(TAG, "Failed to open battery optimization settings: ${e.message}")
+            try {
+                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                startActivity(intent)
+            } catch (e2: Exception) {
+                Logger.w(TAG, "Failed to open fallback battery settings: ${e2.message}")
+                Toast.makeText(
+                    this,
+                    getString(R.string.battery_optimization_open_settings_failed),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
 }
 
