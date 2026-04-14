@@ -141,6 +141,9 @@
     <string name="sync_error_server">Server-Fehler</string>
     <string name="sync_error_http">HTTP-Fehler: %d</string>
     <string name="sync_error_unknown">Unbekannter Fehler</string>
+    <!-- 🔧 v2.3.0 (Issue #55): Bessere Fehlermeldungen für MKCOL/WebDAV-Fehler -->
+    <string name="sync_error_mkcol_failed">Sync-Ordner kann nicht erstellt werden. Bitte überprüfe, ob die WebDAV-URL den vollständigen Pfad enthält (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
+    <string name="sync_error_not_webdav">URL ist kein WebDAV-Endpunkt. Bitte überprüfe den vollständigen WebDAV-Pfad (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->

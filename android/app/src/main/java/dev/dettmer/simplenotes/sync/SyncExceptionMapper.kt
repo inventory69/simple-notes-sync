@@ -38,6 +38,9 @@ class SyncExceptionMapper(private val context: Context) {
                 // IOException kann vieles sein — prüfe ob es ein Timeout-artiger Fehler ist
                 val msg = e.message?.lowercase().orEmpty()
                 when {
+                    // 🔧 v2.3.0 (Issue #55): Spezifische Erkennung von MKCOL-Fehlern.
+                    // Gibt dem Nutzer einen klaren Hinweis auf den WebDAV-Pfad.
+                    msg.contains("mkcol failed") -> context.getString(R.string.sync_error_mkcol_failed)
                     msg.contains("timeout") -> context.getString(R.string.snackbar_connection_timeout)
                     msg.contains("refused") -> context.getString(R.string.snackbar_server_unreachable)
                     msg.contains("unreachable") -> context.getString(R.string.snackbar_server_unreachable)

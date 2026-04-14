@@ -425,6 +425,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 sardine.createDirectory(serverUrl)
             }
 
+            // 🔧 v2.3.0 (Issue #55): Verify WebDAV capability with PROPFIND.
+            // HEAD/exists() can return 200 on any HTTP server, but PROPFIND verifies
+            // the URL is an actual WebDAV collection. Without this check, testConnection()
+            // reports "Reachable" for non-WebDAV URLs, and the subsequent MKCOL fails with 404.
+            try {
+                sardine.list(serverUrl)
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ PROPFIND failed on base URL: ${e.message}")
+                return@withContext SyncResult(
+                    isSuccess = false,
+                    errorMessage = context.getString(R.string.sync_error_not_webdav)
+                )
+            }
+
             // 🔧 v1.9.0 Fix: activeSyncFolderName VOR getNotesUrl() laden
             activeSyncFolderName = prefs.getString(
                 Constants.KEY_SYNC_FOLDER_NAME,

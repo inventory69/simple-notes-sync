@@ -236,6 +236,25 @@ class SafeSardineWrapper private constructor(
 
         okHttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful && response.code != HTTP_METHOD_NOT_ALLOWED) { // 405 = already exists
+                // 🔧 v2.3.0 (Issue #55): MKCOL 404 means the parent collection doesn't exist
+                // or the URL is not a valid WebDAV endpoint.
+                // Try list() fallback to check if the directory already exists
+                // (some servers reject MKCOL but support PROPFIND).
+                if (response.code == HTTP_NOT_FOUND) {
+                    Logger.d(TAG, "createDirectory($url) → 404, trying list() fallback")
+                    val alreadyExists = runCatching { delegate.list(url) }
+                        .getOrNull()
+                        ?.isNotEmpty() == true
+                    if (alreadyExists) {
+                        Logger.d(TAG, "list() fallback → directory already exists")
+                        return
+                    }
+                    Logger.d(TAG, "list() fallback also failed or returned empty")
+                    throw java.io.IOException(
+                        "MKCOL failed: 404 – the server path does not exist. " +
+                            "Please verify the WebDAV URL (e.g. /remote.php/dav/files/USERNAME/)"
+                    )
+                }
                 throw java.io.IOException("MKCOL failed: ${response.code} ${response.message}")
             }
             Logger.d(TAG, "createDirectory($url) → ${response.code}")
