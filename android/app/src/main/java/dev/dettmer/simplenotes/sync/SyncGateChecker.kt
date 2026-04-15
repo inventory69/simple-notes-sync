@@ -24,7 +24,6 @@ class SyncGateChecker(
 ) {
     companion object {
         private const val TAG = "SyncGateChecker"
-        private const val FALLBACK_TIMEOUT_MS = 8000L
     }
 
     /**
@@ -45,7 +44,7 @@ class SyncGateChecker(
 
             Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
 
-            val socketTimeoutMs = getTimeoutMs().toInt()
+            val socketTimeoutMs = ConnectionManager.getTimeoutMs(prefs).toInt()
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(host, port), socketTimeoutMs)
             }
@@ -102,20 +101,6 @@ class SyncGateChecker(
         return SyncGateResult(canSync = true, blockReason = null)
     }
 
-    private fun getTimeoutMs(): Long {
-        return try {
-            val seconds = prefs.getInt(
-                Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
-                Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
-            ).coerceIn(
-                Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
-                Constants.MAX_CONNECTION_TIMEOUT_SECONDS
-            )
-            seconds * 1000L
-        } catch (_: Exception) {
-            FALLBACK_TIMEOUT_MS
-        }
-    }
 }
 
 /**

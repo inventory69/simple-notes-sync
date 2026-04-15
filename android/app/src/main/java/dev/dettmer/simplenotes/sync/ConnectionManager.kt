@@ -21,6 +21,26 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
     companion object {
         private const val TAG = "ConnectionManager"
         private const val FALLBACK_TIMEOUT_MS = 8000L
+
+        /**
+         * Reads the configured connection timeout from SharedPreferences.
+         * Converts seconds to milliseconds, clamped to MIN..MAX range.
+         * Single source of truth — also used by SyncGateChecker.
+         */
+        fun getTimeoutMs(prefs: SharedPreferences): Long {
+            return try {
+                val seconds = prefs.getInt(
+                    Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
+                    Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+                ).coerceIn(
+                    Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
+                    Constants.MAX_CONNECTION_TIMEOUT_SECONDS
+                )
+                seconds * 1000L
+            } catch (_: Exception) {
+                FALLBACK_TIMEOUT_MS
+            }
+        }
     }
 
     // ⚡ v1.3.1 Performance: Session-cached Sardine client
@@ -93,22 +113,6 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
         }
     }
 
-    /**
-     * Reads the configured connection timeout from SharedPreferences.
-     * Converts seconds to milliseconds, clamped to MIN..MAX range.
-     */
-    fun getTimeoutMs(): Long {
-        return try {
-            val seconds = prefs.getInt(
-                Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
-                Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
-            ).coerceIn(
-                Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
-                Constants.MAX_CONNECTION_TIMEOUT_SECONDS
-            )
-            seconds * 1000L
-        } catch (_: Exception) {
-            FALLBACK_TIMEOUT_MS
-        }
-    }
+    /** Delegates to the Companion implementation — preserves existing call sites. */
+    fun getTimeoutMs(): Long = Companion.getTimeoutMs(prefs)
 }
