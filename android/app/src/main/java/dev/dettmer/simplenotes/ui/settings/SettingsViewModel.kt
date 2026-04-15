@@ -364,9 +364,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             checkServerStatus()
 
             // 🆕 v2.3.0: Prompt battery optimization when leaving offline mode.
-            // Background sync (especially WiFi-Connect Trigger) requires the app to be
-            // exempt from battery optimization, otherwise WorkManager jobs are heavily
-            // throttled or delayed.
             checkAndPromptBatteryOptimization()
         }
     }
@@ -714,8 +711,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             if (enabled) {
-                // v2.0.0: Battery optimization dialog now state-driven via showBatteryOptimizationDialog
-                _showBatteryOptimizationDialog.value = true
+                // v2.0.0: Battery optimization dialog — only prompt when not already exempt
+                checkAndPromptBatteryOptimization()
                 _events.emit(SettingsEvent.RestartNetworkMonitor)
                 emitToast(getString(R.string.toast_auto_sync_enabled))
             } else {

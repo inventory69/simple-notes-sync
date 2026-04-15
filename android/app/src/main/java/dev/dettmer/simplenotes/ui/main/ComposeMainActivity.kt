@@ -25,14 +25,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
-import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import dev.dettmer.simplenotes.R
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
-import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -45,10 +44,9 @@ import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
-import android.annotation.SuppressLint
 import android.os.PowerManager
-import android.provider.Settings
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.widget.NoteWidget
@@ -229,7 +227,7 @@ class ComposeMainActivity : ComponentActivity() {
                         confirmButton = {
                             TextButton(onClick = {
                                 showBatteryOptDialog = false
-                                openBatteryOptimizationSettings()
+                                BatteryOptimizationHelper.openBatteryOptimizationSettings(this)
                             }) {
                                 Text(stringResource(R.string.battery_optimization_open_settings))
                             }
@@ -505,34 +503,6 @@ class ComposeMainActivity : ComponentActivity() {
         showBatteryOptDialog = true
     }
 
-    /**
-     * 🆕 v2.3.0: Open system battery optimization settings.
-     * Duplicated from ComposeSettingsActivity because this dialog can now appear
-     * in ComposeMainActivity as well (migration trigger).
-     *
-     * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
-     */
-    @SuppressLint("BatteryLife")
-    private fun openBatteryOptimizationSettings() {
-        try {
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            intent.data = "package:$packageName".toUri()
-            startActivity(intent)
-        } catch (e: Exception) {
-            Logger.w(TAG, "Failed to open battery optimization settings: ${e.message}")
-            try {
-                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                startActivity(intent)
-            } catch (e2: Exception) {
-                Logger.w(TAG, "Failed to open fallback battery settings: ${e2.message}")
-                Toast.makeText(
-                    this,
-                    getString(R.string.battery_optimization_open_settings_failed),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
 }
 
 /**
