@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor
 
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListItemInfo
@@ -718,7 +718,7 @@ class DragDropListState(private val state: LazyListState, private val scope: Cor
     }
 
     private fun logD(event: String, msg: String) {
-        if (BuildConfig.DEBUG) Log.d(LOG_TAG, "[$event] $msg")
+        if (BuildConfig.DEBUG) Logger.d(LOG_TAG, "[$event] $msg")
     }
 
     // --- Separator Logic (unverändert von v1.8.1 IMPL_14) ---
@@ -788,7 +788,7 @@ fun Modifier.dragContainer(dragDropState: DragDropListState, itemKey: Any): Modi
         detectDragGesturesAfterLongPress(
             onDragStart = { _ ->
                 if (BuildConfig.DEBUG) {
-                    Log.d(
+                    Logger.d(
                         "DragDrop",
                         "[POINTER_EVENT] type=DRAG_START key=${currentKey.value}"
                     )
@@ -797,7 +797,7 @@ fun Modifier.dragContainer(dragDropState: DragDropListState, itemKey: Any): Modi
             },
             onDragEnd = {
                 if (BuildConfig.DEBUG) {
-                    Log.d(
+                    Logger.d(
                         "DragDrop",
                         "[POINTER_EVENT] type=DRAG_END key=${currentKey.value} " +
                             "draggingKey=${dragDropState.draggingItemKey}"
@@ -809,7 +809,7 @@ fun Modifier.dragContainer(dragDropState: DragDropListState, itemKey: Any): Modi
                 val eventKey = currentKey.value
                 val activeKey = dragDropState.draggingItemKey
                 if (BuildConfig.DEBUG) {
-                    Log.d(
+                    Logger.d(
                         "DragDrop",
                         "[POINTER_EVENT] type=DRAG_CANCEL key=$eventKey " +
                             "draggingKey=$activeKey"
@@ -820,7 +820,7 @@ fun Modifier.dragContainer(dragDropState: DragDropListState, itemKey: Any): Modi
                 } else if (eventKey != activeKey) {
                     // IMPL_29l L1: Stale Cancel von anderem Item's Pointer-Scope
                     if (BuildConfig.DEBUG) {
-                        Log.d(
+                        Logger.d(
                             "DragDrop",
                             "[POINTER_EVENT] DRAG_CANCEL_IGNORED reason=STALE_KEY " +
                                 "staleKey=$eventKey activeKey=$activeKey"

@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -354,7 +354,7 @@ fun ChecklistItemRow(
                             }
                         }
                         if (BuildConfig.DEBUG && lineCount > COLLAPSED_MAX_LINES) {
-                            Log.d(
+                            Logger.d(
                                 "DragDrop",
                                 "[GRADIENT:${item.id.takeLast(6)}] " +
                                     "lines=$lineCount overflow=$hasOverflow " +

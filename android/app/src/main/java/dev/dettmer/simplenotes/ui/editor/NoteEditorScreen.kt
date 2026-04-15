@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor
 
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -892,7 +892,7 @@ private fun ChecklistEditor(
         SideEffect {
             dragDropState.separatorVisualIndex = separatorVisualIndex
             if (BuildConfig.DEBUG && dragDropState.isAnyItemDragging) {
-                Log.d("DragDrop", "[SEPARATOR] idx=$separatorVisualIndex")
+                Logger.d("DragDrop", "[SEPARATOR] idx=$separatorVisualIndex")
             }
         }
 
