@@ -79,7 +79,7 @@ class NotesStorage(private val context: Context) {
 
             // Track deletion to prevent zombie notes
             val deviceId = DeviceIdGenerator.getDeviceId(context)
-            trackDeletion(id, deviceId)
+            trackDeletionSafe(id, deviceId)
         }
 
         deleted
@@ -96,7 +96,7 @@ class NotesStorage(private val context: Context) {
             for (note in notes) {
                 val file = File(notesDir, "${note.id}.json")
                 if (file.delete()) {
-                    trackDeletion(note.id, deviceId)
+                    trackDeletionSafe(note.id, deviceId)
                 }
             }
 
@@ -168,6 +168,10 @@ class NotesStorage(private val context: Context) {
      *
      * @deprecated Verwende trackDeletionSafe() für Thread-Safety wo möglich
      */
+    @Deprecated(
+        "Use trackDeletionSafe() for thread-safety",
+        ReplaceWith("trackDeletionSafe(noteId, deviceId)")
+    )
     fun trackDeletion(noteId: String, deviceId: String) {
         val tracker = loadDeletionTracker()
         tracker.addDeletion(noteId, deviceId)
