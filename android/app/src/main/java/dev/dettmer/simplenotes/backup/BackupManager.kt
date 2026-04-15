@@ -467,7 +467,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * Restore-Modus: MERGE
      * Fügt neue Notizen hinzu, behält bestehende
      */
-    private fun restoreMerge(backupNotes: List<Note>): RestoreResult {
+    private suspend fun restoreMerge(backupNotes: List<Note>): RestoreResult {
         val existingNotes = storage.loadAllNotes()
         val existingIds = existingNotes.map { it.id }.toSet()
 
@@ -490,7 +490,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * Restore-Modus: REPLACE
      * Löscht alle bestehenden Notizen, importiert Backup
      */
-    private fun restoreReplace(backupNotes: List<Note>): RestoreResult {
+    private suspend fun restoreReplace(backupNotes: List<Note>): RestoreResult {
         // Alle bestehenden Notizen löschen
         storage.deleteAllNotes()
 
@@ -511,7 +511,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * Restore-Modus: OVERWRITE_DUPLICATES
      * Backup überschreibt bei ID-Konflikten
      */
-    private fun restoreOverwriteDuplicates(backupNotes: List<Note>): RestoreResult {
+    private suspend fun restoreOverwriteDuplicates(backupNotes: List<Note>): RestoreResult {
         val existingNotes = storage.loadAllNotes()
         val existingIds = existingNotes.map { it.id }.toSet()
 

@@ -517,7 +517,7 @@ internal class NoteDownloader(
      * @param localNotes Alle lokalen Notizen
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
      */
-    fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
+    suspend fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
         val syncedNotes = localNotes.filter { it.syncStatus == SyncStatus.SYNCED }
 
         // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
@@ -558,7 +558,7 @@ internal class NoteDownloader(
         )
 
         var deletedCount = 0
-        syncedNotes.forEach { note ->
+        for (note in syncedNotes) {
             // Nur SYNCED-Notizen prüfen:
             // - LOCAL_ONLY: War nie auf Server → irrelevant
             // - PENDING: Soll hochgeladen werden → nicht überschreiben

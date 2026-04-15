@@ -50,7 +50,9 @@ import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.widget.NoteWidget
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Main Activity with Jetpack Compose UI
@@ -153,7 +155,9 @@ class ComposeMainActivity : ComponentActivity() {
         }
 
         // v1.4.1: Migrate checklists for backwards compatibility
-        migrateChecklistsForBackwardsCompat()
+        lifecycleScope.launch {
+            migrateChecklistsForBackwardsCompat()
+        }
 
         // 🆕 v2.3.0: One-time battery optimization migration for existing users
         checkBatteryOptimizationMigration()
@@ -440,7 +444,7 @@ class ComposeMainActivity : ComponentActivity() {
     /**
      * v1.4.1: Migrates existing checklists for backwards compatibility.
      */
-    private fun migrateChecklistsForBackwardsCompat() {
+    private suspend fun migrateChecklistsForBackwardsCompat() {
         val migrationKey = "v1.4.1_checklist_migration_done"
 
         // Only run once
@@ -449,7 +453,7 @@ class ComposeMainActivity : ComponentActivity() {
         }
 
         val storage = NotesStorage(this)
-        val allNotes = storage.loadAllNotes()
+        val allNotes = withContext(Dispatchers.IO) { storage.loadAllNotes() }
         val checklistsToMigrate = allNotes.filter { note ->
             note.noteType == NoteType.CHECKLIST &&
                 note.content.isBlank() &&
@@ -459,12 +463,14 @@ class ComposeMainActivity : ComponentActivity() {
         if (checklistsToMigrate.isNotEmpty()) {
             Logger.d(TAG, "🔄 v1.4.1 Migration: Found ${checklistsToMigrate.size} checklists without fallback content")
 
-            for (note in checklistsToMigrate) {
-                val updatedNote = note.copy(
-                    syncStatus = SyncStatus.PENDING
-                )
-                storage.saveNote(updatedNote)
-                Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
+            withContext(Dispatchers.IO) {
+                for (note in checklistsToMigrate) {
+                    val updatedNote = note.copy(
+                        syncStatus = SyncStatus.PENDING
+                    )
+                    storage.saveNote(updatedNote)
+                    Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
+                }
             }
 
             Logger.d(TAG, "✅ v1.4.1 Migration: ${checklistsToMigrate.size} checklists marked for re-sync")

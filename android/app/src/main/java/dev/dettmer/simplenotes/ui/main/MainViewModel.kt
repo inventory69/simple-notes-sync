@@ -554,8 +554,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * [deleteNoteConfirmed] which shows the undo snackbar.
      */
     fun deleteNoteFromEditor(noteId: String, deleteFromServer: Boolean) {
-        val note = storage.loadNote(noteId) ?: return
-        deleteNoteConfirmed(note, deleteFromServer)
+        viewModelScope.launch {
+            val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
+            deleteNoteConfirmed(note, deleteFromServer)
+        }
     }
 
     /**

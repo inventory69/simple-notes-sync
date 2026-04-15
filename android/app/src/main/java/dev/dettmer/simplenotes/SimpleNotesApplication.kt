@@ -11,6 +11,10 @@ import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteCorruptionRepair
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class SimpleNotesApplication : Application() {
     companion object {
@@ -18,6 +22,9 @@ class SimpleNotesApplication : Application() {
     }
 
     lateinit var networkMonitor: NetworkMonitor // Public access für SettingsActivity
+
+    // Application-scoped coroutine scope for non-UI background work
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /**
      * 🌍 v1.7.1: Apply app locale to Application Context
@@ -75,11 +82,13 @@ class SimpleNotesApplication : Application() {
         Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
 
         // 🔧 v2.2.0: Einmalige Reparatur korrupter Checklist-Titel (Bug #07)
-        try {
-            val storage = NotesStorage(this)
-            NoteCorruptionRepair.repairIfNeeded(storage, prefs)
-        } catch (e: Exception) {
-            Logger.e(TAG, "⚠️ Corruption repair failed (non-fatal)", e)
+        applicationScope.launch {
+            try {
+                val storage = NotesStorage(this@SimpleNotesApplication)
+                NoteCorruptionRepair.repairIfNeeded(storage, prefs)
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ Corruption repair failed (non-fatal)", e)
+            }
         }
     }
 

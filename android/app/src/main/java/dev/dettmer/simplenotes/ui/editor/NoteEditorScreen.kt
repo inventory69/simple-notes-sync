@@ -184,9 +184,15 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     }
 
     // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
-    LaunchedEffect(Unit) {
-        if (uiState.content.isNotEmpty()) {
-            textFieldState.edit { placeCursorAtEnd() }
+    // 🔧 v2.3.0 (FIX-011): Sync TextFieldState when content arrives from async storage load.
+    // rememberTextFieldState only uses initialText on first call; this LaunchedEffect handles
+    // the case where uiState.content is updated after first composition.
+    LaunchedEffect(uiState.content) {
+        if (textFieldState.text.isEmpty() && uiState.content.isNotEmpty()) {
+            textFieldState.edit {
+                replace(0, length, uiState.content)
+                placeCursorAtEnd()
+            }
         }
     }
 

@@ -975,7 +975,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     /**
      * Auto-Import Markdown files during regular sync — delegiert an MarkdownSyncManager.
      */
-    private fun importMarkdownFiles(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
+    private suspend fun importMarkdownFiles(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
         markdownSyncManager.importAll(sardine, serverUrl, excludeNoteIds)
 
     /**
