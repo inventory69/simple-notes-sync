@@ -9,6 +9,7 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import java.io.IOException
@@ -48,7 +49,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     private val timestampManager = SyncTimestampManager(prefs)
     private val exceptionMapper = SyncExceptionMapper(context)
     private val urlBuilder = SyncUrlBuilder(prefs)
-    private val connectionManager = ConnectionManager(prefs)
+    private val connectionManager = ConnectionManager(context, prefs)
 
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
     private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
@@ -528,7 +529,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
                         ?: Constants.DEFAULT_SYNC_FOLDER_NAME
                 Logger.d(TAG, "📁 Sync folder: $activeSyncFolderName")
-                Logger.d(TAG, "🔐 Credentials configured: ${prefs.getString(Constants.KEY_USERNAME, null) != null}")
+                Logger.d(TAG, "🔐 Credentials configured: ${CredentialStore.getUsername(context) != null}")
 
                 var syncedCount = 0
                 var conflictCount = 0
@@ -1002,8 +1003,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val serverUrl = getServerUrl()
                 ?: throw SyncException(context.getString(R.string.error_server_url_not_configured))
 
-            val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
-            val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+            val username = CredentialStore.getUsername(context).orEmpty()
+            val password = CredentialStore.getPassword(context).orEmpty()
 
             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                 throw SyncException(context.getString(R.string.error_server_not_configured))

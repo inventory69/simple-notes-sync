@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
 import java.text.SimpleDateFormat
@@ -73,8 +74,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     AppSettings(
                         // Server connection
                         serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null),
-                        username = prefs.getString(Constants.KEY_USERNAME, null),
-                        password = prefs.getString(Constants.KEY_PASSWORD, null),
+                        username = CredentialStore.getUsername(context),
+                        password = CredentialStore.getPassword(context),
                         syncFolder = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null),
                         connectionTimeoutSeconds = prefs.getInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, -1).takeIf {
                             it >=
@@ -311,8 +312,10 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 prefs.edit {
                     // Server connection
                     s.serverUrl?.let { putString(Constants.KEY_SERVER_URL, it) }
-                    s.username?.let { putString(Constants.KEY_USERNAME, it) }
-                    s.password?.let { putString(Constants.KEY_PASSWORD, it) }
+                    s.username?.let { username ->
+                        val password = s.password.orEmpty()
+                        CredentialStore.setCredentials(context, username, password)
+                    }
                     s.syncFolder?.let { putString(Constants.KEY_SYNC_FOLDER_NAME, it) }
                     s.connectionTimeoutSeconds?.let { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, it) }
                     s.maxParallelConnections?.let { putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, it) }
