@@ -3,6 +3,8 @@ package dev.dettmer.simplenotes.utils
 object Constants {
     // SharedPreferences
     const val PREFS_NAME = "simple_notes_prefs"
+    /** Legacy prefs name — used only for credential migration fallback in CredentialStore. */
+    const val PREFS_NAME_LEGACY = PREFS_NAME
     const val KEY_SERVER_URL = "server_url"
     const val KEY_USERNAME = "username"
     const val KEY_PASSWORD = "password"

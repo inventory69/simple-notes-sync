@@ -1,9 +1,11 @@
 package dev.dettmer.simplenotes.sync
 
+import android.content.Context
 import android.content.SharedPreferences
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
@@ -15,7 +17,7 @@ import okhttp3.OkHttpClient
  * - Session caching (one client per sync operation)
  * - Session cleanup (close client + reset caches)
  */
-class ConnectionManager(private val prefs: SharedPreferences) {
+class ConnectionManager(private val context: Context, private val prefs: SharedPreferences) {
     companion object {
         private const val TAG = "ConnectionManager"
         private const val FALLBACK_TIMEOUT_MS = 8000L
@@ -53,8 +55,8 @@ class ConnectionManager(private val prefs: SharedPreferences) {
      * v1.7.1: Uses SafeSardineWrapper (prevents connection leaks, preemptive auth).
      */
     private fun createClient(): SafeSardineWrapper? {
-        val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
-        val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
+        val username = CredentialStore.getUsername(context) ?: return null
+        val password = CredentialStore.getPassword(context) ?: return null
 
         Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
 

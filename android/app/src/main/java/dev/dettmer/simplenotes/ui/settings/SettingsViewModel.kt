@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import android.os.PowerManager
 import java.net.HttpURLConnection
@@ -103,10 +104,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         if (host.isEmpty()) "" else prefix + host
     }.stateIn(viewModelScope, SharingStarted.Eagerly, storedUrl)
 
-    private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "").orEmpty())
+    private val _username = MutableStateFlow(CredentialStore.getUsername(getApplication()).orEmpty())
     val username: StateFlow<String> = _username.asStateFlow()
 
-    private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "").orEmpty())
+    private val _password = MutableStateFlow(CredentialStore.getPassword(getApplication()).orEmpty())
     val password: StateFlow<String> = _password.asStateFlow()
 
     private val _serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Unknown)
@@ -421,13 +422,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateUsername(value: String) {
         _username.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        prefs.edit { putString(Constants.KEY_USERNAME, value) }
+        CredentialStore.setCredentials(getApplication(), value, _password.value)
     }
 
     fun updatePassword(value: String) {
         _password.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        prefs.edit { putString(Constants.KEY_PASSWORD, value) }
+        CredentialStore.setCredentials(getApplication(), _username.value, value)
     }
 
     // 🆕 v1.9.0: Update configurable sync folder name
@@ -838,8 +839,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 try {
                     // Check server configuration first
                     val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
-                    val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
-                    val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+                    val username = CredentialStore.getUsername(getApplication()).orEmpty()
+                    val password = CredentialStore.getPassword(getApplication()).orEmpty()
 
                     if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                         _markdownAutoSync.value = false
@@ -1050,8 +1051,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val url = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
         _isHttps.value = url.startsWith("https://")
         _serverHost.value = extractHostFromUrl(url)
-        _username.value = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
-        _password.value = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+        _username.value = CredentialStore.getUsername(getApplication()).orEmpty()
+        _password.value = CredentialStore.getPassword(getApplication()).orEmpty()
         confirmedServerUrl = url
         confirmedSyncFolderName = prefs.getString(
             Constants.KEY_SYNC_FOLDER_NAME,
