@@ -32,7 +32,7 @@ object UrlValidator {
     fun isLocalUrl(url: String): Boolean {
         return try {
             val parsedUrl = URL(url)
-            val host = parsedUrl.host.lowercase()
+            val host = parsedUrl.host?.lowercase() ?: return false
 
             // Check for .local domains (e.g., nas.local)
             if (host.endsWith(".local")) {
