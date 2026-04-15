@@ -183,7 +183,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
                 startActivity(intent)
             } catch (e2: Exception) {
                 Logger.w(TAG, "Failed to open fallback battery settings: ${e2.message}")
-                Toast.makeText(this, "Bitte Akku-Optimierung manuell deaktivieren", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.battery_optimization_open_settings_failed), Toast.LENGTH_LONG).show()
             }
         }
     }
