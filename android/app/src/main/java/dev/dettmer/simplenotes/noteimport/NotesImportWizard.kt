@@ -165,7 +165,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
      * Importiert eine einzelne Datei als Simple-Notes-Notiz.
      * Erkennt automatisch das Format und wählt den passenden Parser.
      */
-    fun importFile(candidate: ImportCandidate): ImportResult {
+    suspend fun importFile(candidate: ImportCandidate): ImportResult {
         return try {
             val content = readContent(candidate.source)
 
@@ -228,7 +228,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     /**
      * Batch-Import: Importiert mehrere Dateien und gibt eine Zusammenfassung zurück.
      */
-    fun importFiles(
+    suspend fun importFiles(
         candidates: List<ImportCandidate>,
         onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }
     ): ImportSummary {

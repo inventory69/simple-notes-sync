@@ -6,8 +6,10 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 class NotesStorage(private val context: Context) {
     companion object {
@@ -21,15 +23,28 @@ class NotesStorage(private val context: Context) {
         if (!exists()) mkdirs()
     }
 
-    fun saveNote(note: Note) {
+    suspend fun saveNote(note: Note) = withContext(Dispatchers.IO) {
         val file = File(notesDir, "${note.id}.json")
         file.writeText(note.toJson())
     }
 
-    fun loadNote(id: String): Note? {
+    suspend fun loadNote(id: String): Note? = withContext(Dispatchers.IO) {
+        loadNoteSync(id)
+    }
+
+    /**
+     * Synchronous variant for contexts where suspend is not available
+     * (e.g. Glance provideContent composable). Caller is responsible for
+     * ensuring this is NOT called on the main thread.
+     */
+    fun loadNoteSync(id: String): Note? {
         val file = File(notesDir, "$id.json")
         return if (file.exists()) {
-            Note.fromJson(file.readText())
+            try {
+                Note.fromJson(file.readText())
+            } catch (_: java.io.FileNotFoundException) {
+                null
+            }
         } else {
             null
         }
@@ -41,14 +56,21 @@ class NotesStorage(private val context: Context) {
      * 🔀 v1.8.0: Sortierung entfernt — wird jetzt im ViewModel durchgeführt,
      * damit der User die Sortierung konfigurieren kann.
      */
-    fun loadAllNotes(): List<Note> {
-        return notesDir.listFiles()
+    suspend fun loadAllNotes(): List<Note> = withContext(Dispatchers.IO) {
+        notesDir.listFiles()
             ?.filter { it.extension == "json" }
-            ?.mapNotNull { Note.fromJson(it.readText()) }
+            ?.mapNotNull { file ->
+                try {
+                    Note.fromJson(file.readText())
+                } catch (_: java.io.FileNotFoundException) {
+                    // File was deleted between listFiles() and readText() — skip it
+                    null
+                }
+            }
             .orEmpty()
     }
 
-    fun deleteNote(id: String): Boolean {
+    suspend fun deleteNote(id: String): Boolean = withContext(Dispatchers.IO) {
         val file = File(notesDir, "$id.json")
         val deleted = file.delete()
 
@@ -60,16 +82,22 @@ class NotesStorage(private val context: Context) {
             trackDeletion(id, deviceId)
         }
 
-        return deleted
+        deleted
     }
 
-    fun deleteAllNotes(): Boolean {
-        return try {
-            val notes = loadAllNotes()
+    suspend fun deleteAllNotes(): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val notes = notesDir.listFiles()
+                ?.filter { it.extension == "json" }
+                ?.mapNotNull { Note.fromJson(it.readText()) }
+                .orEmpty()
             val deviceId = DeviceIdGenerator.getDeviceId(context)
 
             for (note in notes) {
-                deleteNote(note.id) // Uses trackDeletion() automatically
+                val file = File(notesDir, "${note.id}.json")
+                if (file.delete()) {
+                    trackDeletion(note.id, deviceId)
+                }
             }
 
             Logger.d(TAG, "🗑️ Deleted all notes (${notes.size} notes)")
@@ -161,8 +189,11 @@ class NotesStorage(private val context: Context) {
      * 🔄 v1.7.0: Reset all sync statuses to PENDING when server changes
      * This ensures notes are uploaded to the new server on next sync
      */
-    fun resetAllSyncStatusToPending(): Int {
-        val notes = loadAllNotes()
+    suspend fun resetAllSyncStatusToPending(): Int = withContext(Dispatchers.IO) {
+        val notes = notesDir.listFiles()
+            ?.filter { it.extension == "json" }
+            ?.mapNotNull { Note.fromJson(it.readText()) }
+            .orEmpty()
         var updatedCount = 0
 
         notes.forEach { note ->
@@ -173,13 +204,14 @@ class NotesStorage(private val context: Context) {
                 note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.DELETED_ON_SERVER
             ) {
                 val updatedNote = note.copy(syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING)
-                saveNote(updatedNote)
+                val file = File(notesDir, "${updatedNote.id}.json")
+                file.writeText(updatedNote.toJson())
                 updatedCount++
             }
         }
 
         Logger.d(TAG, "🔄 Reset sync status for $updatedCount notes to PENDING")
-        return updatedCount
+        updatedCount
     }
 
     fun getNotesDir(): File = notesDir

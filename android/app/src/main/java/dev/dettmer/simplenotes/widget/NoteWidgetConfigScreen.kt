@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -68,7 +69,9 @@ fun NoteWidgetConfigScreen(
     onSettingsChanged: ((noteId: String?, isLocked: Boolean, opacity: Float) -> Unit)? = null,
     @Suppress("UNUSED_PARAMETER") onCancel: () -> Unit // Reserved for future use
 ) {
-    val allNotes = remember { storage.loadAllNotes().sortedByDescending { it.updatedAt } }
+    val allNotes by produceState<List<Note>>(initialValue = emptyList()) {
+        value = storage.loadAllNotes().sortedByDescending { it.updatedAt }
+    }
     var lockWidget by remember { mutableStateOf(initialLock) }
     var opacity by remember { mutableFloatStateOf(initialOpacity) }
     var currentSelectedId by remember { mutableStateOf(selectedNoteId) }

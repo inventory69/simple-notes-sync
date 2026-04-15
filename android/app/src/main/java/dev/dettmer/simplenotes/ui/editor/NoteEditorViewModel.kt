@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 /**
@@ -147,14 +148,16 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         val noteTypeString = savedStateHandle.get<String>(ARG_NOTE_TYPE) ?: NoteType.TEXT.name
 
         if (noteId != null) {
-            loadExistingNote(noteId)
+            viewModelScope.launch {
+                loadExistingNote(noteId)
+            }
         } else {
             initNewNote(noteTypeString)
         }
     }
 
-    private fun loadExistingNote(noteId: String) {
-        existingNote = storage.loadNote(noteId)
+    private suspend fun loadExistingNote(noteId: String) {
+        existingNote = withContext(Dispatchers.IO) { storage.loadNote(noteId) }
         existingNote?.let { note ->
             currentNoteType = note.noteType
             _uiState.update { state ->
@@ -867,7 +870,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
-                    storage.saveNote(note)
+                    // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
+                    // und MUSS synchron abschließen bevor die Activity zerstört wird.
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
                     existingNote = note
                 }
                 NoteType.CHECKLIST -> {
@@ -924,7 +930,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
-                    storage.saveNote(note)
+                    // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
+                    // und MUSS synchron abschließen bevor die Activity zerstört wird.
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
                     existingNote = note
                 }
             }
@@ -1246,31 +1255,33 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
         val noteId = savedStateHandle.get<String>(ARG_NOTE_ID) ?: return
 
-        val freshNote = storage.loadNote(noteId) ?: return
+        viewModelScope.launch {
+            val freshNote = withContext(Dispatchers.IO) { storage.loadNote(noteId) } ?: return@launch
 
-        // Nur Checklist-Items aktualisieren
-        if (freshNote.noteType == NoteType.CHECKLIST) {
-            val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
-            // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
-            val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
-            // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
-            val isPreCreatedAtFresh = rawFreshItems.all { it.createdAt == 0L }
-            val freshItems = rawFreshItems.mapIndexed { index, raw ->
-                ChecklistItemState(
-                    id = raw.id,
-                    text = raw.text,
-                    isChecked = raw.isChecked,
-                    order = raw.order,
-                    originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
-                    createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt
-                )
+            // Nur Checklist-Items aktualisieren
+            if (freshNote.noteType == NoteType.CHECKLIST) {
+                val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
+                // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
+                val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
+                // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
+                val isPreCreatedAtFresh = rawFreshItems.all { it.createdAt == 0L }
+                val freshItems = rawFreshItems.mapIndexed { index, raw ->
+                    ChecklistItemState(
+                        id = raw.id,
+                        text = raw.text,
+                        isChecked = raw.isChecked,
+                        order = raw.order,
+                        originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
+                        createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt
+                    )
+                }
+                if (freshItems.isEmpty()) return@launch
+
+                _checklistItems.value = sortChecklistItems(freshItems)
+                // existingNote aktualisieren damit beim Speichern der richtige
+                // Basis-State verwendet wird
+                existingNote = freshNote
             }
-            if (freshItems.isEmpty()) return
-
-            _checklistItems.value = sortChecklistItems(freshItems)
-            // existingNote aktualisieren damit beim Speichern der richtige
-            // Basis-State verwendet wird
-            existingNote = freshNote
         }
     }
 
