@@ -1,7 +1,12 @@
+@file:Suppress("DEPRECATION") // EncryptedSharedPreferences: Required for Android 7+ support.
+// Migration to DataStore Encrypted is only viable when minimum API level > 21.
+// See: https://developer.android.com/topic/security/data-security
+
 package dev.dettmer.simplenotes.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
@@ -74,34 +79,34 @@ object CredentialStore {
     fun setCredentials(context: Context, username: String, password: String) {
         val prefs = getSecurePrefs(context)
         if (prefs != null) {
-            prefs.edit()
-                .putString(Constants.KEY_USERNAME, username)
-                .putString(Constants.KEY_PASSWORD, password)
-                .apply()
+            prefs.edit {
+                putString(Constants.KEY_USERNAME, username)
+                putString(Constants.KEY_PASSWORD, password)
+            }
         } else {
             // Fallback: write to regular prefs if KeyStore unavailable
             Logger.w(TAG, "⚠️ KeyStore unavailable — storing credentials in regular prefs (fallback)")
             context.applicationContext
                 .getSharedPreferences(Constants.PREFS_NAME_LEGACY, Context.MODE_PRIVATE)
-                .edit()
-                .putString(Constants.KEY_USERNAME, username)
-                .putString(Constants.KEY_PASSWORD, password)
-                .apply()
+                .edit {
+                    putString(Constants.KEY_USERNAME, username)
+                    putString(Constants.KEY_PASSWORD, password)
+                }
         }
     }
 
     fun clearCredentials(context: Context) {
-        getSecurePrefs(context)?.edit()
-            ?.remove(Constants.KEY_USERNAME)
-            ?.remove(Constants.KEY_PASSWORD)
-            ?.apply()
+        getSecurePrefs(context)?.edit {
+            remove(Constants.KEY_USERNAME)
+            remove(Constants.KEY_PASSWORD)
+        }
         // Also clear from legacy prefs in case they were not yet migrated
         context.applicationContext
             .getSharedPreferences(Constants.PREFS_NAME_LEGACY, Context.MODE_PRIVATE)
-            .edit()
-            .remove(Constants.KEY_USERNAME)
-            .remove(Constants.KEY_PASSWORD)
-            .apply()
+            .edit {
+                remove(Constants.KEY_USERNAME)
+                remove(Constants.KEY_PASSWORD)
+            }
     }
 
     fun hasCredentials(context: Context): Boolean {

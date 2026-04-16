@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.utils
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -62,7 +63,7 @@ object NoteCorruptionRepair {
             }
         }
 
-        prefs.edit().putBoolean(REPAIR_KEY, true).apply()
+        prefs.edit { putBoolean(REPAIR_KEY, true) }
         if (repairedCount > 0) {
             Logger.w(TAG, "🔧 Corruption repair complete: $repairedCount note(s) repaired")
         } else {
