@@ -9,9 +9,12 @@ import dev.dettmer.simplenotes.utils.Logger
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /**
  * 🆕 v2.0.0: Extracted from WebDavSyncService.
@@ -44,13 +47,33 @@ class SyncGateChecker(
 
             Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
 
-            val socketTimeoutMs = ConnectionManager.getTimeoutMs(prefs).toInt()
+            val timeoutMs = ConnectionManager.getTimeoutMs(prefs)
+            val socketTimeoutMs = timeoutMs.toInt()
+
+            // Phase 1: Quick TCP check
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(host, port), socketTimeoutMs)
             }
 
-            Logger.d(TAG, "✅ Server is reachable")
-            true
+            // Phase 2: HTTP HEAD check via OkHttp to verify the server speaks HTTP.
+            // Uses OkHttp instead of HttpURLConnection so SSL config and
+            // trust management are consistent with the rest of the app.
+            val httpClient = OkHttpClient.Builder()
+                .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .build()
+            val request = Request.Builder().url(serverUrl).head().build()
+            val response = httpClient.newCall(request).execute()
+            val code = response.code
+            response.close()
+            // Any HTTP response code (incl. 401, 403) proves HTTP capability
+            val reachable = code > 0
+            if (reachable) {
+                Logger.d(TAG, "✅ Server is reachable (HTTP $code)")
+            } else {
+                Logger.d(TAG, "❌ Server TCP reachable but HTTP check returned $code")
+            }
+            reachable
         } catch (e: Exception) {
             Logger.d(TAG, "❌ Server not reachable: ${e.message}")
             false
