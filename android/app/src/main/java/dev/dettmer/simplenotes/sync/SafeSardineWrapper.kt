@@ -95,7 +95,12 @@ class SafeSardineWrapper private constructor(
             when {
                 response.isSuccessful -> true
                 code == HTTP_NOT_FOUND -> false
-                code == HTTP_FORBIDDEN -> true // Resource exists (Jianguoyun: HEAD on Collection → 403)
+                code == HTTP_FORBIDDEN -> {
+                    // Jianguoyun returns 403 for HEAD on collections.
+                    // Log as warning so users can diagnose false positives on other servers.
+                    Logger.w(TAG, "exists($url) received 403 — assuming resource exists (Jianguoyun workaround)")
+                    true
+                }
                 code == HTTP_GONE -> false
                 code == HTTP_UNAUTHORIZED -> throw java.io.IOException(
                     "Authentication failed ($code) for $url"
