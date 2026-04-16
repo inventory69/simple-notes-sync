@@ -6,6 +6,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,6 +20,20 @@ class NotesStorage(private val context: Context) {
         private val deletionTrackerMutex = Mutex()
     }
 
+    // ─── In-memory cache for loadAllNotes (REF-023) ───────────────────────
+    private val cacheMutex = Mutex()
+    private var cachedNotes: List<Note>? = null
+    private var cacheTimestamp: Long = 0L
+    private val cacheTtlMs = 2000L
+    private val cacheVersion = AtomicLong(0L)
+
+    private fun invalidateCache() {
+        cacheVersion.incrementAndGet()
+        cachedNotes = null
+        cacheTimestamp = 0L
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     private val notesDir: File = File(context.filesDir, "notes").apply {
         if (!exists()) mkdirs()
     }
@@ -26,6 +41,7 @@ class NotesStorage(private val context: Context) {
     suspend fun saveNote(note: Note) = withContext(Dispatchers.IO) {
         val file = File(notesDir, "${note.id}.json")
         file.writeText(note.toJson())
+        invalidateCache()
     }
 
     suspend fun loadNote(id: String): Note? = withContext(Dispatchers.IO) {
@@ -55,19 +71,37 @@ class NotesStorage(private val context: Context) {
      *
      * 🔀 v1.8.0: Sortierung entfernt — wird jetzt im ViewModel durchgeführt,
      * damit der User die Sortierung konfigurieren kann.
+     * 🗃️ v2.3.0 (REF-023): In-memory cache with 2s TTL to avoid redundant
+     * file reads on every onResume. Cache is invalidated on save/delete.
+     *
+     * @param forceReload Skip the cache and always read from disk (e.g. after sync).
      */
-    suspend fun loadAllNotes(): List<Note> = withContext(Dispatchers.IO) {
-        notesDir.listFiles()
-            ?.filter { it.extension == "json" }
-            ?.mapNotNull { file ->
-                try {
-                    Note.fromJson(file.readText())
-                } catch (_: java.io.FileNotFoundException) {
-                    // File was deleted between listFiles() and readText() — skip it
-                    null
-                }
+    suspend fun loadAllNotes(forceReload: Boolean = false): List<Note> = withContext(Dispatchers.IO) {
+        cacheMutex.withLock {
+            if (!forceReload && cachedNotes != null &&
+                System.currentTimeMillis() - cacheTimestamp < cacheTtlMs
+            ) {
+                return@withLock cachedNotes!!
             }
-            .orEmpty()
+            val versionBefore = cacheVersion.get()
+            val notes = notesDir.listFiles()
+                ?.filter { it.extension == "json" }
+                ?.mapNotNull { file ->
+                    try {
+                        Note.fromJson(file.readText())
+                    } catch (_: java.io.FileNotFoundException) {
+                        // File was deleted between listFiles() and readText() — skip it
+                        null
+                    }
+                }
+                .orEmpty()
+            // Only populate cache if no invalidation happened during disk read
+            if (cacheVersion.get() == versionBefore) {
+                cachedNotes = notes
+                cacheTimestamp = System.currentTimeMillis()
+            }
+            notes
+        }
     }
 
     suspend fun deleteNote(id: String): Boolean = withContext(Dispatchers.IO) {
@@ -76,6 +110,7 @@ class NotesStorage(private val context: Context) {
 
         if (deleted) {
             Logger.d(TAG, "🗑️ Deleted note: $id")
+            invalidateCache()
 
             // Track deletion to prevent zombie notes
             val deviceId = DeviceIdGenerator.getDeviceId(context)
@@ -100,6 +135,7 @@ class NotesStorage(private val context: Context) {
                 }
             }
 
+            invalidateCache()
             Logger.d(TAG, "🗑️ Deleted all notes (${notes.size} notes)")
             true
         } catch (e: Exception) {
@@ -214,6 +250,7 @@ class NotesStorage(private val context: Context) {
             }
         }
 
+        invalidateCache()
         Logger.d(TAG, "🔄 Reset sync status for $updatedCount notes to PENDING")
         updatedCount
     }

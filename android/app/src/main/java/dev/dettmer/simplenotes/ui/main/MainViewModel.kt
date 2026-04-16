@@ -320,8 +320,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Load notes asynchronously on IO dispatcher
      * This prevents UI blocking during app startup
      */
-    private suspend fun loadNotesAsync() {
-        val allNotes = storage.loadAllNotes()
+    private suspend fun loadNotesAsync(forceReload: Boolean = false) {
+        val allNotes = storage.loadAllNotes(forceReload)
         val pendingIds = _pendingDeletions.value
         val filteredNotes = allNotes.filter { it.id !in pendingIds }
 
@@ -345,9 +345,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Public loadNotes - delegates to async version
      */
-    fun loadNotes() {
+    fun loadNotes(forceReload: Boolean = false) {
         viewModelScope.launch(ioDispatcher) {
-            loadNotesAsync()
+            loadNotesAsync(forceReload)
         }
     }
 
@@ -763,7 +763,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
                     SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
-                    loadNotes()
+                    loadNotes(forceReload = true)
                     // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
                     _syncCompletedScrollToTop.value = true
                     return@launch
@@ -800,7 +800,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                     SyncStateManager.markCompleted(bannerMessage)
-                    loadNotes()
+                    loadNotes(forceReload = true)
                     // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
                     if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
                         _syncCompletedScrollToTop.value = true
@@ -897,7 +897,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // Das Banner-System respektiert silent=true korrekt (markCompleted → IDLE)
                     // Toast wurde fälschlicherweise trotzdem angezeigt
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
-                    loadNotes()
+                    loadNotes(forceReload = true)
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
                     SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE
