@@ -682,6 +682,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
+                // 🆕 FIX-015: HTTP reachability check before sync
+                val isReachable = withContext(ioDispatcher) {
+                    syncService.isServerReachable()
+                }
+                if (!isReachable) {
+                    emitToast(getString(R.string.snackbar_server_unreachable))
+                    return@launch
+                }
+
                 val result = syncService.syncNotes()
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
