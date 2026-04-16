@@ -37,7 +37,8 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
                     Constants.MAX_CONNECTION_TIMEOUT_SECONDS
                 )
                 seconds * 1000L
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Logger.d(TAG, "Timeout parsing failed, using fallback ${FALLBACK_TIMEOUT_MS}ms: ${e.message}")
                 FALLBACK_TIMEOUT_MS
             }
         }

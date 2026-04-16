@@ -640,7 +640,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val webdavService = WebDavSyncService(getApplication())
         val isReachable = try {
             withContext(ioDispatcher) { webdavService.isServerReachable() }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.d(TAG, "isServerReachable check failed during attemptServerDeletion: ${e.message}")
             false
         }
         if (!isReachable) {

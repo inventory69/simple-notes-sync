@@ -349,7 +349,8 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                     Logger.d(TAG, "   📋 ${candidate.name}: Simple Notes JSON (id=${note.id})")
                     return note
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to parse as Simple Notes JSON for ${candidate.name}: ${e.message}")
                 // Fallthrough to generic parsing
             }
         }
@@ -515,7 +516,8 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                 prim.isString -> Note.parseISO8601(prim.asString).takeIf { it > 0L }
                 else -> null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.d(TAG, "Timestamp parsing failed: ${e.message}")
             null
         }
     }

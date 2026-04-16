@@ -45,6 +45,9 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
+import dev.dettmer.simplenotes.utils.Logger
+
+private const val TAG = "NoteWidgetContent"
 
 /**
  * 🆕 v1.8.0: Glance Composable Content für das Notiz-Widget
@@ -448,7 +451,8 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+    } catch (e: IllegalArgumentException) {
+        Logger.d(TAG, "Unknown checklistSortOption '${note.checklistSortOption}': ${e.message}")
         null
     }
         ?: ChecklistSortOption.MANUAL
@@ -564,7 +568,8 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+    } catch (e: IllegalArgumentException) {
+        Logger.d(TAG, "Unknown checklistSortOption '${note.checklistSortOption}': ${e.message}")
         null
     }
         ?: ChecklistSortOption.MANUAL

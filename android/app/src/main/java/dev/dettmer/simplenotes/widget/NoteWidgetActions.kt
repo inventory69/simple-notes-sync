@@ -64,7 +64,8 @@ class ToggleChecklistItemAction : ActionCallback {
         // Konsistent mit NoteEditorViewModel.updateChecklistItemChecked
         val sortOption = try {
             note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
+            Logger.d(TAG, "Unknown checklistSortOption '${note.checklistSortOption}': ${e.message}")
             null
         }
             ?: ChecklistSortOption.MANUAL

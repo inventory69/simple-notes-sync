@@ -450,7 +450,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             val notesExist = try {
                 sardine.exists(notesUrl)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Logger.d(TAG, "exists() check failed during testConnection: ${e.message}")
                 false
             }
             val folderName = activeSyncFolderName
