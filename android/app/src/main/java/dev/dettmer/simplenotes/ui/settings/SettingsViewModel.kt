@@ -353,8 +353,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * When enabled, all network features are disabled
      */
     fun setOfflineMode(enabled: Boolean) {
-        _offlineMode.value = enabled
         prefs.edit { putBoolean(Constants.KEY_OFFLINE_MODE, enabled) }
+        _offlineMode.value = enabled
 
         if (enabled) {
             _serverStatus.value = ServerStatus.OfflineMode
@@ -444,8 +444,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * the preference at init time.
      */
     fun setAutosaveEnabled(enabled: Boolean) {
-        _autosaveEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled) }
+        _autosaveEnabled.value = enabled
     }
 
     /**
@@ -458,8 +458,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
             Constants.MAX_CONNECTION_TIMEOUT_SECONDS
         )
-        _connectionTimeoutSeconds.value = validSeconds
         prefs.edit { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, validSeconds) }
+        _connectionTimeoutSeconds.value = validSeconds
         Logger.d(TAG, "Connection timeout set to: ${validSeconds}s")
     }
 
@@ -714,8 +714,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
 
     fun setAutoSync(enabled: Boolean) {
-        _autoSyncEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_AUTO_SYNC, enabled) }
+        _autoSyncEnabled.value = enabled
 
         viewModelScope.launch {
             if (enabled) {
@@ -731,8 +731,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setSyncInterval(minutes: Long) {
-        _syncInterval.value = minutes
         prefs.edit { putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes) }
+        _syncInterval.value = minutes
         viewModelScope.launch {
             val text = when (minutes) {
                 15L -> getString(R.string.toast_sync_interval_15min)
@@ -749,27 +749,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.MIN_PARALLEL_CONNECTIONS,
             Constants.MAX_PARALLEL_CONNECTIONS
         )
-        _maxParallelConnections.value = validCount
         prefs.edit { putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, validCount) }
+        _maxParallelConnections.value = validCount
     }
 
     // 🌟 v1.6.0: Configurable Sync Triggers Setters
 
     fun setTriggerOnSave(enabled: Boolean) {
-        _triggerOnSave.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, enabled) }
+        _triggerOnSave.value = enabled
         Logger.d(TAG, "Trigger onSave: $enabled")
     }
 
     fun setTriggerOnResume(enabled: Boolean) {
-        _triggerOnResume.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, enabled) }
+        _triggerOnResume.value = enabled
         Logger.d(TAG, "Trigger onResume: $enabled")
     }
 
     fun setTriggerWifiConnect(enabled: Boolean) {
-        _triggerWifiConnect.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, enabled) }
+        _triggerWifiConnect.value = enabled
         viewModelScope.launch {
             _events.emit(SettingsEvent.RestartNetworkMonitor)
         }
@@ -777,8 +777,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setTriggerPeriodic(enabled: Boolean) {
-        _triggerPeriodic.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, enabled) }
+        _triggerPeriodic.value = enabled
         viewModelScope.launch {
             _events.emit(SettingsEvent.RestartNetworkMonitor)
         }
@@ -786,8 +786,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setTriggerBoot(enabled: Boolean) {
-        _triggerBoot.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, enabled) }
+        _triggerBoot.value = enabled
         Logger.d(TAG, "Trigger Boot: $enabled")
     }
 
@@ -796,28 +796,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * When enabled, sync only happens when connected to WiFi
      */
     fun setWifiOnlySync(enabled: Boolean) {
-        _wifiOnlySync.value = enabled
         prefs.edit { putBoolean(Constants.KEY_WIFI_ONLY_SYNC, enabled) }
+        _wifiOnlySync.value = enabled
         Logger.d(TAG, "📡 WiFi-only sync: $enabled")
     }
 
     // 🆕 v1.11.0: Notification Settings Setters
 
     fun setNotificationsEnabled(enabled: Boolean) {
-        _notificationsEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled) }
+        _notificationsEnabled.value = enabled
         Logger.d(TAG, "🔔 Notifications enabled: $enabled")
     }
 
     fun setNotificationsErrorsOnly(enabled: Boolean) {
-        _notificationsErrorsOnly.value = enabled
         prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, enabled) }
+        _notificationsErrorsOnly.value = enabled
         Logger.d(TAG, "🔔 Notifications errors-only: $enabled")
     }
 
     fun setNotificationsServerWarning(enabled: Boolean) {
-        _notificationsServerWarning.value = enabled
         prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, enabled) }
+        _notificationsServerWarning.value = enabled
         Logger.d(TAG, "🔔 Notifications server warning: $enabled")
     }
 
@@ -1174,8 +1174,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
 
     fun setFileLogging(enabled: Boolean) {
-        _fileLoggingEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, enabled) }
+        _fileLoggingEnabled.value = enabled
         Logger.setFileLoggingEnabled(enabled)
         viewModelScope.launch {
             emitToast(
@@ -1329,22 +1329,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Set display mode (list or grid)
      */
     fun setDisplayMode(mode: String) {
-        _displayMode.value = mode
         prefs.edit { putString(Constants.KEY_DISPLAY_MODE, mode) }
+        _displayMode.value = mode
         Logger.d(TAG, "Display mode changed to: $mode")
     }
 
     // 🆕 v2.1.0 (F46): Grid column control setters
     fun setGridAdaptiveScaling(enabled: Boolean) {
-        _gridAdaptiveScaling.value = enabled
         prefs.edit { putBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, enabled) }
+        _gridAdaptiveScaling.value = enabled
         Logger.d(TAG, "Grid adaptive scaling: $enabled")
     }
 
     fun setGridManualColumns(columns: Int) {
         val clamped = columns.coerceIn(Constants.GRID_MIN_COLUMNS, Constants.GRID_MAX_COLUMNS)
-        _gridManualColumns.value = clamped
         prefs.edit { putInt(Constants.KEY_GRID_MANUAL_COLUMNS, clamped) }
+        _gridManualColumns.value = clamped
         Logger.d(TAG, "Grid manual columns: $clamped")
     }
 
@@ -1354,8 +1354,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun setCustomAppTitle(title: String) {
         val sanitized = title.take(Constants.MAX_CUSTOM_APP_TITLE_LENGTH)
-        _customAppTitle.value = sanitized
         prefs.edit { putString(Constants.KEY_CUSTOM_APP_TITLE, sanitized) }
+        _customAppTitle.value = sanitized
         Logger.d(TAG, "Custom app title changed to: '$sanitized'")
     }
 
