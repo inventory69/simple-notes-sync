@@ -148,6 +148,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         val noteTypeString = savedStateHandle.get<String>(ARG_NOTE_TYPE) ?: NoteType.TEXT.name
 
         if (noteId != null) {
+            // Mark loading and correct isNewNote to prevent flash of wrong editor
+            // type and wrong LaunchedEffect triggers during async load
+            _uiState.update { it.copy(isLoading = true, isNewNote = false) }
             viewModelScope.launch {
                 loadExistingNote(noteId)
             }
@@ -166,6 +169,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     content = note.content,
                     noteType = note.noteType,
                     isNewNote = false,
+                    isLoading = false,
                     toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                         ToolbarTitle.EDIT_CHECKLIST
                     } else {
@@ -177,6 +181,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             if (note.noteType == NoteType.CHECKLIST) {
                 loadChecklistData(note)
             }
+        } ?: run {
+            // Note not found — clear loading state
+            _uiState.update { it.copy(isLoading = false) }
         }
         undoRedoManager.clear() // 🆕 v1.10.0: No cross-note undo
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
@@ -1348,6 +1355,7 @@ data class NoteEditorUiState(
     val content: String = "",
     val noteType: NoteType = NoteType.TEXT,
     val isNewNote: Boolean = true,
+    val isLoading: Boolean = false,
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE
 )
 

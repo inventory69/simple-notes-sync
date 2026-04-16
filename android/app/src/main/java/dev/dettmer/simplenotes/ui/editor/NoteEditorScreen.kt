@@ -56,6 +56,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -132,11 +133,23 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // 🌟 v1.6.0: Offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
 
+    // 🔧 v2.3.0: Block ALL rendering until async note load completes.
+    // Must be before any remember/LaunchedEffect blocks so they never
+    // execute with stale UiState defaults (noteType=TEXT, isNewNote=true).
+    if (uiState.isLoading) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface
+        ) {}
+        return
+    }
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     // 🆕 v2.0.1: Markdown Preview default for existing TEXT notes
     // New notes start in edit mode (user wants to type immediately),
     // existing TEXT notes start in preview mode (read-first workflow).
-    var isPreviewMode by remember {
+    // key() forces recomputation after async load changes isNewNote/noteType.
+    var isPreviewMode by remember(uiState.isNewNote, uiState.noteType) {
         mutableStateOf(
             !uiState.isNewNote && uiState.noteType == NoteType.TEXT
         )
