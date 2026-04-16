@@ -116,7 +116,7 @@ class ComposeMainActivity : ComponentActivity() {
     // 🆕 v1.10.0: Separate Job for banner auto-hide — survives collect re-emissions
     private var bannerAutoHideJob: kotlinx.coroutines.Job? = null
 
-    // Phase 3: Track if coming from editor to scroll to top
+    // Track if coming from editor (to suppress onResume auto-sync)
     private var cameFromEditor = false
 
     // v2.0.0: Track if coming from settings (to suppress onResume sync)
@@ -292,13 +292,15 @@ class ComposeMainActivity : ComponentActivity() {
         // Reload notes
         viewModel.loadNotes()
 
-        // Phase 3: Scroll to top if coming from editor (new/edited note)
+        // Phase 3: Track returning from in-app child activities
         // v2.0.0: Track whether we're returning from an in-app child activity
         val returningFromChild = cameFromEditor || cameFromSettings
         if (cameFromEditor) {
-            viewModel.scrollToTop()
+            // Signal ViewModel to check for new notes after loadNotes.
+            // scrollToTop is triggered automatically if sorted list has a new first entry.
+            viewModel.notifyReturningFromEditor()
             cameFromEditor = false
-            Logger.d(TAG, "📜 Came from editor - scrolling to top")
+            Logger.d(TAG, "📜 Came from editor")
         }
         if (cameFromSettings) {
             cameFromSettings = false
