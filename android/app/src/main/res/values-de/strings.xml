@@ -611,6 +611,8 @@
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
     <string name="widget_preview_title">Einkaufsliste</string>
     <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
+    <string name="widget_note_not_found">Notiz nicht gefunden</string>
+    <string name="widget_tap_to_reconfigure">Tippen zum Neukonfigurieren</string>
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
     <!-- ============================= -->

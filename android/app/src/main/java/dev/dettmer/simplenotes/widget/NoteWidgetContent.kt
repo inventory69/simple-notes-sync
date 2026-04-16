@@ -667,21 +667,35 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
 private fun EmptyWidgetContent(bgOpacity: Float) {
     // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
+    val context = LocalContext.current
 
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .cornerRadius(16.dp)
             .then(bgModifier)
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable(
+                onClick = actionRunCallback<OpenConfigAction>()
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Note not found",
-            style = TextStyle(
-                color = GlanceTheme.colors.outline,
-                fontSize = 14.sp
+        Column(horizontalAlignment = Alignment.Horizontal.CenterHorizontally) {
+            Text(
+                text = context.getString(R.string.widget_note_not_found),
+                style = TextStyle(
+                    color = GlanceTheme.colors.outline,
+                    fontSize = 14.sp
+                )
             )
-        )
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Text(
+                text = context.getString(R.string.widget_tap_to_reconfigure),
+                style = TextStyle(
+                    color = GlanceTheme.colors.outline,
+                    fontSize = 12.sp
+                )
+            )
+        }
     }
 }

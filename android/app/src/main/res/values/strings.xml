@@ -671,6 +671,8 @@
     <string name="widget_opacity_description">Adjust the transparency of the widget background</string>
     <string name="widget_preview_title">Shopping List</string>
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
+    <string name="widget_note_not_found">Note not found</string>
+    <string name="widget_tap_to_reconfigure">Tap to reconfigure</string>
 
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
