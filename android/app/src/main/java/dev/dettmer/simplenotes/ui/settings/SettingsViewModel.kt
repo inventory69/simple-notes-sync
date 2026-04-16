@@ -116,7 +116,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Default: true for new users (no server), false for existing users (has server config)
     private val _offlineMode = MutableStateFlow(
         if (prefs.contains(Constants.KEY_OFFLINE_MODE)) {
-            prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+            prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         } else {
             // Migration: auto-detect based on existing server config
             !hasExistingServerConfig()
@@ -1072,7 +1072,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.KEY_MAX_PARALLEL_CONNECTIONS,
             Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
         ).coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
-        _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         _autoSyncEnabled.value = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
         _wifiOnlySync.value = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
         _markdownAutoSync.value = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) &&

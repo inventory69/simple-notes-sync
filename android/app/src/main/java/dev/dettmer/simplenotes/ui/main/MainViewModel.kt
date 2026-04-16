@@ -90,7 +90,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
 
     private val _isOfflineMode = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
@@ -100,7 +100,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun refreshOfflineModeState() {
         val oldValue = _isOfflineMode.value
-        val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         _isOfflineMode.value = newValue
         Logger.d(TAG, "🔄 refreshOfflineModeState: offlineMode=$oldValue → $newValue")
     }

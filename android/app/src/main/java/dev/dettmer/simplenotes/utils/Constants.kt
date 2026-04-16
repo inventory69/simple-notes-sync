@@ -40,7 +40,10 @@ object Constants {
     const val KEY_FILE_LOGGING_ENABLED = "file_logging_enabled"
 
     // 🔥 v1.6.0: Offline Mode Toggle
+    // Default: true — new installs start in offline mode (no server configured yet).
+    // Migrated for updates in SimpleNotesApplication.migrateOfflineModeSetting().
     const val KEY_OFFLINE_MODE = "offline_mode_enabled"
+    const val DEFAULT_OFFLINE_MODE = true
 
     // 🔥 v1.7.0: WiFi-Only Sync Toggle
     const val KEY_WIFI_ONLY_SYNC = "wifi_only_sync_enabled"

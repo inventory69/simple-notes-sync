@@ -105,7 +105,7 @@ class SyncGateChecker(
      */
     fun canSync(): SyncGateResult {
         // 1. Offline Mode Check
-        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)) {
             return SyncGateResult(canSync = false, blockReason = null) // Silent skip
         }
 

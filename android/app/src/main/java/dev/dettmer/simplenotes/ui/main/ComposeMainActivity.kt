@@ -489,7 +489,7 @@ class ComposeMainActivity : ComponentActivity() {
      */
     private fun checkBatteryOptimizationMigration() {
         // Only run if offline mode is disabled (sync is active)
-        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) return
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)) return
 
         // Only run once
         if (prefs.getBoolean(Constants.KEY_BATTERY_OPT_MIGRATION_SHOWN, false)) return

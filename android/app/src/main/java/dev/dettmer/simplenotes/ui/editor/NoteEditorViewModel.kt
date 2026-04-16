@@ -67,7 +67,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     // 🌟 v1.6.0: Offline Mode State
     private val _isOfflineMode = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
