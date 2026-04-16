@@ -103,7 +103,12 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     val checklistScrollAction: SharedFlow<ChecklistScrollAction> = _checklistScrollAction.asSharedFlow()
 
     // Internal state
-    private var existingNote: Note? = null
+    // v2.3.0 (REF-012): backed by MutableStateFlow for thread-safe access;
+    // delegated property syntax preserves all call sites unchanged.
+    private val _existingNote = MutableStateFlow<Note?>(null)
+    private var existingNote: Note?
+        get() = _existingNote.value
+        set(value) { _existingNote.value = value }
     private var currentNoteType: NoteType = NoteType.TEXT
 
     // v2.0.0: Callback to read the latest content directly from Compose TextFieldState.
@@ -113,7 +118,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     // 🛡️ v1.8.2 (IMPL_17): Trackt ob User ungespeicherte Checklist-Edits hat.
     // Wenn true, überspringt reloadFromStorage() das Neuladen, damit onResume()
     // (Notification Shade, App-Switcher etc.) keine User-Änderungen überschreibt.
-    private var hasUnsavedChecklistEdits = false
+    // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
+    private val _hasUnsavedChecklistEdits = MutableStateFlow(false)
+    private var hasUnsavedChecklistEdits: Boolean
+        get() = _hasUnsavedChecklistEdits.value
+        set(value) { _hasUnsavedChecklistEdits.value = value }
 
     // 🆕 v1.9.0: Autosave with debounce
     private val autosaveEnabled = prefs.getBoolean(
@@ -121,7 +130,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         Constants.DEFAULT_AUTOSAVE_ENABLED
     )
     private var autosaveJob: kotlinx.coroutines.Job? = null
-    private var isDirty = false // 🆕 v1.9.0: only autosave when content has actually changed
+    // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
+    private val _isDirty = MutableStateFlow(false)
+    private var isDirty: Boolean
+        get() = _isDirty.value
+        set(value) { _isDirty.value = value } // 🆕 v1.9.0: only autosave when content has actually changed
 
     // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
     private val _autosaveIndicatorVisible = MutableStateFlow(false)
@@ -132,7 +145,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     val canUndo: StateFlow<Boolean> = undoRedoManager.canUndo
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedo
     private var snapshotDebounceJob: kotlinx.coroutines.Job? = null
-    private var isRestoringSnapshot = false
+    // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
+    private val _isRestoringSnapshot = MutableStateFlow(false)
+    private var isRestoringSnapshot: Boolean
+        get() = _isRestoringSnapshot.value
+        set(value) { _isRestoringSnapshot.value = value }
 
     // 🔧 v1.10.0: Snapshot des zuletzt gespeicherten Zustands.
     // Wird beim Öffnen und nach jedem erfolgreichen Save gesetzt.
