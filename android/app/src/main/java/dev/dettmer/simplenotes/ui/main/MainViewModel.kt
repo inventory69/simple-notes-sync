@@ -305,6 +305,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
 
     init {
+        // v2.3.0 (FIX-013): Check for stale sync state on every ViewModel init
+        // (covers configuration changes without process kill)
+        SyncStateManager.checkAndResetStaleState()
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()

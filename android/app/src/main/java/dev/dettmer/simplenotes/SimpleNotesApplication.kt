@@ -71,14 +71,10 @@ class SimpleNotesApplication : Application() {
         // Dies läuft im Hintergrund auch wenn App geschlossen ist
         networkMonitor.startMonitoring()
 
-        // 🆕 v1.8.2: Stale Sync-State cleanup beim App-Kaltstart
-        // Nach einem Prozess-Neustart kann kein Sync mehr aktiv sein.
-        // SyncStateManager ist ein Kotlin object — bei Activity-Recreate ohne
-        // Prozess-Kill kann ein verwaister SYNCING-State dauerhaft blockieren.
-        if (SyncStateManager.isSyncing) {
-            Logger.e(TAG, "⚠️ Stale sync state detected on cold start - resetting")
-            SyncStateManager.reset()
-        }
+        // 🔒 v2.3.0 (FIX-013): Timestamp-based stale sync state cleanup.
+        // Replaces unconditional reset with checkAndResetStaleState() which
+        // also handles stuck states from configuration changes without process kill.
+        SyncStateManager.checkAndResetStaleState()
         Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
 
         // 🔧 v2.2.0: Einmalige Reparatur korrupter Checklist-Titel (Bug #07)
