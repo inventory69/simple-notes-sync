@@ -104,9 +104,11 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.showToast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import android.content.ClipData
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
@@ -166,7 +168,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // 🆕 v2.2.0: Checklist Item Context Menu — State für Aktion 3
     var copyToChecklistItemId by remember { mutableStateOf<String?>(null) }
     val otherChecklists by viewModel.otherChecklists.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
 
     // v2.0.1: Compact toolbar for narrow displays or large font scale (Issue #48)
     // Uses LocalWindowInfo (preferred for foldable/multi-window) over LocalConfiguration.
@@ -572,7 +574,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         onCopyText = { itemId ->                                     // 🆕 v2.2.0
                             val text = checklistItems.find { it.id == itemId }?.text
                             if (!text.isNullOrBlank()) {
-                                clipboardManager.setText(AnnotatedString(text))
+                                scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", text))) }
                             }
                         },
                         onDuplicate = { itemId ->                                    // 🆕 v2.2.0
