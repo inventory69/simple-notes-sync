@@ -229,7 +229,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) { notes, option, direction, filter, query ->
         val filtered = filterNotes(notes, filter)
         val searched = searchNotes(filtered, query)
-        sortNotes(searched, option, direction)
+        val sorted = sortNotes(searched, option, direction)
+
+        // Detect new note at top of sorted list (after returning from editor)
+        val newFirstId = sorted.firstOrNull()?.id
+        if (expectNewNoteCheck &&
+            newFirstId != null &&
+            previousFirstSortedNoteId != null &&
+            newFirstId != previousFirstSortedNoteId
+        ) {
+            _scrollToTop.value = true
+            Logger.d(TAG, "\uD83D\uDCDC New note detected at top, triggering scroll-to-top")
+        }
+        expectNewNoteCheck = false
+        previousFirstSortedNoteId = newFirstId
+
+        sorted
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -292,8 +307,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _scrollToTop = MutableStateFlow(false)
     val scrollToTop: StateFlow<Boolean> = _scrollToTop.asStateFlow()
 
-    // Track first note ID to detect new notes
-    private var previousFirstNoteId: String? = null
+    // Track first note ID in sorted order to detect new notes at top
+    private var previousFirstSortedNoteId: String? = null
+    // Flag: set when returning from editor, cleared after loadNotes comparison
+    private var expectNewNoteCheck = false
 
     // ═══════════════════════════════════════════════════════════════════════
     // Data Classes
@@ -332,18 +349,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val filteredNotes = allNotes.filter { it.id !in pendingIds }
 
         withContext(Dispatchers.Main) {
-            // Phase 3: Detect if a new note was added at the top
-            val newFirstNoteId = filteredNotes.firstOrNull()?.id
-            if (newFirstNoteId != null &&
-                previousFirstNoteId != null &&
-                newFirstNoteId != previousFirstNoteId
-            ) {
-                // New note at top → trigger scroll
-                _scrollToTop.value = true
-                Logger.d(TAG, "📜 New note detected at top, triggering scroll-to-top")
-            }
-            previousFirstNoteId = newFirstNoteId
-
             _notes.value = filteredNotes
         }
     }
@@ -369,6 +374,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun scrollToTop() {
         _scrollToTop.value = true
+    }
+
+    /**
+     * Signal that we're returning from editor — enables new-note detection
+     * in the sortedNotes combine flow.
+     */
+    fun notifyReturningFromEditor() {
+        expectNewNoteCheck = true
     }
 
     // ═══════════════════════════════════════════════════════════════════════
