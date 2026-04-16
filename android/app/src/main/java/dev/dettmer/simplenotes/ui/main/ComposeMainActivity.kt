@@ -69,6 +69,8 @@ import kotlinx.coroutines.withContext
 class ComposeMainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "ComposeMainActivity"
+        private const val KEY_CAME_FROM_EDITOR = "cameFromEditor"
+        private const val KEY_CAME_FROM_SETTINGS = "cameFromSettings"
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -123,12 +125,24 @@ class ComposeMainActivity : ComponentActivity() {
     // 🆕 v2.3.0: State-driven battery optimization dialog for migration prompt
     private var showBatteryOptDialog by mutableStateOf(false)
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_CAME_FROM_EDITOR, cameFromEditor)
+        outState.putBoolean(KEY_CAME_FROM_SETTINGS, cameFromSettings)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
 
         super.onCreate(savedInstanceState)
+
+        // 🆕 v2.3.0 FIX-018: Restore navigation flags after process death
+        savedInstanceState?.let {
+            cameFromEditor = it.getBoolean(KEY_CAME_FROM_EDITOR, false)
+            cameFromSettings = it.getBoolean(KEY_CAME_FROM_SETTINGS, false)
+        }
 
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(prefs)
