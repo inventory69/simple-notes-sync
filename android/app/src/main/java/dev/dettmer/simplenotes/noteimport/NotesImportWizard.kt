@@ -449,7 +449,11 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     private fun readContent(source: ImportSource): String {
         return when (source) {
             is ImportSource.WebDav -> {
-                source.sardine.get(source.url).bufferedReader().use { it.readText() }
+                source.sardine.get(source.url)?.bufferedReader()?.use { it.readText() }
+                    ?: run {
+                        Logger.w(TAG, "WebDAV resource not found: ${source.url}")
+                        ""
+                    }
             }
             is ImportSource.LocalFile -> {
                 checkNotNull(context.contentResolver.openInputStream(source.uri)) {
