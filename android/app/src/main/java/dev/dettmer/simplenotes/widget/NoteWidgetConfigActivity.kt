@@ -83,6 +83,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
             var existingNoteId: String? = null
             var existingLock = false
             var existingOpacity = 1.0f
+            var configLoadError = false
 
             try {
                 val glanceId = GlanceAppWidgetManager(this@NoteWidgetConfigActivity)
@@ -97,6 +98,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                 existingOpacity = prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to load widget config, using defaults: ${e.message}")
+                configLoadError = true
             }
 
             // 🆕 v1.8.0 (IMPL_025): Initiale State-Werte für Auto-Save setzen
@@ -115,6 +117,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                         initialLock = existingLock,
                         initialOpacity = existingOpacity,
                         selectedNoteId = existingNoteId,
+                        configLoadError = configLoadError,
                         onNoteSelected = { noteId, isLocked, opacity ->
                             configureWidget(noteId, isLocked, opacity)
                         },
