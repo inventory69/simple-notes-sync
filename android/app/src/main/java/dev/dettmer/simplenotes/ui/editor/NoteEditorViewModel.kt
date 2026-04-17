@@ -10,6 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
+import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -408,36 +409,18 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * 🆕 v1.9.0 (F04): Unchecked items werden nach originalOrder sortiert für Position-Restore.
      */
     private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
-        val sorted = when (_lastChecklistSortOption.value) {
-            ChecklistSortOption.MANUAL,
-            ChecklistSortOption.UNCHECKED_FIRST -> {
-                // 🆕 v1.9.0 (F04): Sort by originalOrder to restore un-checked item's original position
-                val unchecked = items.filter { !it.isChecked }.sortedBy { it.originalOrder }
-                val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
-                unchecked + checked
-            }
-            ChecklistSortOption.CREATION_DATE -> {
-                // 🆕 v1.11.0: Sort by creation timestamp — oldest first (ascending)
-                val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
-                val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
-                unchecked + checked
-            }
-            ChecklistSortOption.CREATION_DATE_DESC -> {
-                // 🆕 v1.11.0: Sort by creation timestamp — newest first (descending)
-                val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
-                val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
-                unchecked + checked
-            }
-            ChecklistSortOption.CHECKED_FIRST ->
-                items.sortedByDescending { it.isChecked }
-            ChecklistSortOption.ALPHABETICAL_ASC ->
-                items.sortedBy { it.text.lowercase() }
-            ChecklistSortOption.ALPHABETICAL_DESC ->
-                items.sortedByDescending { it.text.lowercase() }
+        val asChecklistItems = items.map { s ->
+            ChecklistItem(
+                id = s.id, text = s.text, isChecked = s.isChecked,
+                order = s.order, originalOrder = s.originalOrder, createdAt = s.createdAt
+            )
         }
-
-        return sorted.mapIndexed { index, item ->
-            item.copy(order = index)
+        val sorted = ChecklistSorter.sort(asChecklistItems, _lastChecklistSortOption.value)
+        return sorted.map { item ->
+            ChecklistItemState(
+                id = item.id, text = item.text, isChecked = item.isChecked,
+                order = item.order, originalOrder = item.originalOrder, createdAt = item.createdAt
+            )
         }
     }
 
