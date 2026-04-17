@@ -209,6 +209,7 @@
     <string name="import_no_files_found">Keine importierbaren Dateien gefunden</string>
     <string name="import_summary_title">Import-Ergebnis</string>
     <string name="import_dialog_complete">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen</string>
+    <string name="import_zero_notes_hint">Es konnten keine Notizen importiert werden. Die Datei ist möglicherweise beschädigt oder in einem nicht unterstützten Format.</string>
     <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
     <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
     <string name="import_cancel">Abbrechen</string>

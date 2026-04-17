@@ -327,6 +327,18 @@ private fun ImportSummarySection(summary: NotesImportWizard.ImportSummary) {
                     MaterialTheme.colorScheme.onPrimaryContainer
                 }
             )
+            if (summary.imported == 0 && summary.totalScanned > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.import_zero_notes_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (summary.failed > 0) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    }
+                )
+            }
             if (summary.failed > 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 summary.results.filterIsInstance<NotesImportWizard.ImportResult.Failed>().forEach { failed ->
