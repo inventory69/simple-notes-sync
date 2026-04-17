@@ -393,14 +393,19 @@ internal class NoteDownloader(
                     Logger.d(TAG, "   📂 Found ${rootResources.size} resources in ROOT")
 
                     val oldNotes = rootResources.filter { resource ->
+                        // Backward compat (v1.2.0): Filter for legacy notes in the default
+                        // folder "/notes/" and "/notes-md/". These paths are intentionally
+                        // hardcoded to the PRE-custom-folder default, not the current folder
+                        // configuration. Legacy notes were always stored in /notes/.
+                        val legacyNotesPath = "/${Constants.DEFAULT_SYNC_FOLDER_NAME}/"
+                        val legacyMarkdownPath = "/${Constants.DEFAULT_SYNC_FOLDER_NAME}${SyncUrlBuilder.MARKDOWN_SUFFIX}/"
                         !resource.isDirectory &&
                             resource.name.endsWith(".json") &&
-                            !resource.path.contains("/notes/") &&
-                            // Not from /notes/ subdirectory
-                            !resource.path.contains("/notes-md/") // Not from /notes-md/
+                            !resource.path.contains(legacyNotesPath) &&
+                            !resource.path.contains(legacyMarkdownPath)
                     }
 
-                    Logger.d(TAG, "   🔎 Filtered to ${oldNotes.size} .json files (excluding /notes/ and /notes-md/)")
+                    Logger.d(TAG, "   🔎 Filtered to ${oldNotes.size} .json files (excluding legacy paths)")
 
                     if (oldNotes.isNotEmpty()) {
                         Logger.w(TAG, "⚠️ Found ${oldNotes.size} notes in ROOT (old v1.2.0 structure)")
