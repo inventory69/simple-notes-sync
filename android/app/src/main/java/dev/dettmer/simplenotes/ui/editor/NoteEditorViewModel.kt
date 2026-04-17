@@ -21,6 +21,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -815,15 +816,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             triggerOnSaveSync()
 
             // 🆕 v1.8.0: Betroffene Widgets aktualisieren
-            try {
-                val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
-                val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
-                glanceIds.forEach { id ->
-                    dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
-                }
-            } catch (e: Exception) {
-                Logger.w(TAG, "Failed to update widgets: ${e.message}")
-            }
+            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
 
             _events.emit(NoteEditorEvent.NavigateBack)
         }
@@ -960,15 +953,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             Logger.d(TAG, "💾 saveOnBack: saved successfully")
             // Fire-and-forget widget update — saveOnBack must return synchronously
             viewModelScope.launch {
-                try {
-                    val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
-                    val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
-                    glanceIds.forEach { id ->
-                        dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
-                    }
-                } catch (e: Exception) {
-                    Logger.w(TAG, "Failed to update widgets after saveOnBack: ${e.message}")
-                }
+                WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
             }
             true
         } catch (e: Exception) {
@@ -1169,15 +1154,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 Logger.d(TAG, "💾 Autosave completed")
                 _autosaveIndicatorVisible.value = true
                 // Update widgets so they reflect the auto-saved state
-                try {
-                    val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
-                    val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
-                    glanceIds.forEach { id ->
-                        dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
-                    }
-                } catch (e: Exception) {
-                    Logger.w(TAG, "Failed to update widgets after autosave: ${e.message}")
-                }
+                WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
                 kotlinx.coroutines.delay(Constants.AUTOSAVE_INDICATOR_DURATION_MS)
                 _autosaveIndicatorVisible.value = false
             }

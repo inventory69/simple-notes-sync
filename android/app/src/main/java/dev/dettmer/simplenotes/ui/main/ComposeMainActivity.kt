@@ -25,7 +25,6 @@ import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.dettmer.simplenotes.R
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -47,7 +46,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
-import dev.dettmer.simplenotes.widget.NoteWidget
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -326,17 +325,7 @@ class ComposeMainActivity : ComponentActivity() {
      */
     private fun refreshAllWidgets() {
         lifecycleScope.launch {
-            try {
-                val glanceManager = GlanceAppWidgetManager(this@ComposeMainActivity)
-                val glanceIds = glanceManager.getGlanceIds(NoteWidget::class.java)
-                if (glanceIds.isEmpty()) return@launch
-                Logger.d(TAG, "🔄 F09: Refreshing ${glanceIds.size} widget(s) on onStop")
-                glanceIds.forEach { id ->
-                    NoteWidget().update(this@ComposeMainActivity, id)
-                }
-            } catch (e: Exception) {
-                Logger.w(TAG, "F09: Failed to refresh widgets on onStop: ${e.message}")
-            }
+            WidgetUpdateHelper.refreshAllNoteWidgets(this@ComposeMainActivity)
         }
     }
 
