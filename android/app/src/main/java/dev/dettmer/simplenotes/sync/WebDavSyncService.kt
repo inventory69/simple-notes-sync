@@ -607,7 +607,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     val downloadResult = downloadRemoteNotes(
                         sardine,
                         serverUrl,
-                        includeRootFallback = true, // ✅ v1.3.0: Enable for v1.2.0 compatibility
+                        // 🔧 v2.3.0 (Issue #62): Normal sync must NOT scan WebDAV root.
+                        // v1.2.0 compat-scan caused phantom "Untitled" notes when foreign
+                        // JSONs (info.json, google-services.json, …) sat in the root and
+                        // were parsed into Notes with a fresh random UUID each sync.
+                        // Legacy v1.2.0 users can still migrate via restoreFromServer().
+                        includeRootFallback = false,
                         onProgress = { current, total, noteTitle ->
                             // 🆕 v1.10.0-P2: Pass actual total from ParallelDownloader for determinate progress
                             SyncStateManager.updateProgress(
