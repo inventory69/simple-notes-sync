@@ -32,6 +32,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 
 /**
  * 🆕 v1.9.0 (F07): Renders parsed [MarkdownBlock]s as Compose UI.
@@ -45,13 +46,13 @@ fun MarkdownPreview(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier) 
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 4.dp)
+            .padding(horizontal = Dimensions.SpacingSmall)
     ) {
         blocks.forEach { block ->
             when (block) {
                 is MarkdownBlock.Heading -> {
                     HeadingBlock(block)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
                 }
                 is MarkdownBlock.Paragraph -> {
                     Text(
@@ -59,23 +60,23 @@ fun MarkdownPreview(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier) 
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                 }
                 is MarkdownBlock.TaskList -> {
                     TaskListBlock(block)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                 }
                 is MarkdownBlock.UnorderedList -> {
                     UnorderedListBlock(block)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                 }
                 is MarkdownBlock.CodeBlock -> {
                     CodeBlockSurface(block)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                 }
                 MarkdownBlock.HorizontalRule -> {
                     HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 12.dp),
+                        modifier = Modifier.padding(vertical = Dimensions.SpacingMediumLarge),
                         thickness = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
@@ -106,14 +107,14 @@ private fun TaskListBlock(taskList: MarkdownBlock.TaskList) {
         taskList.items.forEach { item ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 4.dp)
+                modifier = Modifier.padding(start = Dimensions.SpacingSmall)
             ) {
                 Checkbox(
                     checked = item.isChecked,
                     onCheckedChange = null, // Read-only in preview
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(Dimensions.IconSizeMedium)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
                 Text(
                     text = parseInlineFormatting(item.text),
                     style = MaterialTheme.typography.bodyLarge,
@@ -129,7 +130,7 @@ private fun TaskListBlock(taskList: MarkdownBlock.TaskList) {
                     }
                 )
             }
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(Dimensions.SpacingXSmall))
         }
     }
 }
@@ -146,7 +147,7 @@ private fun UnorderedListBlock(list: MarkdownBlock.UnorderedList) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
         }
     }
 }
@@ -165,7 +166,7 @@ private fun CodeBlockSurface(codeBlock: MarkdownBlock.CodeBlock) {
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .padding(12.dp)
+                .padding(Dimensions.SpacingMediumLarge)
                 .horizontalScroll(rememberScrollState())
         )
     }
