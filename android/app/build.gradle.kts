@@ -38,14 +38,15 @@ android {
     productFlavors {
         create("fdroid") {
             dimension = "distribution"
-            // F-Droid builds have no proprietary dependencies
-            // All dependencies in this project are already FOSS-compatible
-            // No APK splits - F-Droid expects single universal APK
+            // F-Droid builds: currently identical to standard.
+            // Flavor exists for future separation (e.g., removing
+            // proprietary dependencies from standard builds).
         }
         
         create("standard") {
             dimension = "distribution"
-            // Standard builds can include Play Services in the future if needed
+            // Standard builds: currently identical to fdroid.
+            // Reserved for Google Play specific features if needed.
         }
     }
 
