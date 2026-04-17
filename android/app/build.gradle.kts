@@ -91,7 +91,6 @@ android {
     }
 
     buildFeatures {
-        viewBinding = false
         buildConfig = true  // Enable BuildConfig generation
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }
