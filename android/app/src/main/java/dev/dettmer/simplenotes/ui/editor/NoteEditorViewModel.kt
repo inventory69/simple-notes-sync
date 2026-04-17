@@ -753,6 +753,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun sortChecklistItems(option: ChecklistSortOption) {
         pushUndoSnapshot() // 🆕 v1.10.0
+        isDirty = true
         hasUnsavedChecklistEdits = true // 🛡️ v1.8.2 (IMPL_17)
         // Merke die Auswahl für diesen Editor-Session
         _lastChecklistSortOption.value = option
@@ -792,6 +793,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             // 🆕 v1.9.0 (F04): Explicit sort resets originalOrder baseline to new positions
             sorted.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
         }
+        scheduleAutosave()
     }
 
     fun saveNote() {
@@ -947,6 +949,18 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             isDirty = false
             savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
             Logger.d(TAG, "💾 saveOnBack: saved successfully")
+            // Fire-and-forget widget update — saveOnBack must return synchronously
+            viewModelScope.launch {
+                try {
+                    val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
+                    val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
+                    glanceIds.forEach { id ->
+                        dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "Failed to update widgets after saveOnBack: ${e.message}")
+                }
+            }
             true
         } catch (e: Exception) {
             Logger.e(TAG, "saveOnBack failed: ${e.message}")
@@ -1133,7 +1147,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     /**
      * 🆕 v1.9.0: Schedules a silent autosave after AUTOSAVE_DEBOUNCE_MS.
      * Called on every text-edit action. Cancels any previous pending autosave.
-     * Does NOT trigger sync, widget update, or navigation — only local disk save.
+     * Does NOT trigger sync or navigation — only local disk save + widget update.
      */
     private fun scheduleAutosave() {
         if (!autosaveEnabled) return
@@ -1145,6 +1159,16 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             if (saved) {
                 Logger.d(TAG, "💾 Autosave completed")
                 _autosaveIndicatorVisible.value = true
+                // Update widgets so they reflect the auto-saved state
+                try {
+                    val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
+                    val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
+                    glanceIds.forEach { id ->
+                        dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "Failed to update widgets after autosave: ${e.message}")
+                }
                 kotlinx.coroutines.delay(Constants.AUTOSAVE_INDICATOR_DURATION_MS)
                 _autosaveIndicatorVisible.value = false
             }
