@@ -48,7 +48,7 @@ class SyncGateChecker(
             Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
 
             val timeoutMs = ConnectionManager.getTimeoutMs(prefs)
-            val socketTimeoutMs = timeoutMs.toInt()
+            val socketTimeoutMs = timeoutMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 
             // Phase 1: Quick TCP check
             Socket().use { socket ->
