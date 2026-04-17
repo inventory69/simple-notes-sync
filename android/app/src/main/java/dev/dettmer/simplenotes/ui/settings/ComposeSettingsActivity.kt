@@ -103,7 +103,9 @@ class ComposeSettingsActivity : AppCompatActivity() {
                         confirmButton = {
                             TextButton(onClick = {
                                 viewModel.dismissBatteryOptimizationDialog()
-                                BatteryOptimizationHelper.openBatteryOptimizationSettings(this)
+                                if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
+                                    viewModel.showSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                                }
                             }) {
                                 Text(getString(R.string.battery_optimization_open_settings))
                             }

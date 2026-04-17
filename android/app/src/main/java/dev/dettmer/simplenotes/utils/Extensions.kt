@@ -12,6 +12,7 @@ private const val DAYS_THRESHOLD = 7L
 private const val TRUNCATE_SUFFIX_LENGTH = 3
 
 // Toast Extensions
+@Deprecated("Use ViewModel.emitSnackbar() instead", level = DeprecationLevel.WARNING)
 fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(this, message, duration).show()
 }

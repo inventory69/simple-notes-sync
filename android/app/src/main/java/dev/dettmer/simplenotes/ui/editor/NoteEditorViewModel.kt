@@ -83,6 +83,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private val _events = MutableSharedFlow<NoteEditorEvent>()
     val events: SharedFlow<NoteEditorEvent> = _events.asSharedFlow()
 
+    private val _showSnackbar = MutableSharedFlow<String>()
+    val showSnackbar: SharedFlow<String> = _showSnackbar.asSharedFlow()
+
+    fun emitSnackbar(message: String) {
+        viewModelScope.launch {
+            _showSnackbar.emit(message)
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.9.0 (F14): Explicit scroll actions for check/un-check
     // ═══════════════════════════════════════════════════════════════════════

@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
@@ -77,7 +75,7 @@ class ComposeMainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         val messageRes = if (granted) R.string.toast_notifications_enabled else R.string.toast_notifications_disabled
-        Toast.makeText(this, getString(messageRes), Toast.LENGTH_SHORT).show()
+        viewModel.emitSnackbar(getString(messageRes))
     }
 
     private val editorLauncher = registerForActivityResult(
@@ -198,7 +196,6 @@ class ComposeMainActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
-                val context = LocalContext.current
 
                 // Dialog state for delete confirmation
                 var deleteDialogData by remember { mutableStateOf<MainViewModel.DeleteDialogData?>(null) }
@@ -207,13 +204,6 @@ class ComposeMainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     viewModel.showDeleteDialog.collect { data ->
                         deleteDialogData = data
-                    }
-                }
-
-                // Handle toast events
-                LaunchedEffect(Unit) {
-                    viewModel.showToast.collect { message ->
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -245,7 +235,9 @@ class ComposeMainActivity : ComponentActivity() {
                         confirmButton = {
                             TextButton(onClick = {
                                 showBatteryOptDialog = false
-                                BatteryOptimizationHelper.openBatteryOptimizationSettings(this)
+                                if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
+                                    viewModel.emitSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                                }
                             }) {
                                 Text(stringResource(R.string.battery_optimization_open_settings))
                             }

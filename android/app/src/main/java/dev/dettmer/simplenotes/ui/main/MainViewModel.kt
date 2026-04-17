@@ -294,9 +294,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // UI Events
     // ═══════════════════════════════════════════════════════════════════════
 
-    private val _showToast = MutableSharedFlow<String>()
-    val showToast: SharedFlow<String> = _showToast.asSharedFlow()
-
     private val _showDeleteDialog = MutableSharedFlow<DeleteDialogData>()
     val showDeleteDialog: SharedFlow<DeleteDialogData> = _showDeleteDialog.asSharedFlow()
 
@@ -318,7 +315,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     data class DeleteDialogData(val note: Note, val originalList: List<Note>)
 
-    data class SnackbarData(val message: String, val actionLabel: String, val onAction: () -> Unit)
+    data class SnackbarData(
+        val message: String,
+        val actionLabel: String? = null,
+        val onAction: (() -> Unit)? = null
+    )
+
+    fun emitSnackbar(message: String) {
+        viewModelScope.launch {
+            _showSnackbar.emit(SnackbarData(message = message))
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // Initialization

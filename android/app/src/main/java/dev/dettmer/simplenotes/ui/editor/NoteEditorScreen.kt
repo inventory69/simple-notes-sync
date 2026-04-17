@@ -56,6 +56,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,7 +80,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -101,7 +102,6 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.utils.Constants
-import dev.dettmer.simplenotes.utils.showToast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -128,7 +128,6 @@ private val DRAGGING_ELEVATION_DP = 8.dp
 @Suppress("LongMethod")
 @Composable
 fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val checklistItems by viewModel.checklistItems.collectAsState()
 
@@ -164,6 +163,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // 🆕 v2.2.0: Checklist Item Context Menu — State für Aktion 3
     var copyToChecklistItemId by remember { mutableStateOf<String?>(null) }
@@ -253,7 +253,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         ToastMessage.NOTE_DELETED -> msgNoteDeleted
                         ToastMessage.ITEM_COPIED_TO_CHECKLIST -> msgItemCopiedToChecklist // 🆕 v2.2.0
                     }
-                    context.showToast(message)
+                    scope.launch { snackbarHostState.showSnackbar(message) }
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
                 is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
@@ -273,7 +273,15 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         }
     }
 
+    // Collect snackbar messages from Activity-originated actions (share, PDF, etc.)
+    LaunchedEffect(Unit) {
+        viewModel.showSnackbar.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
