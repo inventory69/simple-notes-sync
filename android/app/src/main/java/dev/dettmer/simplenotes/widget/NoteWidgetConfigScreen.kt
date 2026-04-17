@@ -64,6 +64,7 @@ fun NoteWidgetConfigScreen(
     initialLock: Boolean = false,
     initialOpacity: Float = 1.0f,
     selectedNoteId: String? = null,
+    configLoadError: Boolean = false,
     onNoteSelected: (noteId: String, isLocked: Boolean, opacity: Float) -> Unit,
     onSave: ((noteId: String, isLocked: Boolean, opacity: Float) -> Unit)? = null,
     onSettingsChanged: ((noteId: String?, isLocked: Boolean, opacity: Float) -> Unit)? = null,
@@ -106,7 +107,14 @@ fun NoteWidgetConfigScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Lock-Option
+            if (configLoadError) {
+                Text(
+                    text = stringResource(R.string.widget_config_load_error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
