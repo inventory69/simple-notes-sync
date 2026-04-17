@@ -75,12 +75,15 @@ class NewNoteWidget : GlanceAppWidget() {
 
 // ── Content Composable ──
 
+private val NEW_NOTE_WIDGET_COMPACT_THRESHOLD = 110.dp
+private val NEW_NOTE_WIDGET_MIN_HEIGHT = 72.dp
+
 @Composable
 private fun NewNoteWidgetContent(context: Context) {
     val size = LocalSize.current
-    // 110dp = midpoint between 1-cell (~80dp) and 2-cell (~180dp) widths
-    val showBothButtons = size.width >= 110.dp
-    val showLabels = showBothButtons && size.height >= 72.dp
+    // NEW_NOTE_WIDGET_COMPACT_THRESHOLD = midpoint between 1-cell (~80dp) and 2-cell (~180dp) widths
+    val showBothButtons = size.width >= NEW_NOTE_WIDGET_COMPACT_THRESHOLD
+    val showLabels = showBothButtons && size.height >= NEW_NOTE_WIDGET_MIN_HEIGHT
 
     if (!showBothButtons) {
         SingleButtonWidget(context)
