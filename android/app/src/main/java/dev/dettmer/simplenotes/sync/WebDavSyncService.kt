@@ -37,6 +37,7 @@ data class UploadBatchResult(val uploadedCount: Int, val markdownExportedNoteIds
 class WebDavSyncService(private val context: Context, private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     companion object {
         private const val TAG = "WebDavSyncService"
+        private const val HTTP_UNAUTHORIZED = 401
 
         // � v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
@@ -128,6 +129,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     internal fun getServerUrl(): String? = urlBuilder.getServerUrl()
 
     /**
+     * 🔧 v2.3.0: Checks if an IOException signals an HTTP 401 authentication failure.
+     * Used in directory-ensure methods to let auth errors propagate
+     * instead of being masked by the exists/list fallback logic.
+     * See: bug-401-error-mapping.md
+     */
+    private fun isAuthException(e: IOException): Boolean {
+        if (e is com.thegrizzlylabs.sardineandroid.impl.SardineException) {
+            return e.statusCode == HTTP_UNAUTHORIZED
+        }
+        val msg = e.message?.lowercase().orEmpty()
+        return msg.contains("authentication failed")
+    }
+
+    /**
      * Stellt sicher dass notes-md/ Ordner existiert
      *
      * Wird beim ersten erfolgreichen Sync aufgerufen (unabhängig von MD-Feature).
@@ -144,11 +159,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val dirExists = try {
                 sardine.exists(mdUrl)
             } catch (e: IOException) {
+                if (isAuthException(e)) throw e
                 Logger.w(TAG, "⚠️ notes-md/ exists() check failed: ${e.message}, trying list()")
                 try {
                     sardine.list(mdUrl)
                     true
-                } catch (_: IOException) {
+                } catch (listEx: IOException) {
+                    if (isAuthException(listEx)) throw listEx
+                    Logger.w(TAG, "⚠️ notes-md/ list() fallback also failed: ${listEx.message}")
                     false
                 }
             }
@@ -171,6 +189,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Spart ~500ms pro Sync durch Caching
      * 🔧 v2.0.0 (Issue #44): Fallback auf list() wenn exists() fehlschlägt
      */
+    @Suppress("ThrowsCount") // Auth re-throws in exists/list fallback + outer re-throw
     private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
         if (connectionManager.notesDirEnsured) {
             Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
@@ -184,11 +203,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val dirExists = try {
                 sardine.exists(notesUrl)
             } catch (e: IOException) {
+                if (isAuthException(e)) throw e
                 Logger.w(TAG, "⚠️ exists() check failed: ${e.message}, trying list()")
                 try {
                     sardine.list(notesUrl)
                     true
-                } catch (_: IOException) {
+                } catch (listEx: IOException) {
+                    if (isAuthException(listEx)) throw listEx
+                    Logger.w(TAG, "⚠️ list() fallback also failed: ${listEx.message}")
                     false
                 }
             }

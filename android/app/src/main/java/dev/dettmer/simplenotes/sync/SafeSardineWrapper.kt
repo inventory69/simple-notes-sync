@@ -260,6 +260,13 @@ class SafeSardineWrapper private constructor(
                             "Please verify the WebDAV URL (e.g. /remote.php/dav/files/USERNAME/)"
                     )
                 }
+                if (response.code == HTTP_UNAUTHORIZED) {
+                    throw com.thegrizzlylabs.sardineandroid.impl.SardineException(
+                        "Authentication failed during MKCOL for $url",
+                        response.code,
+                        null
+                    )
+                }
                 throw java.io.IOException("MKCOL failed: ${response.code} ${response.message}")
             }
             Logger.d(TAG, "createDirectory($url) → ${response.code}")
