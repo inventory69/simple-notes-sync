@@ -415,8 +415,30 @@ internal class NoteDownloader(
                             val noteUrl = rootUrl.trimEnd('/') + "/" + resource.name
                             Logger.d(TAG, "   📄 Processing: ${resource.name} from ${resource.path}")
 
+                            // 🔧 v2.3.0 (Issue #62): UUID-Format-Check auf Dateinamen —
+                            // spiegelt Phase 1 (siehe UUID_REGEX-Check oben). Verhindert
+                            // Parsing von Fremd-JSONs im Root (info.json, google-services.json, …).
+                            val rootNoteId = resource.name.removeSuffix(".json")
+                            if (!UUID_REGEX.matches(rootNoteId)) {
+                                Logger.d(TAG, "   ⏭️ Skipping non-note JSON in ROOT: ${resource.name}")
+                                continue
+                            }
+
                             val jsonContent = sardine.get(noteUrl).use { it.bufferedReader().readText() }
                             val remoteNote = Note.fromJson(jsonContent) ?: continue
+
+                            // 🔧 v2.3.0 (Issue #62): ID-Mismatch-Check — spiegelt Phase 1C.
+                            // Legitimate notes: filename "{noteId}.json" → parsed ID == filename.
+                            // Foreign JSON with random UUID default from NoteRaw → parsed ID ≠ filename.
+                            if (remoteNote.id != rootNoteId) {
+                                Logger.w(
+                                    TAG,
+                                    "   ⚠️ Skipping foreign JSON in ROOT: ${resource.name} " +
+                                        "(parsed ID '${remoteNote.id}' doesn't match filename)"
+                                )
+                                processedIds.add(rootNoteId) // Prevent re-processing
+                                continue
+                            }
 
                             // Skip if already loaded from /notes/
                             if (processedIds.contains(remoteNote.id)) {
