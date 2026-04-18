@@ -134,6 +134,8 @@ cd android
 
 ## 🌍 Übersetzungen
 
+Übersetzungs-Hosting freundlicherweise bereitgestellt von [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/) - danke für das Sponsoring von Open-Source-Projekten! 🙏
+
 [![Übersetzungsstatus](https://hosted.weblate.org/widget/simple-notes-sync/android-app/svg-badge.svg)](https://hosted.weblate.org/engage/simple-notes-sync/)
 
 <a href="https://hosted.weblate.org/engage/simple-notes-sync/">
@@ -157,6 +159,6 @@ GNU Affero General Public License v3.0 – siehe [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v2.0.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.3.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>
