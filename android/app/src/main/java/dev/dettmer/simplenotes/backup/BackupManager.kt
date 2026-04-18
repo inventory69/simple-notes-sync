@@ -442,9 +442,20 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 )
             }
 
-            // Alle Notizen haben ID, title, content?
+            // Alle Notizen haben mindestens eine ID und Inhalt?
+            // 🔧 v2.3.1: Leerer Titel ist erlaubt, solange Inhalt vorhanden ist
+            // (entspricht Editor-Logik in NoteEditorViewModel: Note nur dann leer,
+            //  wenn Titel UND Inhalt/Checklist-Items leer sind).
+            // Vorherige Regel `title.isBlank()` lehnte v2.2.0-Backups mit
+            // titellosen Checklisten ab.
             val invalidNotes = backupData.notes.filter { note ->
-                note.id.isBlank() || note.title.isBlank()
+                val hasContent = when (note.noteType) {
+                    dev.dettmer.simplenotes.models.NoteType.CHECKLIST ->
+                        !note.checklistItems.isNullOrEmpty() || note.content.isNotBlank()
+                    dev.dettmer.simplenotes.models.NoteType.TEXT ->
+                        note.content.isNotBlank()
+                }
+                note.id.isBlank() || (note.title.isBlank() && !hasContent)
             }
 
             if (invalidNotes.isNotEmpty()) {
