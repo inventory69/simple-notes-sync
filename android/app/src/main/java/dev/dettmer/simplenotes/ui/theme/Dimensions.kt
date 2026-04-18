@@ -7,10 +7,13 @@ import androidx.compose.ui.unit.dp
  */
 object Dimensions {
     // Padding & Spacing
+    val SpacingXSmall = 2.dp
     val SpacingSmall = 4.dp
     val SpacingMedium = 8.dp
+    val SpacingMediumLarge = 12.dp
     val SpacingLarge = 16.dp
     val SpacingXLarge = 24.dp
+    val SpacingXXLarge = 32.dp
 
     // Icon Sizes
     val IconSizeSmall = 16.dp

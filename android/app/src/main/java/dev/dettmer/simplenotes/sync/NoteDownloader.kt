@@ -393,14 +393,19 @@ internal class NoteDownloader(
                     Logger.d(TAG, "   📂 Found ${rootResources.size} resources in ROOT")
 
                     val oldNotes = rootResources.filter { resource ->
+                        // Backward compat (v1.2.0): Filter for legacy notes in the default
+                        // folder "/notes/" and "/notes-md/". These paths are intentionally
+                        // hardcoded to the PRE-custom-folder default, not the current folder
+                        // configuration. Legacy notes were always stored in /notes/.
+                        val legacyNotesPath = "/${Constants.DEFAULT_SYNC_FOLDER_NAME}/"
+                        val legacyMarkdownPath = "/${Constants.DEFAULT_SYNC_FOLDER_NAME}${SyncUrlBuilder.MARKDOWN_SUFFIX}/"
                         !resource.isDirectory &&
                             resource.name.endsWith(".json") &&
-                            !resource.path.contains("/notes/") &&
-                            // Not from /notes/ subdirectory
-                            !resource.path.contains("/notes-md/") // Not from /notes-md/
+                            !resource.path.contains(legacyNotesPath) &&
+                            !resource.path.contains(legacyMarkdownPath)
                     }
 
-                    Logger.d(TAG, "   🔎 Filtered to ${oldNotes.size} .json files (excluding /notes/ and /notes-md/)")
+                    Logger.d(TAG, "   🔎 Filtered to ${oldNotes.size} .json files (excluding legacy paths)")
 
                     if (oldNotes.isNotEmpty()) {
                         Logger.w(TAG, "⚠️ Found ${oldNotes.size} notes in ROOT (old v1.2.0 structure)")
@@ -410,8 +415,30 @@ internal class NoteDownloader(
                             val noteUrl = rootUrl.trimEnd('/') + "/" + resource.name
                             Logger.d(TAG, "   📄 Processing: ${resource.name} from ${resource.path}")
 
+                            // 🔧 v2.3.0 (Issue #62): UUID-Format-Check auf Dateinamen —
+                            // spiegelt Phase 1 (siehe UUID_REGEX-Check oben). Verhindert
+                            // Parsing von Fremd-JSONs im Root (info.json, google-services.json, …).
+                            val rootNoteId = resource.name.removeSuffix(".json")
+                            if (!UUID_REGEX.matches(rootNoteId)) {
+                                Logger.d(TAG, "   ⏭️ Skipping non-note JSON in ROOT: ${resource.name}")
+                                continue
+                            }
+
                             val jsonContent = sardine.get(noteUrl).use { it.bufferedReader().readText() }
                             val remoteNote = Note.fromJson(jsonContent) ?: continue
+
+                            // 🔧 v2.3.0 (Issue #62): ID-Mismatch-Check — spiegelt Phase 1C.
+                            // Legitimate notes: filename "{noteId}.json" → parsed ID == filename.
+                            // Foreign JSON with random UUID default from NoteRaw → parsed ID ≠ filename.
+                            if (remoteNote.id != rootNoteId) {
+                                Logger.w(
+                                    TAG,
+                                    "   ⚠️ Skipping foreign JSON in ROOT: ${resource.name} " +
+                                        "(parsed ID '${remoteNote.id}' doesn't match filename)"
+                                )
+                                processedIds.add(rootNoteId) // Prevent re-processing
+                                continue
+                            }
 
                             // Skip if already loaded from /notes/
                             if (processedIds.contains(remoteNote.id)) {
@@ -517,7 +544,7 @@ internal class NoteDownloader(
      * @param localNotes Alle lokalen Notizen
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
      */
-    fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
+    suspend fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
         val syncedNotes = localNotes.filter { it.syncStatus == SyncStatus.SYNCED }
 
         // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
@@ -558,7 +585,7 @@ internal class NoteDownloader(
         )
 
         var deletedCount = 0
-        syncedNotes.forEach { note ->
+        for (note in syncedNotes) {
             // Nur SYNCED-Notizen prüfen:
             // - LOCAL_ONLY: War nie auf Server → irrelevant
             // - PENDING: Soll hochgeladen werden → nicht überschreiben

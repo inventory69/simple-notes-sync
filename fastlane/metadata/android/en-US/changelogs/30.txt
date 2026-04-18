@@ -1,0 +1,13 @@
+🛡️ v2.3.0 — Security, Sync & Battery
+
+• Encrypted WebDAV credentials
+• Battery optimization prompt
+• Fix: Markdown auto-sync on save
+• Fix: phantom notes from WebDAV root
+• Fix: MKCOL 404 & WebDAV validation
+• Fix: widget checklist sorting
+• Many more fixes & improvements
+
+Thanks to @minosimo, @Ichigo-Meow, @angeld-jr2, MrsMinchen, freemen!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

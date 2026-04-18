@@ -10,8 +10,11 @@ import java.util.UUID
 
 /**
  * Note data class with Compose stability annotation.
- * @Immutable tells Compose this class is stable and won't change unexpectedly,
- * enabling skip optimizations during recomposition.
+ *
+ * `@Immutable` is correct: all properties are `val`, and `checklistItems`
+ * is always an immutable copy (never a MutableList in practice), even though
+ * the `List` interface technically permits mutable implementations.
+ * This enables Compose skipping optimizations during recomposition.
  */
 @Immutable
 data class Note(

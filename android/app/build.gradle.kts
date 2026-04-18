@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 29  // 🆕 v2.2.0
-        versionName = "2.2.0"  // 🆕 v2.2.0
+        versionCode = 30  // 🆕 v2.3.0
+        versionName = "2.3.0"  // 🆕 v2.3.0
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,14 +38,15 @@ android {
     productFlavors {
         create("fdroid") {
             dimension = "distribution"
-            // F-Droid builds have no proprietary dependencies
-            // All dependencies in this project are already FOSS-compatible
-            // No APK splits - F-Droid expects single universal APK
+            // F-Droid builds: currently identical to standard.
+            // Flavor exists for future separation (e.g., removing
+            // proprietary dependencies from standard builds).
         }
         
         create("standard") {
             dimension = "distribution"
-            // Standard builds can include Play Services in the future if needed
+            // Standard builds: currently identical to fdroid.
+            // Reserved for Google Play specific features if needed.
         }
     }
 
@@ -91,7 +92,6 @@ android {
     }
 
     buildFeatures {
-        viewBinding = false
         buildConfig = true  // Enable BuildConfig generation
         compose = true  // v1.5.0: Jetpack Compose für Settings Redesign
     }

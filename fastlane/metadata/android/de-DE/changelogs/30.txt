@@ -1,0 +1,13 @@
+🛡️ v2.3.0 — Sicherheit, Sync & Akku
+
+• Verschlüsselte WebDAV-Zugangsdaten
+• Akkuoptimierung-Dialog
+• Fix: Markdown-Auto-Sync beim Speichern
+• Fix: Phantom-Notizen via WebDAV-Root
+• Fix: MKCOL-404 & WebDAV-Validierung
+• Fix: Widget-Checklisten-Sortierung
+• Viele weitere Verbesserungen
+
+Danke an @minosimo, @Ichigo-Meow, @angeld-jr2, MrsMinchen, freemen!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

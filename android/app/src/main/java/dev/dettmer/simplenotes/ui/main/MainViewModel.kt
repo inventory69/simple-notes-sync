@@ -12,10 +12,13 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.storage.NotesStorage
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncStateManager
+import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -90,7 +93,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
 
     private val _isOfflineMode = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
@@ -100,7 +103,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun refreshOfflineModeState() {
         val oldValue = _isOfflineMode.value
-        val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         _isOfflineMode.value = newValue
         Logger.d(TAG, "🔄 refreshOfflineModeState: offlineMode=$oldValue → $newValue")
     }
@@ -226,7 +229,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) { notes, option, direction, filter, query ->
         val filtered = filterNotes(notes, filter)
         val searched = searchNotes(filtered, query)
-        sortNotes(searched, option, direction)
+        val sorted = sortNotes(searched, option, direction)
+
+        // Detect new note at top of sorted list (after returning from editor)
+        val newFirstId = sorted.firstOrNull()?.id
+        if (expectNewNoteCheck &&
+            newFirstId != null &&
+            previousFirstSortedNoteId != null &&
+            newFirstId != previousFirstSortedNoteId
+        ) {
+            _scrollToTop.value = true
+            Logger.d(TAG, "\uD83D\uDCDC New note detected at top, triggering scroll-to-top")
+        }
+        expectNewNoteCheck = false
+        previousFirstSortedNoteId = newFirstId
+
+        sorted
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -276,9 +294,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // UI Events
     // ═══════════════════════════════════════════════════════════════════════
 
-    private val _showToast = MutableSharedFlow<String>()
-    val showToast: SharedFlow<String> = _showToast.asSharedFlow()
-
     private val _showDeleteDialog = MutableSharedFlow<DeleteDialogData>()
     val showDeleteDialog: SharedFlow<DeleteDialogData> = _showDeleteDialog.asSharedFlow()
 
@@ -289,8 +304,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _scrollToTop = MutableStateFlow(false)
     val scrollToTop: StateFlow<Boolean> = _scrollToTop.asStateFlow()
 
-    // Track first note ID to detect new notes
-    private var previousFirstNoteId: String? = null
+    // Track first note ID in sorted order to detect new notes at top
+    private var previousFirstSortedNoteId: String? = null
+    // Flag: set when returning from editor, cleared after loadNotes comparison
+    private var expectNewNoteCheck = false
 
     // ═══════════════════════════════════════════════════════════════════════
     // Data Classes
@@ -298,13 +315,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     data class DeleteDialogData(val note: Note, val originalList: List<Note>)
 
-    data class SnackbarData(val message: String, val actionLabel: String, val onAction: () -> Unit)
+    data class SnackbarData(
+        val message: String,
+        val actionLabel: String? = null,
+        val onAction: (() -> Unit)? = null
+    )
+
+    fun emitSnackbar(message: String) {
+        viewModelScope.launch {
+            _showSnackbar.emit(SnackbarData(message = message))
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // Initialization
     // ═══════════════════════════════════════════════════════════════════════
 
     init {
+        // v2.3.0 (FIX-013): Check for stale sync state on every ViewModel init
+        // (covers configuration changes without process kill)
+        SyncStateManager.checkAndResetStaleState()
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
@@ -320,24 +350,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Load notes asynchronously on IO dispatcher
      * This prevents UI blocking during app startup
      */
-    private suspend fun loadNotesAsync() {
-        val allNotes = storage.loadAllNotes()
+    private suspend fun loadNotesAsync(forceReload: Boolean = false) {
+        val allNotes = storage.loadAllNotes(forceReload)
         val pendingIds = _pendingDeletions.value
         val filteredNotes = allNotes.filter { it.id !in pendingIds }
 
         withContext(Dispatchers.Main) {
-            // Phase 3: Detect if a new note was added at the top
-            val newFirstNoteId = filteredNotes.firstOrNull()?.id
-            if (newFirstNoteId != null &&
-                previousFirstNoteId != null &&
-                newFirstNoteId != previousFirstNoteId
-            ) {
-                // New note at top → trigger scroll
-                _scrollToTop.value = true
-                Logger.d(TAG, "📜 New note detected at top, triggering scroll-to-top")
-            }
-            previousFirstNoteId = newFirstNoteId
-
             _notes.value = filteredNotes
         }
     }
@@ -345,9 +363,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Public loadNotes - delegates to async version
      */
-    fun loadNotes() {
+    fun loadNotes(forceReload: Boolean = false) {
         viewModelScope.launch(ioDispatcher) {
-            loadNotesAsync()
+            loadNotesAsync(forceReload)
         }
     }
 
@@ -363,6 +381,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun scrollToTop() {
         _scrollToTop.value = true
+    }
+
+    /**
+     * Signal that we're returning from editor — enables new-note detection
+     * in the sortedNotes combine flow.
+     */
+    fun notifyReturningFromEditor() {
+        expectNewNoteCheck = true
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -554,8 +580,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * [deleteNoteConfirmed] which shows the undo snackbar.
      */
     fun deleteNoteFromEditor(noteId: String, deleteFromServer: Boolean) {
-        val note = storage.loadNote(noteId) ?: return
-        deleteNoteConfirmed(note, deleteFromServer)
+        viewModelScope.launch {
+            val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
+            deleteNoteConfirmed(note, deleteFromServer)
+            triggerOnSaveSync()
+        }
+    }
+
+    /**
+     * Triggers an on-save sync via WorkManager after a deletion.
+     * Mirrors NoteEditorViewModel.triggerOnSaveSync() — uses same throttle + gate checks.
+     * Audit: 4-04
+     */
+    private fun triggerOnSaveSync() {
+        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)) {
+            Logger.d(TAG, "⏭️ onSave sync disabled - skipping")
+            return
+        }
+
+        val syncService = WebDavSyncService(getApplication())
+        val gateResult = syncService.canSync()
+        if (!gateResult.canSync) {
+            Logger.d(TAG, "⏭️ onSave sync blocked after deletion: ${gateResult.blockReason ?: "offline/no server"}")
+            return
+        }
+
+        val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
+        val now = System.currentTimeMillis()
+        val timeSinceLastSync = now - lastOnSaveSyncTime
+
+        if (timeSinceLastSync < Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS) {
+            val remainingSeconds = (Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
+            Logger.d(TAG, "⏳ onSave sync throttled after deletion - wait ${remainingSeconds}s")
+            return
+        }
+
+        prefs.edit { putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now) }
+
+        Logger.d(TAG, "🗏️ Triggering onSave sync after deletion")
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .addTag(Constants.SYNC_WORK_TAG)
+            .addTag(Constants.SYNC_ONSAVE_TAG)
+            .build()
+        WorkManager.getInstance(getApplication()).enqueue(syncRequest)
     }
 
     /**
@@ -580,7 +647,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val webdavService = WebDavSyncService(getApplication())
         val isReachable = try {
             withContext(ioDispatcher) { webdavService.isServerReachable() }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.d(TAG, "isServerReachable check failed during attemptServerDeletion: ${e.message}")
             false
         }
         if (!isReachable) {
@@ -761,7 +829,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
                     SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
-                    loadNotes()
+                    loadNotes(forceReload = true)
                     // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
                     _syncCompletedScrollToTop.value = true
                     return@launch
@@ -798,7 +866,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                     SyncStateManager.markCompleted(bannerMessage)
-                    loadNotes()
+                    loadNotes(forceReload = true)
                     // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
                     if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
                         _syncCompletedScrollToTop.value = true
@@ -895,7 +963,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // Das Banner-System respektiert silent=true korrekt (markCompleted → IDLE)
                     // Toast wurde fälschlicherweise trotzdem angezeigt
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
-                    loadNotes()
+                    loadNotes(forceReload = true)
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
                     SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE

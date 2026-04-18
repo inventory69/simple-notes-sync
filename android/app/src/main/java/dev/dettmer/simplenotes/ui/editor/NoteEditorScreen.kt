@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor
 
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -56,6 +56,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -77,7 +80,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -100,12 +102,13 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.utils.Constants
-import dev.dettmer.simplenotes.utils.showToast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import android.content.ClipData
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
@@ -125,18 +128,29 @@ private val DRAGGING_ELEVATION_DP = 8.dp
 @Suppress("LongMethod")
 @Composable
 fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val checklistItems by viewModel.checklistItems.collectAsState()
 
     // 🌟 v1.6.0: Offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
 
+    // 🔧 v2.3.0: Block ALL rendering until async note load completes.
+    // Must be before any remember/LaunchedEffect blocks so they never
+    // execute with stale UiState defaults (noteType=TEXT, isNewNote=true).
+    if (uiState.isLoading) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface
+        ) {}
+        return
+    }
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     // 🆕 v2.0.1: Markdown Preview default for existing TEXT notes
     // New notes start in edit mode (user wants to type immediately),
     // existing TEXT notes start in preview mode (read-first workflow).
-    var isPreviewMode by remember {
+    // key() forces recomputation after async load changes isNewNote/noteType.
+    var isPreviewMode by remember(uiState.isNewNote, uiState.noteType) {
         mutableStateOf(
             !uiState.isNewNote && uiState.noteType == NoteType.TEXT
         )
@@ -149,11 +163,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // 🆕 v2.2.0: Checklist Item Context Menu — State für Aktion 3
     var copyToChecklistItemId by remember { mutableStateOf<String?>(null) }
     val otherChecklists by viewModel.otherChecklists.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
 
     // v2.0.1: Compact toolbar for narrow displays or large font scale (Issue #48)
     // Uses LocalWindowInfo (preferred for foldable/multi-window) over LocalConfiguration.
@@ -184,9 +199,15 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     }
 
     // Cursor ans Ende setzen wenn Content geladen wird (einmalig)
-    LaunchedEffect(Unit) {
-        if (uiState.content.isNotEmpty()) {
-            textFieldState.edit { placeCursorAtEnd() }
+    // 🔧 v2.3.0 (FIX-011): Sync TextFieldState when content arrives from async storage load.
+    // rememberTextFieldState only uses initialText on first call; this LaunchedEffect handles
+    // the case where uiState.content is updated after first composition.
+    LaunchedEffect(uiState.content) {
+        if (textFieldState.text.isEmpty() && uiState.content.isNotEmpty()) {
+            textFieldState.edit {
+                replace(0, length, uiState.content)
+                placeCursorAtEnd()
+            }
         }
     }
 
@@ -232,7 +253,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         ToastMessage.NOTE_DELETED -> msgNoteDeleted
                         ToastMessage.ITEM_COPIED_TO_CHECKLIST -> msgItemCopiedToChecklist // 🆕 v2.2.0
                     }
-                    context.showToast(message)
+                    scope.launch { snackbarHostState.showSnackbar(message) }
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
                 is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
@@ -252,7 +273,15 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         }
     }
 
+    // Collect snackbar messages from Activity-originated actions (share, PDF, etc.)
+    LaunchedEffect(Unit) {
+        viewModel.showSnackbar.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -553,7 +582,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         onCopyText = { itemId ->                                     // 🆕 v2.2.0
                             val text = checklistItems.find { it.id == itemId }?.text
                             if (!text.isNullOrBlank()) {
-                                clipboardManager.setText(AnnotatedString(text))
+                                scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", text))) }
                             }
                         },
                         onDuplicate = { itemId ->                                    // 🆕 v2.2.0
@@ -892,7 +921,7 @@ private fun ChecklistEditor(
         SideEffect {
             dragDropState.separatorVisualIndex = separatorVisualIndex
             if (BuildConfig.DEBUG && dragDropState.isAnyItemDragging) {
-                Log.d("DragDrop", "[SEPARATOR] idx=$separatorVisualIndex")
+                Logger.d("DragDrop", "[SEPARATOR] idx=$separatorVisualIndex")
             }
         }
 

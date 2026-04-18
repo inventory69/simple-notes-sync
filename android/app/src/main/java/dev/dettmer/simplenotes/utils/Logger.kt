@@ -13,7 +13,7 @@ import java.util.*
  * Release builds zeigen nur Errors/Warnings
  */
 object Logger {
-    private const val MAX_LOG_ENTRIES = 500 // Nur letzte 500 Einträge
+    private const val MAX_LOG_ENTRIES = 5000 // Nur letzte 5000 Einträge
 
     private var fileLoggingEnabled = false
     private var logFile: File? = null

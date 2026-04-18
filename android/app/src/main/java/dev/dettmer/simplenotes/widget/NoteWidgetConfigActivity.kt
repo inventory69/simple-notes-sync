@@ -15,6 +15,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.launch
 
 /**
@@ -34,6 +35,10 @@ import kotlinx.coroutines.launch
  * 🆕 v1.8.0 (IMPL_025): Auto-Save bei Back-Navigation + Save-FAB
  */
 class NoteWidgetConfigActivity : ComponentActivity() {
+    companion object {
+        private const val TAG = "WidgetConfigActivity"
+    }
+
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
     // 🆕 v1.8.0 (IMPL_025): State-Tracking für Auto-Save bei Back-Navigation
@@ -78,6 +83,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
             var existingNoteId: String? = null
             var existingLock = false
             var existingOpacity = 1.0f
+            var configLoadError = false
 
             try {
                 val glanceId = GlanceAppWidgetManager(this@NoteWidgetConfigActivity)
@@ -90,8 +96,9 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                 existingNoteId = prefs[NoteWidgetState.KEY_NOTE_ID]
                 existingLock = prefs[NoteWidgetState.KEY_IS_LOCKED] ?: false
                 existingOpacity = prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
-            } catch (_: Exception) {
-                // Neues Widget — keine bestehende Konfiguration
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to load widget config, using defaults: ${e.message}")
+                configLoadError = true
             }
 
             // 🆕 v1.8.0 (IMPL_025): Initiale State-Werte für Auto-Save setzen
@@ -110,6 +117,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                         initialLock = existingLock,
                         initialOpacity = existingOpacity,
                         selectedNoteId = existingNoteId,
+                        configLoadError = configLoadError,
                         onNoteSelected = { noteId, isLocked, opacity ->
                             configureWidget(noteId, isLocked, opacity)
                         },

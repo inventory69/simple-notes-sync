@@ -10,6 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
+import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -20,6 +21,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 /**
@@ -66,7 +69,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     // 🌟 v1.6.0: Offline Mode State
     private val _isOfflineMode = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
@@ -80,6 +83,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private val _events = MutableSharedFlow<NoteEditorEvent>()
     val events: SharedFlow<NoteEditorEvent> = _events.asSharedFlow()
+
+    private val _showSnackbar = MutableSharedFlow<String>()
+    val showSnackbar: SharedFlow<String> = _showSnackbar.asSharedFlow()
+
+    fun emitSnackbar(message: String) {
+        viewModelScope.launch {
+            _showSnackbar.emit(message)
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.9.0 (F14): Explicit scroll actions for check/un-check
@@ -102,7 +114,12 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     val checklistScrollAction: SharedFlow<ChecklistScrollAction> = _checklistScrollAction.asSharedFlow()
 
     // Internal state
-    private var existingNote: Note? = null
+    // v2.3.0 (REF-012): backed by MutableStateFlow for thread-safe access;
+    // delegated property syntax preserves all call sites unchanged.
+    private val _existingNote = MutableStateFlow<Note?>(null)
+    private var existingNote: Note?
+        get() = _existingNote.value
+        set(value) { _existingNote.value = value }
     private var currentNoteType: NoteType = NoteType.TEXT
 
     // v2.0.0: Callback to read the latest content directly from Compose TextFieldState.
@@ -112,7 +129,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     // 🛡️ v1.8.2 (IMPL_17): Trackt ob User ungespeicherte Checklist-Edits hat.
     // Wenn true, überspringt reloadFromStorage() das Neuladen, damit onResume()
     // (Notification Shade, App-Switcher etc.) keine User-Änderungen überschreibt.
-    private var hasUnsavedChecklistEdits = false
+    // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
+    private val _hasUnsavedChecklistEdits = MutableStateFlow(false)
+    private var hasUnsavedChecklistEdits: Boolean
+        get() = _hasUnsavedChecklistEdits.value
+        set(value) { _hasUnsavedChecklistEdits.value = value }
 
     // 🆕 v1.9.0: Autosave with debounce
     private val autosaveEnabled = prefs.getBoolean(
@@ -120,7 +141,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         Constants.DEFAULT_AUTOSAVE_ENABLED
     )
     private var autosaveJob: kotlinx.coroutines.Job? = null
-    private var isDirty = false // 🆕 v1.9.0: only autosave when content has actually changed
+    // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
+    private val _isDirty = MutableStateFlow(false)
+    private var isDirty: Boolean
+        get() = _isDirty.value
+        set(value) { _isDirty.value = value } // 🆕 v1.9.0: only autosave when content has actually changed
 
     // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
     private val _autosaveIndicatorVisible = MutableStateFlow(false)
@@ -131,7 +156,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     val canUndo: StateFlow<Boolean> = undoRedoManager.canUndo
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedo
     private var snapshotDebounceJob: kotlinx.coroutines.Job? = null
-    private var isRestoringSnapshot = false
+    // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
+    private val _isRestoringSnapshot = MutableStateFlow(false)
+    private var isRestoringSnapshot: Boolean
+        get() = _isRestoringSnapshot.value
+        set(value) { _isRestoringSnapshot.value = value }
 
     // 🔧 v1.10.0: Snapshot des zuletzt gespeicherten Zustands.
     // Wird beim Öffnen und nach jedem erfolgreichen Save gesetzt.
@@ -147,14 +176,19 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         val noteTypeString = savedStateHandle.get<String>(ARG_NOTE_TYPE) ?: NoteType.TEXT.name
 
         if (noteId != null) {
-            loadExistingNote(noteId)
+            // Mark loading and correct isNewNote to prevent flash of wrong editor
+            // type and wrong LaunchedEffect triggers during async load
+            _uiState.update { it.copy(isLoading = true, isNewNote = false) }
+            viewModelScope.launch {
+                loadExistingNote(noteId)
+            }
         } else {
             initNewNote(noteTypeString)
         }
     }
 
-    private fun loadExistingNote(noteId: String) {
-        existingNote = storage.loadNote(noteId)
+    private suspend fun loadExistingNote(noteId: String) {
+        existingNote = withContext(Dispatchers.IO) { storage.loadNote(noteId) }
         existingNote?.let { note ->
             currentNoteType = note.noteType
             _uiState.update { state ->
@@ -163,6 +197,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     content = note.content,
                     noteType = note.noteType,
                     isNewNote = false,
+                    isLoading = false,
                     toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                         ToolbarTitle.EDIT_CHECKLIST
                     } else {
@@ -174,6 +209,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             if (note.noteType == NoteType.CHECKLIST) {
                 loadChecklistData(note)
             }
+        } ?: run {
+            // Note not found — clear loading state
+            _uiState.update { it.copy(isLoading = false) }
         }
         undoRedoManager.clear() // 🆕 v1.10.0: No cross-note undo
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
@@ -381,36 +419,18 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * 🆕 v1.9.0 (F04): Unchecked items werden nach originalOrder sortiert für Position-Restore.
      */
     private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
-        val sorted = when (_lastChecklistSortOption.value) {
-            ChecklistSortOption.MANUAL,
-            ChecklistSortOption.UNCHECKED_FIRST -> {
-                // 🆕 v1.9.0 (F04): Sort by originalOrder to restore un-checked item's original position
-                val unchecked = items.filter { !it.isChecked }.sortedBy { it.originalOrder }
-                val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
-                unchecked + checked
-            }
-            ChecklistSortOption.CREATION_DATE -> {
-                // 🆕 v1.11.0: Sort by creation timestamp — oldest first (ascending)
-                val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
-                val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
-                unchecked + checked
-            }
-            ChecklistSortOption.CREATION_DATE_DESC -> {
-                // 🆕 v1.11.0: Sort by creation timestamp — newest first (descending)
-                val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
-                val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
-                unchecked + checked
-            }
-            ChecklistSortOption.CHECKED_FIRST ->
-                items.sortedByDescending { it.isChecked }
-            ChecklistSortOption.ALPHABETICAL_ASC ->
-                items.sortedBy { it.text.lowercase() }
-            ChecklistSortOption.ALPHABETICAL_DESC ->
-                items.sortedByDescending { it.text.lowercase() }
+        val asChecklistItems = items.map { s ->
+            ChecklistItem(
+                id = s.id, text = s.text, isChecked = s.isChecked,
+                order = s.order, originalOrder = s.originalOrder, createdAt = s.createdAt
+            )
         }
-
-        return sorted.mapIndexed { index, item ->
-            item.copy(order = index)
+        val sorted = ChecklistSorter.sort(asChecklistItems, _lastChecklistSortOption.value)
+        return sorted.map { item ->
+            ChecklistItemState(
+                id = item.id, text = item.text, isChecked = item.isChecked,
+                order = item.order, originalOrder = item.originalOrder, createdAt = item.createdAt
+            )
         }
     }
 
@@ -743,6 +763,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun sortChecklistItems(option: ChecklistSortOption) {
         pushUndoSnapshot() // 🆕 v1.10.0
+        isDirty = true
         hasUnsavedChecklistEdits = true // 🛡️ v1.8.2 (IMPL_17)
         // Merke die Auswahl für diesen Editor-Session
         _lastChecklistSortOption.value = option
@@ -782,6 +803,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             // 🆕 v1.9.0 (F04): Explicit sort resets originalOrder baseline to new positions
             sorted.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
         }
+        scheduleAutosave()
     }
 
     fun saveNote() {
@@ -794,15 +816,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             triggerOnSaveSync()
 
             // 🆕 v1.8.0: Betroffene Widgets aktualisieren
-            try {
-                val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(getApplication())
-                val glanceIds = glanceManager.getGlanceIds(dev.dettmer.simplenotes.widget.NoteWidget::class.java)
-                glanceIds.forEach { id ->
-                    dev.dettmer.simplenotes.widget.NoteWidget().update(getApplication(), id)
-                }
-            } catch (e: Exception) {
-                Logger.w(TAG, "Failed to update widgets: ${e.message}")
-            }
+            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
 
             _events.emit(NoteEditorEvent.NavigateBack)
         }
@@ -867,7 +881,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
-                    storage.saveNote(note)
+                    // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
+                    // und MUSS synchron abschließen bevor die Activity zerstört wird.
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
                     existingNote = note
                 }
                 NoteType.CHECKLIST -> {
@@ -924,13 +941,20 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
-                    storage.saveNote(note)
+                    // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
+                    // und MUSS synchron abschließen bevor die Activity zerstört wird.
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
                     existingNote = note
                 }
             }
             isDirty = false
             savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
             Logger.d(TAG, "💾 saveOnBack: saved successfully")
+            // Fire-and-forget widget update — saveOnBack must return synchronously
+            viewModelScope.launch {
+                WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+            }
             true
         } catch (e: Exception) {
             Logger.e(TAG, "saveOnBack failed: ${e.message}")
@@ -1117,7 +1141,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     /**
      * 🆕 v1.9.0: Schedules a silent autosave after AUTOSAVE_DEBOUNCE_MS.
      * Called on every text-edit action. Cancels any previous pending autosave.
-     * Does NOT trigger sync, widget update, or navigation — only local disk save.
+     * Does NOT trigger sync or navigation — only local disk save + widget update.
      */
     private fun scheduleAutosave() {
         if (!autosaveEnabled) return
@@ -1129,6 +1153,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             if (saved) {
                 Logger.d(TAG, "💾 Autosave completed")
                 _autosaveIndicatorVisible.value = true
+                // Update widgets so they reflect the auto-saved state
+                WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
                 kotlinx.coroutines.delay(Constants.AUTOSAVE_INDICATOR_DURATION_MS)
                 _autosaveIndicatorVisible.value = false
             }
@@ -1246,31 +1272,33 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
         val noteId = savedStateHandle.get<String>(ARG_NOTE_ID) ?: return
 
-        val freshNote = storage.loadNote(noteId) ?: return
+        viewModelScope.launch {
+            val freshNote = withContext(Dispatchers.IO) { storage.loadNote(noteId) } ?: return@launch
 
-        // Nur Checklist-Items aktualisieren
-        if (freshNote.noteType == NoteType.CHECKLIST) {
-            val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
-            // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
-            val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
-            // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
-            val isPreCreatedAtFresh = rawFreshItems.all { it.createdAt == 0L }
-            val freshItems = rawFreshItems.mapIndexed { index, raw ->
-                ChecklistItemState(
-                    id = raw.id,
-                    text = raw.text,
-                    isChecked = raw.isChecked,
-                    order = raw.order,
-                    originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
-                    createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt
-                )
+            // Nur Checklist-Items aktualisieren
+            if (freshNote.noteType == NoteType.CHECKLIST) {
+                val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
+                // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
+                val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
+                // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
+                val isPreCreatedAtFresh = rawFreshItems.all { it.createdAt == 0L }
+                val freshItems = rawFreshItems.mapIndexed { index, raw ->
+                    ChecklistItemState(
+                        id = raw.id,
+                        text = raw.text,
+                        isChecked = raw.isChecked,
+                        order = raw.order,
+                        originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
+                        createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt
+                    )
+                }
+                if (freshItems.isEmpty()) return@launch
+
+                _checklistItems.value = sortChecklistItems(freshItems)
+                // existingNote aktualisieren damit beim Speichern der richtige
+                // Basis-State verwendet wird
+                existingNote = freshNote
             }
-            if (freshItems.isEmpty()) return
-
-            _checklistItems.value = sortChecklistItems(freshItems)
-            // existingNote aktualisieren damit beim Speichern der richtige
-            // Basis-State verwendet wird
-            existingNote = freshNote
         }
     }
 
@@ -1337,6 +1365,7 @@ data class NoteEditorUiState(
     val content: String = "",
     val noteType: NoteType = NoteType.TEXT,
     val isNewNote: Boolean = true,
+    val isLoading: Boolean = false,
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE
 )
 

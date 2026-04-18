@@ -3,6 +3,8 @@ package dev.dettmer.simplenotes.utils
 object Constants {
     // SharedPreferences
     const val PREFS_NAME = "simple_notes_prefs"
+    /** Legacy prefs name — used only for credential migration fallback in CredentialStore. */
+    const val PREFS_NAME_LEGACY = PREFS_NAME
     const val KEY_SERVER_URL = "server_url"
     const val KEY_USERNAME = "username"
     const val KEY_PASSWORD = "password"
@@ -38,7 +40,10 @@ object Constants {
     const val KEY_FILE_LOGGING_ENABLED = "file_logging_enabled"
 
     // 🔥 v1.6.0: Offline Mode Toggle
+    // Default: true — new installs start in offline mode (no server configured yet).
+    // Migrated for updates in SimpleNotesApplication.migrateOfflineModeSetting().
     const val KEY_OFFLINE_MODE = "offline_mode_enabled"
+    const val DEFAULT_OFFLINE_MODE = true
 
     // 🔥 v1.7.0: WiFi-Only Sync Toggle
     const val KEY_WIFI_ONLY_SYNC = "wifi_only_sync_enabled"
@@ -144,6 +149,9 @@ object Constants {
     // 🆕 v2.2.0: WiFi-Connect Fallback Worker — überlebt Prozess-Tod
     const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
     const val WIFI_FALLBACK_INTERVAL_HOURS = 6L
+
+    // 🆕 v2.3.0: Battery optimization migration prompt (one-time)
+    const val KEY_BATTERY_OPT_MIGRATION_SHOWN = "battery_opt_migration_shown"
 
     // 🆕 v2.1.0 (F46): Grid column control
     const val KEY_GRID_ADAPTIVE_SCALING = "grid_adaptive_scaling"

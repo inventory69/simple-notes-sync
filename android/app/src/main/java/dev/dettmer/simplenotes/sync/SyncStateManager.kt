@@ -198,6 +198,29 @@ object SyncStateManager {
         }
     }
 
+    /**
+     * 🔒 v2.3.0 (FIX-013): Zeitstempel-basierte Stale-Detection.
+     *
+     * Resettet einen SYNCING/SYNCING_SILENT-State, der älter als SYNC_TIMEOUT_MS (5 min) ist.
+     * Ersetzt den bedingungslosen reset() in Application.onCreate — funktioniert auch
+     * bei Configuration-Changes ohne echten Prozess-Kill.
+     *
+     * Aufruf: SimpleNotesApplication.onCreate() und MainViewModel.init {}.
+     */
+    fun checkAndResetStaleState() {
+        synchronized(lock) {
+            val current = _syncStatus.value
+            if ((current.state == SyncState.SYNCING || current.state == SyncState.SYNCING_SILENT) &&
+                System.currentTimeMillis() - current.timestamp > SYNC_TIMEOUT_MS
+            ) {
+                val ageSeconds = (System.currentTimeMillis() - current.timestamp) / 1000
+                Logger.w(TAG, "⚠️ Stale sync state detected (age: ${ageSeconds}s, source: ${current.source}) — resetting to IDLE")
+                _syncStatus.value = SyncStatus()
+                _syncProgress.value = SyncProgress.IDLE
+            }
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.8.0: Detailliertes Progress-Tracking (während syncNotes())
     // ═══════════════════════════════════════════════════════════════════════

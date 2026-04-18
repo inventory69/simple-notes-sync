@@ -155,6 +155,9 @@
     <string name="sync_error_server">Server error</string>
     <string name="sync_error_http">HTTP error: %d</string>
     <string name="sync_error_unknown">Unknown error</string>
+    <!-- 🔧 v2.3.0 (Issue #55): Better error messages for MKCOL/WebDAV failures -->
+    <string name="sync_error_mkcol_failed">Cannot create sync folder. Please verify your WebDAV URL includes the full path (e.g. /remote.php/dav/files/USERNAME/).</string>
+    <string name="sync_error_not_webdav">URL is not a WebDAV endpoint. Please verify the full WebDAV path (e.g. /remote.php/dav/files/USERNAME/).</string>
     
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
@@ -224,6 +227,7 @@
     <string name="import_no_files_found">No importable files found</string>
     <string name="import_summary_title">Import Result</string>
     <string name="import_dialog_complete">%1$d imported, %2$d skipped, %3$d failed</string>
+    <string name="import_zero_notes_hint">No notes could be imported. The file may be corrupted or in an unsupported format.</string>
     <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
     <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
     <string name="import_cancel">Cancel</string>
@@ -564,9 +568,10 @@
     <string name="toast_file_logging_enabled">📝 File logging enabled</string>
     <string name="toast_file_logging_disabled">📝 File logging disabled</string>
     <string name="battery_optimization_dialog_title">Background Synchronization</string>
-    <string name="battery_optimization_dialog_full_message">For the app to sync in the background, battery optimization must be disabled.\n\nPlease select \'Not optimized\' for Simple Notes.</string>
+    <string name="battery_optimization_dialog_full_message">For the app to sync reliably in the background, battery optimization must be disabled.\n\nPlease select \'Not optimized\' for Simple Notes.</string>
     <string name="battery_optimization_open_settings">Open Settings</string>
     <string name="battery_optimization_later">Later</string>
+    <string name="battery_optimization_open_settings_failed">Please disable battery optimization for Simple Notes manually in system settings.</string>
     <string name="content_description_back">Back</string>
     <string name="error_invalid_backup_file">Invalid backup file</string>
     <string name="error_backup_version_unsupported">Backup version not supported (v%1$d requires v%2$d+)</string>
@@ -661,12 +666,15 @@
     <string name="widget_config_title">Choose a Note</string>
     <string name="widget_config_hint">Tap a note to add it as a widget</string>
     <string name="widget_config_save">Save</string>
+    <string name="widget_config_load_error">Previous widget configuration could not be loaded. Please reconfigure.</string>
     <string name="widget_lock_label">Lock widget</string>
     <string name="widget_lock_description">Prevent accidental edits</string>
     <string name="widget_opacity_label">Background opacity</string>
     <string name="widget_opacity_description">Adjust the transparency of the widget background</string>
     <string name="widget_preview_title">Shopping List</string>
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
+    <string name="widget_note_not_found">Note not found</string>
+    <string name="widget_tap_to_reconfigure">Tap to reconfigure</string>
 
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->

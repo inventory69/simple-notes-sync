@@ -583,4 +583,24 @@
     <string name="theme_color_dynamic_unavailable">动态颜色需要 Android 12+</string>
     <string name="toolbar_title_new">新建</string>
     <string name="toolbar_title_edit">编辑</string>
+    <string name="md_toolbar_checklist">复选框</string>
+    <string name="new_note_widget_name">新笔记</string>
+    <string name="new_note_widget_description">快速创建一个新笔记或清单</string>
+    <string name="new_note_widget_content_description">创建新笔记</string>
+    <string name="new_note_widget_checklist_description">创建新清单</string>
+    <string name="new_note_widget_btn_note">笔记</string>
+    <string name="new_note_widget_btn_checklist">清单</string>
+    <string name="share_type_dialog_title">保存为</string>
+    <string name="share_type_dialog_message">分享的文本应该如何保存？</string>
+    <string name="share_type_text_note">文本笔记</string>
+    <string name="share_type_checklist">清单</string>
+    <string name="checklist_item_menu">项目选项</string>
+    <string name="checklist_copy_text">复制文本</string>
+    <string name="checklist_duplicate_item">创建副本</string>
+    <string name="checklist_copy_to_checklist">复制到清单</string>
+    <string name="checklist_copy_to_checklist_title">复制到清单</string>
+    <string name="checklist_copy_to_checklist_empty">无可用的其他清单。先创建其他清单。</string>
+    <string name="checklist_copy_to_checklist_untitled">无标题的清单</string>
+    <string name="checklist_copy_to_checklist_item_count">%d 个项目</string>
+    <string name="checklist_item_copied_toast">项目已经复制到清单</string>
 </resources>

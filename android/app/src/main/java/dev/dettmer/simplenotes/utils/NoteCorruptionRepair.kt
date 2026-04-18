@@ -1,11 +1,14 @@
 package dev.dettmer.simplenotes.utils
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * v2.2.0: Einmalige Reparatur-Routine für korrupte Checklist-Titel.
@@ -18,10 +21,10 @@ object NoteCorruptionRepair {
     private const val TAG = "NoteCorruptionRepair"
     private const val REPAIR_KEY = "corruption_repair_v2_2_0_done"
 
-    fun repairIfNeeded(storage: NotesStorage, prefs: SharedPreferences) {
+    suspend fun repairIfNeeded(storage: NotesStorage, prefs: SharedPreferences) {
         if (prefs.getBoolean(REPAIR_KEY, false)) return
 
-        val allNotes = storage.loadAllNotes()
+        val allNotes = withContext(Dispatchers.IO) { storage.loadAllNotes() }
         val checklistPattern = Regex("""[-*]\s*\[([ xX])\]\s+""")
         var repairedCount = 0
 
@@ -60,7 +63,7 @@ object NoteCorruptionRepair {
             }
         }
 
-        prefs.edit().putBoolean(REPAIR_KEY, true).apply()
+        prefs.edit { putBoolean(REPAIR_KEY, true) }
         if (repairedCount > 0) {
             Logger.w(TAG, "🔧 Corruption repair complete: $repairedCount note(s) repaired")
         } else {

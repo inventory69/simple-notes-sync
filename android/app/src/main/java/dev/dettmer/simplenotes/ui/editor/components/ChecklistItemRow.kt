@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -354,7 +354,7 @@ fun ChecklistItemRow(
                             }
                         }
                         if (BuildConfig.DEBUG && lineCount > COLLAPSED_MAX_LINES) {
-                            Log.d(
+                            Logger.d(
                                 "DragDrop",
                                 "[GRADIENT:${item.id.takeLast(6)}] " +
                                     "lines=$lineCount overflow=$hasOverflow " +
@@ -462,7 +462,7 @@ fun ChecklistItemRow(
                     enabled = item.text.isNotBlank(),
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Default.PlaylistAdd,
+                            imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp)
                         )

@@ -5,6 +5,7 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
+import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -64,23 +65,14 @@ class ToggleChecklistItemAction : ActionCallback {
         // Konsistent mit NoteEditorViewModel.updateChecklistItemChecked
         val sortOption = try {
             note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
+            Logger.d(TAG, "Unknown checklistSortOption '${note.checklistSortOption}': ${e.message}")
             null
         }
             ?: ChecklistSortOption.MANUAL
 
-        // 🆕 v1.9.0 (F04): Restore position on un-check using originalOrder
-        val sortedItems = if (sortOption == ChecklistSortOption.MANUAL ||
-            sortOption == ChecklistSortOption.UNCHECKED_FIRST
-        ) {
-            val unchecked = updatedItems.filter { !it.isChecked }.sortedBy { it.originalOrder }
-            val checked = updatedItems.filter { it.isChecked }.sortedBy { it.originalOrder }
-            (unchecked + checked).mapIndexed { index, item ->
-                item.copy(order = index)
-            }
-        } else {
-            updatedItems.mapIndexed { index, item -> item.copy(order = index) }
-        }
+        // v2.3.0 (FIX-004): Delegate to ChecklistSorter for all sort options
+        val sortedItems = ChecklistSorter.sort(updatedItems, sortOption)
 
         val updatedNote = note.copy(
             checklistItems = sortedItems,

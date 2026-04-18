@@ -68,9 +68,10 @@ class NoteWidget : GlanceAppWidget() {
             val showOptions = prefs[NoteWidgetState.KEY_SHOW_OPTIONS] ?: false
             val bgOpacity = prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
 
-            val note = noteId?.let { nId ->
-                storage.loadNote(nId)
-            }
+            // Load note synchronously inside provideContent so it re-reads on every
+            // widget update (state change). provideContent runs on a Glance SessionWorker
+            // thread, not the main thread, so synchronous file I/O is safe here.
+            val note = noteId?.let { storage.loadNoteSync(it) }
 
             GlanceTheme {
                 NoteWidgetContent(

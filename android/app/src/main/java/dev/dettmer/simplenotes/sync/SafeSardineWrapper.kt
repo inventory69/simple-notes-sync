@@ -95,7 +95,12 @@ class SafeSardineWrapper private constructor(
             when {
                 response.isSuccessful -> true
                 code == HTTP_NOT_FOUND -> false
-                code == HTTP_FORBIDDEN -> true // Resource exists (Jianguoyun: HEAD on Collection → 403)
+                code == HTTP_FORBIDDEN -> {
+                    // Jianguoyun returns 403 for HEAD on collections.
+                    // Log as warning so users can diagnose false positives on other servers.
+                    Logger.w(TAG, "exists($url) received 403 — assuming resource exists (Jianguoyun workaround)")
+                    true
+                }
                 code == HTTP_GONE -> false
                 code == HTTP_UNAUTHORIZED -> throw java.io.IOException(
                     "Authentication failed ($code) for $url"
@@ -236,6 +241,32 @@ class SafeSardineWrapper private constructor(
 
         okHttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful && response.code != HTTP_METHOD_NOT_ALLOWED) { // 405 = already exists
+                // 🔧 v2.3.0 (Issue #55): MKCOL 404 means the parent collection doesn't exist
+                // or the URL is not a valid WebDAV endpoint.
+                // Try list() fallback to check if the directory already exists
+                // (some servers reject MKCOL but support PROPFIND).
+                if (response.code == HTTP_NOT_FOUND) {
+                    Logger.d(TAG, "createDirectory($url) → 404, trying list() fallback")
+                    val alreadyExists = runCatching { delegate.list(url) }
+                        .getOrNull()
+                        ?.isNotEmpty() == true
+                    if (alreadyExists) {
+                        Logger.d(TAG, "list() fallback → directory already exists")
+                        return
+                    }
+                    Logger.d(TAG, "list() fallback also failed or returned empty")
+                    throw java.io.IOException(
+                        "MKCOL failed: 404 – the server path does not exist. " +
+                            "Please verify the WebDAV URL (e.g. /remote.php/dav/files/USERNAME/)"
+                    )
+                }
+                if (response.code == HTTP_UNAUTHORIZED) {
+                    throw com.thegrizzlylabs.sardineandroid.impl.SardineException(
+                        "Authentication failed during MKCOL for $url",
+                        response.code,
+                        null
+                    )
+                }
                 throw java.io.IOException("MKCOL failed: ${response.code} ${response.message}")
             }
             Logger.d(TAG, "createDirectory($url) → ${response.code}")

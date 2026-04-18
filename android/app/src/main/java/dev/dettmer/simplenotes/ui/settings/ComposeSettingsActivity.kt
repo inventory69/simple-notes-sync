@@ -1,11 +1,7 @@
 package dev.dettmer.simplenotes.ui.settings
 
-import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,13 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.SimpleNotesApplication
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
+import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.launch
 
@@ -107,7 +103,9 @@ class ComposeSettingsActivity : AppCompatActivity() {
                         confirmButton = {
                             TextButton(onClick = {
                                 viewModel.dismissBatteryOptimizationDialog()
-                                openBatteryOptimizationSettings()
+                                if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
+                                    viewModel.showSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                                }
                             }) {
                                 Text(getString(R.string.battery_optimization_open_settings))
                             }
@@ -157,33 +155,6 @@ class ComposeSettingsActivity : AppCompatActivity() {
                     }
                     else -> { /* handled via state */ }
                 }
-            }
-        }
-    }
-
-    /**
-     * Open system battery optimization settings
-     * v1.5.0: Ported from old SettingsActivity
-     *
-     * Note: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is acceptable for F-Droid builds.
-     * For Play Store builds, this would need to be changed to
-     * ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS (shows list, doesn't request directly).
-     */
-    @SuppressLint("BatteryLife")
-    private fun openBatteryOptimizationSettings() {
-        try {
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            intent.data = "package:$packageName".toUri()
-            startActivity(intent)
-        } catch (e: Exception) {
-            Logger.w(TAG, "Failed to open battery optimization settings: ${e.message}")
-            // Fallback: Open general battery settings
-            try {
-                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                startActivity(intent)
-            } catch (e2: Exception) {
-                Logger.w(TAG, "Failed to open fallback battery settings: ${e2.message}")
-                Toast.makeText(this, "Bitte Akku-Optimierung manuell deaktivieren", Toast.LENGTH_LONG).show()
             }
         }
     }

@@ -7,9 +7,14 @@ import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteCorruptionRepair
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class SimpleNotesApplication : Application() {
     companion object {
@@ -17,6 +22,9 @@ class SimpleNotesApplication : Application() {
     }
 
     lateinit var networkMonitor: NetworkMonitor // Public access für SettingsActivity
+
+    // Application-scoped coroutine scope for non-UI background work
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /**
      * 🌍 v1.7.1: Apply app locale to Application Context
@@ -40,6 +48,9 @@ class SimpleNotesApplication : Application() {
         // appear as offline even though they have a configured server
         migrateOfflineModeSetting(prefs)
 
+        // 🔐 v2.3.0: Migrate credentials to EncryptedSharedPreferences
+        migrateCredentialsToEncryptedPrefs(prefs)
+
         // File-Logging ZUERST aktivieren (damit alle Logs geschrieben werden!)
         if (prefs.getBoolean("file_logging_enabled", false)) {
             Logger.enableFileLogging(this)
@@ -60,22 +71,20 @@ class SimpleNotesApplication : Application() {
         // Dies läuft im Hintergrund auch wenn App geschlossen ist
         networkMonitor.startMonitoring()
 
-        // 🆕 v1.8.2: Stale Sync-State cleanup beim App-Kaltstart
-        // Nach einem Prozess-Neustart kann kein Sync mehr aktiv sein.
-        // SyncStateManager ist ein Kotlin object — bei Activity-Recreate ohne
-        // Prozess-Kill kann ein verwaister SYNCING-State dauerhaft blockieren.
-        if (SyncStateManager.isSyncing) {
-            Logger.e(TAG, "⚠️ Stale sync state detected on cold start - resetting")
-            SyncStateManager.reset()
-        }
+        // 🔒 v2.3.0 (FIX-013): Timestamp-based stale sync state cleanup.
+        // Replaces unconditional reset with checkAndResetStaleState() which
+        // also handles stuck states from configuration changes without process kill.
+        SyncStateManager.checkAndResetStaleState()
         Logger.d(TAG, "✅ WorkManager-based auto-sync initialized")
 
         // 🔧 v2.2.0: Einmalige Reparatur korrupter Checklist-Titel (Bug #07)
-        try {
-            val storage = NotesStorage(this)
-            NoteCorruptionRepair.repairIfNeeded(storage, prefs)
-        } catch (e: Exception) {
-            Logger.e(TAG, "⚠️ Corruption repair failed (non-fatal)", e)
+        applicationScope.launch {
+            try {
+                val storage = NotesStorage(this@SimpleNotesApplication)
+                NoteCorruptionRepair.repairIfNeeded(storage, prefs)
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ Corruption repair failed (non-fatal)", e)
+            }
         }
     }
 
@@ -89,7 +98,41 @@ class SimpleNotesApplication : Application() {
     }
 
     /**
-     * 🔧 Hotfix v1.6.2: Migrate offline mode setting for updates from v1.5.0
+     * � v2.3.0: Migrate credentials from regular to EncryptedSharedPreferences.
+     * One-time migration: removes credentials from unencrypted prefs after copying.
+     * If EncryptedSharedPreferences is unavailable (KeyStore issue), credentials
+     * remain in regular prefs and migration is retried on next app start.
+     *
+     * Audit: E-01
+     */
+    private fun migrateCredentialsToEncryptedPrefs(prefs: android.content.SharedPreferences) {
+        val username = prefs.getString(Constants.KEY_USERNAME, null)
+        val password = prefs.getString(Constants.KEY_PASSWORD, null)
+        if (username != null || password != null) {
+            try {
+                val securePrefs = CredentialStore.getSecurePrefs(this)
+                if (securePrefs == null) {
+                    Logger.w(TAG, "⚠️ EncryptedSharedPreferences unavailable — credentials remain in regular prefs (KeyStore issue)")
+                    return
+                }
+                CredentialStore.setCredentials(
+                    this,
+                    username.orEmpty(),
+                    password.orEmpty()
+                )
+                prefs.edit {
+                    remove(Constants.KEY_USERNAME)
+                    remove(Constants.KEY_PASSWORD)
+                }
+                Logger.d(TAG, "✅ Credentials migrated to EncryptedSharedPreferences")
+            } catch (e: Exception) {
+                Logger.e(TAG, "⚠️ Credential migration failed (non-fatal) — credentials remain in regular prefs", e)
+            }
+        }
+    }
+
+    /**
+     * �🔧 Hotfix v1.6.2: Migrate offline mode setting for updates from v1.5.0
      *
      * Problem: KEY_OFFLINE_MODE didn't exist in v1.5.0, but MainViewModel
      * and NoteEditorViewModel use `true` as default, causing existing users

@@ -12,7 +12,7 @@ import dev.dettmer.simplenotes.utils.Constants
  */
 class SyncUrlBuilder(private val prefs: SharedPreferences) {
     companion object {
-        private const val MARKDOWN_SUFFIX = "-md"
+        internal const val MARKDOWN_SUFFIX = "-md"
     }
 
     /**

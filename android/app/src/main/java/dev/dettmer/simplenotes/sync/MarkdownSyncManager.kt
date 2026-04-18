@@ -293,7 +293,7 @@ internal class MarkdownSyncManager(
      * 🆕 v1.11.0: excludeNoteIds verhindert Re-Import von soeben exportierten Dateien.
      */
     @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
-    fun importAll(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int {
+    suspend fun importAll(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")
 

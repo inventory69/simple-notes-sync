@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
 import java.text.SimpleDateFormat
@@ -73,8 +74,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     AppSettings(
                         // Server connection
                         serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null),
-                        username = prefs.getString(Constants.KEY_USERNAME, null),
-                        password = prefs.getString(Constants.KEY_PASSWORD, null),
+                        username = CredentialStore.getUsername(context),
+                        password = CredentialStore.getPassword(context),
                         syncFolder = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null),
                         connectionTimeoutSeconds = prefs.getInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, -1).takeIf {
                             it >=
@@ -311,8 +312,10 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 prefs.edit {
                     // Server connection
                     s.serverUrl?.let { putString(Constants.KEY_SERVER_URL, it) }
-                    s.username?.let { putString(Constants.KEY_USERNAME, it) }
-                    s.password?.let { putString(Constants.KEY_PASSWORD, it) }
+                    s.username?.let { username ->
+                        val password = s.password.orEmpty()
+                        CredentialStore.setCredentials(context, username, password)
+                    }
                     s.syncFolder?.let { putString(Constants.KEY_SYNC_FOLDER_NAME, it) }
                     s.connectionTimeoutSeconds?.let { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, it) }
                     s.maxParallelConnections?.let { putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, it) }
@@ -439,9 +442,20 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 )
             }
 
-            // Alle Notizen haben ID, title, content?
+            // Alle Notizen haben mindestens eine ID und Inhalt?
+            // 🔧 v2.3.1: Leerer Titel ist erlaubt, solange Inhalt vorhanden ist
+            // (entspricht Editor-Logik in NoteEditorViewModel: Note nur dann leer,
+            //  wenn Titel UND Inhalt/Checklist-Items leer sind).
+            // Vorherige Regel `title.isBlank()` lehnte v2.2.0-Backups mit
+            // titellosen Checklisten ab.
             val invalidNotes = backupData.notes.filter { note ->
-                note.id.isBlank() || note.title.isBlank()
+                val hasContent = when (note.noteType) {
+                    dev.dettmer.simplenotes.models.NoteType.CHECKLIST ->
+                        !note.checklistItems.isNullOrEmpty() || note.content.isNotBlank()
+                    dev.dettmer.simplenotes.models.NoteType.TEXT ->
+                        note.content.isNotBlank()
+                }
+                note.id.isBlank() || (note.title.isBlank() && !hasContent)
             }
 
             if (invalidNotes.isNotEmpty()) {
@@ -464,7 +478,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * Restore-Modus: MERGE
      * Fügt neue Notizen hinzu, behält bestehende
      */
-    private fun restoreMerge(backupNotes: List<Note>): RestoreResult {
+    private suspend fun restoreMerge(backupNotes: List<Note>): RestoreResult {
         val existingNotes = storage.loadAllNotes()
         val existingIds = existingNotes.map { it.id }.toSet()
 
@@ -487,7 +501,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * Restore-Modus: REPLACE
      * Löscht alle bestehenden Notizen, importiert Backup
      */
-    private fun restoreReplace(backupNotes: List<Note>): RestoreResult {
+    private suspend fun restoreReplace(backupNotes: List<Note>): RestoreResult {
         // Alle bestehenden Notizen löschen
         storage.deleteAllNotes()
 
@@ -508,7 +522,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * Restore-Modus: OVERWRITE_DUPLICATES
      * Backup überschreibt bei ID-Konflikten
      */
-    private fun restoreOverwriteDuplicates(backupNotes: List<Note>): RestoreResult {
+    private suspend fun restoreOverwriteDuplicates(backupNotes: List<Note>): RestoreResult {
         val existingNotes = storage.loadAllNotes()
         val existingIds = existingNotes.map { it.id }.toSet()
 

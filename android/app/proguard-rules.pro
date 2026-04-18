@@ -1,22 +1,19 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# ═══════════════════════════════════════════════════════════════════════
+# simple-notes-sync — ProGuard / R8 Configuration
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Audit-Referenz:
+#   project-docs/simple-notes-sync/v2.3.0/audit-proguard-r8.md
+#
+# Stand: v2.3.0 (Audit 2026-04-18)
+# ═══════════════════════════════════════════════════════════════════════
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Preserve line numbers for crash reports (Crashlytics, Play Console, logcat)
+# ─── Crash-Report-Attribute ──────────────────────────────────────────
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+-keepattributes Signature
+-keepattributes *Annotation*
 
-# OkHttp platform-specific SSL classes (optional dependencies)
+# ─── Library-Warnings (optional/transitive Deps) ─────────────────────
 -dontwarn org.bouncycastle.jsse.BCSSLParameters
 -dontwarn org.bouncycastle.jsse.BCSSLSocket
 -dontwarn org.bouncycastle.jsse.provider.BouncyCastleJsseProvider
@@ -26,84 +23,105 @@
 -dontwarn org.openjsse.javax.net.ssl.SSLParameters
 -dontwarn org.openjsse.javax.net.ssl.SSLSocket
 -dontwarn org.openjsse.net.ssl.OpenJSSE
+-dontwarn org.w3c.dom.ElementTraversal
+-dontwarn android.text.Layout$TextInclusionStrategy
+-dontwarn sun.misc.**
 
 # ═══════════════════════════════════════════════════════════════════════
-# Sardine WebDAV library
+# Sardine WebDAV (com.thegrizzlylabs:sardine-android — KEINE consumer rules)
 # ═══════════════════════════════════════════════════════════════════════
-# Sardine uses JAXB-style XML annotations for WebDAV PROPFIND responses.
-# Only keep the model/handler classes that Sardine needs for XML parsing.
+# SimpleXML Reflection für PROPFIND-Parsing — Modell- und Handler-Klassen
+# müssen vollständig erhalten bleiben.
 -keep class com.thegrizzlylabs.sardineandroid.model.** { *; }
 -keep class com.thegrizzlylabs.sardineandroid.handler.** { *; }
--keep class com.thegrizzlylabs.sardineandroid.DavResource { *; }
 -keep class com.thegrizzlylabs.sardineandroid.impl.** { *; }
--keepclassmembers class com.thegrizzlylabs.sardineandroid.** {
+-keep class com.thegrizzlylabs.sardineandroid.DavResource { *; }
+# Public-API-Surface — nur das Sardine-Interface explizit (interne Subpackages
+# durch obige Klassen-Keeps abgedeckt).
+-keepclassmembers interface com.thegrizzlylabs.sardineandroid.Sardine {
     public <methods>;
 }
--dontwarn org.w3c.dom.ElementTraversal
-
-# ═══════════════════════════════════════════════════════════════════════
-# Coroutines — keep only what's needed for reflection
-# ═══════════════════════════════════════════════════════════════════════
--keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
--keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
--keepclassmembers class kotlinx.coroutines.** {
-    volatile <fields>;
+-keepclassmembers class com.thegrizzlylabs.sardineandroid.DavResource {
+    public <methods>;
+    <init>(...);
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# Gson — only keep Gson's reflection infrastructure, not the entire library
+# Tink (transitiv via androidx.security:security-crypto — KEINE consumer rules)
 # ═══════════════════════════════════════════════════════════════════════
--keepattributes Signature
--keepattributes *Annotation*
--dontwarn sun.misc.**
-# Gson uses TypeToken via reflection for generic type resolution
--keep class com.google.gson.reflect.TypeToken { *; }
+# R8 traces the full call-graph from EncryptedSharedPreferences.create() →
+# MasterKey → AeadConfig.register() → Registry → KeyManagers correctly.
+# Protobuf deserialization in GeneratedMessageLite uses reflection for
+# field access — keep fields on all proto message subclasses.
+# No broad class-keeps needed: R8's code analysis handles reachability.
+-keepclassmembers class * extends com.google.crypto.tink.shaded.protobuf.GeneratedMessageLite {
+    <fields>;
+}
+
+# ═══════════════════════════════════════════════════════════════════════
+# Gson (com.google.code.gson — gson.pro consumer rules vorhanden, App ergänzt)
+# ═══════════════════════════════════════════════════════════════════════
 -keep class * extends com.google.gson.reflect.TypeToken
 -keep class * implements com.google.gson.TypeAdapter
 -keep class * implements com.google.gson.TypeAdapterFactory
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
-# Keep @SerializedName annotation values
 -keepclassmembers,allowobfuscation class * {
     @com.google.gson.annotations.SerializedName <fields>;
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# App-specific rules: Only keep what Gson/reflection needs
+# App-Modelle (Gson-serialisiert)
 # ═══════════════════════════════════════════════════════════════════════
+# Klassennamen dürfen obfuskiert werden (fromJson(json, X::class.java)
+# übersetzt das Class-Literal automatisch). Gson liest Felder über
+# Reflection — diese müssen erhalten bleiben.
+-keep,allowobfuscation class dev.dettmer.simplenotes.models.** { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.models.** {
+    <fields>;
+}
+# NoteRaw ist Note$Companion$NoteRaw — durch das ** Pattern abgedeckt.
 
-# 🔧 v1.8.2: Granulare Regeln statt breiter Wildcard
-# 🔧 v1.10.0 Audit: BackupData-Fix, tote data/-Regel entfernt
-# 🔧 v2.1.0 Audit: Gson-Regeln verschärft, Sardine granularer
+# ═══════════════════════════════════════════════════════════════════════
+# App-Backup-Datenklassen
+# ═══════════════════════════════════════════════════════════════════════
+-keep,allowobfuscation class dev.dettmer.simplenotes.backup.BackupData { <init>(...); }
+-keep,allowobfuscation class dev.dettmer.simplenotes.backup.AppSettings { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.backup.BackupData { <fields>; }
+-keepclassmembers class dev.dettmer.simplenotes.backup.AppSettings { <fields>; }
 
-# 1) DATA MODELS — Gson braucht Feldnamen + Konstruktoren
-#    NoteRaw ist Note$Companion$NoteRaw (Companion-verschachtelt!)
--keep class dev.dettmer.simplenotes.models.** { *; }
-
-# 2) BACKUP — BackupData + AppSettings für Gson-Serialisierung
--keep class dev.dettmer.simplenotes.backup.BackupData { *; }
--keep class dev.dettmer.simplenotes.backup.AppSettings { *; }
-
-# 3) WORKMANAGER — instanziiert SyncWorker via Reflection
+# ═══════════════════════════════════════════════════════════════════════
+# WorkManager — SyncWorker wird per FQN aus WorkRequest instanziiert
+# ═══════════════════════════════════════════════════════════════════════
 -keep class dev.dettmer.simplenotes.sync.SyncWorker { *; }
 
-# 4) BROADCAST RECEIVERS — via AndroidManifest registriert
--keep class dev.dettmer.simplenotes.** extends android.content.BroadcastReceiver { *; }
-
-# 5) ACTIVITIES & APPLICATION — Android-Framework instanziiert via Reflection
--keep class dev.dettmer.simplenotes.SimpleNotesApplication { *; }
--keep class dev.dettmer.simplenotes.** extends android.app.Activity { *; }
-
-# v1.7.1: Suppress TextInclusionStrategy warnings on older Android versions
--dontwarn android.text.Layout$TextInclusionStrategy
-
 # ═══════════════════════════════════════════════════════════════════════
-# v1.8.1: Widget & Compose Fixes
+# Glance Widgets
 # ═══════════════════════════════════════════════════════════════════════
-
-# Glance Widget ActionCallbacks (instanziiert via Reflection durch actionRunCallback<T>())
+# GlanceAppWidget-Subklassen + ComposableSingletons-Anker (Glance-Compose-Compiler).
+# *Action-Pattern deckt alle ActionCallback-Implementierungen ab
+# (Toggle…, Show…, Refresh, Open…).
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget { *; }
+-keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver { *; }
 -keep class dev.dettmer.simplenotes.widget.*Action { *; }
--keep class * implements androidx.glance.appwidget.action.ActionCallback { *; }
 
-# Compose Text Layout: Nur TextLayoutResult behalten (für onTextLayout-Callbacks)
--keep class androidx.compose.ui.text.TextLayoutResult { *; }
+# ═══════════════════════════════════════════════════════════════════════
+# Footer — was bereits durch andere Quellen abgedeckt ist (NICHT duplizieren!)
+# ═══════════════════════════════════════════════════════════════════════
+# • Manifest-Komponenten (Application/Activity/Receiver/Provider/Service)
+#   → AAPT-generierte aapt_rules.txt (siehe build/outputs/mapping/.../configuration.txt)
+# • kotlinx-coroutines (MainDispatcherFactory, CoroutineExceptionHandler, …)
+#   → kotlinx-coroutines-core consumer-rules.pro
+# • Compose UI (TextLayoutResult, Modifier-Elements, …)
+#   → androidx.compose.ui consumer-rules.pro
+# • OkHttp (PublicSuffixDatabase, animal_sniffer dontwarn)
+#   → okhttp3 META-INF/proguard/okhttp3.pro
+# • Gson (TypeToken, *Annotation*, @JsonAdapter, @Expose-Felder)
+#   → gson META-INF/proguard/gson.pro
+# • FileProvider, WorkManager-SystemForegroundService
+#   → AAR consumer rules
+#
+# Wenn du eine neue Library einführst, prüfe `find ~/.gradle/caches -path "*<lib>*"
+# -name "*.pro"`. Falls keine consumer-rules vorhanden sind, App-spezifische Rules
+# hier ergänzen + im Audit-Dokument vermerken.
+# ═══════════════════════════════════════════════════════════════════════
