@@ -9,6 +9,7 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import java.io.IOException
@@ -36,6 +37,7 @@ data class UploadBatchResult(val uploadedCount: Int, val markdownExportedNoteIds
 class WebDavSyncService(private val context: Context, private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     companion object {
         private const val TAG = "WebDavSyncService"
+        private const val HTTP_UNAUTHORIZED = 401
 
         // � v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
@@ -48,7 +50,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     private val timestampManager = SyncTimestampManager(prefs)
     private val exceptionMapper = SyncExceptionMapper(context)
     private val urlBuilder = SyncUrlBuilder(prefs)
-    private val connectionManager = ConnectionManager(prefs)
+    private val connectionManager = ConnectionManager(context, prefs)
 
     /** 🆕 v1.9.0: Configured sync folder name (loaded at sync start). */
     private var activeSyncFolderName: String = Constants.DEFAULT_SYNC_FOLDER_NAME
@@ -127,6 +129,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     internal fun getServerUrl(): String? = urlBuilder.getServerUrl()
 
     /**
+     * 🔧 v2.3.0: Checks if an IOException signals an HTTP 401 authentication failure.
+     * Used in directory-ensure methods to let auth errors propagate
+     * instead of being masked by the exists/list fallback logic.
+     * See: bug-401-error-mapping.md
+     */
+    private fun isAuthException(e: IOException): Boolean {
+        if (e is com.thegrizzlylabs.sardineandroid.impl.SardineException) {
+            return e.statusCode == HTTP_UNAUTHORIZED
+        }
+        val msg = e.message?.lowercase().orEmpty()
+        return msg.contains("authentication failed")
+    }
+
+    /**
      * Stellt sicher dass notes-md/ Ordner existiert
      *
      * Wird beim ersten erfolgreichen Sync aufgerufen (unabhängig von MD-Feature).
@@ -143,11 +159,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val dirExists = try {
                 sardine.exists(mdUrl)
             } catch (e: IOException) {
+                if (isAuthException(e)) throw e
                 Logger.w(TAG, "⚠️ notes-md/ exists() check failed: ${e.message}, trying list()")
                 try {
                     sardine.list(mdUrl)
                     true
-                } catch (_: IOException) {
+                } catch (listEx: IOException) {
+                    if (isAuthException(listEx)) throw listEx
+                    Logger.w(TAG, "⚠️ notes-md/ list() fallback also failed: ${listEx.message}")
                     false
                 }
             }
@@ -170,6 +189,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Spart ~500ms pro Sync durch Caching
      * 🔧 v2.0.0 (Issue #44): Fallback auf list() wenn exists() fehlschlägt
      */
+    @Suppress("ThrowsCount") // Auth re-throws in exists/list fallback + outer re-throw
     private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
         if (connectionManager.notesDirEnsured) {
             Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
@@ -183,11 +203,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val dirExists = try {
                 sardine.exists(notesUrl)
             } catch (e: IOException) {
+                if (isAuthException(e)) throw e
                 Logger.w(TAG, "⚠️ exists() check failed: ${e.message}, trying list()")
                 try {
                     sardine.list(notesUrl)
                     true
-                } catch (_: IOException) {
+                } catch (listEx: IOException) {
+                    if (isAuthException(listEx)) throw listEx
+                    Logger.w(TAG, "⚠️ list() fallback also failed: ${listEx.message}")
                     false
                 }
             }
@@ -425,6 +448,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 sardine.createDirectory(serverUrl)
             }
 
+            // 🔧 v2.3.0 (Issue #55): Verify WebDAV capability with PROPFIND.
+            // HEAD/exists() can return 200 on any HTTP server, but PROPFIND verifies
+            // the URL is an actual WebDAV collection. Without this check, testConnection()
+            // reports "Reachable" for non-WebDAV URLs, and the subsequent MKCOL fails with 404.
+            try {
+                sardine.list(serverUrl)
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ PROPFIND failed on base URL: ${e.message}")
+                return@withContext SyncResult(
+                    isSuccess = false,
+                    errorMessage = context.getString(R.string.sync_error_not_webdav)
+                )
+            }
+
             // 🔧 v1.9.0 Fix: activeSyncFolderName VOR getNotesUrl() laden
             activeSyncFolderName = prefs.getString(
                 Constants.KEY_SYNC_FOLDER_NAME,
@@ -435,7 +472,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             val notesExist = try {
                 sardine.exists(notesUrl)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Logger.d(TAG, "exists() check failed during testConnection: ${e.message}")
                 false
             }
             val folderName = activeSyncFolderName
@@ -514,7 +552,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
                         ?: Constants.DEFAULT_SYNC_FOLDER_NAME
                 Logger.d(TAG, "📁 Sync folder: $activeSyncFolderName")
-                Logger.d(TAG, "🔐 Credentials configured: ${prefs.getString(Constants.KEY_USERNAME, null) != null}")
+                Logger.d(TAG, "🔐 Credentials configured: ${CredentialStore.getUsername(context) != null}")
 
                 var syncedCount = 0
                 var conflictCount = 0
@@ -591,7 +629,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     val downloadResult = downloadRemoteNotes(
                         sardine,
                         serverUrl,
-                        includeRootFallback = true, // ✅ v1.3.0: Enable for v1.2.0 compatibility
+                        // 🔧 v2.3.0 (Issue #62): Normal sync must NOT scan WebDAV root.
+                        // v1.2.0 compat-scan caused phantom "Untitled" notes when foreign
+                        // JSONs (info.json, google-services.json, …) sat in the root and
+                        // were parsed into Notes with a fresh random UUID each sync.
+                        // Legacy v1.2.0 users can still migrate via restoreFromServer().
+                        includeRootFallback = false,
                         onProgress = { current, total, noteTitle ->
                             // 🆕 v1.10.0-P2: Pass actual total from ParallelDownloader for determinate progress
                             SyncStateManager.updateProgress(
@@ -960,7 +1003,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     /**
      * Auto-Import Markdown files during regular sync — delegiert an MarkdownSyncManager.
      */
-    private fun importMarkdownFiles(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
+    private suspend fun importMarkdownFiles(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
         markdownSyncManager.importAll(sardine, serverUrl, excludeNoteIds)
 
     /**
@@ -988,8 +1031,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val serverUrl = getServerUrl()
                 ?: throw SyncException(context.getString(R.string.error_server_url_not_configured))
 
-            val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
-            val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+            val username = CredentialStore.getUsername(context).orEmpty()
+            val password = CredentialStore.getPassword(context).orEmpty()
 
             if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                 throw SyncException(context.getString(R.string.error_server_not_configured))

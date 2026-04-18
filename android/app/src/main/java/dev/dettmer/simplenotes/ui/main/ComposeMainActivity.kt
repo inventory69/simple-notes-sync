@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,17 +20,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.glance.appwidget.GlanceAppWidgetManager
+import dev.dettmer.simplenotes.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
-import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -44,11 +41,15 @@ import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import android.os.PowerManager
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
-import dev.dettmer.simplenotes.widget.NoteWidget
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Main Activity with Jetpack Compose UI
@@ -65,13 +66,15 @@ import kotlinx.coroutines.launch
 class ComposeMainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "ComposeMainActivity"
+        private const val KEY_CAME_FROM_EDITOR = "cameFromEditor"
+        private const val KEY_CAME_FROM_SETTINGS = "cameFromSettings"
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         val messageRes = if (granted) R.string.toast_notifications_enabled else R.string.toast_notifications_disabled
-        Toast.makeText(this, getString(messageRes), Toast.LENGTH_SHORT).show()
+        viewModel.emitSnackbar(getString(messageRes))
     }
 
     private val editorLauncher = registerForActivityResult(
@@ -110,11 +113,20 @@ class ComposeMainActivity : ComponentActivity() {
     // 🆕 v1.10.0: Separate Job for banner auto-hide — survives collect re-emissions
     private var bannerAutoHideJob: kotlinx.coroutines.Job? = null
 
-    // Phase 3: Track if coming from editor to scroll to top
+    // Track if coming from editor (to suppress onResume auto-sync)
     private var cameFromEditor = false
 
     // v2.0.0: Track if coming from settings (to suppress onResume sync)
     private var cameFromSettings = false
+
+    // 🆕 v2.3.0: State-driven battery optimization dialog for migration prompt
+    private var showBatteryOptDialog by mutableStateOf(false)
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_CAME_FROM_EDITOR, cameFromEditor)
+        outState.putBoolean(KEY_CAME_FROM_SETTINGS, cameFromSettings)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
@@ -122,6 +134,12 @@ class ComposeMainActivity : ComponentActivity() {
         splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
 
         super.onCreate(savedInstanceState)
+
+        // 🆕 v2.3.0 FIX-018: Restore navigation flags after process death
+        savedInstanceState?.let {
+            cameFromEditor = it.getBoolean(KEY_CAME_FROM_EDITOR, false)
+            cameFromSettings = it.getBoolean(KEY_CAME_FROM_SETTINGS, false)
+        }
 
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(prefs)
@@ -148,7 +166,12 @@ class ComposeMainActivity : ComponentActivity() {
         }
 
         // v1.4.1: Migrate checklists for backwards compatibility
-        migrateChecklistsForBackwardsCompat()
+        lifecycleScope.launch {
+            migrateChecklistsForBackwardsCompat()
+        }
+
+        // 🆕 v2.3.0: One-time battery optimization migration for existing users
+        checkBatteryOptimizationMigration()
 
         // Setup Sync State Observer
         setupSyncStateObserver()
@@ -161,7 +184,7 @@ class ComposeMainActivity : ComponentActivity() {
                         is SyncEvent.SyncCompleted -> {
                             Logger.d(TAG, "📡 Sync completed event: success=${event.success}, count=${event.count}")
                             if (event.success && event.count > 0) {
-                                viewModel.loadNotes()
+                                viewModel.loadNotes(forceReload = true)
                                 Logger.d(TAG, "🔄 Notes reloaded after background sync")
                             }
                         }
@@ -172,7 +195,6 @@ class ComposeMainActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
-                val context = LocalContext.current
 
                 // Dialog state for delete confirmation
                 var deleteDialogData by remember { mutableStateOf<MainViewModel.DeleteDialogData?>(null) }
@@ -181,13 +203,6 @@ class ComposeMainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     viewModel.showDeleteDialog.collect { data ->
                         deleteDialogData = data
-                    }
-                }
-
-                // Handle toast events
-                LaunchedEffect(Unit) {
-                    viewModel.showToast.collect { message ->
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -206,6 +221,30 @@ class ComposeMainActivity : ComponentActivity() {
                         onDeleteFromServer = {
                             viewModel.deleteNoteConfirmed(data.note, deleteFromServer = true)
                             deleteDialogData = null
+                        }
+                    )
+                }
+
+                // 🆕 v2.3.0: Battery optimization migration dialog
+                if (showBatteryOptDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showBatteryOptDialog = false },
+                        title = { Text(stringResource(R.string.battery_optimization_dialog_title)) },
+                        text = { Text(stringResource(R.string.battery_optimization_dialog_full_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showBatteryOptDialog = false
+                                if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
+                                    viewModel.emitSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                                }
+                            }) {
+                                Text(stringResource(R.string.battery_optimization_open_settings))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showBatteryOptDialog = false }) {
+                                Text(stringResource(R.string.battery_optimization_later))
+                            }
                         }
                     )
                 }
@@ -244,13 +283,15 @@ class ComposeMainActivity : ComponentActivity() {
         // Reload notes
         viewModel.loadNotes()
 
-        // Phase 3: Scroll to top if coming from editor (new/edited note)
+        // Phase 3: Track returning from in-app child activities
         // v2.0.0: Track whether we're returning from an in-app child activity
         val returningFromChild = cameFromEditor || cameFromSettings
         if (cameFromEditor) {
-            viewModel.scrollToTop()
+            // Signal ViewModel to check for new notes after loadNotes.
+            // scrollToTop is triggered automatically if sorted list has a new first entry.
+            viewModel.notifyReturningFromEditor()
             cameFromEditor = false
-            Logger.d(TAG, "📜 Came from editor - scrolling to top")
+            Logger.d(TAG, "📜 Came from editor")
         }
         if (cameFromSettings) {
             cameFromSettings = false
@@ -284,17 +325,7 @@ class ComposeMainActivity : ComponentActivity() {
      */
     private fun refreshAllWidgets() {
         lifecycleScope.launch {
-            try {
-                val glanceManager = GlanceAppWidgetManager(this@ComposeMainActivity)
-                val glanceIds = glanceManager.getGlanceIds(NoteWidget::class.java)
-                if (glanceIds.isEmpty()) return@launch
-                Logger.d(TAG, "🔄 F09: Refreshing ${glanceIds.size} widget(s) on onStop")
-                glanceIds.forEach { id ->
-                    NoteWidget().update(this@ComposeMainActivity, id)
-                }
-            } catch (e: Exception) {
-                Logger.w(TAG, "F09: Failed to refresh widgets on onStop: ${e.message}")
-            }
+            WidgetUpdateHelper.refreshAllNoteWidgets(this@ComposeMainActivity)
         }
     }
 
@@ -410,7 +441,7 @@ class ComposeMainActivity : ComponentActivity() {
     /**
      * v1.4.1: Migrates existing checklists for backwards compatibility.
      */
-    private fun migrateChecklistsForBackwardsCompat() {
+    private suspend fun migrateChecklistsForBackwardsCompat() {
         val migrationKey = "v1.4.1_checklist_migration_done"
 
         // Only run once
@@ -419,7 +450,7 @@ class ComposeMainActivity : ComponentActivity() {
         }
 
         val storage = NotesStorage(this)
-        val allNotes = storage.loadAllNotes()
+        val allNotes = withContext(Dispatchers.IO) { storage.loadAllNotes() }
         val checklistsToMigrate = allNotes.filter { note ->
             note.noteType == NoteType.CHECKLIST &&
                 note.content.isBlank() &&
@@ -429,12 +460,14 @@ class ComposeMainActivity : ComponentActivity() {
         if (checklistsToMigrate.isNotEmpty()) {
             Logger.d(TAG, "🔄 v1.4.1 Migration: Found ${checklistsToMigrate.size} checklists without fallback content")
 
-            for (note in checklistsToMigrate) {
-                val updatedNote = note.copy(
-                    syncStatus = SyncStatus.PENDING
-                )
-                storage.saveNote(updatedNote)
-                Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
+            withContext(Dispatchers.IO) {
+                for (note in checklistsToMigrate) {
+                    val updatedNote = note.copy(
+                        syncStatus = SyncStatus.PENDING
+                    )
+                    storage.saveNote(updatedNote)
+                    Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
+                }
             }
 
             Logger.d(TAG, "✅ v1.4.1 Migration: ${checklistsToMigrate.size} checklists marked for re-sync")
@@ -443,6 +476,36 @@ class ComposeMainActivity : ComponentActivity() {
         // Mark migration as done
         prefs.edit { putBoolean(migrationKey, true) }
     }
+
+    /**
+     * 🆕 v2.3.0: One-time battery optimization check for existing users.
+     *
+     * Existing users who already have sync enabled (offline mode disabled) but haven't
+     * been prompted for battery optimization exemption should see this dialog once.
+     * New users will be prompted via Trigger A (setOfflineMode → checkAndPromptBatteryOptimization).
+     */
+    private fun checkBatteryOptimizationMigration() {
+        // Only run if offline mode is disabled (sync is active)
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)) return
+
+        // Only run once
+        if (prefs.getBoolean(Constants.KEY_BATTERY_OPT_MIGRATION_SHOWN, false)) return
+
+        // Mark as shown immediately (regardless of whether the dialog is needed)
+        prefs.edit { putBoolean(Constants.KEY_BATTERY_OPT_MIGRATION_SHOWN, true) }
+
+        // Check if already exempt from battery optimization
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            Logger.d(TAG, "🔋 Battery optimization already ignored — migration prompt not needed")
+            return
+        }
+
+        // Show migration dialog
+        Logger.d(TAG, "🔋 Showing one-time battery optimization migration prompt")
+        showBatteryOptDialog = true
+    }
+
 }
 
 /**

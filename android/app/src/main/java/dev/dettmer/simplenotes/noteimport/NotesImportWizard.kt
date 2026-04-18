@@ -165,7 +165,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
      * Importiert eine einzelne Datei als Simple-Notes-Notiz.
      * Erkennt automatisch das Format und wählt den passenden Parser.
      */
-    fun importFile(candidate: ImportCandidate): ImportResult {
+    suspend fun importFile(candidate: ImportCandidate): ImportResult {
         return try {
             val content = readContent(candidate.source)
 
@@ -228,7 +228,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     /**
      * Batch-Import: Importiert mehrere Dateien und gibt eine Zusammenfassung zurück.
      */
-    fun importFiles(
+    suspend fun importFiles(
         candidates: List<ImportCandidate>,
         onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }
     ): ImportSummary {
@@ -349,7 +349,8 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                     Logger.d(TAG, "   📋 ${candidate.name}: Simple Notes JSON (id=${note.id})")
                     return note
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to parse as Simple Notes JSON for ${candidate.name}: ${e.message}")
                 // Fallthrough to generic parsing
             }
         }
@@ -448,7 +449,11 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     private fun readContent(source: ImportSource): String {
         return when (source) {
             is ImportSource.WebDav -> {
-                source.sardine.get(source.url).bufferedReader().use { it.readText() }
+                source.sardine.get(source.url)?.bufferedReader()?.use { it.readText() }
+                    ?: run {
+                        Logger.w(TAG, "WebDAV resource not found: ${source.url}")
+                        ""
+                    }
             }
             is ImportSource.LocalFile -> {
                 checkNotNull(context.contentResolver.openInputStream(source.uri)) {
@@ -515,7 +520,8 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                 prim.isString -> Note.parseISO8601(prim.asString).takeIf { it > 0L }
                 else -> null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.d(TAG, "Timestamp parsing failed: ${e.message}")
             null
         }
     }

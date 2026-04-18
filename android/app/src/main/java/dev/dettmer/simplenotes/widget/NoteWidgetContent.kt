@@ -45,6 +45,14 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
+import dev.dettmer.simplenotes.utils.Logger
+
+private const val TAG = "NoteWidgetContent"
+
+// Maximum number of lines/items to render in the widget to prevent
+// TransactionTooLargeException (1MB Binder limit for RemoteViews).
+private const val WIDGET_MAX_TEXT_LINES = 100
+private const val WIDGET_MAX_CHECKLIST_ITEMS = 100
 
 /**
  * 🆕 v1.8.0: Glance Composable Content für das Notiz-Widget
@@ -409,7 +417,14 @@ private fun TextNoteFullView(note: Note) {
         // 🆕 v1.8.0 Fix: Split text into individual lines instead of paragraphs.
         // This ensures each line is a separate LazyColumn item that can scroll properly.
         // Empty lines are preserved as small spacers for visual paragraph separation.
-        val lines = note.content.split("\n")
+        val lines = note.content.split("\n").let { allLines ->
+            if (allLines.size > WIDGET_MAX_TEXT_LINES) {
+                Logger.d(TAG, "Truncating text note from ${allLines.size} to $WIDGET_MAX_TEXT_LINES lines")
+                allLines.take(WIDGET_MAX_TEXT_LINES)
+            } else {
+                allLines
+            }
+        }
         items(lines.size) { index ->
             val line = lines[index]
             if (line.isBlank()) {
@@ -448,7 +463,8 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+    } catch (e: IllegalArgumentException) {
+        Logger.d(TAG, "Unknown checklistSortOption '${note.checklistSortOption}': ${e.message}")
         null
     }
         ?: ChecklistSortOption.MANUAL
@@ -556,7 +572,13 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
 private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
     val items = note.checklistItems?.let { rawItems ->
-        sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
+        val sorted = sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
+        if (sorted.size > WIDGET_MAX_CHECKLIST_ITEMS) {
+            Logger.d(TAG, "Truncating checklist from ${sorted.size} to $WIDGET_MAX_CHECKLIST_ITEMS items")
+            sorted.take(WIDGET_MAX_CHECKLIST_ITEMS)
+        } else {
+            sorted
+        }
     } ?: return
 
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
@@ -564,7 +586,8 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+    } catch (e: IllegalArgumentException) {
+        Logger.d(TAG, "Unknown checklistSortOption '${note.checklistSortOption}': ${e.message}")
         null
     }
         ?: ChecklistSortOption.MANUAL
@@ -667,21 +690,35 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
 private fun EmptyWidgetContent(bgOpacity: Float) {
     // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
+    val context = LocalContext.current
 
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .cornerRadius(16.dp)
             .then(bgModifier)
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable(
+                onClick = actionRunCallback<OpenConfigAction>()
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Note not found",
-            style = TextStyle(
-                color = GlanceTheme.colors.outline,
-                fontSize = 14.sp
+        Column(horizontalAlignment = Alignment.Horizontal.CenterHorizontally) {
+            Text(
+                text = context.getString(R.string.widget_note_not_found),
+                style = TextStyle(
+                    color = GlanceTheme.colors.outline,
+                    fontSize = 14.sp
+                )
             )
-        )
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Text(
+                text = context.getString(R.string.widget_tap_to_reconfigure),
+                style = TextStyle(
+                    color = GlanceTheme.colors.outline,
+                    fontSize = 12.sp
+                )
+            )
+        }
     }
 }

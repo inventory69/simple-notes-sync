@@ -141,6 +141,9 @@
     <string name="sync_error_server">Server-Fehler</string>
     <string name="sync_error_http">HTTP-Fehler: %d</string>
     <string name="sync_error_unknown">Unbekannter Fehler</string>
+    <!-- 🔧 v2.3.0 (Issue #55): Bessere Fehlermeldungen für MKCOL/WebDAV-Fehler -->
+    <string name="sync_error_mkcol_failed">Sync-Ordner kann nicht erstellt werden. Bitte überprüfe, ob die WebDAV-URL den vollständigen Pfad enthält (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
+    <string name="sync_error_not_webdav">URL ist kein WebDAV-Endpunkt. Bitte überprüfe den vollständigen WebDAV-Pfad (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
@@ -206,6 +209,7 @@
     <string name="import_no_files_found">Keine importierbaren Dateien gefunden</string>
     <string name="import_summary_title">Import-Ergebnis</string>
     <string name="import_dialog_complete">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen</string>
+    <string name="import_zero_notes_hint">Es konnten keine Notizen importiert werden. Die Datei ist möglicherweise beschädigt oder in einem nicht unterstützten Format.</string>
     <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
     <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
     <string name="import_cancel">Abbrechen</string>
@@ -513,9 +517,10 @@
     <string name="toast_file_logging_enabled">📝 Datei-Logging aktiviert</string>
     <string name="toast_file_logging_disabled">📝 Datei-Logging deaktiviert</string>
     <string name="battery_optimization_dialog_title">Hintergrund-Synchronisation</string>
-    <string name="battery_optimization_dialog_full_message">Damit die App im Hintergrund synchronisieren kann, muss die Akku-Optimierung deaktiviert werden.\n\nBitte wähle \'Nicht optimieren\' für Simple Notes.</string>
+    <string name="battery_optimization_dialog_full_message">Damit die App im Hintergrund zuverlässig synchronisieren kann, muss die Akku-Optimierung deaktiviert werden.\n\nBitte wähle \'Nicht optimieren\' für Simple Notes.</string>
     <string name="battery_optimization_open_settings">Einstellungen öffnen</string>
     <string name="battery_optimization_later">Später</string>
+    <string name="battery_optimization_open_settings_failed">Bitte deaktiviere die Akku-Optimierung für Simple Notes manuell in den Systemeinstellungen.</string>
     <string name="content_description_back">Zurück</string>
     <string name="error_invalid_backup_file">Ungültige Backup-Datei</string>
     <string name="error_backup_version_unsupported">Backup-Version nicht unterstützt (v%1$d benötigt v%2$d+)</string>
@@ -601,12 +606,15 @@
     <string name="widget_config_title">Notiz auswählen</string>
     <string name="widget_config_hint">Tippe auf eine Notiz, um sie als Widget hinzuzufügen</string>
     <string name="widget_config_save">Speichern</string>
+    <string name="widget_config_load_error">Die vorherige Widget-Konfiguration konnte nicht geladen werden. Bitte neu konfigurieren.</string>
     <string name="widget_lock_label">Widget sperren</string>
     <string name="widget_lock_description">Versehentliches Bearbeiten verhindern</string>
     <string name="widget_opacity_label">Hintergrund-Transparenz</string>
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
     <string name="widget_preview_title">Einkaufsliste</string>
     <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
+    <string name="widget_note_not_found">Notiz nicht gefunden</string>
+    <string name="widget_tap_to_reconfigure">Tippen zum Neukonfigurieren</string>
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
     <!-- ============================= -->

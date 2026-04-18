@@ -1,9 +1,11 @@
 package dev.dettmer.simplenotes.sync
 
+import android.content.Context
 import android.content.SharedPreferences
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
@@ -15,10 +17,31 @@ import okhttp3.OkHttpClient
  * - Session caching (one client per sync operation)
  * - Session cleanup (close client + reset caches)
  */
-class ConnectionManager(private val prefs: SharedPreferences) {
+class ConnectionManager(private val context: Context, private val prefs: SharedPreferences) {
     companion object {
         private const val TAG = "ConnectionManager"
         private const val FALLBACK_TIMEOUT_MS = 8000L
+
+        /**
+         * Reads the configured connection timeout from SharedPreferences.
+         * Converts seconds to milliseconds, clamped to MIN..MAX range.
+         * Single source of truth — also used by SyncGateChecker.
+         */
+        fun getTimeoutMs(prefs: SharedPreferences): Long {
+            return try {
+                val seconds = prefs.getInt(
+                    Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
+                    Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
+                ).coerceIn(
+                    Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
+                    Constants.MAX_CONNECTION_TIMEOUT_SECONDS
+                )
+                seconds * 1000L
+            } catch (e: Exception) {
+                Logger.d(TAG, "Timeout parsing failed, using fallback ${FALLBACK_TIMEOUT_MS}ms: ${e.message}")
+                FALLBACK_TIMEOUT_MS
+            }
+        }
     }
 
     // ⚡ v1.3.1 Performance: Session-cached Sardine client
@@ -53,8 +76,8 @@ class ConnectionManager(private val prefs: SharedPreferences) {
      * v1.7.1: Uses SafeSardineWrapper (prevents connection leaks, preemptive auth).
      */
     private fun createClient(): SafeSardineWrapper? {
-        val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
-        val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
+        val username = CredentialStore.getUsername(context) ?: return null
+        val password = CredentialStore.getPassword(context) ?: return null
 
         Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
 
@@ -91,22 +114,6 @@ class ConnectionManager(private val prefs: SharedPreferences) {
         }
     }
 
-    /**
-     * Reads the configured connection timeout from SharedPreferences.
-     * Converts seconds to milliseconds, clamped to MIN..MAX range.
-     */
-    fun getTimeoutMs(): Long {
-        return try {
-            val seconds = prefs.getInt(
-                Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
-                Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
-            ).coerceIn(
-                Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
-                Constants.MAX_CONNECTION_TIMEOUT_SECONDS
-            )
-            seconds * 1000L
-        } catch (_: Exception) {
-            FALLBACK_TIMEOUT_MS
-        }
-    }
+    /** Delegates to the Companion implementation — preserves existing call sites. */
+    fun getTimeoutMs(): Long = Companion.getTimeoutMs(prefs)
 }

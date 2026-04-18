@@ -144,6 +144,8 @@ Features with enough community support will be considered for implementation. Pl
 
 ## 🌍 Translations
 
+Translation hosting generously provided by [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/) - thank you for sponsoring open-source projects! 🙏
+
 [![Translation status](https://hosted.weblate.org/widget/simple-notes-sync/android-app/svg-badge.svg)](https://hosted.weblate.org/engage/simple-notes-sync/)
 
 <a href="https://hosted.weblate.org/engage/simple-notes-sync/">
@@ -167,6 +169,6 @@ GNU Affero General Public License v3.0 - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v2.1.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.3.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

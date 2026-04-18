@@ -9,9 +9,12 @@ import dev.dettmer.simplenotes.utils.Logger
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /**
  * 🆕 v2.0.0: Extracted from WebDavSyncService.
@@ -24,7 +27,6 @@ class SyncGateChecker(
 ) {
     companion object {
         private const val TAG = "SyncGateChecker"
-        private const val FALLBACK_TIMEOUT_MS = 8000L
     }
 
     /**
@@ -45,13 +47,33 @@ class SyncGateChecker(
 
             Logger.d(TAG, "🔍 Checking server reachability: $host:$port")
 
-            val socketTimeoutMs = getTimeoutMs().toInt()
+            val timeoutMs = ConnectionManager.getTimeoutMs(prefs)
+            val socketTimeoutMs = timeoutMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+
+            // Phase 1: Quick TCP check
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(host, port), socketTimeoutMs)
             }
 
-            Logger.d(TAG, "✅ Server is reachable")
-            true
+            // Phase 2: HTTP HEAD check via OkHttp to verify the server speaks HTTP.
+            // Uses OkHttp instead of HttpURLConnection so SSL config and
+            // trust management are consistent with the rest of the app.
+            val httpClient = OkHttpClient.Builder()
+                .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .build()
+            val request = Request.Builder().url(serverUrl).head().build()
+            val response = httpClient.newCall(request).execute()
+            val code = response.code
+            response.close()
+            // Any HTTP response code (incl. 401, 403) proves HTTP capability
+            val reachable = code > 0
+            if (reachable) {
+                Logger.d(TAG, "✅ Server is reachable (HTTP $code)")
+            } else {
+                Logger.d(TAG, "❌ Server TCP reachable but HTTP check returned $code")
+            }
+            reachable
         } catch (e: Exception) {
             Logger.d(TAG, "❌ Server not reachable: ${e.message}")
             false
@@ -83,7 +105,7 @@ class SyncGateChecker(
      */
     fun canSync(): SyncGateResult {
         // 1. Offline Mode Check
-        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)) {
+        if (prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)) {
             return SyncGateResult(canSync = false, blockReason = null) // Silent skip
         }
 
@@ -102,20 +124,6 @@ class SyncGateChecker(
         return SyncGateResult(canSync = true, blockReason = null)
     }
 
-    private fun getTimeoutMs(): Long {
-        return try {
-            val seconds = prefs.getInt(
-                Constants.KEY_CONNECTION_TIMEOUT_SECONDS,
-                Constants.DEFAULT_CONNECTION_TIMEOUT_SECONDS
-            ).coerceIn(
-                Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
-                Constants.MAX_CONNECTION_TIMEOUT_SECONDS
-            )
-            seconds * 1000L
-        } catch (_: Exception) {
-            FALLBACK_TIMEOUT_MS
-        }
-    }
 }
 
 /**

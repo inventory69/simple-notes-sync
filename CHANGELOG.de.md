@@ -8,6 +8,176 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.3.0] - 2026-04-18
+
+### 🛡️ Sicherheit
+
+**WebDAV-Zugangsdaten werden jetzt verschlüsselt gespeichert** ([bf117f8](https://github.com/inventory69/simple-notes-sync/commit/bf117f8))
+- WebDAV-Benutzername und -Passwort wurden bisher als Klartext in regulären SharedPreferences gespeichert
+- Migration zu `EncryptedSharedPreferences` mit AES256-GCM-Verschlüsselung
+- Einmalige Auto-Migration beim ersten Start: bestehende Zugangsdaten werden in den verschlüsselten Speicher übernommen und aus dem Klartext-Speicher entfernt
+
+### ✨ Neue Features
+
+**Akkuoptimierung-Dialog bei Sync-Aktivierung & Migration** ([da2ab36](https://github.com/inventory69/simple-notes-sync/commit/da2ab36))
+- Wenn der Nutzer den Offline-Modus deaktiviert, prüft die App sofort die Akkuoptimierungs-Ausnahme und zeigt den System-Dialog bei Bedarf
+- Einmalige Migration für bestehende Nutzer: Nutzer mit bereits aktiviertem Sync, die noch nie gefragt wurden, sehen den Dialog einmalig beim nächsten App-Start
+- Verwendet neuen SharedPreferences-Key `battery_opt_migration_shown`
+
+### 🐛 Fehlerbehebungen
+
+**Markdown-Auto-Sync löst beim Speichern nicht aus** ([1756af4](https://github.com/inventory69/simple-notes-sync/commit/1756af4))
+- SharedPreferences für Markdown-Export/Auto-Import wurden erst nach erfolgreichem Initial-Export gespeichert — bei Fehler (HTTP 405, Timeout, Netzwerkfehler) wurden die Prefs nie gesetzt und On-Save-Export hat nie ausgelöst
+- Prefs werden jetzt sofort nach Server-Konfigurations-Validierung gespeichert; Initial-Export ist Best-Effort
+- HTTP-405-Fallback in `ensureMarkdownDirExists()` hinzugefügt (List-after-failed-exists-Pattern)
+- Danke an [@minosimo](https://github.com/minosimo) für den detaillierten Bug-Report mit Logs! ([#50](https://github.com/inventory69/simple-notes-sync/issues/50))
+
+**MKCOL-404-Fehlerbehandlung und WebDAV-Validierung verbessert** ([8c5907a](https://github.com/inventory69/simple-notes-sync/commit/8c5907a))
+- `SafeSardineWrapper.createDirectory()`: 404 mit `list()`-Fallback behandeln (analog zur bestehenden 405-Behandlung)
+- `WebDavSyncService.testConnection()`: WebDAV-Fähigkeit via PROPFIND nach HEAD-Check verifizieren, um falschen „Erreichbar"-Status zu verhindern
+- `SyncExceptionMapper`: MKCOL-Fehler erkennen und benutzerfreundliche Meldung mit WebDAV-URL-Hinweis anzeigen
+- Danke an [@Ichigo-Meow](https://github.com/Ichigo-Meow) für die Meldung! ([#55](https://github.com/inventory69/simple-notes-sync/issues/55))
+
+**Phantom-„Untitled"-Notizen vom WebDAV-Root-Scan stoppen** ([fab23eb](https://github.com/inventory69/simple-notes-sync/commit/fab23eb))
+- Fremde JSON-Dateien im WebDAV-Root (z. B. `info.json`) wurden bei jedem Sync geparst und erzeugten eine neue „Untitled"-Geistnotiz mit zufälliger UUID — als SYNCED gespeichert, sofort als DELETED_ON_SERVER markiert, und so endlos akkumuliert
+- Der v1.2.0-Root-Fallback im normalen Sync-Pfad ist deaktiviert; der Migrations-Scan läuft weiterhin in `restoreFromServer()`
+- UUID-Format- und id-vs-Dateinamen-Prüfungen in `NoteDownloader` Phase 2 als Defense-in-Depth ergänzt
+- Danke an [@angeld-jr2](https://github.com/angeld-jr2) für das ausführliche Debug-Log, das die Diagnose ermöglichte! ([#62](https://github.com/inventory69/simple-notes-sync/issues/62))
+
+**Notizen ohne Titel in Backup-Validierung erlauben** ([d41d02b](https://github.com/inventory69/simple-notes-sync/commit/d41d02b))
+- Backup-Wiederherstellung lehnte v2.2.0-Backups mit titellosen Notizen (z. B. Checklisten) ab
+- `validateBackup()` verhält sich nun wie der Editor: eine Notiz ist nur ungültig, wenn Titel UND Inhalt/Checklisten-Items leer sind
+- Danke an [@angeld-jr2](https://github.com/angeld-jr2) für die Meldung!
+
+**HTTP 401 beim Verzeichnis-Anlegen als Auth-Fehler erkennen** ([02c3f77](https://github.com/inventory69/simple-notes-sync/commit/02c3f77))
+- `ensureNotesDirectoryExists()` und `ensureMarkdownDirectoryExists()` haben 401 verschluckt und zu MKCOL durchgereicht — Anzeige war „Sync-Ordner kann nicht erstellt werden" statt „Authentifizierung fehlgeschlagen"
+- Auth-Fehler werden jetzt vor MKCOL erkannt und durchgereicht; Defense-in-Depth in `SyncExceptionMapper`
+
+**Widget-Checklisten-Sortierung mit Editor für alle Sortier-Optionen abgeglichen** ([dcc740b](https://github.com/inventory69/simple-notes-sync/commit/dcc740b))
+- Widget `ToggleChecklistItemAction` unterstützte nur MANUAL und UNCHECKED_FIRST
+- Gemeinsame `ChecklistSorter`-Utility extrahiert und in Widget und Editor eingesetzt — konsistente Sortierung für alle sieben Optionen
+- Danke an MrsMinchen für den Beitrag!
+
+**Auto-Speichern bei Änderung der Sortier-Option auslösen** ([06c5228](https://github.com/inventory69/simple-notes-sync/commit/06c5228))
+- `sortChecklistItems(option)` setzte weder `isDirty` noch `scheduleAutosave` — Sortier-Änderungen gingen ohne explizites Speichern verloren
+- Widget-Updates auch nach Auto-Save und saveOnBack hinzugefügt
+- Danke an freemen für die Meldung!
+
+**Widget-Inhalt kürzen, um TransactionTooLargeException zu verhindern** ([7aba796](https://github.com/inventory69/simple-notes-sync/commit/7aba796))
+- Text-Notizen auf 100 Zeilen, Checklisten auf 100 Items im Widget begrenzt — sehr lange Notizen sprengten das 1MB-Binder-IPC-Limit für RemoteViews
+
+**Widget-Empty-State lokalisieren und Tap-to-Reconfigure** ([0b7dbf8](https://github.com/inventory69/simple-notes-sync/commit/0b7dbf8))
+- Hardcoded „Note not found" durch String-Resource ersetzt
+- Tippen aufs Widget öffnet die Konfigurations-Activity, sodass Nutzer nach gelöschten Notiz-Daten wiederherstellen können
+
+**NotesStorage-Datei-I/O vom Main Thread weg** ([645ce9e](https://github.com/inventory69/simple-notes-sync/commit/645ce9e))
+- `saveNote`, `loadNote`, `loadAllNotes`, `deleteNote` sind jetzt suspend-Funktionen auf `Dispatchers.IO`
+- Behebt Race-Condition-Crash in `loadAllNotes()` (FileNotFoundException zwischen listFiles/readText)
+- Behebt leeres TextFieldState beim ersten Öffnen einer Notiz nach App-Start
+- Behebt fälschliches PENDING-Markieren bei Zurück-Navigation aus leerem Editor
+- Behebt „Notiz nicht gefunden"-Anzeige im Widget: `loadNoteSync()` läuft jetzt innerhalb `provideContent`, sodass jedes Widget-Update frische Daten lädt
+
+**Editor-State-Flackern beim asynchronen Notiz-Laden verhindern** ([b7b3a1c](https://github.com/inventory69/simple-notes-sync/commit/b7b3a1c))
+- Async-Laden zeigte 1+ Frames lang TEXT-Mode-Defaults, was bei Checklisten kurzzeitig falschen TopBar-Titel und falschen Inhalts-Typ verursachte
+- `isNewNote=false` wird jetzt synchron vor der Coroutine gesetzt; isLoading gated den gesamten Screen
+
+**Mutex-geschütztes Deletion-Tracking nutzen** ([e777259](https://github.com/inventory69/simple-notes-sync/commit/e777259))
+- `deleteNote()` nutzt jetzt `trackDeletionSafe()`, um Race Conditions bei Batch-Löschungen zu verhindern; die ungeschützte Legacy-Variante ist deprecated
+
+**Listen-Scrollposition beim Rückkehren aus dem Editor erhalten** ([c5b4955](https://github.com/inventory69/simple-notes-sync/commit/c5b4955))
+- Neue-Notiz-Erkennung vom unsortierten Load in den sortierten Flow verschoben — Bearbeiten einer existierenden Notiz setzt die Scrollposition nicht mehr zurück
+
+**Navigation-Flags über Process Death persistieren** ([78b331b](https://github.com/inventory69/simple-notes-sync/commit/78b331b))
+- `cameFromEditor`/`cameFromSettings` werden via `onSaveInstanceState` gespeichert/wiederhergestellt — verhindert falsches Scroll-to-Top und Sync-Unterdrückung nach System-Process-Kill
+
+**onSave-Sync nach Editor-Löschung auslösen** ([5c7f008](https://github.com/inventory69/simple-notes-sync/commit/5c7f008))
+- `deleteNoteFromEditor` löst jetzt einen Sync aus, um die Löschung sofort an den Server zu propagieren — konsistent mit `saveNote`
+
+**Erreichbarkeits-Check für Settings-`syncNow()`** ([d1928be](https://github.com/inventory69/simple-notes-sync/commit/d1928be))
+- Der „Jetzt synchronisieren"-Pfad in den Einstellungen war der einzige Aufrufer, der `SyncGateChecker.isServerReachable()` umging — unerreichbare Server lösten FATAL-Exceptions statt sauberem Abbruch aus
+
+**HTTP-HEAD-Check im Erreichbarkeits-Gate** ([13ad82e](https://github.com/inventory69/simple-notes-sync/commit/13ad82e))
+- `SyncGateChecker` führt nach dem TCP-Socket-Check einen HEAD-Request aus, um sicherzustellen, dass der Server tatsächlich HTTP spricht — verhindert False-Positives bei Servern mit TLS-Problemen
+
+**Zeitstempel-basierte Stale-Sync-State-Erkennung** ([bd394fa](https://github.com/inventory69/simple-notes-sync/commit/bd394fa))
+- `SyncStateManager` setzt `SYNCING`-Zustand älter als 5 Minuten automatisch zurück; aufgerufen aus `Application.onCreate` und `MainViewModel.init`, um sowohl Process Death als auch Configuration Changes abzudecken
+
+**Logging in 18 stillen Catch-Blöcken** ([728f33a](https://github.com/inventory69/simple-notes-sync/commit/728f33a))
+- `catch (_: Exception)` durch geloggte Exceptions ersetzt in `ImportWizard`, `WebDavSyncService`, `ConnectionManager`, `SyncGateChecker`, `ThemePreferences`, `MainViewModel`, `NoteDownloader` und Widget-Code
+
+**Logging und Nutzer-Hinweise für stille Fehler-Pfade** ([e6dac28](https://github.com/inventory69/simple-notes-sync/commit/e6dac28))
+- `WidgetConfig` loggt jetzt Fehler; Import zeigt einen sichtbaren Hinweis, wenn trotz Kandidaten null Notizen importiert wurden
+
+**Logging für 403-Workaround in `SafeSardineWrapper.exists`** ([4917fc4](https://github.com/inventory69/simple-notes-sync/commit/4917fc4))
+- Warnung im Log, wenn der Jianguoyun-403-als-existiert-Workaround greift, sodass False-Positives in Debug-Logs sichtbar werden
+
+**Null-Check für `sardine.getInputStream` in `readContent`** ([98a778f](https://github.com/inventory69/simple-notes-sync/commit/98a778f))
+- Sardine kann für nicht existierende Ressourcen null zurückgeben; Safe-Call verhindert NPE beim Import
+
+**Deprecated-APIs und Lint-Warnungen behoben** ([6b87dd2](https://github.com/inventory69/simple-notes-sync/commit/6b87dd2))
+- `LocalClipboardManager` → `LocalClipboard` + `ClipEntry`
+- `Icons.Filled.PlaylistAdd` → `Icons.AutoMirrored.Filled.PlaylistAdd`
+- `EncryptedSharedPreferences`/`MasterKey`: Suppression dokumentiert (kein Ersatz für Android 7+ verfügbar)
+- Alle `SharedPreferences.edit().putX().apply()`-Ketten zu KTX-`edit { }`-Blöcken konvertiert
+
+**NPE in UrlValidator bei fehlerhaften URLs verhindern** ([1a3c6a7](https://github.com/inventory69/simple-notes-sync/commit/1a3c6a7))
+- `parsedUrl.host` kann bei URLs wie `http:///path` null sein; Safe-Call mit Early-Return
+
+**Hardcoded Deutsch im Akkuoptimierungs-Fallback ersetzen** ([98c39a6](https://github.com/inventory69/simple-notes-sync/commit/98c39a6))
+- `ComposeSettingsActivity` nutzt jetzt die existierende String-Resource `battery_optimization_open_settings_failed`
+
+**Hinweis bei Widget-Konfig-Ladefehler** ([8d7d03f](https://github.com/inventory69/simple-notes-sync/commit/8d7d03f))
+- Die Widget-Konfigurations-Activity loggt jetzt den Fallback auf Defaults und zeigt einen Hinweis, wenn die vorherige Konfiguration nicht geladen werden konnte
+
+### ✨ Verbesserungen
+
+**Alle Toast-Nachrichten zu Material 3 Snackbar migriert** ([a834e25](https://github.com/inventory69/simple-notes-sync/commit/a834e25))
+- Alle 9 `Toast.makeText()`-Aufrufstellen durch ViewModel-getriebene Snackbar-Events ersetzt — einheitliches UX
+- `emitSnackbar()`-Helper in `MainViewModel` und `NoteEditorViewModel` ergänzt; `showToast()`-Extension deprecated
+
+**Zentrale Spacing-Tokens** ([db4ce8f](https://github.com/inventory69/simple-notes-sync/commit/db4ce8f))
+- `SpacingXSmall` (2dp), `SpacingMediumLarge` (12dp), `SpacingXXLarge` (32dp) zu `Dimensions` ergänzt; `MarkdownRenderer` auf zentrale Tokens migriert
+
+**Hardcoded Legacy-Pfad-Filter durch Konstanten ersetzen** ([5f4d044](https://github.com/inventory69/simple-notes-sync/commit/5f4d044))
+- `Constants.DEFAULT_SYNC_FOLDER_NAME` und `SyncUrlBuilder.MARKDOWN_SUFFIX` statt Magic Strings im Root-Fallback-Filter
+
+**`DEFAULT_OFFLINE_MODE`-Konstante extrahieren** ([051054d](https://github.com/inventory69/simple-notes-sync/commit/051054d))
+- Magic-Boolean in 3 `getBoolean()`-Aufrufen ersetzt; Kommentar dokumentiert, warum Default `true` ist (sicher bei Erstinstallation)
+
+### 🔧 Interne Änderungen
+
+- **StateFlow-Migration im `NoteEditorViewModel`** ([9071905](https://github.com/inventory69/simple-notes-sync/commit/9071905)) — `existingNote`, `isDirty`, `hasUnsavedChecklistEdits`, `isRestoringSnapshot` werden jetzt von `MutableStateFlow` getragen
+- **In-Memory-Cache für `loadAllNotes` mit 2s TTL** ([8b74b43](https://github.com/inventory69/simple-notes-sync/commit/8b74b43)) — verhindert wiederholtes Lesen und Parsen aller JSON-Dateien bei jedem onResume; race-sicher via `AtomicLong`-Versions-Counter
+- **`android.util.Log` durch Project Logger in 4 Dateien ersetzt** ([57c3246](https://github.com/inventory69/simple-notes-sync/commit/57c3246)) — `DragDropListState`, `NoteEditorScreen`, `ChecklistItemRow`, `SettingsViewModel`
+- **`getTimeoutMs` in `ConnectionManager` dedupliziert** ([ea05e03](https://github.com/inventory69/simple-notes-sync/commit/ea05e03)) — `SyncGateChecker` delegiert jetzt
+- **`BatteryOptimizationHelper` extrahiert** ([c3a1e3b](https://github.com/inventory69/simple-notes-sync/commit/c3a1e3b)) — `ComposeSettingsActivity` und `ComposeMainActivity` dedupliziert; `setAutoSync()` zeigt den Dialog nur, wenn nicht bereits exempt
+- **Schreibreihenfolge SharedPreferences/StateFlow vereinheitlicht** ([908493b](https://github.com/inventory69/simple-notes-sync/commit/908493b)) — erst Prefs, dann State; In-Memory-Zustand divergiert nicht mehr bei Teilfehlern
+- **`WidgetUpdateHelper` extrahiert** ([00f66db](https://github.com/inventory69/simple-notes-sync/commit/00f66db)) — einheitlicher Helper für das `GlanceAppWidgetManager → getGlanceIds → forEach update`-Pattern
+- **`@Immutable` auf `Note` dokumentiert** ([15c6a12](https://github.com/inventory69/simple-notes-sync/commit/15c6a12))
+- **Leere Product Flavors dokumentiert** ([602c06a](https://github.com/inventory69/simple-notes-sync/commit/602c06a))
+- **Redundantes `viewBinding = false` entfernt** ([0e02124](https://github.com/inventory69/simple-notes-sync/commit/0e02124))
+- **Widget-Magic-Numbers in benannte Konstanten extrahiert** ([2a84b32](https://github.com/inventory69/simple-notes-sync/commit/2a84b32))
+- **Sichere Long-zu-Int-Konvertierung für Socket-Timeout** ([b77ac4d](https://github.com/inventory69/simple-notes-sync/commit/b77ac4d))
+- **`MAX_LOG_ENTRIES` von 500 auf 5000 erhöht** ([b18fa8f](https://github.com/inventory69/simple-notes-sync/commit/b18fa8f)) — vollständige Sync-Zyklen mit 30+ Notizen können 500 Zeilen überschreiten
+- **Toten Legacy-`toReadableTime` ohne Context-Param entfernt** ([d3ea343](https://github.com/inventory69/simple-notes-sync/commit/d3ea343))
+- **Versions-Bump 2.2.0 → 2.3.0** ([71cf215](https://github.com/inventory69/simple-notes-sync/commit/71cf215))
+
+### 🌍 Übersetzungen
+
+- Chinesisch (vereinfacht) über Weblate aktualisiert ([1be36bb](https://github.com/inventory69/simple-notes-sync/commit/1be36bb)) — danke an [@heretic43](https://github.com/heretic43)!
+
+Übersetzungs-Hosting freundlicherweise bereitgestellt von [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/) — danke für das Sponsoring von Open-Source-Projekten! 🙏
+
+### 🙏 Danksagungen
+
+- [@angeld-jr2](https://github.com/angeld-jr2) — meldete den Backup-Validierungs-Crash und lieferte das Debug-Log, das den Phantom-Notizen-Bug diagnostizierbar machte
+- [@Ichigo-Meow](https://github.com/Ichigo-Meow) — meldete das MKCOL/WebDAV-Validierungs-Problem ([#55](https://github.com/inventory69/simple-notes-sync/issues/55))
+- [@minosimo](https://github.com/minosimo) — meldete die Markdown-Auto-Sync-Regression ([#50](https://github.com/inventory69/simple-notes-sync/issues/50))
+- MrsMinchen — beigetragen: Widget-Checklisten-Sortier-Fix
+- freemen — meldete das fehlende Auto-Speichern bei Sortier-Änderungen
+
+---
+
 ## [2.2.0] - 2026-03-30
 
 ### ✨ Neue Features

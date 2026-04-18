@@ -154,10 +154,10 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
                 val result = snackbarHostState.showSnackbar(
                     message = data.message,
                     actionLabel = data.actionLabel,
-                    duration = SnackbarDuration.Long
+                    duration = if (data.actionLabel != null) SnackbarDuration.Long else SnackbarDuration.Short
                 )
                 if (result == SnackbarResult.ActionPerformed) {
-                    data.onAction()
+                    data.onAction?.invoke()
                 }
             }
         }

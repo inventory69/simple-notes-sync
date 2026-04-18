@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.CalendarContract
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
@@ -278,7 +277,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             Logger.w(TAG, "No calendar app found: ${e.message}")
-            Toast.makeText(this, getString(R.string.share_no_calendar_app), Toast.LENGTH_LONG).show()
+            viewModel.emitSnackbar(getString(R.string.share_no_calendar_app))
         }
     }
 
@@ -295,7 +294,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.share_chooser_title)))
         } catch (e: ActivityNotFoundException) {
             Logger.w(TAG, "No share target found: ${e.message}")
-            Toast.makeText(this, getString(R.string.share_error), Toast.LENGTH_SHORT).show()
+            viewModel.emitSnackbar(getString(R.string.share_error))
         }
     }
 
@@ -318,7 +317,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         )
 
         if (pdfFile == null || !pdfFile.exists()) {
-            Toast.makeText(this, getString(R.string.share_pdf_error), Toast.LENGTH_SHORT).show()
+            viewModel.emitSnackbar(getString(R.string.share_pdf_error))
             return
         }
 
@@ -339,7 +338,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.share_chooser_title)))
         } catch (e: ActivityNotFoundException) {
             Logger.w(TAG, "No PDF share target found: ${e.message}")
-            Toast.makeText(this, getString(R.string.share_error), Toast.LENGTH_SHORT).show()
+            viewModel.emitSnackbar(getString(R.string.share_error))
         }
     }
 }

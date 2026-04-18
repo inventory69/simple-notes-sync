@@ -3,7 +3,7 @@ package dev.dettmer.simplenotes.ui.settings
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import dev.dettmer.simplenotes.utils.Logger
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,7 +16,8 @@ import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
-import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.CredentialStore
+import android.os.PowerManager
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
@@ -102,10 +103,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         if (host.isEmpty()) "" else prefix + host
     }.stateIn(viewModelScope, SharingStarted.Eagerly, storedUrl)
 
-    private val _username = MutableStateFlow(prefs.getString(Constants.KEY_USERNAME, "").orEmpty())
+    private val _username = MutableStateFlow(CredentialStore.getUsername(getApplication()).orEmpty())
     val username: StateFlow<String> = _username.asStateFlow()
 
-    private val _password = MutableStateFlow(prefs.getString(Constants.KEY_PASSWORD, "").orEmpty())
+    private val _password = MutableStateFlow(CredentialStore.getPassword(getApplication()).orEmpty())
     val password: StateFlow<String> = _password.asStateFlow()
 
     private val _serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Unknown)
@@ -115,7 +116,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Default: true for new users (no server), false for existing users (has server config)
     private val _offlineMode = MutableStateFlow(
         if (prefs.contains(Constants.KEY_OFFLINE_MODE)) {
-            prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+            prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         } else {
             // Migration: auto-detect based on existing server config
             !hasExistingServerConfig()
@@ -352,14 +353,30 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * When enabled, all network features are disabled
      */
     fun setOfflineMode(enabled: Boolean) {
-        _offlineMode.value = enabled
         prefs.edit { putBoolean(Constants.KEY_OFFLINE_MODE, enabled) }
+        _offlineMode.value = enabled
 
         if (enabled) {
             _serverStatus.value = ServerStatus.OfflineMode
         } else {
             // Re-check server status when disabling offline mode
             checkServerStatus()
+
+            // 🆕 v2.3.0: Prompt battery optimization when leaving offline mode.
+            checkAndPromptBatteryOptimization()
+        }
+    }
+
+    /**
+     * 🆕 v2.3.0: Checks if the app is exempt from battery optimization.
+     * If not, triggers the battery optimization dialog.
+     * Does NOT check offline mode — caller must ensure sync is relevant.
+     */
+    private fun checkAndPromptBatteryOptimization() {
+        val context = getApplication<Application>()
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        if (!powerManager.isIgnoringBatteryOptimizations(context.packageName)) {
+            _showBatteryOptimizationDialog.value = true
         }
     }
 
@@ -401,13 +418,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateUsername(value: String) {
         _username.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        prefs.edit { putString(Constants.KEY_USERNAME, value) }
+        CredentialStore.setCredentials(getApplication(), value, _password.value)
     }
 
     fun updatePassword(value: String) {
         _password.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        prefs.edit { putString(Constants.KEY_PASSWORD, value) }
+        CredentialStore.setCredentials(getApplication(), _username.value, value)
     }
 
     // 🆕 v1.9.0: Update configurable sync folder name
@@ -427,8 +444,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * the preference at init time.
      */
     fun setAutosaveEnabled(enabled: Boolean) {
-        _autosaveEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled) }
+        _autosaveEnabled.value = enabled
     }
 
     /**
@@ -441,8 +458,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.MIN_CONNECTION_TIMEOUT_SECONDS,
             Constants.MAX_CONNECTION_TIMEOUT_SECONDS
         )
-        _connectionTimeoutSeconds.value = validSeconds
         prefs.edit { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, validSeconds) }
+        _connectionTimeoutSeconds.value = validSeconds
         Logger.d(TAG, "Connection timeout set to: ${validSeconds}s")
     }
 
@@ -632,7 +649,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         connection.disconnect()
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Server check failed: ${e.message}")
+                    Logger.e(TAG, "Server check failed: ${e.message}")
                     false
                 }
             }
@@ -665,6 +682,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
+                // 🆕 FIX-015: HTTP reachability check before sync
+                val isReachable = withContext(ioDispatcher) {
+                    syncService.isServerReachable()
+                }
+                if (!isReachable) {
+                    emitToast(getString(R.string.snackbar_server_unreachable))
+                    return@launch
+                }
+
                 val result = syncService.syncNotes()
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
@@ -688,13 +714,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
 
     fun setAutoSync(enabled: Boolean) {
-        _autoSyncEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_AUTO_SYNC, enabled) }
+        _autoSyncEnabled.value = enabled
 
         viewModelScope.launch {
             if (enabled) {
-                // v2.0.0: Battery optimization dialog now state-driven via showBatteryOptimizationDialog
-                _showBatteryOptimizationDialog.value = true
+                // v2.0.0: Battery optimization dialog — only prompt when not already exempt
+                checkAndPromptBatteryOptimization()
                 _events.emit(SettingsEvent.RestartNetworkMonitor)
                 emitToast(getString(R.string.toast_auto_sync_enabled))
             } else {
@@ -705,8 +731,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setSyncInterval(minutes: Long) {
-        _syncInterval.value = minutes
         prefs.edit { putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes) }
+        _syncInterval.value = minutes
         viewModelScope.launch {
             val text = when (minutes) {
                 15L -> getString(R.string.toast_sync_interval_15min)
@@ -723,27 +749,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.MIN_PARALLEL_CONNECTIONS,
             Constants.MAX_PARALLEL_CONNECTIONS
         )
-        _maxParallelConnections.value = validCount
         prefs.edit { putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, validCount) }
+        _maxParallelConnections.value = validCount
     }
 
     // 🌟 v1.6.0: Configurable Sync Triggers Setters
 
     fun setTriggerOnSave(enabled: Boolean) {
-        _triggerOnSave.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, enabled) }
+        _triggerOnSave.value = enabled
         Logger.d(TAG, "Trigger onSave: $enabled")
     }
 
     fun setTriggerOnResume(enabled: Boolean) {
-        _triggerOnResume.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, enabled) }
+        _triggerOnResume.value = enabled
         Logger.d(TAG, "Trigger onResume: $enabled")
     }
 
     fun setTriggerWifiConnect(enabled: Boolean) {
-        _triggerWifiConnect.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT, enabled) }
+        _triggerWifiConnect.value = enabled
         viewModelScope.launch {
             _events.emit(SettingsEvent.RestartNetworkMonitor)
         }
@@ -751,8 +777,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setTriggerPeriodic(enabled: Boolean) {
-        _triggerPeriodic.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, enabled) }
+        _triggerPeriodic.value = enabled
         viewModelScope.launch {
             _events.emit(SettingsEvent.RestartNetworkMonitor)
         }
@@ -760,8 +786,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setTriggerBoot(enabled: Boolean) {
-        _triggerBoot.value = enabled
         prefs.edit { putBoolean(Constants.KEY_SYNC_TRIGGER_BOOT, enabled) }
+        _triggerBoot.value = enabled
         Logger.d(TAG, "Trigger Boot: $enabled")
     }
 
@@ -770,28 +796,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * When enabled, sync only happens when connected to WiFi
      */
     fun setWifiOnlySync(enabled: Boolean) {
-        _wifiOnlySync.value = enabled
         prefs.edit { putBoolean(Constants.KEY_WIFI_ONLY_SYNC, enabled) }
+        _wifiOnlySync.value = enabled
         Logger.d(TAG, "📡 WiFi-only sync: $enabled")
     }
 
     // 🆕 v1.11.0: Notification Settings Setters
 
     fun setNotificationsEnabled(enabled: Boolean) {
-        _notificationsEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled) }
+        _notificationsEnabled.value = enabled
         Logger.d(TAG, "🔔 Notifications enabled: $enabled")
     }
 
     fun setNotificationsErrorsOnly(enabled: Boolean) {
-        _notificationsErrorsOnly.value = enabled
         prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, enabled) }
+        _notificationsErrorsOnly.value = enabled
         Logger.d(TAG, "🔔 Notifications errors-only: $enabled")
     }
 
     fun setNotificationsServerWarning(enabled: Boolean) {
-        _notificationsServerWarning.value = enabled
         prefs.edit { putBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, enabled) }
+        _notificationsServerWarning.value = enabled
         Logger.d(TAG, "🔔 Notifications server warning: $enabled")
     }
 
@@ -818,8 +844,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 try {
                     // Check server configuration first
                     val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
-                    val username = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
-                    val password = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+                    val username = CredentialStore.getUsername(getApplication()).orEmpty()
+                    val password = CredentialStore.getPassword(getApplication()).orEmpty()
 
                     if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
                         _markdownAutoSync.value = false
@@ -1030,8 +1056,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val url = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
         _isHttps.value = url.startsWith("https://")
         _serverHost.value = extractHostFromUrl(url)
-        _username.value = prefs.getString(Constants.KEY_USERNAME, "").orEmpty()
-        _password.value = prefs.getString(Constants.KEY_PASSWORD, "").orEmpty()
+        _username.value = CredentialStore.getUsername(getApplication()).orEmpty()
+        _password.value = CredentialStore.getPassword(getApplication()).orEmpty()
         confirmedServerUrl = url
         confirmedSyncFolderName = prefs.getString(
             Constants.KEY_SYNC_FOLDER_NAME,
@@ -1046,7 +1072,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.KEY_MAX_PARALLEL_CONNECTIONS,
             Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
         ).coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
-        _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, true)
+        _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         _autoSyncEnabled.value = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
         _wifiOnlySync.value = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
         _markdownAutoSync.value = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) &&
@@ -1148,8 +1174,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
 
     fun setFileLogging(enabled: Boolean) {
-        _fileLoggingEnabled.value = enabled
         prefs.edit { putBoolean(Constants.KEY_FILE_LOGGING_ENABLED, enabled) }
+        _fileLoggingEnabled.value = enabled
         Logger.setFileLoggingEnabled(enabled)
         viewModelScope.launch {
             emitToast(
@@ -1303,22 +1329,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Set display mode (list or grid)
      */
     fun setDisplayMode(mode: String) {
-        _displayMode.value = mode
         prefs.edit { putString(Constants.KEY_DISPLAY_MODE, mode) }
+        _displayMode.value = mode
         Logger.d(TAG, "Display mode changed to: $mode")
     }
 
     // 🆕 v2.1.0 (F46): Grid column control setters
     fun setGridAdaptiveScaling(enabled: Boolean) {
-        _gridAdaptiveScaling.value = enabled
         prefs.edit { putBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, enabled) }
+        _gridAdaptiveScaling.value = enabled
         Logger.d(TAG, "Grid adaptive scaling: $enabled")
     }
 
     fun setGridManualColumns(columns: Int) {
         val clamped = columns.coerceIn(Constants.GRID_MIN_COLUMNS, Constants.GRID_MAX_COLUMNS)
-        _gridManualColumns.value = clamped
         prefs.edit { putInt(Constants.KEY_GRID_MANUAL_COLUMNS, clamped) }
+        _gridManualColumns.value = clamped
         Logger.d(TAG, "Grid manual columns: $clamped")
     }
 
@@ -1328,8 +1354,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun setCustomAppTitle(title: String) {
         val sanitized = title.take(Constants.MAX_CUSTOM_APP_TITLE_LENGTH)
-        _customAppTitle.value = sanitized
         prefs.edit { putString(Constants.KEY_CUSTOM_APP_TITLE, sanitized) }
+        _customAppTitle.value = sanitized
         Logger.d(TAG, "Custom app title changed to: '$sanitized'")
     }
 
