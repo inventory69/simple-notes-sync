@@ -444,7 +444,7 @@
     <string name="toast_file_logging_enabled">📝 已启用日志文件</string>
     <string name="toast_file_logging_disabled">📝 已禁用日志文件</string>
     <string name="battery_optimization_dialog_title">后台同步</string>
-    <string name="battery_optimization_dialog_full_message">为使应用在后台同步，必须禁用电池优化。\n\n请为简单笔记选择“不优化”。</string>
+    <string name="battery_optimization_dialog_full_message">为使应用可靠地在后台同步，必须禁用电池优化。\n\n请为简单笔记选择“不优化”。</string>
     <string name="battery_optimization_open_settings">打开设置</string>
     <string name="battery_optimization_later">稍后</string>
     <string name="error_invalid_backup_file">无效的备份文件</string>
@@ -603,4 +603,11 @@
     <string name="checklist_copy_to_checklist_untitled">无标题的清单</string>
     <string name="checklist_copy_to_checklist_item_count">%d 个项目</string>
     <string name="checklist_item_copied_toast">项目已经复制到清单</string>
+    <string name="sync_error_mkcol_failed">不能创建同步文件夹。请查证你的 WebDAV URL 包含完整路径（例如 /remote.php/dav/files/USERNAME/）。</string>
+    <string name="sync_error_not_webdav">URL 不是 WebDAV 端点。请查证完整 WebDAV 路径（例如 /remote.php/dav/files/USERNAME/）。</string>
+    <string name="import_zero_notes_hint">没有笔记能被导入。文件可能已经损坏或者是不支持的格式。</string>
+    <string name="battery_optimization_open_settings_failed">请在系统设置中手动为简单笔记禁用电池优化。</string>
+    <string name="widget_config_load_error">不能载入之前的微件配置。请重新配置。</string>
+    <string name="widget_note_not_found">未找到笔记</string>
+    <string name="widget_tap_to_reconfigure">点击来重新配置</string>
 </resources>
