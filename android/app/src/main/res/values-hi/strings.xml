@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">सरल नोट्स</string>
+    <string name="main_title">सरल नोट्स</string>
+    <string name="action_sync">समन्वय</string>
+    <string name="action_settings">सेटिंग्स</string>
+    <string name="action_close_selection">चयन बंद करें</string>
+    <string name="action_select_all">सभी चुनें</string>
+    <string name="action_delete_selected">चयनित आइटम हटाएं</string>
+    <string name="selection_count">%d चयनित</string>
+    <string name="empty_state_title">अभी तक कोई नोट्स नहीं</string>
+    <string name="empty_state_message">नया नोट बनाने के लिए + दबाएं</string>
+    <string name="fab_new_note">नया नोट</string>
+    <string name="fab_close">मेनू बंद करें</string>
+    <string name="fab_text_note">टेक्स्ट नोट</string>
+    <string name="fab_checklist">चेकलिस्ट</string>
+    <string name="untitled">बिना शीर्षक</string>
+    <string name="checklist_progress">%1$d/%2$d पूरा हुआ</string>
+    <string name="sync_status_completed">सिंक पूरा हुआ</string>
+    <string name="sync_status_error">सिंक विफल हुआ</string>
+    <string name="sync_already_running">सिंक पहले से चल रहा है</string>
+    <string name="sync_status_synced">सर्वर के साथ सिंक हो गया</string>
+    <string name="sync_status_pending">सिंक का इंतजार हो रहा है</string>
+    <string name="sync_status_conflict">सिंक में टकराव पाया गया</string>
+    <string name="sync_status_local_only">अभी तक सिंक नहीं हुआ</string>
+    <string name="sync_status_deleted_on_server">सर्वर पर हटाया गया</string>
+    <string name="sync_legend_button">सिंक स्थिति सहायता</string>
+</resources>
