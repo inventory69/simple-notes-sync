@@ -4,6 +4,9 @@
     <locale android:name="en" />
     <!-- Supported languages -->
     <locale android:name="de" />
+    <locale android:name="hi" />
+    <locale android:name="it" />
+    <locale android:name="ru" />
     <locale android:name="tr" />
     <locale android:name="uk" />
     <locale android:name="zh-Hans" />
