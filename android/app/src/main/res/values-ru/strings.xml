@@ -525,4 +525,11 @@
         <item quantity="many">%d выполненных</item>
         <item quantity="other">%d выполненных</item>
     </plurals>
+    <string name="sync_error_mkcol_failed">Не удаётся создать папку для синхронизации. Пожалуйста, убедитесь, что URL‑адрес WebDAV содержит полный путь (например, /remote.php/dav/files/USERNAME/).</string>
+    <string name="sync_error_not_webdav">URL не является конечной точкой WebDAV. Пожалуйста, проверьте полный путь WebDAV (например, /remote.php/dav/files/USERNAME/).</string>
+    <string name="import_zero_notes_hint">Не удалось импортировать заметки. Файл может быть повреждён или иметь неподдерживаемый формат.</string>
+    <string name="battery_optimization_open_settings_failed">Пожалуйста, отключите оптимизацию батареи для приложения «Simple Notes» вручную в настройках системы.</string>
+    <string name="widget_config_load_error">Не удалось загрузить предыдущую конфигурацию виджета. Пожалуйста, настройте его заново.</string>
+    <string name="widget_note_not_found">Заметка не найдена</string>
+    <string name="widget_tap_to_reconfigure">Нажмите, чтобы перенастроить</string>
 </resources>
