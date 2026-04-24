@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 30  // 🆕 v2.3.0
-        versionName = "2.3.0"  // 🆕 v2.3.0
+        versionCode = 31  // 🆕 v2.3.1
+        versionName = "2.3.1"  // 🆕 v2.3.1
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

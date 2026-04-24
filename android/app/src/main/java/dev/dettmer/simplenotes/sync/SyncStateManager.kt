@@ -166,6 +166,44 @@ object SyncStateManager {
     }
 
     /**
+     * 🆕 v2.4.0 (FIX-SSBE-001): Visibility-aware Fehlerbehandlung für Soft-Errors.
+     *
+     * Für „weiche" Fehler wie Server-nicht-erreichbar während eines Silent-Syncs:
+     * - Sync noch silent → IDLE (kein Banner, normales Background-Verhalten)
+     * - Sync wurde promoted (silent=false) → ERROR-Banner anzeigen
+     *
+     * Für „harte" Fehler (Auth, syncNotes-Failure) weiterhin markError() verwenden,
+     * das immer sichtbar ist.
+     */
+    fun errorIfVisible(errorMessage: String?) {
+        synchronized(lock) {
+            val current = _syncStatus.value
+
+            if (current.silent) {
+                // Still silent — reset without user-facing feedback
+                Logger.d(TAG, "🔇 Silent sync soft error suppressed: $errorMessage")
+                _syncStatus.value = SyncStatus()
+                _syncProgress.value = SyncProgress.IDLE
+            } else {
+                // Promoted to visible or was never silent — show error to user
+                val currentSource = current.source
+                Logger.e(TAG, "❌ Sync failed from: $currentSource - $errorMessage")
+
+                _syncStatus.value = SyncStatus(
+                    state = SyncState.ERROR,
+                    message = errorMessage,
+                    source = currentSource
+                )
+                _syncProgress.value = SyncProgress(
+                    phase = SyncPhase.ERROR,
+                    resultMessage = errorMessage,
+                    silent = false
+                )
+            }
+        }
+    }
+
+    /**
      * Markiert Sync als fehlgeschlagen
      * Bei Silent-Sync: Fehler trotzdem anzeigen (wichtig für User)
      */

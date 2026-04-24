@@ -9,6 +9,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -149,8 +150,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
                 Logger.d(TAG, "   Saves battery, network traffic, and server load")
 
-                // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
-                SyncStateManager.reset()
+                // 🆕 v2.4.0 (FIX-SSBE-005): Visibility-aware Termination
+                // markCompleted() prüft silent-Flag: silent=true → IDLE, promoted → COMPLETED
+                SyncStateManager.markCompleted(
+                    applicationContext.getString(R.string.toast_already_synced)
+                )
 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
@@ -173,8 +177,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     Logger.d(TAG, "⏭️ Sync blocked by gate: ${gateResult.blockReason ?: "offline/no server"}")
                 }
 
-                // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
-                SyncStateManager.reset()
+                // 🆕 v2.4.0 (FIX-SSBE-006): Visibility-aware Termination
+                // Zeigt Fehler im Banner wenn der Sync promoted wurde (silent=false)
+                val gateErrorMessage = if (gateResult.isBlockedByWifiOnly) {
+                    applicationContext.getString(R.string.sync_wifi_only_error)
+                } else {
+                    gateResult.blockReason
+                }
+                SyncStateManager.errorIfVisible(gateErrorMessage)
 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (gate blocked)")
@@ -199,8 +209,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // 🔥 v1.1.2: Check if we should show warning (server unreachable for >24h)
                 checkAndShowSyncWarning(syncService)
 
-                // 🛡️ v1.8.2 (IMPL_14): State reset — tryStartSync() wurde bereits aufgerufen
-                SyncStateManager.reset()
+                // 🆕 v2.4.0 (FIX-SSBE-004): Visibility-aware Termination
+                // Wenn der Sync promoted wurde (User hat Pull-to-Refresh gemacht),
+                // zeige den Fehler im Banner. Sonst: silent reset.
+                SyncStateManager.errorIfVisible(
+                    applicationContext.getString(R.string.snackbar_server_unreachable)
+                )
 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (silent skip)")

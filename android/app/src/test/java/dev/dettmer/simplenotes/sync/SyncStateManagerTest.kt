@@ -270,4 +270,63 @@ class SyncStateManagerTest {
         // Phase should still be PREPARING
         assertEquals(SyncPhase.PREPARING, SyncStateManager.syncProgress.value.phase)
     }
+
+    // ═══════════════════════════════════════════════
+    // 🆕 v2.4.0 (FIX-SSBE-007): errorIfVisible
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `errorIfVisible shows error when sync was promoted`() {
+        SyncStateManager.tryStartSync("test", silent = true)
+        SyncStateManager.promoteToVisible()
+
+        SyncStateManager.errorIfVisible("Server not reachable")
+
+        assertEquals(SyncPhase.ERROR, SyncStateManager.syncProgress.value.phase)
+        assertEquals("Server not reachable", SyncStateManager.syncProgress.value.resultMessage)
+        assertFalse(SyncStateManager.syncProgress.value.silent)
+    }
+
+    @Test
+    fun `errorIfVisible resets silently when sync is still silent`() {
+        SyncStateManager.tryStartSync("test", silent = true)
+
+        SyncStateManager.errorIfVisible("Server not reachable")
+
+        assertEquals(SyncPhase.IDLE, SyncStateManager.syncProgress.value.phase)
+        assertFalse(SyncStateManager.isSyncing)
+    }
+
+    @Test
+    fun `errorIfVisible shows error for non-silent sync`() {
+        SyncStateManager.tryStartSync("test", silent = false)
+
+        SyncStateManager.errorIfVisible("Server not reachable")
+
+        assertEquals(SyncPhase.ERROR, SyncStateManager.syncProgress.value.phase)
+    }
+
+    // ═══════════════════════════════════════════════
+    // 🆕 v2.4.0 (FIX-SSBE-007): markCompleted after promotion
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `markCompleted shows COMPLETED when promoted`() {
+        SyncStateManager.tryStartSync("test", silent = true)
+        SyncStateManager.promoteToVisible()
+
+        SyncStateManager.markCompleted("Already synced")
+
+        assertEquals(SyncPhase.COMPLETED, SyncStateManager.syncProgress.value.phase)
+        assertEquals("Already synced", SyncStateManager.syncProgress.value.resultMessage)
+    }
+
+    @Test
+    fun `markCompleted resets to IDLE when still silent`() {
+        SyncStateManager.tryStartSync("test", silent = true)
+
+        SyncStateManager.markCompleted("Already synced")
+
+        assertEquals(SyncPhase.IDLE, SyncStateManager.syncProgress.value.phase)
+    }
 }

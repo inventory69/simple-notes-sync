@@ -937,7 +937,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Check for unsynced changes
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): No unsynced changes - skipping")
-                    SyncStateManager.reset() // Silent → geht direkt auf IDLE
+                    // 🔧 v2.4.0 (FIX-SSBE-003): markCompleted statt reset()
+                    // silent=true → IDLE (identisch zu reset()); promoted → COMPLETED Banner
+                    SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
                     return@launch
                 }
 
@@ -948,7 +950,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (!isReachable) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): Server not reachable - skipping silently")
-                    SyncStateManager.reset() // Silent → kein Error-Banner
+                    // 🔧 v2.4.0 (FIX-SSBE-002): Visibility-aware Termination statt reset()
+                    // Wenn promoted (silent=false): Fehler im Banner anzeigen
+                    // Wenn noch silent: IDLE (kein Banner, wie bisher)
+                    SyncStateManager.errorIfVisible(getString(R.string.snackbar_server_unreachable))
                     return@launch
                 }
 
