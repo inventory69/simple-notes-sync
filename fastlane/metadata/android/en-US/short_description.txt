@@ -1,1 +1,1 @@
-Notes & checklists with WebDAV sync to your own server
+Offline notes & checklists with self-hosted WebDAV sync. No ads, no tracking.

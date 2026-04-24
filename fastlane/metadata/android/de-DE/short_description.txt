@@ -1,1 +1,1 @@
-Notizen & Checklisten mit WebDAV-Sync zu deinem eigenen Server
+Offline-Notizen & Checklisten mit WebDAV-Sync. Kein Account, keine Werbung.

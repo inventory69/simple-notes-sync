@@ -1,34 +1,46 @@
-Simple Notes Sync is a minimalist note-taking app with WebDAV sync and modern features.
+Simple Notes Sync – Private, offline-first notes with smart sync.
+
+Write notes and checklists that stay on YOUR device. Sync to your own server when you want. No accounts, no ads, no data collection – ever.
 
 Key Features:
 • Text notes and checklists (tap-to-check, drag & drop, sorting)
-• Grid and list view with note type indicators
-• Homescreen widgets (quick-note, checklist with interactive checkboxes)
+• Undo/redo history in the note editor
+• Grid and list view (1–5 columns, configurable)
+• Homescreen widgets (quick-note for notes, interactive checklist)
 • Multi-device sync (phone, tablet, desktop)
 • WebDAV sync with your own server (Nextcloud, ownCloud, etc.)
-• Markdown export/import for desktop editors (Obsidian, VS Code)
-• WiFi-only sync, VPN support, parallel downloads
-• Configurable sync triggers: onSave, onResume, WiFi, periodic, boot
-• Fully usable offline – no ads, no trackers
+• Markdown export/import for desktop editors (such as Obsidian, VS Code)
+• WiFi-only sync, VPN support, parallel uploads & downloads (up to 5)
+• Configurable sync triggers: on save, on resume, WiFi connect, WiFi-only sync toggle, periodic (15/30/60 min), on boot
+• Fully usable offline – no internet required
 
 Privacy & Security:
 • Your data stays with you – no cloud, no tracking libraries
+• No account required – ever
 • Support for self-signed SSL certificates
-• Encrypted local backups
+• Encrypted local backup & restore (JSON)
+
+Export & Sharing:
+• Share notes as text or PDF
+• Export to calendar
+• Markdown export for desktop editors like Obsidian, VS Code, Typora
 
 Synchronization:
-• Parallel downloads (up to 5 simultaneous)
+• Parallel uploads and downloads (up to 5 simultaneous)
 • Live sync progress with phase indicators
 • Smart conflict resolution, server deletion detection
 • Post-update changelog dialog
 
 UI & Design:
-• Modern Jetpack Compose interface
-• Material Design 3, 7 color schemes (incl. AMOLED & Dynamic), dark mode
+• Modern Jetpack Compose interface with animated theme transitions
+• Material Design 3, 7 color schemes (incl. AMOLED & Dynamic Color)
 • Note & checklist sorting (title, date, type, alphabetical)
+• Battery-friendly background sync
 
 Multilingual:
-• English and German, automatic detection, in-app language selector
+• Supports multiple languages with automatic detection
+• In-app language selector respects Android system preferences
+• Community translations via Weblate
 
-Open Source under AGPL v3 License
-Source code: https://github.com/inventory69/simple-notes-sync
+Open Source (AGPL-3.0) – source code available on GitHub:
+https://github.com/inventory69/simple-notes-sync

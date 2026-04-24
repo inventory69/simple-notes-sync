@@ -1,34 +1,46 @@
-Simple Notes Sync ist eine minimalistische Notizen-App mit WebDAV-Synchronisation und modernen Features.
+Simple Notes Sync – Private Offline-Notizen mit intelligentem Sync.
+
+Notizen und Checklisten, die auf DEINEM Gerät bleiben. Synchronisiere mit deinem eigenen Server, wann du willst. Kein Account, keine Werbung, keine Datenerhebung – niemals.
 
 Hauptfunktionen:
 • Text-Notizen und Checklisten (Tap-to-Check, Drag & Drop, Sortierung)
-• Raster- und Listen-Ansicht mit Notiztypen
-• Homescreen-Widgets (Quick-Note, Checkliste mit interaktiven Checkboxen)
+• Rückgängig/Wiederherstellen im Notiz-Editor
+• Raster- und Listen-Ansicht (1–5 Spalten, konfigurierbar)
+• Homescreen-Widgets (Quick-Note für Notizen, interaktive Checkliste)
 • Multi-Device Sync (Handy, Tablet, Desktop)
 • WebDAV-Synchronisation mit eigenem Server (Nextcloud, ownCloud, etc.)
-• Markdown-Export und Import für Desktop-Editoren (Obsidian, VS Code)
-• WiFi-only Sync, VPN-Unterstützung, parallele Downloads
-• Konfigurierbare Sync-Trigger: onSave, onResume, WiFi, periodisch, Boot
-• Komplett offline nutzbar – keine Werbung, keine Tracker
+• Markdown-Export und Import für Desktop-Editoren (z.B. Obsidian, VS Code)
+• WiFi-only Sync, VPN-Unterstützung, parallele Uploads & Downloads (bis zu 5)
+• Konfigurierbare Sync-Trigger: beim Speichern, beim Öffnen, WiFi-Verbindung, WiFi-only Toggle, periodisch (15/30/60 Min.), Boot
+• Komplett offline nutzbar – kein Internet erforderlich
 
 Datenschutz & Sicherheit:
 • Alle Daten bleiben bei dir – keine Cloud, keine Tracking-Bibliotheken
+• Kein Account erforderlich – niemals
 • Unterstützung für selbstsignierte SSL-Zertifikate
-• Verschlüsselte lokale Backups
+• Verschlüsselte lokale Backups & Wiederherstellung (JSON)
+
+Export & Teilen:
+• Notizen als Text oder PDF teilen
+• In Kalender exportieren
+• Markdown-Export für Desktop-Editoren wie Obsidian, VS Code, Typora
 
 Synchronisation:
-• Parallele Downloads (bis zu 5 gleichzeitig)
+• Parallele Uploads & Downloads (bis zu 5 gleichzeitig)
 • Live Sync-Fortschritt mit Phasen-Anzeige
 • Intelligente Konfliktlösung, Server-Löschungs-Erkennung
 • Post-Update Changelog-Dialog
 
 UI & Design:
-• Moderne Jetpack Compose Oberfläche
-• Material Design 3, 7 Farbschemata (inkl. AMOLED & Dynamisch), Dark Mode
+• Moderne Jetpack Compose Oberfläche mit animierten Theme-Übergängen
+• Material Design 3, 7 Farbschemata (inkl. AMOLED & Dynamic Color)
 • Notiz- und Checklisten-Sortierung (Titel, Datum, Typ, alphabetisch)
+• Akkuschonende Hintergrundsynchronisation
 
 Mehrsprachig:
-• Deutsch und Englisch, automatische Erkennung, App-Sprachauswahl
+• Unterstützt mehrere Sprachen mit automatischer Erkennung
+• In-App-Sprachauswahl berücksichtigt Android-Systemeinstellungen
+• Community-Übersetzungen via Weblate
 
-Open Source unter AGPL v3 Lizenz
-Quellcode: https://github.com/inventory69/simple-notes-sync
+Open Source (AGPL-3.0) – Quellcode auf GitHub:
+https://github.com/inventory69/simple-notes-sync
