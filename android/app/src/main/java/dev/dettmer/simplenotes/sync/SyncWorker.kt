@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         private const val STOP_REASON_BACKGROUND_RESTRICTION = 11
         private const val STOP_REASON_APP_STANDBY = 12
     }
+
+    /** Returns the first worker tag or "unknown" — used as triggerType for SyncDebugLogger. */
+    private fun tagOrUnknown(): String = tags.firstOrNull() ?: "unknown"
 
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 
@@ -208,6 +212,28 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
                 // 🔥 v1.1.2: Check if we should show warning (server unreachable for >24h)
                 checkAndShowSyncWarning(syncService)
+
+                // 🆕 v2.2.0: Retry for WiFi-connect and WiFi-fallback triggers on transient
+                // unreachability (e.g. DHCP still settling, DNS not yet resolved).
+                val isWifiConnectTrigger = tags.contains("wifi-connect")
+                val isFallbackTrigger = tags.contains("wifi-fallback")
+                val canRetry = (isWifiConnectTrigger || isFallbackTrigger) &&
+                    runAttemptCount < Constants.MAX_WIFI_CONNECT_RETRY_COUNT
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = if (canRetry) SyncDebugLogger.Outcome.RETRY else SyncDebugLogger.Outcome.SKIPPED,
+                    reason = "server unreachable (attempt=${runAttemptCount + 1})",
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
+                if (canRetry) {
+                    Logger.d(
+                        TAG,
+                        "🔁 Server unreachable — scheduling retry " +
+                            "(attempt ${runAttemptCount + 1}/${Constants.MAX_WIFI_CONNECT_RETRY_COUNT})"
+                    )
+                    SyncStateManager.reset()
+                    return@withContext Result.retry()
+                }
 
                 // 🆕 v2.4.0 (FIX-SSBE-004): Visibility-aware Termination
                 // Wenn der Sync promoted wurde (User hat Pull-to-Refresh gemacht),
