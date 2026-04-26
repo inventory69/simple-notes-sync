@@ -361,6 +361,10 @@
     <string name="debug_after_export_message">Du kannst das Datei-Logging jetzt deaktivieren, da du die Logs bereits geteilt hast. Es kann hier jederzeit wieder aktiviert werden.</string>
     <string name="debug_after_export_disable">Logging deaktivieren</string>
     <string name="debug_after_export_keep">Aktiviert lassen</string>
+    <!-- 🆕 v2.2.0: Robuster Log-Export-Feedback -->
+    <string name="debug_export_preparing">Export wird vorbereitet…</string>
+    <string name="debug_export_empty_message">Keine Log-Dateien zum Exportieren gefunden</string>
+    <string name="debug_export_failed_toast">Share-Dialog konnte nicht geöffnet werden — keine kompatible App installiert</string>
     <string name="debug_test_section">Test-Modus</string>
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>
