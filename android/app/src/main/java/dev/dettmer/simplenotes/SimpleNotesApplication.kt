@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteCorruptionRepair
 import dev.dettmer.simplenotes.utils.NotificationHelper
+import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,6 +57,9 @@ class SimpleNotesApplication : Application() {
             Logger.enableFileLogging(this)
             Logger.d(TAG, "📝 File logging enabled at Application startup")
         }
+
+        // 🆕 v2.2.0: Persistent sync debug logger
+        SyncDebugLogger.init(this)
 
         Logger.d(TAG, "🚀 Application onCreate()")
 
