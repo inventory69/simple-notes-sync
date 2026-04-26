@@ -129,6 +129,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // Globaler Cooldown-Check (nicht für Bypass-Syncs)
             if (!bypassesGlobalCooldown && !SyncStateManager.canSyncGlobally(prefs)) {
                 Logger.d(TAG, "⏭️ SyncWorker: Global sync cooldown active - skipping")
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.SKIPPED,
+                    reason = "global cooldown active",
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (cooldown)")
                     Logger.d(TAG, "═══════════════════════════════════════")
@@ -138,6 +144,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
             if (!SyncStateManager.tryStartSync("worker-${tags.firstOrNull() ?: "unknown"}", silent = true)) {
                 Logger.d(TAG, "⏭️ SyncWorker: Another sync already in progress - skipping")
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.SKIPPED,
+                    reason = "another sync in progress",
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (already syncing)")
                     Logger.d(TAG, "═══════════════════════════════════════")
@@ -157,6 +169,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (!syncService.hasUnsyncedChanges()) {
                 Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
                 Logger.d(TAG, "   Saves battery, network traffic, and server load")
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.NO_CHANGES,
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
 
                 // 🆕 v2.4.0 (FIX-SSBE-005): Visibility-aware Termination
                 // markCompleted() prüft silent-Flag: silent=true → IDLE, promoted → COMPLETED
@@ -184,6 +201,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 } else {
                     Logger.d(TAG, "⏭️ Sync blocked by gate: ${gateResult.blockReason ?: "offline/no server"}")
                 }
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.SKIPPED,
+                    reason = "gate: " + when {
+                        gateResult.isBlockedByWifiOnly -> "wifi-only, not on wifi"
+                        else -> gateResult.blockReason ?: "offline/no server"
+                    },
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
 
                 // 🆕 v2.4.0 (FIX-SSBE-006): Visibility-aware Termination
                 // Zeigt Fehler im Banner wenn der Sync promoted wurde (silent=false)
@@ -259,7 +285,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 Logger.d(TAG, "📍 Step 6: Server reachable - proceeding with sync")
                 Logger.d(TAG, "    SyncService: $syncService")
             }
-
+            // 🆕 v2.2.0: Sync wird jetzt wirklich ausgeführt — STARTED-Outcome
+            SyncDebugLogger.logTrigger(
+                triggerType = tagOrUnknown(),
+                outcome = SyncDebugLogger.Outcome.STARTED,
+                networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+            )
             // Try-catch um syncNotes
             val result = try {
                 if (BuildConfig.DEBUG) {
@@ -290,7 +321,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     Logger.d(TAG, "📍 Step 8: Success path")
                 }
                 Logger.i(TAG, "✅ Sync successful: ${result.syncedCount} notes")
-
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.SUCCESS,
+                    reason = "synced=${result.syncedCount}",
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 SyncStateManager.markCompleted()
 
@@ -332,7 +368,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     Logger.d(TAG, "📍 Step 8: Failure path")
                 }
                 Logger.e(TAG, "❌ Sync failed: ${result.errorMessage}")
-
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.FAILED,
+                    reason = result.errorMessage ?: "unknown",
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 SyncStateManager.markError(result.errorMessage)
 
@@ -353,6 +394,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         } catch (e: CancellationException) {
             // 🛡️ v1.8.2 (IMPL_14): State reset — verhindert "Sync already in progress" Deadlock
             SyncStateManager.reset()
+            SyncDebugLogger.logTrigger(
+                triggerType = tagOrUnknown(),
+                outcome = SyncDebugLogger.Outcome.CANCELLED,
+                reason = e.message,
+                networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+            )
 
             // 🆕 v1.10.0-P2: Detailed stop reason logging + quota/standby tracking
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -385,6 +432,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             Logger.e(TAG, "Exception type: ${e.javaClass.name}")
             Logger.e(TAG, "Exception message: ${e.message}")
             Logger.e(TAG, "Stack trace:", e)
+            SyncDebugLogger.logTrigger(
+                triggerType = tagOrUnknown(),
+                outcome = SyncDebugLogger.Outcome.FAILED,
+                reason = "exception: ${e.javaClass.simpleName}: ${e.message}",
+                networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+            )
 
             // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock
             SyncStateManager.markError(e.message)
