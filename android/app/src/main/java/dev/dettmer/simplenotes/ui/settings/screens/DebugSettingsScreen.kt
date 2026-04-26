@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +40,10 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
+import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.SyncDebugLogger
+
+private const val TAG = "DebugSettingsScreen"
 
 /**
  * Debug and diagnostics settings screen
@@ -112,27 +117,51 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             // Export Logs Button
             val logsSubject = stringResource(R.string.debug_logs_subject)
             val logsShareVia = stringResource(R.string.debug_logs_share_via)
+            val exportEmptyMsg = stringResource(R.string.debug_export_empty_message)
+            val exportFailedMsg = stringResource(R.string.debug_export_failed_toast)
+            val exportPreparingMsg = stringResource(R.string.debug_export_preparing)
 
             SettingsButton(
                 text = stringResource(R.string.debug_export_logs),
                 onClick = {
-                    val logFile = viewModel.getLogFile()
-                    if (logFile != null && logFile.exists() && logFile.length() > 0L) {
-                        val logUri = FileProvider.getUriForFile(
+                    // Collect all non-empty log files (regular log + sync debug log)
+                    val logFiles = listOfNotNull(
+                        viewModel.getLogFile()?.takeIf { it.exists() && it.length() > 0L },
+                        SyncDebugLogger.getLogFile(context)?.takeIf { it.exists() && it.length() > 0L }
+                    )
+                    if (logFiles.isEmpty()) {
+                        viewModel.showSnackbar(exportEmptyMsg)
+                        return@SettingsButton
+                    }
+                    viewModel.showSnackbar(exportPreparingMsg)
+                    val uris = ArrayList(logFiles.map { file ->
+                        FileProvider.getUriForFile(
                             context,
                             "${BuildConfig.APPLICATION_ID}.fileprovider",
-                            logFile
+                            file
                         )
-
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    })
+                    val shareIntent = if (uris.size == 1) {
+                        Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
-                            putExtra(Intent.EXTRA_STREAM, logUri)
+                            putExtra(Intent.EXTRA_STREAM, uris[0])
                             putExtra(Intent.EXTRA_SUBJECT, logsSubject)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-
+                    } else {
+                        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                            type = "text/plain"
+                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                            putExtra(Intent.EXTRA_SUBJECT, logsSubject)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    }
+                    try {
                         context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
                         if (fileLoggingEnabled) pendingDisableDialog = true
+                    } catch (e: ActivityNotFoundException) {
+                        Logger.w(TAG, "No app available to handle share intent for logs: ${e.message}")
+                        viewModel.showSnackbar(exportFailedMsg)
                     }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
