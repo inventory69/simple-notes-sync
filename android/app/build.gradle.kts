@@ -24,6 +24,8 @@ android {
         versionName = "2.3.1"  // 🆕 v2.3.1
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // 🆕 v2.2.0: Enable by default for the diagnostic phase — flip to false before release.
+        buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "true")
     }
     
     // Disable Google dependency metadata for F-Droid/IzzyOnDroid compatibility

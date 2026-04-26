@@ -346,6 +346,9 @@
     <string name="debug_settings_title">Debug &amp; Diagnose</string>
     <string name="debug_file_logging_title">Datei-Logging</string>
     <string name="debug_file_logging_subtitle">Sync-Logs in Datei speichern</string>
+    <!-- 🆕 v2.2.0: Persistentes Sync-Debug-Log -->
+    <string name="debug_sync_debug_logging_title">Persistentes Sync-Debug-Log</string>
+    <string name="debug_sync_debug_logging_subtitle">Speichert Sync-Trigger und Ergebnisse zur Fehleranalyse im Hintergrund-Sync.</string>
     <string name="debug_privacy_info">🔒 Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
     <string name="debug_log_actions_section">Log-Aktionen</string>
     <string name="debug_export_logs">📤 Logs exportieren &amp; teilen</string>
