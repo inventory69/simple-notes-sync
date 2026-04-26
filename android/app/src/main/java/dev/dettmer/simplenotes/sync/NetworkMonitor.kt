@@ -8,6 +8,7 @@ import android.net.NetworkRequest
 import androidx.work.*
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,8 +23,10 @@ class NetworkMonitor(context: Context) {
         private const val TAG = "NetworkMonitor"
         private const val AUTO_SYNC_WORK_NAME = "auto_sync_periodic"
 
-        // 🛡️ Kaltstart-Guard: Verhindert Sync-Trigger direkt nach Package-Update/Prozess-Neustart
-        private const val COLD_START_GUARD_MS = 5_000L
+        // 🛡️ Kaltstart-Guard: Verhindert Sync-Trigger direkt nach Package-Update/Prozess-Neustart.
+        // 🔗 v2.2.0: 5s → 2s — das synthetische onAvailable() nach registerNetworkCallback() kommt
+        // typischerweise innerhalb <500ms; 5s hat echte Boot-Trigger nach Standby gefressen.
+        private const val COLD_START_GUARD_MS = 2_000L
     }
 
     private val prefs by lazy {
@@ -44,83 +47,128 @@ class NetworkMonitor(context: Context) {
     private var monitoringStartTime: Long = 0L
 
     /**
-     * NetworkCallback: Erkennt WiFi-Verbindung und triggert WorkManager
+     * NetworkCallback: Erkennt WiFi-Verbindung und triggert WorkManager.
      * WorkManager funktioniert auch wenn App geschlossen ist!
+     *
+     * 🔗 v2.2.0: Verwendet NET_CAPABILITY_VALIDATED im NetworkRequest (siehe startWifiMonitoring).
+     * onAvailable enthält eine defensive Re-Validation als Sicherheitsnetz.
+     * onCapabilitiesChanged reagiert auf nachträgliche Validierung.
      */
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
-
             Logger.d(TAG, "🌐 NetworkCallback.onAvailable() triggered")
+            val caps = connectivityManager.getNetworkCapabilities(network)
+            evaluateAndMaybeTrigger(network, caps)
+        }
 
-            val capabilities = connectivityManager.getNetworkCapabilities(network)
-            Logger.d(TAG, "    Network capabilities: $capabilities")
-
-            val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-            Logger.d(TAG, "    Is WiFi: $isWifi")
-
-            if (isWifi) {
-                val currentNetworkId = network.toString()
-                Logger.d(TAG, "📶 WiFi network connected: $currentNetworkId")
-
-                // 🔥 Trigger bei:
-                // 1. WiFi aus -> WiFi an (lastConnectedNetworkId == null)
-                // 2. SSID-Wechsel (lastConnectedNetworkId != currentNetworkId)
-                // NICHT triggern bei: App-Restart mit gleichem WiFi
-
-                if (lastConnectedNetworkId != currentNetworkId) {
-                    if (lastConnectedNetworkId == null) {
-                        Logger.d(TAG, "    🎯 WiFi state changed: OFF -> ON (network: $currentNetworkId)")
-                    } else {
-                        Logger.d(TAG, "    🎯 WiFi network changed: $lastConnectedNetworkId -> $currentNetworkId")
-                    }
-
-                    lastConnectedNetworkId = currentNetworkId
-
-                    // 🛡️ Kaltstart-Guard: Nach Package-Update/Prozess-Neustart
-                    // feuert onAvailable() sofort für das bestehende WiFi.
-                    // In den ersten 5s keinen Sync auslösen.
-                    val msSinceStart = System.currentTimeMillis() - monitoringStartTime
-                    if (msSinceStart < COLD_START_GUARD_MS) {
-                        Logger.d(
-                            TAG,
-                            "    ⏭️ Cold-start guard active (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms) - ignoring"
-                        )
-                    } else {
-                        // WiFi-Connect Trigger prüfen - NICHT KEY_AUTO_SYNC!
-                        // Der Callback ist registriert WEIL KEY_SYNC_TRIGGER_WIFI_CONNECT = true
-                        // Aber defensive Prüfung für den Fall, dass Settings sich geändert haben
-                        val wifiConnectEnabled = prefs.getBoolean(
-                            Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
-                            Constants.DEFAULT_TRIGGER_WIFI_CONNECT
-                        )
-                        Logger.d(TAG, "    WiFi-Connect trigger enabled: $wifiConnectEnabled")
-
-                        if (wifiConnectEnabled) {
-                            Logger.d(TAG, "    ✅ Triggering WiFi-Connect sync...")
-                            triggerWifiConnectSync()
-                        } else {
-                            Logger.d(TAG, "    ⏭️ WiFi-Connect trigger disabled in settings")
-                        }
-                    }
-                } else {
-                    Logger.d(TAG, "    ⚠️ Same WiFi network as before - ignoring (no network change)")
-                }
-            } else {
-                Logger.d(TAG, "    ⚠️ Not WiFi - ignoring")
+        // 🔗 v2.2.0: Fallback für späte Validierung (z.B. Captive-Portal-Login nach onAvailable)
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            super.onCapabilitiesChanged(network, capabilities)
+            if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+            ) {
+                Logger.d(TAG, "🌐 NetworkCallback.onCapabilitiesChanged() — validated WiFi detected")
+                evaluateAndMaybeTrigger(network, capabilities)
             }
         }
 
         override fun onLost(network: Network) {
             super.onLost(network)
-
             val lostNetworkId = network.toString()
             Logger.d(TAG, "🔴 NetworkCallback.onLost() - Network disconnected: $lostNetworkId")
-
             if (lastConnectedNetworkId == lostNetworkId) {
                 Logger.d(TAG, "    Last WiFi network lost - resetting state")
                 lastConnectedNetworkId = null
             }
+        }
+    }
+
+    /**
+     * 🔗 v2.2.0: Gemeinsame Evaluierungs-Logik für onAvailable und onCapabilitiesChanged.
+     *
+     * Prüft in dieser Reihenfolge:
+     * 1. WiFi-Transport
+     * 2. Validiertes Internet (defensive Re-Validation)
+     * 3. Neue Network-ID (kein Doppel-Trigger für dasselbe Netz)
+     * 4. Cold-Start-Guard
+     * 5. Setting-Toggle
+     *
+     * Alle Skip-Pfade loggen via SyncDebugLogger für Post-Mortem-Diagnose.
+     */
+    private fun evaluateAndMaybeTrigger(network: Network, caps: NetworkCapabilities?) {
+        val networkState = SyncDebugLogger.snapshotNetwork(context)
+
+        val isWifi    = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        val validated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+        val internet  = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+
+        Logger.d(TAG, "    Evaluate: wifi=$isWifi validated=$validated internet=$internet")
+
+        if (!isWifi) {
+            Logger.d(TAG, "    ⚠️ Not WiFi — ignoring")
+            return
+        }
+
+        // 🛡️ v2.2.0: Defensive Re-Validation als Sicherheitsnetz.
+        // (Der NetworkRequest erzwingt bereits VALIDATED, aber manche Custom-ROMs
+        // liefern onAvailable vor dem vollständigen Capability-Set.)
+        if (!validated || !internet) {
+            Logger.d(TAG, "    ⏭️ onAvailable but not validated/internet yet — waiting for onCapabilitiesChanged")
+            SyncDebugLogger.logTrigger(
+                triggerType = "WIFI_CONNECT",
+                outcome = SyncDebugLogger.Outcome.SKIPPED,
+                reason = "not validated yet (validated=$validated internet=$internet)",
+                networkState = networkState,
+            )
+            return
+        }
+
+        val currentNetworkId = network.toString()
+        if (lastConnectedNetworkId == currentNetworkId) {
+            Logger.d(TAG, "    ⚠️ Same WiFi network as before — ignoring (no network change)")
+            return
+        }
+
+        if (lastConnectedNetworkId == null) {
+            Logger.d(TAG, "    🎯 WiFi state changed: OFF -> ON (network: $currentNetworkId)")
+        } else {
+            Logger.d(TAG, "    🎯 WiFi network changed: $lastConnectedNetworkId -> $currentNetworkId")
+        }
+        lastConnectedNetworkId = currentNetworkId
+
+        val msSinceStart = System.currentTimeMillis() - monitoringStartTime
+        if (msSinceStart < COLD_START_GUARD_MS) {
+            Logger.d(TAG, "    ⏭️ Cold-start guard active (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms) — ignoring")
+            SyncDebugLogger.logTrigger(
+                triggerType = "WIFI_CONNECT",
+                outcome = SyncDebugLogger.Outcome.SKIPPED,
+                reason = "cold-start guard (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms)",
+                networkState = networkState,
+            )
+            return
+        }
+
+        val wifiConnectEnabled = prefs.getBoolean(
+            Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
+            Constants.DEFAULT_TRIGGER_WIFI_CONNECT,
+        )
+        if (!wifiConnectEnabled) {
+            Logger.d(TAG, "    ⏭️ WiFi-Connect trigger disabled in settings")
+            SyncDebugLogger.logTrigger(
+                triggerType = "WIFI_CONNECT",
+                outcome = SyncDebugLogger.Outcome.SKIPPED,
+                reason = "trigger disabled in settings",
+                networkState = networkState,
+            )
+        } else {
+            Logger.d(TAG, "    ✅ Triggering WiFi-Connect sync...")
+            SyncDebugLogger.logTrigger(
+                triggerType = "WIFI_CONNECT",
+                outcome = SyncDebugLogger.Outcome.STARTED,
+                networkState = networkState,
+            )
+            triggerWifiConnectSync()
         }
     }
 
@@ -344,9 +392,13 @@ class NetworkMonitor(context: Context) {
             val request = NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) // 🔗 v2.2.0: Erst feuern wenn Internet verifiziert
+                // ℹ️ NET_CAPABILITY_NOT_RESTRICTED bewusst weggelassen: ist Default-Capability
+                // jedes Standard-Requests; explizites Setzen kann auf manchen Custom-ROMs dazu
+                // führen, dass der Callback nie feuert.
                 .build()
 
-            Logger.d(TAG, "    NetworkRequest built: WIFI + INTERNET capability")
+            Logger.d(TAG, "    NetworkRequest built: WIFI + INTERNET + VALIDATED capability")
 
             connectivityManager.registerNetworkCallback(request, networkCallback)
             Logger.d(TAG, "✅✅✅ WiFi NetworkCallback registered successfully")
