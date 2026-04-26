@@ -160,4 +160,7 @@ object Constants {
     const val DEFAULT_GRID_MANUAL_COLUMNS = 2
     const val GRID_MIN_COLUMNS = 1
     const val GRID_MAX_COLUMNS = 5
+
+    // 🆕 v2.2.0: Persistent sync debug logging
+    const val KEY_SYNC_DEBUG_LOGGING = "sync_debug_logging"
 }

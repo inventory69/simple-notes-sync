@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +49,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
+    val syncDebugLoggingEnabled by viewModel.syncDebugLoggingEnabled.collectAsState()
 
     var showClearLogsDialog by remember { mutableStateOf(false) }
     var showDisableAfterExportDialog by remember { mutableStateOf(false) }
@@ -85,6 +87,15 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 checked = fileLoggingEnabled,
                 onCheckedChange = { viewModel.setFileLogging(it) },
                 icon = Icons.AutoMirrored.Filled.Notes
+            )
+
+            // 🆕 v2.2.0: Persistent sync debug log toggle
+            SettingsSwitch(
+                title = stringResource(R.string.debug_sync_debug_logging_title),
+                subtitle = stringResource(R.string.debug_sync_debug_logging_subtitle),
+                checked = syncDebugLoggingEnabled,
+                onCheckedChange = { viewModel.setSyncDebugLogging(it) },
+                icon = Icons.Filled.BugReport
             )
 
             // Privacy Info
