@@ -120,10 +120,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // 🆕 v1.8.1 (IMPL_08B): onSave-Syncs bypassen den globalen Cooldown
             // Grund: User hat explizit gespeichert → erwartet zeitnahen Sync
             // Der eigene 5s-Throttle + isSyncing-Mutex reichen als Schutz
-            val isOnSaveSync = tags.contains(Constants.SYNC_ONSAVE_TAG)
+            // 🆕 v2.2.0: WiFi-connect bypasses cooldown too — it fires at most once per
+            // physical WiFi attach event, so the 30 s global guard is redundant and would
+            // swallow the very sync we care most about.
+            val bypassesGlobalCooldown = tags.contains(Constants.SYNC_ONSAVE_TAG) ||
+                tags.contains("wifi-connect")
 
-            // Globaler Cooldown-Check (nicht für onSave-Syncs)
-            if (!isOnSaveSync && !SyncStateManager.canSyncGlobally(prefs)) {
+            // Globaler Cooldown-Check (nicht für Bypass-Syncs)
+            if (!bypassesGlobalCooldown && !SyncStateManager.canSyncGlobally(prefs)) {
                 Logger.d(TAG, "⏭️ SyncWorker: Global sync cooldown active - skipping")
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (cooldown)")
