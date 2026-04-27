@@ -5,7 +5,9 @@
     <!-- Supported languages -->
     <locale android:name="de" />
     <locale android:name="hi" />
+    <locale android:name="in" />
     <locale android:name="it" />
+    <locale android:name="nb" />
     <locale android:name="ru" />
     <locale android:name="tr" />
     <locale android:name="uk" />
