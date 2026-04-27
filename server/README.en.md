@@ -2,14 +2,16 @@
 
 **🌍 Languages:** [Deutsch](README.md) · **English**
 
+> Based on [hacdias/webdav](https://github.com/hacdias/webdav) — a lightweight, actively maintained WebDAV server.
+
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Adjust environment variables
-cp .env.example .env
-nano .env
+# 1. Create config and set credentials
+cp config.yml.example config.yml
+nano config.yml
 
 # 2. Start server
 docker-compose up -d
@@ -34,9 +36,20 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 ## Credentials
 
-Default (see `.env`):
-- Username: `noteuser`
-- Password: See `.env` file
+Credentials are set in `config.yml` (not committed to git):
+```yaml
+users:
+  - username: noteuser
+    password: your_secure_password
+```
+
+## Custom Port (optional)
+
+Default port is `8080`. To change it:
+```bash
+cp .env.example .env
+# Set WEBDAV_PORT in .env
+```
 
 ## Management
 
@@ -53,19 +66,18 @@ docker-compose restart
 # Stop
 docker-compose down
 
-# Update
-docker-compose pull
-docker-compose up -d
+# Update image
+docker-compose pull && docker-compose up -d
 ```
 
 ## Data Location
 
-Your notes are stored in: `./data/`
+Your notes are stored in: `./notes-data/`
 
 **Backup:**
 ```bash
 # Create backup
-tar -czf notes-backup-$(date +%Y%m%d).tar.gz data/
+tar -czf notes-backup-$(date +%Y%m%d).tar.gz notes-data/
 
 # Restore backup
 tar -xzf notes-backup-YYYYMMDD.tar.gz

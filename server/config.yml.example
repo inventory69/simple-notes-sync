@@ -1,0 +1,49 @@
+address: 0.0.0.0
+port: 8080
+
+# Directory for WebDAV storage (mapped via docker-compose volume)
+directory: /data
+
+# Default permissions (R=Read, C=Create, U=Update, D=Delete)
+permissions: CRUD
+
+debug: false
+
+log:
+  format: console
+  colors: false
+  outputs:
+    - stderr
+
+# CORS configuration — only needed if accessing via a web browser/app
+# cors:
+#   enabled: true
+#   credentials: true
+#   allowed_headers:
+#     - Depth
+#     - Content-Type
+#     - Authorization
+#   allowed_hosts:
+#     - http://localhost:8080
+#   allowed_methods:
+#     - GET
+#     - HEAD
+#     - POST
+#     - PUT
+#     - DELETE
+#     - OPTIONS
+#     - PROPFIND
+#     - PROPPATCH
+#     - MKCOL
+#     - COPY
+#     - MOVE
+
+# Users — change username and password before starting!
+users:
+  - username: noteuser
+    password: your_secure_password_here
+    permissions: CRUD
+  # Add more users if needed:
+  # - username: user2
+  #   password: another_secure_password
+  #   permissions: CRUD
