@@ -1,6 +1,9 @@
 # Environment
 .env
 
+# Config (contains credentials — copy from config.yml.example)
+config.yml
+
 # Data
 notes-data/
 logs/

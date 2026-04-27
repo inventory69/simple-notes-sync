@@ -2,14 +2,16 @@
 
 **🌍 Sprachen:** **Deutsch** · [English](README.en.md)
 
+> Basiert auf [hacdias/webdav](https://github.com/hacdias/webdav) — leichtgewichtiger, aktiv gewarteter WebDAV-Server.
+
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Umgebungsvariablen anpassen
-cp .env.example .env
-nano .env
+# 1. Konfiguration anlegen und Zugangsdaten setzen
+cp config.yml.example config.yml
+nano config.yml
 
 # 2. Server starten
 docker-compose up -d
@@ -34,9 +36,20 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 ## Credentials
 
-Standard (siehe `.env`):
-- Username: `noteuser`
-- Password: Siehe `.env` Datei
+Zugangsdaten werden in `config.yml` gesetzt (wird nicht ins Git eingecheckt):
+```yaml
+users:
+  - username: noteuser
+    password: dein_sicheres_passwort
+```
+
+## Port anpassen (optional)
+
+Standardmäßig läuft der Server auf Port `8080`. Zum Ändern:
+```bash
+cp .env.example .env
+# WEBDAV_PORT in .env setzen
+```
 
 ## Management
 
@@ -52,6 +65,9 @@ docker-compose restart
 
 # Stoppen
 docker-compose down
+
+# Image aktualisieren
+docker-compose pull && docker-compose up -d
 
 # Komplett löschen (inkl. Daten)
 docker-compose down -v
