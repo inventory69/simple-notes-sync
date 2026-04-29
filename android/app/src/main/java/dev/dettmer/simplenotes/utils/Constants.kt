@@ -160,4 +160,10 @@ object Constants {
     const val DEFAULT_GRID_MANUAL_COLUMNS = 2
     const val GRID_MIN_COLUMNS = 1
     const val GRID_MAX_COLUMNS = 5
+
+    // 🆕 v2.2.0: Persistent sync debug logging
+    const val KEY_SYNC_DEBUG_LOGGING = "sync_debug_logging"
+
+    // 🆕 v2.2.0: Max retry count for WiFi-connect and WiFi-fallback sync workers
+    const val MAX_WIFI_CONNECT_RETRY_COUNT = 3
 }

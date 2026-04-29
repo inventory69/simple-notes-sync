@@ -20,10 +20,12 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 31  // 🆕 v2.3.1
-        versionName = "2.3.1"  // 🆕 v2.3.1
+        versionCode = 32  // 🆕 v2.3.2 - Sync Debug
+        versionName = "2.4.0"  // 🆕 v2.3.2 - Sync Debug
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // 🆕 v2.2.0: Enable by default for the diagnostic phase — flip to false before release.
+        buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "true")
     }
     
     // Disable Google dependency metadata for F-Droid/IzzyOnDroid compatibility

@@ -382,6 +382,9 @@
     <string name="debug_settings_title">Debug &amp; Diagnostics</string>
     <string name="debug_file_logging_title">File Logging</string>
     <string name="debug_file_logging_subtitle">Save sync logs to file</string>
+    <!-- 🆕 v2.2.0: Persistent sync debug log -->
+    <string name="debug_sync_debug_logging_title">Persistent sync debug log</string>
+    <string name="debug_sync_debug_logging_subtitle">Records sync triggers and outcomes for diagnosing background sync issues.</string>
     <string name="debug_privacy_info">🔒 Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
     <string name="debug_log_actions_section">Log Actions</string>
     <string name="debug_export_logs">📤 Export &amp; Share Logs</string>
@@ -394,6 +397,10 @@
     <string name="debug_after_export_message">You can disable file logging now that you\'ve shared the logs. File logging can be re-enabled here at any time.</string>
     <string name="debug_after_export_disable">Disable Logging</string>
     <string name="debug_after_export_keep">Keep Enabled</string>
+    <!-- 🆕 v2.2.0: Robust log export feedback -->
+    <string name="debug_export_preparing">Preparing export…</string>
+    <string name="debug_export_empty_message">No log files found to export</string>
+    <string name="debug_export_failed_toast">Could not open share sheet — no compatible app installed</string>
     <string name="debug_test_section">Test Mode</string>
     <string name="debug_reset_changelog">Reset Changelog Dialog</string>
     <string name="debug_reset_changelog_desc">Show changelog on next app start</string>

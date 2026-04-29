@@ -610,4 +610,9 @@
     <string name="widget_config_load_error">不能载入之前的微件配置。请重新配置。</string>
     <string name="widget_note_not_found">未找到笔记</string>
     <string name="widget_tap_to_reconfigure">点击来重新配置</string>
+    <string name="debug_sync_debug_logging_title">持久同步调试日志</string>
+    <string name="debug_sync_debug_logging_subtitle">记录同步触发和结果，用于诊断后台同步问题。</string>
+    <string name="debug_export_preparing">正在准备导出……</string>
+    <string name="debug_export_empty_message">没找到日志文件来导出</string>
+    <string name="debug_export_failed_toast">不能打开分享面板 — 未安装兼容的应用</string>
 </resources>
