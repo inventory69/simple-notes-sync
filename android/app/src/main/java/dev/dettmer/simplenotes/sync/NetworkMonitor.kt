@@ -154,6 +154,8 @@ class NetworkMonitor(context: Context) {
             return
         }
 
+        // 🆕 v2.4.0: Capture reason before updating lastConnectedNetworkId (B-8)
+        val triggerReason = if (lastConnectedNetworkId == null) "initial-connect" else "network-change"
         lastConnectedNetworkId = currentNetworkId
 
         val msSinceStart = android.os.SystemClock.elapsedRealtime() - startTs
@@ -203,6 +205,7 @@ class NetworkMonitor(context: Context) {
             SyncDebugLogger.logTrigger(
                 triggerType = "WIFI_CONNECT",
                 outcome = SyncDebugLogger.Outcome.STARTED,
+                reason = triggerReason,
                 networkState = networkState,
             )
             triggerWifiConnectSync()
