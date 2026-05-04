@@ -177,4 +177,9 @@ object Constants {
     // wall-clock guard would otherwise eat the first real reconnect after a long gap.
     const val KEY_LAST_WIFI_CONNECT_TRIGGER_TIME = "last_wifi_connect_trigger_time"
     const val COLD_START_GUARD_BYPASS_AFTER_MS = 5L * 60_000L // 5 min
+
+    // 🆕 v2.4.0: Linear backoff cap for WiFi-connect + WiFi-fallback retry workers.
+    // WorkManager default (10s × 2^n, max 5h) is too aggressive for transient recovery.
+    // 30s linear ≙ 3 retries within ~90s.
+    const val WIFI_CONNECT_BACKOFF_SECONDS = 30L
 }
