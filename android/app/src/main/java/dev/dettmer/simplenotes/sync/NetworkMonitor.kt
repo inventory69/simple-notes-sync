@@ -240,6 +240,11 @@ class NetworkMonitor(context: Context) {
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .setConstraints(constraints) // 🔥 Constraints hinzugefügt
+            .setBackoffCriteria(
+                BackoffPolicy.LINEAR,
+                Constants.WIFI_CONNECT_BACKOFF_SECONDS,
+                java.util.concurrent.TimeUnit.SECONDS
+            )
             .addTag(Constants.SYNC_WORK_TAG)
             .addTag("wifi-connect")
             .build()
@@ -274,6 +279,11 @@ class NetworkMonitor(context: Context) {
             Constants.WIFI_FALLBACK_INTERVAL_MINUTES, TimeUnit.MINUTES
         )
             .setConstraints(constraints)
+            .setBackoffCriteria(
+                BackoffPolicy.LINEAR,
+                Constants.WIFI_CONNECT_BACKOFF_SECONDS,
+                TimeUnit.SECONDS
+            )
             .addTag(Constants.SYNC_WORK_TAG)
             .addTag("wifi-fallback")
             .build()
