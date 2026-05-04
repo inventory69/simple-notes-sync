@@ -62,22 +62,26 @@ object SyncDebugLogger {
     /**
      * Single-Method-API — logt einen Trigger-Versuch in einer Zeile.
      *
-     * @param triggerType z.B. "WIFI_CONNECT", "ON_RESUME", "PERIODIC", "ON_SAVE", "BOOT"
-     * @param outcome     Ergebnis des Trigger-Versuchs
-     * @param reason      Optionale Begründung (max 200 Zeichen, keine Notizinhalte!)
+     * @param triggerType  z.B. "WIFI_CONNECT", "ON_RESUME", "PERIODIC", "ON_SAVE", "BOOT"
+     * @param outcome      Ergebnis des Trigger-Versuchs
+     * @param reason       Optionale Begründung (max 200 Zeichen, keine Notizinhalte!)
      * @param networkState Snapshot des aktuellen Netzwerkzustands
+     * @param runAttempt   WorkManager-Attempt-Zähler (0-basiert); default 0
+     * @param holder       Tag des Syncs, der aktuell den Mutex hält (für SKIPPED-Mutex-Pfad)
      */
     fun logTrigger(
         triggerType: String,
         outcome: Outcome,
         reason: String? = null,
         networkState: NetworkSnapshot? = null,
+        runAttempt: Int = 0,
+        holder: String? = null,
     ) {
         val ctx = appContext ?: return
         if (!isEnabled(ctx)) return
         synchronized(fileLock) {
             try {
-                val line = formatLine(triggerType, outcome, reason, networkState)
+                val line = formatLine(triggerType, outcome, reason, networkState, runAttempt, holder)
                 val file = File(ctx.filesDir, FILE_NAME)
                 FileWriter(file, true).use { it.write(line) }
                 rotateIfNeeded(ctx, file)
@@ -123,6 +127,8 @@ object SyncDebugLogger {
         outcome: Outcome,
         reason: String?,
         networkState: NetworkSnapshot?,
+        runAttempt: Int,
+        holder: String?,
     ): String {
         val ts = dateFormat.format(Date())
         val net = if (networkState != null) {
@@ -136,7 +142,9 @@ object SyncDebugLogger {
             ?.replace('\n', ' ')
             ?.take(200)
             ?: "-"
-        return "$ts\tTRIGGER=$triggerType\tOUTCOME=$outcome\tNET=$net\tREASON=$sanitizedReason\n"
+        val holderVal = holder?.replace('\t', ' ')?.take(100) ?: "-"
+        return "$ts\tTRIGGER=$triggerType\tOUTCOME=$outcome\tATTEMPT=$runAttempt" +
+            "\tNET=$net\tHOLDER=$holderVal\tREASON=$sanitizedReason\n"
     }
 
     private fun rotateIfNeeded(ctx: Context, file: File) {
