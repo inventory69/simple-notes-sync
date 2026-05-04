@@ -43,8 +43,10 @@ class NetworkMonitor(context: Context) {
     @Volatile
     private var lastConnectedNetworkId: String? = null
 
-    // 🛡️ Kaltstart-Guard: Zeitpunkt des Monitoring-Starts
-    private var monitoringStartTime: Long = 0L
+    // 🛡️ Kaltstart-Guard: Zeitpunkt des Monitoring-Starts (ElapsedRealtime-Basis — kein Wall-Clock-Sprung)
+    // 🔥 v2.4.0: @Volatile da NetworkCallback auf ConnectivityThread läuft, startWifiMonitoring auf Main
+    @Volatile
+    private var monitoringStartElapsedMs: Long = 0L
 
     /**
      * NetworkCallback: Erkennt WiFi-Verbindung und triggert WorkManager.
@@ -91,11 +93,12 @@ class NetworkMonitor(context: Context) {
      * 1. WiFi-Transport
      * 2. Validiertes Internet (defensive Re-Validation)
      * 3. Neue Network-ID (kein Doppel-Trigger für dasselbe Netz)
-     * 4. Cold-Start-Guard
+     * 4. Cold-Start-Guard (inkl. 0-Guard für Callback-vor-Init)
      * 5. Setting-Toggle
      *
      * Alle Skip-Pfade loggen via SyncDebugLogger für Post-Mortem-Diagnose.
      */
+    @Suppress("ReturnCount") // Linear guard-clause chain — splitting would hurt readability
     private fun evaluateAndMaybeTrigger(network: Network, caps: NetworkCapabilities?) {
         val networkState = SyncDebugLogger.snapshotNetwork(context)
 
@@ -135,9 +138,23 @@ class NetworkMonitor(context: Context) {
         } else {
             Logger.d(TAG, "    🎯 WiFi network changed: $lastConnectedNetworkId -> $currentNetworkId")
         }
+
+        // 🔥 v2.4.0: Guard against callback arriving before startMonitoring() (monitoringStartElapsedMs == 0)
+        val startTs = monitoringStartElapsedMs
+        if (startTs == 0L) {
+            Logger.w(TAG, "    ⚠️ Callback before startMonitoring — ignoring")
+            SyncDebugLogger.logTrigger(
+                triggerType = "WIFI_CONNECT",
+                outcome = SyncDebugLogger.Outcome.SKIPPED,
+                reason = "callback before init",
+                networkState = networkState,
+            )
+            return
+        }
+
         lastConnectedNetworkId = currentNetworkId
 
-        val msSinceStart = System.currentTimeMillis() - monitoringStartTime
+        val msSinceStart = android.os.SystemClock.elapsedRealtime() - startTs
         if (msSinceStart < COLD_START_GUARD_MS) {
             Logger.d(TAG, "    ⏭️ Cold-start guard active (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms) — ignoring")
             SyncDebugLogger.logTrigger(
@@ -386,7 +403,8 @@ class NetworkMonitor(context: Context) {
             // 🛡️ Kaltstart-Guard Zeitpunkt setzen + WiFi-State initialisieren
             // WICHTIG: VOR registerNetworkCallback() — sonst Race-Condition,
             // weil onAvailable() asynchron auf ConnectivityThread feuert
-            monitoringStartTime = System.currentTimeMillis()
+            // 🔥 v2.4.0: elapsedRealtime statt currentTimeMillis — kein Wall-Clock-Sprung
+            monitoringStartElapsedMs = android.os.SystemClock.elapsedRealtime()
             initializeWifiState()
 
             val request = NetworkRequest.Builder()
