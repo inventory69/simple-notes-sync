@@ -120,6 +120,28 @@ object SyncDebugLogger {
         return if (f.exists()) f else null
     }
 
+    /**
+     * 🆕 v2.4.0: Löscht die persistente Sync-Debug-Log-Datei und ihr Rotations-Backup.
+     * Wird vom "Logs löschen"-Button im Debug-Settings-Screen aufgerufen.
+     *
+     * @return true wenn mindestens eine Datei gelöscht wurde oder gar keine existierte
+     *         (Idempotenz), false bei IO-Fehler.
+     */
+    fun clearLog(context: Context): Boolean {
+        synchronized(fileLock) {
+            return try {
+                val main = File(context.filesDir, FILE_NAME)
+                val backup = File(context.filesDir, FILE_NAME_BAK)
+                if (main.exists()) main.delete()
+                if (backup.exists()) backup.delete()
+                true
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to clear sync_debug.log: ${e.message}")
+                false
+            }
+        }
+    }
+
     // ───────── private helpers ─────────
 
     private fun formatLine(

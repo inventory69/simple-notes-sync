@@ -1202,6 +1202,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 val cleared = Logger.clearLogFile(getApplication())
+                // 🆕 v2.4.0: Auch das persistente Sync-Debug-Log löschen — der Button
+                // versprach "Logs löschen" (Plural), hat aber bisher nur die Hauptdatei
+                // erwischt und sync_debug.log liegen lassen.
+                SyncDebugLogger.clearLog(getApplication())
                 emitToast(
                     if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted)
                 )
