@@ -24,8 +24,10 @@ android {
         versionName = "2.4.0"  // 🆕 v2.3.2 - Sync Debug
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // 🆕 v2.2.0: Enable by default for the diagnostic phase — flip to false before release.
-        buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "true")
+        // 🆕 v2.4.0: Diagnostic phase finished (long-run log validated all v2.4.0 fixes).
+        // Default to OFF so new installs/updates don't write sync_debug.log unless the
+        // user explicitly enables it via Debug & Diagnose settings.
+        buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "false")
     }
     
     // Disable Google dependency metadata for F-Droid/IzzyOnDroid compatibility

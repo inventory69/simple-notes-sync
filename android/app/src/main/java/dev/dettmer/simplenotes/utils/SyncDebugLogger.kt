@@ -19,8 +19,9 @@ import java.util.Locale
  * **Niemals** Notizinhalte loggen — nur Metadaten (Trigger, Zeit, Netz, Fehler).
  *
  * Aktivierung: [Constants.KEY_SYNC_DEBUG_LOGGING] (SharedPreferences-Toggle, default
- * [BuildConfig.SYNC_DEBUG_LOGGING_DEFAULT] — `true` für die v2.2.0-Diagnose-Phase,
- * vor dem nächsten Release auf `false` setzen).
+ * [BuildConfig.SYNC_DEBUG_LOGGING_DEFAULT] — seit v2.4.0 `false` (Diagnose-Phase
+ * abgeschlossen). Nutzer können das Log bei Bedarf in den Debug & Diagnose-Settings
+ * wieder aktivieren.
  */
 object SyncDebugLogger {
 
