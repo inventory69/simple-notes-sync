@@ -78,7 +78,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
     }
 
-    @Suppress("LongMethod") // Linear sync flow with debug logging — splitting would hurt readability
+    @Suppress("LongMethod", "CyclomaticComplexMethod") // Linear sync flow with debug logging — splitting would hurt readability
     override suspend fun doWork(): Result = withContext(ioDispatcher) {
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "═══════════════════════════════════════")
@@ -221,10 +221,18 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val isFallbackTrigger = tags.contains("wifi-fallback")
                 val canRetry = (isWifiConnectTrigger || isFallbackTrigger) &&
                     runAttemptCount < Constants.MAX_WIFI_CONNECT_RETRY_COUNT
+                // 🆕 v2.4.0: EXHAUSTED when this IS a retried worker-job but has run out of attempts
+                val isLastAttempt = (runAttemptCount + 1) >= Constants.MAX_WIFI_CONNECT_RETRY_COUNT
+                val outcome = when {
+                    canRetry -> SyncDebugLogger.Outcome.RETRY
+                    (isWifiConnectTrigger || isFallbackTrigger) && isLastAttempt ->
+                        SyncDebugLogger.Outcome.EXHAUSTED
+                    else -> SyncDebugLogger.Outcome.SKIPPED
+                }
                 SyncDebugLogger.logTrigger(
                     triggerType = tagOrUnknown(),
-                    outcome = if (canRetry) SyncDebugLogger.Outcome.RETRY else SyncDebugLogger.Outcome.SKIPPED,
-                    reason = "server unreachable (attempt=${runAttemptCount + 1})",
+                    outcome = outcome,
+                    reason = "server unreachable (attempt=${runAttemptCount + 1}/${Constants.MAX_WIFI_CONNECT_RETRY_COUNT})",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
                 )
                 if (canRetry) {

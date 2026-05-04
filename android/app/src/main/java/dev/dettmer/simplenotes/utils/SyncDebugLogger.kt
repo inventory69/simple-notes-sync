@@ -29,7 +29,8 @@ object SyncDebugLogger {
     private const val MAX_FILE_BYTES = 2L * 1024L * 1024L // 2 MB
     private const val TAG = "SyncDebugLogger"
 
-    enum class Outcome { STARTED, SKIPPED, FAILED, SUCCESS, NO_CHANGES, RETRY, CANCELLED }
+    // 🆕 v2.4.0: EXHAUSTED = worker exhausted all retries; WorkManager will not schedule again
+    enum class Outcome { STARTED, SKIPPED, FAILED, SUCCESS, NO_CHANGES, RETRY, CANCELLED, EXHAUSTED }
 
     data class NetworkSnapshot(
         val wifiConnected: Boolean,
