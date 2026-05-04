@@ -171,4 +171,10 @@ object Constants {
 
     // 🆕 v2.2.0: Max retry count for WiFi-connect and WiFi-fallback sync workers
     const val MAX_WIFI_CONNECT_RETRY_COUNT = 3
+
+    // 🆕 v2.4.0: Cold-start-guard bypass — if the last wifi-connect trigger is older than
+    // this threshold the guard is skipped. Handles process-kill scenarios where the 2 s
+    // wall-clock guard would otherwise eat the first real reconnect after a long gap.
+    const val KEY_LAST_WIFI_CONNECT_TRIGGER_TIME = "last_wifi_connect_trigger_time"
+    const val COLD_START_GUARD_BYPASS_AFTER_MS = 5L * 60_000L // 5 min
 }

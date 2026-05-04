@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import androidx.core.content.edit
 import androidx.work.*
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -22,6 +23,7 @@ class NetworkMonitor(context: Context) {
     companion object {
         private const val TAG = "NetworkMonitor"
         private const val AUTO_SYNC_WORK_NAME = "auto_sync_periodic"
+        private const val MS_PER_MINUTE = 60_000L
 
         // 🛡️ Kaltstart-Guard: Verhindert Sync-Trigger direkt nach Package-Update/Prozess-Neustart.
         // 🔗 v2.2.0: 5s → 2s — das synthetische onAvailable() nach registerNetworkCallback() kommt
@@ -155,7 +157,17 @@ class NetworkMonitor(context: Context) {
         lastConnectedNetworkId = currentNetworkId
 
         val msSinceStart = android.os.SystemClock.elapsedRealtime() - startTs
-        if (msSinceStart < COLD_START_GUARD_MS) {
+
+        // 🆕 v2.4.0: If the last trigger was > COLD_START_GUARD_BYPASS_AFTER_MS ago, bypass
+        // the cold-start guard. This handles process-kill scenarios where startMonitoring()
+        // was just called after a long gap but the callback fires within 2 s — which is
+        // indistinguishable from the synthetic onAvailable() right after registerNetworkCallback().
+        val lastTriggerTs = prefs.getLong(Constants.KEY_LAST_WIFI_CONNECT_TRIGGER_TIME, 0L)
+        val msSinceLastTrigger = System.currentTimeMillis() - lastTriggerTs
+        val coldStartBypass = lastTriggerTs > 0L &&
+            msSinceLastTrigger > Constants.COLD_START_GUARD_BYPASS_AFTER_MS
+
+        if (msSinceStart < COLD_START_GUARD_MS && !coldStartBypass) {
             Logger.d(TAG, "    ⏭️ Cold-start guard active (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms) — ignoring")
             SyncDebugLogger.logTrigger(
                 triggerType = "WIFI_CONNECT",
@@ -164,6 +176,14 @@ class NetworkMonitor(context: Context) {
                 networkState = networkState,
             )
             return
+        }
+
+        if (coldStartBypass && msSinceStart < COLD_START_GUARD_MS) {
+            Logger.d(
+                TAG,
+                "    ⚡ Cold-start guard bypassed " +
+                    "(last trigger ${msSinceLastTrigger / MS_PER_MINUTE}min ago, process-kill recovery)"
+            )
         }
 
         val wifiConnectEnabled = prefs.getBoolean(
@@ -223,6 +243,9 @@ class NetworkMonitor(context: Context) {
             .addTag(Constants.SYNC_WORK_TAG)
             .addTag("wifi-connect")
             .build()
+
+        // 🆕 v2.4.0: Persist trigger timestamp for cold-start-guard bypass logic
+        prefs.edit { putLong(Constants.KEY_LAST_WIFI_CONNECT_TRIGGER_TIME, System.currentTimeMillis()) }
 
         WorkManager.getInstance(context).enqueue(syncRequest)
         Logger.d(TAG, "✅ WiFi-Connect sync scheduled (WIFI ONLY, WorkManager will wake app if needed)")
