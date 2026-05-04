@@ -161,36 +161,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             SyncStateManager.markGlobalSyncStarted(prefs)
 
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 3: Checking for unsynced changes (Performance Pre-Check)")
-            }
-
-            // 🔥 v1.1.2: Performance-Optimierung - Skip Sync wenn keine lokalen Änderungen
-            // Spart Batterie + Netzwerk-Traffic + Server-Last
-            if (!syncService.hasUnsyncedChanges()) {
-                Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
-                Logger.d(TAG, "   Saves battery, network traffic, and server load")
-                SyncDebugLogger.logTrigger(
-                    triggerType = tagOrUnknown(),
-                    outcome = SyncDebugLogger.Outcome.NO_CHANGES,
-                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
-                )
-
-                // 🆕 v2.4.0 (FIX-SSBE-005): Visibility-aware Termination
-                // markCompleted() prüft silent-Flag: silent=true → IDLE, promoted → COMPLETED
-                SyncStateManager.markCompleted(
-                    applicationContext.getString(R.string.toast_already_synced)
-                )
-
-                if (BuildConfig.DEBUG) {
-                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
-                    Logger.d(TAG, "═══════════════════════════════════════")
-                }
-
-                return@withContext Result.success()
-            }
-
-            if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 4: Checking sync gate (canSync)")
+                Logger.d(TAG, "📍 Step 3: Checking sync gate (canSync)")
             }
 
             // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (WiFi-Only, Offline Mode, Server Config)
@@ -229,12 +200,13 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
 
             if (BuildConfig.DEBUG) {
-                Logger.d(TAG, "📍 Step 5: Checking server reachability (Pre-Check)")
+                Logger.d(TAG, "📍 Step 4: Checking server reachability (cheap TCP pre-check)")
             }
 
             // ⭐ KRITISCH: Server-Erreichbarkeits-Check VOR Sync
-            // Verhindert Fehler-Notifications in fremden WiFi-Netzen
-            // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway)
+            // 🔥 v2.4.0: Vor hasUnsyncedChanges() — spart PROPFIND bei unerreichbarem Server.
+            // Verhindert Fehler-Notifications in fremden WiFi-Netzen.
+            // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway).
             if (!syncService.isServerReachable()) {
                 Logger.d(TAG, "⏭️ Server not reachable - skipping sync (no error)")
                 Logger.d(TAG, "   Reason: Server offline/wrong network/network not ready/not configured")
@@ -278,6 +250,37 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 }
 
                 // Success zurückgeben (kein Fehler, Server ist halt nicht erreichbar)
+                return@withContext Result.success()
+            }
+
+            if (BuildConfig.DEBUG) {
+                Logger.d(TAG, "📍 Step 5: Checking for unsynced changes (Performance Pre-Check)")
+            }
+
+            // 🔥 v1.1.2: Performance-Optimierung - Skip Sync wenn keine lokalen Änderungen
+            // Spart Batterie + Netzwerk-Traffic + Server-Last.
+            // 🔥 v2.4.0: Nach isServerReachable() — PROPFIND in hasUnsyncedChanges() wäre sonst
+            // bei unerreichbarem Server fehlgeschlagen und hätte fälschlich true zurückgegeben.
+            if (!syncService.hasUnsyncedChanges()) {
+                Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
+                Logger.d(TAG, "   Saves battery, network traffic, and server load")
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.NO_CHANGES,
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext)
+                )
+
+                // 🆕 v2.4.0 (FIX-SSBE-005): Visibility-aware Termination
+                // markCompleted() prüft silent-Flag: silent=true → IDLE, promoted → COMPLETED
+                SyncStateManager.markCompleted(
+                    applicationContext.getString(R.string.toast_already_synced)
+                )
+
+                if (BuildConfig.DEBUG) {
+                    Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (no changes to sync)")
+                    Logger.d(TAG, "═══════════════════════════════════════")
+                }
+
                 return@withContext Result.success()
             }
 
