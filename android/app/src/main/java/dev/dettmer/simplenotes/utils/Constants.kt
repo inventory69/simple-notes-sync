@@ -148,7 +148,12 @@ object Constants {
 
     // 🆕 v2.2.0: WiFi-Connect Fallback Worker — überlebt Prozess-Tod
     const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
-    const val WIFI_FALLBACK_INTERVAL_HOURS = 6L
+    // 🔥 v2.4.0: Reduziert von 6 h → 30 min, da WiFi-Connect-Trigger nach Process-Death
+    // nicht feuert (NetworkCallback ist prozessgebunden, CONNECTIVITY_ACTION-Broadcast
+    // seit Android 7 für Manifest-Receiver blockiert). UNMETERED-Constraint stellt
+    // sicher, dass nur bei WiFi gesynct wird; hasUnsyncedChanges() short-circuits
+    // bei nichts zu tun → minimaler Battery-/Server-Impact.
+    const val WIFI_FALLBACK_INTERVAL_MINUTES = 30L
 
     // 🆕 v2.3.0: Battery optimization migration prompt (one-time)
     const val KEY_BATTERY_OPT_MIGRATION_SHOWN = "battery_opt_migration_shown"
