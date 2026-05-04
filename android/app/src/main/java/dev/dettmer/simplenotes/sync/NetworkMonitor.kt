@@ -248,20 +248,22 @@ class NetworkMonitor(context: Context) {
             .build()
 
         val fallbackRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-            Constants.WIFI_FALLBACK_INTERVAL_HOURS, TimeUnit.HOURS
+            Constants.WIFI_FALLBACK_INTERVAL_MINUTES, TimeUnit.MINUTES
         )
             .setConstraints(constraints)
             .addTag(Constants.SYNC_WORK_TAG)
             .addTag("wifi-fallback")
             .build()
 
+        // ⚠️ ExistingPeriodicWorkPolicy.UPDATE (not KEEP) — required so that existing
+        // installations pick up the new 30-min interval instead of keeping the old 6-h slot.
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             Constants.WIFI_FALLBACK_WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             fallbackRequest
         )
 
-        Logger.d(TAG, "✅ WiFi-Fallback worker registered (every ${Constants.WIFI_FALLBACK_INTERVAL_HOURS}h, UNMETERED only)")
+        Logger.d(TAG, "✅ WiFi-Fallback worker registered (every ${Constants.WIFI_FALLBACK_INTERVAL_MINUTES}min, UNMETERED only)")
     }
 
     /**
