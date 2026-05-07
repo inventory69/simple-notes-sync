@@ -346,6 +346,9 @@
     <string name="debug_settings_title">Debug &amp; Diagnose</string>
     <string name="debug_file_logging_title">Datei-Logging</string>
     <string name="debug_file_logging_subtitle">Sync-Logs in Datei speichern</string>
+    <!-- 🆕 v2.2.0: Persistentes Sync-Debug-Log -->
+    <string name="debug_sync_debug_logging_title">Persistentes Sync-Debug-Log</string>
+    <string name="debug_sync_debug_logging_subtitle">Speichert Sync-Trigger und Ergebnisse zur Fehleranalyse im Hintergrund-Sync.</string>
     <string name="debug_privacy_info">🔒 Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
     <string name="debug_log_actions_section">Log-Aktionen</string>
     <string name="debug_export_logs">📤 Logs exportieren &amp; teilen</string>
@@ -358,6 +361,10 @@
     <string name="debug_after_export_message">Du kannst das Datei-Logging jetzt deaktivieren, da du die Logs bereits geteilt hast. Es kann hier jederzeit wieder aktiviert werden.</string>
     <string name="debug_after_export_disable">Logging deaktivieren</string>
     <string name="debug_after_export_keep">Aktiviert lassen</string>
+    <!-- 🆕 v2.2.0: Robuster Log-Export-Feedback -->
+    <string name="debug_export_preparing">Export wird vorbereitet…</string>
+    <string name="debug_export_empty_message">Keine Log-Dateien zum Exportieren gefunden</string>
+    <string name="debug_export_failed_toast">Share-Dialog konnte nicht geöffnet werden — keine kompatible App installiert</string>
     <string name="debug_test_section">Test-Modus</string>
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>

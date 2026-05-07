@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.utils.Logger
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
@@ -17,6 +18,7 @@ import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
+import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import android.os.PowerManager
 import java.net.HttpURLConnection
 import java.net.URL
@@ -240,6 +242,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
     )
     val fileLoggingEnabled: StateFlow<Boolean> = _fileLoggingEnabled.asStateFlow()
+
+    // 🆕 v2.2.0: Persistent sync debug logging toggle
+    private val _syncDebugLoggingEnabled = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_SYNC_DEBUG_LOGGING, BuildConfig.SYNC_DEBUG_LOGGING_DEFAULT)
+    )
+    val syncDebugLoggingEnabled: StateFlow<Boolean> = _syncDebugLoggingEnabled.asStateFlow()
 
     // 🔧 v1.11.0: Developer Options (Easter-Egg) — session-only, nicht persistiert
     private val _developerOptionsUnlocked = MutableStateFlow(false)
@@ -1194,6 +1202,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 val cleared = Logger.clearLogFile(getApplication())
+                // 🆕 v2.4.0: Auch das persistente Sync-Debug-Log löschen — der Button
+                // versprach "Logs löschen" (Plural), hat aber bisher nur die Hauptdatei
+                // erwischt und sync_debug.log liegen lassen.
+                SyncDebugLogger.clearLog(getApplication())
                 emitToast(
                     if (cleared) getString(R.string.toast_logs_deleted) else getString(R.string.toast_logs_deleted)
                 )
@@ -1204,6 +1216,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getLogFile() = Logger.getLogFile(getApplication())
+
+    // 🆕 v2.2.0: Toggle persistent sync debug logging
+    fun setSyncDebugLogging(enabled: Boolean) {
+        _syncDebugLoggingEnabled.value = enabled
+        prefs.edit { putBoolean(Constants.KEY_SYNC_DEBUG_LOGGING, enabled) }
+        SyncDebugLogger.setEnabled(enabled)
+    }
 
     /**
      * v1.8.0: Reset changelog version to force showing the changelog dialog on next start

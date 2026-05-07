@@ -8,6 +8,81 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.4.0] - 2026-05-04
+
+### ✨ New Features
+
+**Persistent Sync Debug Logger** ([1de5fdb](https://github.com/inventory69/simple-notes-sync/commit/1de5fdb), [1234f6c](https://github.com/inventory69/simple-notes-sync/commit/1234f6c), [d8d4284](https://github.com/inventory69/simple-notes-sync/commit/d8d4284), [13defa9](https://github.com/inventory69/simple-notes-sync/commit/13defa9), [62e75e7](https://github.com/inventory69/simple-notes-sync/commit/62e75e7))
+- New persistent `SyncDebugLogger` writing structured entries to `sync_debug.log` for diagnosing background-sync issues
+- Logs every `SyncWorker` outcome (start, success, soft errors, retries, final failure)
+- Schema enriched with `attempt` counter and `holder` (process tag) to distinguish app/worker contexts
+- WIFI_CONNECT events annotated with `first|change` reason for clarity
+- Explicit final outcome emitted when WorkManager drops retries, so failures aren't invisible
+- **Disabled by default** ([26cdf47](https://github.com/inventory69/simple-notes-sync/commit/26cdf47)) — enable in Settings → Debug to collect logs when reporting sync issues
+
+**Bypass Cold-Start Guard After Long Process Gap** ([17d57d5](https://github.com/inventory69/simple-notes-sync/commit/17d57d5))
+- After a long period without app process activity (e.g. overnight), the cold-start sync guard is bypassed so the first sync runs immediately on resume
+
+### 🐛 Bug Fixes
+
+**Reliable WiFi-Connect Sync Trigger**
+- Require validated WiFi (not just SSID) before triggering sync ([a03eadf](https://github.com/inventory69/simple-notes-sync/commit/a03eadf))
+- Retry WiFi-trigger sync on transient unreachability ([bea0558](https://github.com/inventory69/simple-notes-sync/commit/bea0558))
+- Bypass global cooldown for WiFi-connect trigger so the first sync after reconnect actually runs ([5195ee0](https://github.com/inventory69/simple-notes-sync/commit/5195ee0))
+- Cap WiFi-trigger backoff at 30 s linear to avoid runaway delays ([5ff2a70](https://github.com/inventory69/simple-notes-sync/commit/5ff2a70))
+- Shorten WiFi-fallback interval to 30 min for faster process-death recovery ([42e6a64](https://github.com/inventory69/simple-notes-sync/commit/42e6a64))
+
+**Cheaper, More Robust Reachability**
+- Cheap reachability check before expensive PROPFIND ([f46f326](https://github.com/inventory69/simple-notes-sync/commit/f46f326))
+- `monitoringStartTime` made volatile and switched to `elapsedRealtime()` to avoid wall-clock skew ([7f980fb](https://github.com/inventory69/simple-notes-sync/commit/7f980fb))
+- Drop redundant onResume sync cooldown ([69a7b05](https://github.com/inventory69/simple-notes-sync/commit/69a7b05))
+
+**Settings & Logging**
+- Make debug-log export robust on all devices (handles SAF edge cases) ([bbf466b](https://github.com/inventory69/simple-notes-sync/commit/bbf466b))
+- Clear `sync_debug.log` on the Delete-Logs button so users can reset the log easily ([caa329e](https://github.com/inventory69/simple-notes-sync/commit/caa329e))
+
+### ♻️ Internal
+
+**WebDAV Server Migration** ([41ecb13](https://github.com/inventory69/simple-notes-sync/commit/41ecb13))
+- Self-hosted reference server migrated from `bytemark/webdav` to `hacdias/webdav` for active maintenance and better protocol coverage
+- No user-visible change for app users; affects the optional bundled server in `server/`
+
+### 🌍 Translations
+
+- **New language: Indonesian (`in`)** — thanks to [Arif Budiman](https://hosted.weblate.org/user/aribudiman/) ([c537455](https://github.com/inventory69/simple-notes-sync/commit/c537455), [6bc7a4e](https://github.com/inventory69/simple-notes-sync/commit/6bc7a4e))
+- **New language: Norwegian Bokmål (`nb`)** — thanks to [xdpirate](https://hosted.weblate.org/user/xdpirate/) ([3ce9164](https://github.com/inventory69/simple-notes-sync/commit/3ce9164), [d11b34d](https://github.com/inventory69/simple-notes-sync/commit/d11b34d))
+- **New language: Italian (`it`)** — thanks to [Jean-Pierre](https://hosted.weblate.org/user/Jeannot/) ([3467756](https://github.com/inventory69/simple-notes-sync/commit/3467756), [4bf449c](https://github.com/inventory69/simple-notes-sync/commit/4bf449c))
+- **New language: Hindi (`hi`)** — thanks to [Silent Coder](https://hosted.weblate.org/user/silentcoder/) ([2c54735](https://github.com/inventory69/simple-notes-sync/commit/2c54735), [9ba64fd](https://github.com/inventory69/simple-notes-sync/commit/9ba64fd), [ecfb129](https://github.com/inventory69/simple-notes-sync/commit/ecfb129))
+- **New language: Russian (`ru`)** — thanks to [PONYATIN](https://hosted.weblate.org/user/PONYATIN/) ([4078a59](https://github.com/inventory69/simple-notes-sync/commit/4078a59), [f96055e](https://github.com/inventory69/simple-notes-sync/commit/f96055e), [1eeebc1](https://github.com/inventory69/simple-notes-sync/commit/1eeebc1))
+- **Chinese (Simplified) updated** — thanks to [heretic43](https://hosted.weblate.org/user/heretic43/) ([7a2defb](https://github.com/inventory69/simple-notes-sync/commit/7a2defb))
+- New locales `in` and `nb` registered in `locales_config.xml` ([349e972](https://github.com/inventory69/simple-notes-sync/commit/349e972)); `ru`, `it`, `hi` registered in [84a5282](https://github.com/inventory69/simple-notes-sync/commit/84a5282)
+
+### 🙏 Acknowledgements
+
+A huge thank you to the Weblate translators making Simple Notes Sync available in more languages:
+- **Arif Budiman** — Indonesian
+- **xdpirate** — Norwegian Bokmål
+- **Jean-Pierre** — Italian
+- **Silent Coder** — Hindi
+- **PONYATIN** — Russian
+- **heretic43** — Chinese (Simplified)
+
+---
+
+## [2.3.1] - 2026-04-24
+
+> Beta-only release on Google Play. Not published on F-Droid; the changes are included in v2.4.0.
+
+### 🐛 Bug Fixes
+
+**Visibility-Aware Error Banner on Soft Sync Errors** ([c4a40f8](https://github.com/inventory69/simple-notes-sync/commit/c4a40f8))
+- Silent background sync errors no longer surface as a red error banner — they reset cleanly to IDLE
+- Errors are only promoted to a visible banner when the user is actively viewing the app
+- New `SyncStateManager.errorIfVisible()` API used by `SyncWorker` and `MainViewModel.triggerAutoSync` for all soft-error paths
+- Prevents user-confusing transient warnings during background retries
+
+---
+
 ## [2.3.0] - 2026-04-18
 
 ### 🛡️ Security
