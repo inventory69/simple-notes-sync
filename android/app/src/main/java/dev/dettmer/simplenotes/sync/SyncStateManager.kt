@@ -64,6 +64,12 @@ object SyncStateManager {
         }
 
     /**
+     * 🆕 v2.4.0: Returns the source tag of the sync currently holding the mutex,
+     * or null if no sync is active. Used by SyncDebugLogger HOLDER field.
+     */
+    fun currentSyncOwner(): String? = synchronized(lock) { _syncStatus.value.source }
+
+    /**
      * Versucht einen Sync zu starten.
      * Bei silent=false: Setzt sofort PREPARING-Phase → Banner erscheint instant
      * Bei silent=true: Setzt silent-Flag → kein Banner wird angezeigt

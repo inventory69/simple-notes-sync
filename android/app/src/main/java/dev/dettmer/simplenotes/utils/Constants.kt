@@ -148,7 +148,12 @@ object Constants {
 
     // 🆕 v2.2.0: WiFi-Connect Fallback Worker — überlebt Prozess-Tod
     const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
-    const val WIFI_FALLBACK_INTERVAL_HOURS = 6L
+    // 🔥 v2.4.0: Reduziert von 6 h → 30 min, da WiFi-Connect-Trigger nach Process-Death
+    // nicht feuert (NetworkCallback ist prozessgebunden, CONNECTIVITY_ACTION-Broadcast
+    // seit Android 7 für Manifest-Receiver blockiert). UNMETERED-Constraint stellt
+    // sicher, dass nur bei WiFi gesynct wird; hasUnsyncedChanges() short-circuits
+    // bei nichts zu tun → minimaler Battery-/Server-Impact.
+    const val WIFI_FALLBACK_INTERVAL_MINUTES = 30L
 
     // 🆕 v2.3.0: Battery optimization migration prompt (one-time)
     const val KEY_BATTERY_OPT_MIGRATION_SHOWN = "battery_opt_migration_shown"
@@ -160,4 +165,21 @@ object Constants {
     const val DEFAULT_GRID_MANUAL_COLUMNS = 2
     const val GRID_MIN_COLUMNS = 1
     const val GRID_MAX_COLUMNS = 5
+
+    // 🆕 v2.2.0: Persistent sync debug logging
+    const val KEY_SYNC_DEBUG_LOGGING = "sync_debug_logging"
+
+    // 🆕 v2.2.0: Max retry count for WiFi-connect and WiFi-fallback sync workers
+    const val MAX_WIFI_CONNECT_RETRY_COUNT = 3
+
+    // 🆕 v2.4.0: Cold-start-guard bypass — if the last wifi-connect trigger is older than
+    // this threshold the guard is skipped. Handles process-kill scenarios where the 2 s
+    // wall-clock guard would otherwise eat the first real reconnect after a long gap.
+    const val KEY_LAST_WIFI_CONNECT_TRIGGER_TIME = "last_wifi_connect_trigger_time"
+    const val COLD_START_GUARD_BYPASS_AFTER_MS = 5L * 60_000L // 5 min
+
+    // 🆕 v2.4.0: Linear backoff cap for WiFi-connect + WiFi-fallback retry workers.
+    // WorkManager default (10s × 2^n, max 5h) is too aggressive for transient recovery.
+    // 30s linear ≙ 3 retries within ~90s.
+    const val WIFI_CONNECT_BACKOFF_SECONDS = 30L
 }

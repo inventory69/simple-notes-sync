@@ -56,7 +56,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "MainViewModel"
-        private const val MIN_AUTO_SYNC_INTERVAL_MS = 60_000L // 1 Minute
         private const val SNACKBAR_UNDO_DELAY_MS = 3500L
     }
 
@@ -894,16 +893,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // 🆕 v1.8.1 (IMPL_08): Globaler Sync-Cooldown (alle Trigger teilen sich diesen)
-        if (!SyncStateManager.canSyncGlobally(prefs)) {
-            return
-        }
-
-        // Throttling check (eigener 60s-Cooldown für onResume)
-        if (!canTriggerAutoSync()) {
-            return
-        }
-
         // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
         val syncService = WebDavSyncService(getApplication())
         val gateResult = syncService.canSync()
@@ -924,13 +913,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         Logger.d(TAG, "🔄 Auto-sync triggered ($source)")
-
-        // Update last sync timestamp (in-memory only — resets on process restart
-        // so first onResume after cold start always triggers)
-        lastAutoSyncTime = System.currentTimeMillis()
-
-        // 🆕 v1.8.1 (IMPL_08): Globalen Sync-Cooldown markieren
-        SyncStateManager.markGlobalSyncStarted(prefs)
 
         viewModelScope.launch {
             try {
@@ -982,22 +964,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SyncStateManager.markError(e.message)
             }
         }
-    }
-
-    // In-memory throttle for onResume sync (not persisted — cold start always syncs)
-    private var lastAutoSyncTime: Long = 0L
-
-    private fun canTriggerAutoSync(): Boolean {
-        val now = System.currentTimeMillis()
-        val timeSinceLastSync = now - lastAutoSyncTime
-
-        if (timeSinceLastSync < MIN_AUTO_SYNC_INTERVAL_MS) {
-            val remainingSeconds = (MIN_AUTO_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
-            Logger.d(TAG, "⏳ Auto-sync throttled - wait ${remainingSeconds}s")
-            return false
-        }
-
-        return true
     }
 
     // ═══════════════════════════════════════════════════════════════════════

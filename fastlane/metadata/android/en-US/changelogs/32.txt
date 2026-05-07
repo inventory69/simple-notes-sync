@@ -1,0 +1,9 @@
+🔧 v2.4.0 — More reliable sync
+
+• Sync now resumes reliably after WiFi reconnects & long app breaks
+• No more false error alerts during quiet background retries
+• Optional sync log for reporting issues (off by default, enable in Settings)
+• New languages: Italian, Hindi, Russian, Indonesian, Norwegian Bokmål
+• Chinese translation updated
+
+Thanks to Jean-Pierre, Silent Coder, PONYATIN, Arif Budiman, xdpirate & heretic43!
