@@ -8,6 +8,81 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.4.0] - 2026-05-04
+
+### ✨ Neue Features
+
+**Persistentes Sync-Debug-Log** ([1de5fdb](https://github.com/inventory69/simple-notes-sync/commit/1de5fdb), [1234f6c](https://github.com/inventory69/simple-notes-sync/commit/1234f6c), [d8d4284](https://github.com/inventory69/simple-notes-sync/commit/d8d4284), [13defa9](https://github.com/inventory69/simple-notes-sync/commit/13defa9), [62e75e7](https://github.com/inventory69/simple-notes-sync/commit/62e75e7))
+- Neuer persistenter `SyncDebugLogger`, der strukturierte Einträge in `sync_debug.log` schreibt — hilft beim Diagnostizieren von Hintergrund-Sync-Problemen
+- Loggt jedes `SyncWorker`-Ergebnis (Start, Erfolg, Soft-Fehler, Retry, finales Scheitern)
+- Schema um `attempt`-Zähler und `holder` (Prozess-Tag) erweitert, um App-/Worker-Kontexte zu unterscheiden
+- WIFI_CONNECT-Events mit `first|change`-Grund annotiert
+- Expliziter finaler Status, wenn WorkManager Retries verwirft — keine unsichtbaren Fehler mehr
+- **Standardmäßig deaktiviert** ([26cdf47](https://github.com/inventory69/simple-notes-sync/commit/26cdf47)) — in den Einstellungen → Debug aktivierbar, um beim Melden von Sync-Problemen Logs zu sammeln
+
+**Cold-Start-Guard nach langer Prozess-Pause überspringen** ([17d57d5](https://github.com/inventory69/simple-notes-sync/commit/17d57d5))
+- Nach längerer Inaktivität (z. B. über Nacht) wird der Cold-Start-Sync-Guard übersprungen, damit der erste Sync sofort beim Resume läuft
+
+### 🐛 Fehlerbehebungen
+
+**Zuverlässiger WiFi-Connect-Sync-Trigger**
+- Validiertes WiFi (nicht nur SSID) erforderlich, bevor Sync ausgelöst wird ([a03eadf](https://github.com/inventory69/simple-notes-sync/commit/a03eadf))
+- WiFi-Trigger-Sync wird bei vorübergehender Nicht-Erreichbarkeit erneut versucht ([bea0558](https://github.com/inventory69/simple-notes-sync/commit/bea0558))
+- Globaler Cooldown wird für WiFi-Connect-Trigger umgangen — der erste Sync nach Reconnect läuft tatsächlich ([5195ee0](https://github.com/inventory69/simple-notes-sync/commit/5195ee0))
+- WiFi-Trigger-Backoff bei 30 s linear gedeckelt, um ausufernde Verzögerungen zu vermeiden ([5ff2a70](https://github.com/inventory69/simple-notes-sync/commit/5ff2a70))
+- WiFi-Fallback-Intervall auf 30 min verkürzt für schnellere Process-Death-Recovery ([42e6a64](https://github.com/inventory69/simple-notes-sync/commit/42e6a64))
+
+**Günstigere, robustere Erreichbarkeits-Prüfung**
+- Günstiger Reachability-Check vor teurem PROPFIND ([f46f326](https://github.com/inventory69/simple-notes-sync/commit/f46f326))
+- `monitoringStartTime` als volatile markiert und auf `elapsedRealtime()` umgestellt — vermeidet Wall-Clock-Drift ([7f980fb](https://github.com/inventory69/simple-notes-sync/commit/7f980fb))
+- Redundanten onResume-Sync-Cooldown entfernt ([69a7b05](https://github.com/inventory69/simple-notes-sync/commit/69a7b05))
+
+**Einstellungen & Logging**
+- Debug-Log-Export auf allen Geräten robust (SAF-Edge-Cases behandelt) ([bbf466b](https://github.com/inventory69/simple-notes-sync/commit/bbf466b))
+- Der „Logs löschen"-Button löscht jetzt auch `sync_debug.log` ([caa329e](https://github.com/inventory69/simple-notes-sync/commit/caa329e))
+
+### ♻️ Intern
+
+**WebDAV-Server-Migration** ([41ecb13](https://github.com/inventory69/simple-notes-sync/commit/41ecb13))
+- Self-hosted Referenz-Server von `bytemark/webdav` auf `hacdias/webdav` migriert — aktive Wartung und bessere Protokoll-Abdeckung
+- Keine Auswirkungen für App-Nutzer; betrifft nur den optionalen mitgelieferten Server in `server/`
+
+### 🌍 Übersetzungen
+
+- **Neue Sprache: Indonesisch (`in`)** — danke an [Arif Budiman](https://hosted.weblate.org/user/aribudiman/) ([c537455](https://github.com/inventory69/simple-notes-sync/commit/c537455), [6bc7a4e](https://github.com/inventory69/simple-notes-sync/commit/6bc7a4e))
+- **Neue Sprache: Norwegisch Bokmål (`nb`)** — danke an [xdpirate](https://hosted.weblate.org/user/xdpirate/) ([3ce9164](https://github.com/inventory69/simple-notes-sync/commit/3ce9164), [d11b34d](https://github.com/inventory69/simple-notes-sync/commit/d11b34d))
+- **Neue Sprache: Italienisch (`it`)** — danke an [Jean-Pierre](https://hosted.weblate.org/user/Jeannot/) ([3467756](https://github.com/inventory69/simple-notes-sync/commit/3467756), [4bf449c](https://github.com/inventory69/simple-notes-sync/commit/4bf449c))
+- **Neue Sprache: Hindi (`hi`)** — danke an [Silent Coder](https://hosted.weblate.org/user/silentcoder/) ([2c54735](https://github.com/inventory69/simple-notes-sync/commit/2c54735), [9ba64fd](https://github.com/inventory69/simple-notes-sync/commit/9ba64fd), [ecfb129](https://github.com/inventory69/simple-notes-sync/commit/ecfb129))
+- **Neue Sprache: Russisch (`ru`)** — danke an [PONYATIN](https://hosted.weblate.org/user/PONYATIN/) ([4078a59](https://github.com/inventory69/simple-notes-sync/commit/4078a59), [f96055e](https://github.com/inventory69/simple-notes-sync/commit/f96055e), [1eeebc1](https://github.com/inventory69/simple-notes-sync/commit/1eeebc1))
+- **Chinesisch (Vereinfacht) aktualisiert** — danke an [heretic43](https://hosted.weblate.org/user/heretic43/) ([7a2defb](https://github.com/inventory69/simple-notes-sync/commit/7a2defb))
+- Neue Locales `in` und `nb` in `locales_config.xml` registriert ([349e972](https://github.com/inventory69/simple-notes-sync/commit/349e972)); `ru`, `it`, `hi` in [84a5282](https://github.com/inventory69/simple-notes-sync/commit/84a5282)
+
+### 🙏 Danksagungen
+
+Ein riesiges Dankeschön an die Weblate-Übersetzer, die Simple Notes Sync in immer mehr Sprachen verfügbar machen:
+- **Arif Budiman** — Indonesisch
+- **xdpirate** — Norwegisch Bokmål
+- **Jean-Pierre** — Italienisch
+- **Silent Coder** — Hindi
+- **PONYATIN** — Russisch
+- **heretic43** — Chinesisch (Vereinfacht)
+
+---
+
+## [2.3.1] - 2026-04-24
+
+> Nur als Beta-Release im Google Play veröffentlicht. Nicht auf F-Droid erschienen; die Änderungen sind in v2.4.0 enthalten.
+
+### 🐛 Fehlerbehebungen
+
+**Sichtbarkeits-bewusster Fehler-Banner bei Soft-Sync-Fehlern** ([c4a40f8](https://github.com/inventory69/simple-notes-sync/commit/c4a40f8))
+- Stille Hintergrund-Sync-Fehler erscheinen nicht mehr als roter Fehler-Banner — sie setzen sauber zu IDLE zurück
+- Fehler werden nur dann zu einem sichtbaren Banner, wenn der Nutzer die App tatsächlich aktiv ansieht
+- Neue `SyncStateManager.errorIfVisible()`-API wird von `SyncWorker` und `MainViewModel.triggerAutoSync` für alle Soft-Fehler-Pfade verwendet
+- Verhindert verwirrende kurzzeitige Warnungen bei Hintergrund-Retries
+
+---
+
 ## [2.3.0] - 2026-04-18
 
 ### 🛡️ Sicherheit

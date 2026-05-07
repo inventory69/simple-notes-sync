@@ -1,0 +1,9 @@
+🔧 v2.4.0 — Zuverlässigerer Sync
+
+• Sync startet nach WLAN-Wechsel & langen Pausen wieder zuverlässig
+• Kein falscher Fehler-Banner mehr bei automatischen Hintergrund-Syncs
+• Optionales Sync-Log für Problemmeldungen (standardmäßig aus, in Einstellungen)
+• Neue Sprachen: Italienisch, Hindi, Russisch, Indonesisch, Norwegisch Bokmål
+• Chinesisch aktualisiert
+
+Danke an Jean-Pierre, Silent Coder, PONYATIN, Arif Budiman, xdpirate & heretic43!

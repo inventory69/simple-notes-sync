@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 32  // 🆕 v2.3.2 - Sync Debug
-        versionName = "2.4.0"  // 🆕 v2.3.2 - Sync Debug
+        versionCode = 32  // 🆕 v2.4.0 - Sync Reliability
+        versionName = "2.4.0"  // 🆕 v2.4.0 - Sync Reliability
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // 🆕 v2.4.0: Diagnostic phase finished (long-run log validated all v2.4.0 fixes).
