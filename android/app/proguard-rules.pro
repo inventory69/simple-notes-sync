@@ -83,6 +83,19 @@
 # NoteRaw ist Note$Companion$NoteRaw — durch das ** Pattern abgedeckt.
 
 # ═══════════════════════════════════════════════════════════════════════
+# Keep-Import DTOs (Gson-Reflection)
+# ═══════════════════════════════════════════════════════════════════════
+# Die Keep-Takeout-JSONs werden über typisierte DTOs in
+# noteimport.keep.parser.dto.** deserialisiert. Class-Literale werden im
+# Quellcode verwendet (`fromJson(json, KeepNoteJson::class.java)`), daher
+# dürfen die Klassennamen obfuskiert werden — nur Felder + Konstruktoren
+# müssen erhalten bleiben.
+-keep,allowobfuscation class dev.dettmer.simplenotes.noteimport.keep.parser.dto.** { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.noteimport.keep.parser.dto.** {
+    <fields>;
+}
+
+# ═══════════════════════════════════════════════════════════════════════
 # App-Backup-Datenklassen
 # ═══════════════════════════════════════════════════════════════════════
 -keep,allowobfuscation class dev.dettmer.simplenotes.backup.BackupData { <init>(...); }
