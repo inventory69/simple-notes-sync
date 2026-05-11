@@ -640,6 +640,57 @@
     <string name="keep_import_snackbar_error">Import failed</string>
     <string name="keep_import_snackbar_retry_action">Retry</string>
 
+    <!-- 🆕 v2.5.0: Google Keep Import — full UI strings -->
+    <string name="keep_import_section_title">Google Keep import</string>
+    <string name="keep_import_section_description">Import your Google Takeout export as simple-notes-sync notes.</string>
+    <string name="keep_import_section_button_pick_zip">Choose ZIP…</string>
+
+    <string name="keep_import_config_title">Import from Google Keep</string>
+    <string name="keep_import_config_scanning">Analysing archive contents…</string>
+    <string name="keep_import_config_include_archived">Import archived notes</string>
+    <string name="keep_import_config_include_trashed">Import notes from the trash</string>
+    <string name="keep_import_config_conflict_label">On conflict:</string>
+    <string name="keep_import_config_conflict_always_create">Always create new (recommended, safest)</string>
+    <string name="keep_import_config_conflict_skip">Skip duplicates</string>
+    <string name="keep_import_config_conflict_replace">Replace existing</string>
+    <string name="keep_import_config_info_labels">ℹ️ Keep labels are stored. They will appear as tags in a future version.</string>
+    <string name="keep_import_config_info_attachments">🖼️ Images/attachments are not imported in this version. When the app gains image support later, you can re-run the import to load them.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Colours and pin states are stored, but only become visible in a future version.</string>
+    <string name="keep_import_config_button_start">Start import</string>
+    <string name="keep_import_config_button_cancel">Cancel</string>
+
+    <string name="keep_import_prescan_header">📦 Archive contains:</string>
+    <string name="keep_import_prescan_active">• %1$d active notes</string>
+    <string name="keep_import_prescan_archived">• %1$d archived notes</string>
+    <string name="keep_import_prescan_trashed">• %1$d notes in the trash</string>
+    <string name="keep_import_prescan_labels">• %1$d different labels</string>
+    <string name="keep_import_prescan_shared">• %1$d notes from shared lists</string>
+    <string name="keep_import_prescan_attachments">• %1$d notes with attachments (will not be imported)</string>
+    <string name="keep_import_prescan_large_warning">⚠️ Large archive (%1$d MB), analysis may take a minute.</string>
+
+    <string name="keep_import_large_zip_title">Large archive</string>
+    <string name="keep_import_large_zip_body">This archive is %1$d MB. The import may take several minutes and consume significant battery. Continue anyway?</string>
+    <string name="keep_import_large_zip_button_continue">Continue</string>
+    <string name="keep_import_large_zip_button_cancel">Cancel</string>
+
+    <string name="keep_import_progress_title">Importing from Google Keep…</string>
+    <string name="keep_import_progress_status">Processing %1$d of %2$d: %3$s</string>
+    <string name="keep_import_progress_button_cancel">Cancel</string>
+
+    <string name="keep_import_result_title">Import complete</string>
+    <string name="keep_import_result_imported">✓ %1$d notes imported</string>
+    <string name="keep_import_result_replaced">↻ %1$d replaced</string>
+    <string name="keep_import_result_skipped">⊘ %1$d skipped</string>
+    <string name="keep_import_result_failed">✗ %1$d errors</string>
+    <string name="keep_import_result_attachments_dropped">🖼️ %1$d notes had attachments — not imported (you can re-run the import once image support is added).</string>
+    <string name="keep_import_result_labels">🏷️ %1$d labels stored</string>
+    <string name="keep_import_result_shared">👥 %1$d of those from shared lists (collaborations)</string>
+    <string name="keep_import_result_color">🎨 %1$d with colour stored (visible in a future version)</string>
+    <string name="keep_import_result_pinned">📌 %1$d marked as pinned (visible in a future version)</string>
+    <string name="keep_import_result_show_errors">Show details</string>
+    <string name="keep_import_result_hide_errors">Hide details</string>
+    <string name="keep_import_result_button_close">Close</string>
+
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
