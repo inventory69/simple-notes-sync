@@ -197,7 +197,7 @@
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
     <!-- Issue #21: Notizen importieren -->
     <string name="settings_import_title">Notizen importieren</string>
-    <string name="settings_import_subtitle">Notizen aus Dateien oder vom Server importieren</string>
+    <string name="settings_import_subtitle">Notizen aus Dateien, vom Server oder aus Google Keep importieren</string>
     <string name="import_section_server">Vom WebDAV-Server</string>
     <string name="import_section_local">Vom Gerät</string>
     <string name="import_info_text">Importiere .md-, .json- oder .txt-Dateien als Simple Notes. Importierte Notizen werden bei der nächsten Synchronisation übertragen. Originaldateien bleiben unverändert.</string>

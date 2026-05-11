@@ -7,17 +7,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
+import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
-import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.Logger
 
 private const val TAG = "KeepImportSection"
@@ -41,32 +38,22 @@ fun KeepImportSection(
 
     Column(modifier = modifier.fillMaxWidth()) {
         SettingsSectionHeader(text = stringResource(R.string.keep_import_section_title))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-        ) {
-            Column(modifier = Modifier.padding(Dimensions.SpacingLarge)) {
-                Text(
-                    text = stringResource(R.string.keep_import_section_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(Dimensions.SpacingMedium))
-                SettingsButton(
-                    text = stringResource(R.string.keep_import_section_button_pick_zip),
-                    onClick = {
-                        // MIME-Type "application/zip" mit Fallback "*/*" — manche
-                        // SAF-Provider liefern keinen ZIP-MIME, daher liberal:
-                        try {
-                            launcher.launch("application/zip")
-                        } catch (e: Exception) {
-                            Logger.d(TAG, "ZIP MIME launch failed, retrying with */*: ${e.message}")
-                            launcher.launch("*/*")
-                        }
-                    },
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsInfoCard(text = stringResource(R.string.keep_import_section_description))
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsButton(
+            text = stringResource(R.string.keep_import_section_button_pick_zip),
+            onClick = {
+                // MIME-Type "application/zip" mit Fallback "*/*" — manche
+                // SAF-Provider liefern keinen ZIP-MIME, daher liberal:
+                try {
+                    launcher.launch("application/zip")
+                } catch (e: Exception) {
+                    Logger.d(TAG, "ZIP MIME launch failed, retrying with */*: ${e.message}")
+                    launcher.launch("*/*")
+                }
+            },
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
     }
 }

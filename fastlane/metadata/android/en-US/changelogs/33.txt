@@ -1,0 +1,10 @@
+✨ v2.5.0 — Google Keep import
+
+• Import notes from a Google Keep / Takeout .zip directly on-device
+• Pre-scan summary: active / archived / trashed counts before you confirm
+• Conflict strategy per run: always create, skip, or replace by content hash
+• Indented checklists (up to 3 levels), labels, color & pin preserved
+• Cancellable; partial imports are kept; one auto-sync at the end
+• New ChecklistItem.indentationLevel field — DnD unchanged
+
+Thanks to everyone who tested early Keep exports!

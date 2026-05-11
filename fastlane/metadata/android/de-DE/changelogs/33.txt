@@ -1,0 +1,10 @@
+✨ v2.5.0 — Google-Keep-Import
+
+• Notizen aus einer Google-Keep- / Takeout-ZIP direkt am Gerät importieren
+• Vorab-Übersicht: aktiv / archiviert / Papierkorb vor Bestätigung
+• Konflikt-Strategie: neu erstellen, überspringen oder per Hash ersetzen
+• Eingerückte Checklisten (bis 3 Ebenen), Labels, Farbe & Pin bleiben erhalten
+• Abbrechbar; Teil-Importe erhalten; Auto-Sync am Ende
+• Neues Feld ChecklistItem.indentationLevel — DnD unverändert
+
+Danke an alle, die frühe Keep-Exporte getestet haben!

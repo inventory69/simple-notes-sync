@@ -8,6 +8,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.0] - 2026-05-11
+
+### ✨ New Features
+
+**Google Keep Import**
+- Import notes directly from a Google Keep / Google Takeout `.zip` archive — fully on-device, no upload
+- Pre-scan classifies the archive (active / archived / trashed / labels / shared / total size) before you confirm
+- Per-run **conflict strategy**: *always create* (default), *skip if exists*, or *replace if exists* — matched by content hash (title + body + checklist items)
+- Optional **archived** and **trashed** include switches
+- Indented checklists preserved up to 3 levels (new `ChecklistItem.indentationLevel` field, default `0` — DnD behaviour verified unchanged)
+- Keep `color` and `isPinned` persisted in the note model (rendering follows in a later release)
+- Labels persisted in a separate `notes_labels.json` index
+- Cancellable mid-import; already-imported notes are kept; result dialog shows imported / replaced / skipped / errors with an expandable error list
+- Confirmation step for archives larger than 200 MB
+- Single auto-sync triggered at the end (only when ≥ 1 note was imported or replaced; respects existing on-save sync gate, throttle, and offline-mode settings)
+- Find it under **Settings → Import → Import from Google Keep**
+
+### ♻️ Internal
+
+**`SyncScheduler` extracted**
+- The duplicated `triggerOnSaveSync()` logic from `NoteEditorViewModel` and `MainViewModel` is now centralised in `sync/SyncScheduler` (behaviour strictly equivalent to v2.4.0; reused by the Keep import flow)
+
+### 📚 Documentation
+
+- New user guide: `project-docs/simple-notes-sync/v2.5.0/google-keep-import-user-guide.md` (EN + DE)
+- New QA cheatsheet: `project-docs/simple-notes-sync/v2.5.0/google-keep-import-adb-tests.md`
+
+### 🙏 Acknowledgements
+
+Thanks to everyone who tested early Google Keep exports and reported edge cases!
+
+---
+
 ## [2.4.0] - 2026-05-04
 
 ### ✨ New Features
