@@ -195,7 +195,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
             }
 
             // Konflikt-Erkennung und SyncStatus je nach Importquelle
-            val syncStatus = computeSyncStatus(candidate, content)
+            val syncStatus = computeSyncStatus()
             val (noteToSave, skipReason) = resolveConflict(note, candidate, syncStatus, strategy, conflictResolver)
             if (noteToSave == null) {
                 return ImportResult.Skipped(candidate.name, skipReason)
@@ -325,20 +325,16 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     }
 
     /**
-     * Bestimmt den SyncStatus einer importierten Notiz:
-     * - Lokale Datei → immer PENDING (muss noch hochgeladen werden)
-     * - WebDAV JSON → SYNCED (Simple-Notes-JSON kommt aus /notes/, ID ist bereits registriert)
-     * - WebDAV Markdown MIT Frontmatter → SYNCED (UUID stammt aus /notes/, bereits synced)
-     * - WebDAV Markdown OHNE Frontmatter → PENDING (neue Notiz, kein /notes/<uuid>.json vorhanden)
+     * Bestimmt den SyncStatus einer importierten Notiz.
+     *
+     * Alle Importe erhalten PENDING — sowohl lokale Dateien als auch WebDAV-Scan-Ergebnisse.
+     *
+     * Begründung WebDAV: scanWebDavFolder() überspringt explizit den konfigurierten Sync-Ordner
+     * (/notes/) via isSyncFolder(). Gescannte Dateien existieren daher NIE in /notes/ auf dem
+     * Server. Würden sie mit SYNCED importiert, würde der nächste Sync sie als „server deleted"
+     * interpretieren und lokal löschen.
      */
-    private fun computeSyncStatus(candidate: ImportCandidate, rawContent: String): SyncStatus = when {
-        candidate.source is ImportSource.LocalFile -> SyncStatus.PENDING
-        candidate.fileType == FileType.MARKDOWN -> {
-            val normalizedContent = rawContent.replace("\\n", "\n")
-            if (Note.fromMarkdown(normalizedContent) != null) SyncStatus.SYNCED else SyncStatus.PENDING
-        }
-        else -> SyncStatus.SYNCED
-    }
+    private fun computeSyncStatus(): SyncStatus = SyncStatus.PENDING
 
     // ══════════════════════════════════════════════════════════════
     // Parser — Format-spezifisches Parsing
