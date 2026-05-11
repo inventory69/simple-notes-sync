@@ -95,6 +95,12 @@
     <fields>;
 }
 
+# LabelIndex wird via Gson serialisiert/deserialisiert (notes_labels.json).
+-keep,allowobfuscation class dev.dettmer.simplenotes.noteimport.keep.persistence.LabelIndex { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.noteimport.keep.persistence.LabelIndex {
+    <fields>;
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # App-Backup-Datenklassen
 # ═══════════════════════════════════════════════════════════════════════
