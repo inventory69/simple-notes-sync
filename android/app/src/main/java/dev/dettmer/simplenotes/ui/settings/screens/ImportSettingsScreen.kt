@@ -47,6 +47,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsOutlinedButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.keepimport.KeepImportHost
 import kotlinx.coroutines.launch
 
 private const val BYTES_PER_KB = 1024L
@@ -61,7 +62,12 @@ private const val BYTES_PER_MB = 1024L * 1024L
  * v1.9.0: Issue #21
  */
 @Composable
-fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
+fun ImportSettingsScreen(
+    viewModel: SettingsViewModel,
+    onBack: () -> Unit,
+    // 🆕 v2.5.0: Keep-Import-Snackbar-Bridge an SettingsNavHost
+    onKeepImportSnackbar: (dev.dettmer.simplenotes.ui.main.MainViewModel.SnackbarData) -> Unit = {},
+) {
     val scope = rememberCoroutineScope()
 
     val isServerConfigured = viewModel.isServerConfigured()
@@ -165,6 +171,10 @@ fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     )
                 }
             )
+
+            // 🆕 v2.5.0: Google-Keep-Import-Section
+            SettingsDivider()
+            KeepImportHost(onSnackbarEvent = onKeepImportSnackbar)
 
             importSummary?.let { summary ->
                 SettingsDivider()
