@@ -212,6 +212,10 @@
     <string name="import_zero_notes_hint">Es konnten keine Notizen importiert werden. Die Datei ist möglicherweise beschädigt oder in einem nicht unterstützten Format.</string>
     <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
     <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
+    <string name="import_conflict_label">Konfliktstrategie</string>
+    <string name="import_conflict_always_create">Immer neu erstellen (kann Duplikate erzeugen)</string>
+    <string name="import_conflict_skip">Vorhandene überspringen (Standard)</string>
+    <string name="import_conflict_replace">Vorhandene überschreiben</string>
     <string name="import_cancel">Abbrechen</string>
     <string name="settings_about">Über diese App</string>
     <string name="settings_debug">Debug &amp; Diagnose</string>
