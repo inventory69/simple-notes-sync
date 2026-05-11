@@ -215,7 +215,7 @@
 
     <!-- Issue #21: Notes Import -->
     <string name="settings_import_title">Import Notes</string>
-    <string name="settings_import_subtitle">Import notes from files or server</string>
+    <string name="settings_import_subtitle">Import notes from files, server, or Google Keep</string>
     <string name="import_section_server">From WebDAV Server</string>
     <string name="import_section_local">From Device</string>
     <string name="import_info_text">Import .md, .json, or .txt files as Simple Notes. Imported notes will be synced on next synchronization. Original files remain unchanged.</string>

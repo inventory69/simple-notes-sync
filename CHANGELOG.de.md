@@ -8,6 +8,39 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.0] - 2026-05-11
+
+### ✨ Neue Features
+
+**Google-Keep-Import**
+- Notizen direkt aus einer Google-Keep- / Google-Takeout-`.zip` importieren — komplett auf dem Gerät, kein Upload
+- Vorab-Analyse klassifiziert das Archiv (aktiv / archiviert / Papierkorb / Labels / geteilt / Gesamtgröße), bevor du bestätigst
+- **Konflikt-Strategie** pro Lauf: *immer neu erstellen* (Standard), *überspringen, falls vorhanden* oder *ersetzen, falls vorhanden* — Vergleich per Inhalts-Hash (Titel + Body + Checklisten-Items)
+- Optionale Schalter für **archivierte** und **Papierkorb**-Notizen
+- Eingerückte Checklisten bis 3 Ebenen erhalten (neues Feld `ChecklistItem.indentationLevel`, Default `0` — DnD-Verhalten verifiziert unverändert)
+- Keep-`color` und `isPinned` werden im Notiz-Modell gespeichert (Anzeige folgt in einem späteren Release)
+- Labels werden in einer separaten `notes_labels.json`-Indexdatei gespeichert
+- Abbrechbar während des Imports; bereits importierte Notizen bleiben erhalten; Ergebnis-Dialog zeigt importiert / ersetzt / übersprungen / Fehler mit ausklappbarer Fehlerliste
+- Bestätigungs-Schritt bei Archiven über 200 MB
+- Einmaliger Auto-Sync am Ende (nur wenn ≥ 1 Notiz importiert oder ersetzt wurde; respektiert vorhandenes Sync-beim-Speichern-Gate, Throttle und Offline-Modus)
+- Zu finden unter **Einstellungen → Import → Google Keep importieren**
+
+### ♻️ Intern
+
+**`SyncScheduler` extrahiert**
+- Die duplizierte `triggerOnSaveSync()`-Logik aus `NoteEditorViewModel` und `MainViewModel` liegt jetzt zentral in `sync/SyncScheduler` (Verhalten strikt äquivalent zu v2.4.0; wird vom Keep-Import-Flow wiederverwendet)
+
+### 📚 Dokumentation
+
+- Neue Anleitung: `project-docs/simple-notes-sync/v2.5.0/google-keep-import-user-guide.de.md` (EN + DE)
+- Neues QA-Cheatsheet: `project-docs/simple-notes-sync/v2.5.0/google-keep-import-adb-tests.md`
+
+### 🙏 Danksagungen
+
+Danke an alle, die frühe Google-Keep-Exporte getestet und Sonderfälle gemeldet haben!
+
+---
+
 ## [2.4.0] - 2026-05-04
 
 ### ✨ Neue Features
