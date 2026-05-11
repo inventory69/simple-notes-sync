@@ -580,6 +580,12 @@
     <string name="notification_sync_in_progress_title">Synchronisierung läuft</string>
     <string name="notification_sync_in_progress_message">Notizen werden synchronisiert…</string>
     <string name="notification_sync_error_title">Sync Fehler</string>
+    <!-- 🆕 v2.5.0: Google Keep Import — Snackbar-Texte (vollständige Liste in Commit #12) -->
+    <string name="keep_import_snackbar_done">Import fertig: %1$d neu, %2$d übersprungen</string>
+    <string name="keep_import_snackbar_cancelled">Import abgebrochen</string>
+    <string name="keep_import_snackbar_error">Import fehlgeschlagen</string>
+    <string name="keep_import_snackbar_retry_action">Erneut versuchen</string>
+
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
