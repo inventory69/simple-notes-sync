@@ -2,12 +2,9 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.app.Application
 import android.content.Context
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
@@ -15,8 +12,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
-import dev.dettmer.simplenotes.sync.SyncWorker
-import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
@@ -1313,46 +1309,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      *
      * Separate throttling (5 seconds) to prevent spam when saving multiple times
      */
+    // v2.5.0: Logik nach `sync/SyncScheduler` extrahiert.
+    private val syncScheduler by lazy { SyncScheduler(getApplication()) }
+
     private fun triggerOnSaveSync() {
-        // Check 1: Trigger enabled?
-        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)) {
-            Logger.d(TAG, "⏭️ onSave sync disabled - skipping")
-            return
-        }
-
-        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
-        val syncService = WebDavSyncService(getApplication())
-        val gateResult = syncService.canSync()
-        if (!gateResult.canSync) {
-            if (gateResult.isBlockedByWifiOnly) {
-                Logger.d(TAG, "⏭️ onSave sync blocked: WiFi-only mode, not on WiFi")
-            } else {
-                Logger.d(TAG, "⏭️ onSave sync blocked: ${gateResult.blockReason ?: "offline/no server"}")
-            }
-            return
-        }
-
-        // Check 2: Throttling (5 seconds) to prevent spam
-        val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
-        val now = System.currentTimeMillis()
-        val timeSinceLastSync = now - lastOnSaveSyncTime
-
-        if (timeSinceLastSync < Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS) {
-            val remainingSeconds = (Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
-            Logger.d(TAG, "⏳ onSave sync throttled - wait ${remainingSeconds}s")
-            return
-        }
-
-        // Update last sync time
-        prefs.edit { putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now) }
-
-        // Trigger sync via WorkManager
-        Logger.d(TAG, "📤 Triggering onSave sync")
-        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-            .addTag(Constants.SYNC_WORK_TAG)
-            .addTag(Constants.SYNC_ONSAVE_TAG) // 🆕 v1.8.1 (IMPL_08B): Bypassed globalen Cooldown
-            .build()
-        WorkManager.getInstance(getApplication()).enqueue(syncRequest)
+        syncScheduler.triggerOnSaveSync(reason = "onSave")
     }
 }
 

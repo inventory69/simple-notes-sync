@@ -47,10 +47,12 @@ class KeepImportViewModelFactory(
             storage = storage,
             labelStore = labelStore,
         )
+        val syncScheduler = dev.dettmer.simplenotes.sync.SyncScheduler(application)
         return KeepImportViewModel(
             application = application,
             useCase = useCase,
             zipReader = zipReader,
+            syncScheduler = syncScheduler,
         ) as T
     }
 }
