@@ -130,6 +130,8 @@ fun ImportSettingsScreen(
                 selectedCandidates = selectedCandidates,
                 conflictStrategy = webDavConflictStrategy,
                 onStrategyChange = { webDavConflictStrategy = it },
+                onSelectAll = { selectedCandidates = scanResults.indices.toSet() },
+                onDeselectAll = { selectedCandidates = emptySet() },
                 onScanClick = {
                     scope.launch {
                         isScanning = true
@@ -219,6 +221,8 @@ private fun WebDavImportSection(
     selectedCandidates: Set<Int>,
     conflictStrategy: ConflictStrategy,
     onStrategyChange: (ConflictStrategy) -> Unit,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
     onScanClick: () -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
@@ -251,6 +255,8 @@ private fun WebDavImportSection(
             selectedCandidates = selectedCandidates,
             conflictStrategy = conflictStrategy,
             onStrategyChange = onStrategyChange,
+            onSelectAll = onSelectAll,
+            onDeselectAll = onDeselectAll,
             onSelectionChange = onSelectionChange,
             onCancelScan = onCancelScan,
             onImportSelected = onImportSelected
@@ -265,6 +271,8 @@ private fun ScanResultsCard(
     selectedCandidates: Set<Int>,
     conflictStrategy: ConflictStrategy,
     onStrategyChange: (ConflictStrategy) -> Unit,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
     onImportSelected: () -> Unit
@@ -275,11 +283,28 @@ private fun ScanResultsCard(
             .padding(horizontal = 16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.import_dialog_found, scanResults.size),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            val allSelected = selectedCandidates.size == scanResults.size
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.import_dialog_found, scanResults.size),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = if (allSelected) onDeselectAll else onSelectAll) {
+                    Text(
+                        text = if (allSelected) {
+                            stringResource(R.string.import_deselect_all)
+                        } else {
+                            stringResource(R.string.import_select_all)
+                        },
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             val density = LocalDensity.current
             val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }

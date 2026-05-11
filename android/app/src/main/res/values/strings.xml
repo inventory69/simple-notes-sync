@@ -235,6 +235,8 @@
     <string name="import_conflict_skip">Skip existing (default)</string>
     <string name="import_conflict_replace">Replace existing</string>
     <string name="import_cancel">Cancel</string>
+    <string name="import_select_all">Select all</string>
+    <string name="import_deselect_all">Deselect all</string>
     <string name="settings_about">About this App</string>
     <string name="settings_debug">Debug &amp; Diagnostics</string>
     <string name="settings_debug_logging_on">Logging: On</string>
