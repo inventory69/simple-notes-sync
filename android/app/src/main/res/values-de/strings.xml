@@ -586,6 +586,57 @@
     <string name="keep_import_snackbar_error">Import fehlgeschlagen</string>
     <string name="keep_import_snackbar_retry_action">Erneut versuchen</string>
 
+    <!-- 🆕 v2.5.0: Google Keep Import — vollständige UI-Texte -->
+    <string name="keep_import_section_title">Google Keep importieren</string>
+    <string name="keep_import_section_description">Importiere deinen Google-Takeout-Export als simple-notes-sync-Notizen.</string>
+    <string name="keep_import_section_button_pick_zip">ZIP wählen…</string>
+
+    <string name="keep_import_config_title">Aus Google Keep importieren</string>
+    <string name="keep_import_config_scanning">Archivinhalt wird analysiert…</string>
+    <string name="keep_import_config_include_archived">Archivierte Notizen importieren</string>
+    <string name="keep_import_config_include_trashed">Notizen aus dem Papierkorb importieren</string>
+    <string name="keep_import_config_conflict_label">Bei Konflikt:</string>
+    <string name="keep_import_config_conflict_always_create">Immer neu erstellen (empfohlen, sicherste Option)</string>
+    <string name="keep_import_config_conflict_skip">Überspringen</string>
+    <string name="keep_import_config_conflict_replace">Ersetzen</string>
+    <string name="keep_import_config_info_labels">ℹ️ Etiketten aus Keep werden gespeichert. Sie werden in einer zukünftigen Version als Tags sichtbar.</string>
+    <string name="keep_import_config_info_attachments">🖼️ Bilder/Anhänge werden in dieser Version nicht importiert. Wenn die App später Bildunterstützung erhält, kannst du den Import erneut durchführen, um die Bilder nachzuladen.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Farben und Anheftungen werden gespeichert, aber erst in einer zukünftigen Version sichtbar.</string>
+    <string name="keep_import_config_button_start">Import starten</string>
+    <string name="keep_import_config_button_cancel">Abbrechen</string>
+
+    <string name="keep_import_prescan_header">📦 Archiv enthält:</string>
+    <string name="keep_import_prescan_active">• %1$d aktive Notizen</string>
+    <string name="keep_import_prescan_archived">• %1$d archivierte Notizen</string>
+    <string name="keep_import_prescan_trashed">• %1$d Notizen im Papierkorb</string>
+    <string name="keep_import_prescan_labels">• %1$d verschiedene Etiketten</string>
+    <string name="keep_import_prescan_shared">• %1$d Notizen aus geteilten Listen (sharees)</string>
+    <string name="keep_import_prescan_attachments">• %1$d Notizen mit Anhängen (werden nicht importiert)</string>
+    <string name="keep_import_prescan_large_warning">⚠️ Großes Archiv (%1$d MB), Analyse kann eine Minute dauern.</string>
+
+    <string name="keep_import_large_zip_title">Großes Archiv</string>
+    <string name="keep_import_large_zip_body">Dieses Archiv ist %1$d MB groß. Der Import kann mehrere Minuten dauern und viel Akku verbrauchen. Trotzdem starten?</string>
+    <string name="keep_import_large_zip_button_continue">Fortfahren</string>
+    <string name="keep_import_large_zip_button_cancel">Abbrechen</string>
+
+    <string name="keep_import_progress_title">Importiere aus Google Keep…</string>
+    <string name="keep_import_progress_status">Verarbeite %1$d von %2$d: %3$s</string>
+    <string name="keep_import_progress_button_cancel">Abbrechen</string>
+
+    <string name="keep_import_result_title">Import abgeschlossen</string>
+    <string name="keep_import_result_imported">✓ %1$d Notizen importiert</string>
+    <string name="keep_import_result_replaced">↻ %1$d ersetzt</string>
+    <string name="keep_import_result_skipped">⊘ %1$d übersprungen</string>
+    <string name="keep_import_result_failed">✗ %1$d Fehler</string>
+    <string name="keep_import_result_attachments_dropped">🖼️ %1$d Notizen hatten Anhänge — nicht importiert (du kannst den Import wiederholen, sobald Bildunterstützung verfügbar ist).</string>
+    <string name="keep_import_result_labels">🏷️ %1$d Etiketten gespeichert</string>
+    <string name="keep_import_result_shared">👥 %1$d davon aus geteilten Listen (Kollaborationen)</string>
+    <string name="keep_import_result_color">🎨 %1$d mit Farbe gespeichert (in zukünftiger Version sichtbar)</string>
+    <string name="keep_import_result_pinned">📌 %1$d als angeheftet gespeichert (in zukünftiger Version sichtbar)</string>
+    <string name="keep_import_result_show_errors">Details anzeigen</string>
+    <string name="keep_import_result_hide_errors">Details ausblenden</string>
+    <string name="keep_import_result_button_close">Schließen</string>
+
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
