@@ -300,7 +300,7 @@ private fun LocalImportSection(isImporting: Boolean, onPickFiles: () -> Unit) {
     Spacer(modifier = Modifier.height(8.dp))
     SettingsInfoCard(text = stringResource(R.string.import_local_info))
     Spacer(modifier = Modifier.height(8.dp))
-    SettingsOutlinedButton(
+    SettingsButton(
         text = stringResource(R.string.settings_import_from_file),
         onClick = onPickFiles,
         enabled = !isImporting,
