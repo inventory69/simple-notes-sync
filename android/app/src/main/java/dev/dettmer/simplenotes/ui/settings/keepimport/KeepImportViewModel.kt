@@ -44,6 +44,8 @@ class KeepImportViewModel internal constructor(
     application: Application,
     private val useCase: KeepImportUseCase,
     private val zipReader: KeepZipReader,
+    private val syncScheduler: dev.dettmer.simplenotes.sync.SyncScheduler =
+        dev.dettmer.simplenotes.sync.SyncScheduler(application),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AndroidViewModel(application) {
 
@@ -165,6 +167,16 @@ class KeepImportViewModel internal constructor(
                         summary.skipped,
                     )
                 )
+                // 🆕 v2.5.0: einmaliger Sync-Trigger am Ende (Analyseplan §7.1 Annahme #4).
+                // Nur wenn tatsächlich neue/ersetzte Notizen anstehen — sonst ist der
+                // Sync ein No-op und wir vermeiden unnötige Network-Requests.
+                if (summary.imported > 0 || summary.replaced > 0) {
+                    try {
+                        syncScheduler.triggerOnSaveSync(reason = "keepImport")
+                    } catch (e: Exception) {
+                        Logger.w(TAG, "post-import sync trigger failed: ${e.message}")
+                    }
+                }
             } catch (e: CancellationException) {
                 // Sauber durchreichen — onCancel() hat den State bereits gesetzt.
                 throw e

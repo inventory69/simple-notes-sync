@@ -12,13 +12,11 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.storage.NotesStorage
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
+import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
-import dev.dettmer.simplenotes.sync.SyncWorker
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -587,41 +585,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Triggers an on-save sync via WorkManager after a deletion.
-     * Mirrors NoteEditorViewModel.triggerOnSaveSync() — uses same throttle + gate checks.
-     * Audit: 4-04
+     * v2.5.0: Logik nach `sync/SyncScheduler` extrahiert (vorher dupliziert
+     * mit `NoteEditorViewModel.triggerOnSaveSync()`). Audit: 4-04.
      */
+    private val syncScheduler by lazy { SyncScheduler(getApplication()) }
+
     private fun triggerOnSaveSync() {
-        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)) {
-            Logger.d(TAG, "⏭️ onSave sync disabled - skipping")
-            return
-        }
-
-        val syncService = WebDavSyncService(getApplication())
-        val gateResult = syncService.canSync()
-        if (!gateResult.canSync) {
-            Logger.d(TAG, "⏭️ onSave sync blocked after deletion: ${gateResult.blockReason ?: "offline/no server"}")
-            return
-        }
-
-        val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
-        val now = System.currentTimeMillis()
-        val timeSinceLastSync = now - lastOnSaveSyncTime
-
-        if (timeSinceLastSync < Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS) {
-            val remainingSeconds = (Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
-            Logger.d(TAG, "⏳ onSave sync throttled after deletion - wait ${remainingSeconds}s")
-            return
-        }
-
-        prefs.edit { putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now) }
-
-        Logger.d(TAG, "🗏️ Triggering onSave sync after deletion")
-        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-            .addTag(Constants.SYNC_WORK_TAG)
-            .addTag(Constants.SYNC_ONSAVE_TAG)
-            .build()
-        WorkManager.getInstance(getApplication()).enqueue(syncRequest)
+        syncScheduler.triggerOnSaveSync(reason = "onDelete")
     }
 
     /**

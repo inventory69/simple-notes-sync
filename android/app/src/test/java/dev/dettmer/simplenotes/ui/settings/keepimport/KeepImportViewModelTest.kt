@@ -9,10 +9,12 @@ import dev.dettmer.simplenotes.noteimport.keep.KeepImportUseCase
 import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 import dev.dettmer.simplenotes.noteimport.keep.zip.KeepPreScanResult
 import dev.dettmer.simplenotes.noteimport.keep.zip.KeepZipReader
+import dev.dettmer.simplenotes.sync.SyncScheduler
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -37,6 +39,7 @@ class KeepImportViewModelTest {
     private lateinit var app: Application
     private lateinit var useCase: KeepImportUseCase
     private lateinit var zipReader: KeepZipReader
+    private lateinit var syncScheduler: SyncScheduler
     private lateinit var vm: KeepImportViewModel
 
     private val fakeUri: Uri = mockk(relaxed = true)
@@ -50,7 +53,11 @@ class KeepImportViewModelTest {
         }
         useCase = mockk(relaxed = true)
         zipReader = mockk()
-        vm = KeepImportViewModel(application = app, useCase = useCase, zipReader = zipReader, ioDispatcher = dispatcher)
+        syncScheduler = mockk(relaxed = true)
+        vm = KeepImportViewModel(
+            application = app, useCase = useCase, zipReader = zipReader,
+            syncScheduler = syncScheduler, ioDispatcher = dispatcher,
+        )
     }
 
     @After
@@ -201,6 +208,35 @@ class KeepImportViewModelTest {
 
         vm.onResultDismissed()
         assertEquals(KeepImportUiState.Idle, vm.state.value)
+    }
+
+    // ───── Sync-Trigger nach Done ─────
+    @Test
+    fun `done_withImportedNotes_triggersSyncOnce`() = runTest(dispatcher) {
+        coEvery { zipReader.preScan(fakeUri) } returns preScan()
+        coEvery { useCase.import(any(), any(), any(), any()) } returns
+            KeepImportSummary.EMPTY.copy(totalEntries = 2, imported = 2)
+
+        vm.onZipPicked(fakeUri)
+        advanceUntilIdle()
+        vm.onConfigConfirmed(defaultOptions)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { syncScheduler.triggerOnSaveSync(reason = "keepImport") }
+    }
+
+    @Test
+    fun `done_withZeroImportedAndReplaced_skipsSync`() = runTest(dispatcher) {
+        coEvery { zipReader.preScan(fakeUri) } returns preScan()
+        coEvery { useCase.import(any(), any(), any(), any()) } returns
+            KeepImportSummary.EMPTY.copy(totalEntries = 2, imported = 0, replaced = 0, skipped = 2)
+
+        vm.onZipPicked(fakeUri)
+        advanceUntilIdle()
+        vm.onConfigConfirmed(defaultOptions)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { syncScheduler.triggerOnSaveSync(any()) }
     }
 
     // ───── Progress-Callback aktualisiert Running-State ─────
