@@ -230,6 +230,10 @@
     <string name="import_zero_notes_hint">No notes could be imported. The file may be corrupted or in an unsupported format.</string>
     <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
     <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
+    <string name="import_conflict_label">Conflict strategy</string>
+    <string name="import_conflict_always_create">Always create (may duplicate)</string>
+    <string name="import_conflict_skip">Skip existing (default)</string>
+    <string name="import_conflict_replace">Replace existing</string>
     <string name="import_cancel">Cancel</string>
     <string name="settings_about">About this App</string>
     <string name="settings_debug">Debug &amp; Diagnostics</string>
