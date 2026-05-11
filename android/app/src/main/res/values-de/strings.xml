@@ -217,6 +217,8 @@
     <string name="import_conflict_skip">Vorhandene überspringen (Standard)</string>
     <string name="import_conflict_replace">Vorhandene überschreiben</string>
     <string name="import_cancel">Abbrechen</string>
+    <string name="import_select_all">Alle auswählen</string>
+    <string name="import_deselect_all">Alle abwählen</string>
     <string name="settings_about">Über diese App</string>
     <string name="settings_debug">Debug &amp; Diagnose</string>
     <string name="settings_debug_logging_on">Logging: An</string>
