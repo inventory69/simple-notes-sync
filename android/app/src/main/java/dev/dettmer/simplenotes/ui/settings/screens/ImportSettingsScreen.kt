@@ -86,6 +86,7 @@ fun ImportSettingsScreen(
     var showScanResults by remember { mutableStateOf(false) }
     var selectedCandidates by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var pendingLocalUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var webDavConflictStrategy by remember { mutableStateOf(ConflictStrategy.SKIP) }
 
     // File Picker für lokalen Import (mehrere Dateien) — zeigt nach Auswahl den Config-Dialog
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -127,6 +128,8 @@ fun ImportSettingsScreen(
                 showScanResults = showScanResults,
                 scanResults = scanResults,
                 selectedCandidates = selectedCandidates,
+                conflictStrategy = webDavConflictStrategy,
+                onStrategyChange = { webDavConflictStrategy = it },
                 onScanClick = {
                     scope.launch {
                         isScanning = true
@@ -151,7 +154,7 @@ fun ImportSettingsScreen(
                         isImporting = true
                         showScanResults = false
                         val selected = selectedCandidates.map { scanResults[it] }
-                        importSummary = viewModel.importCandidates(selected)
+                        importSummary = viewModel.importCandidates(selected, webDavConflictStrategy)
                         scanResults = emptyList()
                         isImporting = false
                     }
@@ -214,6 +217,8 @@ private fun WebDavImportSection(
     showScanResults: Boolean,
     scanResults: List<NotesImportWizard.ImportCandidate>,
     selectedCandidates: Set<Int>,
+    conflictStrategy: ConflictStrategy,
+    onStrategyChange: (ConflictStrategy) -> Unit,
     onScanClick: () -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
@@ -244,6 +249,8 @@ private fun WebDavImportSection(
         ScanResultsCard(
             scanResults = scanResults,
             selectedCandidates = selectedCandidates,
+            conflictStrategy = conflictStrategy,
+            onStrategyChange = onStrategyChange,
             onSelectionChange = onSelectionChange,
             onCancelScan = onCancelScan,
             onImportSelected = onImportSelected
@@ -251,10 +258,13 @@ private fun WebDavImportSection(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun ScanResultsCard(
     scanResults: List<NotesImportWizard.ImportCandidate>,
     selectedCandidates: Set<Int>,
+    conflictStrategy: ConflictStrategy,
+    onStrategyChange: (ConflictStrategy) -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
     onImportSelected: () -> Unit
@@ -296,6 +306,11 @@ private fun ScanResultsCard(
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
+            ImportConflictStrategyPicker(
+                selected = conflictStrategy,
+                onSelectionChange = onStrategyChange,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 SettingsOutlinedButton(
                     text = stringResource(R.string.import_cancel),

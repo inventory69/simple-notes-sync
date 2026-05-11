@@ -301,12 +301,25 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
             }
         }
         is ImportSource.WebDav -> {
-            // UUID-basierte Duplikat-Erkennung (bestehende Logik; Strategie folgt in Commit 3)
+            // UUID-basierte Duplikat-Erkennung; Strategie steuert das Verhalten bei Treffer
+            Logger.d(TAG, "🔍 Conflict check (webdav): '${candidate.name}' strategy=$strategy")
             val existingNote = storage.loadNote(note.id)
-            if (existingNote != null) {
-                Pair(null, "Note with ID ${note.id} already exists (title: '${existingNote.title}')")
-            } else {
-                Pair(note.copy(syncStatus = syncStatus), "")
+            when {
+                existingNote == null -> Pair(note.copy(syncStatus = syncStatus), "")
+                strategy == ConflictStrategy.ALWAYS_CREATE -> {
+                    val newId = UUID.randomUUID().toString()
+                    Logger.d(TAG, "🔀 ALWAYS_CREATE (webdav): '${candidate.name}' ${note.id} → $newId")
+                    Pair(note.copy(id = newId, syncStatus = syncStatus), "")
+                }
+                strategy == ConflictStrategy.REPLACE -> {
+                    Logger.d(TAG, "↻ Replace (webdav): '${candidate.name}' id=${existingNote.id}")
+                    Pair(note.copy(syncStatus = syncStatus), "")
+                }
+                else -> {
+                    // SKIP (default)
+                    Logger.d(TAG, "⊘ Skipped (webdav, uuid match): '${candidate.name}' id=${note.id}")
+                    Pair(null, "Note with ID ${note.id} already exists (title: '${existingNote.title}')")
+                }
             }
         }
     }
