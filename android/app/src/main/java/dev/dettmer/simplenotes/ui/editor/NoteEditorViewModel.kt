@@ -447,6 +447,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         pushUndoSnapshot() // 🆕 v1.10.0
         isDirty = true // 🆕 v1.9.0: checking/unchecking is an edit
         hasUnsavedChecklistEdits = true // 🛡️ v1.8.2 (IMPL_17)
+
+        // 🆕 v2.5.0: isChecked-Update UND Sort laufen im selben State-Snapshot.
+        // Vorher (uncommitted): Sort wurde 350 ms verzögert, damit die Checkbox-Animation
+        // „Zeit zum Spielen" hatte. Folge: separatorVisualIndex (aus uncheckedCount abgeleitet)
+        // sprang sofort, Items folgten erst 350 ms später → ein Nachbar-Item rutschte
+        // visuell über/unter den Separator, obwohl er nicht angefasst wurde.
+        // Lösung: Sort sofort. Die UI-Animation (Flash + Scale-Pop in ChecklistItemRow,
+        // Placement-Spring via LazyColumn.animateItem in NoteEditorScreen) läuft parallel
+        // und überlebt die Reorder, weil der Item-Key (item.id) stabil bleibt.
         _checklistItems.update { items ->
             val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
