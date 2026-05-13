@@ -114,6 +114,19 @@ private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
 private const val ITEM_CORNER_RADIUS_DP = 8
 private const val DRAGGING_ITEM_Z_INDEX = 10f
+// 🆕 v2.5.0: Z-Index für Items in Check/Uncheck-Animation. Liegt zwischen 0f
+// (Standard-Items) und DRAGGING_ITEM_Z_INDEX (10f). Hebt das animierende Item
+// während der LazyColumn-Placement-Animation über seine Nachbarn — behebt die
+// Asymmetrie, dass aufwärts wandernde Items (Uncheck) sonst hinter Nachbarn
+// gezeichnet werden, weil ihre neue (niedrigere) Composition-Position sie früher
+// im Draw-Tree platziert. Drag dominiert weiterhin (10f > 5f).
+private const val CHECKING_ITEM_Z_INDEX = 5f
+// 🆕 v2.5.0: Gesamt-Dauer der Check-Tap-Animation in Millisekunden. Deckt
+// Scale-Up (CHECK_ANIM_SCALE_UP_MS = 80ms) + Spring-Back + Glow-Fade-Out
+// (CHECK_GLOW_FADE_OUT_MS = 450ms) + LazyColumn-Placement-Spring komfortabel ab.
+// Wird vom LaunchedEffect in DraggableChecklistItem genutzt, um isCheckAnimating
+// zurückzusetzen (deterministischer Reset statt finishedListener-Race).
+private const val CHECK_ANIMATION_TOTAL_MS = 500L
 private val DRAGGING_ELEVATION_DP = 8.dp
 
 /**
@@ -747,6 +760,20 @@ private fun LazyItemScope.DraggableChecklistItem(
         }
     }
 
+    // 🆕 v2.5.0: Trigger für Check-Tap-Animation. Wird beim Checkbox-Tap auf true
+    // gesetzt (über onCheckboxTap-Callback an die Row), und nach CHECK_ANIMATION_TOTAL_MS
+    // automatisch zurückgesetzt. Solange true → erhöhter zIndex (siehe unten) →
+    // Row wird über Nachbarn gezeichnet, unabhängig von der Draw-Reihenfolge nach
+    // dem Reorder. Key item.id: Reset-Timer überlebt Reorder, weil Composition
+    // erhalten bleibt.
+    var isCheckAnimating by remember(item.id) { mutableStateOf(false) }
+    LaunchedEffect(isCheckAnimating, item.id) {
+        if (isCheckAnimating) {
+            delay(CHECK_ANIMATION_TOTAL_MS)
+            isCheckAnimating = false
+        }
+    }
+
     ChecklistItemRow(
         item = item,
         onTextChange = { onTextChange(item.id, it) },
@@ -756,6 +783,8 @@ private fun LazyItemScope.DraggableChecklistItem(
         onCopyText = { onCopyText(item.id) },             // 🆕 v2.2.0
         onDuplicate = { onDuplicate(item.id) },            // 🆕 v2.2.0
         onCopyToChecklist = { onCopyToChecklist(item.id) },// 🆕 v2.2.0
+        isCheckAnimating = isCheckAnimating,               // 🆕 v2.5.0
+        onCheckboxTap = { isCheckAnimating = true },       // 🆕 v2.5.0
         requestFocus = shouldFocus,
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.isAnyItemDragging,
@@ -765,18 +794,33 @@ private fun LazyItemScope.DraggableChecklistItem(
         ),
         onHeightChanged = onHeightChanged, // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
-            // 🆕 v1.8.2 (IMPL_11): animateItem() NUR während bestätigtem Drag anwenden.
-            // Vorher: animateItem() auf ALLEN Items permanent → Fade-In/Out-Animationen
-            // verursachten visuelles Flackern bei langen Items beim schnellen Scrollen.
-            // Jetzt: Nur placement-Animation für nicht-gedraggte Items während Reorder.
+            // 🆕 v1.8.2 (IMPL_11): Placement-Animation für nicht-gedraggte Items.
+            // Historisch (vor IMPL_11): animateItem() mit fadeInSpec/fadeOutSpec auf ALLEN Items
+            // → sichtbares Flickering bei langen Items beim schnellen Scrollen.
+            // Lösung damals: fade entfernen, animateItem nur während Drag.
+            // 🆕 v2.5.0: Bedingung von „nur während Drag" auf „immer außer beim gedraggten Item"
+            // erweitert. Grund: Beim Check/Uncheck-Sort (außerhalb DnD) gab es vorher keine
+            // Placement-Animation → Items sprangen abrupt. Da fadeInSpec/fadeOutSpec weiterhin
+            // null sind, gilt die ursprüngliche Flicker-Ursache nicht. Der gedraggte Item bleibt
+            // ausgenommen, weil seine Position via graphicsLayer.translationY gesteuert wird.
             .then(
-                if (dragDropState.isDragConfirmed && !isDragging) {
+                if (!isDragging) {
                     Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
                 } else {
                     Modifier
                 }
             )
-            .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
+            // 🆕 v2.5.0: zIndex-Tabelle:
+            //   isDragging              → DRAGGING_ITEM_Z_INDEX (10f)  – Drag wins
+            //   isCheckAnimating        → CHECKING_ITEM_Z_INDEX  (5f)  – Glow/Move on top
+            //   sonst                   → 0f
+            .zIndex(
+                when {
+                    isDragging -> DRAGGING_ITEM_Z_INDEX
+                    isCheckAnimating -> CHECKING_ITEM_Z_INDEX
+                    else -> 0f
+                }
+            )
             .graphicsLayer {
                 if (isDragging) translationY = dragDropState.draggingItemOffset
                 shadowElevation = elevation.toPx()
@@ -1008,7 +1052,16 @@ private fun ChecklistEditor(
                             // pre-request scroll to index 0. requestScrollToItem runs DURING
                             // the next layout pass, overriding LazyColumn's key-tracking
                             // which would otherwise follow the checked item to the bottom.
-                            if (checked && listState.firstVisibleItemIndex == 0) {
+                            // 🔧 v2.5.x: Extend to un-check as well. When the viewport is at
+                            // the top and the un-checked item becomes the new index 0, LazyColumn
+                            // keeps anchoring on the previous top key, laying the new index-0
+                            // item at y = -itemHeight (off-screen above). animateItem() then
+                            // plays its placement spring outside the viewport — invisible.
+                            // Removing the `checked &&` guard fires requestScrollToItem(0, 0)
+                            // for both directions. It runs synchronously in the next measure
+                            // pass, forcing the anchor onto the correct new index-0 item before
+                            // LazyListItemAnimator captures from/to coordinates.
+                            if (listState.firstVisibleItemIndex == 0) {
                                 listState.requestScrollToItem(0, 0)
                             }
                             onCheckedChange(id, checked)

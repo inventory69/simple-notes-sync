@@ -1,7 +1,9 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
 import dev.dettmer.simplenotes.utils.Logger
+import androidx.compose.animation.core.Spring            // 🆕 v2.5.0
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring            // 🆕 v2.5.0
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -43,9 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind              // 🆕 v2.5.0 flash
+import androidx.compose.ui.draw.scale                   // 🆕 v2.5.0
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -88,6 +94,8 @@ fun ChecklistItemRow(
     onCopyText: () -> Unit,              // 🆕 v2.2.0: Aktion 1 — Text kopieren
     onDuplicate: () -> Unit,             // 🆕 v2.2.0: Aktion 2 — Eintrag duplizieren
     onCopyToChecklist: () -> Unit,       // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
+    isCheckAnimating: Boolean = false,   // 🆕 v2.5.0: Hoisted check-tap trigger (owned by DraggableChecklistItem)
+    onCheckboxTap: () -> Unit = {},      // 🆕 v2.5.0: Notifies parent to set isCheckAnimating = true
     modifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     requestFocus: Boolean = false,
@@ -102,6 +110,52 @@ fun ChecklistItemRow(
     var textFieldValue by remember(item.id) {
         mutableStateOf(TextFieldValue(text = item.text, selection = TextRange(0)))
     }
+
+    // 🆕 v2.5.0: Scale-pop animation — driven by isCheckAnimating parameter (hoisted
+    // to DraggableChecklistItem in NoteEditorScreen). Parent owns the trigger because
+    // it also controls Modifier.zIndex on the LazyColumn item slot, which is the only
+    // scope where zIndex affects sibling draw-order. Hoisting fixes the visual
+    // asymmetry where uncheck-moves (item travels upward to a lower index) were
+    // drawn behind their neighbors due to LazyColumn composition-order = draw-order.
+    // During isCheckAnimating==true the parent raises zIndex to CHECKING_ITEM_Z_INDEX,
+    // guaranteeing the row stays on top throughout the placement spring.
+    // DnD: dragModifier remains the only DnD entry-point; onCheckboxTap never fires
+    // during a drag.
+    @Suppress("MagicNumber") // Animation peak/duration constants defined below as named consts
+    val checkScale by animateFloatAsState(
+        targetValue = if (isCheckAnimating) CHECK_ANIM_SCALE_PEAK else 1f,
+        animationSpec = if (isCheckAnimating) {
+            tween(durationMillis = CHECK_ANIM_SCALE_UP_MS)
+        } else {
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        },
+        label = "checkScale"
+        // 🗑️ v2.5.0: finishedListener entfernt — isCheckAnimating wird vom Parent
+        // (DraggableChecklistItem) per LaunchedEffect+delay zurückgesetzt. Behebt
+        // gleichzeitig die Z-Index-Asymmetrie beim Uncheck-Move (Item wandert
+        // aufwärts und wurde vorher hinter Nachbarn gezeichnet).
+    )
+
+    // 🆕 v2.5.0: Row-background radial glow — same isCheckAnimating trigger as scale-pop.
+    // Fast fade-in (CHECK_ANIM_SCALE_UP_MS) signals the check; slower fade-out
+    // (CHECK_GLOW_FADE_OUT_MS) overlaps visually with the LazyColumn animateItem
+    // placement spring, creating the impression "item glows briefly while moving".
+    // primaryContainer wird HIER (Composable-Scope) gecaptured, weil DrawScope kein
+    // CompositionLocal-Zugriff hat — MaterialTheme.colorScheme darf in drawBehind nicht
+    // aufgerufen werden.
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isCheckAnimating) 1f else 0f,
+        animationSpec = if (isCheckAnimating) {
+            tween(durationMillis = CHECK_ANIM_SCALE_UP_MS)
+        } else {
+            tween(durationMillis = CHECK_GLOW_FADE_OUT_MS)
+        },
+        label = "checkGlowAlpha"
+    )
 
     // 🆕 v1.8.0: Focus-State tracken für Expand/Collapse
     var isFocused by remember { mutableStateOf(false) }
@@ -222,6 +276,27 @@ fun ChecklistItemRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .drawBehind {
+                // 🆕 v2.5.0: Radial glow — only allocate Brush while animation is active.
+                // Brush per-frame allocation is acceptable: DrawScope läuft ohnehin pro Frame,
+                // Brush ist ein leichtgewichtiges Heap-Objekt (kein nativer Aufruf), und
+                // ein remember(glowAlpha) würde durch glowAlpha-Änderungen pro Frame
+                // ohnehin neu rechnen — also kein Cache-Vorteil, nur zusätzliche Komplexität.
+                if (glowAlpha > 0f) {
+                    val radius = size.width * CHECK_GLOW_RADIUS_FACTOR
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                primaryContainer.copy(alpha = CHECK_GLOW_CENTER_ALPHA * glowAlpha),
+                                primaryContainer.copy(alpha = 0f)
+                            ),
+                            center = center,
+                            radius = radius
+                        )
+                    )
+                }
+            }
             .padding(end = 8.dp, top = 4.dp, bottom = 4.dp), // 🆕 v1.8.0: IMPL_023 - links kein Padding (Handle hat eigene Fläche)
         verticalAlignment = if (hasOverflow) Alignment.Top else Alignment.CenterVertically // 🆕 v1.8.0: Dynamisch
     ) {
@@ -259,11 +334,23 @@ fun ChecklistItemRow(
             )
         }
 
-        // Checkbox
+        // 🆕 v2.5.0: onCheckboxTap notifies parent (DraggableChecklistItem) to set
+        // isCheckAnimating = true, which elevates zIndex and drives Scale + Glow animations.
+        // onCheckedChange wird synchron danach aufgerufen — das ViewModel sortiert sofort,
+        // die LazyColumn animiert die resultierende Reorder via animateItem (placement-only,
+        // kein Fade). Es gibt keinen State-Delay mehr; Animation und Reorder laufen parallel
+        // und konsistent.
+        // DnD: dragModifier ist der einzige DnD-Entry-Point; onCheckboxTap feuert nie
+        // während eines Drags.
         Checkbox(
             checked = item.isChecked,
-            onCheckedChange = onCheckedChange,
-            modifier = Modifier.alpha(alpha)
+            onCheckedChange = { checked ->
+                onCheckboxTap()                  // 🆕 v2.5.0: Trigger Z-Index + Animation im Parent
+                onCheckedChange(checked)
+            },
+            modifier = Modifier
+                .scale(checkScale)  // 🆕 v2.5.0: Scale-pop animation
+                .alpha(alpha)
         )
 
         Spacer(modifier = Modifier.width(4.dp))
@@ -496,6 +583,20 @@ private const val GRADIENT_FADE_DURATION_MS = 200
 
 // IMPL_29d: Delay after drag ends to allow layout pass before reading scrollState.maxValue
 private const val DRAG_END_LAYOUT_DELAY_MS = 50L
+
+// 🆕 v2.5.0: Scale-pop animation values for checkbox tap feedback.
+// Phase 1: tween to peak (CHECK_ANIM_SCALE_UP_MS ms), Phase 2: spring back to 1f.
+private const val CHECK_ANIM_SCALE_PEAK = 1.5f          // raised from 1.25f for visibility
+private const val CHECK_ANIM_SCALE_UP_MS = 80
+
+// 🆕 v2.5.0: Radial glow animation values for checkbox tap feedback.
+// Fast fade-in matches scale-up; slower fade-out feels natural for a soft glow.
+// CHECK_GLOW_RADIUS_FACTOR is multiplied with size.width: at factor 0.55 the row's
+// horizontal edge sits at ~91% of the gradient radius → edge alpha ≈ 5% of center →
+// no visible cutoff, smooth falloff into transparency.
+private const val CHECK_GLOW_CENTER_ALPHA = 0.55f
+private const val CHECK_GLOW_FADE_OUT_MS = 450
+private const val CHECK_GLOW_RADIUS_FACTOR = 0.55f
 
 // ════════════════════════════════════════════════════════════════
 // 🆕 v1.8.0: Preview Composables for Manual Testing
