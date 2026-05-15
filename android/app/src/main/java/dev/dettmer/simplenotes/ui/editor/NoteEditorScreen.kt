@@ -1096,21 +1096,60 @@ private fun ChecklistEditor(
                         focusNewItemId = focusNewItemId,
                         onTextChange = onTextChange,
                         onCheckedChange = { id, checked ->
-                            // 🔧 v1.9.0 (F14 fix): When checking the first visible item,
-                            // pre-request scroll to index 0. requestScrollToItem runs DURING
-                            // the next layout pass, overriding LazyColumn's key-tracking
-                            // which would otherwise follow the checked item to the bottom.
-                            // 🔧 v2.5.x: Extend to un-check as well. When the viewport is at
-                            // the top and the un-checked item becomes the new index 0, LazyColumn
-                            // keeps anchoring on the previous top key, laying the new index-0
-                            // item at y = -itemHeight (off-screen above). animateItem() then
-                            // plays its placement spring outside the viewport — invisible.
-                            // Removing the `checked &&` guard fires requestScrollToItem(0, 0)
-                            // for both directions. It runs synchronously in the next measure
-                            // pass, forcing the anchor onto the correct new index-0 item before
-                            // LazyListItemAnimator captures from/to coordinates.
+                            // 🔧 v2.5.x (Dual-Fix Top + Bottom): Pre-anchor the LazyColumn before
+                            // the model reorder so LazyListItemAnimator captures from/to coords
+                            // against a stable anchor. requestScrollToItem runs synchronously in
+                            // the next measure pass and clears LazyListState.lastKnownFirstItemKey,
+                            // disabling key-based re-anchoring that would otherwise follow the
+                            // toggled item to its new position and shift the viewport (→ animation
+                            // would run over ~0 visible delta and be invisible to the user).
+                            //
+                            // Two viewport regimes need different anchoring strategies:
+                            //
+                            // A) Viewport at top (firstVisibleItemIndex == 0): pin index 0 at the
+                            //    viewport top via requestScrollToItem(0, 0). This is the proven
+                            //    7156c12 path and covers the index-0 toggle as well as any toggle
+                            //    while the user is scrolled to the very top. Using the generalized
+                            //    "first non-toggled visible item" anchor here breaks the idx-0 case
+                            //    because it forces a non-zero index with negative scrollOffset,
+                            //    which has edge-case behaviour at the top boundary.
+                            //
+                            // B) Viewport scrolled away from top (firstVisibleItemIndex > 0):
+                            //    snapshot the first visible item that is NOT the toggled item,
+                            //    then requestScrollToItem(anchor.index, -anchor.offset) to keep
+                            //    its current pixel position. The toggled item is excluded so it
+                            //    is free to animate to its new index; all other visible items
+                            //    stay anchored. Covers the bottom-viewport case (toggled item
+                            //    crossing the CheckedItemsSeparator).
                             if (listState.firstVisibleItemIndex == 0) {
-                                listState.requestScrollToItem(0, 0)
+                                // 🔧 v2.5.x Phase 2: Pre-Anchor preserves the user's exact scroll
+                                // offset within item 0 instead of snapping to (0,0). The original
+                                // requestScrollToItem(0, 0) call snapped the viewport up by the
+                                // current firstVisibleItemScrollOffset (e.g. 92–175 px), which
+                                // landed in the SAME measure pass as the data-driven reorder.
+                                // LazyListItemAnimator then interpreted the combined layout
+                                // change as a scroll (not as a reorder) and skipped
+                                // Modifier.animateItem placement animation entirely — the toggled
+                                // item teleported to its new position, scale-pop & glow fired on
+                                // an already-displaced item, visually "nothing happened".
+                                //
+                                // Diagnose-Logs (Phase 1) compared s2 (offset=0, requestScrollToItem
+                                // is a no-op → ~30 interpolated PLACE frames) with s3–s6 (offset
+                                // 92–175 → 1 PLACE frame, then static). Calling
+                                // requestScrollToItem(0, currentOffset) still sets the anchor
+                                // key to item-0 (preventing re-anchor onto the toggled item) but
+                                // does not move the viewport, so LazyListItemAnimator captures
+                                // valid from/to coords and the placement animation runs.
+                                val preservedOffset = listState.firstVisibleItemScrollOffset
+                                listState.requestScrollToItem(0, preservedOffset)
+                            } else {
+                                val layoutInfo = listState.layoutInfo
+                                val anchor = layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                                    info.key != id
+                                } ?: layoutInfo.visibleItemsInfo.firstOrNull()
+                                if (anchor != null) {
+                                    listState.requestScrollToItem(anchor.index, -anchor.offset)
+                                }
                             }
                             onCheckedChange(id, checked)
                         },
