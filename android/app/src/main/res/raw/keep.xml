@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Resource-Shrinker-Konfiguration
+
+    shrinkMode="strict": entfernt jede Ressource, die nicht statisch im Code
+    referenziert ist. Der Default "safe" ist defensiv und behält Ressourcen,
+    die theoretisch über Resources.getIdentifier() / String-Konkatenation
+    geladen werden könnten. Wir prüfen den Quellcode regelmäßig — es gibt
+    keine dynamischen Resource-Lookups, daher ist strict sicher und spart
+    weitere KB in resources.arsc.
+
+    Falls künftig dynamisch aufgelöste Ressourcen hinzukommen, hier per
+    tools:keep="@drawable/foo,@string/bar_*" whitelisten.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:shrinkMode="strict" />
