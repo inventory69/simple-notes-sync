@@ -194,6 +194,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = note.noteType,
                     isNewNote = false,
                     isLoading = false,
+                    color = note.color, // 🆕 v2.5.0
                     toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                         ToolbarTitle.EDIT_CHECKLIST
                     } else {
@@ -811,6 +812,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         scheduleAutosave()
     }
 
+    /** 🆕 v2.5.0 (Issue #65): Set or clear the note background colour.
+     *  Triggers an immediate silent save so Process-Death cannot lose the change. */
+    fun setColor(hex: String?) {
+        if (hex == _uiState.value.color) return
+        _uiState.update { it.copy(color = hex) }
+        isDirty = true
+        viewModelScope.launch { performSave(silent = true) }
+    }
+
     fun saveNote() {
         autosaveJob?.cancel() // 🆕 v1.9.0: manual save supersedes pending autosave
         viewModelScope.launch {
@@ -876,6 +886,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         content = content,
                         noteType = NoteType.TEXT,
                         checklistItems = null,
+                        color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = SyncStatus.PENDING
                     ) ?: Note(
@@ -883,6 +894,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         content = content,
                         noteType = NoteType.TEXT,
                         checklistItems = null,
+                        color = state.color, // 🆕 v2.5.0
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
@@ -935,6 +947,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         noteType = NoteType.CHECKLIST,
                         checklistItems = validItems,
                         checklistSortOption = _lastChecklistSortOption.value.name,
+                        color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = SyncStatus.PENDING
                     ) ?: Note(
@@ -943,6 +956,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         noteType = NoteType.CHECKLIST,
                         checklistItems = validItems,
                         checklistSortOption = _lastChecklistSortOption.value.name,
+                        color = state.color, // 🆕 v2.5.0
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
@@ -990,6 +1004,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     content = content,
                     noteType = NoteType.TEXT,
                     checklistItems = null,
+                    color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = SyncStatus.PENDING
                 ) ?: Note(
@@ -997,6 +1012,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     content = content,
                     noteType = NoteType.TEXT,
                     checklistItems = null,
+                    color = state.color, // 🆕 v2.5.0
                     deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
@@ -1053,6 +1069,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = NoteType.CHECKLIST,
                     checklistItems = validItems,
                     checklistSortOption = _lastChecklistSortOption.value.name, // 🆕 v1.8.1 (IMPL_03)
+                    color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = SyncStatus.PENDING
                 ) ?: Note(
@@ -1061,6 +1078,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = NoteType.CHECKLIST,
                     checklistItems = validItems,
                     checklistSortOption = _lastChecklistSortOption.value.name, // 🆕 v1.8.1 (IMPL_03)
+                    color = state.color, // 🆕 v2.5.0
                     deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
@@ -1336,7 +1354,8 @@ data class NoteEditorUiState(
     val noteType: NoteType = NoteType.TEXT,
     val isNewNote: Boolean = true,
     val isLoading: Boolean = false,
-    val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE
+    val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
+    val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
 )
 
 data class ChecklistItemState(

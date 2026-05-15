@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
@@ -80,6 +81,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -101,6 +104,8 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
+import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
+import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
@@ -183,6 +188,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val canUndo by viewModel.canUndo.collectAsState() // 🆕 v1.10.0
     val canRedo by viewModel.canRedo.collectAsState() // 🆕 v1.10.0
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
+    var showColorPicker by remember { mutableStateOf(false) }  // 🆕 v2.5.0
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -198,6 +204,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val isCompactToolbar = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.width.toDp().value / fontScale < 360f
     }
+
+    // 🆕 v2.5.0: Resolve note background colour for TopAppBar + Scaffold body.
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val noteContainerColor = NoteColorPalette
+        .resolveContainer(uiState.color, isDark)
+        .takeOrElse { MaterialTheme.colorScheme.surface }
 
     // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
@@ -303,6 +315,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     }
 
     Scaffold(
+        containerColor = noteContainerColor, // 🆕 v2.5.0: tint body by note colour
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -431,6 +444,24 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 )
                             }
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_set_note_color)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Palette,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showColorPicker = true
+                                }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.share_to_calendar)) },
                                 leadingIcon = {
                                     Icon(
@@ -501,7 +532,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = noteContainerColor // 🆕 v2.5.0
                 )
             )
         },
@@ -659,6 +690,17 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 showChecklistSortDialog = false
             },
             onDismiss = { showChecklistSortDialog = false }
+        )
+    }
+
+    // 🆕 v2.5.0: Note color picker sheet
+    if (showColorPicker) {
+        NoteColorPickerSheet(
+            currentColor = uiState.color,
+            onColorSelected = { hex ->
+                viewModel.setColor(hex)
+            },
+            onDismiss = { showColorPicker = false },
         )
     }
 
