@@ -82,7 +82,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -205,11 +205,11 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         LocalWindowInfo.current.containerSize.width.toDp().value / fontScale < 360f
     }
 
-    // 🆕 v2.5.0: Resolve note background colour for TopAppBar + Scaffold body.
+    // 🆕 v2.5.0: Resolve note accent colour for the 3 dp stripe below the TopAppBar.
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val noteContainerColor = NoteColorPalette
+    val noteAccentColor: Color? = NoteColorPalette
         .resolveContainer(uiState.color, isDark)
-        .takeOrElse { MaterialTheme.colorScheme.surface }
+        .takeIf { it != Color.Unspecified }
 
     // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
@@ -315,7 +315,6 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     }
 
     Scaffold(
-        containerColor = noteContainerColor, // 🆕 v2.5.0: tint body by note colour
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -532,7 +531,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = noteContainerColor // 🆕 v2.5.0
+                    containerColor = MaterialTheme.colorScheme.surface // 🆕 v2.5.0: neutral bar; accent shown as stripe below
                 )
             )
         },
@@ -542,11 +541,22 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .wrapContentWidth(align = Alignment.CenterHorizontally) // 🆕 v1.10.0-P2: Center on tablets
-                .widthIn(max = 720.dp) // 🆕 v1.10.0-P2: Constrain width for readability
-                .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
-                .padding(16.dp)
         ) {
+            // 🆕 v2.5.0: 3 dp accent stripe — full width, outside content padding
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(noteAccentColor ?: Color.Transparent)
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .wrapContentWidth(align = Alignment.CenterHorizontally) // 🆕 v1.10.0-P2: Center on tablets
+                    .widthIn(max = 720.dp) // 🆕 v1.10.0-P2: Constrain width for readability
+                    .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
+                    .padding(16.dp)
+            ) {
             // Title Input (for both types)
             OutlinedTextField(
                 value = uiState.title,
@@ -660,6 +670,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                             .weight(1f)
                     )
                 }
+            }
             }
         }
     }
