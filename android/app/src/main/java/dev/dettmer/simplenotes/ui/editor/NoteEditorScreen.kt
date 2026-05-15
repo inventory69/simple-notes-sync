@@ -102,6 +102,7 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.utils.Constants
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -127,6 +128,14 @@ private const val CHECKING_ITEM_Z_INDEX = 5f
 // Wird vom LaunchedEffect in DraggableChecklistItem genutzt, um isCheckAnimating
 // zurückzusetzen (deterministischer Reset statt finishedListener-Race).
 private const val CHECK_ANIMATION_TOTAL_MS = 500L
+// 🔧 v2.5.x: Maximale Wartezeit, bis das initiale LazyColumn-Layout als „stabil"
+// gilt. Sicherheitsnetz für den Settle-LaunchedEffect in ChecklistEditor: falls externe
+// Effekte (Text-Messung, dynamische Höhen, Sync-Updates) die Liste länger als diese
+// Schwelle in Bewegung halten, wird das Placement-Animation-Gate trotzdem geöffnet,
+// damit Reorder-Animationen nach Check/Uncheck garantiert spielen.
+// 250 ms ≈ 15 Frames @ 60Hz — genug Puffer für Cold-Open auch auf langsamen
+// Geräten, kurz genug, dass User es nicht wahrnehmen.
+private const val INITIAL_LAYOUT_SETTLE_TIMEOUT_MS = 250L
 private val DRAGGING_ELEVATION_DP = 8.dp
 
 /**
@@ -740,7 +749,8 @@ private fun LazyItemScope.DraggableChecklistItem(
     onDuplicate: (String) -> Unit,         // 🆕 v2.2.0: Aktion 2
     onCopyToChecklist: (String) -> Unit,   // 🆕 v2.2.0: Aktion 3
     onFocusHandled: () -> Unit,
-    onHeightChanged: () -> Unit // 🆕 v1.8.1 (IMPL_05)
+    onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
+    placementAnimationsEnabled: Boolean // 🔧 v2.5.x: Gate gegen Open-Burst
 ) {
     // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
     // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
@@ -803,8 +813,13 @@ private fun LazyItemScope.DraggableChecklistItem(
             // Placement-Animation → Items sprangen abrupt. Da fadeInSpec/fadeOutSpec weiterhin
             // null sind, gilt die ursprüngliche Flicker-Ursache nicht. Der gedraggte Item bleibt
             // ausgenommen, weil seine Position via graphicsLayer.translationY gesteuert wird.
+            // 🔧 v2.5.x: Zusätzliches Gate `placementAnimationsEnabled` verhindert, dass
+            // Modifier.animateItem zwischen den ersten Layout-Pässen nach Open der Checkliste
+            // die Offset-Diffs animiert (Symptom: Items „schieben sich rein"). Sobald das
+            // initiale Layout stabil ist, ist das Gate offen — alle Check/Uncheck-Reorder-
+            // Animationen aus Commit 7156c12 spielen unverändert.
             .then(
-                if (!isDragging) {
+                if (!isDragging && placementAnimationsEnabled) {
                     Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
                 } else {
                     Modifier
@@ -865,6 +880,39 @@ private fun ChecklistEditor(
         scope = scope,
         onMove = onMove
     )
+
+    // 🔧 v2.5.x: Gate für LazyColumn-Placement-Animationen (Modifier.animateItem).
+    // Beim Öffnen einer Checkliste durchläuft die LazyColumn mehrere Layout-Pässe
+    // (Text-Messung im OutlinedTextField, dynamische Höhen via onHeightChanged,
+    // LazyLayoutCacheWindow-Vorbau). Wenn animateItem in diesem Fenster aktiv ist,
+    // animiert LazyListItemAnimator die Offset-Diffs zwischen den Pässen → Items
+    // „schieben sich rein". Dieses Gate hält animateItem deaktiviert, bis das
+    // Initial-Layout zwei aufeinanderfolgende Frames lang unverändert geblieben
+    // ist (oder INITIAL_LAYOUT_SETTLE_TIMEOUT_MS abgelaufen ist). Nach Aktivierung
+    // bleibt das Gate für die Lebenszeit des Screens offen — alle späteren Reorder
+    // (Check/Uncheck — siehe Commit 7156c12) animieren wie vorgesehen.
+    // Userinteraktionen (Tap, Drag) erfolgen lange nach dem Settle → kein Konflikt
+    // mit der Check-Tap-Animation aus dem Commit.
+    var placementAnimationsEnabled by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val deadline = withFrameNanos { it } + INITIAL_LAYOUT_SETTLE_TIMEOUT_MS * 1_000_000L
+        var previousSnapshot: List<Pair<Any, Int>> = emptyList()
+        var stableFrames = 0
+        var settled = false
+        while (!settled) {
+            val now = withFrameNanos { it }
+            val current = listState.layoutInfo.visibleItemsInfo.map { it.key to it.offset }
+            if (current.isNotEmpty() && current == previousSnapshot) {
+                stableFrames++
+                if (stableFrames >= 2) settled = true
+            } else {
+                stableFrames = 0
+            }
+            previousSnapshot = current
+            if (now >= deadline) settled = true
+        }
+        placementAnimationsEnabled = true
+    }
 
     // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
     var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
@@ -1072,7 +1120,8 @@ private fun ChecklistEditor(
                         onDuplicate = onDuplicate,               // 🆕 v2.2.0
                         onCopyToChecklist = onCopyToChecklist,   // 🆕 v2.2.0
                         onFocusHandled = onFocusHandled,
-                        onHeightChanged = { scrollToItemIndex = visualIndex }
+                        onHeightChanged = { scrollToItemIndex = visualIndex },
+                        placementAnimationsEnabled = placementAnimationsEnabled,
                     )
                 }
             }
