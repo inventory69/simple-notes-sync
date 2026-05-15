@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
+import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
@@ -20,6 +21,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -481,6 +483,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 selectedIds.forEach { noteId -> finalizeDeletion(noteId) }
             }
+        }
+    }
+
+    /**
+     * 🆕 v2.5.0 (Issue #65): Set background colour for all currently selected notes.
+     * Saves each note with the new colour and clears the selection afterwards.
+     */
+    fun setColorForSelected(hex: String?) {
+        val ids = _selectedNotes.value.toList()
+        if (ids.isEmpty()) return
+
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                _notes.value
+                    .filter { it.id in ids }
+                    .forEach { note ->
+                        storage.saveNote(
+                            note.copy(
+                                color = hex,
+                                updatedAt = System.currentTimeMillis(),
+                                syncStatus = SyncStatus.PENDING,
+                            )
+                        )
+                    }
+            }
+            clearSelection()
+            loadNotes()
+            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
         }
     }
 
