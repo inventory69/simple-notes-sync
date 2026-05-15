@@ -472,18 +472,26 @@ fun ChecklistItemRow(
 
             // 🆕 v1.8.0: Dynamischer Gradient basierend auf Scroll-Position
             // IMPL_29d: animateFloatAsState für sanften Fade-Effekt (~200ms)
+            // 🆕 v2.5.1: Cross-fade mit Glow-Animation — der surface-farbige OverflowGradient
+            // liegt im Draw-Stack vor dem drawBehind-Radial-Glow und würde diesen im
+            // Textbereich visuell verdecken (surfaceColor ≈ opaker Hintergrund).
+            // (1f - glowAlpha) blendet den Gradient aus, während der Glow aktiv ist,
+            // und lässt ihn nach dem Abklingen sanft zurückkehren.
+            val effectiveTopAlpha    = topGradientAlpha    * (1f - glowAlpha)
+            val effectiveBottomAlpha = bottomGradientAlpha * (1f - glowAlpha)
+
             // Oben: sichtbar wenn nach unten gescrollt (Text oberhalb versteckt)
-            if (topGradientAlpha > 0f) {
+            if (effectiveTopAlpha > 0f) {
                 OverflowGradient(
-                    modifier = Modifier.align(Alignment.TopCenter).alpha(topGradientAlpha),
+                    modifier = Modifier.align(Alignment.TopCenter).alpha(effectiveTopAlpha),
                     isTopGradient = true
                 )
             }
 
             // Unten: sichtbar wenn noch Text unterhalb vorhanden
-            if (bottomGradientAlpha > 0f) {
+            if (effectiveBottomAlpha > 0f) {
                 OverflowGradient(
-                    modifier = Modifier.align(Alignment.BottomCenter).alpha(bottomGradientAlpha),
+                    modifier = Modifier.align(Alignment.BottomCenter).alpha(effectiveBottomAlpha),
                     isTopGradient = false
                 )
             }
