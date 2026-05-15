@@ -1,10 +1,9 @@
-✨ v2.5.0 — Google-Keep-Import
+🎉 v2.5.0 — erstes Play-Store-Production-Release!
 
-• Notizen aus einer Google-Keep- / Takeout-ZIP direkt am Gerät importieren
-• Vorab-Übersicht: aktiv / archiviert / Papierkorb vor Bestätigung
-• Konflikt-Strategie: neu erstellen, überspringen oder per Hash ersetzen
-• Eingerückte Checklisten (bis 3 Ebenen), Labels, Farbe & Pin bleiben erhalten
-• Abbrechbar; Teil-Importe erhalten; Auto-Sync am Ende
-• Neues Feld ChecklistItem.indentationLevel — DnD unverändert
+• Google-Keep-Import: Notizen aus Keep- / Takeout-.zip direkt am Gerät laden
+• Notizfarben: 12-Farben-Palette, im Editor & per Mehrfachauswahl
+• Konflikt-Strategie (neu / überspringen / ersetzen) jetzt auch für lokale & WebDAV-Importe
+• Alle auswählen / Auswahl aufheben bei WebDAV-Scan-Ergebnissen
+• Neue Checklisten-Tap-Animation: Scale-Pop, Glow & animiertes Abhaken
 
-Danke an alle, die frühe Keep-Exporte getestet haben!
+Danke an @simianaya (#65) und alle Beta-Tester!

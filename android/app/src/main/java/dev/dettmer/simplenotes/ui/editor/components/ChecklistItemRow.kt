@@ -472,7 +472,7 @@ fun ChecklistItemRow(
 
             // 🆕 v1.8.0: Dynamischer Gradient basierend auf Scroll-Position
             // IMPL_29d: animateFloatAsState für sanften Fade-Effekt (~200ms)
-            // 🆕 v2.5.1: Cross-fade mit Glow-Animation — der surface-farbige OverflowGradient
+            // 🆕 v2.5.0: Cross-fade mit Glow-Animation — der surface-farbige OverflowGradient
             // liegt im Draw-Stack vor dem drawBehind-Radial-Glow und würde diesen im
             // Textbereich visuell verdecken (surfaceColor ≈ opaker Hintergrund).
             // (1f - glowAlpha) blendet den Gradient aus, während der Glow aktiv ist,

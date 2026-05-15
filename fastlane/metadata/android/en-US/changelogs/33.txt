@@ -1,10 +1,9 @@
-✨ v2.5.0 — Google Keep import
+🎉 v2.5.0 — first Play Store production release!
 
-• Import notes from a Google Keep / Takeout .zip directly on-device
-• Pre-scan summary: active / archived / trashed counts before you confirm
-• Conflict strategy per run: always create, skip, or replace by content hash
-• Indented checklists (up to 3 levels), labels, color & pin preserved
-• Cancellable; partial imports are kept; one auto-sync at the end
-• New ChecklistItem.indentationLevel field — DnD unchanged
+• Google Keep import: load notes from a Keep / Takeout .zip on-device
+• Note colours: pick from a 12-colour palette, in editor & multi-select
+• Conflict strategy (create / skip / replace) now also for local & WebDAV imports
+• Select all / deselect all in WebDAV scan results
+• New checklist tap animation: scale-pop, glow & satisfying check-off effect
 
-Thanks to everyone who tested early Keep exports!
+Thanks to @simianaya (#65) and to all beta testers!
