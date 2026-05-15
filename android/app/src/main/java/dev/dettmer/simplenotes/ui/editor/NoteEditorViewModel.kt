@@ -1050,6 +1050,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     val existingItems = currentNote.checklistItems.orEmpty()
                     val existingTitle = currentNote.title
                     val noContentChange = existingTitle == title &&
+                        currentNote.color == state.color && // 🆕 v2.5.x Fix: colour change must not be blocked by guard
                         existingItems.size == validItems.size &&
                         existingItems.zip(validItems).all { (old, new) ->
                             old.id == new.id &&
