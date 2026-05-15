@@ -607,7 +607,7 @@
     <string name="keep_import_config_conflict_replace">Ersetzen</string>
     <string name="keep_import_config_info_labels">ℹ️ Etiketten aus Keep werden gespeichert. Sie werden in einer zukünftigen Version als Tags sichtbar.</string>
     <string name="keep_import_config_info_attachments">🖼️ Bilder/Anhänge werden in dieser Version nicht importiert. Wenn die App später Bildunterstützung erhält, kannst du den Import erneut durchführen, um die Bilder nachzuladen.</string>
-    <string name="keep_import_config_info_color_pin">🎨 Farben und Anheftungen werden gespeichert, aber erst in einer zukünftigen Version sichtbar.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Notizfarben werden direkt mitimportiert und angezeigt. Anheftungen werden gespeichert, aber erst in einer zukünftigen Version sichtbar.</string>
     <string name="keep_import_config_button_start">Import starten</string>
     <string name="keep_import_config_button_cancel">Abbrechen</string>
 
@@ -637,7 +637,7 @@
     <string name="keep_import_result_attachments_dropped">🖼️ %1$d Notizen hatten Anhänge — nicht importiert (du kannst den Import wiederholen, sobald Bildunterstützung verfügbar ist).</string>
     <string name="keep_import_result_labels">🏷️ %1$d Etiketten gespeichert</string>
     <string name="keep_import_result_shared">👥 %1$d davon aus geteilten Listen (Kollaborationen)</string>
-    <string name="keep_import_result_color">🎨 %1$d mit Farbe gespeichert (in zukünftiger Version sichtbar)</string>
+    <string name="keep_import_result_color">🎨 %1$d mit Farbe importiert</string>
     <string name="keep_import_result_pinned">📌 %1$d als angeheftet gespeichert (in zukünftiger Version sichtbar)</string>
     <string name="keep_import_result_show_errors">Details anzeigen</string>
     <string name="keep_import_result_hide_errors">Details ausblenden</string>

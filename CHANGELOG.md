@@ -8,22 +8,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.5.0] - 2026-05-11
+## [2.5.0] - 2026-05-15
+
+> 🎉 **First Google Play production release!** After several rounds of beta testing, v2.5.0 is the first build promoted to the Play Store production track. A huge thank you to everyone who installed early builds, reported issues and helped us shake out the rough edges.
 
 ### ✨ New Features
 
-**Google Keep Import**
+**Google Keep Import** ([#65](https://github.com/inventory69/simple-notes-sync/issues/65))
 - Import notes directly from a Google Keep / Google Takeout `.zip` archive — fully on-device, no upload
 - Pre-scan classifies the archive (active / archived / trashed / labels / shared / total size) before you confirm
 - Per-run **conflict strategy**: *always create* (default), *skip if exists*, or *replace if exists* — matched by content hash (title + body + checklist items)
 - Optional **archived** and **trashed** include switches
-- Indented checklists preserved up to 3 levels (new `ChecklistItem.indentationLevel` field, default `0` — DnD behaviour verified unchanged)
-- Keep `color` and `isPinned` persisted in the note model (rendering follows in a later release)
+- Indented checklists preserved up to 3 levels (DnD behaviour unchanged)
+- Keep `color` is imported and applied immediately (see *Note Colours* below); `isPinned` is persisted in the note model (rendering follows in a later release)
 - Labels persisted in a separate `notes_labels.json` index
 - Cancellable mid-import; already-imported notes are kept; result dialog shows imported / replaced / skipped / errors with an expandable error list
 - Confirmation step for archives larger than 200 MB
 - Single auto-sync triggered at the end (only when ≥ 1 note was imported or replaced; respects existing on-save sync gate, throttle, and offline-mode settings)
 - Find it under **Settings → Import → Import from Google Keep**
+- Thanks to [@simianaya](https://github.com/simianaya) for the feature request!
+
+**Note Colours** ([#65](https://github.com/inventory69/simple-notes-sync/issues/65))
+- New colour palette (None, Red, Orange, Yellow, Green, Teal, Blue, Dark blue, Purple, Pink, Brown, Gray) with separate light/dark slots so colours stay readable in both themes ([4465615](https://github.com/inventory69/simple-notes-sync/commit/4465615))
+- Note cards on the home screen are tinted by the chosen colour ([7ced207](https://github.com/inventory69/simple-notes-sync/commit/7ced207))
+- New colour picker bottom sheet ([cd0361e](https://github.com/inventory69/simple-notes-sync/commit/cd0361e))
+- Set a note's colour from the editor's overflow menu ([b244db9](https://github.com/inventory69/simple-notes-sync/commit/b244db9))
+- Bulk-set the colour for multiple selected notes from the home screen ([7341462](https://github.com/inventory69/simple-notes-sync/commit/7341462))
+- In the editor, the colour is rendered as a subtle 3 dp accent stripe instead of a full-screen tint, so reading stays comfortable ([bd5c943](https://github.com/inventory69/simple-notes-sync/commit/bd5c943))
+- Colours from Google Keep imports are mapped to this palette automatically
+- Thanks to [@simianaya](https://github.com/simianaya) for the feature request!
+
+**Conflict Strategy for Local & WebDAV Imports**
+- The conflict strategy that already shipped with the Keep import is now also available for the **local file import** ([3a3d55c](https://github.com/inventory69/simple-notes-sync/commit/3a3d55c)) and the **WebDAV scan import** ([d369536](https://github.com/inventory69/simple-notes-sync/commit/d369536))
+- Choose per import run whether to *always create*, *skip*, or *replace* matching notes — same content-hash comparison as the Keep import, so behaviour is consistent across all three sources
+- Local file import button now uses the standard `SettingsButton` for visual consistency ([75f4dbd](https://github.com/inventory69/simple-notes-sync/commit/75f4dbd))
+
+**Select All / Deselect All for WebDAV Import** ([d928ddb](https://github.com/inventory69/simple-notes-sync/commit/d928ddb))
+- After scanning a WebDAV folder, a single toggle lets you tick or untick every result at once
+- Saves a lot of tapping when restoring large note sets
+
+### ✨ Improvements
+
+**Checklist Tap Animation**
+- Ticking a checklist item now plays a brand-new animation: a brief scale-pop on the row, a soft radial glow and a satisfying check-off effect ([7156c12](https://github.com/inventory69/simple-notes-sync/commit/7156c12), [2551d21](https://github.com/inventory69/simple-notes-sync/commit/2551d21))
+- The first item no longer "jumps" when the editor opens — the placement animation is suppressed on initial render ([2515874](https://github.com/inventory69/simple-notes-sync/commit/2515874))
+- The list keeps its scroll position correctly when items move between the unchecked and checked branches ([9792968](https://github.com/inventory69/simple-notes-sync/commit/9792968))
+
+### 🐛 Bug Fixes
+
+- **Imports always assign `SyncStatus.PENDING`** ([51ea959](https://github.com/inventory69/simple-notes-sync/commit/51ea959)) — imported notes are now reliably picked up by the next sync run, regardless of the import source
+- **Editor autosave includes colour changes** ([a0a34b9](https://github.com/inventory69/simple-notes-sync/commit/a0a34b9)) — switching a note's colour from the editor no longer gets discarded by the no-change guard
 
 ### ♻️ Internal
 
@@ -37,7 +71,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🙏 Acknowledgements
 
-Thanks to everyone who tested early Google Keep exports and reported edge cases!
+- [@simianaya](https://github.com/simianaya) — for requesting Google Keep import and note colours ([#65](https://github.com/inventory69/simple-notes-sync/issues/65))
+- Everyone who tested early Google Keep exports and reported edge cases
+- All beta testers who helped us reach the **first Play Store production release** — thank you! 🎉
 
 ---
 

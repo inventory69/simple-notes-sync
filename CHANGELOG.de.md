@@ -8,22 +8,56 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.5.0] - 2026-05-11
+## [2.5.0] - 2026-05-15
+
+> 🎉 **Erstes Google-Play-Production-Release!** Nach mehreren Beta-Runden ist v2.5.0 der erste Build, der in den Production-Track im Play Store wandert. Riesiges Dankeschön an alle, die frühe Builds installiert, Probleme gemeldet und uns geholfen haben, die letzten Ecken auszubügeln.
 
 ### ✨ Neue Features
 
-**Google-Keep-Import**
+**Google-Keep-Import** ([#65](https://github.com/inventory69/simple-notes-sync/issues/65))
 - Notizen direkt aus einer Google-Keep- / Google-Takeout-`.zip` importieren — komplett auf dem Gerät, kein Upload
 - Vorab-Analyse klassifiziert das Archiv (aktiv / archiviert / Papierkorb / Labels / geteilt / Gesamtgröße), bevor du bestätigst
 - **Konflikt-Strategie** pro Lauf: *immer neu erstellen* (Standard), *überspringen, falls vorhanden* oder *ersetzen, falls vorhanden* — Vergleich per Inhalts-Hash (Titel + Body + Checklisten-Items)
 - Optionale Schalter für **archivierte** und **Papierkorb**-Notizen
-- Eingerückte Checklisten bis 3 Ebenen erhalten (neues Feld `ChecklistItem.indentationLevel`, Default `0` — DnD-Verhalten verifiziert unverändert)
-- Keep-`color` und `isPinned` werden im Notiz-Modell gespeichert (Anzeige folgt in einem späteren Release)
+- Eingerückte Checklisten bis 3 Ebenen erhalten (DnD-Verhalten unverändert)
+- Keep-`color` wird mitimportiert und sofort angezeigt (siehe *Notizfarben* unten); `isPinned` wird im Notiz-Modell gespeichert (Anzeige folgt in einem späteren Release)
 - Labels werden in einer separaten `notes_labels.json`-Indexdatei gespeichert
 - Abbrechbar während des Imports; bereits importierte Notizen bleiben erhalten; Ergebnis-Dialog zeigt importiert / ersetzt / übersprungen / Fehler mit ausklappbarer Fehlerliste
 - Bestätigungs-Schritt bei Archiven über 200 MB
 - Einmaliger Auto-Sync am Ende (nur wenn ≥ 1 Notiz importiert oder ersetzt wurde; respektiert vorhandenes Sync-beim-Speichern-Gate, Throttle und Offline-Modus)
 - Zu finden unter **Einstellungen → Import → Google Keep importieren**
+- Danke an [@simianaya](https://github.com/simianaya) für den Feature-Wunsch!
+
+**Notizfarben** ([#65](https://github.com/inventory69/simple-notes-sync/issues/65))
+- Neue Farbpalette (Keine, Rot, Orange, Gelb, Grün, Blaugrün, Blau, Dunkelblau, Lila, Rosa, Braun, Grau) mit getrennten Light-/Dark-Slots, damit Farben in beiden Themes lesbar bleiben ([4465615](https://github.com/inventory69/simple-notes-sync/commit/4465615))
+- Notizkarten auf dem Startbildschirm werden in der gewählten Farbe eingefärbt ([7ced207](https://github.com/inventory69/simple-notes-sync/commit/7ced207))
+- Neuer Farbwähler als Bottom-Sheet ([cd0361e](https://github.com/inventory69/simple-notes-sync/commit/cd0361e))
+- Farbe einer Notiz im Editor über das Overflow-Menü setzen ([b244db9](https://github.com/inventory69/simple-notes-sync/commit/b244db9))
+- Mehrfachauswahl auf dem Startbildschirm: Farbe für mehrere Notizen gleichzeitig setzen ([7341462](https://github.com/inventory69/simple-notes-sync/commit/7341462))
+- Im Editor wird die Farbe als dezenter 3-dp-Akzentstreifen statt als ganzflächige Tönung dargestellt — angenehm zu lesen ([bd5c943](https://github.com/inventory69/simple-notes-sync/commit/bd5c943))
+- Farben aus Google-Keep-Importen werden automatisch auf diese Palette gemappt
+- Danke an [@simianaya](https://github.com/simianaya) für den Feature-Wunsch!
+
+**Konflikt-Strategie für lokale & WebDAV-Importe**
+- Die Konflikt-Strategie, die bereits beim Keep-Import bestand, gibt es jetzt auch für den **lokalen Datei-Import** ([3a3d55c](https://github.com/inventory69/simple-notes-sync/commit/3a3d55c)) und den **WebDAV-Scan-Import** ([d369536](https://github.com/inventory69/simple-notes-sync/commit/d369536))
+- Pro Import-Lauf wählbar: *immer neu erstellen*, *überspringen* oder *ersetzen* — gleicher Inhalts-Hash-Vergleich wie beim Keep-Import, damit alle drei Quellen konsistent funktionieren
+- Der Button für den lokalen Datei-Import nutzt jetzt den Standard-`SettingsButton` für ein einheitliches Erscheinungsbild ([75f4dbd](https://github.com/inventory69/simple-notes-sync/commit/75f4dbd))
+
+**Alle auswählen / Auswahl aufheben beim WebDAV-Import** ([d928ddb](https://github.com/inventory69/simple-notes-sync/commit/d928ddb))
+- Nach dem Scan eines WebDAV-Ordners kannst du mit einem einzigen Toggle alle Ergebnisse auf einmal an- oder abwählen
+- Spart bei großen Notizsammlungen viel Tippen
+
+### ✨ Verbesserungen
+
+**Checklisten-Tap-Animation**
+- Beim Abhaken eines Checklisten-Eintrags läuft jetzt eine brandneue Animation: kurzer Scale-Pop auf der Zeile, sanftes Radial-Glow und ein animiertes Abhaken ([7156c12](https://github.com/inventory69/simple-notes-sync/commit/7156c12), [2551d21](https://github.com/inventory69/simple-notes-sync/commit/2551d21))
+- Der erste Eintrag „springt" beim Öffnen des Editors nicht mehr — die Placement-Animation wird beim ersten Render unterdrückt ([2515874](https://github.com/inventory69/simple-notes-sync/commit/2515874))
+- Die Liste behält ihre Scroll-Position korrekt bei, wenn Einträge zwischen dem unchecked- und checked-Zweig wechseln ([9792968](https://github.com/inventory69/simple-notes-sync/commit/9792968))
+
+### 🐛 Fehlerbehebungen
+
+- **Importierte Notizen bekommen immer `SyncStatus.PENDING`** ([51ea959](https://github.com/inventory69/simple-notes-sync/commit/51ea959)) — importierte Notizen werden jetzt zuverlässig vom nächsten Sync-Lauf erfasst, egal aus welcher Quelle sie kommen
+- **Editor-Autosave berücksichtigt Farbänderungen** ([a0a34b9](https://github.com/inventory69/simple-notes-sync/commit/a0a34b9)) — eine im Editor geänderte Notizfarbe wird nicht mehr vom No-Change-Guard verworfen
 
 ### ♻️ Intern
 
@@ -37,7 +71,9 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🙏 Danksagungen
 
-Danke an alle, die frühe Google-Keep-Exporte getestet und Sonderfälle gemeldet haben!
+- [@simianaya](https://github.com/simianaya) — für den Wunsch nach Google-Keep-Import und Notizfarben ([#65](https://github.com/inventory69/simple-notes-sync/issues/65))
+- Alle, die frühe Google-Keep-Exporte getestet und Sonderfälle gemeldet haben
+- Alle Beta-Tester, die uns zum **ersten Play-Store-Production-Release** geholfen haben — danke! 🎉
 
 ---
 

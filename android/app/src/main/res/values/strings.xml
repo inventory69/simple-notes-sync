@@ -661,7 +661,7 @@
     <string name="keep_import_config_conflict_replace">Replace existing</string>
     <string name="keep_import_config_info_labels">ℹ️ Keep labels are stored. They will appear as tags in a future version.</string>
     <string name="keep_import_config_info_attachments">🖼️ Images/attachments are not imported in this version. When the app gains image support later, you can re-run the import to load them.</string>
-    <string name="keep_import_config_info_color_pin">🎨 Colours and pin states are stored, but only become visible in a future version.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Note colours are imported and shown right away. Pin states are stored, but only become visible in a future version.</string>
     <string name="keep_import_config_button_start">Start import</string>
     <string name="keep_import_config_button_cancel">Cancel</string>
 
@@ -691,7 +691,7 @@
     <string name="keep_import_result_attachments_dropped">🖼️ %1$d notes had attachments — not imported (you can re-run the import once image support is added).</string>
     <string name="keep_import_result_labels">🏷️ %1$d labels stored</string>
     <string name="keep_import_result_shared">👥 %1$d of those from shared lists (collaborations)</string>
-    <string name="keep_import_result_color">🎨 %1$d with colour stored (visible in a future version)</string>
+    <string name="keep_import_result_color">🎨 %1$d with colour imported</string>
     <string name="keep_import_result_pinned">📌 %1$d marked as pinned (visible in a future version)</string>
     <string name="keep_import_result_show_errors">Show details</string>
     <string name="keep_import_result_hide_errors">Hide details</string>
