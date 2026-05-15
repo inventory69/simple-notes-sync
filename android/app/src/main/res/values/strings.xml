@@ -775,4 +775,22 @@
     <string name="checklist_copy_to_checklist_item_count">%d items</string>
     <string name="checklist_item_copied_toast">Item copied to checklist</string>
 
+    <!-- ============================= -->
+    <!-- NOTE COLOR v2.5.0 (Issue #65) -->
+    <!-- ============================= -->
+    <string name="action_set_note_color">Note color</string>
+    <string name="cd_note_color_swatch">Note color: %s</string>
+    <string name="note_color_none">None</string>
+    <string name="note_color_red">Red</string>
+    <string name="note_color_orange">Orange</string>
+    <string name="note_color_yellow">Yellow</string>
+    <string name="note_color_green">Green</string>
+    <string name="note_color_teal">Teal</string>
+    <string name="note_color_blue">Blue</string>
+    <string name="note_color_dark_blue">Dark blue</string>
+    <string name="note_color_purple">Purple</string>
+    <string name="note_color_pink">Pink</string>
+    <string name="note_color_brown">Brown</string>
+    <string name="note_color_gray">Gray</string>
+
 </resources>

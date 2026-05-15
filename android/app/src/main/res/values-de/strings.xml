@@ -713,4 +713,22 @@
     <string name="checklist_copy_to_checklist_untitled">Unbenannte Checkliste</string>
     <string name="checklist_copy_to_checklist_item_count">%d Einträge</string>
     <string name="checklist_item_copied_toast">Eintrag in Checkliste kopiert</string>
+
+    <!-- ============================= -->
+    <!-- NOTIZFARBE v2.5.0 (Issue #65) -->
+    <!-- ============================= -->
+    <string name="action_set_note_color">Notizfarbe</string>
+    <string name="cd_note_color_swatch">Notizfarbe: %s</string>
+    <string name="note_color_none">Keine</string>
+    <string name="note_color_red">Rot</string>
+    <string name="note_color_orange">Orange</string>
+    <string name="note_color_yellow">Gelb</string>
+    <string name="note_color_green">Grün</string>
+    <string name="note_color_teal">Blaugrün</string>
+    <string name="note_color_blue">Blau</string>
+    <string name="note_color_dark_blue">Dunkelblau</string>
+    <string name="note_color_purple">Lila</string>
+    <string name="note_color_pink">Rosa</string>
+    <string name="note_color_brown">Braun</string>
+    <string name="note_color_gray">Grau</string>
 </resources>
