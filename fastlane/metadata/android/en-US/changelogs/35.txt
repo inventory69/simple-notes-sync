@@ -1,0 +1,11 @@
+🎉 v2.5.1 — first Play Store production release!
+
+v2.5.0 was prepared as the first production build but never published.
+v2.5.1 completes note colours with sorting and is the version reaching production.
+
+• Sort notes by colour — new in v2.5.1
+• Note colours: 12-colour palette, in editor & multi-select
+• Filter notes by colour
+• Google Keep import from a Keep / Takeout .zip
+• Checklist tap animation
+• APK −11%: smaller download (5.2 → 4.7 MB)

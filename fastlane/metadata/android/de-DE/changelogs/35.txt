@@ -1,0 +1,11 @@
+🎉 v2.5.1 — erstes Play-Store-Production-Release!
+
+v2.5.0 war als initialer Production-Build vorbereitet, aber nie veröffentlicht.
+v2.5.1 vervollständigt Notizfarben mit Sortierung und ist die Version, die in Production geht.
+
+• Notizen nach Farbe sortieren — neu in v2.5.1
+• Notizfarben: 12-Farben-Palette, Editor & Mehrfachauswahl
+• Notizen nach Farbe filtern
+• Google-Keep-Import aus einer .zip
+• Checklisten-Animation
+• APK −11%: kleinere Downloads (5,2 → 4,7 MB)
