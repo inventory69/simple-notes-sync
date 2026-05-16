@@ -68,13 +68,13 @@ jobs:
       - name: Calculate rollout fraction (production only)
         id: rollout
         run: |
-          if [ "${{ inputs.track }}" = "production" ]; then
+          if [ "${{ inputs.track }}" = "production" ] && [ "${{ inputs.rollout_percentage }}" -lt 100 ]; then
             FRACTION=$(echo "scale=4; ${{ inputs.rollout_percentage }} / 100" | bc)
             echo "USER_FRACTION=$FRACTION" >> $GITHUB_OUTPUT
-            echo "Production rollout: ${{ inputs.rollout_percentage }}% → fraction $FRACTION"
+            echo "Production staged rollout: ${{ inputs.rollout_percentage }}% → fraction $FRACTION"
           else
             echo "USER_FRACTION=" >> $GITHUB_OUTPUT
-            echo "Non-production track: no rollout fraction"
+            echo "Full rollout or non-production track: no userFraction"
           fi
 
       - name: Configure Android signing
