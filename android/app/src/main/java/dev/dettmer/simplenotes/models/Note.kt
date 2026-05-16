@@ -29,7 +29,18 @@ data class Note(
     val noteType: NoteType = NoteType.TEXT,
     val checklistItems: List<ChecklistItem>? = null,
     // 🆕 v1.8.1 (IMPL_03): Persistierte Sortierung
-    val checklistSortOption: String? = null
+    val checklistSortOption: String? = null,
+    // 🆕 v2.5.0: Google-Keep-Import-Marker (ms epoch). null = nicht aus Keep importiert.
+    val importedAt: Long? = null,
+    // 🆕 v2.5.0: Vorbereitung Tag-Feature (v2.6.x). null = keine Tags. Pro Notiz persistiert,
+    // zusätzlich aggregiert in `notes_labels.json` (siehe Commit #9 LabelStore).
+    val labels: List<String>? = null,
+    // 🆕 v2.5.0: Vorbereitung v2.6.0 Color-Feature. Hex-Format `#RRGGBB`. null = Standardfarbe.
+    // UI-Inertheit v2.5.0: nur persistiert, NICHT gerendert (siehe Analyseplan §2.4.1).
+    val color: String? = null,
+    // 🆕 v2.5.0: Vorbereitung v2.6.0 Pin-Feature. null = nicht angepinnt.
+    // UI-Inertheit v2.5.0: nur persistiert, NICHT gerendert (siehe Analyseplan §2.4.1).
+    val isPinned: Boolean? = null
 ) {
     /**
      * Serialisiert Note zu JSON
@@ -101,13 +112,22 @@ data class Note(
             ""
         }
 
+        // 🆕 v2.5.0: optionale YAML-Felder. Nur schreiben wenn != null.
+        // Ältere App-Versionen (<v2.5.0) ignorieren unbekannte YAML-Keys (siehe fromMarkdown Z. 312-320).
+        val importedLine = importedAt?.let { "\nimported: $it" }.orEmpty()
+        val labelsLine = labels?.takeIf { it.isNotEmpty() }
+            ?.joinToString(prefix = "\nlabels: [", separator = ", ", postfix = "]")
+            .orEmpty()
+        val colorLine = color?.let { "\ncolor: \"$it\"" }.orEmpty()
+        val pinnedLine = isPinned?.let { "\npinned: $it" }.orEmpty()
+
         val header = """
 ---
 id: $id
 created: ${formatISO8601(createdAt)}
 updated: ${formatISO8601(updatedAt)}
 device: $deviceId
-type: ${noteType.name.lowercase()}$sortLine
+type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pinnedLine
 ---
 
 # $title
@@ -238,7 +258,12 @@ type: ${noteType.name.lowercase()}$sortLine
                     syncStatus = rawNote.syncStatus ?: SyncStatus.LOCAL_ONLY,
                     noteType = noteType,
                     checklistItems = checklistItems,
-                    checklistSortOption = checklistSortOption // 🆕 v1.8.1 (IMPL_03)
+                    checklistSortOption = checklistSortOption, // 🆕 v1.8.1 (IMPL_03)
+                    // 🆕 v2.5.0 — direkt aus rawNote (Gson-Reflection füllt sie)
+                    importedAt = rawNote.importedAt,
+                    labels = rawNote.labels,
+                    color = rawNote.color,
+                    isPinned = rawNote.isPinned
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -256,7 +281,12 @@ type: ${noteType.name.lowercase()}$sortLine
             val createdAt: Long = System.currentTimeMillis(),
             val updatedAt: Long = System.currentTimeMillis(),
             val deviceId: String = "",
-            val syncStatus: SyncStatus? = null
+            val syncStatus: SyncStatus? = null,
+            // 🆕 v2.5.0 — alle nullable: alte JSONs ohne diese Felder lesen weiter sauber
+            val importedAt: Long? = null,
+            val labels: List<String>? = null,
+            val color: String? = null,
+            val isPinned: Boolean? = null
         )
 
         /**
@@ -345,6 +375,32 @@ type: ${noteType.name.lowercase()}$sortLine
                 // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung aus YAML laden
                 val checklistSortOption = metadata["sort"]
 
+                // 🆕 v2.5.0: vier optionale Felder aus YAML laden. Alle Reads defensiv (null bei Fehler).
+                val importedAt: Long? = metadata["imported"]?.trim()?.toLongOrNull()
+                val labels: List<String>? = metadata["labels"]?.let { raw ->
+                    // Inline-Liste "[a, b, c]" parsen. Auch leere Liste oder fehlende Brackets tolerieren.
+                    val trimmed = raw.trim().removePrefix("[").removeSuffix("]").trim()
+                    if (trimmed.isEmpty()) {
+                        null
+                    } else {
+                        trimmed.split(",").map { it.trim().removeSurrounding("\"") }
+                            .filter { it.isNotEmpty() }
+                            .ifEmpty { null }
+                    }
+                }
+                val color: String? = metadata["color"]?.trim()?.removeSurrounding("\"")
+                    ?.takeIf { it.isNotEmpty() }
+                val isPinned: Boolean? = metadata["pinned"]?.trim()?.let { v ->
+                    when (v.lowercase()) {
+                        "true" -> true
+                        "false" -> false
+                        else -> {
+                            Logger.w(TAG, "Invalid 'pinned' YAML value '$v', ignoring")
+                            null
+                        }
+                    }
+                }
+
                 // v1.4.0: Parse Content basierend auf Typ
                 // FIX: Robusteres Parsing - suche nach dem Titel-Header und extrahiere den Rest
                 val titleLineIndex = contentBlock.lines().indexOfFirst { it.startsWith("# ") }
@@ -424,7 +480,12 @@ type: ${noteType.name.lowercase()}$sortLine
                     syncStatus = SyncStatus.SYNCED, // Annahme: Vom Server importiert
                     noteType = noteType,
                     checklistItems = checklistItems,
-                    checklistSortOption = checklistSortOption // 🆕 v1.8.1 (IMPL_03)
+                    checklistSortOption = checklistSortOption, // 🆕 v1.8.1 (IMPL_03)
+                    // 🆕 v2.5.0
+                    importedAt = importedAt,
+                    labels = labels,
+                    color = color,
+                    isPinned = isPinned
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse Markdown: ${e.message}")

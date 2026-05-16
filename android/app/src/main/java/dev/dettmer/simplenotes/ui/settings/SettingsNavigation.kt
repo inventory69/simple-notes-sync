@@ -165,11 +165,24 @@ fun SettingsNavHost(navController: NavHostController, viewModel: SettingsViewMod
                 )
             }
 
-            // 🆕 Issue #21: Import Notes
+            // 🆕 Issue #21: Import Notes (v2.5.0: + Keep-Import-Snackbar-Bridge)
             composable(SettingsRoute.Import.route) {
                 ImportSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onKeepImportSnackbar = { data ->
+                        scope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            val result = snackbarHostState.showSnackbar(
+                                message = data.message,
+                                actionLabel = data.actionLabel,
+                                duration = SnackbarDuration.Short,
+                            )
+                            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                data.onAction?.invoke()
+                            }
+                        }
+                    },
                 )
             }
         }

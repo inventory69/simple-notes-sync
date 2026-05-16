@@ -1,7 +1,9 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,12 +21,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.noteimport.NotesImportWizard
+import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.BackupProgressCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
@@ -47,6 +53,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsOutlinedButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.keepimport.KeepImportHost
 import kotlinx.coroutines.launch
 
 private const val BYTES_PER_KB = 1024L
@@ -61,7 +68,12 @@ private const val BYTES_PER_MB = 1024L * 1024L
  * v1.9.0: Issue #21
  */
 @Composable
-fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
+fun ImportSettingsScreen(
+    viewModel: SettingsViewModel,
+    onBack: () -> Unit,
+    // 🆕 v2.5.0: Keep-Import-Snackbar-Bridge an SettingsNavHost
+    onKeepImportSnackbar: (dev.dettmer.simplenotes.ui.main.MainViewModel.SnackbarData) -> Unit = {},
+) {
     val scope = rememberCoroutineScope()
 
     val isServerConfigured = viewModel.isServerConfigured()
@@ -73,18 +85,15 @@ fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     var importSummary by remember { mutableStateOf<NotesImportWizard.ImportSummary?>(null) }
     var showScanResults by remember { mutableStateOf(false) }
     var selectedCandidates by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var pendingLocalUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var webDavConflictStrategy by remember { mutableStateOf(ConflictStrategy.SKIP) }
 
-    // File Picker für lokalen Import (mehrere Dateien)
+    // File Picker für lokalen Import (mehrere Dateien) — zeigt nach Auswahl den Config-Dialog
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
         if (uris.isNotEmpty()) {
-            scope.launch {
-                isImporting = true
-                val summary = viewModel.importLocalFiles(uris)
-                importSummary = summary
-                isImporting = false
-            }
+            pendingLocalUris = uris
         }
     }
 
@@ -119,6 +128,10 @@ fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 showScanResults = showScanResults,
                 scanResults = scanResults,
                 selectedCandidates = selectedCandidates,
+                conflictStrategy = webDavConflictStrategy,
+                onStrategyChange = { webDavConflictStrategy = it },
+                onSelectAll = { selectedCandidates = scanResults.indices.toSet() },
+                onDeselectAll = { selectedCandidates = emptySet() },
                 onScanClick = {
                     scope.launch {
                         isScanning = true
@@ -143,7 +156,7 @@ fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                         isImporting = true
                         showScanResults = false
                         val selected = selectedCandidates.map { scanResults[it] }
-                        importSummary = viewModel.importCandidates(selected)
+                        importSummary = viewModel.importCandidates(selected, webDavConflictStrategy)
                         scanResults = emptyList()
                         isImporting = false
                     }
@@ -166,6 +179,10 @@ fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 }
             )
 
+            // 🆕 v2.5.0: Google-Keep-Import-Section
+            SettingsDivider()
+            KeepImportHost(onSnackbarEvent = onKeepImportSnackbar)
+
             importSummary?.let { summary ->
                 SettingsDivider()
                 ImportSummarySection(summary = summary)
@@ -173,6 +190,23 @@ fun ImportSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    // Config-Dialog erscheint nach Dateiauswahl (wie KeepImportConfigDialog)
+    if (pendingLocalUris.isNotEmpty()) {
+        LocalImportConfigDialog(
+            fileCount = pendingLocalUris.size,
+            onConfirm = { strategy ->
+                val uris = pendingLocalUris
+                pendingLocalUris = emptyList()
+                scope.launch {
+                    isImporting = true
+                    importSummary = viewModel.importLocalFiles(uris, strategy)
+                    isImporting = false
+                }
+            },
+            onDismiss = { pendingLocalUris = emptyList() }
+        )
     }
 }
 
@@ -185,6 +219,10 @@ private fun WebDavImportSection(
     showScanResults: Boolean,
     scanResults: List<NotesImportWizard.ImportCandidate>,
     selectedCandidates: Set<Int>,
+    conflictStrategy: ConflictStrategy,
+    onStrategyChange: (ConflictStrategy) -> Unit,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
     onScanClick: () -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
@@ -215,6 +253,10 @@ private fun WebDavImportSection(
         ScanResultsCard(
             scanResults = scanResults,
             selectedCandidates = selectedCandidates,
+            conflictStrategy = conflictStrategy,
+            onStrategyChange = onStrategyChange,
+            onSelectAll = onSelectAll,
+            onDeselectAll = onDeselectAll,
             onSelectionChange = onSelectionChange,
             onCancelScan = onCancelScan,
             onImportSelected = onImportSelected
@@ -222,10 +264,15 @@ private fun WebDavImportSection(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun ScanResultsCard(
     scanResults: List<NotesImportWizard.ImportCandidate>,
     selectedCandidates: Set<Int>,
+    conflictStrategy: ConflictStrategy,
+    onStrategyChange: (ConflictStrategy) -> Unit,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
     onSelectionChange: (Int, Boolean) -> Unit,
     onCancelScan: () -> Unit,
     onImportSelected: () -> Unit
@@ -236,11 +283,28 @@ private fun ScanResultsCard(
             .padding(horizontal = 16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.import_dialog_found, scanResults.size),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            val allSelected = selectedCandidates.size == scanResults.size
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.import_dialog_found, scanResults.size),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = if (allSelected) onDeselectAll else onSelectAll) {
+                    Text(
+                        text = if (allSelected) {
+                            stringResource(R.string.import_deselect_all)
+                        } else {
+                            stringResource(R.string.import_select_all)
+                        },
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             val density = LocalDensity.current
             val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
@@ -267,6 +331,11 @@ private fun ScanResultsCard(
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
+            ImportConflictStrategyPicker(
+                selected = conflictStrategy,
+                onSelectionChange = onStrategyChange,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 SettingsOutlinedButton(
                     text = stringResource(R.string.import_cancel),
@@ -285,17 +354,97 @@ private fun ScanResultsCard(
 }
 
 @Composable
-private fun LocalImportSection(isImporting: Boolean, onPickFiles: () -> Unit) {
+private fun LocalImportSection(
+    isImporting: Boolean,
+    onPickFiles: () -> Unit
+) {
     SettingsSectionHeader(text = stringResource(R.string.import_section_local))
     Spacer(modifier = Modifier.height(8.dp))
     SettingsInfoCard(text = stringResource(R.string.import_local_info))
     Spacer(modifier = Modifier.height(8.dp))
-    SettingsOutlinedButton(
+    SettingsButton(
         text = stringResource(R.string.settings_import_from_file),
         onClick = onPickFiles,
         enabled = !isImporting,
         modifier = Modifier.padding(horizontal = 16.dp)
     )
+}
+
+@Composable
+private fun LocalImportConfigDialog(
+    fileCount: Int,
+    onConfirm: (ConflictStrategy) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var conflictStrategy by remember { mutableStateOf(ConflictStrategy.SKIP) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_import_from_file)) },
+        text = {
+            ImportConflictStrategyPicker(
+                selected = conflictStrategy,
+                onSelectionChange = { conflictStrategy = it },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(conflictStrategy) }) {
+                Text(stringResource(R.string.import_button_import, fileCount))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.import_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ImportConflictStrategyPicker(
+    selected: ConflictStrategy,
+    onSelectionChange: (ConflictStrategy) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.import_conflict_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        ConflictRadioRow(
+            label = stringResource(R.string.import_conflict_skip),
+            selected = selected == ConflictStrategy.SKIP,
+            onClick = { onSelectionChange(ConflictStrategy.SKIP) }
+        )
+        ConflictRadioRow(
+            label = stringResource(R.string.import_conflict_always_create),
+            selected = selected == ConflictStrategy.ALWAYS_CREATE,
+            onClick = { onSelectionChange(ConflictStrategy.ALWAYS_CREATE) }
+        )
+        ConflictRadioRow(
+            label = stringResource(R.string.import_conflict_replace),
+            selected = selected == ConflictStrategy.REPLACE,
+            onClick = { onSelectionChange(ConflictStrategy.REPLACE) }
+        )
+    }
+}
+
+@Composable
+private fun ConflictRadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 2.dp)
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+    }
 }
 
 @Composable

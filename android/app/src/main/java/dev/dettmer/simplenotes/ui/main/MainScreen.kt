@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -55,6 +56,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.FilterChipRow
+import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
@@ -78,6 +80,7 @@ private const val SYNC_SCROLL_DELAY_MS = 150L
  * - Scroll-to-top on new note
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod") // 🔧 v2.5.0: color picker state + sheet push over limit
 @Composable
 fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSettings: () -> Unit, onCreateNote: (NoteType) -> Unit) {
     val notes by viewModel.sortedNotes.collectAsState()
@@ -106,6 +109,8 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
 
     // Delete confirmation dialog state
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    // 🆕 v2.5.0: Bulk color-picker dialog
+    var showBatchColorPicker by remember { mutableStateOf(false) }
 
     // 🆕 v1.8.0: Sync status legend dialog
     var showSyncLegend by remember { mutableStateOf(false) }
@@ -120,6 +125,9 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
     val noteFilter by viewModel.noteFilter.collectAsState()
     // 🆕 v1.9.0 (F10): Search query state
     val searchQuery by viewModel.searchQuery.collectAsState()
+    // 🆕 v2.5.0: Farbfilter-State
+    val colorFilter by viewModel.colorFilter.collectAsState()
+    val availableColors by viewModel.availableColors.collectAsState()
     val focusManager = LocalFocusManager.current
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -206,6 +214,7 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
                         totalCount = notes.size,
                         onCloseSelection = { viewModel.clearSelection() },
                         onSelectAll = { viewModel.selectAllNotes() },
+                        onColorClick = { showBatchColorPicker = true }, // 🆕 v2.5.0
                         onDeleteSelected = { showBatchDeleteDialog = true }
                     )
                 }
@@ -259,6 +268,9 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
                             FilterChipRow(
                                 currentFilter = noteFilter,
                                 onFilterSelected = { viewModel.setNoteFilter(it) },
+                                currentColorFilter = colorFilter,                           // 🆕 v2.5.0
+                                onColorFilterSelected = { viewModel.setColorFilter(it) },   // 🆕 v2.5.0
+                                availableColors = availableColors,                          // 🆕 v2.5.0
                                 searchQuery = searchQuery,
                                 onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                                 onSortClick = { showSortDialog = true },
@@ -362,6 +374,18 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
             }
         } // end Scaffold
 
+        // 🆕 v2.5.0: Bulk colour picker — shown as overlay above Scaffold
+        if (showBatchColorPicker) {
+            NoteColorPickerSheet(
+                currentColor = null, // no "current" for a multi-note selection
+                onColorSelected = { hex ->
+                    viewModel.setColorForSelected(hex)
+                    showBatchColorPicker = false
+                },
+                onDismiss = { showBatchColorPicker = false },
+            )
+        }
+
         // 🆕 v1.11.0: FAB als Fullscreen-Overlay ÜBER dem Scaffold — Scrim deckt Statusbar ab
         AnimatedVisibility(
             visible = !isSelectionMode,
@@ -456,6 +480,7 @@ private fun SelectionTopBar(
     totalCount: Int,
     onCloseSelection: () -> Unit,
     onSelectAll: () -> Unit,
+    onColorClick: () -> Unit,   // 🆕 v2.5.0
     onDeleteSelected: () -> Unit
 ) {
     TopAppBar(
@@ -482,6 +507,16 @@ private fun SelectionTopBar(
                         contentDescription = stringResource(R.string.action_select_all)
                     )
                 }
+            }
+            // 🆕 v2.5.0: Set colour for selected notes
+            IconButton(
+                onClick = onColorClick,
+                enabled = selectedCount > 0
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Palette,
+                    contentDescription = stringResource(R.string.action_set_note_color),
+                )
             }
             // Delete button
             IconButton(

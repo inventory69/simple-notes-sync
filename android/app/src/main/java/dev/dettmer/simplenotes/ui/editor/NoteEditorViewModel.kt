@@ -2,12 +2,9 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.app.Application
 import android.content.Context
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
@@ -15,8 +12,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
-import dev.dettmer.simplenotes.sync.SyncWorker
-import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
@@ -198,6 +194,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = note.noteType,
                     isNewNote = false,
                     isLoading = false,
+                    color = note.color, // 🆕 v2.5.0
                     toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                         ToolbarTitle.EDIT_CHECKLIST
                     } else {
@@ -451,6 +448,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         pushUndoSnapshot() // 🆕 v1.10.0
         isDirty = true // 🆕 v1.9.0: checking/unchecking is an edit
         hasUnsavedChecklistEdits = true // 🛡️ v1.8.2 (IMPL_17)
+
+        // 🆕 v2.5.0: isChecked-Update UND Sort laufen im selben State-Snapshot.
+        // Vorher (uncommitted): Sort wurde 350 ms verzögert, damit die Checkbox-Animation
+        // „Zeit zum Spielen" hatte. Folge: separatorVisualIndex (aus uncheckedCount abgeleitet)
+        // sprang sofort, Items folgten erst 350 ms später → ein Nachbar-Item rutschte
+        // visuell über/unter den Separator, obwohl er nicht angefasst wurde.
+        // Lösung: Sort sofort. Die UI-Animation (Flash + Scale-Pop in ChecklistItemRow,
+        // Placement-Spring via LazyColumn.animateItem in NoteEditorScreen) läuft parallel
+        // und überlebt die Reorder, weil der Item-Key (item.id) stabil bleibt.
         _checklistItems.update { items ->
             val updatedItems = items.map { item ->
                 if (item.id == itemId) item.copy(isChecked = isChecked) else item
@@ -806,6 +812,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         scheduleAutosave()
     }
 
+    /** 🆕 v2.5.0 (Issue #65): Set or clear the note background colour.
+     *  Triggers an immediate silent save so Process-Death cannot lose the change. */
+    fun setColor(hex: String?) {
+        if (hex == _uiState.value.color) return
+        _uiState.update { it.copy(color = hex) }
+        isDirty = true
+        viewModelScope.launch { performSave(silent = true) }
+    }
+
     fun saveNote() {
         autosaveJob?.cancel() // 🆕 v1.9.0: manual save supersedes pending autosave
         viewModelScope.launch {
@@ -871,6 +886,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         content = content,
                         noteType = NoteType.TEXT,
                         checklistItems = null,
+                        color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = SyncStatus.PENDING
                     ) ?: Note(
@@ -878,6 +894,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         content = content,
                         noteType = NoteType.TEXT,
                         checklistItems = null,
+                        color = state.color, // 🆕 v2.5.0
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
@@ -930,6 +947,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         noteType = NoteType.CHECKLIST,
                         checklistItems = validItems,
                         checklistSortOption = _lastChecklistSortOption.value.name,
+                        color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = SyncStatus.PENDING
                     ) ?: Note(
@@ -938,6 +956,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         noteType = NoteType.CHECKLIST,
                         checklistItems = validItems,
                         checklistSortOption = _lastChecklistSortOption.value.name,
+                        color = state.color, // 🆕 v2.5.0
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
@@ -985,6 +1004,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     content = content,
                     noteType = NoteType.TEXT,
                     checklistItems = null,
+                    color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = SyncStatus.PENDING
                 ) ?: Note(
@@ -992,6 +1012,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     content = content,
                     noteType = NoteType.TEXT,
                     checklistItems = null,
+                    color = state.color, // 🆕 v2.5.0
                     deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
@@ -1029,6 +1050,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     val existingItems = currentNote.checklistItems.orEmpty()
                     val existingTitle = currentNote.title
                     val noContentChange = existingTitle == title &&
+                        currentNote.color == state.color && // 🆕 v2.5.x Fix: colour change must not be blocked by guard
                         existingItems.size == validItems.size &&
                         existingItems.zip(validItems).all { (old, new) ->
                             old.id == new.id &&
@@ -1048,6 +1070,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = NoteType.CHECKLIST,
                     checklistItems = validItems,
                     checklistSortOption = _lastChecklistSortOption.value.name, // 🆕 v1.8.1 (IMPL_03)
+                    color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = SyncStatus.PENDING
                 ) ?: Note(
@@ -1056,6 +1079,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = NoteType.CHECKLIST,
                     checklistItems = validItems,
                     checklistSortOption = _lastChecklistSortOption.value.name, // 🆕 v1.8.1 (IMPL_03)
+                    color = state.color, // 🆕 v2.5.0
                     deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
@@ -1313,46 +1337,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      *
      * Separate throttling (5 seconds) to prevent spam when saving multiple times
      */
+    // v2.5.0: Logik nach `sync/SyncScheduler` extrahiert.
+    private val syncScheduler by lazy { SyncScheduler(getApplication()) }
+
     private fun triggerOnSaveSync() {
-        // Check 1: Trigger enabled?
-        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)) {
-            Logger.d(TAG, "⏭️ onSave sync disabled - skipping")
-            return
-        }
-
-        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
-        val syncService = WebDavSyncService(getApplication())
-        val gateResult = syncService.canSync()
-        if (!gateResult.canSync) {
-            if (gateResult.isBlockedByWifiOnly) {
-                Logger.d(TAG, "⏭️ onSave sync blocked: WiFi-only mode, not on WiFi")
-            } else {
-                Logger.d(TAG, "⏭️ onSave sync blocked: ${gateResult.blockReason ?: "offline/no server"}")
-            }
-            return
-        }
-
-        // Check 2: Throttling (5 seconds) to prevent spam
-        val lastOnSaveSyncTime = prefs.getLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, 0)
-        val now = System.currentTimeMillis()
-        val timeSinceLastSync = now - lastOnSaveSyncTime
-
-        if (timeSinceLastSync < Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS) {
-            val remainingSeconds = (Constants.MIN_ON_SAVE_SYNC_INTERVAL_MS - timeSinceLastSync) / 1000
-            Logger.d(TAG, "⏳ onSave sync throttled - wait ${remainingSeconds}s")
-            return
-        }
-
-        // Update last sync time
-        prefs.edit { putLong(Constants.PREF_LAST_ON_SAVE_SYNC_TIME, now) }
-
-        // Trigger sync via WorkManager
-        Logger.d(TAG, "📤 Triggering onSave sync")
-        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-            .addTag(Constants.SYNC_WORK_TAG)
-            .addTag(Constants.SYNC_ONSAVE_TAG) // 🆕 v1.8.1 (IMPL_08B): Bypassed globalen Cooldown
-            .build()
-        WorkManager.getInstance(getApplication()).enqueue(syncRequest)
+        syncScheduler.triggerOnSaveSync(reason = "onSave")
     }
 }
 
@@ -1366,7 +1355,8 @@ data class NoteEditorUiState(
     val noteType: NoteType = NoteType.TEXT,
     val isNewNote: Boolean = true,
     val isLoading: Boolean = false,
-    val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE
+    val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
+    val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
 )
 
 data class ChecklistItemState(
