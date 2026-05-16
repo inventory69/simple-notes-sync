@@ -1,9 +1,11 @@
 🎉 v2.5.0 — first Play Store production release!
 
-• Google Keep import: load notes from a Keep / Takeout .zip on-device
+• Google Keep import from a Keep / Takeout .zip
 • Note colours: pick from a 12-colour palette, in editor & multi-select
-• Conflict strategy (create / skip / replace) now also for local & WebDAV imports
+• Conflict strategy (create/skip/replace) for local & WebDAV imports
 • Select all / deselect all in WebDAV scan results
-• New checklist tap animation: scale-pop, glow & satisfying check-off effect
+• Checklist tap animation: scale-pop, glow & check-off effect
+• Colour filter chip: filter notes by colour
+• APK −11%: smaller download (5.2 → 4.7 MB)
 
 Thanks to @simianaya (#65) and to all beta testers!

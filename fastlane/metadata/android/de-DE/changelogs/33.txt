@@ -1,9 +1,11 @@
 🎉 v2.5.0 — erstes Play-Store-Production-Release!
 
-• Google-Keep-Import: Notizen aus Keep- / Takeout-.zip direkt am Gerät laden
+• Google-Keep-Import: Notizen aus lokaler .zip importieren
 • Notizfarben: 12-Farben-Palette, im Editor & per Mehrfachauswahl
-• Konflikt-Strategie (neu / überspringen / ersetzen) jetzt auch für lokale & WebDAV-Importe
+• Konflikt-Strategie auch für lokale & WebDAV-Importe
 • Alle auswählen / Auswahl aufheben bei WebDAV-Scan-Ergebnissen
-• Neue Checklisten-Tap-Animation: Scale-Pop, Glow & animiertes Abhaken
+• Checklisten-Animation: Scale-Pop, Glow & Abhaken
+• Farbfilter-Chip: Notizen nach Farbe filtern
+• APK −11%: kleinere Downloads (5,2 → 4,7 MB)
 
 Danke an @simianaya (#65) und alle Beta-Tester!

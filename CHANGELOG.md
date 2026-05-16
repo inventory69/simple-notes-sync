@@ -47,6 +47,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - After scanning a WebDAV folder, a single toggle lets you tick or untick every result at once
 - Saves a lot of tapping when restoring large note sets
 
+**Note List Colour Filter** ([e773a05](https://github.com/inventory69/simple-notes-sync/commit/e773a05))
+- Palette icon chip in the filter bar opens a colour-filter dropdown with per-colour note counts
+- Combines with the existing type filter (AND logic) and is persisted in SharedPreferences
+- Text and List type chips converted to icon-only for visual consistency
+- Closes [#65](https://github.com/inventory69/simple-notes-sync/issues/65)
+
 ### ✨ Improvements
 
 **Checklist Tap Animation**
@@ -63,6 +69,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **`SyncScheduler` extracted**
 - The duplicated `triggerOnSaveSync()` logic from `NoteEditorViewModel` and `MainViewModel` is now centralised in `sync/SyncScheduler` (behaviour strictly equivalent to v2.4.0; reused by the Keep import flow)
+
+**APK Size −11% via Locale & Resource Filtering** ([5a631cb](https://github.com/inventory69/simple-notes-sync/commit/5a631cb))
+- `localeFilters` restricted to the 10 supported languages — removes unused translations from `resources.arsc`
+- Strict resource shrinking (`keep.xml`) — safe because the app has no dynamic resource lookups
+- Packaging excludes expanded to remove build-time-only metadata
+- Result: 5.23 MB → 4.65 MB (−577 KB, −11%); `resources.arsc`: 1.49 MB → 0.95 MB (−540 KB)
 
 ### 📚 Documentation
 
