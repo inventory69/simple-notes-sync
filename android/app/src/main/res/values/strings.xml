@@ -84,6 +84,7 @@
     <string name="sort_by_created">Date created</string>
     <string name="sort_by_name">Name</string>
     <string name="sort_by_type">Type</string>
+    <string name="sort_by_color">Color</string>
     <string name="close">Close</string>
     
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->

@@ -8,6 +8,20 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.1] - 2026-05-16
+
+> 🎉 **Erstes Google-Play-Production-Release** — v2.5.0 war als initialer Production-Build vorbereitet, wurde aber nie im Play Store veröffentlicht. v2.5.1 ist die Version, die tatsächlich in Production geht. Sie vervollständigt das Notizfarben-Feature aus v2.5.0 durch das eine fehlende Stück: die Sortierung nach Farbe.
+
+### ✨ Neue Features
+
+**Notizlisten-Farb-Sortierung** ([93f7852](https://github.com/inventory69/simple-notes-sync/commit/93f7852))
+- Neue Option **Farbe** im Sort-Dialog gruppiert Notizen in kanonischer Palettenreihenfolge (Rot → Orange → Gelb → Grün → Blaugrün → Blau → Dunkelblau → Lila → Rosa → Braun → Grau)
+- Farblose Notizen landen am Ende (aufsteigend) bzw. am Anfang (absteigend) der Liste
+- Innerhalb einer Farbgruppe werden Notizen nach Änderungsdatum absteigend sortiert — konsistent mit der bestehenden Typ-Sortierung
+- Die Sortierauswahl bleibt über App-Neustarts hinweg in den SharedPreferences erhalten
+
+---
+
 ## [2.5.0] - 2026-05-15
 
 > 🎉 **Erstes Google-Play-Production-Release!** Nach mehreren Beta-Runden ist v2.5.0 der erste Build, der in den Production-Track im Play Store wandert. Riesiges Dankeschön an alle, die frühe Builds installiert, Probleme gemeldet und uns geholfen haben, die letzten Ecken auszubügeln.

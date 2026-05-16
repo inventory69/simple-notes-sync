@@ -179,4 +179,18 @@ class KeepToNoteMapperTest {
         assertNull(n.color)
         assertNull(n.isPinned)
     }
+
+    // ───── Keep palette extension: CERULEAN aliases to DARK_BLUE slot ──
+    @Test
+    fun `map_ceruleanColor_aliasesToDarkBlueSlot`() {
+        val n = mapper.map(keepNoteOf(color = "CERULEAN"), importedAtMs = 0L)
+        assertEquals("#AECBFA", n.color)
+    }
+
+    // ───── Unknown Keep colour name falls back to null (no override) ──
+    @Test
+    fun `map_unknownColorName_fallsBackToNull`() {
+        val n = mapper.map(keepNoteOf(color = "TOTALLY_NEW_COLOR_NAME"), importedAtMs = 0L)
+        assertNull(n.color)
+    }
 }

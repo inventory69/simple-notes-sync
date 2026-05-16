@@ -14,7 +14,10 @@ enum class SortOption(val prefsValue: String) {
     TITLE("title"),
 
     /** Nach Notiz-Typ (Text / Checkliste) */
-    NOTE_TYPE("noteType");
+    NOTE_TYPE("noteType"),
+
+    /** Nach Notizfarbe (Palettenreihenfolge; farblose Notizen zuletzt) */
+    COLOR("color");
 
     companion object {
         fun fromPrefsValue(value: String): SortOption {
