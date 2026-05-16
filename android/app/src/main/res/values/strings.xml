@@ -479,9 +479,12 @@
     <string name="editor_undo">Undo</string>
     <string name="editor_redo">Redo</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
-    <string name="filter_all">All</string>
-    <string name="filter_text_only">Text</string>
-    <string name="filter_checklist_only">Lists</string>
+     <string name="filter_all">All</string>
+     <string name="filter_text_only">Text</string>
+     <string name="filter_checklist_only">Lists</string>
+     <!-- 🆕 v2.5.0: Farbfilter -->
+     <string name="filter_color">Filter by color</string>
+     <string name="filter_color_all">All colors</string>
 
     <!-- v1.9.0 (F10): Search -->
     <string name="search_notes_placeholder">Search…</string>
