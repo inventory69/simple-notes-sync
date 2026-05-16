@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 33  // 🆕 v2.5.0 - Google Keep Import
-        versionName = "2.5.0"  // 🆕 v2.5.0 - Google Keep Import
+        versionCode = 34  // 🆕 v2.5.1 - Note colour sorting
+        versionName = "2.5.1"  // 🆕 v2.5.1 - Note colour sorting
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

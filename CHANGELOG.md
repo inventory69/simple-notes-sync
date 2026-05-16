@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.1] - 2026-05-16
+
+> 🎉 **First Google Play production release** — v2.5.0 was prepared as the initial production build but was never published to the Play Store. v2.5.1 is the version actually reaching production. It completes the note colour feature that shipped in v2.5.0 by adding the one missing piece: sorting by colour.
+
+### ✨ New Features
+
+**Note List Colour Sorting** ([93f7852](https://github.com/inventory69/simple-notes-sync/commit/93f7852))
+- New **Color** option in the Sort dialog groups notes by colour in canonical palette order (Red → Orange → Yellow → Green → Teal → Blue → Dark blue → Purple → Pink → Brown → Gray)
+- Uncoloured notes land at the end (ascending) or the beginning (descending) of the list
+- Within each colour group, notes are ordered by last-modified date descending — consistent with the existing Type sort
+- Sort selection persists across app restarts via SharedPreferences
+
+---
+
 ## [2.5.0] - 2026-05-15
 
 > 🎉 **First Google Play production release!** After several rounds of beta testing, v2.5.0 is the first build promoted to the Play Store production track. A huge thank you to everyone who installed early builds, reported issues and helped us shake out the rough edges.
