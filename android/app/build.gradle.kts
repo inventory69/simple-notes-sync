@@ -20,7 +20,7 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 34  // 🆕 v2.5.1 - Note colour sorting
+        versionCode = 35  // 🆕 v2.5.1 - Note colour sorting (code 34 consumed by failed API upload)
         versionName = "2.5.1"  // 🆕 v2.5.1 - Note colour sorting
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
