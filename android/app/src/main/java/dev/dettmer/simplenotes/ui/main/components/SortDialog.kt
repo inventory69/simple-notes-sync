@@ -155,4 +155,5 @@ fun SortOption.toStringRes(): Int = when (this) {
     SortOption.CREATED_AT -> R.string.sort_by_created
     SortOption.TITLE -> R.string.sort_by_name
     SortOption.NOTE_TYPE -> R.string.sort_by_type
+    SortOption.COLOR -> R.string.sort_by_color
 }

@@ -19,6 +19,7 @@ import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
@@ -1032,6 +1033,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             SortOption.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
             SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }
                 .thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Typen
+            SortOption.COLOR -> compareBy<Note> { note ->
+                NoteColorPalette.slots.indexOfFirst { slot -> slot.hex == note.color }
+                    .takeIf { idx -> idx >= 0 } ?: Int.MAX_VALUE
+            }.thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Farbe
         }
 
         return when (direction) {
