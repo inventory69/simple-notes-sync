@@ -17,6 +17,7 @@ class SortOptionTest {
         assertEquals("createdAt", SortOption.CREATED_AT.prefsValue)
         assertEquals("title", SortOption.TITLE.prefsValue)
         assertEquals("noteType", SortOption.NOTE_TYPE.prefsValue)
+        assertEquals("color", SortOption.COLOR.prefsValue)
     }
 
     @Test
@@ -25,6 +26,7 @@ class SortOptionTest {
         assertEquals(SortOption.CREATED_AT, SortOption.fromPrefsValue("createdAt"))
         assertEquals(SortOption.TITLE, SortOption.fromPrefsValue("title"))
         assertEquals(SortOption.NOTE_TYPE, SortOption.fromPrefsValue("noteType"))
+        assertEquals(SortOption.COLOR, SortOption.fromPrefsValue("color"))
     }
 
     @Test
@@ -34,8 +36,8 @@ class SortOptionTest {
     }
 
     @Test
-    fun `SortOption has exactly 4 entries`() {
-        assertEquals(4, SortOption.entries.size)
+    fun `SortOption has exactly 5 entries`() {
+        assertEquals(5, SortOption.entries.size)
     }
 
     // ═══════════════════════════════════════════════
