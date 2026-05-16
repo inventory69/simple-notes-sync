@@ -20,8 +20,18 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 32  // 🆕 v2.4.0 - Sync Reliability
-        versionName = "2.4.0"  // 🆕 v2.4.0 - Sync Reliability
+        versionCode = 33  // 🆕 v2.5.0 - Google Keep Import
+        versionName = "2.5.0"  // 🆕 v2.5.0 - Google Keep Import
+
+        // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
+        // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
+        // mit nicht gelisteten Locales fallen wie gewohnt auf den Default (en) zurück.
+        // Liste muss synchron zu app/src/main/res/values-* gehalten werden.
+        androidResources {
+            localeFilters += listOf(
+                "en", "de", "hi", "in", "it", "nb-rNO", "ru", "tr", "uk", "zh-rCN",
+            )
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // 🆕 v2.4.0: Diagnostic phase finished (long-run log validated all v2.4.0 fixes).
@@ -115,6 +125,12 @@ android {
                 "META-INF/**/LICENSE",
                 "META-INF/**/NOTICE.txt",
                 "META-INF/**/NOTICE",
+                // v2.5.x: Buildzeit-only Artefakte ohne Runtime-Bedeutung
+                "META-INF/proguard/**",           // Consumer-Rules (zur Buildzeit konsumiert)
+                "META-INF/com.android.tools/**",  // R8/AGP-spezifische Hints
+                "META-INF/*.version",             // AndroidX/Kotlin-Versionsmarker
+                "META-INF/androidx/**",           // andere AndroidX-Metadaten
+                "**/*.kotlin_metadata",           // Kotlin Reflection (nicht genutzt)
             )
         }
     }

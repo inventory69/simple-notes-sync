@@ -39,12 +39,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
@@ -74,6 +77,11 @@ fun NoteCard(
     @Suppress("UNUSED_VARIABLE")
     val ticker = timestampTicker
 
+    // v2.5.0: Resolve note colour, fall back to theme default
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val noteContainerColor = NoteColorPalette.resolveContainer(note.color, isDark)
+        .takeOrElse { MaterialTheme.colorScheme.surfaceContainerHigh }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -101,7 +109,7 @@ fun NoteCard(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
+                noteContainerColor
             }
         )
     ) {

@@ -7,6 +7,8 @@ import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictResolver
+import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
@@ -164,8 +166,17 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     /**
      * Importiert eine einzelne Datei als Simple-Notes-Notiz.
      * Erkennt automatisch das Format und wählt den passenden Parser.
+     *
+     * @param strategy Konflikt-Strategie für lokale Dateien (content-hash-basiert).
+     *   Für WebDAV-Quellen wird weiterhin UUID-basierte Duplikat-Erkennung verwendet (Commit 3).
+     * @param conflictResolver Optionaler vorinstanziierter Resolver; wenn null, wird ein neuer
+     *   erstellt. Für Batch-Imports sollte der Caller einen einzigen Resolver übergeben.
      */
-    suspend fun importFile(candidate: ImportCandidate): ImportResult {
+    suspend fun importFile(
+        candidate: ImportCandidate,
+        strategy: ConflictStrategy = ConflictStrategy.SKIP,
+        conflictResolver: ConflictResolver? = null
+    ): ImportResult {
         return try {
             val content = readContent(candidate.source)
 
@@ -183,29 +194,12 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                 return ImportResult.Failed(candidate.name, "Could not parse file")
             }
 
-            // Duplikat-Check: Existiert bereits eine Notiz mit dieser ID?
-            val existingNote = storage.loadNote(note.id)
-            if (existingNote != null) {
-                return ImportResult.Skipped(
-                    candidate.name,
-                    "Note with ID ${note.id} already exists (title: '${existingNote.title}')"
-                )
+            // Konflikt-Erkennung und SyncStatus je nach Importquelle
+            val syncStatus = computeSyncStatus()
+            val (noteToSave, skipReason) = resolveConflict(note, candidate, syncStatus, strategy, conflictResolver)
+            if (noteToSave == null) {
+                return ImportResult.Skipped(candidate.name, skipReason)
             }
-
-            // SyncStatus-Logik:
-            // - Lokale Datei → immer PENDING (muss noch hochgeladen werden)
-            // - WebDAV JSON → SYNCED (Simple-Notes-JSON kommt aus /notes/, ID ist bereits registriert)
-            // - WebDAV Markdown MIT Frontmatter → SYNCED (UUID stammt aus /notes/, bereits synced)
-            // - WebDAV Markdown OHNE Frontmatter → PENDING (neue Notiz, kein /notes/<uuid>.json vorhanden)
-            val syncStatus = when {
-                candidate.source is ImportSource.LocalFile -> SyncStatus.PENDING
-                candidate.fileType == FileType.MARKDOWN -> {
-                    val normalizedContent = content.replace("\\n", "\n")
-                    if (Note.fromMarkdown(normalizedContent) != null) SyncStatus.SYNCED else SyncStatus.PENDING
-                }
-                else -> SyncStatus.SYNCED
-            }
-            val noteToSave = note.copy(syncStatus = syncStatus)
             storage.saveNote(noteToSave)
 
             // Falls die Notiz vorher gelöscht wurde, aus dem DeletionTracker entfernen
@@ -227,16 +221,26 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
 
     /**
      * Batch-Import: Importiert mehrere Dateien und gibt eine Zusammenfassung zurück.
+     *
+     * Für lokale Dateien wird ein einziger [ConflictResolver] instanziiert (eine Storage-Abfrage
+     * für alle Kandidaten statt N einzelner Abfragen).
      */
     suspend fun importFiles(
         candidates: List<ImportCandidate>,
+        strategy: ConflictStrategy = ConflictStrategy.SKIP,
         onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }
     ): ImportSummary {
         val results = mutableListOf<ImportResult>()
 
+        // Einmaligen Resolver für alle lokalen Kandidaten erstellen
+        val localCandidates = candidates.count { it.source is ImportSource.LocalFile }
+        val localResolver = if (localCandidates > 0) ConflictResolver(storage) else null
+        Logger.d(TAG, "📦 importFiles: ${candidates.size} candidates, strategy=$strategy, local=$localCandidates")
+
         for ((index, candidate) in candidates.withIndex()) {
             onProgress(index + 1, candidates.size, candidate.name)
-            results.add(importFile(candidate))
+            val resolver = if (candidate.source is ImportSource.LocalFile) localResolver else null
+            results.add(importFile(candidate, strategy, resolver))
         }
 
         return ImportSummary(
@@ -255,9 +259,86 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     }
 
     // ══════════════════════════════════════════════════════════════
-    // Parser — Format-spezifisches Parsing
+    // Helpers — SyncStatus
     // ══════════════════════════════════════════════════════════════
 
+    /**
+     * Führt die quellenabhängige Konflikt-Erkennung durch und gibt entweder die fertige Note
+     * (zum Speichern) oder `null` (= überspringen) zurück.
+     *
+     * @return Pair von (Note?, skipReason): Note != null → Import; Note == null → Skip mit Grund.
+     */
+    private suspend fun resolveConflict(
+        note: Note,
+        candidate: ImportCandidate,
+        syncStatus: SyncStatus,
+        strategy: ConflictStrategy,
+        conflictResolver: ConflictResolver?
+    ): Pair<Note?, String> = when (candidate.source) {
+        is ImportSource.LocalFile -> {
+            Logger.d(TAG, "🔍 Conflict check (local): '${candidate.name}' strategy=$strategy")
+            val resolver = conflictResolver ?: ConflictResolver(storage)
+            when (val resolution = resolver.resolve(note, strategy)) {
+                is ConflictResolver.Resolution.Skip -> {
+                    Logger.d(TAG, "⊘ Skipped (hash match): '${candidate.name}' — ${resolution.reason}")
+                    Pair(null, resolution.reason)
+                }
+                is ConflictResolver.Resolution.Replace -> {
+                    Logger.d(TAG, "↻ Replace: '${candidate.name}' existingId=${resolution.existingId}")
+                    Pair(note.copy(id = resolution.existingId, syncStatus = syncStatus), "")
+                }
+                is ConflictResolver.Resolution.Create -> {
+                    // UUID-Kollisions-Schutz: falls die geparste ID bereits belegt ist,
+                    // neue UUID vergeben (z.B. bei JSON-Dateien mit fremder ID)
+                    val idCollision = storage.loadNote(note.id) != null
+                    val safeNote = if (idCollision) {
+                        val newId = UUID.randomUUID().toString()
+                        Logger.d(TAG, "🔀 UUID collision for '${candidate.name}': ${note.id} → $newId")
+                        note.copy(id = newId)
+                    } else note
+                    Pair(safeNote.copy(syncStatus = syncStatus), "")
+                }
+            }
+        }
+        is ImportSource.WebDav -> {
+            // UUID-basierte Duplikat-Erkennung; Strategie steuert das Verhalten bei Treffer
+            Logger.d(TAG, "🔍 Conflict check (webdav): '${candidate.name}' strategy=$strategy")
+            val existingNote = storage.loadNote(note.id)
+            when {
+                existingNote == null -> Pair(note.copy(syncStatus = syncStatus), "")
+                strategy == ConflictStrategy.ALWAYS_CREATE -> {
+                    val newId = UUID.randomUUID().toString()
+                    Logger.d(TAG, "🔀 ALWAYS_CREATE (webdav): '${candidate.name}' ${note.id} → $newId")
+                    Pair(note.copy(id = newId, syncStatus = syncStatus), "")
+                }
+                strategy == ConflictStrategy.REPLACE -> {
+                    Logger.d(TAG, "↻ Replace (webdav): '${candidate.name}' id=${existingNote.id}")
+                    Pair(note.copy(syncStatus = syncStatus), "")
+                }
+                else -> {
+                    // SKIP (default)
+                    Logger.d(TAG, "⊘ Skipped (webdav, uuid match): '${candidate.name}' id=${note.id}")
+                    Pair(null, "Note with ID ${note.id} already exists (title: '${existingNote.title}')")
+                }
+            }
+        }
+    }
+
+    /**
+     * Bestimmt den SyncStatus einer importierten Notiz.
+     *
+     * Alle Importe erhalten PENDING — sowohl lokale Dateien als auch WebDAV-Scan-Ergebnisse.
+     *
+     * Begründung WebDAV: scanWebDavFolder() überspringt explizit den konfigurierten Sync-Ordner
+     * (/notes/) via isSyncFolder(). Gescannte Dateien existieren daher NIE in /notes/ auf dem
+     * Server. Würden sie mit SYNCED importiert, würde der nächste Sync sie als „server deleted"
+     * interpretieren und lokal löschen.
+     */
+    private fun computeSyncStatus(): SyncStatus = SyncStatus.PENDING
+
+    // ══════════════════════════════════════════════════════════════
+    // Parser — Format-spezifisches Parsing
+    // ══════════════════════════════════════════════════════════════
     /**
      * Markdown-Parser: Unterstützt Plain-MD und MD mit Simple-Notes-Frontmatter.
      */

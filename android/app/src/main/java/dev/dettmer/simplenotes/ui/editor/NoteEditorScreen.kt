@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
@@ -80,6 +81,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -101,7 +104,10 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
+import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
+import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -114,6 +120,27 @@ private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
 private const val ITEM_CORNER_RADIUS_DP = 8
 private const val DRAGGING_ITEM_Z_INDEX = 10f
+// 🆕 v2.5.0: Z-Index für Items in Check/Uncheck-Animation. Liegt zwischen 0f
+// (Standard-Items) und DRAGGING_ITEM_Z_INDEX (10f). Hebt das animierende Item
+// während der LazyColumn-Placement-Animation über seine Nachbarn — behebt die
+// Asymmetrie, dass aufwärts wandernde Items (Uncheck) sonst hinter Nachbarn
+// gezeichnet werden, weil ihre neue (niedrigere) Composition-Position sie früher
+// im Draw-Tree platziert. Drag dominiert weiterhin (10f > 5f).
+private const val CHECKING_ITEM_Z_INDEX = 5f
+// 🆕 v2.5.0: Gesamt-Dauer der Check-Tap-Animation in Millisekunden. Deckt
+// Scale-Up (CHECK_ANIM_SCALE_UP_MS = 80ms) + Spring-Back + Glow-Fade-Out
+// (CHECK_GLOW_FADE_OUT_MS = 450ms) + LazyColumn-Placement-Spring komfortabel ab.
+// Wird vom LaunchedEffect in DraggableChecklistItem genutzt, um isCheckAnimating
+// zurückzusetzen (deterministischer Reset statt finishedListener-Race).
+private const val CHECK_ANIMATION_TOTAL_MS = 500L
+// 🔧 v2.5.x: Maximale Wartezeit, bis das initiale LazyColumn-Layout als „stabil"
+// gilt. Sicherheitsnetz für den Settle-LaunchedEffect in ChecklistEditor: falls externe
+// Effekte (Text-Messung, dynamische Höhen, Sync-Updates) die Liste länger als diese
+// Schwelle in Bewegung halten, wird das Placement-Animation-Gate trotzdem geöffnet,
+// damit Reorder-Animationen nach Check/Uncheck garantiert spielen.
+// 250 ms ≈ 15 Frames @ 60Hz — genug Puffer für Cold-Open auch auf langsamen
+// Geräten, kurz genug, dass User es nicht wahrnehmen.
+private const val INITIAL_LAYOUT_SETTLE_TIMEOUT_MS = 250L
 private val DRAGGING_ELEVATION_DP = 8.dp
 
 /**
@@ -161,6 +188,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val canUndo by viewModel.canUndo.collectAsState() // 🆕 v1.10.0
     val canRedo by viewModel.canRedo.collectAsState() // 🆕 v1.10.0
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
+    var showColorPicker by remember { mutableStateOf(false) }  // 🆕 v2.5.0
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -176,6 +204,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val isCompactToolbar = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.width.toDp().value / fontScale < 360f
     }
+
+    // 🆕 v2.5.0: Resolve note accent colour for the 3 dp stripe below the TopAppBar.
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val noteAccentColor: Color? = NoteColorPalette
+        .resolveContainer(uiState.color, isDark)
+        .takeIf { it != Color.Unspecified }
 
     // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
@@ -409,6 +443,24 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 )
                             }
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_set_note_color)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Palette,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showColorPicker = true
+                                }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.share_to_calendar)) },
                                 leadingIcon = {
                                     Icon(
@@ -479,7 +531,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface // 🆕 v2.5.0: neutral bar; accent shown as stripe below
                 )
             )
         },
@@ -489,11 +541,22 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .wrapContentWidth(align = Alignment.CenterHorizontally) // 🆕 v1.10.0-P2: Center on tablets
-                .widthIn(max = 720.dp) // 🆕 v1.10.0-P2: Constrain width for readability
-                .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
-                .padding(16.dp)
         ) {
+            // 🆕 v2.5.0: 3 dp accent stripe — full width, outside content padding
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(noteAccentColor ?: Color.Transparent)
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .wrapContentWidth(align = Alignment.CenterHorizontally) // 🆕 v1.10.0-P2: Center on tablets
+                    .widthIn(max = 720.dp) // 🆕 v1.10.0-P2: Constrain width for readability
+                    .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
+                    .padding(16.dp)
+            ) {
             // Title Input (for both types)
             OutlinedTextField(
                 value = uiState.title,
@@ -608,6 +671,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     )
                 }
             }
+            }
         }
     }
 
@@ -637,6 +701,17 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 showChecklistSortDialog = false
             },
             onDismiss = { showChecklistSortDialog = false }
+        )
+    }
+
+    // 🆕 v2.5.0: Note color picker sheet
+    if (showColorPicker) {
+        NoteColorPickerSheet(
+            currentColor = uiState.color,
+            onColorSelected = { hex ->
+                viewModel.setColor(hex)
+            },
+            onDismiss = { showColorPicker = false },
         )
     }
 
@@ -727,7 +802,8 @@ private fun LazyItemScope.DraggableChecklistItem(
     onDuplicate: (String) -> Unit,         // 🆕 v2.2.0: Aktion 2
     onCopyToChecklist: (String) -> Unit,   // 🆕 v2.2.0: Aktion 3
     onFocusHandled: () -> Unit,
-    onHeightChanged: () -> Unit // 🆕 v1.8.1 (IMPL_05)
+    onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
+    placementAnimationsEnabled: Boolean // 🔧 v2.5.x: Gate gegen Open-Burst
 ) {
     // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
     // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
@@ -747,6 +823,20 @@ private fun LazyItemScope.DraggableChecklistItem(
         }
     }
 
+    // 🆕 v2.5.0: Trigger für Check-Tap-Animation. Wird beim Checkbox-Tap auf true
+    // gesetzt (über onCheckboxTap-Callback an die Row), und nach CHECK_ANIMATION_TOTAL_MS
+    // automatisch zurückgesetzt. Solange true → erhöhter zIndex (siehe unten) →
+    // Row wird über Nachbarn gezeichnet, unabhängig von der Draw-Reihenfolge nach
+    // dem Reorder. Key item.id: Reset-Timer überlebt Reorder, weil Composition
+    // erhalten bleibt.
+    var isCheckAnimating by remember(item.id) { mutableStateOf(false) }
+    LaunchedEffect(isCheckAnimating, item.id) {
+        if (isCheckAnimating) {
+            delay(CHECK_ANIMATION_TOTAL_MS)
+            isCheckAnimating = false
+        }
+    }
+
     ChecklistItemRow(
         item = item,
         onTextChange = { onTextChange(item.id, it) },
@@ -756,6 +846,8 @@ private fun LazyItemScope.DraggableChecklistItem(
         onCopyText = { onCopyText(item.id) },             // 🆕 v2.2.0
         onDuplicate = { onDuplicate(item.id) },            // 🆕 v2.2.0
         onCopyToChecklist = { onCopyToChecklist(item.id) },// 🆕 v2.2.0
+        isCheckAnimating = isCheckAnimating,               // 🆕 v2.5.0
+        onCheckboxTap = { isCheckAnimating = true },       // 🆕 v2.5.0
         requestFocus = shouldFocus,
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.isAnyItemDragging,
@@ -765,18 +857,38 @@ private fun LazyItemScope.DraggableChecklistItem(
         ),
         onHeightChanged = onHeightChanged, // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
-            // 🆕 v1.8.2 (IMPL_11): animateItem() NUR während bestätigtem Drag anwenden.
-            // Vorher: animateItem() auf ALLEN Items permanent → Fade-In/Out-Animationen
-            // verursachten visuelles Flackern bei langen Items beim schnellen Scrollen.
-            // Jetzt: Nur placement-Animation für nicht-gedraggte Items während Reorder.
+            // 🆕 v1.8.2 (IMPL_11): Placement-Animation für nicht-gedraggte Items.
+            // Historisch (vor IMPL_11): animateItem() mit fadeInSpec/fadeOutSpec auf ALLEN Items
+            // → sichtbares Flickering bei langen Items beim schnellen Scrollen.
+            // Lösung damals: fade entfernen, animateItem nur während Drag.
+            // 🆕 v2.5.0: Bedingung von „nur während Drag" auf „immer außer beim gedraggten Item"
+            // erweitert. Grund: Beim Check/Uncheck-Sort (außerhalb DnD) gab es vorher keine
+            // Placement-Animation → Items sprangen abrupt. Da fadeInSpec/fadeOutSpec weiterhin
+            // null sind, gilt die ursprüngliche Flicker-Ursache nicht. Der gedraggte Item bleibt
+            // ausgenommen, weil seine Position via graphicsLayer.translationY gesteuert wird.
+            // 🔧 v2.5.x: Zusätzliches Gate `placementAnimationsEnabled` verhindert, dass
+            // Modifier.animateItem zwischen den ersten Layout-Pässen nach Open der Checkliste
+            // die Offset-Diffs animiert (Symptom: Items „schieben sich rein"). Sobald das
+            // initiale Layout stabil ist, ist das Gate offen — alle Check/Uncheck-Reorder-
+            // Animationen aus Commit 7156c12 spielen unverändert.
             .then(
-                if (dragDropState.isDragConfirmed && !isDragging) {
+                if (!isDragging && placementAnimationsEnabled) {
                     Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
                 } else {
                     Modifier
                 }
             )
-            .zIndex(if (isDragging) DRAGGING_ITEM_Z_INDEX else 0f)
+            // 🆕 v2.5.0: zIndex-Tabelle:
+            //   isDragging              → DRAGGING_ITEM_Z_INDEX (10f)  – Drag wins
+            //   isCheckAnimating        → CHECKING_ITEM_Z_INDEX  (5f)  – Glow/Move on top
+            //   sonst                   → 0f
+            .zIndex(
+                when {
+                    isDragging -> DRAGGING_ITEM_Z_INDEX
+                    isCheckAnimating -> CHECKING_ITEM_Z_INDEX
+                    else -> 0f
+                }
+            )
             .graphicsLayer {
                 if (isDragging) translationY = dragDropState.draggingItemOffset
                 shadowElevation = elevation.toPx()
@@ -821,6 +933,39 @@ private fun ChecklistEditor(
         scope = scope,
         onMove = onMove
     )
+
+    // 🔧 v2.5.x: Gate für LazyColumn-Placement-Animationen (Modifier.animateItem).
+    // Beim Öffnen einer Checkliste durchläuft die LazyColumn mehrere Layout-Pässe
+    // (Text-Messung im OutlinedTextField, dynamische Höhen via onHeightChanged,
+    // LazyLayoutCacheWindow-Vorbau). Wenn animateItem in diesem Fenster aktiv ist,
+    // animiert LazyListItemAnimator die Offset-Diffs zwischen den Pässen → Items
+    // „schieben sich rein". Dieses Gate hält animateItem deaktiviert, bis das
+    // Initial-Layout zwei aufeinanderfolgende Frames lang unverändert geblieben
+    // ist (oder INITIAL_LAYOUT_SETTLE_TIMEOUT_MS abgelaufen ist). Nach Aktivierung
+    // bleibt das Gate für die Lebenszeit des Screens offen — alle späteren Reorder
+    // (Check/Uncheck — siehe Commit 7156c12) animieren wie vorgesehen.
+    // Userinteraktionen (Tap, Drag) erfolgen lange nach dem Settle → kein Konflikt
+    // mit der Check-Tap-Animation aus dem Commit.
+    var placementAnimationsEnabled by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val deadline = withFrameNanos { it } + INITIAL_LAYOUT_SETTLE_TIMEOUT_MS * 1_000_000L
+        var previousSnapshot: List<Pair<Any, Int>> = emptyList()
+        var stableFrames = 0
+        var settled = false
+        while (!settled) {
+            val now = withFrameNanos { it }
+            val current = listState.layoutInfo.visibleItemsInfo.map { it.key to it.offset }
+            if (current.isNotEmpty() && current == previousSnapshot) {
+                stableFrames++
+                if (stableFrames >= 2) settled = true
+            } else {
+                stableFrames = 0
+            }
+            previousSnapshot = current
+            if (now >= deadline) settled = true
+        }
+        placementAnimationsEnabled = true
+    }
 
     // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
     var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
@@ -1004,12 +1149,60 @@ private fun ChecklistEditor(
                         focusNewItemId = focusNewItemId,
                         onTextChange = onTextChange,
                         onCheckedChange = { id, checked ->
-                            // 🔧 v1.9.0 (F14 fix): When checking the first visible item,
-                            // pre-request scroll to index 0. requestScrollToItem runs DURING
-                            // the next layout pass, overriding LazyColumn's key-tracking
-                            // which would otherwise follow the checked item to the bottom.
-                            if (checked && listState.firstVisibleItemIndex == 0) {
-                                listState.requestScrollToItem(0, 0)
+                            // 🔧 v2.5.x (Dual-Fix Top + Bottom): Pre-anchor the LazyColumn before
+                            // the model reorder so LazyListItemAnimator captures from/to coords
+                            // against a stable anchor. requestScrollToItem runs synchronously in
+                            // the next measure pass and clears LazyListState.lastKnownFirstItemKey,
+                            // disabling key-based re-anchoring that would otherwise follow the
+                            // toggled item to its new position and shift the viewport (→ animation
+                            // would run over ~0 visible delta and be invisible to the user).
+                            //
+                            // Two viewport regimes need different anchoring strategies:
+                            //
+                            // A) Viewport at top (firstVisibleItemIndex == 0): pin index 0 at the
+                            //    viewport top via requestScrollToItem(0, 0). This is the proven
+                            //    7156c12 path and covers the index-0 toggle as well as any toggle
+                            //    while the user is scrolled to the very top. Using the generalized
+                            //    "first non-toggled visible item" anchor here breaks the idx-0 case
+                            //    because it forces a non-zero index with negative scrollOffset,
+                            //    which has edge-case behaviour at the top boundary.
+                            //
+                            // B) Viewport scrolled away from top (firstVisibleItemIndex > 0):
+                            //    snapshot the first visible item that is NOT the toggled item,
+                            //    then requestScrollToItem(anchor.index, -anchor.offset) to keep
+                            //    its current pixel position. The toggled item is excluded so it
+                            //    is free to animate to its new index; all other visible items
+                            //    stay anchored. Covers the bottom-viewport case (toggled item
+                            //    crossing the CheckedItemsSeparator).
+                            if (listState.firstVisibleItemIndex == 0) {
+                                // 🔧 v2.5.x Phase 2: Pre-Anchor preserves the user's exact scroll
+                                // offset within item 0 instead of snapping to (0,0). The original
+                                // requestScrollToItem(0, 0) call snapped the viewport up by the
+                                // current firstVisibleItemScrollOffset (e.g. 92–175 px), which
+                                // landed in the SAME measure pass as the data-driven reorder.
+                                // LazyListItemAnimator then interpreted the combined layout
+                                // change as a scroll (not as a reorder) and skipped
+                                // Modifier.animateItem placement animation entirely — the toggled
+                                // item teleported to its new position, scale-pop & glow fired on
+                                // an already-displaced item, visually "nothing happened".
+                                //
+                                // Diagnose-Logs (Phase 1) compared s2 (offset=0, requestScrollToItem
+                                // is a no-op → ~30 interpolated PLACE frames) with s3–s6 (offset
+                                // 92–175 → 1 PLACE frame, then static). Calling
+                                // requestScrollToItem(0, currentOffset) still sets the anchor
+                                // key to item-0 (preventing re-anchor onto the toggled item) but
+                                // does not move the viewport, so LazyListItemAnimator captures
+                                // valid from/to coords and the placement animation runs.
+                                val preservedOffset = listState.firstVisibleItemScrollOffset
+                                listState.requestScrollToItem(0, preservedOffset)
+                            } else {
+                                val layoutInfo = listState.layoutInfo
+                                val anchor = layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                                    info.key != id
+                                } ?: layoutInfo.visibleItemsInfo.firstOrNull()
+                                if (anchor != null) {
+                                    listState.requestScrollToItem(anchor.index, -anchor.offset)
+                                }
                             }
                             onCheckedChange(id, checked)
                         },
@@ -1019,7 +1212,8 @@ private fun ChecklistEditor(
                         onDuplicate = onDuplicate,               // 🆕 v2.2.0
                         onCopyToChecklist = onCopyToChecklist,   // 🆕 v2.2.0
                         onFocusHandled = onFocusHandled,
-                        onHeightChanged = { scrollToItemIndex = visualIndex }
+                        onHeightChanged = { scrollToItemIndex = visualIndex },
+                        placementAnimationsEnabled = placementAnimationsEnabled,
                     )
                 }
             }

@@ -1405,16 +1405,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Importiert ausgewählte Import-Kandidaten.
      */
     suspend fun importCandidates(
-        candidates: List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate>
+        candidates: List<dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportCandidate>,
+        strategy: dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy =
+            dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy.SKIP
     ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary = withContext(ioDispatcher) {
         val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
-        wizard.importFiles(candidates)
+        wizard.importFiles(candidates, strategy)
     }
 
     /**
      * Importiert lokale Dateien via Android Content-URI.
      */
-    suspend fun importLocalFiles(uris: List<Uri>): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary =
+    suspend fun importLocalFiles(
+        uris: List<Uri>,
+        strategy: dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy =
+            dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy.SKIP
+    ): dev.dettmer.simplenotes.noteimport.NotesImportWizard.ImportSummary =
         withContext(ioDispatcher) {
             val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
             val candidates = uris.mapNotNull { uri ->
@@ -1434,7 +1440,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     null
                 }
             }
-            wizard.importFiles(candidates)
+            wizard.importFiles(candidates, strategy)
         }
 
     private fun getFileName(uri: Uri): String? {

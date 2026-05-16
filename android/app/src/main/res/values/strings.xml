@@ -215,7 +215,7 @@
 
     <!-- Issue #21: Notes Import -->
     <string name="settings_import_title">Import Notes</string>
-    <string name="settings_import_subtitle">Import notes from files or server</string>
+    <string name="settings_import_subtitle">Import notes from files, server, or Google Keep</string>
     <string name="import_section_server">From WebDAV Server</string>
     <string name="import_section_local">From Device</string>
     <string name="import_info_text">Import .md, .json, or .txt files as Simple Notes. Imported notes will be synced on next synchronization. Original files remain unchanged.</string>
@@ -230,7 +230,13 @@
     <string name="import_zero_notes_hint">No notes could be imported. The file may be corrupted or in an unsupported format.</string>
     <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
     <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
+    <string name="import_conflict_label">Conflict strategy</string>
+    <string name="import_conflict_always_create">Always create (may duplicate)</string>
+    <string name="import_conflict_skip">Skip existing (default)</string>
+    <string name="import_conflict_replace">Replace existing</string>
     <string name="import_cancel">Cancel</string>
+    <string name="import_select_all">Select all</string>
+    <string name="import_deselect_all">Deselect all</string>
     <string name="settings_about">About this App</string>
     <string name="settings_debug">Debug &amp; Diagnostics</string>
     <string name="settings_debug_logging_on">Logging: On</string>
@@ -473,9 +479,12 @@
     <string name="editor_undo">Undo</string>
     <string name="editor_redo">Redo</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
-    <string name="filter_all">All</string>
-    <string name="filter_text_only">Text</string>
-    <string name="filter_checklist_only">Lists</string>
+     <string name="filter_all">All</string>
+     <string name="filter_text_only">Text</string>
+     <string name="filter_checklist_only">Lists</string>
+     <!-- 🆕 v2.5.0: Farbfilter -->
+     <string name="filter_color">Filter by color</string>
+     <string name="filter_color_all">All colors</string>
 
     <!-- v1.9.0 (F10): Search -->
     <string name="search_notes_placeholder">Search…</string>
@@ -634,6 +643,63 @@
     <string name="notification_sync_in_progress_message">Notes are being synchronized…</string>
     <string name="notification_sync_error_title">Sync Error</string>
     
+    <!-- 🆕 v2.5.0: Google Keep Import — Snackbar messages (full set in Commit #12) -->
+    <string name="keep_import_snackbar_done">Import done: %1$d new, %2$d skipped</string>
+    <string name="keep_import_snackbar_cancelled">Import cancelled</string>
+    <string name="keep_import_snackbar_error">Import failed</string>
+    <string name="keep_import_snackbar_retry_action">Retry</string>
+
+    <!-- 🆕 v2.5.0: Google Keep Import — full UI strings -->
+    <string name="keep_import_section_title">Google Keep import</string>
+    <string name="keep_import_section_description">Import your Google Takeout export as simple-notes-sync notes.</string>
+    <string name="keep_import_section_button_pick_zip">Choose ZIP…</string>
+
+    <string name="keep_import_config_title">Import from Google Keep</string>
+    <string name="keep_import_config_scanning">Analysing archive contents…</string>
+    <string name="keep_import_config_include_archived">Import archived notes</string>
+    <string name="keep_import_config_include_trashed">Import notes from the trash</string>
+    <string name="keep_import_config_conflict_label">On conflict:</string>
+    <string name="keep_import_config_conflict_always_create">Always create new (recommended, safest)</string>
+    <string name="keep_import_config_conflict_skip">Skip duplicates</string>
+    <string name="keep_import_config_conflict_replace">Replace existing</string>
+    <string name="keep_import_config_info_labels">ℹ️ Keep labels are stored. They will appear as tags in a future version.</string>
+    <string name="keep_import_config_info_attachments">🖼️ Images/attachments are not imported in this version. When the app gains image support later, you can re-run the import to load them.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Note colours are imported and shown right away. Pin states are stored, but only become visible in a future version.</string>
+    <string name="keep_import_config_button_start">Start import</string>
+    <string name="keep_import_config_button_cancel">Cancel</string>
+
+    <string name="keep_import_prescan_header">📦 Archive contains:</string>
+    <string name="keep_import_prescan_active">• %1$d active notes</string>
+    <string name="keep_import_prescan_archived">• %1$d archived notes</string>
+    <string name="keep_import_prescan_trashed">• %1$d notes in the trash</string>
+    <string name="keep_import_prescan_labels">• %1$d different labels</string>
+    <string name="keep_import_prescan_shared">• %1$d notes from shared lists</string>
+    <string name="keep_import_prescan_attachments">• %1$d notes with attachments (will not be imported)</string>
+    <string name="keep_import_prescan_large_warning">⚠️ Large archive (%1$d MB), analysis may take a minute.</string>
+
+    <string name="keep_import_large_zip_title">Large archive</string>
+    <string name="keep_import_large_zip_body">This archive is %1$d MB. The import may take several minutes and consume significant battery. Continue anyway?</string>
+    <string name="keep_import_large_zip_button_continue">Continue</string>
+    <string name="keep_import_large_zip_button_cancel">Cancel</string>
+
+    <string name="keep_import_progress_title">Importing from Google Keep…</string>
+    <string name="keep_import_progress_status">Processing %1$d of %2$d: %3$s</string>
+    <string name="keep_import_progress_button_cancel">Cancel</string>
+
+    <string name="keep_import_result_title">Import complete</string>
+    <string name="keep_import_result_imported">✓ %1$d notes imported</string>
+    <string name="keep_import_result_replaced">↻ %1$d replaced</string>
+    <string name="keep_import_result_skipped">⊘ %1$d skipped</string>
+    <string name="keep_import_result_failed">✗ %1$d errors</string>
+    <string name="keep_import_result_attachments_dropped">🖼️ %1$d notes had attachments — not imported (you can re-run the import once image support is added).</string>
+    <string name="keep_import_result_labels">🏷️ %1$d labels stored</string>
+    <string name="keep_import_result_shared">👥 %1$d of those from shared lists (collaborations)</string>
+    <string name="keep_import_result_color">🎨 %1$d with colour imported</string>
+    <string name="keep_import_result_pinned">📌 %1$d marked as pinned (visible in a future version)</string>
+    <string name="keep_import_result_show_errors">Show details</string>
+    <string name="keep_import_result_hide_errors">Hide details</string>
+    <string name="keep_import_result_button_close">Close</string>
+
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
@@ -711,5 +777,23 @@
     <string name="checklist_copy_to_checklist_untitled">Untitled checklist</string>
     <string name="checklist_copy_to_checklist_item_count">%d items</string>
     <string name="checklist_item_copied_toast">Item copied to checklist</string>
+
+    <!-- ============================= -->
+    <!-- NOTE COLOR v2.5.0 (Issue #65) -->
+    <!-- ============================= -->
+    <string name="action_set_note_color">Note color</string>
+    <string name="cd_note_color_swatch">Note color: %s</string>
+    <string name="note_color_none">None</string>
+    <string name="note_color_red">Red</string>
+    <string name="note_color_orange">Orange</string>
+    <string name="note_color_yellow">Yellow</string>
+    <string name="note_color_green">Green</string>
+    <string name="note_color_teal">Teal</string>
+    <string name="note_color_blue">Blue</string>
+    <string name="note_color_dark_blue">Dark blue</string>
+    <string name="note_color_purple">Purple</string>
+    <string name="note_color_pink">Pink</string>
+    <string name="note_color_brown">Brown</string>
+    <string name="note_color_gray">Gray</string>
 
 </resources>
