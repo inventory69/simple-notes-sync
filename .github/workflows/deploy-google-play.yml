@@ -1,0 +1,127 @@
+name: Deploy to Google Play
+
+# Bypasses broken Google Play Console UI by using the Developer API directly.
+# Requires a Google Play service account JSON added as repository secret
+# GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (see setup instructions below).
+#
+# Setup:
+#   1. Play Console → Setup → API access → Link Google Cloud project
+#   2. Create service account → Grant "Release Manager" role in Play Console
+#   3. Download JSON key → add as GitHub secret GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Release track'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+      rollout_percentage:
+        description: 'Rollout % for production track (1-100, ignored for other tracks)'
+        required: false
+        default: '10'
+      status:
+        description: 'Release status'
+        required: true
+        default: 'completed'
+        type: choice
+        options:
+          - completed
+          - draft
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build AAB & Deploy (${{ inputs.track }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Extract version info
+        id: version
+        run: |
+          VERSION_NAME=$(grep 'versionName = ' android/app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
+          VERSION_CODE=$(grep 'versionCode = ' android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "Building v$VERSION_NAME (Code: $VERSION_CODE) → track: ${{ inputs.track }}"
+
+      - name: Calculate rollout fraction (production only)
+        id: rollout
+        run: |
+          if [ "${{ inputs.track }}" = "production" ]; then
+            FRACTION=$(echo "scale=4; ${{ inputs.rollout_percentage }} / 100" | bc)
+            echo "USER_FRACTION=$FRACTION" >> $GITHUB_OUTPUT
+            echo "Production rollout: ${{ inputs.rollout_percentage }}% → fraction $FRACTION"
+          else
+            echo "USER_FRACTION=" >> $GITHUB_OUTPUT
+            echo "Non-production track: no rollout fraction"
+          fi
+
+      - name: Configure Android signing
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/simple-notes-release.jks
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}"       >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}"             >> android/key.properties
+          echo "storeFile=simple-notes-release.jks"            >> android/key.properties
+
+      - name: Build release AAB (standard flavor)
+        run: |
+          cd android
+          ./gradlew bundleStandardRelease --no-daemon --stacktrace
+
+      - name: Locate AAB
+        id: aab
+        run: |
+          AAB_PATH=$(find android/app/build/outputs/bundle/standardRelease -name "*.aab" | head -1)
+          echo "AAB_PATH=$AAB_PATH" >> $GITHUB_OUTPUT
+          echo "Found AAB: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: dev.dettmer.simplenotes
+          releaseFiles: ${{ steps.aab.outputs.AAB_PATH }}
+          track: ${{ inputs.track }}
+          status: ${{ inputs.status }}
+          inAppUpdatePriority: 0
+          userFraction: ${{ steps.rollout.outputs.USER_FRACTION }}
+          whatsNewDirectory: fastlane/metadata/android
+          mappingFile: android/app/build/outputs/mapping/standardRelease/mapping.txt
+
+      - name: Summary
+        run: |
+          {
+            echo "### Deployment successful"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Package | \`dev.dettmer.simplenotes\` |"
+            echo "| Version | ${{ steps.version.outputs.VERSION_NAME }} (Code ${{ steps.version.outputs.VERSION_CODE }}) |"
+            echo "| Track | ${{ inputs.track }} |"
+            echo "| Status | ${{ inputs.status }} |"
+            if [ "${{ inputs.track }}" = "production" ]; then
+              echo "| Rollout | ${{ inputs.rollout_percentage }}% |"
+            fi
+          } >> $GITHUB_STEP_SUMMARY
