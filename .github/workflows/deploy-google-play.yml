@@ -97,6 +97,24 @@ jobs:
           echo "AAB_PATH=$AAB_PATH" >> $GITHUB_OUTPUT
           echo "Found AAB: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
 
+      - name: Ensure changelog exists for version code
+        run: |
+          VERSION_CODE=${{ steps.version.outputs.VERSION_CODE }}
+          for locale_dir in fastlane/metadata/android/*/changelogs; do
+            target="$locale_dir/$VERSION_CODE.txt"
+            if [ ! -f "$target" ]; then
+              latest=$(ls "$locale_dir"/*.txt 2>/dev/null | sort -V | tail -1)
+              if [ -n "$latest" ]; then
+                cp "$latest" "$target"
+                echo "No $VERSION_CODE.txt in $locale_dir — copied from $(basename $latest)"
+              else
+                echo "WARNING: No changelog files found in $locale_dir"
+              fi
+            else
+              echo "Changelog $target already exists"
+            fi
+          done
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
