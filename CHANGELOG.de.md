@@ -47,6 +47,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Nach dem Scan eines WebDAV-Ordners kannst du mit einem einzigen Toggle alle Ergebnisse auf einmal an- oder abwählen
 - Spart bei großen Notizsammlungen viel Tippen
 
+**Notizlisten-Farbfilter** ([e773a05](https://github.com/inventory69/simple-notes-sync/commit/e773a05))
+- Palette-Icon-Chip in der Filterleiste öffnet ein Farbfilter-Dropdown mit der Anzahl Notizen je Farbe
+- Kombiniert sich mit dem bestehenden Typ-Filter (UND-Logik) und wird in den SharedPreferences gespeichert
+- Text- und Listen-Chips auf reine Icon-Darstellung umgestellt für ein einheitlicheres Erscheinungsbild
+- Schließt [#65](https://github.com/inventory69/simple-notes-sync/issues/65)
+
 ### ✨ Verbesserungen
 
 **Checklisten-Tap-Animation**
@@ -63,6 +69,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **`SyncScheduler` extrahiert**
 - Die duplizierte `triggerOnSaveSync()`-Logik aus `NoteEditorViewModel` und `MainViewModel` liegt jetzt zentral in `sync/SyncScheduler` (Verhalten strikt äquivalent zu v2.4.0; wird vom Keep-Import-Flow wiederverwendet)
+
+**APK-Größe −11 % durch Locale- & Ressourcen-Filterung** ([5a631cb](https://github.com/inventory69/simple-notes-sync/commit/5a631cb))
+- `localeFilters` auf die 10 unterstützten Sprachen beschränkt — entfernt ungenutzte Übersetzungen aus `resources.arsc`
+- Striktes Ressourcen-Shrinking (`keep.xml`) — sicher, da die App keine dynamischen Ressourcen-Zugriffe hat
+- Packaging-Excludes um Build-time-Metadaten erweitert
+- Ergebnis: 5,23 MB → 4,65 MB (−577 KB, −11 %); `resources.arsc`: 1,49 MB → 0,95 MB (−540 KB)
 
 ### 📚 Dokumentation
 
