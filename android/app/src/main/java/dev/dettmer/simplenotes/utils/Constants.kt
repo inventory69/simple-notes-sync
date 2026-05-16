@@ -136,6 +136,10 @@ object Constants {
     const val KEY_NOTE_FILTER = "note_filter"
     const val DEFAULT_NOTE_FILTER = "all" // NoteFilter.ALL.prefsValue
 
+    // 🆕 v2.5.0: Farbfilter
+    const val KEY_COLOR_FILTER = "color_filter"
+    const val DEFAULT_COLOR_FILTER = "" // "" = kein Filter aktiv
+
     // 📋 v1.8.0: Post-Update Changelog
     const val KEY_LAST_SHOWN_CHANGELOG_VERSION = "last_shown_changelog_version"
 

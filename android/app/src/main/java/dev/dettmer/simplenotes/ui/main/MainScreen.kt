@@ -125,6 +125,9 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
     val noteFilter by viewModel.noteFilter.collectAsState()
     // 🆕 v1.9.0 (F10): Search query state
     val searchQuery by viewModel.searchQuery.collectAsState()
+    // 🆕 v2.5.0: Farbfilter-State
+    val colorFilter by viewModel.colorFilter.collectAsState()
+    val availableColors by viewModel.availableColors.collectAsState()
     val focusManager = LocalFocusManager.current
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -265,6 +268,9 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
                             FilterChipRow(
                                 currentFilter = noteFilter,
                                 onFilterSelected = { viewModel.setNoteFilter(it) },
+                                currentColorFilter = colorFilter,                           // 🆕 v2.5.0
+                                onColorFilterSelected = { viewModel.setColorFilter(it) },   // 🆕 v2.5.0
+                                availableColors = availableColors,                          // 🆕 v2.5.0
                                 searchQuery = searchQuery,
                                 onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                                 onSortClick = { showSortDialog = true },

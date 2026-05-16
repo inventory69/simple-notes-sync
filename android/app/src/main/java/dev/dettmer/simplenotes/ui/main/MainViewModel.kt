@@ -210,6 +210,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val noteFilter: StateFlow<NoteFilter> = _noteFilter.asStateFlow()
 
+    // 🆕 v2.5.0: Farbfilter — null = kein Filter, "#RRGGBB" = aktiver Farbfilter
+    private val _colorFilter = MutableStateFlow(
+        prefs.getString(Constants.KEY_COLOR_FILTER, Constants.DEFAULT_COLOR_FILTER)
+            ?.takeIf { it.isNotEmpty() }
+    )
+    val colorFilter: StateFlow<String?> = _colorFilter.asStateFlow()
+
+    // 🆕 v2.5.0: Kombinierter Filter-State für sortedNotes.
+    // Nötig, da combine() nativ max. 5 Flows unterstützt; NoteFilter + Farbfilter werden
+    // zu einem Paar zusammengefasst, damit sortedNotes weiterhin 5 Flows nutzt.
+    private val _filterCriteria = combine(_noteFilter, _colorFilter) { f, c -> Pair(f, c) }
+
     // 🆕 v1.9.0 (F10): Search Query State
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -218,15 +230,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
      * 🆕 v1.9.0 (F06): + Filter nach NoteType
      * 🆕 v1.9.0 (F10): + Volltextsuche über Titel und Inhalt
+     * 🆕 v2.5.0: + Farbfilter (via _filterCriteria)
      */
     val sortedNotes: StateFlow<List<Note>> = combine(
         _notes,
         _sortOption,
         _sortDirection,
-        _noteFilter,
+        _filterCriteria,        // 🆕 v2.5.0: vorher _noteFilter
         _searchQuery
-    ) { notes, option, direction, filter, query ->
-        val filtered = filterNotes(notes, filter)
+    ) { notes, option, direction, filterCriteria, query ->
+        val (filter, colorFilter) = filterCriteria
+        val filtered = filterNotes(notes, filter, colorFilter)
         val searched = searchNotes(filtered, query)
         val sorted = sortNotes(searched, option, direction)
 
@@ -972,12 +986,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * 🆕 v1.9.0 (F06): Filtert Notizen nach NoteType.
+     * 🆕 v2.5.0: + optionaler Farbfilter (UND-Verknüpfung).
      */
-    private fun filterNotes(notes: List<Note>, filter: NoteFilter): List<Note> {
-        return when (filter) {
-            NoteFilter.ALL -> notes
-            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
+    private fun filterNotes(
+        notes: List<Note>,
+        filter: NoteFilter,
+        colorFilter: String? = null      // 🆕 v2.5.0
+    ): List<Note> {
+        val byType = when (filter) {
+            NoteFilter.ALL            -> notes
+            NoteFilter.TEXT_ONLY      -> notes.filter { it.noteType == NoteType.TEXT }
             NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
+        }
+        return if (colorFilter != null) {
+            byType.filter { it.color == colorFilter }
+        } else {
+            byType
         }
     }
 
@@ -1042,6 +1066,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit { putString(Constants.KEY_NOTE_FILTER, filter.prefsValue) }
         Logger.d(TAG, "🔍 Note filter changed to: ${filter.prefsValue}")
     }
+
+    /**
+     * 🆕 v2.5.0: Aktiviert/deaktiviert den Farbfilter.
+     * @param hex Hex-String der Farbe (z.B. "#F28B82") oder null zum Aufheben.
+     */
+    fun setColorFilter(hex: String?) {
+        _colorFilter.value = hex
+        prefs.edit { putString(Constants.KEY_COLOR_FILTER, hex ?: "") }
+        Logger.d(TAG, "🎨 Color filter changed to: ${hex ?: "none"}")
+    }
+
+    /**
+     * 🆕 v2.5.0: Anzahl Notizen pro Farbe nach Typ-Filter (vor Farbfilter).
+     * Wird im Farbfilter-Dropdown als Datenquelle verwendet — zeigt nur Farben mit count > 0.
+     * Map-Key: Hex-String ("#F28B82") oder null (keine Farbe zugewiesen).
+     */
+    val availableColors: StateFlow<Map<String?, Int>> = combine(
+        _notes, _noteFilter
+    ) { notes, filter ->
+        val byType = when (filter) {
+            NoteFilter.ALL            -> notes
+            NoteFilter.TEXT_ONLY      -> notes.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
+        }
+        byType.groupingBy { it.color }.eachCount()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyMap()
+    )
 
     /**
      * 🆕 v1.9.0 (F10): Setzt den Suchbegriff (session-only, nicht persistent).
