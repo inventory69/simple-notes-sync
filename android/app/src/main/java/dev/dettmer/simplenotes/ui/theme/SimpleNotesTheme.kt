@@ -1,6 +1,9 @@
 package dev.dettmer.simplenotes.ui.theme
 
 import android.app.Activity
+import android.graphics.Color as AndroidColor
+import android.os.Build
+import android.view.View
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -55,6 +58,29 @@ fun SimpleNotesTheme(
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = !isDark
                 isAppearanceLightNavigationBars = !isDark
+            }
+            // Bugfix (API 26–28): On API < Q, WindowInsetsController does not reliably
+            // update the navigation bar background. enableEdgeToEdge() sets a transparent
+            // scrim but only enforces auto-contrast from API 29 onwards, and only for the
+            // initial call — not for runtime theme switches. We therefore also set
+            // window.navigationBarColor explicitly and toggle
+            // SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR directly on the decorView when running
+            // below Android Q. SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR requires API 26 (O),
+            // so the lower bound is O; API ≤ 25 behavior is undefined and not covered.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+            ) {
+                @Suppress("DEPRECATION")
+                window.navigationBarColor =
+                    if (isDark) AndroidColor.BLACK else AndroidColor.WHITE
+                @Suppress("DEPRECATION")
+                val flags = window.decorView.systemUiVisibility
+                @Suppress("DEPRECATION")
+                window.decorView.systemUiVisibility = if (isDark) {
+                    flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+                } else {
+                    flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                }
             }
         }
     }
