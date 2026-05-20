@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -102,6 +103,11 @@ fun MainScreen(
     // Multi-Select State
     val selectedNotes by viewModel.selectedNotes.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+
+    // Back press handler for selection mode
+    BackHandler(enabled = isSelectionMode) {
+        viewModel.clearSelection()
+    }
 
     // 🌟 v1.6.0: Reactive offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
