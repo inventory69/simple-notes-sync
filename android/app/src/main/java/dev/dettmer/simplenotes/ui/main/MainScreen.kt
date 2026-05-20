@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
@@ -82,7 +84,12 @@ private const val SYNC_SCROLL_DELAY_MS = 150L
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod") // 🔧 v2.5.0: color picker state + sheet push over limit
 @Composable
-fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSettings: () -> Unit, onCreateNote: (NoteType) -> Unit) {
+fun MainScreen(
+    viewModel: MainViewModel,
+    onOpenNote: (String?) -> Unit,
+    onOpenSettings: () -> Unit,
+    onCreateNote: (NoteType) -> Unit
+) {
     val notes by viewModel.sortedNotes.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val scrollToTop by viewModel.scrollToTop.collectAsState()
@@ -236,8 +243,20 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
                     )
                 }
             },
-            // FAB wird manuell in Box platziert für korrekten z-Index
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            // FAB liegt als Fullscreen-Overlay außerhalb des Scaffolds (siehe NoteTypeFAB-Block
+            // weiter unten). Das Scaffold kennt den FAB nicht und kann die Snackbar nicht
+            // automatisch darüber anheben. 72.dp = 56.dp (Material Standard-FAB-Höhe) +
+            // 16.dp (Column bottom padding in NoteTypeFAB).
+            // Kein navigationBarsPadding() hier — das Scaffold konsumiert die Navbar-Insets
+            // für seinen Layout-Bereich; innerhalb des snackbarHost-Slots wäre der Modifier
+            // ein No-Op und würde die Snackbar fälschlicherweise doppelt anheben.
+            snackbarHost = {
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .padding(bottom = 72.dp)
+                )
+            },
             containerColor = MaterialTheme.colorScheme.surface
         ) { paddingValues ->
             // 🌟 v1.6.0: PullToRefreshBox only enabled when sync available
