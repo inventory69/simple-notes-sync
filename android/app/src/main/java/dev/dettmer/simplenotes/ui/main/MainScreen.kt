@@ -42,6 +42,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -399,10 +400,23 @@ fun MainScreen(
             }
         } // end Scaffold
 
+        // 🆕 v2.5.0: Einheitliche Farbe der Selektion für den Batch-ColorPicker:
+        // 1 Notiz oder alle Notizen gleiche Farbe → diese Farbe anzeigen
+        // Gemischte Farben oder leere Selektion → null (kein Highlight)
+        val selectedDisplayColor: String? by remember {
+            derivedStateOf {
+                notes
+                    .filter { it.id in selectedNotes }
+                    .map { it.color }
+                    .distinct()
+                    .singleOrNull()
+            }
+        }
+
         // 🆕 v2.5.0: Bulk colour picker — shown as overlay above Scaffold
         if (showBatchColorPicker) {
             NoteColorPickerSheet(
-                currentColor = null, // no "current" for a multi-note selection
+                currentColor = selectedDisplayColor,
                 onColorSelected = { hex ->
                     viewModel.setColorForSelected(hex)
                     showBatchColorPicker = false
