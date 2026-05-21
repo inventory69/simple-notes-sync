@@ -34,13 +34,16 @@ on:
         options:
           - completed
           - draft
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
 
 jobs:
   deploy:
-    name: Build AAB & Deploy (${{ inputs.track }})
+    name: Build AAB & Deploy (${{ inputs.track || 'internal' }})
     runs-on: ubuntu-latest
 
     steps:
@@ -63,15 +66,33 @@ jobs:
           VERSION_CODE=$(grep 'versionCode = ' android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "Building v$VERSION_NAME (Code: $VERSION_CODE) → track: ${{ inputs.track }}"
+          echo "Building v$VERSION_NAME (Code: $VERSION_CODE) → track: ${{ inputs.track || 'internal' }}"
+
+      - name: Ensure changelog exists for version code
+        run: |
+          VERSION_CODE=${{ steps.version.outputs.VERSION_CODE }}
+          for locale_dir in fastlane/metadata/android/*/changelogs; do
+            target="$locale_dir/$VERSION_CODE.txt"
+            if [ ! -f "$target" ]; then
+              latest=$(ls "$locale_dir"/*.txt 2>/dev/null | sort -V | tail -1)
+              if [ -n "$latest" ]; then
+                cp "$latest" "$target"
+                echo "No $VERSION_CODE.txt in $locale_dir — copied from $(basename $latest)"
+              else
+                echo "WARNING: No changelog files found in $locale_dir"
+              fi
+            else
+              echo "Changelog $target already exists"
+            fi
+          done
 
       - name: Calculate rollout fraction (production only)
         id: rollout
         run: |
-          if [ "${{ inputs.track }}" = "production" ] && [ "${{ inputs.rollout_percentage }}" -lt 100 ]; then
-            FRACTION=$(echo "scale=4; ${{ inputs.rollout_percentage }} / 100" | bc)
+          if [ "${{ inputs.track || 'internal' }}" = "production" ] && [ "${{ inputs.rollout_percentage || '10' }}" -lt 100 ]; then
+            FRACTION=$(echo "scale=4; ${{ inputs.rollout_percentage || '10' }} / 100" | bc)
             echo "USER_FRACTION=$FRACTION" >> $GITHUB_OUTPUT
-            echo "Production staged rollout: ${{ inputs.rollout_percentage }}% → fraction $FRACTION"
+            echo "Production staged rollout: ${{ inputs.rollout_percentage || '10' }}% → fraction $FRACTION"
           else
             echo "USER_FRACTION=" >> $GITHUB_OUTPUT
             echo "Full rollout or non-production track: no userFraction"
@@ -97,32 +118,14 @@ jobs:
           echo "AAB_PATH=$AAB_PATH" >> $GITHUB_OUTPUT
           echo "Found AAB: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
 
-      - name: Ensure changelog exists for version code
-        run: |
-          VERSION_CODE=${{ steps.version.outputs.VERSION_CODE }}
-          for locale_dir in fastlane/metadata/android/*/changelogs; do
-            target="$locale_dir/$VERSION_CODE.txt"
-            if [ ! -f "$target" ]; then
-              latest=$(ls "$locale_dir"/*.txt 2>/dev/null | sort -V | tail -1)
-              if [ -n "$latest" ]; then
-                cp "$latest" "$target"
-                echo "No $VERSION_CODE.txt in $locale_dir — copied from $(basename $latest)"
-              else
-                echo "WARNING: No changelog files found in $locale_dir"
-              fi
-            else
-              echo "Changelog $target already exists"
-            fi
-          done
-
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: dev.dettmer.simplenotes
           releaseFiles: ${{ steps.aab.outputs.AAB_PATH }}
-          track: ${{ inputs.track }}
-          status: ${{ inputs.status }}
+          track: ${{ inputs.track || 'internal' }}
+          status: ${{ inputs.status || 'completed' }}
           inAppUpdatePriority: 0
           userFraction: ${{ steps.rollout.outputs.USER_FRACTION }}
           whatsNewDirectory: fastlane/metadata/android
@@ -137,9 +140,9 @@ jobs:
             echo "|---|---|"
             echo "| Package | \`dev.dettmer.simplenotes\` |"
             echo "| Version | ${{ steps.version.outputs.VERSION_NAME }} (Code ${{ steps.version.outputs.VERSION_CODE }}) |"
-            echo "| Track | ${{ inputs.track }} |"
-            echo "| Status | ${{ inputs.status }} |"
-            if [ "${{ inputs.track }}" = "production" ]; then
-              echo "| Rollout | ${{ inputs.rollout_percentage }}% |"
+            echo "| Track | ${{ inputs.track || 'internal' }} |"
+            echo "| Status | ${{ inputs.status || 'completed' }} |"
+            if [ "${{ inputs.track || 'internal' }}" = "production" ]; then
+              echo "| Rollout | ${{ inputs.rollout_percentage || '10' }}% |"
             fi
           } >> $GITHUB_STEP_SUMMARY
