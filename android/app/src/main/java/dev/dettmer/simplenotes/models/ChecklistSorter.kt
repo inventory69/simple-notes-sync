@@ -22,11 +22,19 @@ object ChecklistSorter {
      */
     fun sort(items: List<ChecklistItem>, option: ChecklistSortOption): List<ChecklistItem> {
         val sorted = when (option) {
-            ChecklistSortOption.MANUAL,
-            ChecklistSortOption.UNCHECKED_FIRST -> {
+            ChecklistSortOption.MANUAL -> {
                 // v1.9.0 (F04): Sort by originalOrder to restore un-checked item's original position
                 val unchecked = items.filter { !it.isChecked }.sortedBy { it.originalOrder }
                 val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
+                unchecked + checked
+            }
+            ChecklistSortOption.UNCHECKED_FIRST -> {
+                // Stable filter: keep current relative order within each group.
+                // After any previous sort the list is [unchecked 0..k, checked k+1..n], so:
+                //   check   → item was at p≤k, appears first in checked group (top after separator)
+                //   uncheck → item was at q>k, appears last in unchecked group (bottom before separator)
+                val unchecked = items.filter { !it.isChecked }
+                val checked = items.filter { it.isChecked }
                 unchecked + checked
             }
             ChecklistSortOption.CREATION_DATE -> {

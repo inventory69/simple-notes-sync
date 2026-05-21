@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
+import dev.dettmer.simplenotes.models.ChecklistSorter
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -367,5 +369,93 @@ class ChecklistSortingTest {
         assertTrue("Cashews before new", cashewsIdx < newIdx)
         assertTrue("Noodles before new", noodlesIdx < newIdx)
         assertTrue("New before Coffee", newIdx < coffeeIdx)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ChecklistSorter.sort — UNCHECKED_FIRST stable-filter behaviour
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private fun sorterItem(id: String, checked: Boolean, order: Int, originalOrder: Int = order): ChecklistItem =
+        ChecklistItem(id = id, text = "Item $id", isChecked = checked, order = order, originalOrder = originalOrder)
+
+    @Test
+    fun `UNCHECKED_FIRST - uncheck appends to end of unchecked group, not originalOrder position`() {
+        // Items 10–12 are unchecked (orig 9–11); item1 has orig=0 but is checked.
+        // Without the fix, unchecking item1 would jump it to position 0 (orig=0 < orig=9).
+        val items = listOf(
+            sorterItem("10", checked = false, order = 0, originalOrder = 9),
+            sorterItem("11", checked = false, order = 1, originalOrder = 10),
+            sorterItem("12", checked = false, order = 2, originalOrder = 11),
+            sorterItem("1",  checked = true,  order = 3, originalOrder = 0)
+        )
+
+        val result = ChecklistSorter.sort(items, ChecklistSortOption.UNCHECKED_FIRST)
+
+        assertEquals(listOf("10", "11", "12", "1"), result.map { it.id })
+        assertFalse(result[0].isChecked)
+        assertFalse(result[1].isChecked)
+        assertFalse(result[2].isChecked)
+        assertTrue(result[3].isChecked)
+    }
+
+    @Test
+    fun `UNCHECKED_FIRST - checking an item places it at top of checked group`() {
+        // State after flipping Zeckenmittel to checked: it sits at position 2 in the pre-sort list
+        // (unchecked group), while existing checked items are at positions 3–4.
+        val items = listOf(
+            sorterItem("A",            checked = false, order = 0),
+            sorterItem("B",            checked = false, order = 1),
+            sorterItem("Zeckenmittel", checked = true,  order = 2), // just flipped
+            sorterItem("C",            checked = true,  order = 3),
+            sorterItem("D",            checked = true,  order = 4)
+        )
+
+        val result = ChecklistSorter.sort(items, ChecklistSortOption.UNCHECKED_FIRST)
+
+        // Unchecked first
+        assertEquals("A", result[0].id)
+        assertEquals("B", result[1].id)
+        // Zeckenmittel must be at the TOP of checked group (position 2), not at position 4
+        assertEquals("Zeckenmittel", result[2].id)
+        assertEquals("C", result[3].id)
+        assertEquals("D", result[4].id)
+    }
+
+    @Test
+    fun `UNCHECKED_FIRST - relative order within unchecked group is preserved after toggle`() {
+        // User arranged unchecked as [B, C, A] via DnD; originalOrder reflects DnD positions.
+        // On next toggle the unchecked group must stay [B, C, A] — no re-sort by originalOrder.
+        val items = listOf(
+            sorterItem("B", checked = false, order = 0, originalOrder = 0),
+            sorterItem("C", checked = false, order = 1, originalOrder = 1),
+            sorterItem("A", checked = false, order = 2, originalOrder = 2),
+            sorterItem("X", checked = true,  order = 3, originalOrder = 3)
+        )
+
+        val result = ChecklistSorter.sort(items, ChecklistSortOption.UNCHECKED_FIRST)
+
+        assertEquals(listOf("B", "C", "A", "X"), result.map { it.id })
+    }
+
+    @Test
+    fun `MANUAL - unchecked group is re-sorted by originalOrder (regression guard)`() {
+        // MANUAL mode must keep the originalOrder-based sort within each group unchanged.
+        // Items A and B are both unchecked but their current order (A before B) differs
+        // from their originalOrder (B=0, A=2). MANUAL sort must re-order to [B, A].
+        // UNCHECKED_FIRST (stable filter) would leave them as [A, B].
+        val items = listOf(
+            sorterItem("A", checked = false, order = 0, originalOrder = 2),
+            sorterItem("B", checked = false, order = 1, originalOrder = 0),
+            sorterItem("C", checked = true,  order = 2, originalOrder = 1)
+        )
+
+        val result = ChecklistSorter.sort(items, ChecklistSortOption.MANUAL)
+
+        // Unchecked group re-sorted by originalOrder: B(0) before A(2)
+        assertEquals("B", result[0].id)
+        assertEquals("A", result[1].id)
+        // C stays in checked group
+        assertEquals("C", result[2].id)
+        assertTrue(result[2].isChecked)
     }
 }
