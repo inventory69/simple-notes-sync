@@ -579,4 +579,6 @@
     <string name="keep_import_result_labels"></string>
     <string name="sync_interval_15min_title"></string>
     <string name="developer_options_unlocked"></string>
+    <string name="language_ukrainian"></string>
+    <string name="language_turkish"></string>
 </resources>
