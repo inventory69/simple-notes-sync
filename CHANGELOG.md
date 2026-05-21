@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.2] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+**Navigation Bar Color Not Applied on Android < 10 in Dark Mode** ([5554710](https://github.com/inventory69/simple-notes-sync/commit/5554710))
+- On API < 30, the navigation bar color was not applied in dark mode; the window flag `navigationBarColor` is now set explicitly for these devices
+- Thanks to [dfxflkbvnsr](https://github.com/dfxflkbvnsr) for the report!
+
+**Snackbar Overlapping the FAB on Main Screen** ([a9ff4f5](https://github.com/inventory69/simple-notes-sync/commit/a9ff4f5))
+- The snackbar appeared behind the floating action button; it now renders above the FAB
+- Thanks to [dfxflkbvnsr](https://github.com/dfxflkbvnsr) for the report!
+
+**Back Press Ignored in Note Selection Mode** ([b8689eb](https://github.com/inventory69/simple-notes-sync/commit/b8689eb))
+- Pressing back while notes were selected did not exit selection mode; the back handler is now correctly registered when selection is active
+- Thanks to [dfxflkbvnsr](https://github.com/dfxflkbvnsr) for the report!
+
+**Multi-Select Color Picker Showed No Current Color** ([1365893](https://github.com/inventory69/simple-notes-sync/commit/1365893))
+- The color picker in multi-select always opened with no color pre-selected; it now highlights the shared color when all selected notes share one
+
+**Note Color Lost When Entering Selection Mode** ([9c4cc5d](https://github.com/inventory69/simple-notes-sync/commit/9c4cc5d))
+- Tapping a note card to begin selection reset its color to None; the color is now preserved
+
+**Checklist UNCHECKED_FIRST Sort Stability on Toggle** ([2c008fd](https://github.com/inventory69/simple-notes-sync/commit/2c008fd))
+- `UNCHECKED_FIRST` shared the same `sortedBy { originalOrder }` branch as `MANUAL`, causing items to jump on every toggle: unchecked items moved to the top of the unchecked group, checked items sank to the bottom of the checked group
+- Fixed with a dedicated stable-filter branch that preserves relative order within each group; `MANUAL` keeps its `originalOrder`-based restore unchanged
+- Thanks to [@WuTangWilli](https://github.com/WuTangWilli) for the report!
+
+### 🌍 Translations
+
+- **Indonesian** (100%): [@arifpedia](https://github.com/arifpedia) / Arif Budiman
+- **Chinese (Simplified)** (100%): heretic43
+- **Hindi** (partial): Silent Coder
+
+---
+
 ## [2.5.1] - 2026-05-16
 
 > 🎉 **First Google Play production release** — v2.5.0 was prepared as the initial production build but was never published to the Play Store. v2.5.1 is the version actually reaching production. It completes the note colour feature that shipped in v2.5.0 by adding the one missing piece: sorting by colour.

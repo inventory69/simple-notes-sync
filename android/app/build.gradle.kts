@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 35  // 🆕 v2.5.1 - Note colour sorting (code 34 consumed by failed API upload)
-        versionName = "2.5.1"  // 🆕 v2.5.1 - Note colour sorting
+        versionCode = 36  // 🆕 v2.5.2 - UI & color bug fixes
+        versionName = "2.5.2"  // 🆕 v2.5.2 - UI & color bug fixes
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

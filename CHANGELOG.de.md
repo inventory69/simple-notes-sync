@@ -8,6 +8,41 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.5.2] - 2026-05-22
+
+### 🐛 Bug-Fixes
+
+**Navigationsleistenfarbe wird bei Android < 10 im Dunkelmodus nicht gesetzt** ([5554710](https://github.com/inventory69/simple-notes-sync/commit/5554710))
+- Auf API < 30 blieb die Navigationsleiste hell, obwohl Dunkelmodus aktiv war; das Window-Flag `navigationBarColor` wird jetzt explizit für diese Geräte gesetzt
+- Danke an [dfxflkbvnsr](https://github.com/dfxflkbvnsr) für den Hinweis!
+
+**Snackbar verdeckt FAB auf dem Hauptbildschirm** ([a9ff4f5](https://github.com/inventory69/simple-notes-sync/commit/a9ff4f5))
+- Die Snackbar erschien hinter dem Floating Action Button; sie wird jetzt korrekt oberhalb des FAB angezeigt
+- Danke an [dfxflkbvnsr](https://github.com/dfxflkbvnsr) für den Hinweis!
+
+**Zurück-Taste wird im Auswahlmodus nicht abgefangen** ([b8689eb](https://github.com/inventory69/simple-notes-sync/commit/b8689eb))
+- Ein Druck auf Zurück beim Auswählen von Notizen beendete den Auswahlmodus nicht; der Back-Handler wird jetzt korrekt registriert, sobald die Auswahl aktiv ist
+- Danke an [dfxflkbvnsr](https://github.com/dfxflkbvnsr) für den Hinweis!
+
+**Farbauswahl im Multi-Select zeigt keine aktuelle Farbe** ([1365893](https://github.com/inventory69/simple-notes-sync/commit/1365893))
+- Der Farb-Picker im Multi-Select öffnete sich immer ohne vorausgewählte Farbe; er markiert jetzt die gemeinsame Farbe, wenn alle ausgewählten Notizen dieselbe haben
+
+**Notizfarbe geht beim Wechsel in den Auswahlmodus verloren** ([9c4cc5d](https://github.com/inventory69/simple-notes-sync/commit/9c4cc5d))
+- Ein Tippen auf eine Notizkarte zum Starten der Auswahl setzte die Notizfarbe auf „Keine" zurück; die Farbe bleibt jetzt erhalten
+
+**Checklisten: UNCHECKED_FIRST-Sortierung springt beim Umschalten** ([2c008fd](https://github.com/inventory69/simple-notes-sync/commit/2c008fd))
+- `UNCHECKED_FIRST` teilte sich denselben `sortedBy { originalOrder }`-Zweig wie `MANUAL`, wodurch Items beim Abhaken sprangen (Abgehakte landeten am Ende der abgehakten Gruppe, Abgehobene an der Spitze der nicht-abgehakten Gruppe)
+- Behoben durch einen eigenen stabilen Filter-Zweig für `UNCHECKED_FIRST`, der die relative Reihenfolge innerhalb jeder Gruppe erhält; `MANUAL` behält die `originalOrder`-basierte Wiederherstellung unverändert
+- Danke an [@WuTangWilli](https://github.com/WuTangWilli) für den Hinweis!
+
+### 🌍 Übersetzungen
+
+- **Indonesisch** (100 %): [@arifpedia](https://github.com/arifpedia) / Arif Budiman
+- **Chinesisch (Vereinfacht)** (100 %): heretic43
+- **Hindi** (teilweise): Silent Coder
+
+---
+
 ## [2.5.1] - 2026-05-16
 
 > 🎉 **Erstes Google-Play-Production-Release** — v2.5.0 war als initialer Production-Build vorbereitet, wurde aber nie im Play Store veröffentlicht. v2.5.1 ist die Version, die tatsächlich in Production geht. Sie vervollständigt das Notizfarben-Feature aus v2.5.0 durch das eine fehlende Stück: die Sortierung nach Farbe.
