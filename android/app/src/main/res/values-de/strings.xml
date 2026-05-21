@@ -400,14 +400,12 @@
     <string name="display_mode_list">Listen-Ansicht</string>
     <string name="display_mode_grid">Raster-Ansicht</string>
     <string name="display_mode_info">Die Raster-Ansicht ordnet Notizen in mehreren Spalten an. Die Spaltenanzahl passt sich automatisch an die Displaygröße und Textskalierung des Geräts an.</string>
-
     <!-- 🆕 v2.1.0 (F46): Grid Column Control -->
     <string name="grid_scaling_title">Raster-Spaltensteuerung</string>
     <string name="grid_adaptive_scaling_title">Automatische Skalierung</string>
     <string name="grid_adaptive_scaling_subtitle">Spalten passen sich an Displaygröße und Textskalierung an</string>
     <string name="grid_manual_columns_title">Spaltenanzahl</string>
     <string name="grid_scaling_info">Bei automatischer Skalierung passt sich die Spaltenanzahl an die Displaygröße und Textskalierung des Geräts an. Bei deaktivierter Skalierung wird eine feste Spaltenanzahl verwendet.</string>
-
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App-Titel</string>
     <string name="custom_app_title_label">Eigener Titel</string>
@@ -440,13 +438,13 @@
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Rükgängig</string>
     <string name="editor_redo">Wiederherstellen</string>
-     <!-- 🆕 v1.9.0 (F06): Note Filter -->
+    <!-- 🆕 v1.9.0 (F06): Note Filter -->
      <string name="filter_all">Alle</string>
-     <string name="filter_text_only">Text</string>
-     <string name="filter_checklist_only">Listen</string>
-     <!-- 🆕 v2.5.0: Farbfilter -->
+    <string name="filter_text_only">Text</string>
+    <string name="filter_checklist_only">Listen</string>
+    <!-- 🆕 v2.5.0: Farbfilter -->
      <string name="filter_color">Nach Farbe filtern</string>
-     <string name="filter_color_all">Alle Farben</string>
+    <string name="filter_color_all">Alle Farben</string>
     <!-- v1.9.0 (F10): Suche -->
     <string name="search_notes_placeholder">Suchen…</string>
     <string name="search_clear">Suche leeren</string>
@@ -595,12 +593,10 @@
     <string name="keep_import_snackbar_cancelled">Import abgebrochen</string>
     <string name="keep_import_snackbar_error">Import fehlgeschlagen</string>
     <string name="keep_import_snackbar_retry_action">Erneut versuchen</string>
-
     <!-- 🆕 v2.5.0: Google Keep Import — vollständige UI-Texte -->
     <string name="keep_import_section_title">Google Keep importieren</string>
     <string name="keep_import_section_description">Importiere deinen Google-Takeout-Export als simple-notes-sync-Notizen.</string>
     <string name="keep_import_section_button_pick_zip">ZIP wählen…</string>
-
     <string name="keep_import_config_title">Aus Google Keep importieren</string>
     <string name="keep_import_config_scanning">Archivinhalt wird analysiert…</string>
     <string name="keep_import_config_include_archived">Archivierte Notizen importieren</string>
@@ -614,7 +610,6 @@
     <string name="keep_import_config_info_color_pin">🎨 Notizfarben werden direkt mitimportiert und angezeigt. Anheftungen werden gespeichert, aber erst in einer zukünftigen Version sichtbar.</string>
     <string name="keep_import_config_button_start">Import starten</string>
     <string name="keep_import_config_button_cancel">Abbrechen</string>
-
     <string name="keep_import_prescan_header">📦 Archiv enthält:</string>
     <string name="keep_import_prescan_active">• %1$d aktive Notizen</string>
     <string name="keep_import_prescan_archived">• %1$d archivierte Notizen</string>
@@ -623,16 +618,13 @@
     <string name="keep_import_prescan_shared">• %1$d Notizen aus geteilten Listen (sharees)</string>
     <string name="keep_import_prescan_attachments">• %1$d Notizen mit Anhängen (werden nicht importiert)</string>
     <string name="keep_import_prescan_large_warning">⚠️ Großes Archiv (%1$d MB), Analyse kann eine Minute dauern.</string>
-
     <string name="keep_import_large_zip_title">Großes Archiv</string>
     <string name="keep_import_large_zip_body">Dieses Archiv ist %1$d MB groß. Der Import kann mehrere Minuten dauern und viel Akku verbrauchen. Trotzdem starten?</string>
     <string name="keep_import_large_zip_button_continue">Fortfahren</string>
     <string name="keep_import_large_zip_button_cancel">Abbrechen</string>
-
     <string name="keep_import_progress_title">Importiere aus Google Keep…</string>
     <string name="keep_import_progress_status">Verarbeite %1$d von %2$d: %3$s</string>
     <string name="keep_import_progress_button_cancel">Abbrechen</string>
-
     <string name="keep_import_result_title">Import abgeschlossen</string>
     <string name="keep_import_result_imported">✓ %1$d Notizen importiert</string>
     <string name="keep_import_result_replaced">↻ %1$d ersetzt</string>
@@ -646,7 +638,6 @@
     <string name="keep_import_result_show_errors">Details anzeigen</string>
     <string name="keep_import_result_hide_errors">Details ausblenden</string>
     <string name="keep_import_result_button_close">Schließen</string>
-
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
@@ -669,7 +660,6 @@
     <!-- ============================= -->
     <string name="widget_name">Simple Notes</string>
     <string name="widget_description">Zeige eine Notiz oder Checkliste auf dem Startbildschirm</string>
-
     <!-- v2.2.0: New Note Shortcut Widget -->
     <string name="new_note_widget_name">Neue Notiz</string>
     <string name="new_note_widget_description">Schnell eine neue Notiz oder Checkliste erstellen</string>
@@ -700,13 +690,11 @@
     <string name="share_no_calendar_app">Keine Kalender-App gefunden</string>
     <string name="share_error">Teilen-Dialog konnte nicht geöffnet werden</string>
     <string name="share_pdf_error">PDF konnte nicht erstellt werden</string>
-
     <!-- v2.2.0: Share Intent — Notiztyp-Auswahl -->
     <string name="share_type_dialog_title">Speichern als</string>
     <string name="share_type_dialog_message">Wie soll der geteilte Text gespeichert werden?</string>
     <string name="share_type_text_note">Textnotiz</string>
     <string name="share_type_checklist">Checkliste</string>
-
     <!-- v2.2.0: Checklist Item Kontextmenü -->
     <string name="checklist_item_menu">Eintrag-Optionen</string>
     <string name="checklist_copy_text">Text kopieren</string>
@@ -717,7 +705,6 @@
     <string name="checklist_copy_to_checklist_untitled">Unbenannte Checkliste</string>
     <string name="checklist_copy_to_checklist_item_count">%d Einträge</string>
     <string name="checklist_item_copied_toast">Eintrag in Checkliste kopiert</string>
-
     <!-- ============================= -->
     <!-- NOTIZFARBE v2.5.0 (Issue #65) -->
     <!-- ============================= -->
