@@ -1,0 +1,13 @@
+🔧 v2.5.2 — UI & Color Fixes
+
+• Fix: nav bar color on Android < 10 (dark mode)
+• Fix: snackbar overlapping FAB
+• Fix: back press in note selection mode
+• Fix: color picker shows wrong color in multi-select
+• Fix: note color lost in selection mode
+• Fix: checklist UNCHECKED_FIRST sort stability
+• Updated translations: Hindi, Indonesian & Chinese
+
+Thanks to @WuTangWilli, Arif Budiman, dfxflkbvnsr, heretic43 & Silent Coder!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

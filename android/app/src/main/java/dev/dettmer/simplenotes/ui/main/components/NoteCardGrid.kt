@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,6 +90,7 @@ fun NoteCardGrid(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val noteContainerColor = NoteColorPalette.resolveContainer(note.color, isDark)
         .takeOrElse { MaterialTheme.colorScheme.surfaceContainerHigh }
+    val hasNoteColor = !note.color.isNullOrBlank()
 
     Card(
         modifier = Modifier
@@ -114,7 +116,7 @@ fun NoteCardGrid(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
+            containerColor = if (isSelected && !hasNoteColor) {
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             } else {
                 noteContainerColor
@@ -222,6 +224,16 @@ fun NoteCardGrid(
                         )
                     }
                 }
+            }
+
+            // Selection overlay on colored notes — keeps note color visible while
+            // signaling selection via a subtle semi-transparent tint
+            if (isSelected && hasNoteColor) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.08f))
+                )
             }
 
             // Selection indicator checkbox (top-right)

@@ -25,4 +25,21 @@
     <string name="sync_status_local_only">अभी तक सिंक नहीं हुआ</string>
     <string name="sync_status_deleted_on_server">सर्वर पर हटाया गया</string>
     <string name="sync_legend_button">सिंक स्थिति सहायता</string>
+    <string name="sync_legend_description">प्रत्येक नोट अपने सिंक की स्थिति को दर्शाता है:</string>
+    <string name="sync_legend_pending_label">लंबित</string>
+    <string name="sync_legend_pending_desc">इस नोट में लोकल बदलाव हैं जो सिंक किए जाने का इंतज़ार कर रहे हैं।</string>
+    <string name="sync_legend_conflict_label">टकराव</string>
+    <string name="sync_legend_conflict_desc">इस नोट में एक ही समय पर कई डिवाइसों पर परिवर्तन हुए थे। नवीनतम संस्करण ही रखा गया।</string>
+    <string name="sync_legend_local_only_label">केवल स्थानीय</string>
+    <string name="sync_legend_local_only_desc">यह नोट अभी तक सर्वर से सिंक नहीं हुआ है।</string>
+    <string name="sync_legend_deleted_label">सर्वर पर हटाया गया</string>
+    <string name="sync_legend_deleted_desc">यह नोट किसी अन्य डिवाइस पर या सीधे सर्वर पर हटाया गया था। यह अभी भी स्थानीय रूप से मौजूद है।</string>
+    <string name="sync_deleted_on_server_count">सर्वर पर %d हटाए गए</string>
+    <string name="sync_phase_preparing">सिंक्रनाइज़ हो रहा है…</string>
+    <string name="sync_phase_uploading">अपलोड हो रहा है…</string>
+    <string name="sync_phase_downloading">डाउनलोड हो रहा है…</string>
+    <string name="sync_phase_deleting">सर्वर से हटा रहा है…</string>
+    <string name="sync_quota_warning">⚠️ सिंक एंड्रॉयड पावर प्रबंधन के कारण देरी हुई। विश्वसनीय बैकग्राउंड सिंक के लिए नियमित रूप से ऐप खोलें या बैटरी अनुकूलन अक्षम करें।</string>
+    <string name="sort_notes">नोट्स क्रमबद्ध करें</string>
+    <string name="sort_ascending">आरोही</string>
 </resources>

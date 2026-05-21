@@ -7,10 +7,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
@@ -40,6 +42,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
@@ -82,7 +86,12 @@ private const val SYNC_SCROLL_DELAY_MS = 150L
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod") // 🔧 v2.5.0: color picker state + sheet push over limit
 @Composable
-fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSettings: () -> Unit, onCreateNote: (NoteType) -> Unit) {
+fun MainScreen(
+    viewModel: MainViewModel,
+    onOpenNote: (String?) -> Unit,
+    onOpenSettings: () -> Unit,
+    onCreateNote: (NoteType) -> Unit
+) {
     val notes by viewModel.sortedNotes.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val scrollToTop by viewModel.scrollToTop.collectAsState()
@@ -95,6 +104,11 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
     // Multi-Select State
     val selectedNotes by viewModel.selectedNotes.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+
+    // Back press handler for selection mode
+    BackHandler(enabled = isSelectionMode) {
+        viewModel.clearSelection()
+    }
 
     // 🌟 v1.6.0: Reactive offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
@@ -236,8 +250,20 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
                     )
                 }
             },
-            // FAB wird manuell in Box platziert für korrekten z-Index
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            // FAB liegt als Fullscreen-Overlay außerhalb des Scaffolds (siehe NoteTypeFAB-Block
+            // weiter unten). Das Scaffold kennt den FAB nicht und kann die Snackbar nicht
+            // automatisch darüber anheben. 72.dp = 56.dp (Material Standard-FAB-Höhe) +
+            // 16.dp (Column bottom padding in NoteTypeFAB).
+            // Kein navigationBarsPadding() hier — das Scaffold konsumiert die Navbar-Insets
+            // für seinen Layout-Bereich; innerhalb des snackbarHost-Slots wäre der Modifier
+            // ein No-Op und würde die Snackbar fälschlicherweise doppelt anheben.
+            snackbarHost = {
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .padding(bottom = 72.dp)
+                )
+            },
             containerColor = MaterialTheme.colorScheme.surface
         ) { paddingValues ->
             // 🌟 v1.6.0: PullToRefreshBox only enabled when sync available
@@ -374,10 +400,23 @@ fun MainScreen(viewModel: MainViewModel, onOpenNote: (String?) -> Unit, onOpenSe
             }
         } // end Scaffold
 
+        // 🆕 v2.5.0: Einheitliche Farbe der Selektion für den Batch-ColorPicker:
+        // 1 Notiz oder alle Notizen gleiche Farbe → diese Farbe anzeigen
+        // Gemischte Farben oder leere Selektion → null (kein Highlight)
+        val selectedDisplayColor: String? by remember {
+            derivedStateOf {
+                notes
+                    .filter { it.id in selectedNotes }
+                    .map { it.color }
+                    .distinct()
+                    .singleOrNull()
+            }
+        }
+
         // 🆕 v2.5.0: Bulk colour picker — shown as overlay above Scaffold
         if (showBatchColorPicker) {
             NoteColorPickerSheet(
-                currentColor = null, // no "current" for a multi-note selection
+                currentColor = selectedDisplayColor,
                 onColorSelected = { hex ->
                     viewModel.setColorForSelected(hex)
                     showBatchColorPicker = false

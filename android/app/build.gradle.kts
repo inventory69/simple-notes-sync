@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 35  // 🆕 v2.5.1 - Note colour sorting (code 34 consumed by failed API upload)
-        versionName = "2.5.1"  // 🆕 v2.5.1 - Note colour sorting
+        versionCode = 36  // 🆕 v2.5.2 - UI & color bug fixes
+        versionName = "2.5.2"  // 🆕 v2.5.2 - UI & color bug fixes
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
@@ -261,6 +261,23 @@ tasks.register<Copy>("copyChangelogsToAssets") {
     }
     
     includeEmptyDirs = false
+
+    doLast {
+        val versionCode = android.defaultConfig.versionCode ?: return@doLast
+        listOf("en-US", "de-DE").forEach { locale ->
+            val destDir = file("$projectDir/src/main/assets/changelogs/$locale")
+            val target = File(destDir, "$versionCode.txt")
+            if (!target.exists()) {
+                val latest = destDir.listFiles()
+                    ?.filter { it.extension == "txt" }
+                    ?.maxByOrNull { it.nameWithoutExtension.toIntOrNull() ?: 0 }
+                if (latest != null) {
+                    latest.copyTo(target, overwrite = true)
+                    logger.warn("copyChangelogsToAssets: $versionCode.txt missing in $locale — copied ${latest.name} as fallback")
+                }
+            }
+        }
+    }
 }
 
 // Run before preBuild to ensure changelogs are available

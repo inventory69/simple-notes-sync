@@ -1,0 +1,13 @@
+🔧 v2.5.2 — UI- & Farb-Fixes
+
+• Fix: Nav-Leiste unter Android 10 (Dunkelmodus)
+• Fix: Snackbar verdeckt FAB
+• Fix: Zurück-Taste im Auswahlmodus
+• Fix: Farbauswahl zeigt falsche Farbe (Multi-Select)
+• Fix: Notizfarbe im Auswahlmodus verloren
+• Fix: Sortierung UNCHECKED_FIRST in Checklisten
+• Übersetzungsupdate: Hindi, Indonesisch & Chinesisch
+
+Danke an @WuTangWilli, Arif Budiman, dfxflkbvnsr, heretic43 & Silent Coder!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
