@@ -43,12 +43,27 @@ permissions:
 
 jobs:
   deploy:
-    name: Build AAB & Deploy (${{ inputs.track || 'internal' }})
+    name: Build AAB & Deploy
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Resolve deploy target
+        id: target
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            echo "track=production" >> $GITHUB_OUTPUT
+            echo "status=completed" >> $GITHUB_OUTPUT
+            echo "rollout_percentage=100" >> $GITHUB_OUTPUT
+            echo "Tag-triggered: deploying to production (100%)"
+          else
+            echo "track=${{ inputs.track }}" >> $GITHUB_OUTPUT
+            echo "status=${{ inputs.status }}" >> $GITHUB_OUTPUT
+            echo "rollout_percentage=${{ inputs.rollout_percentage || '10' }}" >> $GITHUB_OUTPUT
+            echo "Manual dispatch: track=${{ inputs.track }}, status=${{ inputs.status }}"
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -66,7 +81,7 @@ jobs:
           VERSION_CODE=$(grep 'versionCode = ' android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "Building v$VERSION_NAME (Code: $VERSION_CODE) → track: ${{ inputs.track || 'internal' }}"
+          echo "Building v$VERSION_NAME (Code: $VERSION_CODE) → track: ${{ steps.target.outputs.track }}"
 
       - name: Ensure changelog exists for version code
         run: |
@@ -89,10 +104,12 @@ jobs:
       - name: Calculate rollout fraction (production only)
         id: rollout
         run: |
-          if [ "${{ inputs.track || 'internal' }}" = "production" ] && [ "${{ inputs.rollout_percentage || '10' }}" -lt 100 ]; then
-            FRACTION=$(echo "scale=4; ${{ inputs.rollout_percentage || '10' }} / 100" | bc)
+          TRACK="${{ steps.target.outputs.track }}"
+          PCT="${{ steps.target.outputs.rollout_percentage }}"
+          if [ "$TRACK" = "production" ] && [ "$PCT" -lt 100 ]; then
+            FRACTION=$(echo "scale=4; $PCT / 100" | bc)
             echo "USER_FRACTION=$FRACTION" >> $GITHUB_OUTPUT
-            echo "Production staged rollout: ${{ inputs.rollout_percentage || '10' }}% → fraction $FRACTION"
+            echo "Production staged rollout: $PCT% → fraction $FRACTION"
           else
             echo "USER_FRACTION=" >> $GITHUB_OUTPUT
             echo "Full rollout or non-production track: no userFraction"
@@ -124,8 +141,8 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: dev.dettmer.simplenotes
           releaseFiles: ${{ steps.aab.outputs.AAB_PATH }}
-          track: ${{ inputs.track || 'internal' }}
-          status: ${{ inputs.status || 'completed' }}
+          track: ${{ steps.target.outputs.track }}
+          status: ${{ steps.target.outputs.status }}
           inAppUpdatePriority: 0
           userFraction: ${{ steps.rollout.outputs.USER_FRACTION }}
           whatsNewDirectory: fastlane/metadata/android
@@ -140,9 +157,9 @@ jobs:
             echo "|---|---|"
             echo "| Package | \`dev.dettmer.simplenotes\` |"
             echo "| Version | ${{ steps.version.outputs.VERSION_NAME }} (Code ${{ steps.version.outputs.VERSION_CODE }}) |"
-            echo "| Track | ${{ inputs.track || 'internal' }} |"
-            echo "| Status | ${{ inputs.status || 'completed' }} |"
-            if [ "${{ inputs.track || 'internal' }}" = "production" ]; then
-              echo "| Rollout | ${{ inputs.rollout_percentage || '10' }}% |"
+            echo "| Track | ${{ steps.target.outputs.track }} |"
+            echo "| Status | ${{ steps.target.outputs.status }} |"
+            if [ "${{ steps.target.outputs.track }}" = "production" ]; then
+              echo "| Rollout | ${{ steps.target.outputs.rollout_percentage }}% |"
             fi
           } >> $GITHUB_STEP_SUMMARY
