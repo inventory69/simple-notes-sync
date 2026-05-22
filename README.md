@@ -31,6 +31,10 @@ alt="Get it on Obtainium" align="center" height="54" />
 <a href="https://f-droid.org/packages/dev.dettmer.simplenotes">
 <img src="https://f-droid.org/badge/get-it-on.png"
 alt="Get it on F-Droid" align="center" height="80" /></a>
+
+<a href="https://play.google.com/store/apps/details?id=dev.dettmer.simplenotes">
+<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+alt="Get it on Google Play" align="center" height="80" /></a>
   
 </div>
 
