@@ -312,8 +312,13 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             // Don't treat a list-item line as a title
             val listItemRegex = Regex("""^[-*]\s+.*""")
             if (listItemRegex.matches(firstLine)) return "" to text
-            // Only extract as title when a blank line separates it from the items
-            val bodyStart = if (lines.getOrNull(1)?.isBlank() == true) 2 else null
+            // Extract as title when separated by a blank line, or when next line is a list item
+            val secondLine = lines.getOrNull(1)?.trim() ?: ""
+            val bodyStart = when {
+                secondLine.isBlank()              -> 2
+                listItemRegex.matches(secondLine) -> 1
+                else                              -> null
+            }
             if (bodyStart != null) {
                 firstLine to lines.drop(bodyStart).joinToString("\n").trim()
             } else {
@@ -325,29 +330,26 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
-    /**
-     * 🆕 v2.2.0: Parses shared plain text into checklist items.
-     * GFM heuristic: if ALL non-empty lines match `- [ ] text` / `* [x] text`,
-     * preserves checked/unchecked state; otherwise each line becomes an unchecked item.
-     */
     private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
-        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
-        val nonEmptyLines = text.trim().lines().filter { it.isNotBlank() }
-        if (nonEmptyLines.isEmpty()) return _checklistItems.value
-        val allGfm = nonEmptyLines.all { gfmRegex.matches(it.trim()) }
-        return if (allGfm) {
-            // GFM-Format: checked-State aus Prefix übernehmen
-            nonEmptyLines.mapIndexed { index, line ->
-                val match = requireNotNull(gfmRegex.find(line.trim()))
+        val gfmRegex    = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val markerRegex = Regex("""^[-*]\s+(.*)$""")
+        val cbRegex     = Regex("""^\[[ xX]\]\s*(.*)$""")
+
+        val lines = text.trim().lines().filter { it.isNotBlank() }
+        if (lines.isEmpty()) return _checklistItems.value
+
+        return lines.mapIndexed { index, line ->
+            val t = line.trim()
+            val gfm = gfmRegex.find(t)
+            if (gfm != null) {
                 ChecklistItemState.createEmpty(index).copy(
-                    text = match.groupValues[2].trim(),
-                    isChecked = match.groupValues[1].lowercase() != " "
+                    text      = gfm.groupValues[2].trim(),
+                    isChecked = gfm.groupValues[1].lowercase() != " "
                 )
-            }
-        } else {
-            // Plaintext: Jede Zeile = unchecked Item
-            nonEmptyLines.mapIndexed { index, line ->
-                ChecklistItemState.createEmpty(index).copy(text = line.trim())
+            } else {
+                val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
+                val afterCb     = cbRegex.find(afterMarker.trim())?.groupValues?.get(1) ?: afterMarker
+                ChecklistItemState.createEmpty(index).copy(text = afterCb.trim())
             }
         }
     }
