@@ -310,7 +310,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
         return if (isChecklist) {
             // Don't treat a list-item line as a title
-            val listItemRegex = Regex("""^[-*]\s+.*""")
+            val listItemRegex = Regex("""^[-*•✓☑✔]\s+.*""")
             if (listItemRegex.matches(firstLine)) return "" to text
             // Extract as title when separated by a blank line, or when next line is a list item
             val secondLine = lines.getOrNull(1)?.trim() ?: ""
@@ -331,9 +331,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
-        val gfmRegex    = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
-        val markerRegex = Regex("""^[-*]\s+(.*)$""")
-        val cbRegex     = Regex("""^\[[ xX]\]\s*(.*)$""")
+        val gfmRegex       = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val markerRegex    = Regex("""^[-*•]\s+(.*)$""")
+        val cbRegex        = Regex("""^\[[ xX]\]\s*(.*)$""")
+        val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
 
         val lines = text.trim().lines().filter { it.isNotBlank() }
         if (lines.isEmpty()) return _checklistItems.value
@@ -347,9 +348,17 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     isChecked = gfm.groupValues[1].lowercase() != " "
                 )
             } else {
-                val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
-                val afterCb     = cbRegex.find(afterMarker.trim())?.groupValues?.get(1) ?: afterMarker
-                ChecklistItemState.createEmpty(index).copy(text = afterCb.trim())
+                val checkmark = checkmarkRegex.find(t)
+                if (checkmark != null) {
+                    ChecklistItemState.createEmpty(index).copy(
+                        text      = checkmark.groupValues[1].trim(),
+                        isChecked = true
+                    )
+                } else {
+                    val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
+                    val afterCb     = cbRegex.find(afterMarker.trim())?.groupValues?.get(1) ?: afterMarker
+                    ChecklistItemState.createEmpty(index).copy(text = afterCb.trim())
+                }
             }
         }
     }
