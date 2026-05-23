@@ -1138,7 +1138,8 @@ private fun ChecklistEditor(
                 if (showSeparator && visualIndex == separatorVisualIndex) {
                     CheckedItemsSeparator(
                         checkedCount = checkedCount,
-                        isDragActive = dragDropState.isAnyItemDragging
+                        isDragActive = dragDropState.isAnyItemDragging,
+                        modifier = if (placementAnimationsEnabled) Modifier.animateItem() else Modifier
                     )
                 } else {
                     val dataIndex = localVisualToDataIndex(visualIndex)
