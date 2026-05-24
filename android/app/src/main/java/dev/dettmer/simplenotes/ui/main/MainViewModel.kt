@@ -97,6 +97,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
+    val isServerConfigured: StateFlow<Boolean> = _isOfflineMode.map { offline ->
+        if (offline) false
+        else hasServerConfig()
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        initialValue = !_isOfflineMode.value && hasServerConfig()
+    )
+
     /**
      * Refresh offline mode state from SharedPreferences
      * Called when returning from Settings screen (in onResume)
@@ -244,9 +253,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val filtered = filterNotes(notes, filter, colorFilter)
         val searched = searchNotes(filtered, query)
         val sorted = sortNotes(searched, option, direction)
+        val result = sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
 
         // Detect new note at top of sorted list (after returning from editor)
-        val newFirstId = sorted.firstOrNull()?.id
+        val newFirstId = result.firstOrNull()?.id
         if (expectNewNoteCheck &&
             newFirstId != null &&
             previousFirstSortedNoteId != null &&
@@ -258,7 +268,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         expectNewNoteCheck = false
         previousFirstSortedNoteId = newFirstId
 
-        sorted
+        result
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -525,6 +535,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             clearSelection()
             loadNotes()
+            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+        }
+    }
+
+    fun togglePinForSelected() {
+        val ids = _selectedNotes.value.toList()
+        if (ids.isEmpty()) return
+        val allPinned = _notes.value.filter { it.id in ids }.all { it.isPinned == true }
+        val newPinned = if (allPinned) null else true
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                _notes.value.filter { it.id in ids }.forEach { note ->
+                    storage.saveNote(
+                        note.copy(
+                            isPinned = newPinned,
+                            updatedAt = System.currentTimeMillis(),
+                            syncStatus = SyncStatus.PENDING,
+                        )
+                    )
+                }
+            }
+            clearSelection()
+            loadNotes()
+            _scrollToTop.value = true
             WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
         }
     }
@@ -1129,15 +1163,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun getQuantityString(resId: Int, quantity: Int, vararg formatArgs: Any): String =
         getApplication<android.app.Application>().resources.getQuantityString(resId, quantity, *formatArgs)
-
-    fun isServerConfigured(): Boolean {
-        // 🌟 v1.6.0: Use reactive offline mode state
-        if (_isOfflineMode.value) {
-            return false
-        }
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        return !serverUrl.isNullOrEmpty() && serverUrl != "http://" && serverUrl != "https://"
-    }
 
     /**
      * 🌟 v1.6.0: Check if server has a configured URL (ignores offline mode)

@@ -1,0 +1,13 @@
+✨ v2.6.0 — Pinned Notes & Editor Upgrades
+
+• Pinned notes section (batch pin/unpin)
+• Type conversion: text ↔ checklist
+• Auto-link bare URLs in Markdown preview
+• "Copy text" in editor overflow menu
+• Append shared text to existing note
+• Fix: settings reactive to offline mode changes
+• Fix: checklist share intent improvements
+
+Thanks to @ASFHU, @james0336, @isawaway, @xdpirate!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

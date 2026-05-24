@@ -45,8 +45,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
-        const val ARG_SHARED_TEXT = "sharedText"       // 🆕 v2.2.0
-        const val ARG_SHARED_SUBJECT = "sharedSubject" // 🆕 v2.2.0
+        const val ARG_SHARED_TEXT = "sharedText"           // 🆕 v2.2.0
+        const val ARG_SHARED_SUBJECT = "sharedSubject"     // 🆕 v2.2.0
+        const val ARG_APPEND_TO_NOTE_ID = "appendToNoteId" // 🆕 v2.6.0
         private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50 // 🆕 v1.10.0-Papa
     }
 
@@ -117,6 +118,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         get() = _existingNote.value
         set(value) { _existingNote.value = value }
     private var currentNoteType: NoteType = NoteType.TEXT
+    private var isConverting = false
 
     // v2.0.0: Callback to read the latest content directly from Compose TextFieldState.
     // Avoids snapshotFlow race condition when the user presses back before the next frame.
@@ -168,18 +170,22 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     private fun loadNote() {
+        val appendToNoteId = savedStateHandle.get<String>(ARG_APPEND_TO_NOTE_ID)
         val noteId = savedStateHandle.get<String>(ARG_NOTE_ID)
         val noteTypeString = savedStateHandle.get<String>(ARG_NOTE_TYPE) ?: NoteType.TEXT.name
 
-        if (noteId != null) {
-            // Mark loading and correct isNewNote to prevent flash of wrong editor
-            // type and wrong LaunchedEffect triggers during async load
-            _uiState.update { it.copy(isLoading = true, isNewNote = false) }
-            viewModelScope.launch {
-                loadExistingNote(noteId)
+        when {
+            appendToNoteId != null -> {
+                _uiState.update { it.copy(isLoading = true, isNewNote = false) }
+                viewModelScope.launch { loadAndAppendSharedText(appendToNoteId) }
             }
-        } else {
-            initNewNote(noteTypeString)
+            noteId != null -> {
+                // Mark loading and correct isNewNote to prevent flash of wrong editor
+                // type and wrong LaunchedEffect triggers during async load
+                _uiState.update { it.copy(isLoading = true, isNewNote = false) }
+                viewModelScope.launch { loadExistingNote(noteId) }
+            }
+            else -> initNewNote(noteTypeString)
         }
     }
 
@@ -212,6 +218,61 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
         undoRedoManager.clear() // 🆕 v1.10.0: No cross-note undo
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
+    }
+
+    private suspend fun loadAndAppendSharedText(noteId: String) {
+        val note = withContext(Dispatchers.IO) { storage.loadNote(noteId) }
+        if (note == null) {
+            initNewNote(NoteType.TEXT.name)
+            return
+        }
+
+        existingNote = note
+        currentNoteType = note.noteType
+        _uiState.update { state ->
+            state.copy(
+                title = note.title,
+                content = note.content,
+                noteType = note.noteType,
+                isNewNote = false,
+                isLoading = false,
+                color = note.color,
+                toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
+                    ToolbarTitle.EDIT_CHECKLIST
+                } else {
+                    ToolbarTitle.EDIT_NOTE
+                }
+            )
+        }
+        if (note.noteType == NoteType.CHECKLIST) {
+            loadChecklistData(note)
+        }
+
+        val sharedText = savedStateHandle.get<String>(ARG_SHARED_TEXT).orEmpty().trim()
+        val sharedSubject = savedStateHandle.get<String>(ARG_SHARED_SUBJECT).orEmpty().trim()
+        val appendText = listOf(sharedSubject, sharedText).filter { it.isNotBlank() }.joinToString("\n")
+
+        if (appendText.isNotBlank()) {
+            when (note.noteType) {
+                NoteType.TEXT -> {
+                    val separator = if (note.content.isNotBlank()) "\n\n" else ""
+                    _uiState.update { it.copy(content = it.content + separator + appendText) }
+                }
+                NoteType.CHECKLIST -> {
+                    val parsedItems = parseSharedTextAsChecklist(appendText)
+                    val existing = _checklistItems.value
+                    val maxOrder = existing.maxOfOrNull { it.order } ?: -1
+                    val reindexed = parsedItems.mapIndexed { i, item ->
+                        item.copy(order = maxOrder + 1 + i, originalOrder = maxOrder + 1 + i)
+                    }
+                    _checklistItems.value = existing + reindexed
+                }
+            }
+            isDirty = true
+        }
+
+        undoRedoManager.clear()
+        savedSnapshot = currentSnapshot()
     }
 
     private fun loadChecklistData(note: Note) {
@@ -310,10 +371,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
         return if (isChecklist) {
             // Don't treat a list-item line as a title
-            val listItemRegex = Regex("""^[-*]\s+.*""")
+            val listItemRegex = Regex("""^[-*•✓☑✔]\s+.*""")
             if (listItemRegex.matches(firstLine)) return "" to text
-            // Only extract as title when a blank line separates it from the items
-            val bodyStart = if (lines.getOrNull(1)?.isBlank() == true) 2 else null
+            // Extract as title when separated by a blank line, or when next line is a list item
+            val secondLine = lines.getOrNull(1)?.trim() ?: ""
+            val bodyStart = when {
+                secondLine.isBlank()              -> 2
+                listItemRegex.matches(secondLine) -> 1
+                else                              -> null
+            }
             if (bodyStart != null) {
                 firstLine to lines.drop(bodyStart).joinToString("\n").trim()
             } else {
@@ -325,31 +391,49 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
-    /**
-     * 🆕 v2.2.0: Parses shared plain text into checklist items.
-     * GFM heuristic: if ALL non-empty lines match `- [ ] text` / `* [x] text`,
-     * preserves checked/unchecked state; otherwise each line becomes an unchecked item.
-     */
-    private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
-        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
-        val nonEmptyLines = text.trim().lines().filter { it.isNotBlank() }
-        if (nonEmptyLines.isEmpty()) return _checklistItems.value
-        val allGfm = nonEmptyLines.all { gfmRegex.matches(it.trim()) }
-        return if (allGfm) {
-            // GFM-Format: checked-State aus Prefix übernehmen
-            nonEmptyLines.mapIndexed { index, line ->
-                val match = requireNotNull(gfmRegex.find(line.trim()))
-                ChecklistItemState.createEmpty(index).copy(
-                    text = match.groupValues[2].trim(),
-                    isChecked = match.groupValues[1].lowercase() != " "
-                )
-            }
+    private fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
+        val gfmRegex       = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val markerRegex    = Regex("""^[-*•]\s+(.*)$""")
+        val cbRegex        = Regex("""^\[([ xX])\]\s*(.*)$""") // group 1 = mark, group 2 = text
+        val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
+        val t = line.trim()
+        val gfm = gfmRegex.find(t)
+        return if (gfm != null) {
+            ChecklistItemState.createEmpty(index).copy(
+                text      = gfm.groupValues[2].trim(),
+                isChecked = gfm.groupValues[1].lowercase() != " "
+            )
         } else {
-            // Plaintext: Jede Zeile = unchecked Item
-            nonEmptyLines.mapIndexed { index, line ->
-                ChecklistItemState.createEmpty(index).copy(text = line.trim())
+            val checkmark = checkmarkRegex.find(t)
+            if (checkmark != null) {
+                ChecklistItemState.createEmpty(index).copy(
+                    text      = checkmark.groupValues[1].trim(),
+                    isChecked = true
+                )
+            } else {
+                val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
+                val cbMatch     = cbRegex.find(afterMarker.trim())
+                if (cbMatch != null) {
+                    ChecklistItemState.createEmpty(index).copy(
+                        text      = cbMatch.groupValues[2].trim(),
+                        isChecked = cbMatch.groupValues[1].lowercase() != " "
+                    )
+                } else {
+                    ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
+                }
             }
         }
+    }
+
+    private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
+        val lines = text.trim().lines().filter { it.isNotBlank() }
+        if (lines.isEmpty()) return _checklistItems.value
+        return lines.mapIndexed { index, line -> normalizeLineToChecklistItem(line, index) }
+    }
+
+    private fun parseContentAsChecklistItems(content: String): List<ChecklistItemState> {
+        val lines = content.trim().lines().filter { it.isNotBlank() }
+        return lines.mapIndexed { index, line -> normalizeLineToChecklistItem(line, index) }
     }
 
     /**
@@ -385,6 +469,55 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         isDirty = true
         _uiState.update { it.copy(content = content) }
         scheduleAutosave() // 🆕 v1.9.0
+    }
+
+    fun convertNoteType() {
+        if (isConverting) return
+        isConverting = true
+        autosaveJob?.cancel()
+        hasUnsavedChecklistEdits = false
+        pushUndoSnapshot()
+        viewModelScope.launch {
+            try {
+                val current = _uiState.value
+                val isNew = current.isNewNote
+                when (current.noteType) {
+                    NoteType.TEXT -> {
+                        // Flush latest TextFieldState content — snapshotFlow may lag by one frame
+                        val latestContent = contentProvider?.invoke()?.also { latest ->
+                            if (latest != _uiState.value.content) {
+                                _uiState.update { it.copy(content = latest) }
+                            }
+                        } ?: _uiState.value.content
+                        val rawItems = parseContentAsChecklistItems(latestContent)
+                        val items = if (rawItems.isEmpty()) listOf(ChecklistItemState.createEmpty(0)) else rawItems
+                        _checklistItems.value = items
+                        currentNoteType = NoteType.CHECKLIST
+                        val newTitle = if (isNew) ToolbarTitle.NEW_CHECKLIST else ToolbarTitle.EDIT_CHECKLIST
+                        _uiState.update { it.copy(noteType = NoteType.CHECKLIST, content = "", toolbarTitle = newTitle) }
+                    }
+                    NoteType.CHECKLIST -> {
+                        // Preserve GFM checkbox syntax so round-trip TEXT→CHECKLIST restores states
+                        val text = _checklistItems.value
+                            .filter { it.text.isNotBlank() }
+                            .sortedBy { it.order }
+                            .joinToString("\n") { item ->
+                                if (item.isChecked) "- [x] ${item.text}" else "- [ ] ${item.text}"
+                            }
+                        _checklistItems.value = emptyList()
+                        currentNoteType = NoteType.TEXT
+                        val newTitle = if (isNew) ToolbarTitle.NEW_NOTE else ToolbarTitle.EDIT_NOTE
+                        _uiState.update { it.copy(noteType = NoteType.TEXT, content = text, toolbarTitle = newTitle) }
+                        _events.emit(NoteEditorEvent.RestoreContent(text))
+                        _events.emit(NoteEditorEvent.ActivatePreviewMode)
+                    }
+                }
+                isDirty = true
+                performSave(silent = true)
+            } finally {
+                isConverting = false
+            }
+        }
     }
 
     fun updateChecklistItemText(itemId: String, newText: String) {
@@ -1100,7 +1233,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private fun currentSnapshot(): EditorSnapshot = EditorSnapshot(
         title = _uiState.value.title,
         content = _uiState.value.content,
-        checklistItems = _checklistItems.value.toList()
+        checklistItems = _checklistItems.value.toList(),
+        noteType = currentNoteType,
     )
 
     private fun pushUndoSnapshot() {
@@ -1135,7 +1269,20 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private fun applySnapshot(snapshot: EditorSnapshot) {
         isRestoringSnapshot = true
-        _uiState.update { it.copy(title = snapshot.title, content = snapshot.content) }
+        currentNoteType = snapshot.noteType
+        val isNew = _uiState.value.isNewNote
+        val restoredToolbarTitle = when {
+            snapshot.noteType == NoteType.CHECKLIST && isNew -> ToolbarTitle.NEW_CHECKLIST
+            snapshot.noteType == NoteType.CHECKLIST          -> ToolbarTitle.EDIT_CHECKLIST
+            isNew                                            -> ToolbarTitle.NEW_NOTE
+            else                                             -> ToolbarTitle.EDIT_NOTE
+        }
+        _uiState.update { it.copy(
+            title        = snapshot.title,
+            content      = snapshot.content,
+            noteType     = snapshot.noteType,
+            toolbarTitle = restoredToolbarTitle,
+        ) }
         _checklistItems.value = snapshot.checklistItems
 
         // 🔧 v1.10.0: isDirty-Reset wenn Undo/Redo den gespeicherten Zustand wiederherstellt
@@ -1251,6 +1398,24 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             }
             val pdfTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
             _events.emit(NoteEditorEvent.ShareAsPdf(title = pdfTitle))
+        }
+    }
+
+    fun copyNoteText() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val fullText = if (title.isNotBlank()) "$title\n\n$content" else content
+            _events.emit(NoteEditorEvent.CopyToClipboard(fullText.trim()))
         }
     }
 
@@ -1420,4 +1585,8 @@ sealed interface NoteEditorEvent {
     data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
 
     data class ShareAsPdf(val title: String) : NoteEditorEvent
+
+    data class CopyToClipboard(val text: String) : NoteEditorEvent
+
+    data object ActivatePreviewMode : NoteEditorEvent
 }

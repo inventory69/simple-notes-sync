@@ -39,9 +39,7 @@ fun MarkdownSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val exportProgress by viewModel.markdownExportProgress.collectAsState()
 
-    // 🌟 v1.6.0: Check offline mode
-    val offlineMode by viewModel.offlineMode.collectAsState()
-    val isServerConfigured = viewModel.isServerConfigured()
+    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
     // v1.5.0 Fix: Progress Dialog for initial export
     exportProgress?.let { progress ->

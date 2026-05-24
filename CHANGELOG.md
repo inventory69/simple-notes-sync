@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.6.0] - 2026-05-24
+
+### ✨ New Features
+
+**Pinned Notes Section** ([e849bdf](https://github.com/inventory69/simple-notes-sync/commit/e849bdf))
+- Notes can be pinned via multi-select batch action; pinned notes appear in a dedicated "Pinned" section above the regular list
+- Section only visible when at least one note is pinned; pinned cards show a pin icon indicator
+- Works in both list and grid view modes
+- Requested by [@ASFHU](https://github.com/ASFHU), [@james0336](https://github.com/james0336), [@isawaway](https://github.com/isawaway)!
+
+**Type Conversion: Text ↔ Checklist** ([714a7e6](https://github.com/inventory69/simple-notes-sync/commit/714a7e6))
+- Convert any text note to a checklist and back; GFM checkbox notation (`- [ ]` / `- [x]`) is preserved in both directions
+- Full undo/redo support for type conversions
+
+**Auto-Link Bare URLs in Markdown Preview** ([745a4cd](https://github.com/inventory69/simple-notes-sync/commit/745a4cd))
+- Naked `http://` and `https://` URLs are now detected and rendered as clickable links in the Markdown preview
+- Trailing sentence punctuation is excluded from the linked URL
+- Requested by [@james0336](https://github.com/james0336), [@isawaway](https://github.com/isawaway)!
+
+**"Copy Text" in Editor Overflow Menu** ([83e6a3c](https://github.com/inventory69/simple-notes-sync/commit/83e6a3c))
+- One-tap copy of the full note content (title + body) to the clipboard; Android 13+ shows the system confirmation, older versions show a Snackbar
+- Thanks to [@xdpirate](https://github.com/xdpirate) for the suggestion!
+
+**Append Shared Text to Existing Note** ([dc59351](https://github.com/inventory69/simple-notes-sync/commit/dc59351))
+- Share intent now offers a third option to append shared text to an existing note instead of always creating a new one
+- A note picker (sorted by last modified) lets you choose the target; the editor opens with the merged content for review
+
+### 🐛 Bug Fixes
+
+**Settings Not Reactive to Offline Mode Toggle** ([b388016](https://github.com/inventory69/simple-notes-sync/commit/b388016))
+- `isServerConfigured` was a plain function called once per composable, so toggling offline mode did not trigger recomposition; replaced with a `StateFlow` derived via `combine`/`map`
+- Status labels now correctly distinguish "offline mode active" from "no server configured"
+
+**Parallel Connections Setting Active in Offline Mode** ([c6cf4e5](https://github.com/inventory69/simple-notes-sync/commit/c6cf4e5))
+- The parallel connections radio group remained interactive while all other sync settings were grayed out in offline mode; it is now correctly disabled
+
+**Checklist: Unicode Bullet/Checkmark Prefixes Not Stripped on Share Paste** ([8e67ccd](https://github.com/inventory69/simple-notes-sync/commit/8e67ccd))
+- `• item` (U+2022), `✓ item`, `☑ item`, and `✔ item` are now normalised correctly when pasting via share intent
+
+**Checklist: Separator Jumps on Keyboard Show/Hide** ([8295522](https://github.com/inventory69/simple-notes-sync/commit/8295522))
+- The checked/unchecked separator was missing `animateItem()`, causing it to snap instead of slide when the soft keyboard resized the list
+
+**Checklist: Mixed GFM + Plain Lines Not Parsed Per-Line** ([2bd8106](https://github.com/inventory69/simple-notes-sync/commit/2bd8106))
+- Mixed input (some GFM, some plain lines) fell through to the raw path, leaving `- [ ] Milk` as literal item text; the parser now classifies each line individually
+
+---
+
 ## [2.5.2] - 2026-05-22
 
 ### 🐛 Bug Fixes

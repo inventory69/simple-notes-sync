@@ -13,7 +13,10 @@
     <string name="action_close_selection">Auswahl beenden</string>
     <string name="action_select_all">Alle auswählen</string>
     <string name="action_delete_selected">Ausgewählte löschen</string>
+    <string name="action_toggle_pin">Anheften umschalten</string>
     <string name="selection_count">%d ausgewählt</string>
+    <string name="section_pinned">Angeheftet</string>
+    <string name="section_notes">Notizen</string>
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
@@ -184,6 +187,7 @@
     <string name="settings_server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="settings_server_status_checking">🔍 Prüfe…</string>
     <string name="settings_server_status_offline_mode">📴 Offline-Modus</string>
+    <string name="settings_server_status_not_configured">📴 Nicht konfiguriert</string>
     <string name="settings_sync">Sync &amp; Benachrichtigungen</string>
     <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
     <string name="settings_sync_manual_only">Nur manueller Sync</string>
@@ -250,6 +254,7 @@
     <string name="server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="server_status_checking">🔍 Prüfe…</string>
     <string name="server_status_offline_mode">📴 Offline-Modus aktiv</string>
+    <string name="server_status_not_configured">📴 Nicht konfiguriert</string>
     <string name="server_status_unknown">❓ Unbekannt</string>
     <string name="server_offline_mode_title">📴 Offline-Modus</string>
     <string name="server_offline_mode_subtitle">Alle Netzwerkfunktionen deaktivieren</string>
@@ -297,6 +302,7 @@
     <string name="sync_manual_hint">Manueller Sync (Toolbar/Pull-to-Refresh) ist ebenfalls verfügbar.</string>
     <string name="sync_manual_hint_disabled">Sync ist im Offline-Modus nicht verfügbar.</string>
     <string name="sync_offline_mode_message">Du nutzt die App im Offline-Modus. Richte einen Server ein, um Notizen zu synchronisieren.</string>
+    <string name="sync_no_server_message">Kein Server konfiguriert. Richte einen Server ein, um Notizen zu synchronisieren.</string>
     <string name="sync_offline_mode_button">Server einrichten</string>
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
@@ -607,7 +613,7 @@
     <string name="keep_import_config_conflict_replace">Ersetzen</string>
     <string name="keep_import_config_info_labels">ℹ️ Etiketten aus Keep werden gespeichert. Sie werden in einer zukünftigen Version als Tags sichtbar.</string>
     <string name="keep_import_config_info_attachments">🖼️ Bilder/Anhänge werden in dieser Version nicht importiert. Wenn die App später Bildunterstützung erhält, kannst du den Import erneut durchführen, um die Bilder nachzuladen.</string>
-    <string name="keep_import_config_info_color_pin">🎨 Notizfarben werden direkt mitimportiert und angezeigt. Anheftungen werden gespeichert, aber erst in einer zukünftigen Version sichtbar.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Notizfarben werden direkt mitimportiert und angezeigt. Angeheftete Notizen erscheinen im Bereich „Angeheftet" oben in der Notizliste.</string>
     <string name="keep_import_config_button_start">Import starten</string>
     <string name="keep_import_config_button_cancel">Abbrechen</string>
     <string name="keep_import_prescan_header">📦 Archiv enthält:</string>
@@ -634,7 +640,7 @@
     <string name="keep_import_result_labels">🏷️ %1$d Etiketten gespeichert</string>
     <string name="keep_import_result_shared">👥 %1$d davon aus geteilten Listen (Kollaborationen)</string>
     <string name="keep_import_result_color">🎨 %1$d mit Farbe importiert</string>
-    <string name="keep_import_result_pinned">📌 %1$d als angeheftet gespeichert (in zukünftiger Version sichtbar)</string>
+    <string name="keep_import_result_pinned">📌 %1$d angeheftete Notizen erscheinen im Bereich „Angeheftet"</string>
     <string name="keep_import_result_show_errors">Details anzeigen</string>
     <string name="keep_import_result_hide_errors">Details ausblenden</string>
     <string name="keep_import_result_button_close">Schließen</string>
@@ -684,6 +690,8 @@
     <!-- ============================= -->
     <string name="share_overflow_menu">Weitere Optionen</string>
     <string name="share_to_calendar">Zum Kalender hinzufügen</string>
+    <string name="action_copy_note_text">Text kopieren</string>
+    <string name="toast_note_copied">Text in Zwischenablage kopiert</string>
     <string name="share_as_text">Als Text teilen</string>
     <string name="share_as_pdf">Als PDF teilen</string>
     <string name="share_chooser_title">Notiz teilen</string>
@@ -695,6 +703,8 @@
     <string name="share_type_dialog_message">Wie soll der geteilte Text gespeichert werden?</string>
     <string name="share_type_text_note">Textnotiz</string>
     <string name="share_type_checklist">Checkliste</string>
+    <string name="share_type_append_note">Zu Notiz hinzufügen…</string>
+    <string name="share_append_picker_title">Notiz auswählen</string>
     <!-- v2.2.0: Checklist Item Kontextmenü -->
     <string name="checklist_item_menu">Eintrag-Optionen</string>
     <string name="checklist_copy_text">Text kopieren</string>
@@ -722,4 +732,12 @@
     <string name="note_color_pink">Rosa</string>
     <string name="note_color_brown">Braun</string>
     <string name="note_color_gray">Grau</string>
+
+    <!-- TYP-KONVERTIERUNG v2.6.0 -->
+    <!-- ========================== -->
+    <string name="action_convert_to_checklist">Als Checkliste konvertieren</string>
+    <string name="action_convert_to_note">Als Notiz konvertieren</string>
+    <string name="confirm_convert_to_checklist">Notiz in eine Checkliste umwandeln? Jede Zeile wird zu einem Eintrag. Zeilen mit Checkbox-Notation (- [ ] / - [x]) behalten ihren Status.</string>
+    <string name="confirm_convert_to_note">Checkliste in eine Notiz umwandeln? Jeder Eintrag wird als Textzeile mit erhaltenem Haken-Status gespeichert.</string>
+    <string name="action_convert">Konvertieren</string>
 </resources>

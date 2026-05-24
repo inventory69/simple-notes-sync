@@ -43,11 +43,15 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -113,6 +117,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
 import android.content.ClipData
+import android.os.Build
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 
@@ -177,7 +182,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // New notes start in edit mode (user wants to type immediately),
     // existing TEXT notes start in preview mode (read-first workflow).
     // key() forces recomputation after async load changes isNewNote/noteType.
-    var isPreviewMode by remember(uiState.isNewNote, uiState.noteType) {
+    var isPreviewMode by remember(uiState.isNewNote) {
         mutableStateOf(
             !uiState.isNewNote && uiState.noteType == NoteType.TEXT
         )
@@ -189,6 +194,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val canRedo by viewModel.canRedo.collectAsState() // 🆕 v1.10.0
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
     var showColorPicker by remember { mutableStateOf(false) }  // 🆕 v2.5.0
+    var showConvertDialog by remember { mutableStateOf(false) }
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -216,6 +222,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val msgNoteSaved = stringResource(R.string.note_saved)
     val msgNoteDeleted = stringResource(R.string.note_deleted)
     val msgItemCopiedToChecklist = stringResource(R.string.checklist_item_copied_toast) // 🆕 v2.2.0
+    val msgNoteCopied = stringResource(R.string.toast_note_copied)
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -263,7 +270,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
     // v1.5.0: Auto-focus and show keyboard
     // v2.0.1: Skip auto-focus for existing TEXT notes (they start in preview mode)
-    LaunchedEffect(uiState.isNewNote, uiState.noteType) {
+    LaunchedEffect(uiState.isNewNote) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
             uiState.isNewNote -> {
@@ -303,6 +310,15 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 is NoteEditorEvent.OpenCalendar -> Unit
                 is NoteEditorEvent.ShareAsText -> Unit
                 is NoteEditorEvent.ShareAsPdf -> Unit
+                is NoteEditorEvent.CopyToClipboard -> {
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", event.text)))
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            snackbarHostState.showSnackbar(msgNoteCopied)
+                        }
+                    }
+                }
+                is NoteEditorEvent.ActivatePreviewMode -> { isPreviewMode = true }
             }
         }
     }
@@ -456,6 +472,32 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                     showColorPicker = true
                                 }
                             )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            if (uiState.noteType == NoteType.CHECKLIST)
+                                                R.string.action_convert_to_note
+                                            else
+                                                R.string.action_convert_to_checklist
+                                        )
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        if (uiState.noteType == NoteType.CHECKLIST)
+                                            Icons.AutoMirrored.Outlined.Notes
+                                        else
+                                            Icons.Outlined.Checklist,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showConvertDialog = true
+                                }
+                            )
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 4.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -472,6 +514,20 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 onClick = {
                                     showOverflowMenu = false
                                     viewModel.openInCalendar()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_copy_note_text)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.ContentCopy,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    viewModel.copyNoteText()
                                 }
                             )
                             DropdownMenuItem(
@@ -712,6 +768,45 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 viewModel.setColor(hex)
             },
             onDismiss = { showColorPicker = false },
+        )
+    }
+
+    if (showConvertDialog) {
+        AlertDialog(
+            onDismissRequest = { showConvertDialog = false },
+            title = {
+                Text(
+                    stringResource(
+                        if (uiState.noteType == NoteType.CHECKLIST)
+                            R.string.action_convert_to_note
+                        else
+                            R.string.action_convert_to_checklist
+                    )
+                )
+            },
+            text = {
+                Text(
+                    stringResource(
+                        if (uiState.noteType == NoteType.CHECKLIST)
+                            R.string.confirm_convert_to_note
+                        else
+                            R.string.confirm_convert_to_checklist
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showConvertDialog = false
+                    viewModel.convertNoteType()
+                }) {
+                    Text(stringResource(R.string.action_convert))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConvertDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
         )
     }
 
@@ -1138,7 +1233,8 @@ private fun ChecklistEditor(
                 if (showSeparator && visualIndex == separatorVisualIndex) {
                     CheckedItemsSeparator(
                         checkedCount = checkedCount,
-                        isDragActive = dragDropState.isAnyItemDragging
+                        isDragActive = dragDropState.isAnyItemDragging,
+                        modifier = if (placementAnimationsEnabled) Modifier.animateItem() else Modifier
                     )
                 } else {
                     val dataIndex = localVisualToDataIndex(visualIndex)

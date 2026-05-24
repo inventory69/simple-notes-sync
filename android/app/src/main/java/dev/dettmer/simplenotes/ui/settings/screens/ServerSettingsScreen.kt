@@ -396,7 +396,7 @@ fun ServerSettingsScreen(
                                 R.string.server_status_checking
                             )
                             is SettingsViewModel.ServerStatus.NotConfigured -> stringResource(
-                                R.string.server_status_offline_mode
+                                R.string.server_status_not_configured
                             )
                             else -> stringResource(R.string.server_status_unknown)
                         },

@@ -58,8 +58,7 @@ private const val DIALOG_CLOSE_DELAY_MS = 200L
 fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val isBackupInProgress by viewModel.isBackupInProgress.collectAsState()
 
-    // 🌟 v1.6.0: Check if server restore is available
-    val isServerConfigured = viewModel.isServerConfigured()
+    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
     // Restore dialog state
     var showRestoreDialog by remember { mutableStateOf(false) }

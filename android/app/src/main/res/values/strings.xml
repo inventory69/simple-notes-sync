@@ -14,7 +14,10 @@
     <string name="action_close_selection">Close selection</string>
     <string name="action_select_all">Select all</string>
     <string name="action_delete_selected">Delete selected</string>
+    <string name="action_toggle_pin">Toggle pin</string>
     <string name="selection_count">%d selected</string>
+    <string name="section_pinned">Pinned</string>
+    <string name="section_notes">Notes</string>
     
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
@@ -201,6 +204,7 @@
     <string name="settings_server_status_unreachable">❌ Not reachable</string>
     <string name="settings_server_status_checking">🔍 Checking…</string>
     <string name="settings_server_status_offline_mode">📴 Offline Mode</string>
+    <string name="settings_server_status_not_configured">📴 Not configured</string>
     <string name="settings_sync">Sync &amp; Notifications</string>
     <string name="settings_sync_offline_mode">📴 Offline Mode</string>
     <string name="settings_sync_manual_only">Manual sync only</string>
@@ -269,6 +273,7 @@
     <string name="server_status_unreachable">❌ Not reachable</string>
     <string name="server_status_checking">🔍 Checking…</string>
     <string name="server_status_offline_mode">📴 Offline mode active</string>
+    <string name="server_status_not_configured">📴 Not configured</string>
     <string name="server_status_unknown">❓ Unknown</string>
     <string name="server_offline_mode_title">📴 Offline Mode</string>
     <string name="server_offline_mode_subtitle">Disable all network features</string>
@@ -328,6 +333,7 @@
     <string name="sync_manual_hint_disabled">Sync is not available in offline mode.</string>
     
     <string name="sync_offline_mode_message">You are using the app in offline mode. Set up a server to synchronize notes.</string>
+    <string name="sync_no_server_message">No server configured. Set up a server to synchronize notes.</string>
     <string name="sync_offline_mode_button">Set Up Server</string>
     
     <!-- ============================= -->
@@ -665,7 +671,7 @@
     <string name="keep_import_config_conflict_replace">Replace existing</string>
     <string name="keep_import_config_info_labels">ℹ️ Keep labels are stored. They will appear as tags in a future version.</string>
     <string name="keep_import_config_info_attachments">🖼️ Images/attachments are not imported in this version. When the app gains image support later, you can re-run the import to load them.</string>
-    <string name="keep_import_config_info_color_pin">🎨 Note colours are imported and shown right away. Pin states are stored, but only become visible in a future version.</string>
+    <string name="keep_import_config_info_color_pin">🎨 Note colours are imported and shown right away. Pinned notes will appear in a separate Pinned section at the top of your notes list.</string>
     <string name="keep_import_config_button_start">Start import</string>
     <string name="keep_import_config_button_cancel">Cancel</string>
 
@@ -696,7 +702,7 @@
     <string name="keep_import_result_labels">🏷️ %1$d labels stored</string>
     <string name="keep_import_result_shared">👥 %1$d of those from shared lists (collaborations)</string>
     <string name="keep_import_result_color">🎨 %1$d with colour imported</string>
-    <string name="keep_import_result_pinned">📌 %1$d marked as pinned (visible in a future version)</string>
+    <string name="keep_import_result_pinned">📌 %1$d pinned notes appear in the Pinned section</string>
     <string name="keep_import_result_show_errors">Show details</string>
     <string name="keep_import_result_hide_errors">Hide details</string>
     <string name="keep_import_result_button_close">Close</string>
@@ -755,6 +761,8 @@
     <!-- ============================= -->
     <string name="share_overflow_menu">More options</string>
     <string name="share_to_calendar">Add to calendar</string>
+    <string name="action_copy_note_text">Copy text</string>
+    <string name="toast_note_copied">Text copied to clipboard</string>
     <string name="share_as_text">Share as text</string>
     <string name="share_as_pdf">Share as PDF</string>
     <string name="share_chooser_title">Share note</string>
@@ -767,6 +775,8 @@
     <string name="share_type_dialog_message">How should the shared text be saved?</string>
     <string name="share_type_text_note">Text note</string>
     <string name="share_type_checklist">Checklist</string>
+    <string name="share_type_append_note">Append to note…</string>
+    <string name="share_append_picker_title">Select note</string>
 
     <!-- v2.2.0: Checklist Item Context Menu -->
     <string name="checklist_item_menu">Item options</string>
@@ -796,5 +806,13 @@
     <string name="note_color_pink">Pink</string>
     <string name="note_color_brown">Brown</string>
     <string name="note_color_gray">Gray</string>
+
+    <!-- TYPE CONVERSION v2.6.0 -->
+    <!-- ======================= -->
+    <string name="action_convert_to_checklist">Convert to checklist</string>
+    <string name="action_convert_to_note">Convert to note</string>
+    <string name="confirm_convert_to_checklist">Convert this note to a checklist? Each line becomes a checklist item. Lines with existing checkbox notation (- [ ] / - [x]) keep their checked state.</string>
+    <string name="confirm_convert_to_note">Convert this checklist to a note? Each item becomes a line of text with its checked state preserved.</string>
+    <string name="action_convert">Convert</string>
 
 </resources>

@@ -20,10 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -112,6 +114,7 @@ fun MainScreen(
 
     // 🌟 v1.6.0: Reactive offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
+    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
@@ -226,8 +229,10 @@ fun MainScreen(
                     SelectionTopBar(
                         selectedCount = selectedNotes.size,
                         totalCount = notes.size,
+                        allSelectedPinned = notes.filter { it.id in selectedNotes }.all { it.isPinned == true },
                         onCloseSelection = { viewModel.clearSelection() },
                         onSelectAll = { viewModel.selectAllNotes() },
+                        onTogglePinSelected = { viewModel.togglePinForSelected() },
                         onColorClick = { showBatchColorPicker = true }, // 🆕 v2.5.0
                         onDeleteSelected = { showBatchDeleteDialog = true }
                     )
@@ -315,7 +320,7 @@ fun MainScreen(
                                     gridState = gridState,
                                     adaptiveScaling = gridAdaptiveScaling,
                                     manualColumns = gridManualColumns,
-                                    showSyncStatus = viewModel.isServerConfigured(),
+                                    showSyncStatus = isServerConfigured,
                                     selectedNoteIds = selectedNotes,
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
@@ -336,7 +341,7 @@ fun MainScreen(
                             } else {
                                 NotesList(
                                     notes = notes,
-                                    showSyncStatus = viewModel.isServerConfigured(),
+                                    showSyncStatus = isServerConfigured,
                                     selectedNotes = selectedNotes,
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
@@ -517,8 +522,10 @@ private fun MainTopBar(
 private fun SelectionTopBar(
     selectedCount: Int,
     totalCount: Int,
+    allSelectedPinned: Boolean,
     onCloseSelection: () -> Unit,
     onSelectAll: () -> Unit,
+    onTogglePinSelected: () -> Unit,
     onColorClick: () -> Unit,   // 🆕 v2.5.0
     onDeleteSelected: () -> Unit
 ) {
@@ -546,6 +553,16 @@ private fun SelectionTopBar(
                         contentDescription = stringResource(R.string.action_select_all)
                     )
                 }
+            }
+            // Pin/Unpin selected notes
+            IconButton(
+                onClick = onTogglePinSelected,
+                enabled = selectedCount > 0
+            ) {
+                Icon(
+                    imageVector = if (allSelectedPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                    contentDescription = stringResource(R.string.action_toggle_pin),
+                )
             }
             // 🆕 v2.5.0: Set colour for selected notes
             IconButton(

@@ -1,0 +1,13 @@
+✨ v2.6.0 — Angepinnte Notizen & Editor
+
+• Angepinnte Notizen (Batch-Pin/Unpin)
+• Typkonvertierung: Text ↔ Checkliste
+• Bare-URLs im Markdown-Preview als Links
+• „Text kopieren" im Editor-Überlaufmenü
+• Geteilten Text an Notiz anhängen
+• Fix: Einstellungen reagieren auf Offline-Modus
+• Fix: Checkliste-Share-Intent-Verbesserungen
+
+Danke an @ASFHU, @james0336, @isawaway, @xdpirate!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

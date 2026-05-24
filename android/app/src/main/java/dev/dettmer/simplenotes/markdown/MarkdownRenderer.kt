@@ -201,6 +201,7 @@ fun parseInlineFormatting(text: String): AnnotatedString {
                 InlinePattern.ITALIC_ASTERISK,
                 InlinePattern.ITALIC_UNDERSCORE,
                 InlinePattern.INLINE_CODE,
+                InlinePattern.AUTO_URL,
                 InlinePattern.LINK
             )
 
@@ -251,9 +252,26 @@ fun parseInlineFormatting(text: String): AnnotatedString {
                         append(earliestMatch.groupValues[1])
                     }
                 }
+                InlinePattern.AUTO_URL -> {
+                    val url = earliestMatch.value.trimEnd('!', '?', ',', '.', ';', ':')
+                    withLink(
+                        LinkAnnotation.Url(
+                            url = url,
+                            styles = TextLinkStyles(
+                                style = SpanStyle(
+                                    color = linkColor,
+                                    textDecoration = TextDecoration.Underline
+                                )
+                            )
+                        )
+                    ) { append(url) }
+                    // Append any trimmed trailing punctuation as plain text
+                    val trimmed = earliestMatch.value.length - url.length
+                    if (trimmed > 0) append(earliestMatch.value.takeLast(trimmed))
+                }
                 InlinePattern.LINK -> {
                     val linkText = earliestMatch.groupValues[1]
-                    val linkUrl = earliestMatch.groupValues[2]
+                    val linkUrl = earliestMatch.groupValues[2].trimEnd('!', '?', ',', '.', ';', ':')
                     withLink(
                         LinkAnnotation.Url(
                             url = linkUrl,
@@ -286,5 +304,6 @@ private enum class InlinePattern(val regex: Regex) {
     ITALIC_ASTERISK(Regex("""\*(.+?)\*""")),
     ITALIC_UNDERSCORE(Regex("""_(.+?)_""")),
     INLINE_CODE(Regex("""`([^`]+)`""")),
+    AUTO_URL(Regex("""https?://[^\s<>"')\]!]+""")),
     LINK(Regex("""\[([^\]]+)\]\(([^)]+)\)"""))
 }

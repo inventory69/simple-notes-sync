@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.editor
 
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -84,4 +85,9 @@ class UndoRedoManager {
  * Immutable snapshot of the note editor state at a point in time.
  * Used as the unit stored in [UndoRedoManager]'s stacks.
  */
-data class EditorSnapshot(val title: String, val content: String, val checklistItems: List<ChecklistItemState>)
+data class EditorSnapshot(
+    val title: String,
+    val content: String,
+    val checklistItems: List<ChecklistItemState>,
+    val noteType: NoteType = NoteType.TEXT,
+)
