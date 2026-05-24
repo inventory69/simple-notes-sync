@@ -296,7 +296,8 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
         title = stringResource(R.string.sync_parallel_connections_title),
         options = parallelOptions,
         selectedValue = maxParallelConnections,
-        onValueSelected = { viewModel.setMaxParallelConnections(it) }
+        onValueSelected = { viewModel.setMaxParallelConnections(it) },
+        enabled = isServerConfigured
     )
 }
 

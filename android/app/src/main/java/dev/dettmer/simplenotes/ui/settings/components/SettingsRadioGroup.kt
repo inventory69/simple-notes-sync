@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 
 /**
  * Data class for radio option
@@ -34,8 +35,25 @@ fun <T> SettingsRadioGroup(
     selectedValue: T,
     onValueSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
-    title: String? = null
+    title: String? = null,
+    enabled: Boolean = true
 ) {
+    val titleColor = if (enabled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    val labelColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    val subtitleColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -45,8 +63,8 @@ fun <T> SettingsRadioGroup(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                color = titleColor,
+                modifier = Modifier.padding(horizontal = Dimensions.SpacingLarge, vertical = Dimensions.SpacingMedium)
             )
         }
 
@@ -56,33 +74,35 @@ fun <T> SettingsRadioGroup(
                     .fillMaxWidth()
                     .selectable(
                         selected = option.value == selectedValue,
+                        enabled = enabled,
                         onClick = { onValueSelected(option.value) },
                         role = Role.RadioButton
                     )
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = Dimensions.SpacingLarge, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 RadioButton(
                     selected = option.value == selectedValue,
-                    onClick = null // handled by selectable
+                    onClick = null,
+                    enabled = enabled
                 )
 
                 Column(
                     modifier = Modifier
-                        .padding(start = 16.dp)
+                        .padding(start = Dimensions.SpacingLarge)
                         .weight(1f)
                 ) {
                     Text(
                         text = option.title,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = labelColor
                     )
                     if (option.subtitle != null) {
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingXSmall))
                         Text(
                             text = option.subtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subtitleColor
                         )
                     }
                 }
