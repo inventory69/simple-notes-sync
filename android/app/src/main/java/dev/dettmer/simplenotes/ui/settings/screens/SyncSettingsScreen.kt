@@ -69,7 +69,8 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
  */
 @Composable
 fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigateToServerSettings: () -> Unit) {
-    val isServerConfigured = viewModel.isServerConfigured()
+    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val offlineMode by viewModel.offlineMode.collectAsState()
 
     SettingsScaffold(
         title = stringResource(R.string.sync_settings_title),
@@ -83,11 +84,15 @@ fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavig
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Offline Mode Warning ──
+            // ── Server not configured / Offline mode warning ──
             if (!isServerConfigured) {
                 SettingsInfoCard(
-                    text = stringResource(R.string.sync_offline_mode_message),
-                    isWarning = true
+                    text = if (offlineMode) {
+                        stringResource(R.string.sync_offline_mode_message)
+                    } else {
+                        stringResource(R.string.sync_no_server_message)
+                    },
+                    isWarning = offlineMode
                 )
 
                 Button(

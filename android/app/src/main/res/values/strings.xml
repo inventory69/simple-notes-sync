@@ -201,6 +201,7 @@
     <string name="settings_server_status_unreachable">❌ Not reachable</string>
     <string name="settings_server_status_checking">🔍 Checking…</string>
     <string name="settings_server_status_offline_mode">📴 Offline Mode</string>
+    <string name="settings_server_status_not_configured">📴 Not configured</string>
     <string name="settings_sync">Sync &amp; Notifications</string>
     <string name="settings_sync_offline_mode">📴 Offline Mode</string>
     <string name="settings_sync_manual_only">Manual sync only</string>
@@ -269,6 +270,7 @@
     <string name="server_status_unreachable">❌ Not reachable</string>
     <string name="server_status_checking">🔍 Checking…</string>
     <string name="server_status_offline_mode">📴 Offline mode active</string>
+    <string name="server_status_not_configured">📴 Not configured</string>
     <string name="server_status_unknown">❓ Unknown</string>
     <string name="server_offline_mode_title">📴 Offline Mode</string>
     <string name="server_offline_mode_subtitle">Disable all network features</string>
@@ -328,6 +330,7 @@
     <string name="sync_manual_hint_disabled">Sync is not available in offline mode.</string>
     
     <string name="sync_offline_mode_message">You are using the app in offline mode. Set up a server to synchronize notes.</string>
+    <string name="sync_no_server_message">No server configured. Set up a server to synchronize notes.</string>
     <string name="sync_offline_mode_button">Set Up Server</string>
     
     <!-- ============================= -->

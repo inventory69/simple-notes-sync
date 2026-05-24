@@ -112,6 +112,7 @@ fun MainScreen(
 
     // 🌟 v1.6.0: Reactive offline mode state
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
+    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
@@ -315,7 +316,7 @@ fun MainScreen(
                                     gridState = gridState,
                                     adaptiveScaling = gridAdaptiveScaling,
                                     manualColumns = gridManualColumns,
-                                    showSyncStatus = viewModel.isServerConfigured(),
+                                    showSyncStatus = isServerConfigured,
                                     selectedNoteIds = selectedNotes,
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
@@ -336,7 +337,7 @@ fun MainScreen(
                             } else {
                                 NotesList(
                                     notes = notes,
-                                    showSyncStatus = viewModel.isServerConfigured(),
+                                    showSyncStatus = isServerConfigured,
                                     selectedNotes = selectedNotes,
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,

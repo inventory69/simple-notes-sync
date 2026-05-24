@@ -97,6 +97,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
+    val isServerConfigured: StateFlow<Boolean> = _isOfflineMode.map { offline ->
+        if (offline) false
+        else hasServerConfig()
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        initialValue = !_isOfflineMode.value && hasServerConfig()
+    )
+
     /**
      * Refresh offline mode state from SharedPreferences
      * Called when returning from Settings screen (in onResume)
@@ -1129,15 +1138,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun getQuantityString(resId: Int, quantity: Int, vararg formatArgs: Any): String =
         getApplication<android.app.Application>().resources.getQuantityString(resId, quantity, *formatArgs)
-
-    fun isServerConfigured(): Boolean {
-        // 🌟 v1.6.0: Use reactive offline mode state
-        if (_isOfflineMode.value) {
-            return false
-        }
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        return !serverUrl.isNullOrEmpty() && serverUrl != "http://" && serverUrl != "https://"
-    }
 
     /**
      * 🌟 v1.6.0: Check if server has a configured URL (ignores offline mode)

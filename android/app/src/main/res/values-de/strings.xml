@@ -184,6 +184,7 @@
     <string name="settings_server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="settings_server_status_checking">🔍 Prüfe…</string>
     <string name="settings_server_status_offline_mode">📴 Offline-Modus</string>
+    <string name="settings_server_status_not_configured">📴 Nicht konfiguriert</string>
     <string name="settings_sync">Sync &amp; Benachrichtigungen</string>
     <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
     <string name="settings_sync_manual_only">Nur manueller Sync</string>
@@ -250,6 +251,7 @@
     <string name="server_status_unreachable">❌ Nicht erreichbar</string>
     <string name="server_status_checking">🔍 Prüfe…</string>
     <string name="server_status_offline_mode">📴 Offline-Modus aktiv</string>
+    <string name="server_status_not_configured">📴 Nicht konfiguriert</string>
     <string name="server_status_unknown">❓ Unbekannt</string>
     <string name="server_offline_mode_title">📴 Offline-Modus</string>
     <string name="server_offline_mode_subtitle">Alle Netzwerkfunktionen deaktivieren</string>
@@ -297,6 +299,7 @@
     <string name="sync_manual_hint">Manueller Sync (Toolbar/Pull-to-Refresh) ist ebenfalls verfügbar.</string>
     <string name="sync_manual_hint_disabled">Sync ist im Offline-Modus nicht verfügbar.</string>
     <string name="sync_offline_mode_message">Du nutzt die App im Offline-Modus. Richte einen Server ein, um Notizen zu synchronisieren.</string>
+    <string name="sync_no_server_message">Kein Server konfiguriert. Richte einen Server ein, um Notizen zu synchronisieren.</string>
     <string name="sync_offline_mode_button">Server einrichten</string>
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->

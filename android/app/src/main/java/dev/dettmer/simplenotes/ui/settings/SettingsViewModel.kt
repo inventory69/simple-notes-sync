@@ -126,6 +126,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val offlineMode: StateFlow<Boolean> = _offlineMode.asStateFlow()
 
+    val isServerConfigured: StateFlow<Boolean> = combine(offlineMode, serverUrl) { offline, url ->
+        !offline && url.isNotEmpty()
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        initialValue = !_offlineMode.value && serverUrl.value.isNotEmpty()
+    )
+
     private fun hasExistingServerConfig(): Boolean {
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
         return !serverUrl.isNullOrEmpty() &&
@@ -1235,20 +1243,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
     // Helper
     // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Check if server is configured AND not in offline mode
-     * v1.6.0: Returns false if offline mode is enabled
-     */
-    fun isServerConfigured(): Boolean {
-        // Offline mode takes priority
-        if (_offlineMode.value) return false
-
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        return !serverUrl.isNullOrEmpty() &&
-            serverUrl != "http://" &&
-            serverUrl != "https://"
-    }
 
     /**
      * 🌍 v1.7.1: Get string resources with correct app locale
