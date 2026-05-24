@@ -797,4 +797,12 @@
     <string name="note_color_brown">Brown</string>
     <string name="note_color_gray">Gray</string>
 
+    <!-- TYPE CONVERSION v2.6.0 -->
+    <!-- ======================= -->
+    <string name="action_convert_to_checklist">Convert to checklist</string>
+    <string name="action_convert_to_note">Convert to note</string>
+    <string name="confirm_convert_to_checklist">Convert this note to a checklist? Each line becomes a checklist item. Lines with existing checkbox notation (- [ ] / - [x]) keep their checked state.</string>
+    <string name="confirm_convert_to_note">Convert this checklist to a note? Each item becomes a line of text with its checked state preserved.</string>
+    <string name="action_convert">Convert</string>
+
 </resources>

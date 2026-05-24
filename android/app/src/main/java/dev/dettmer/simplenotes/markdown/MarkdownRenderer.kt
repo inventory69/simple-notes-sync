@@ -253,7 +253,7 @@ fun parseInlineFormatting(text: String): AnnotatedString {
                     }
                 }
                 InlinePattern.AUTO_URL -> {
-                    val url = earliestMatch.value
+                    val url = earliestMatch.value.trimEnd('!', '?', ',', '.', ';', ':')
                     withLink(
                         LinkAnnotation.Url(
                             url = url,
@@ -265,6 +265,9 @@ fun parseInlineFormatting(text: String): AnnotatedString {
                             )
                         )
                     ) { append(url) }
+                    // Append any trimmed trailing punctuation as plain text
+                    val trimmed = earliestMatch.value.length - url.length
+                    if (trimmed > 0) append(earliestMatch.value.takeLast(trimmed))
                 }
                 InlinePattern.LINK -> {
                     val linkText = earliestMatch.groupValues[1]

@@ -117,6 +117,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         get() = _existingNote.value
         set(value) { _existingNote.value = value }
     private var currentNoteType: NoteType = NoteType.TEXT
+    private var isConverting = false
 
     // v2.0.0: Callback to read the latest content directly from Compose TextFieldState.
     // Avoids snapshotFlow race condition when the user presses back before the next frame.
@@ -330,37 +331,49 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
-    private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
+    private fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
         val gfmRegex       = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
         val markerRegex    = Regex("""^[-*•]\s+(.*)$""")
-        val cbRegex        = Regex("""^\[[ xX]\]\s*(.*)$""")
+        val cbRegex        = Regex("""^\[([ xX])\]\s*(.*)$""") // group 1 = mark, group 2 = text
         val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
-
-        val lines = text.trim().lines().filter { it.isNotBlank() }
-        if (lines.isEmpty()) return _checklistItems.value
-
-        return lines.mapIndexed { index, line ->
-            val t = line.trim()
-            val gfm = gfmRegex.find(t)
-            if (gfm != null) {
+        val t = line.trim()
+        val gfm = gfmRegex.find(t)
+        return if (gfm != null) {
+            ChecklistItemState.createEmpty(index).copy(
+                text      = gfm.groupValues[2].trim(),
+                isChecked = gfm.groupValues[1].lowercase() != " "
+            )
+        } else {
+            val checkmark = checkmarkRegex.find(t)
+            if (checkmark != null) {
                 ChecklistItemState.createEmpty(index).copy(
-                    text      = gfm.groupValues[2].trim(),
-                    isChecked = gfm.groupValues[1].lowercase() != " "
+                    text      = checkmark.groupValues[1].trim(),
+                    isChecked = true
                 )
             } else {
-                val checkmark = checkmarkRegex.find(t)
-                if (checkmark != null) {
+                val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
+                val cbMatch     = cbRegex.find(afterMarker.trim())
+                if (cbMatch != null) {
                     ChecklistItemState.createEmpty(index).copy(
-                        text      = checkmark.groupValues[1].trim(),
-                        isChecked = true
+                        text      = cbMatch.groupValues[2].trim(),
+                        isChecked = cbMatch.groupValues[1].lowercase() != " "
                     )
                 } else {
-                    val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
-                    val afterCb     = cbRegex.find(afterMarker.trim())?.groupValues?.get(1) ?: afterMarker
-                    ChecklistItemState.createEmpty(index).copy(text = afterCb.trim())
+                    ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
                 }
             }
         }
+    }
+
+    private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
+        val lines = text.trim().lines().filter { it.isNotBlank() }
+        if (lines.isEmpty()) return _checklistItems.value
+        return lines.mapIndexed { index, line -> normalizeLineToChecklistItem(line, index) }
+    }
+
+    private fun parseContentAsChecklistItems(content: String): List<ChecklistItemState> {
+        val lines = content.trim().lines().filter { it.isNotBlank() }
+        return lines.mapIndexed { index, line -> normalizeLineToChecklistItem(line, index) }
     }
 
     /**
@@ -396,6 +409,55 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         isDirty = true
         _uiState.update { it.copy(content = content) }
         scheduleAutosave() // 🆕 v1.9.0
+    }
+
+    fun convertNoteType() {
+        if (isConverting) return
+        isConverting = true
+        autosaveJob?.cancel()
+        hasUnsavedChecklistEdits = false
+        pushUndoSnapshot()
+        viewModelScope.launch {
+            try {
+                val current = _uiState.value
+                val isNew = current.isNewNote
+                when (current.noteType) {
+                    NoteType.TEXT -> {
+                        // Flush latest TextFieldState content — snapshotFlow may lag by one frame
+                        val latestContent = contentProvider?.invoke()?.also { latest ->
+                            if (latest != _uiState.value.content) {
+                                _uiState.update { it.copy(content = latest) }
+                            }
+                        } ?: _uiState.value.content
+                        val rawItems = parseContentAsChecklistItems(latestContent)
+                        val items = if (rawItems.isEmpty()) listOf(ChecklistItemState.createEmpty(0)) else rawItems
+                        _checklistItems.value = items
+                        currentNoteType = NoteType.CHECKLIST
+                        val newTitle = if (isNew) ToolbarTitle.NEW_CHECKLIST else ToolbarTitle.EDIT_CHECKLIST
+                        _uiState.update { it.copy(noteType = NoteType.CHECKLIST, content = "", toolbarTitle = newTitle) }
+                    }
+                    NoteType.CHECKLIST -> {
+                        // Preserve GFM checkbox syntax so round-trip TEXT→CHECKLIST restores states
+                        val text = _checklistItems.value
+                            .filter { it.text.isNotBlank() }
+                            .sortedBy { it.order }
+                            .joinToString("\n") { item ->
+                                if (item.isChecked) "- [x] ${item.text}" else "- [ ] ${item.text}"
+                            }
+                        _checklistItems.value = emptyList()
+                        currentNoteType = NoteType.TEXT
+                        val newTitle = if (isNew) ToolbarTitle.NEW_NOTE else ToolbarTitle.EDIT_NOTE
+                        _uiState.update { it.copy(noteType = NoteType.TEXT, content = text, toolbarTitle = newTitle) }
+                        _events.emit(NoteEditorEvent.RestoreContent(text))
+                        _events.emit(NoteEditorEvent.ActivatePreviewMode)
+                    }
+                }
+                isDirty = true
+                performSave(silent = true)
+            } finally {
+                isConverting = false
+            }
+        }
     }
 
     fun updateChecklistItemText(itemId: String, newText: String) {
@@ -1111,7 +1173,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private fun currentSnapshot(): EditorSnapshot = EditorSnapshot(
         title = _uiState.value.title,
         content = _uiState.value.content,
-        checklistItems = _checklistItems.value.toList()
+        checklistItems = _checklistItems.value.toList(),
+        noteType = currentNoteType,
     )
 
     private fun pushUndoSnapshot() {
@@ -1146,7 +1209,20 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private fun applySnapshot(snapshot: EditorSnapshot) {
         isRestoringSnapshot = true
-        _uiState.update { it.copy(title = snapshot.title, content = snapshot.content) }
+        currentNoteType = snapshot.noteType
+        val isNew = _uiState.value.isNewNote
+        val restoredToolbarTitle = when {
+            snapshot.noteType == NoteType.CHECKLIST && isNew -> ToolbarTitle.NEW_CHECKLIST
+            snapshot.noteType == NoteType.CHECKLIST          -> ToolbarTitle.EDIT_CHECKLIST
+            isNew                                            -> ToolbarTitle.NEW_NOTE
+            else                                             -> ToolbarTitle.EDIT_NOTE
+        }
+        _uiState.update { it.copy(
+            title        = snapshot.title,
+            content      = snapshot.content,
+            noteType     = snapshot.noteType,
+            toolbarTitle = restoredToolbarTitle,
+        ) }
         _checklistItems.value = snapshot.checklistItems
 
         // 🔧 v1.10.0: isDirty-Reset wenn Undo/Redo den gespeicherten Zustand wiederherstellt
@@ -1431,4 +1507,6 @@ sealed interface NoteEditorEvent {
     data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
 
     data class ShareAsPdf(val title: String) : NoteEditorEvent
+
+    data object ActivatePreviewMode : NoteEditorEvent
 }

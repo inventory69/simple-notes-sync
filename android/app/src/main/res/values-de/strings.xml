@@ -722,4 +722,12 @@
     <string name="note_color_pink">Rosa</string>
     <string name="note_color_brown">Braun</string>
     <string name="note_color_gray">Grau</string>
+
+    <!-- TYP-KONVERTIERUNG v2.6.0 -->
+    <!-- ========================== -->
+    <string name="action_convert_to_checklist">Als Checkliste konvertieren</string>
+    <string name="action_convert_to_note">Als Notiz konvertieren</string>
+    <string name="confirm_convert_to_checklist">Notiz in eine Checkliste umwandeln? Jede Zeile wird zu einem Eintrag. Zeilen mit Checkbox-Notation (- [ ] / - [x]) behalten ihren Status.</string>
+    <string name="confirm_convert_to_note">Checkliste in eine Notiz umwandeln? Jeder Eintrag wird als Textzeile mit erhaltenem Haken-Status gespeichert.</string>
+    <string name="action_convert">Konvertieren</string>
 </resources>
