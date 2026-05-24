@@ -45,8 +45,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
-        const val ARG_SHARED_TEXT = "sharedText"       // 🆕 v2.2.0
-        const val ARG_SHARED_SUBJECT = "sharedSubject" // 🆕 v2.2.0
+        const val ARG_SHARED_TEXT = "sharedText"           // 🆕 v2.2.0
+        const val ARG_SHARED_SUBJECT = "sharedSubject"     // 🆕 v2.2.0
+        const val ARG_APPEND_TO_NOTE_ID = "appendToNoteId" // 🆕 v2.6.0
         private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50 // 🆕 v1.10.0-Papa
     }
 
@@ -169,18 +170,22 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     private fun loadNote() {
+        val appendToNoteId = savedStateHandle.get<String>(ARG_APPEND_TO_NOTE_ID)
         val noteId = savedStateHandle.get<String>(ARG_NOTE_ID)
         val noteTypeString = savedStateHandle.get<String>(ARG_NOTE_TYPE) ?: NoteType.TEXT.name
 
-        if (noteId != null) {
-            // Mark loading and correct isNewNote to prevent flash of wrong editor
-            // type and wrong LaunchedEffect triggers during async load
-            _uiState.update { it.copy(isLoading = true, isNewNote = false) }
-            viewModelScope.launch {
-                loadExistingNote(noteId)
+        when {
+            appendToNoteId != null -> {
+                _uiState.update { it.copy(isLoading = true, isNewNote = false) }
+                viewModelScope.launch { loadAndAppendSharedText(appendToNoteId) }
             }
-        } else {
-            initNewNote(noteTypeString)
+            noteId != null -> {
+                // Mark loading and correct isNewNote to prevent flash of wrong editor
+                // type and wrong LaunchedEffect triggers during async load
+                _uiState.update { it.copy(isLoading = true, isNewNote = false) }
+                viewModelScope.launch { loadExistingNote(noteId) }
+            }
+            else -> initNewNote(noteTypeString)
         }
     }
 
@@ -213,6 +218,61 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
         undoRedoManager.clear() // 🆕 v1.10.0: No cross-note undo
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Referenz-Snapshot für isDirty-Reset
+    }
+
+    private suspend fun loadAndAppendSharedText(noteId: String) {
+        val note = withContext(Dispatchers.IO) { storage.loadNote(noteId) }
+        if (note == null) {
+            initNewNote(NoteType.TEXT.name)
+            return
+        }
+
+        existingNote = note
+        currentNoteType = note.noteType
+        _uiState.update { state ->
+            state.copy(
+                title = note.title,
+                content = note.content,
+                noteType = note.noteType,
+                isNewNote = false,
+                isLoading = false,
+                color = note.color,
+                toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
+                    ToolbarTitle.EDIT_CHECKLIST
+                } else {
+                    ToolbarTitle.EDIT_NOTE
+                }
+            )
+        }
+        if (note.noteType == NoteType.CHECKLIST) {
+            loadChecklistData(note)
+        }
+
+        val sharedText = savedStateHandle.get<String>(ARG_SHARED_TEXT).orEmpty().trim()
+        val sharedSubject = savedStateHandle.get<String>(ARG_SHARED_SUBJECT).orEmpty().trim()
+        val appendText = listOf(sharedSubject, sharedText).filter { it.isNotBlank() }.joinToString("\n")
+
+        if (appendText.isNotBlank()) {
+            when (note.noteType) {
+                NoteType.TEXT -> {
+                    val separator = if (note.content.isNotBlank()) "\n\n" else ""
+                    _uiState.update { it.copy(content = it.content + separator + appendText) }
+                }
+                NoteType.CHECKLIST -> {
+                    val parsedItems = parseSharedTextAsChecklist(appendText)
+                    val existing = _checklistItems.value
+                    val maxOrder = existing.maxOfOrNull { it.order } ?: -1
+                    val reindexed = parsedItems.mapIndexed { i, item ->
+                        item.copy(order = maxOrder + 1 + i, originalOrder = maxOrder + 1 + i)
+                    }
+                    _checklistItems.value = existing + reindexed
+                }
+            }
+            isDirty = true
+        }
+
+        undoRedoManager.clear()
+        savedSnapshot = currentSnapshot()
     }
 
     private fun loadChecklistData(note: Note) {

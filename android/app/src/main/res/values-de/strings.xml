@@ -698,6 +698,8 @@
     <string name="share_type_dialog_message">Wie soll der geteilte Text gespeichert werden?</string>
     <string name="share_type_text_note">Textnotiz</string>
     <string name="share_type_checklist">Checkliste</string>
+    <string name="share_type_append_note">Zu Notiz hinzufügen…</string>
+    <string name="share_append_picker_title">Notiz auswählen</string>
     <!-- v2.2.0: Checklist Item Kontextmenü -->
     <string name="checklist_item_menu">Eintrag-Optionen</string>
     <string name="checklist_copy_text">Text kopieren</string>

@@ -10,15 +10,35 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.lifecycleScope
@@ -26,7 +46,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
@@ -34,7 +56,9 @@ import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.PdfExporter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Compose-based Note Editor Activity
@@ -52,7 +76,8 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
         private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
-        private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen" // 🆕 v2.2.0
+        private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen"   // 🆕 v2.2.0
+        private const val KEY_PICK_TARGET_NOTE = "pick_target_note"     // 🆕 v2.6.0
 
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
@@ -67,6 +92,9 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     private var isShareTypeChosen by mutableStateOf(false)
     private var isShareIntent = false
     private var eventCollectionStarted = false
+    // 🆕 v2.6.0: Append-to-note flow state
+    private var isPickingTargetNote by mutableStateOf(false)
+    private var chosenAppendNoteId: String? = null
 
     private val viewModel: NoteEditorViewModel by viewModels {
         viewModelFactory {
@@ -82,9 +110,15 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                     val sharedSubject = intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty()
                     handle[NoteEditorViewModel.ARG_SHARED_TEXT] = sharedText
                     handle[NoteEditorViewModel.ARG_SHARED_SUBJECT] = sharedSubject
-                    handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
-                        chosenShareNoteType ?: NoteType.TEXT.name
-                    handle[NoteEditorViewModel.ARG_NOTE_ID] = null
+                    if (chosenAppendNoteId != null) {
+                        // 🆕 v2.6.0: Append mode — load existing note and append
+                        handle[NoteEditorViewModel.ARG_NOTE_ID] = null
+                        handle[NoteEditorViewModel.ARG_APPEND_TO_NOTE_ID] = chosenAppendNoteId
+                    } else {
+                        handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
+                            chosenShareNoteType ?: NoteType.TEXT.name
+                        handle[NoteEditorViewModel.ARG_NOTE_ID] = null
+                    }
                 }
 
                 NoteEditorViewModel(application, handle)
@@ -142,6 +176,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         // Restore state nach Configuration Change (z.B. Rotation)
         if (savedInstanceState != null) {
             isShareTypeChosen = savedInstanceState.getBoolean(KEY_SHARE_TYPE_CHOSEN, false)
+            isPickingTargetNote = savedInstanceState.getBoolean(KEY_PICK_TARGET_NOTE, false)
         } else {
             // Nicht-Share-Intents brauchen keinen Dialog → sofort ready
             isShareTypeChosen = !isShareIntent
@@ -149,26 +184,43 @@ class ComposeNoteEditorActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
-                if (isShareIntent && !isShareTypeChosen) {
-                    // 🆕 v2.2.0: Typ-Auswahl-Dialog für Share Intent
-                    ShareNoteTypeDialog(
-                        onTextNote = {
-                            chosenShareNoteType = NoteType.TEXT.name
-                            isShareTypeChosen = true
-                            startEventCollectionIfNeeded()
-                        },
-                        onChecklist = {
-                            chosenShareNoteType = NoteType.CHECKLIST.name
-                            isShareTypeChosen = true
-                            startEventCollectionIfNeeded()
-                        },
-                        onDismiss = { finishWithTransition() }
-                    )
-                } else {
-                    NoteEditorScreen(
-                        viewModel = viewModel,
-                        onNavigateBack = { finishWithTransition() }
-                    )
+                when {
+                    isShareIntent && !isShareTypeChosen && isPickingTargetNote -> {
+                        // 🆕 v2.6.0: Note-Picker-Dialog für Append-Modus
+                        ShareNotePickerDialog(
+                            storage = NotesStorage(this@ComposeNoteEditorActivity),
+                            onNoteSelected = { noteId ->
+                                chosenAppendNoteId = noteId
+                                isPickingTargetNote = false
+                                isShareTypeChosen = true
+                                startEventCollectionIfNeeded()
+                            },
+                            onDismiss = { isPickingTargetNote = false }
+                        )
+                    }
+                    isShareIntent && !isShareTypeChosen -> {
+                        // 🆕 v2.2.0: Typ-Auswahl-Dialog für Share Intent
+                        ShareNoteTypeDialog(
+                            onTextNote = {
+                                chosenShareNoteType = NoteType.TEXT.name
+                                isShareTypeChosen = true
+                                startEventCollectionIfNeeded()
+                            },
+                            onChecklist = {
+                                chosenShareNoteType = NoteType.CHECKLIST.name
+                                isShareTypeChosen = true
+                                startEventCollectionIfNeeded()
+                            },
+                            onAppendNote = { isPickingTargetNote = true },
+                            onDismiss = { finishWithTransition() }
+                        )
+                    }
+                    else -> {
+                        NoteEditorScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { finishWithTransition() }
+                        )
+                    }
                 }
             }
         }
@@ -183,6 +235,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(KEY_SHARE_TYPE_CHOSEN, isShareTypeChosen)
+        outState.putBoolean(KEY_PICK_TARGET_NOTE, isPickingTargetNote)
     }
 
     /**
@@ -347,18 +400,13 @@ class ComposeNoteEditorActivity : ComponentActivity() {
 // 🆕 v2.2.0: Share Intent — Notiztyp-Auswahl-Dialog
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * Leichtgewichtiger Material3 AlertDialog zur Auswahl des Notiztyps
- * für geteilten Text. Wird angezeigt bevor der Editor initialisiert wird.
- *
- * - Dismiss-Position (links): "Checkliste" (sekundäre Aktion)
- * - Confirm-Position (rechts): "Textnotiz" (primäre/Standard-Aktion)
- * - Back-Taste / Tap außerhalb: Activity wird geschlossen (onDismiss)
- */
+private const val PICKER_PREVIEW_MAX_LENGTH = 50
+
 @Composable
 private fun ShareNoteTypeDialog(
     onTextNote: () -> Unit,
     onChecklist: () -> Unit,
+    onAppendNote: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -370,20 +418,103 @@ private fun ShareNoteTypeDialog(
             )
         },
         text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.share_type_dialog_message),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                TextButton(onClick = onTextNote, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.share_type_text_note))
+                }
+                TextButton(onClick = onChecklist, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.share_type_checklist))
+                }
+                TextButton(onClick = onAppendNote, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.share_type_append_note))
+                }
+            }
+        },
+        confirmButton = {}
+    )
+}
+
+@Composable
+private fun ShareNotePickerDialog(
+    storage: NotesStorage,
+    onNoteSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val allNotes by produceState<List<Note>>(initialValue = emptyList()) {
+        value = withContext(Dispatchers.IO) { storage.loadAllNotes() }
+            .sortedByDescending { it.updatedAt }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
             Text(
-                text = stringResource(R.string.share_type_dialog_message),
-                style = MaterialTheme.typography.bodyMedium
+                text = stringResource(R.string.share_append_picker_title),
+                style = MaterialTheme.typography.headlineSmall
             )
         },
-        dismissButton = {
-            TextButton(onClick = onChecklist) {
-                Text(stringResource(R.string.share_type_checklist))
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items(allNotes, key = { it.id }) { note ->
+                    ShareNotePickerCard(note = note, onClick = { onNoteSelected(note.id) })
+                }
             }
         },
-        confirmButton = {
-            TextButton(onClick = onTextNote) {
-                Text(stringResource(R.string.share_type_text_note))
+        confirmButton = {}
+    )
+}
+
+@Composable
+private fun ShareNotePickerCard(note: Note, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = when (note.noteType) {
+                    NoteType.TEXT -> Icons.Outlined.Description
+                    NoteType.CHECKLIST -> Icons.AutoMirrored.Outlined.List
+                },
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = note.title.ifEmpty { stringResource(R.string.untitled) },
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1
+                )
+                Text(
+                    text = when (note.noteType) {
+                        NoteType.TEXT -> note.content.take(PICKER_PREVIEW_MAX_LENGTH).replace("\n", " ")
+                        NoteType.CHECKLIST -> {
+                            val items = note.checklistItems.orEmpty()
+                            val checked = items.count { it.isChecked }
+                            "✔ $checked/${items.size}"
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1
+                )
             }
         }
-    )
+    }
 }

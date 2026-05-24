@@ -770,6 +770,8 @@
     <string name="share_type_dialog_message">How should the shared text be saved?</string>
     <string name="share_type_text_note">Text note</string>
     <string name="share_type_checklist">Checklist</string>
+    <string name="share_type_append_note">Append to note…</string>
+    <string name="share_append_picker_title">Select note</string>
 
     <!-- v2.2.0: Checklist Item Context Menu -->
     <string name="checklist_item_menu">Item options</string>
