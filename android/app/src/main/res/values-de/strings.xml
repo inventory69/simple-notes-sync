@@ -687,6 +687,8 @@
     <!-- ============================= -->
     <string name="share_overflow_menu">Weitere Optionen</string>
     <string name="share_to_calendar">Zum Kalender hinzufügen</string>
+    <string name="action_copy_note_text">Text kopieren</string>
+    <string name="toast_note_copied">Text in Zwischenablage kopiert</string>
     <string name="share_as_text">Als Text teilen</string>
     <string name="share_as_pdf">Als PDF teilen</string>
     <string name="share_chooser_title">Notiz teilen</string>

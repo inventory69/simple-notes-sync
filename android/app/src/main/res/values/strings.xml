@@ -758,6 +758,8 @@
     <!-- ============================= -->
     <string name="share_overflow_menu">More options</string>
     <string name="share_to_calendar">Add to calendar</string>
+    <string name="action_copy_note_text">Copy text</string>
+    <string name="toast_note_copied">Text copied to clipboard</string>
     <string name="share_as_text">Share as text</string>
     <string name="share_as_pdf">Share as PDF</string>
     <string name="share_chooser_title">Share note</string>

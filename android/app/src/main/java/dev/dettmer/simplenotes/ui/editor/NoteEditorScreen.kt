@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Palette
@@ -116,6 +117,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
 import android.content.ClipData
+import android.os.Build
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 
@@ -220,6 +222,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val msgNoteSaved = stringResource(R.string.note_saved)
     val msgNoteDeleted = stringResource(R.string.note_deleted)
     val msgItemCopiedToChecklist = stringResource(R.string.checklist_item_copied_toast) // 🆕 v2.2.0
+    val msgNoteCopied = stringResource(R.string.toast_note_copied)
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -307,6 +310,14 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 is NoteEditorEvent.OpenCalendar -> Unit
                 is NoteEditorEvent.ShareAsText -> Unit
                 is NoteEditorEvent.ShareAsPdf -> Unit
+                is NoteEditorEvent.CopyToClipboard -> {
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", event.text)))
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            snackbarHostState.showSnackbar(msgNoteCopied)
+                        }
+                    }
+                }
                 is NoteEditorEvent.ActivatePreviewMode -> { isPreviewMode = true }
             }
         }
@@ -503,6 +514,20 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 onClick = {
                                     showOverflowMenu = false
                                     viewModel.openInCalendar()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_copy_note_text)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.ContentCopy,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    viewModel.copyNoteText()
                                 }
                             )
                             DropdownMenuItem(

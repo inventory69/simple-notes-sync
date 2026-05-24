@@ -1401,6 +1401,24 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
+    fun copyNoteText() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val content = NoteShareHelper.formatAsPlainText(
+                noteType = state.noteType,
+                textContent = state.content,
+                checklistItems = _checklistItems.value
+            )
+            val title = state.title.trim()
+            if (title.isBlank() && content.isBlank()) {
+                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+                return@launch
+            }
+            val fullText = if (title.isNotBlank()) "$title\n\n$content" else content
+            _events.emit(NoteEditorEvent.CopyToClipboard(fullText.trim()))
+        }
+    }
+
     /**
      * Delete the current note
      * @param deleteOnServer if true, also triggers server deletion; if false, only deletes locally
@@ -1567,6 +1585,8 @@ sealed interface NoteEditorEvent {
     data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
 
     data class ShareAsPdf(val title: String) : NoteEditorEvent
+
+    data class CopyToClipboard(val text: String) : NoteEditorEvent
 
     data object ActivatePreviewMode : NoteEditorEvent
 }
