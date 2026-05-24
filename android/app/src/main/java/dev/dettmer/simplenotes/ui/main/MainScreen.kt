@@ -20,10 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -227,8 +229,10 @@ fun MainScreen(
                     SelectionTopBar(
                         selectedCount = selectedNotes.size,
                         totalCount = notes.size,
+                        allSelectedPinned = notes.filter { it.id in selectedNotes }.all { it.isPinned == true },
                         onCloseSelection = { viewModel.clearSelection() },
                         onSelectAll = { viewModel.selectAllNotes() },
+                        onTogglePinSelected = { viewModel.togglePinForSelected() },
                         onColorClick = { showBatchColorPicker = true }, // 🆕 v2.5.0
                         onDeleteSelected = { showBatchDeleteDialog = true }
                     )
@@ -518,8 +522,10 @@ private fun MainTopBar(
 private fun SelectionTopBar(
     selectedCount: Int,
     totalCount: Int,
+    allSelectedPinned: Boolean,
     onCloseSelection: () -> Unit,
     onSelectAll: () -> Unit,
+    onTogglePinSelected: () -> Unit,
     onColorClick: () -> Unit,   // 🆕 v2.5.0
     onDeleteSelected: () -> Unit
 ) {
@@ -547,6 +553,16 @@ private fun SelectionTopBar(
                         contentDescription = stringResource(R.string.action_select_all)
                     )
                 }
+            }
+            // Pin/Unpin selected notes
+            IconButton(
+                onClick = onTogglePinSelected,
+                enabled = selectedCount > 0
+            ) {
+                Icon(
+                    imageVector = if (allSelectedPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                    contentDescription = stringResource(R.string.action_toggle_pin),
+                )
             }
             // 🆕 v2.5.0: Set colour for selected notes
             IconButton(
