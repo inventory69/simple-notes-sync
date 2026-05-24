@@ -101,6 +101,19 @@ jobs:
             fi
           done
 
+      - name: Prepare whatsnew files for upload-google-play action
+        run: |
+          VERSION_CODE=${{ steps.version.outputs.VERSION_CODE }}
+          # r0adkll/upload-google-play expects `whatsnew-<locale>` files directly in
+          # whatsNewDirectory — it does not traverse the Fastlane supply subdirectory
+          # structure (`<locale>/changelogs/<versionCode>.txt`).
+          for changelog in fastlane/metadata/android/*/changelogs/${VERSION_CODE}.txt; do
+            locale=$(echo "$changelog" | sed 's|fastlane/metadata/android/\(.*\)/changelogs/.*|\1|')
+            dest="fastlane/metadata/android/whatsnew-${locale}"
+            cp "$changelog" "$dest"
+            echo "Prepared $dest from $changelog"
+          done
+
       - name: Calculate rollout fraction (production only)
         id: rollout
         run: |
