@@ -8,6 +8,53 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.6.0] - 2026-05-24
+
+### ✨ Neue Features
+
+**Angepinnte-Notizen-Bereich** ([e849bdf](https://github.com/inventory69/simple-notes-sync/commit/e849bdf))
+- Notizen können per Multi-Select-Batch-Aktion angepinnt werden und erscheinen in einem eigenen „Angepinnt"-Bereich oberhalb der regulären Liste
+- Bereich nur sichtbar, wenn mindestens eine Notiz angepinnt ist; angepinnte Karten zeigen ein Pin-Symbol
+- Funktioniert in Listen- und Rasteransicht
+- Vorgeschlagen von [@ASFHU](https://github.com/ASFHU), [@james0336](https://github.com/james0336), [@isawaway](https://github.com/isawaway)!
+
+**Typkonvertierung: Text ↔ Checkliste** ([714a7e6](https://github.com/inventory69/simple-notes-sync/commit/714a7e6))
+- Jede Textnotiz lässt sich in eine Checkliste umwandeln und zurück; GFM-Checkbox-Notation (`- [ ]` / `- [x]`) bleibt in beide Richtungen erhalten
+- Vollständige Rückgängig/Wiederholen-Unterstützung für Typkonvertierungen
+
+**Bare-URLs im Markdown-Preview als Links** ([745a4cd](https://github.com/inventory69/simple-notes-sync/commit/745a4cd))
+- Nackte `http://`- und `https://`-URLs werden im Markdown-Preview automatisch als anklickbare Links erkannt
+- Abschließende Satzzeichen werden nicht in den Link einbezogen
+- Vorgeschlagen von [@james0336](https://github.com/james0336), [@isawaway](https://github.com/isawaway)!
+
+**„Text kopieren" im Editor-Überlaufmenü** ([83e6a3c](https://github.com/inventory69/simple-notes-sync/commit/83e6a3c))
+- Kopiert den vollständigen Notizinhalt (Titel + Text) mit einem Tippen in die Zwischenablage; Android 13+ zeigt die Systembestätigung, ältere Versionen eine Snackbar
+- Danke an [@xdpirate](https://github.com/xdpirate) für den Vorschlag!
+
+**Geteilten Text an bestehende Notiz anhängen** ([dc59351](https://github.com/inventory69/simple-notes-sync/commit/dc59351))
+- Der Teilen-Intent bietet jetzt eine dritte Option, um freigegebenen Text an eine bestehende Notiz anzuhängen
+- Eine Notizauswahl (sortiert nach zuletzt geändert) ermöglicht die Auswahl; der Editor öffnet sich mit dem zusammengeführten Inhalt zur Kontrolle
+
+### 🐛 Bug-Fixes
+
+**Einstellungen reagieren nicht auf Offline-Modus-Umschalten** ([b388016](https://github.com/inventory69/simple-notes-sync/commit/b388016))
+- `isServerConfigured` war eine einfache Funktion, die einmalig pro Composable aufgerufen wurde; durch Umstellung auf `StateFlow` reagiert die UI jetzt sofort auf Änderungen
+- Statusbeschriftungen unterscheiden nun korrekt zwischen „Offline-Modus aktiv" und „Kein Server konfiguriert"
+
+**Parallele-Verbindungen-Einstellung im Offline-Modus aktiv** ([c6cf4e5](https://github.com/inventory69/simple-notes-sync/commit/c6cf4e5))
+- Die Radiogruppe für parallele Verbindungen blieb interaktiv, während alle anderen Sync-Einstellungen ausgegraut waren; sie wird jetzt korrekt deaktiviert
+
+**Checkliste: Unicode-Aufzählungszeichen beim Einfügen via Teilen-Intent** ([8e67ccd](https://github.com/inventory69/simple-notes-sync/commit/8e67ccd))
+- `• Element` (U+2022), `✓ Element`, `☑ Element` und `✔ Element` werden beim Einfügen via Teilen-Intent jetzt korrekt normalisiert
+
+**Checkliste: Trennlinie springt beim Einblenden/Ausblenden der Tastatur** ([8295522](https://github.com/inventory69/simple-notes-sync/commit/8295522))
+- Der Trenner zwischen abgehakten und nicht abgehakten Items fehlte `animateItem()` und sprang anstatt zu gleiten, wenn die Bildschirmtastatur die Liste verkleinerte
+
+**Checkliste: Gemischte GFM- und Plaintext-Zeilen nicht zeilenweise geparst** ([2bd8106](https://github.com/inventory69/simple-notes-sync/commit/2bd8106))
+- Gemischte Eingaben (teils GFM, teils Klartext) wurden als Rohtext behandelt und ließen `- [ ] Milch` als wörtlichen Itemtext stehen; der Parser klassifiziert nun jede Zeile einzeln
+
+---
+
 ## [2.5.2] - 2026-05-22
 
 ### 🐛 Bug-Fixes
