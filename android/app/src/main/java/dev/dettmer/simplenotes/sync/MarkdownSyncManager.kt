@@ -481,7 +481,12 @@ internal class MarkdownSyncManager(
                             )
                         }
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
-                            storage.saveNote(mdNote.copy(syncStatus = SyncStatus.PENDING))
+                            val merged = mdNote.copy(
+                                syncStatus = SyncStatus.PENDING,
+                                isPinned = mdNote.isPinned ?: localNote.isPinned,
+                                color = mdNote.color ?: localNote.color,
+                            )
+                            storage.saveNote(merged)
                             importedCount++
                             Logger.d(
                                 TAG,

@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
@@ -346,11 +347,40 @@ internal class NoteDownloader(
                                         }
                                     }
                                     else -> {
-                                        // 🔧 v1.9.0 (Bug C): E-Tag auch bei "local newer"-Skip cachen
-                                        // Verhindert erneutes Herunterladen beim nächsten Sync,
-                                        // wenn Server-Inhalt sich nicht geändert hat
-                                        if (result.etag != null) {
-                                            etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                        // Local timestamp is newer or equal to server.
+                                        // Only mark PENDING if content actually differs — otherwise
+                                        // just refresh the E-Tag. Without this check the upload
+                                        // phase skips unchanged notes (hash match) but never
+                                        // updates the cached E-Tag, causing an infinite
+                                        // download → PENDING → skip-upload → download loop.
+                                        if (localNote.syncStatus == SyncStatus.SYNCED ||
+                                            localNote.syncStatus == SyncStatus.PENDING
+                                        ) {
+                                            if (noteContentDiffers(localNote, remoteNote)) {
+                                                if (localNote.syncStatus == SyncStatus.SYNCED) {
+                                                    storage.saveNote(
+                                                        localNote.copy(syncStatus = SyncStatus.PENDING)
+                                                    )
+                                                    Logger.d(
+                                                        TAG,
+                                                        "   🔄 ${result.noteId}: local newer with different content " +
+                                                            "— marked PENDING for re-upload"
+                                                    )
+                                                }
+                                                // Already PENDING → uploader will handle it next cycle
+                                            } else {
+                                                // Content identical — server E-Tag changed (e.g. file
+                                                // re-saved on another client). Just sync the E-Tag so
+                                                // future syncs can skip this note correctly.
+                                                if (result.etag != null) {
+                                                    etagUpdates["etag_json_${result.noteId}"] = result.etag
+                                                }
+                                                Logger.d(
+                                                    TAG,
+                                                    "   ✅ ${result.noteId}: local newer but same content " +
+                                                        "— E-Tag refreshed, no upload needed"
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -720,6 +750,30 @@ internal class NoteDownloader(
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to delete note from server: $noteId", e)
             false
+        }
+    }
+
+    /**
+     * Returns true if the user-visible content of [a] and [b] differs.
+     * Intentionally excludes [Note.updatedAt] and [Note.syncStatus] — only the
+     * fields a user can read or interact with are compared.
+     */
+    private fun noteContentDiffers(a: Note, b: Note): Boolean {
+        if (a.noteType != b.noteType) return true
+        if (a.title != b.title) return true
+        if (a.isPinned != b.isPinned) return true
+        if (a.color != b.color) return true
+
+        return when (a.noteType) {
+            NoteType.CHECKLIST -> {
+                val aItems = a.checklistItems.orEmpty()
+                val bItems = b.checklistItems.orEmpty()
+                if (aItems.size != bItems.size) return true
+                aItems.zip(bItems).any { (ai, bi) ->
+                    ai.text != bi.text || ai.isChecked != bi.isChecked || ai.order != bi.order
+                }
+            }
+            else -> a.content.trim() != b.content.trim()
         }
     }
 }
