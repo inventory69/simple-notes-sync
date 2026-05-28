@@ -551,6 +551,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamp, deletion tracker)")
     }
 
+    fun clearETagCache() {
+        prefs.edit {
+            prefs.all.keys.filter {
+                it.startsWith("etag_json_") ||
+                    it.startsWith("etag_md_") ||
+                    it.startsWith("content_hash_") ||
+                    it.startsWith("content_hash_md_")
+            }.forEach { key -> remove(key) }
+        }
+        Logger.d(TAG, "🧹 [DEBUG] Cleared E-Tag and content hash cache")
+        showSnackbar(getString(R.string.debug_etag_cache_cleared))
+    }
+
     /**
      * � v1.7.0 Hotfix: Improved server change detection
      *

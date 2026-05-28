@@ -60,6 +60,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     var showDisableAfterExportDialog by remember { mutableStateOf(false) }
     // True after export while waiting for the share sheet to be dismissed
     var pendingDisableDialog by remember { mutableStateOf(false) }
+    var showClearETagCacheDialog by remember { mutableStateOf(false) }
 
     // Show the disable-after-export dialog only once the screen resumes (share sheet closed)
     DisposableEffect(lifecycleOwner) {
@@ -202,6 +203,24 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsDivider()
+
+            SettingsSectionHeader(text = stringResource(R.string.debug_sync_section))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsInfoCard(
+                text = stringResource(R.string.debug_clear_etag_cache_subtitle)
+            )
+
+            SettingsButton(
+                text = stringResource(R.string.debug_clear_etag_cache_title),
+                onClick = { showClearETagCacheDialog = true },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -250,6 +269,29 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             dismissButton = {
                 TextButton(onClick = { showDisableAfterExportDialog = false }) {
                     Text(stringResource(R.string.debug_after_export_keep))
+                }
+            }
+        )
+    }
+
+    if (showClearETagCacheDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearETagCacheDialog = false },
+            title = { Text(stringResource(R.string.debug_clear_etag_cache_dialog_title)) },
+            text = { Text(stringResource(R.string.debug_clear_etag_cache_dialog_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearETagCacheDialog = false
+                        viewModel.clearETagCache()
+                    }
+                ) {
+                    Text(stringResource(R.string.debug_clear_etag_cache_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearETagCacheDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

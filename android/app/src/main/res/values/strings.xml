@@ -418,6 +418,13 @@
     <string name="debug_reset_changelog">Reset Changelog Dialog</string>
     <string name="debug_reset_changelog_desc">Show changelog on next app start</string>
     <string name="debug_changelog_reset">Changelog will show on next start</string>
+    <string name="debug_sync_section">Sync</string>
+    <string name="debug_clear_etag_cache_title">Clear E-Tag cache</string>
+    <string name="debug_clear_etag_cache_subtitle">Removes cached E-Tags and content hashes. The next sync fully re-compares all notes with the server.</string>
+    <string name="debug_clear_etag_cache_dialog_title">Clear E-Tag cache?</string>
+    <string name="debug_clear_etag_cache_dialog_message">Removes E-Tags and content hashes for all notes. The next sync will re-compare all notes with the server. Note contents are not changed.</string>
+    <string name="debug_clear_etag_cache_confirm">Clear</string>
+    <string name="debug_etag_cache_cleared">E-Tag cache cleared.</string>
 
     <!-- 🔧 v1.10.1: Easter-Egg Developer Options -->
     <string name="developer_options_countdown">%d taps to unlock developer options</string>

@@ -382,6 +382,13 @@
     <string name="debug_reset_changelog">Changelog-Dialog zurücksetzen</string>
     <string name="debug_reset_changelog_desc">Changelog beim nächsten App-Start anzeigen</string>
     <string name="debug_changelog_reset">Changelog wird beim nächsten Start angezeigt</string>
+    <string name="debug_sync_section">Sync</string>
+    <string name="debug_clear_etag_cache_title">E-Tag-Cache löschen</string>
+    <string name="debug_clear_etag_cache_subtitle">Entfernt gecachte E-Tags und Content-Hashes. Der nächste Sync vergleicht alle Notizen neu mit dem Server.</string>
+    <string name="debug_clear_etag_cache_dialog_title">E-Tag-Cache löschen?</string>
+    <string name="debug_clear_etag_cache_dialog_message">Entfernt E-Tags und Content-Hashes für alle Notizen. Beim nächsten Sync werden alle Notizen neu mit dem Server verglichen. Notiz-Inhalte bleiben unverändert.</string>
+    <string name="debug_clear_etag_cache_confirm">Löschen</string>
+    <string name="debug_etag_cache_cleared">E-Tag-Cache gelöscht.</string>
     <!-- 🔧 v1.10.1: Easter-Egg Entwickleroptionen -->
     <string name="developer_options_countdown">Noch %d Taps bis zu den Entwickleroptionen</string>
     <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>
