@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Simple Notes</string>
+    <string name="main_title">Simple Notes</string>
+    <string name="action_sync">Sincronizar</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="action_select_all">Seleccionar todo</string>
+    <string name="selection_count">%d seleccionados</string>
+    <string name="section_notes">Notas</string>
+    <string name="fab_close">Cerrar menu</string>
+    <string name="untitled">Sin titulo</string>
+    <string name="checklist_progress">%1$d/%2$d hecho</string>
+    <string name="sync_status_synced">Sincronizado con el servidor</string>
+    <string name="sync_status_pending">Esperando para sincronizar</string>
+    <string name="sync_legend_description">Cada nota muestra un pequeño icono indicando su estado de sincronización:</string>
+    <string name="sync_legend_synced_label">Sincronizado</string>
+    <string name="sync_legend_synced_desc">Esta nota esta actualizada en todos los dispositivos.</string>
+    <string name="sync_legend_pending_label">Pendiente</string>
+    <string name="sync_legend_pending_desc">Esta nota tiene cambios locales pendientes a sincronizar.</string>
+    <string name="sync_legend_conflict_label">Conflicto</string>
+    <string name="sync_legend_conflict_desc">Esta nota fue modificada en varios dispositivos al mismo tiempo. Se guardo la última versión.</string>
+    <string name="sync_legend_deleted_desc">Esta nota fue borrada en otro dispositivo o del servidor. Aún existe localmente.</string>
+    <string name="sync_phase_preparing">Sincronizando…</string>
+    <string name="sync_phase_downloading">Descargando…</string>
+</resources>
