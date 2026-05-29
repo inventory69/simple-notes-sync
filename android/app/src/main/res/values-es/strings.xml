@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Simple Notes</string>
     <string name="main_title">Simple Notes</string>
     <string name="action_sync">Sincronizar</string>
@@ -19,7 +19,64 @@
     <string name="sync_legend_pending_desc">Esta nota tiene cambios locales pendientes a sincronizar.</string>
     <string name="sync_legend_conflict_label">Conflicto</string>
     <string name="sync_legend_conflict_desc">Esta nota fue modificada en varios dispositivos al mismo tiempo. Se guardo la última versión.</string>
-    <string name="sync_legend_deleted_desc">Esta nota fue borrada en otro dispositivo o del servidor. Aún existe localmente.</string>
+    <string name="sync_legend_deleted_desc">Esta nota fue eliminada en otro dispositivo o del servidor. Aún existe localmente.</string>
     <string name="sync_phase_preparing">Sincronizando…</string>
     <string name="sync_phase_downloading">Descargando…</string>
+    <string name="close">Cerrar</string>
+    <string name="sort_checklist_manual">Manual</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation">Fecha de creación ↑</string>
+    <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation">Fecha de creación ↓</string>
+    <string name="apply">Aplicar</string>
+    <string name="sync_phase_importing_markdown">Importando Markdown…</string>
+    <string name="sync_phase_completed">Sincronización completada</string>
+    <string name="sync_phase_error">Sincronización fallida</string>
+    <string name="delete_note_title">¿Eliminar la nota?</string>
+    <string name="delete_notes_title">¿Borrar %d notas?</string>
+    <string name="delete_note_message">¿Cómo quieres eliminar esta nota?</string>
+    <string name="delete_notes_message">¿Cómo quieres eliminar estas %d notas?</string>
+    <string name="delete_everywhere">Eliminar en todos (también el servidor)</string>
+    <string name="delete_everywhere_offline_hint">No disponible en modo offline</string>
+    <string name="delete">Eliminar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="ok">OK</string>
+    <string name="legacy_delete_dialog_title">Eliminar nota</string>
+    <string name="legacy_delete_dialog_message">\"%s\" se eliminarán localmente.\n\n¿También del servidor?</string>
+    <string name="legacy_delete_from_server">Eliminar del servidor</string>
+    <string name="snackbar_undo">Deshacer</string>
+    <string name="snackbar_note_deleted_local">\"%s\" eliminados localmente</string>
+    <string name="snackbar_note_deleted_server">\"%s\" serán eliminados del servidor</string>
+    <plurals name="snackbar_notes_deleted_local">
+        <item quantity="one">%d nota eliminada localmente</item>
+        <item quantity="many">%d notas eliminadas localmente</item>
+        <item quantity="other">%d notas eliminadas localmente</item>
+    </plurals>
+    <plurals name="snackbar_notes_deleted_server">
+        <item quantity="one">%d nota será eliminada del servidor</item>
+        <item quantity="many">%d notas serán eliminadas del servidor</item>
+        <item quantity="other">%d notas serán eliminadas del servidor</item>
+    </plurals>
+    <string name="snackbar_delete_queued_for_sync">Sin conexión al servidor - Se eliminara para la siguiente sincronización</string>
+    <string name="snackbar_server_error">Error del servidor: %s</string>
+    <string name="snackbar_nothing_to_sync">ℹ️ Nada por sincronizar</string>
+    <string name="sync_error_ssl">Error SSL</string>
+    <string name="sync_phase_deleting">Eliminando del servidor…</string>
+    <string name="sync_quota_warning">⚠️ La sincronización fue retrasada por el administrador de energía de Android. Usa la app regularmente o desactiva la optimización en segundo plano de la batería.</string>
+    <string name="sort_notes">Ordenar notas</string>
+    <string name="sort_ascending">Ascendente</string>
+    <string name="sort_descending">Descendente</string>
+    <string name="sort_by_updated">Última modificación</string>
+    <string name="sort_by_created">Fecha de creación</string>
+    <string name="sort_by_name">Nombre</string>
+    <string name="sort_by_type">Tipo</string>
+    <string name="sort_by_color">Color</string>
+    <string name="action_close_selection">Cerrar selección</string>
+    <string name="action_delete_selected">Eliminar seleccionado</string>
+    <string name="action_toggle_pin">Cambiar pin</string>
+    <string name="section_pinned">Anclado</string>
+    <string name="fab_new_note">Nueva nota</string>
+    <string name="fab_text_note">Nota de texto</string>
+    <string name="sync_status_completed">Sincronización terminada</string>
+    <string name="sync_already_running">Sincronización en proceso</string>
 </resources>
