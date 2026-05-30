@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.CreateFolderDialog
@@ -364,6 +365,8 @@ fun MainScreen(
                                 gridManualColumns = gridManualColumns,
                                 scrollToTop = scrollToTop,
                                 syncScrollToTop = syncScrollToTop,
+                                noteFilter = noteFilter,
+                                colorFilter = colorFilter,
                                 onResetScrollToTop = { viewModel.resetScrollToTop() },
                                 onResetSyncScrollToTop = { viewModel.resetSyncCompletedScrollToTop() },
                                 onEnterFolder = { viewModel.enterFolder(it) },
@@ -740,6 +743,8 @@ private fun NotesPane(
     gridManualColumns: Int,
     scrollToTop: Boolean,
     syncScrollToTop: Boolean,
+    noteFilter: NoteFilter,
+    colorFilter: String?,
     onResetScrollToTop: () -> Unit,
     onResetSyncScrollToTop: () -> Unit,
     onEnterFolder: (String) -> Unit,
@@ -767,6 +772,15 @@ private fun NotesPane(
             kotlinx.coroutines.delay(SYNC_SCROLL_DELAY_MS)
             if (displayMode == "grid") gridState.animateScrollToItem(0) else listState.animateScrollToItem(0)
             onResetSyncScrollToTop()
+        }
+    }
+    var filterSettled by remember { mutableStateOf(false) }
+    LaunchedEffect(noteFilter, colorFilter) {
+        if (!filterSettled) {
+            filterSettled = true
+        } else {
+            gridState.scrollToItem(0)
+            listState.scrollToItem(0)
         }
     }
 
