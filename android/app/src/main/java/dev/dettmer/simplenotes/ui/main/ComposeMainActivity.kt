@@ -253,7 +253,7 @@ class ComposeMainActivity : ComponentActivity() {
                     viewModel = viewModel,
                     onOpenNote = { noteId -> openNoteEditor(noteId) },
                     onOpenSettings = { openSettings() },
-                    onCreateNote = { noteType -> createNote(noteType) }
+                    onCreateNote = { noteType, folder -> createNote(noteType, folder) }
                 )
 
                 // v1.8.0: Post-Update Changelog (shows once after update)
@@ -282,6 +282,7 @@ class ComposeMainActivity : ComponentActivity() {
 
         // Reload notes
         viewModel.loadNotes()
+        viewModel.refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Settings-Sync/Resume nachladen
 
         // Phase 3: Track returning from in-app child activities
         // v2.0.0: Track whether we're returning from an in-app child activity
@@ -405,10 +406,11 @@ class ComposeMainActivity : ComponentActivity() {
         editorLauncher.launch(intent, options)
     }
 
-    private fun createNote(noteType: NoteType) {
+    private fun createNote(noteType: NoteType, folderName: String? = null) {
         cameFromEditor = true
         val intent = Intent(this, ComposeNoteEditorActivity::class.java)
         intent.putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
+        folderName?.let { intent.putExtra(ComposeNoteEditorActivity.EXTRA_FOLDER, it) } // 🆕 v2.7.0 (Folders)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,

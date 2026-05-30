@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.NoteType
@@ -63,6 +64,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val pendingServerDeletions = PendingServerDeletions(application)
+    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(application)
 
     // ═══════════════════════════════════════════════════════════════════════
     // Notes State
@@ -77,6 +79,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _pendingDeletions = MutableStateFlow<Set<String>>(emptySet())
     val pendingDeletions: StateFlow<Set<String>> = _pendingDeletions.asStateFlow()
 
+    // 🆕 v2.7.0 (Folders): aktuell geöffneter Ordner (null = Root-Ansicht)
+    private val _currentFolder = MutableStateFlow<String?>(null)
+    val currentFolder: StateFlow<String?> = _currentFolder.asStateFlow()
+
+    // 🆕 v2.7.0 (Folders): bekannte Ordner (aus FolderStore)
+    private val _folders = MutableStateFlow<List<Folder>>(emptyList())
+    val folders: StateFlow<List<Folder>> = _folders.asStateFlow()
+
     // ═══════════════════════════════════════════════════════════════════════
     // Multi-Select State (v1.5.0)
     // ═══════════════════════════════════════════════════════════════════════
@@ -84,9 +94,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedNotes = MutableStateFlow<Set<String>>(emptySet())
     val selectedNotes: StateFlow<Set<String>> = _selectedNotes.asStateFlow()
 
-    val isSelectionMode: StateFlow<Boolean> = _selectedNotes
-        .map { it.isNotEmpty() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    private val _selectedFolders = MutableStateFlow<Set<String>>(emptySet()) // 🆕 v2.7.0 (Folders)
+    val selectedFolders: StateFlow<Set<String>> = _selectedFolders.asStateFlow()
+
+    val isSelectionMode: StateFlow<Boolean> =
+        combine(_selectedNotes, _selectedFolders) { n, f -> n.isNotEmpty() || f.isNotEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // ═══════════════════════════════════════════════════════════════════════
     // 🌟 v1.6.0: Offline Mode State (reactive)
@@ -227,10 +240,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val colorFilter: StateFlow<String?> = _colorFilter.asStateFlow()
 
-    // 🆕 v2.5.0: Kombinierter Filter-State für sortedNotes.
+    // 🆕 v2.5.0: Kombinierter Filter-State für sortedNotesUnfoldered.
     // Nötig, da combine() nativ max. 5 Flows unterstützt; NoteFilter + Farbfilter werden
-    // zu einem Paar zusammengefasst, damit sortedNotes weiterhin 5 Flows nutzt.
-    private val _filterCriteria = combine(_noteFilter, _colorFilter) { f, c -> Pair(f, c) }
+    // zu einem Paar zusammengefasst, damit der Flow weiterhin 5 Flows nutzt.
+    // 🆕 v2.7.0 (Folders): Ordner-Filter ist NICHT mehr Teil dieser Pipeline — er wird erst
+    // pro AnimatedContent-Pane angewandt (sonst Flackern beim Ordnerwechsel, siehe MainScreen).
+    private val _filterCriteria =
+        combine(_noteFilter, _colorFilter) { f, c -> f to c }
 
     // 🆕 v1.9.0 (F10): Search Query State
     private val _searchQuery = MutableStateFlow("")
@@ -241,8 +257,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * 🆕 v1.9.0 (F06): + Filter nach NoteType
      * 🆕 v1.9.0 (F10): + Volltextsuche über Titel und Inhalt
      * 🆕 v2.5.0: + Farbfilter (via _filterCriteria)
+     * 🆕 v2.7.0 (Folders): OHNE Ordner-Filter — jede AnimatedContent-Pane filtert selbst nach ihrem
+     * `folderKey` (verhindert Flackern, weil die abgehende Pane sonst kurz die Notizen des neuen
+     * Ordners zeigt). Ordner-bezogene Auswahl (selectAll) filtert `.value` ad hoc nach `_currentFolder`.
      */
-    val sortedNotes: StateFlow<List<Note>> = combine(
+    val sortedNotesUnfoldered: StateFlow<List<Note>> = combine(
         _notes,
         _sortOption,
         _sortDirection,
@@ -362,6 +381,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
+            _folders.value = folderStore.loadFolders()
             _isReady.value = true
         }
     }
@@ -448,10 +468,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Select all notes
+     * Select all notes (kept for compatibility)
      */
     fun selectAllNotes() {
-        _selectedNotes.value = _notes.value.map { it.id }.toSet()
+        _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
+    }
+
+    /** 🆕 v2.7.0 (Folders): Notizen der aktuell sichtbaren Ordner-Ansicht (sortiert/gefiltert). */
+    private fun notesInCurrentFolder(): List<Note> =
+        sortedNotesUnfoldered.value.filter { it.folderName == _currentFolder.value }
+
+    /** 🆕 v2.7.0 (Folders): Alles auswählen — Notizen + (im Root) Ordner. */
+    fun selectAll() {
+        _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
+        _selectedFolders.value = if (_currentFolder.value == null) {
+            _folders.value.map { it.name }.toSet()
+        } else {
+            emptySet()
+        }
+    }
+
+    /** 🆕 v2.7.0 (Folders): Ordner-Auswahl toggeln. */
+    fun toggleFolderSelection(name: String) {
+        _selectedFolders.update { if (name in it) it - name else it + name }
+    }
+
+    /** 🆕 v2.7.0 (Folders): Auswahl mit einem Ordner starten (Long-Press). */
+    fun startSelectionWithFolder(name: String) {
+        _selectedNotes.value = emptySet()
+        _selectedFolders.value = setOf(name)
     }
 
     /**
@@ -459,6 +504,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun clearSelection() {
         _selectedNotes.value = emptySet()
+        _selectedFolders.value = emptySet() // 🆕 v2.7.0 (Folders)
     }
 
     /**
@@ -503,7 +549,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
                 val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
                 if (idsToDelete.isNotEmpty()) {
-                    attemptServerDeletion(idsToDelete)
+                    val pendingDels = selectedNotes
+                        .filter { it.id in idsToDelete }
+                        .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
+                    attemptServerDeletion(pendingDels)
                 }
             } else {
                 selectedIds.forEach { noteId -> finalizeDeletion(noteId) }
@@ -516,13 +565,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Saves each note with the new colour and clears the selection afterwards.
      */
     fun setColorForSelected(hex: String?) {
-        val ids = _selectedNotes.value.toList()
-        if (ids.isEmpty()) return
+        val noteIds = _selectedNotes.value.toList()
+        val folderNames = _selectedFolders.value.toList()
+        if (noteIds.isEmpty() && folderNames.isEmpty()) return
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
                 _notes.value
-                    .filter { it.id in ids }
+                    .filter { it.id in noteIds }
                     .forEach { note ->
                         storage.saveNote(
                             note.copy(
@@ -532,10 +582,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             )
                         )
                     }
+                // 🆕 v2.7.0 (Folders): Farbe auch auf selektierte Ordner anwenden
+                folderNames.forEach { name -> folderStore.setColor(name, hex) }
             }
+            _folders.value = folderStore.loadFolders()
             clearSelection()
             loadNotes()
             WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+            triggerOnSaveSync()
         }
     }
 
@@ -642,7 +696,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (deleteFromServer) {
                 kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
                 if (note.id in _pendingDeletions.value) {
-                    attemptServerDeletion(listOf(note.id))
+                    attemptServerDeletion(listOf(PendingServerDeletions.PendingDeletion(note.id, note.folderName)))
                 }
             } else {
                 finalizeDeletion(note.id)
@@ -691,7 +745,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Attempts to delete notes from the server.
      * If the server is not reachable, queues the deletions for the next sync.
      */
-    private suspend fun attemptServerDeletion(noteIds: List<String>) {
+    private suspend fun attemptServerDeletion(deletions: List<PendingServerDeletions.PendingDeletion>) {
         val webdavService = WebDavSyncService(getApplication())
         val isReachable = try {
             withContext(ioDispatcher) { webdavService.isServerReachable() }
@@ -701,12 +755,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (!isReachable) {
             // Queue for next sync — server not reachable right now
-            pendingServerDeletions.add(noteIds)
-            noteIds.forEach { finalizeDeletion(it) }
+            pendingServerDeletions.add(deletions)
+            deletions.forEach { finalizeDeletion(it.id) }
             SyncStateManager.showInfo(getString(R.string.snackbar_delete_queued_for_sync))
             return
         }
         // Server reachable → delete immediately
+        val noteIds = deletions.map { it.id }
         if (noteIds.size == 1) {
             deleteNoteFromServer(noteIds[0])
         } else {
@@ -878,6 +933,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
                     SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
                     loadNotes(forceReload = true)
+                    refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
                     // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
                     _syncCompletedScrollToTop.value = true
                     return@launch
@@ -915,6 +971,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     SyncStateManager.markCompleted(bannerMessage)
                     loadNotes(forceReload = true)
+                    refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
                     // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
                     if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
                         _syncCompletedScrollToTop.value = true
@@ -1000,9 +1057,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // Toast wurde fälschlicherweise trotzdem angezeigt
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
                     loadNotes(forceReload = true)
+                    refreshFolders() // 🆕 v2.7.0 (Folders)
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
                     SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE
+                    // 🆕 v2.7.0 (Folders): Farbe leerer Ordner auch ohne Note-Sync ins UI laden
+                    if (result.foldersChanged) refreshFolders()
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
                     // Fehler werden IMMER angezeigt (auch bei Silent-Sync)
@@ -1026,18 +1086,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun filterNotes(
         notes: List<Note>,
         filter: NoteFilter,
-        colorFilter: String? = null      // 🆕 v2.5.0
+        colorFilter: String? = null       // 🆕 v2.5.0
     ): List<Note> {
+        // 🆕 v2.7.0 (Folders): Kein Ordner-Filter hier — das übernimmt jede Pane selbst (s. sortedNotesUnfoldered).
         val byType = when (filter) {
             NoteFilter.ALL            -> notes
             NoteFilter.TEXT_ONLY      -> notes.filter { it.noteType == NoteType.TEXT }
             NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
         }
-        return if (colorFilter != null) {
-            byType.filter { it.color == colorFilter }
-        } else {
-            byType
-        }
+        return if (colorFilter != null) byType.filter { it.color == colorFilter } else byType
     }
 
     /**
@@ -1135,6 +1192,188 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyMap()
     )
+
+    // ─── 🆕 v2.7.0 (Folders) ──────────────────────────────────────────────
+
+    /** Anzahl Notizen je (bekanntem) Ordner — für die Folder-Karten im Root. */
+    val folderNoteCounts: StateFlow<Map<String, Int>> = combine(_notes, _folders) { notes, folders ->
+        folders.associate { f -> f.name to notes.count { it.folderName == f.name } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    fun createFolder(name: String) {
+        val trimmed = name.trim()
+        viewModelScope.launch {
+            withContext(ioDispatcher) { folderStore.addFolder(trimmed) }
+            _folders.value = folderStore.loadFolders()
+            triggerOnSaveSync()
+        }
+    }
+
+    /** 🆕 v2.7.0 (Folders): Ordner neu laden (onResume / nach Sync). Scrollt nach oben wenn 0→N. */
+    fun refreshFolders() {
+        viewModelScope.launch {
+            val before = _folders.value
+            val after = withContext(ioDispatcher) { folderStore.loadFolders() }
+            _folders.value = after
+            if (before.isEmpty() && after.isNotEmpty() && _currentFolder.value == null) {
+                _scrollToTop.value = true
+            }
+        }
+    }
+
+    /** 🆕 v2.7.0 (Folders): Ordner umbenennen und enthaltene Notizen migrieren. */
+    fun renameFolder(oldName: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.equals(oldName, ignoreCase = true) || _folders.value.any { it.name.equals(trimmed, ignoreCase = true) }) return
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                _notes.value.filter { it.folderName == oldName }.forEach { note ->
+                    storage.moveNote(note.id, trimmed)
+                    if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
+                        pendingServerDeletions.add(
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldName))
+                        )
+                    }
+                }
+                folderStore.rename(oldName, trimmed)
+            }
+            _folders.value = folderStore.loadFolders()
+            if (_currentFolder.value == oldName) _currentFolder.value = trimmed
+            clearSelection()
+            loadNotes(forceReload = true)
+            triggerOnSaveSync()
+            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+        }
+    }
+
+    /** 🆕 v2.7.0 (Folders): Unified Delete — Notizen + Ordner (mit Undo). */
+    @Suppress("LongMethod")
+    fun deleteSelection(deleteFromServer: Boolean, keepContainedNotes: Boolean) {
+        val noteIds = _selectedNotes.value.toSet()
+        val folderNames = _selectedFolders.value.toSet()
+        val notesInFolders = _notes.value.filter { it.folderName in folderNames }
+        val notesToDelete = (_notes.value.filter { it.id in noteIds } +
+            if (!keepContainedNotes) notesInFolders else emptyList()).distinctBy { it.id }
+        val notesToRoot = if (keepContainedNotes) notesInFolders.filter { it.id !in noteIds } else emptyList()
+
+        if (notesToDelete.isEmpty() && folderNames.isEmpty()) return
+
+        val deleteIds = notesToDelete.map { it.id }
+        _pendingDeletions.update { it + deleteIds.toSet() }
+        clearSelection()
+
+        val noteCount = notesToDelete.size
+        val folderCount = folderNames.size
+        val message = when {
+            folderCount > 0 && noteCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount) +
+                " · " + getQuantityString(R.plurals.snackbar_notes_deleted_local, noteCount, noteCount)
+            folderCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount)
+            deleteFromServer -> getQuantityString(R.plurals.snackbar_notes_deleted_server, noteCount, noteCount)
+            else -> getQuantityString(R.plurals.snackbar_notes_deleted_local, noteCount, noteCount)
+        }
+
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                // Notizen löschen
+                notesToDelete.forEach { note -> storage.deleteNote(note.id) }
+                // Notizen nach Root verschieben
+                notesToRoot.forEach { note -> storage.moveNote(note.id, null) }
+                // Ordner tombstonen
+                folderNames.forEach { name -> folderStore.deleteFolder(name) }
+            }
+            _folders.value = folderStore.loadFolders()
+            if (_currentFolder.value in folderNames) _currentFolder.value = null
+            loadNotes()
+
+            _showSnackbar.emit(
+                SnackbarData(
+                    message = message,
+                    actionLabel = getString(R.string.snackbar_undo),
+                    onAction = { undoDeleteSelection(notesToDelete, folderNames, notesToRoot) }
+                )
+            )
+
+            if (deleteFromServer) {
+                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
+                val idsToDelete = deleteIds.filter { it in _pendingDeletions.value }
+                if (idsToDelete.isNotEmpty()) {
+                    val pendingDels = notesToDelete
+                        .filter { it.id in idsToDelete }
+                        .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
+                    attemptServerDeletion(pendingDels)
+                }
+            } else {
+                deleteIds.forEach { id -> finalizeDeletion(id) }
+            }
+        }
+    }
+
+    private fun undoDeleteSelection(
+        deletedNotes: List<Note>,
+        restoredFolders: Set<String>,
+        notesToRoot: List<Note>
+    ) {
+        _pendingDeletions.update { it - deletedNotes.map { n -> n.id }.toSet() }
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                deletedNotes.forEach { note -> storage.saveNote(note) }
+                notesToRoot.forEach { note -> storage.moveNote(note.id, note.folderName) }
+                restoredFolders.forEach { name -> folderStore.addFolder(name) }
+            }
+            _folders.value = folderStore.loadFolders()
+            loadNotes()
+        }
+    }
+
+    fun enterFolder(name: String) { _currentFolder.value = name }
+
+    fun goToRoot() { _currentFolder.value = null }
+
+    fun moveSelectedNotesTo(targetFolder: String?) {
+        val ids = _selectedNotes.value.toList()
+        if (ids.isEmpty()) return
+        val toMove = _notes.value.filter { it.id in ids }
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                toMove.forEach { note ->
+                    val oldFolder = note.folderName
+                    if (oldFolder == targetFolder) return@forEach
+                    storage.moveNote(note.id, targetFolder)
+                    if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
+                        pendingServerDeletions.add(
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder))
+                        )
+                    }
+                }
+                if (targetFolder != null) folderStore.addFolder(targetFolder)
+            }
+            _folders.value = folderStore.loadFolders()
+            clearSelection()
+            loadNotes(forceReload = true)
+            triggerOnSaveSync()
+            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+        }
+    }
+
+    fun deleteFolder(name: String) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                folderStore.deleteFolder(name)
+                val stillHasNotes = _notes.value.any { it.folderName == name }
+                if (!stillHasNotes && hasServerConfig() && !isOfflineMode.value) {
+                    try {
+                        val service = WebDavSyncService(getApplication())
+                        service.deleteServerFolderIfEmpty(name)
+                    } catch (e: Exception) {
+                        Logger.w(TAG, "deleteServerFolderIfEmpty failed: ${e.message}")
+                    }
+                }
+            }
+            _folders.value = folderStore.loadFolders()
+            if (_currentFolder.value == name) _currentFolder.value = null
+            loadNotes(forceReload = true)
+        }
+    }
 
     /**
      * 🆕 v1.9.0 (F10): Setzt den Suchbegriff (session-only, nicht persistent).

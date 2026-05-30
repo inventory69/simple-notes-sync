@@ -3,23 +3,18 @@ package dev.dettmer.simplenotes.ui.main.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
-import dev.dettmer.simplenotes.ui.theme.Dimensions
 
 /**
  * 🎨 v1.7.0: Staggered Grid Layout - OPTIMIERT
@@ -45,10 +40,18 @@ fun NotesStaggeredGrid(
     modifier: Modifier = Modifier,
     timestampTicker: Long = 0L,
     onNoteClick: (Note) -> Unit,
-    onNoteLongClick: (Note) -> Unit
+    onNoteLongClick: (Note) -> Unit,
+    folders: List<Folder> = emptyList(),                    // 🆕 v2.7.0 (Folders): List<Folder>
+    folderNoteCounts: Map<String, Int> = emptyMap(),
+    selectedFolders: Set<String> = emptySet(),              // 🆕 v2.7.0 (Folders): Auswahl
+    onFolderClick: (String) -> Unit = {},
+    onFolderLongPress: (String) -> Unit = {},
+    onFolderSelectionToggle: (String) -> Unit = {}          // 🆕 v2.7.0 (Folders)
 ) {
     val pinnedNotes = notes.filter { it.isPinned == true }
     val unpinnedNotes = notes.filter { it.isPinned != true }
+    // 🆕 v2.7.0 (Folders): Reihenfolge Pinned → Folders → Notes
+    val showNotesHeader = unpinnedNotes.isNotEmpty() && (pinnedNotes.isNotEmpty() || folders.isNotEmpty())
 
     LazyVerticalStaggeredGrid(
         columns = if (adaptiveScaling) {
@@ -58,15 +61,9 @@ fun NotesStaggeredGrid(
         },
         modifier = modifier.fillMaxSize(),
         state = gridState,
-        // 🎨 v1.7.0: Konsistente Abstände - 16dp horizontal wie Liste, mehr Platz für FAB
-        contentPadding = PaddingValues(
-            start = 16.dp, // Wie Liste, war 8dp
-            end = 16.dp,
-            top = 8.dp,
-            bottom = 80.dp // Mehr Platz für FAB, war 16dp
-        ),
-        horizontalArrangement = Arrangement.spacedBy(12.dp), // War 8dp
-        verticalItemSpacing = 12.dp // War Constants.GRID_SPACING_DP (8dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalItemSpacing = 12.dp
     ) {
         if (pinnedNotes.isNotEmpty()) {
             item(
@@ -74,24 +71,9 @@ fun NotesStaggeredGrid(
                 contentType = "SectionHeader",
                 span = StaggeredGridItemSpan.FullLine,
             ) {
-                Text(
-                    text = stringResource(R.string.section_pinned),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            top = Dimensions.SpacingMedium,
-                            bottom = Dimensions.SpacingSmall,
-                        )
-                )
+                SectionHeaderText(stringResource(R.string.section_pinned))
             }
-            items(
-                items = pinnedNotes,
-                key = { it.id },
-                contentType = { "NoteCardGrid" }
-            ) { note ->
+            items(items = pinnedNotes, key = { it.id }, contentType = { "NoteCardGrid" }) { note ->
                 NoteCardGrid(
                     note = note,
                     showSyncStatus = showSyncStatus,
@@ -102,38 +84,45 @@ fun NotesStaggeredGrid(
                     onLongClick = { onNoteLongClick(note) }
                 )
             }
+        }
+
+        if (folders.isNotEmpty()) {
+            item(key = "header_folders", contentType = "SectionHeader", span = StaggeredGridItemSpan.FullLine) {
+                SectionHeaderText(stringResource(R.string.folder_section_header))
+            }
+            items(items = folders, key = { "folder_${it.name}" }, contentType = { "FolderCardGrid" }) { folder ->
+                FolderCardGrid(
+                    name = folder.name,
+                    count = folderNoteCounts[folder.name] ?: 0,
+                    color = folder.color,
+                    isSelected = folder.name in selectedFolders,
+                    isSelectionMode = isSelectionMode, // 🆕 v2.7.0 (Folders)
+                    onClick = { if (isSelectionMode) onFolderSelectionToggle(folder.name) else onFolderClick(folder.name) },
+                    onLongClick = { onFolderLongPress(folder.name) }
+                )
+            }
+        }
+
+        if (showNotesHeader) {
             item(
                 key = "header_notes",
                 contentType = "SectionHeader",
                 span = StaggeredGridItemSpan.FullLine,
             ) {
-                Text(
-                    text = stringResource(R.string.section_notes),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            top = Dimensions.SpacingMedium,
-                            bottom = Dimensions.SpacingSmall,
-                        )
-                )
+                SectionHeaderText(stringResource(R.string.section_notes))
             }
         }
+
         items(
             items = unpinnedNotes,
             key = { it.id },
             contentType = { "NoteCardGrid" }
             // 🎨 v1.7.0: KEIN span mehr - alle Items sind SingleLane (halbe Breite)
         ) { note ->
-            val isSelected = selectedNoteIds.contains(note.id)
-
-            // 🎉 Einheitliche Card für alle Größen - dynamische maxLines intern
             NoteCardGrid(
                 note = note,
                 showSyncStatus = showSyncStatus,
-                isSelected = isSelected,
+                isSelected = selectedNoteIds.contains(note.id),
                 isSelectionMode = isSelectionMode,
                 timestampTicker = timestampTicker,
                 onClick = { onNoteClick(note) },

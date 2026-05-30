@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -59,7 +60,12 @@ import dev.dettmer.simplenotes.models.NoteType
  *                Semi-transparent scrim covers entire screen (incl. status bar).
  */
 @Composable
-fun NoteTypeFAB(modifier: Modifier = Modifier, onCreateNote: (NoteType) -> Unit) {
+fun NoteTypeFAB(
+    modifier: Modifier = Modifier,
+    showCreateFolder: Boolean = false,  // 🆕 v2.7.0 (Folders): nur im Root true
+    onCreateNote: (NoteType) -> Unit,
+    onCreateFolder: () -> Unit = {}
+) {
     var expanded by remember { mutableStateOf(false) }
     var navigating by remember { mutableStateOf(false) }
 
@@ -122,6 +128,17 @@ fun NoteTypeFAB(modifier: Modifier = Modifier, onCreateNote: (NoteType) -> Unit)
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Sub-action items (only when expanded)
+            // 🆕 v2.7.0 (Folders): "New folder" pill only in root view
+            if (showCreateFolder && expanded) {
+                FabSubActionRow(
+                    label = stringResource(R.string.fab_create_folder),
+                    icon = Icons.Outlined.CreateNewFolder,
+                    scale = 1f,
+                    alpha = 1f,
+                    onClick = { expanded = false; onCreateFolder() }
+                )
+            }
+
             val items = listOf(
                 FabSubAction(
                     label = stringResource(R.string.fab_text_note),
