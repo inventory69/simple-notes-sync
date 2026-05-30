@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 37  // 🆕 v2.6.0 - pinned notes, editor upgrades, checklist fixes
-        versionName = "2.6.0"  // 🆕 v2.6.0 - pinned notes, editor upgrades, checklist fixes
+        versionCode = 38  // 🆕 v2.7.0 - folder support, Spanish locale
+        versionName = "2.7.0"  // 🆕 v2.7.0 - folder support, Spanish locale
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

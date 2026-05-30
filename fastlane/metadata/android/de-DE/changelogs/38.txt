@@ -1,0 +1,11 @@
+✨ v2.7.0 - Ordner-Unterstützung
+
+• Neu: Ordner erstellen, umbenennen und löschen
+• Neu: Notizen per Bottom-Sheet in Ordner verschieben
+• Neu: Ordner-Navigation in der Hauptliste
+• Neu: Ordner-Sync via WebDAV (Tombstone-basiert)
+• Neu: Spanisch als neue Sprache
+
+Danke an @happy-turtle, @racehd (Ideen) und @afoni95 (Testen)!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

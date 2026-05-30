@@ -8,6 +8,25 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.7.0] - 2026-05-30
+
+### ✨ Neue Features
+
+**Ordner-Unterstützung** ([e38553d](https://github.com/inventory69/simple-notes-sync/commit/e38553d))
+- Notizen können in Ordner organisiert werden; jede Notiz trägt ein optionales `folderName`-Feld
+- Ordner erstellen, umbenennen und löschen über dedizierte CRUD-Dialoge
+- Notizen per Bottom-Sheet in der Notizliste in Ordner verschieben
+- Ordner-Navigation in der Hauptansicht filtert die Liste nach Ordner
+- Ordner werden mit Tombstone-basiertem Lösch-Tracking persistiert (`FolderStore`)
+- Ordner synchronisieren bidirektional via WebDAV mit ordner-bewusstem URL-Routing (`FolderSyncManager`)
+- Danke an [@happy-turtle](https://github.com/happy-turtle) und [@racehd](https://github.com/racehd) für die Idee, und an [@afoni95](https://github.com/afoni95) fürs Testen!
+
+### 🌍 Übersetzungen
+
+- **Spanisch** (neu): [08f0948](https://github.com/inventory69/simple-notes-sync/commit/08f0948)
+
+---
+
 ## [2.6.0] - 2026-05-24
 
 ### ✨ Neue Features

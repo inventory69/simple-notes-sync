@@ -1,0 +1,11 @@
+✨ v2.7.0 - Folder Support
+
+• New: Create, rename, and delete folders
+• New: Move notes to folders via bottom sheet
+• New: Folder navigation in the main list
+• New: Folders sync via WebDAV (tombstone-based)
+• New: Spanish language support
+
+Thanks to @happy-turtle, @racehd (ideas) and @afoni95 (testing)!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md
