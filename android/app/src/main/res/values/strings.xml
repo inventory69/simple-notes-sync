@@ -111,6 +111,9 @@
     <string name="delete_notes_title">Delete %d notes?</string>
     <string name="delete_note_message">How do you want to delete this note?</string>
     <string name="delete_notes_message">How do you want to delete these %d notes?</string>
+    <string name="delete_folder_message">How do you want to delete this folder?</string>
+    <string name="delete_folders_message">How do you want to delete these %1$d folders?</string>
+    <string name="delete_selection_message">How do you want to delete this selection?</string>
     <string name="delete_everywhere">Delete everywhere (also server)</string>
     <string name="delete_everywhere_offline_hint">Not available in offline mode</string>
     <string name="delete_local_only">Delete local only</string>
@@ -821,5 +824,29 @@
     <string name="confirm_convert_to_checklist">Convert this note to a checklist? Each line becomes a checklist item. Lines with existing checkbox notation (- [ ] / - [x]) keep their checked state.</string>
     <string name="confirm_convert_to_note">Convert this checklist to a note? Each item becomes a line of text with its checked state preserved.</string>
     <string name="action_convert">Convert</string>
+
+    <!-- 🆕 v2.7.0 (Folders) -->
+    <string name="folder_rename_title">Rename folder</string>
+    <string name="folder_rename_action">Rename</string>
+    <string name="action_rename_folder">Rename folder</string>
+    <string name="folder_delete_keep_notes">Keep notes (move to Root)</string>
+    <string name="folder_delete_selected_title">Delete selection</string>
+    <plurals name="snackbar_folders_deleted">
+        <item quantity="one">%1$d folder deleted</item>
+        <item quantity="other">%1$d folders deleted</item>
+    </plurals>
+    <string name="folder_section_header">Folders</string>
+    <string name="folder_create_title">New folder</string>
+    <string name="folder_create_hint">Folder name</string>
+    <string name="folder_create_action">Create</string>
+    <string name="folder_name_invalid">Invalid folder name (no /, \\, : * ? \" &lt; &gt; |, max 64 chars)</string>
+    <string name="fab_create_folder">New folder</string>
+    <string name="folder_move_title">Move to folder</string>
+    <string name="folder_move_to_root">Root (no folder)</string>
+    <string name="folder_delete_confirm">Remove folder \"%1$s\"? Notes stay where they are.</string>
+    <string name="folder_delete_not_empty">Folder \"%1$s\" still contains notes. It will be removed from the list; the notes and the server folder stay.</string>
+    <string name="cd_folder_card">Folder %1$s</string>
+    <string name="action_move_to_folder">Move to folder</string>
+    <string name="cd_more_options">More options</string>
 
 </resources>
