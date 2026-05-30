@@ -29,7 +29,7 @@ android {
         // Liste muss synchron zu app/src/main/res/values-* gehalten werden.
         androidResources {
             localeFilters += listOf(
-                "en", "de", "hi", "in", "it", "nb-rNO", "ru", "tr", "uk", "zh-rCN",
+                "en", "de", "es", "hi", "in", "it", "nb-rNO", "ru", "tr", "uk", "zh-rCN",
             )
         }
 
