@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.main.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import kotlin.math.max
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -80,6 +82,8 @@ fun NotesStaggeredGrid(
             item(key = "pinned_notes_body", contentType = "PinnedSection", span = StaggeredGridItemSpan.FullLine) {
                 PinnedNotesGrid(
                     notes = pinnedNotes,
+                    adaptiveScaling = adaptiveScaling,
+                    manualColumns = manualColumns,
                     showSyncStatus = showSyncStatus,
                     selectedNoteIds = selectedNoteIds,
                     isSelectionMode = isSelectionMode,
@@ -140,6 +144,8 @@ fun NotesStaggeredGrid(
 @Composable
 private fun PinnedNotesGrid(
     notes: List<Note>,
+    adaptiveScaling: Boolean,
+    manualColumns: Int,
     showSyncStatus: Boolean,
     selectedNoteIds: Set<String>,
     isSelectionMode: Boolean,
@@ -147,36 +153,29 @@ private fun PinnedNotesGrid(
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {
-    val leftNotes = remember(notes) { notes.filterIndexed { i, _ -> i % 2 == 0 } }
-    val rightNotes = remember(notes) { notes.filterIndexed { i, _ -> i % 2 == 1 } }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            leftNotes.forEach { note ->
-                NoteCardGrid(
-                    note = note,
-                    showSyncStatus = showSyncStatus,
-                    isSelected = selectedNoteIds.contains(note.id),
-                    isSelectionMode = isSelectionMode,
-                    timestampTicker = timestampTicker,
-                    onClick = { onNoteClick(note) },
-                    onLongClick = { onNoteLongClick(note) }
-                )
-            }
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val columnCount = if (adaptiveScaling) max(1, (maxWidth / 150.dp).toInt()) else manualColumns
+        val columnedNotes = remember(notes, columnCount) {
+            (0 until columnCount).map { col -> notes.filterIndexed { i, _ -> i % columnCount == col } }
         }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            rightNotes.forEach { note ->
-                NoteCardGrid(
-                    note = note,
-                    showSyncStatus = showSyncStatus,
-                    isSelected = selectedNoteIds.contains(note.id),
-                    isSelectionMode = isSelectionMode,
-                    timestampTicker = timestampTicker,
-                    onClick = { onNoteClick(note) },
-                    onLongClick = { onNoteLongClick(note) }
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            columnedNotes.forEach { columnNotes ->
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    columnNotes.forEach { note ->
+                        NoteCardGrid(
+                            note = note,
+                            showSyncStatus = showSyncStatus,
+                            isSelected = selectedNoteIds.contains(note.id),
+                            isSelectionMode = isSelectionMode,
+                            timestampTicker = timestampTicker,
+                            onClick = { onNoteClick(note) },
+                            onLongClick = { onNoteLongClick(note) }
+                        )
+                    }
+                }
             }
         }
     }
