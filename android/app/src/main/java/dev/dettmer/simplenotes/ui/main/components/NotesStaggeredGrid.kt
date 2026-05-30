@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,10 +52,10 @@ fun NotesStaggeredGrid(
     onFolderLongPress: (String) -> Unit = {},
     onFolderSelectionToggle: (String) -> Unit = {}          // 🆕 v2.7.0 (Folders)
 ) {
-    val pinnedNotes = notes.filter { it.isPinned == true }
-    val unpinnedNotes = notes.filter { it.isPinned != true }
+    val pinnedNotes = remember(notes) { notes.filter { it.isPinned == true } }
+    val unpinnedNotes = remember(notes) { notes.filter { it.isPinned != true } }
     // 🆕 v2.7.0 (Folders): Reihenfolge Pinned → Folders → Notes
-    val showNotesHeader = unpinnedNotes.isNotEmpty() && (pinnedNotes.isNotEmpty() || folders.isNotEmpty())
+    val showNotesHeader = remember(notes, folders) { unpinnedNotes.isNotEmpty() && (pinnedNotes.isNotEmpty() || folders.isNotEmpty()) }
 
     LazyVerticalStaggeredGrid(
         columns = if (adaptiveScaling) {
@@ -146,8 +147,8 @@ private fun PinnedNotesGrid(
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {
-    val leftNotes = notes.filterIndexed { i, _ -> i % 2 == 0 }
-    val rightNotes = notes.filterIndexed { i, _ -> i % 2 == 1 }
+    val leftNotes = remember(notes) { notes.filterIndexed { i, _ -> i % 2 == 0 } }
+    val rightNotes = remember(notes) { notes.filterIndexed { i, _ -> i % 2 == 1 } }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
