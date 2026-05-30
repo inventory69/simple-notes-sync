@@ -14,8 +14,15 @@ class SyncResultTest {
         assertEquals(0, result.syncedCount)
         assertEquals(0, result.conflictCount)
         assertEquals(0, result.deletedOnServerCount)
+        assertFalse(result.foldersChanged)
         assertNull(result.errorMessage)
         assertNull(result.infoMessage)
+    }
+
+    @Test
+    fun `foldersChanged is propagated`() {
+        val result = SyncResult(isSuccess = true, foldersChanged = true)
+        assertTrue(result.foldersChanged)
     }
 
     @Test
