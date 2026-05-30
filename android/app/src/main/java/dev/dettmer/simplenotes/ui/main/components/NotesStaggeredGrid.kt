@@ -1,8 +1,11 @@
 package dev.dettmer.simplenotes.ui.main.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -73,15 +76,15 @@ fun NotesStaggeredGrid(
             ) {
                 SectionHeaderText(stringResource(R.string.section_pinned))
             }
-            items(items = pinnedNotes, key = { it.id }, contentType = { "NoteCardGrid" }) { note ->
-                NoteCardGrid(
-                    note = note,
+            item(key = "pinned_notes_body", contentType = "PinnedSection", span = StaggeredGridItemSpan.FullLine) {
+                PinnedNotesGrid(
+                    notes = pinnedNotes,
                     showSyncStatus = showSyncStatus,
-                    isSelected = selectedNoteIds.contains(note.id),
+                    selectedNoteIds = selectedNoteIds,
                     isSelectionMode = isSelectionMode,
                     timestampTicker = timestampTicker,
-                    onClick = { onNoteClick(note) },
-                    onLongClick = { onNoteLongClick(note) }
+                    onNoteClick = onNoteClick,
+                    onNoteLongClick = onNoteLongClick
                 )
             }
         }
@@ -128,6 +131,52 @@ fun NotesStaggeredGrid(
                 onClick = { onNoteClick(note) },
                 onLongClick = { onNoteLongClick(note) }
             )
+        }
+    }
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun PinnedNotesGrid(
+    notes: List<Note>,
+    showSyncStatus: Boolean,
+    selectedNoteIds: Set<String>,
+    isSelectionMode: Boolean,
+    timestampTicker: Long,
+    onNoteClick: (Note) -> Unit,
+    onNoteLongClick: (Note) -> Unit
+) {
+    val leftNotes = notes.filterIndexed { i, _ -> i % 2 == 0 }
+    val rightNotes = notes.filterIndexed { i, _ -> i % 2 == 1 }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            leftNotes.forEach { note ->
+                NoteCardGrid(
+                    note = note,
+                    showSyncStatus = showSyncStatus,
+                    isSelected = selectedNoteIds.contains(note.id),
+                    isSelectionMode = isSelectionMode,
+                    timestampTicker = timestampTicker,
+                    onClick = { onNoteClick(note) },
+                    onLongClick = { onNoteLongClick(note) }
+                )
+            }
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            rightNotes.forEach { note ->
+                NoteCardGrid(
+                    note = note,
+                    showSyncStatus = showSyncStatus,
+                    isSelected = selectedNoteIds.contains(note.id),
+                    isSelectionMode = isSelectionMode,
+                    timestampTicker = timestampTicker,
+                    onClick = { onNoteClick(note) },
+                    onLongClick = { onNoteLongClick(note) }
+                )
+            }
         }
     }
 }

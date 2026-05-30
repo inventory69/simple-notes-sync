@@ -64,7 +64,7 @@ fun NotesList(
             item(key = "header_pinned", contentType = "SectionHeader") {
                 SectionHeaderText(stringResource(R.string.section_pinned))
             }
-            items(items = pinnedNotes, key = { it.id }, contentType = { "NoteCard" }) { note ->
+            items(items = pinnedNotes, key = { it.id }, contentType = { "PinnedNoteCard" }) { note ->
                 NoteCard(
                     note = note,
                     showSyncStatus = showSyncStatus,
