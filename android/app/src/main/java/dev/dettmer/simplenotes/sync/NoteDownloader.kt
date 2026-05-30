@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
 import dev.dettmer.simplenotes.sync.parallel.DownloadTaskResult
@@ -48,11 +49,13 @@ internal class NoteDownloader(
     private val urlBuilder: SyncUrlBuilder,
     private val connectionManager: ConnectionManager,
     private val markdownSyncManager: MarkdownSyncManager,
-    private val ioDispatcher: CoroutineDispatcher
+    private val ioDispatcher: CoroutineDispatcher,
+    private val folderStore: FolderStore // 🆕 v2.7.0 (Folders)
 ) {
     companion object {
         private const val TAG = "NoteDownloader"
         private const val ETAG_PREVIEW_LENGTH = 8
+        private const val FOLDERS_FILE_NAME = "folders.json" // 🆕 v2.7.0 (Folders): von serverNoteIds ausschließen
         private const val ALL_DELETED_GUARD_THRESHOLD = 10
         private val UUID_REGEX = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     }
@@ -99,6 +102,10 @@ internal class NoteDownloader(
         // 🛡️ v1.8.2 (IMPL_21): Track download errors statt sie zu verschlucken
         var downloadException: Exception? = null
 
+        // 🆕 v2.7.0 (Folders): Server-Pfad ist autoritativ für folderName.
+        val folderByNoteId = mutableMapOf<String, String?>()
+        val discoveredFolders = mutableSetOf<String>()
+
         try {
             // 🆕 PHASE 1: Download from /{syncFolder}/ (configurable since v1.9.0)
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
@@ -122,14 +129,45 @@ internal class NoteDownloader(
 
             if (notesResources != null) {
                 Logger.d(TAG, "   ✅ /$activeSyncFolderName/ exists, scanning...")
-                val resources = notesResources
-                val jsonFiles = resources.filter { !it.isDirectory && it.name.endsWith(".json") }
-                Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server")
 
-                // 🆕 v1.8.0: Extract server note IDs
-                jsonFiles.forEach { resource ->
-                    val noteId = resource.name.removeSuffix(".json")
+                // 🆕 v2.7.0 (Folders): Root-JSONs (folderName=null) + je Subdir ein zweiter list().
+                data class ScanItem(val resource: com.thegrizzlylabs.sardineandroid.DavResource, val folder: String?)
+                val scanItems = mutableListOf<ScanItem>()
+
+                // Root-Ebene: nur Top-Level-JSONs der Notes-Basis (ohne href-Self-Eintrag).
+                val rootBaseUrl = urlBuilder.getNotesUrl(serverUrl)
+                notesResources
+                    .filter { !it.isDirectory && it.name.endsWith(".json") && it.name != FOLDERS_FILE_NAME }
+                    .forEach { scanItems.add(ScanItem(it, null)) }
+
+                // Subdirectories (Collections), die nicht die Basis selbst sind.
+                val subDirs = notesResources.filter { res ->
+                    res.isDirectory &&
+                        res.name.isNotBlank() &&
+                        res.name != "/" &&
+                        !rootBaseUrl.trimEnd('/').endsWith("/" + res.name)
+                }
+                for (dir in subDirs) {
+                    val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
+                    discoveredFolders.add(folder)
+                    val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
+                    val folderResources = when (sardine) {
+                        is SafeSardineWrapper -> sardine.listOrNull(folderUrl)
+                        else -> try { sardine.list(folderUrl) } catch (_: java.io.IOException) { null }
+                    } ?: continue
+                    folderResources
+                        .filter { !it.isDirectory && it.name.endsWith(".json") }
+                        .forEach { scanItems.add(ScanItem(it, folder)) }
+                }
+
+                val jsonFiles = scanItems.map { it.resource }
+                Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server (incl. subfolders)")
+
+                // 🆕 v1.8.0 + v2.6.0: serverNoteIds + folderByNoteId füllen
+                scanItems.forEach { item ->
+                    val noteId = item.resource.name.removeSuffix(".json")
                     serverNoteIds.add(noteId)
+                    folderByNoteId[noteId] = item.folder
                 }
 
                 // ════════════════════════════════════════════════════════════════
@@ -140,7 +178,9 @@ internal class NoteDownloader(
                 for (resource in jsonFiles) {
                     currentCoroutineContext().ensureActive() // 🆕 v1.10.0-P2: FGS cancel checkpoint
                     val noteId = resource.name.removeSuffix(".json")
-                    val noteUrl = notesUrl.trimEnd('/') + "/" + resource.name
+                    val folderForNote = folderByNoteId[noteId]
+                    val noteUrl = urlBuilder.getNotesFolderUrl(serverUrl, folderForNote)
+                        .trimEnd('/') + "/" + resource.name
 
                     // 🔧 v1.10.0: UUID-Format-Check — fremde JSONs (z.B. google-services.json) überspringen
                     if (!UUID_REGEX.matches(noteId)) {
@@ -303,10 +343,15 @@ internal class NoteDownloader(
                                 processedIds.add(remoteNote.id)
                                 val localNote = storage.loadNote(remoteNote.id)
 
+                                // 🆕 v2.7.0 (Folders): Server-Pfad ist autoritativ.
+                                val remoteNoteFoldered = remoteNote.copy(
+                                    folderName = folderByNoteId[result.noteId]
+                                )
+
                                 when {
                                     localNote == null -> {
                                         // New note from server
-                                        storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                        storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
                                         Logger.d(TAG, "   ✅ Downloaded from /$activeSyncFolderName/: ${remoteNote.id}")
 
@@ -317,7 +362,7 @@ internal class NoteDownloader(
                                     }
                                     forceOverwrite -> {
                                         // OVERWRITE mode: Always replace regardless of timestamps
-                                        storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                        storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                                         downloadedCount++
                                         Logger.d(
                                             TAG,
@@ -337,7 +382,7 @@ internal class NoteDownloader(
                                             Logger.w(TAG, "   ⚠️ Conflict: ${remoteNote.id}")
                                         } else {
                                             // Safe to overwrite
-                                            storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
+                                            storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                                             downloadedCount++
                                             Logger.d(TAG, "   ✅ Updated from /$activeSyncFolderName/: ${remoteNote.id}")
 
@@ -545,6 +590,11 @@ internal class NoteDownloader(
             Logger.d(TAG, "💾 Deletion tracker updated")
         }
 
+        // 🆕 v2.7.0 (Folders): entdeckte Server-Ordner lokal registrieren (auch leere).
+        if (discoveredFolders.isNotEmpty()) {
+            folderStore.addFolders(discoveredFolders)
+        }
+
         // 🆕 v1.8.0: Server-Deletions erkennen (nach Downloads)
         val allLocalNotes = storage.loadAllNotes()
         val deletedOnServerCount = detectDeletions(serverNoteIds, allLocalNotes)
@@ -657,7 +707,7 @@ internal class NoteDownloader(
      * @param noteId The ID of the note to delete
      * @return true if at least one file was deleted (or already absent), false on error
      */
-    suspend fun deleteFromServer(noteId: String): Boolean = withContext(ioDispatcher) {
+    suspend fun deleteFromServer(noteId: String, folderName: String? = null): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             val sardine = connectionManager.getOrCreateClient() ?: return@withContext false
             val serverUrl = urlBuilder.getServerUrl() ?: return@withContext false
@@ -668,7 +718,7 @@ internal class NoteDownloader(
             // v1.4.1: Try to delete JSON from configured sync folder first (standard path)
             // 🔧 v2.0.0 (Issue #44): Use try/delete instead of exists()+delete() to avoid
             // false-negative exists() on servers returning 403 for HEAD on collections.
-            val jsonUrl = urlBuilder.getNotesUrl(serverUrl) + "$noteId.json"
+            val jsonUrl = urlBuilder.getNotesFolderUrl(serverUrl, folderName) + "$noteId.json"
             try {
                 sardine.delete(jsonUrl)
                 deletedJson = true
@@ -692,7 +742,7 @@ internal class NoteDownloader(
             }
 
             // Delete Markdown (v1.3.0: YAML-scan based approach)
-            val mdBaseUrl = urlBuilder.getMarkdownUrl(serverUrl)
+            val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
             val note = storage.loadNote(noteId)
             var mdFilenameToDelete: String? = null
 
@@ -763,6 +813,7 @@ internal class NoteDownloader(
         if (a.title != b.title) return true
         if (a.isPinned != b.isPinned) return true
         if (a.color != b.color) return true
+        if (a.folderName != b.folderName) return true
 
         return when (a.noteType) {
             NoteType.CHECKLIST -> {
