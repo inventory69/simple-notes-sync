@@ -21,6 +21,14 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ordner synchronisieren bidirektional via WebDAV mit ordner-bewusstem URL-Routing (`FolderSyncManager`)
 - Danke an [@happy-turtle](https://github.com/happy-turtle) und [@racehd](https://github.com/racehd) für die Idee, und an [@afoni95](https://github.com/afoni95) fürs Testen!
 
+### 🐛 Bug-Fixes
+
+**Raster & Angepinnte Notizen – Polishing** ([1e02895](https://github.com/inventory69/simple-notes-sync/commit/1e02895))
+- Pop-in-Artefakt beim Erscheinen angepinnter Notizen im gestaffelten Raster behoben
+- Scroll-Position wird beim Filterwechsel wieder auf den Anfang zurückgesetzt ([2375c97](https://github.com/inventory69/simple-notes-sync/commit/2375c97))
+- Berechnungen der gestaffelten Raster-Aufteilung gecacht, weniger Layout-Stress ([dc117ba](https://github.com/inventory69/simple-notes-sync/commit/dc117ba))
+- Visuellen Glitch beim GridColumnChip in der Spaltenauswahl der Anzeigeeinstellungen behoben ([27a7c0a](https://github.com/inventory69/simple-notes-sync/commit/27a7c0a))
+
 ### 🌍 Übersetzungen
 
 - **Spanisch** (neu): [08f0948](https://github.com/inventory69/simple-notes-sync/commit/08f0948)

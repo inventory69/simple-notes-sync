@@ -4,6 +4,7 @@
 • Neu: Spanisch als neue Sprache
 • Fix: Pinned-Notiz-Pop-in im gestaffelten Raster
 • Fix: Scroll-Position nach Filterwechsel wird jetzt zurückgesetzt
+• Fix: GridColumnChip-Glitch in Anzeigeeinstellungen
 • Perf: Flüssigeres gestaffeltes Raster
 
 Danke an @happy-turtle & @racehd (Ideen) und @afoni95 (Testen)!
