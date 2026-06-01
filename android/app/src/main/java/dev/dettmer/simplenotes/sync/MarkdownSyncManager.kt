@@ -46,13 +46,20 @@ internal class MarkdownSyncManager(
      * 🔧 v1.9.0 (Opt 6): MD-Content-Hash-Cache für Skip bei unverändertem Inhalt
      */
     fun exportSingle(sardine: Sardine, serverUrl: String, note: Note, markdownDirExists: Boolean = true) {
-        val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
-
-        // 🔧 v1.9.0 (Opt 1): Nur prüfen/erstellen wenn Caller nicht bereits bestätigt hat
+        // 🆕 v2.7.0 (Folders): Basis-md-Ordner sicherstellen, danach ggf. das Subdir der Notiz.
+        val mdRootUrl = urlBuilder.getMarkdownUrl(serverUrl)
         if (!markdownDirExists) {
-            if (!sardine.exists(mdUrl)) {
-                sardine.createDirectory(mdUrl)
+            if (!sardine.exists(mdRootUrl)) {
+                sardine.createDirectory(mdRootUrl)
                 Logger.d(TAG, "📁 Created notes-md/ directory")
+            }
+        }
+        val mdUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
+        if (note.folderName != null) {
+            try {
+                sardine.createDirectory(mdUrl)
+            } catch (e: Exception) {
+                Logger.w(TAG, "createDirectory($mdUrl) failed (continuing): ${e.message}")
             }
         }
 
@@ -154,20 +161,27 @@ internal class MarkdownSyncManager(
             val totalCount = allNotes.size
             var exportedCount = 0
 
-            // Track used filenames to handle duplicates
-            val usedFilenames = mutableSetOf<String>()
-
             Logger.d(TAG, "📝 Found $totalCount notes to export")
+
+            // 🆕 v2.7.0 (Folders): Dedup pro Ordner; Subdir idempotent anlegen.
+            val usedFilenamesByFolder = mutableMapOf<String?, MutableSet<String>>()
+            val ensuredFolders = mutableSetOf<String>()
 
             allNotes.forEachIndexed { index, note ->
                 try {
                     // Progress-Callback
                     onProgress(index + 1, totalCount)
 
-                    // Eindeutiger Filename (mit Duplikat-Handling)
-                    val filename = getUniqueFilename(note, usedFilenames) + ".md"
+                    val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
+                    if (note.folderName != null && ensuredFolders.add(note.folderName)) {
+                        try { sardine.createDirectory(folderUrl) } catch (e: Exception) {
+                            Logger.w(TAG, "createDirectory($folderUrl) failed: ${e.message}")
+                        }
+                    }
+                    val used = usedFilenamesByFolder.getOrPut(note.folderName) { mutableSetOf() }
+                    val filename = getUniqueFilename(note, used) + ".md"
                     // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
-                    val noteUrl = "${mdUrl.trimEnd('/')}/$filename"
+                    val noteUrl = "${folderUrl.trimEnd('/')}/$filename"
 
                     // Konvertiere zu Markdown
                     val mdContent = note.toMarkdown().toByteArray()
@@ -306,7 +320,35 @@ internal class MarkdownSyncManager(
 
             cleanupStaleRoot(sardine, serverUrl)
 
-            val mdResources = sardine.list(mdUrl).filter { !it.isDirectory && it.name.endsWith(".md") }
+            // 🆕 v2.7.0 (Folders): Root-md + alle Subdirs einsammeln.
+            data class MdItem(
+                val resource: com.thegrizzlylabs.sardineandroid.DavResource,
+                val fileUrl: String,
+                val folder: String?
+            )
+            val mdItems = mutableListOf<MdItem>()
+            val rootList = sardine.list(mdUrl)
+            rootList.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
+                mdItems.add(MdItem(it, mdUrl.trimEnd('/') + "/" + it.name, null))
+            }
+            val mdSubDirs = rootList.filter { res ->
+                res.isDirectory &&
+                    res.name.isNotBlank() &&
+                    res.name != "/" &&
+                    !mdUrl.trimEnd('/').endsWith("/" + res.name)
+            }
+            for (dir in mdSubDirs) {
+                val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
+                val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
+                val sub = try { sardine.list(folderUrl) } catch (e: Exception) {
+                    Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}"); continue
+                }
+                sub.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
+                    mdItems.add(MdItem(it, folderUrl.trimEnd('/') + "/" + it.name, folder))
+                }
+            }
+            val mdResources = mdItems.map { it.resource } // für bestehende Logs/Counts
+
             var importedCount = 0
             var skippedCount = 0
 
@@ -338,7 +380,8 @@ internal class MarkdownSyncManager(
             )
 
             var processedCount = 0
-            for (resource in mdResources) {
+            for (mdItem in mdItems) {
+                val resource = mdItem.resource
                 SyncStateManager.updateProgress(
                     phase = SyncPhase.IMPORTING_MARKDOWN,
                     current = ++processedCount,
@@ -365,7 +408,7 @@ internal class MarkdownSyncManager(
                     )
 
                     // Build full URL
-                    val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
+                    val mdFileUrl = mdItem.fileUrl
 
                     // Download MD content
                     val mdContent = sardine.get(mdFileUrl).use { it.bufferedReader().readText() }
@@ -377,6 +420,8 @@ internal class MarkdownSyncManager(
                         Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
                         continue
                     }
+                    // 🆕 v2.7.0 (Folders): Verzeichnis ist autoritativ für folderName.
+                    val mdNoteFoldered = mdNote.copy(folderName = mdItem.folder)
 
                     // FIX-05 (v2.2.0): Checklist-Import-Logging + Korruptions-Warnung
                     if (mdNote.noteType == NoteType.CHECKLIST) {
@@ -466,7 +511,7 @@ internal class MarkdownSyncManager(
 
                     when {
                         localNote == null -> {
-                            storage.saveNote(mdNote.copy(syncStatus = SyncStatus.SYNCED))
+                            storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                             importedCount++
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
                         }
@@ -481,7 +526,7 @@ internal class MarkdownSyncManager(
                             )
                         }
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
-                            val merged = mdNote.copy(
+                            val merged = mdNoteFoldered.copy(
                                 syncStatus = SyncStatus.PENDING,
                                 isPinned = mdNote.isPinned ?: localNote.isPinned,
                                 color = mdNote.color ?: localNote.color,
@@ -499,7 +544,7 @@ internal class MarkdownSyncManager(
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {
-                                storage.saveNote(mdNote.copy(syncStatus = SyncStatus.SYNCED))
+                                storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                                 importedCount++
                                 Logger.d(TAG, "   ✅ Updated from Markdown (newer timestamp): ${mdNote.title}")
                             }

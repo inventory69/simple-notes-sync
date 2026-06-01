@@ -1,0 +1,12 @@
+✨ v2.7.0 - Folder Support
+
+• New: Folders - create, rename, delete, move & sync
+• New: Spanish language added
+• Fix: Pinned note pop-in in staggered grid
+• Fix: Grid scroll not resetting on filter change
+• Fix: GridColumnChip glitch in display settings
+• Perf: Smoother staggered grid rendering
+
+Thanks to @happy-turtle & @racehd (ideas) and @afoni95 (testing)!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

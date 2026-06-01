@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -323,7 +324,7 @@ private fun GridColumnChip(columns: Int, selected: Boolean, onClick: () -> Unit)
     Surface(
         onClick = onClick,
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .widthIn(min = 56.dp)
             .border(
                 width = if (selected) 2.dp else 1.dp,
                 color = borderColor,

@@ -63,4 +63,28 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
         val normalized = notesUrl.trimEnd('/')
         return normalized.replace("/$folderName", "/$folderName$MARKDOWN_SUFFIX") + "/"
     }
+
+    /**
+     * 🆕 v2.7.0 (Folders): URL eines JSON-Ordners. folderName == null → identisch zu getNotesUrl.
+     * Das Pfadsegment wird URL-enkodiert (Leerzeichen → %20 usw.).
+     */
+    fun getNotesFolderUrl(baseUrl: String, folderName: String?): String {
+        val base = getNotesUrl(baseUrl)
+        if (folderName.isNullOrEmpty()) return base
+        return base + encodeSegment(folderName) + "/"
+    }
+
+    /**
+     * 🆕 v2.7.0 (Folders): URL eines Markdown-Ordners (nested mirror).
+     * Robust gebaut: Folder-Segment NACH der berechneten md-Basis angehängt — kein String-replace
+     * auf "/notes", damit ein Ordner namens "notes" den Pfad nicht korrumpiert.
+     */
+    fun getMarkdownFolderUrl(baseUrl: String, folderName: String?): String {
+        val base = getMarkdownUrl(baseUrl)
+        if (folderName.isNullOrEmpty()) return base
+        return base.trimEnd('/') + "/" + encodeSegment(folderName) + "/"
+    }
+
+    private fun encodeSegment(segment: String): String =
+        java.net.URLEncoder.encode(segment, "UTF-8").replace("+", "%20")
 }

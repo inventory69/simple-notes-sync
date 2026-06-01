@@ -106,6 +106,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     )
 
+    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(context) // 🆕 v2.7.0 (Folders)
+
     private val noteDownloader = NoteDownloader(
         prefs = prefs,
         storage = storage,
@@ -113,7 +115,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         urlBuilder = urlBuilder,
         connectionManager = connectionManager,
         markdownSyncManager = markdownSyncManager,
-        ioDispatcher = ioDispatcher
+        ioDispatcher = ioDispatcher,
+        folderStore = folderStore
+    )
+
+    private val folderSyncManager = FolderSyncManager( // 🆕 v2.7.0 (Folders)
+        urlBuilder = urlBuilder,
+        folderStore = folderStore,
+        prefs = prefs
     )
 
     /**
@@ -333,6 +342,23 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 }
             }
 
+            // ====== FOLDERS.JSON CHECK ======
+            // 🆕 v2.7.0 (Folders): Prüft ob folders.json neuer als lastSyncTime ist.
+            // Greift wenn hasJsonChanges konditionell wird oder KEY_ALWAYS_CHECK_SERVER deaktiviert ist.
+            val foldersUrl = urlBuilder.getNotesUrl(serverUrl).trimEnd('/') + "/" + FolderSyncManager.FOLDERS_FILE_NAME
+            val hasFolderChanges = try {
+                val resources = when (sardine) {
+                    is SafeSardineWrapper -> sardine.listOrNull(foldersUrl)
+                    else -> try { sardine.list(foldersUrl) } catch (_: IOException) { null }
+                }
+                resources?.firstOrNull { !it.isDirectory }?.modified?.time?.let { it > lastSyncTime } ?: false
+            } catch (_: Exception) { false }
+
+            if (hasFolderChanges) {
+                Logger.d(TAG, "📁 folders.json has changes (modified after lastSync)")
+                return true
+            }
+
             val elapsed = System.currentTimeMillis() - startTime
 
             // Return TRUE if JSON or Markdown have potential changes
@@ -363,6 +389,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // Check 1: Never synced
             if (lastSyncTime == 0L) {
                 Logger.d(TAG, "📝 Never synced - has changes: true")
+                return@withContext true
+            }
+
+            // 🆕 v2.7.0 (Folders): ungesyncte Ordner-Metadaten (Farbe/Anlage/Rename/Löschung)
+            if (prefs.getBoolean(Constants.KEY_FOLDERS_DIRTY, false)) {
+                Logger.d(TAG, "📁 Folder metadata dirty - has changes: true")
                 return@withContext true
             }
 
@@ -600,12 +632,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     if (pendingIds.isNotEmpty()) {
                         Logger.d(TAG, "🗑️ Processing ${pendingIds.size} pending server deletions")
                         val successIds = mutableListOf<String>()
-                        pendingIds.forEach { noteId ->
+                        pendingIds.forEach { pd ->
                             try {
-                                val deleted = noteDownloader.deleteFromServer(noteId)
-                                if (deleted) successIds.add(noteId)
+                                val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
+                                if (deleted) successIds.add(pd.id)
                             } catch (e: Exception) {
-                                Logger.w(TAG, "⚠️ Failed to delete pending note $noteId from server: ${e.message}")
+                                Logger.w(TAG, "⚠️ Failed to delete pending note ${pd.id} from server: ${e.message}")
                             }
                         }
                         if (successIds.isNotEmpty()) {
@@ -667,6 +699,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     e.printStackTrace()
                     throw e
                 }
+
+                // 🆕 v2.7.0 (Folders): Step 5.6 — Ordner-Metadaten syncen (Namen + Farben + Tombstones).
+                var foldersChanged = false
+                try { foldersChanged = folderSyncManager.sync(sardine, serverUrl) }
+                catch (e: Exception) { Logger.w(TAG, "folder metadata sync failed (non-fatal): ${e.message}") }
 
                 Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
 
@@ -756,7 +793,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     isSuccess = true,
                     syncedCount = effectiveSyncedCount,
                     conflictCount = conflictCount,
-                    deletedOnServerCount = deletedOnServerCount // 🆕 v1.8.0
+                    deletedOnServerCount = deletedOnServerCount, // 🆕 v1.8.0
+                    foldersChanged = foldersChanged // 🆕 v2.7.0 (Folders)
                 )
             } catch (e: Exception) {
                 Logger.e(TAG, "═══════════════════════════════════════")
@@ -1016,7 +1054,36 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * @param noteId The ID of the note to delete
      * @return true if at least one file was deleted, false otherwise
      */
-    suspend fun deleteNoteFromServer(noteId: String): Boolean = noteDownloader.deleteFromServer(noteId)
+    suspend fun deleteNoteFromServer(noteId: String, folderName: String? = null): Boolean =
+        noteDownloader.deleteFromServer(noteId, folderName)
+
+    /**
+     * 🆕 v2.7.0 (Folders): Löscht das JSON- und Markdown-Server-Verzeichnis eines Ordners,
+     * aber nur wenn beide leer sind. Nicht-leere Verzeichnisse bleiben unangetastet.
+     */
+    suspend fun deleteServerFolderIfEmpty(folderName: String): Boolean = withContext(Dispatchers.IO) {
+        val sardine = connectionManager.getOrCreateClient() ?: return@withContext false
+        val serverUrl = urlBuilder.getServerUrl() ?: return@withContext false
+        var ok = true
+        for (url in listOf(
+            urlBuilder.getNotesFolderUrl(serverUrl, folderName),
+            urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
+        )) {
+            try {
+                val entries = (sardine as? SafeSardineWrapper)?.listOrNull(url) ?: sardine.list(url)
+                // depth=1 liefert das Verzeichnis selbst als ersten Eintrag → "leer" = nur Self.
+                val children = entries?.filter { !it.href.toString().trimEnd('/').endsWith(folderName) }
+                if (children.isNullOrEmpty()) {
+                    sardine.delete(url)
+                    Logger.d(TAG, "🗑️ Deleted empty server folder: $url")
+                }
+            } catch (e: Exception) {
+                Logger.w(TAG, "deleteServerFolderIfEmpty($url) skipped: ${e.message}")
+                ok = false
+            }
+        }
+        ok
+    }
 
     /**
      * Manual Markdown sync: Export all notes + Import all MD files

@@ -40,7 +40,10 @@ data class Note(
     val color: String? = null,
     // 🆕 v2.5.0: Vorbereitung v2.6.0 Pin-Feature. null = nicht angepinnt.
     // UI-Inertheit v2.5.0: nur persistiert, NICHT gerendert (siehe Analyseplan §2.4.1).
-    val isPinned: Boolean? = null
+    val isPinned: Boolean? = null,
+    // 🆕 v2.7.0 (Folders): Ordner-Zuordnung. null = Root, sonst Verzeichnisname (ohne "/").
+    // Lokal flach gespeichert; auf dem Server ein echtes Subdirectory (siehe FolderStore/Sync).
+    val folderName: String? = null
 ) {
     /**
      * Serialisiert Note zu JSON
@@ -120,6 +123,7 @@ data class Note(
             .orEmpty()
         val colorLine = color?.let { "\ncolor: \"$it\"" }.orEmpty()
         val pinnedLine = isPinned?.let { "\npinned: $it" }.orEmpty()
+        val folderLine = folderName?.let { "\nfolder: \"$it\"" }.orEmpty()
 
         val header = """
 ---
@@ -127,7 +131,7 @@ id: $id
 created: ${formatISO8601(createdAt)}
 updated: ${formatISO8601(updatedAt)}
 device: $deviceId
-type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pinnedLine
+type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pinnedLine$folderLine
 ---
 
 # $title
@@ -263,7 +267,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     importedAt = rawNote.importedAt,
                     labels = rawNote.labels,
                     color = rawNote.color,
-                    isPinned = rawNote.isPinned
+                    isPinned = rawNote.isPinned,
+                    folderName = rawNote.folderName
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -286,7 +291,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
             val importedAt: Long? = null,
             val labels: List<String>? = null,
             val color: String? = null,
-            val isPinned: Boolean? = null
+            val isPinned: Boolean? = null,
+            val folderName: String? = null
         )
 
         /**
@@ -400,6 +406,9 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                         }
                     }
                 }
+                // 🆕 v2.7.0 (Folders): optionaler Ordnername aus YAML.
+                val folderName: String? = metadata["folder"]?.trim()?.removeSurrounding("\"")
+                    ?.takeIf { it.isNotEmpty() }
 
                 // v1.4.0: Parse Content basierend auf Typ
                 // FIX: Robusteres Parsing - suche nach dem Titel-Header und extrahiere den Rest
@@ -485,7 +494,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     importedAt = importedAt,
                     labels = labels,
                     color = color,
-                    isPinned = isPinned
+                    isPinned = isPinned,
+                    folderName = folderName
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse Markdown: ${e.message}")

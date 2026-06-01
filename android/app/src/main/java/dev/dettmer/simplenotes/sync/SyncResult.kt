@@ -12,6 +12,7 @@ data class SyncResult(
     val syncedCount: Int = 0,
     val conflictCount: Int = 0,
     val deletedOnServerCount: Int = 0, // 🆕 v1.8.0
+    val foldersChanged: Boolean = false, // 🆕 v2.7.0 (Folders): Ordner-Metadaten haben sich geändert
     val errorMessage: String? = null,
     val infoMessage: String? = null // 🆕 v1.9.0 Issue #21: Non-error status info
 ) {

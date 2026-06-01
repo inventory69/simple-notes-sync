@@ -99,6 +99,9 @@
     <string name="delete_notes_title">%d Notizen löschen?</string>
     <string name="delete_note_message">Wie möchtest du diese Notiz löschen?</string>
     <string name="delete_notes_message">Wie möchtest du diese %d Notizen löschen?</string>
+    <string name="delete_folder_message">Wie möchtest du diesen Ordner löschen?</string>
+    <string name="delete_folders_message">Wie möchtest du diese %1$d Ordner löschen?</string>
+    <string name="delete_selection_message">Wie möchtest du diese Auswahl löschen?</string>
     <string name="delete_everywhere">Überall löschen (auch Server)</string>
     <string name="delete_everywhere_offline_hint">Nicht verfügbar im Offline-Modus</string>
     <string name="delete_local_only">Nur lokal löschen</string>
@@ -747,4 +750,28 @@
     <string name="confirm_convert_to_checklist">Notiz in eine Checkliste umwandeln? Jede Zeile wird zu einem Eintrag. Zeilen mit Checkbox-Notation (- [ ] / - [x]) behalten ihren Status.</string>
     <string name="confirm_convert_to_note">Checkliste in eine Notiz umwandeln? Jeder Eintrag wird als Textzeile mit erhaltenem Haken-Status gespeichert.</string>
     <string name="action_convert">Konvertieren</string>
+
+    <!-- 🆕 v2.7.0 (Folders) -->
+    <string name="folder_rename_title">Ordner umbenennen</string>
+    <string name="folder_rename_action">Umbenennen</string>
+    <string name="action_rename_folder">Ordner umbenennen</string>
+    <string name="folder_delete_keep_notes">Notizen behalten (nach Root)</string>
+    <string name="folder_delete_selected_title">Auswahl löschen</string>
+    <plurals name="snackbar_folders_deleted">
+        <item quantity="one">%1$d Ordner gelöscht</item>
+        <item quantity="other">%1$d Ordner gelöscht</item>
+    </plurals>
+    <string name="folder_section_header">Ordner</string>
+    <string name="folder_create_title">Neuer Ordner</string>
+    <string name="folder_create_hint">Ordnername</string>
+    <string name="folder_create_action">Erstellen</string>
+    <string name="folder_name_invalid">Ungültiger Ordnername (kein /, \\, : * ? \" &lt; &gt; |, max. 64 Zeichen)</string>
+    <string name="fab_create_folder">Neuer Ordner</string>
+    <string name="folder_move_title">In Ordner verschieben</string>
+    <string name="folder_move_to_root">Root (kein Ordner)</string>
+    <string name="folder_delete_confirm">Ordner \"%1$s\" entfernen? Die Notizen bleiben erhalten.</string>
+    <string name="folder_delete_not_empty">Ordner \"%1$s\" enthält noch Notizen. Er wird nur aus der Liste entfernt; Notizen und Server-Ordner bleiben.</string>
+    <string name="cd_folder_card">Ordner %1$s</string>
+    <string name="action_move_to_folder">In Ordner verschieben</string>
+    <string name="cd_more_options">Weitere Optionen</string>
 </resources>

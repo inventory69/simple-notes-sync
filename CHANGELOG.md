@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.7.0] - 2026-05-30
+
+### ✨ New Features
+
+**Folder Support** ([e38553d](https://github.com/inventory69/simple-notes-sync/commit/e38553d))
+- Notes can be organized into folders; each note carries an optional `folderName` field
+- Create, rename, and delete folders via dedicated CRUD dialogs
+- Move notes to a folder from a bottom sheet accessible in the note list
+- Folder navigation in the main screen filters the list by folder
+- Folders are persisted with tombstone-based deletion tracking (`FolderStore`)
+- Folders sync bidirectionally via WebDAV using folder-aware URL routing (`FolderSyncManager`)
+- Thanks to [@happy-turtle](https://github.com/happy-turtle) and [@racehd](https://github.com/racehd) for the idea, and [@afoni95](https://github.com/afoni95) for testing!
+
+### 🐛 Bug Fixes
+
+**Grid & Pinned Notes Polish** ([1e02895](https://github.com/inventory69/simple-notes-sync/commit/1e02895))
+- Fixed pop-in artifact when pinned notes appeared in staggered grid
+- Grid scroll now resets to top when the active filter changes ([2375c97](https://github.com/inventory69/simple-notes-sync/commit/2375c97))
+- Staggered grid split calculations memoized, reducing layout churn ([dc117ba](https://github.com/inventory69/simple-notes-sync/commit/dc117ba))
+- Fixed visual glitch in GridColumnChip in the display settings column picker ([27a7c0a](https://github.com/inventory69/simple-notes-sync/commit/27a7c0a))
+
+### 🌍 Translations
+
+- **Spanish** (new): [08f0948](https://github.com/inventory69/simple-notes-sync/commit/08f0948)
+
+---
+
 ## [2.6.0] - 2026-05-24
 
 ### ✨ New Features

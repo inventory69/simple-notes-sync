@@ -1,0 +1,12 @@
+✨ v2.7.0 - Ordner-Unterstützung
+
+• Neu: Ordner - erstellen, umbenennen, löschen, verschieben & sync
+• Neu: Spanisch als neue Sprache
+• Fix: Pinned-Notiz-Pop-in im gestaffelten Raster
+• Fix: Scroll-Position nach Filterwechsel wird jetzt zurückgesetzt
+• Fix: GridColumnChip-Glitch in Anzeigeeinstellungen
+• Perf: Flüssigeres gestaffeltes Raster
+
+Danke an @happy-turtle & @racehd (Ideen) und @afoni95 (Testen)!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

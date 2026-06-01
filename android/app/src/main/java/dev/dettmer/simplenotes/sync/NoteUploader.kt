@@ -85,6 +85,18 @@ internal class NoteUploader(
             return UploadBatchResult(uploadedCount = 0, markdownExportedNoteIds = emptySet())
         }
 
+        // 🆕 v2.7.0 (Folders): benötigte Subdirectories einmalig anlegen (vor parallelem Upload).
+        // SafeSardineWrapper.createDirectory toleriert 405 (existiert) und macht list()-Fallback bei 404.
+        val foldersToCreate = pendingNotes.mapNotNull { it.folderName }.distinct()
+        for (folder in foldersToCreate) {
+            try {
+                sardine.createDirectory(urlBuilder.getNotesFolderUrl(serverUrl, folder))
+                Logger.d(TAG, "📁 Ensured folder dir: $folder")
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ createDirectory for folder '$folder' failed: ${e.message}")
+            }
+        }
+
         Logger.d(TAG, "🚀 Starting parallel upload: $totalToUpload notes")
 
         // 🔧 v1.9.0: Unified parallel setting, capped for uploads
@@ -144,21 +156,33 @@ internal class NoteUploader(
 
         if (successfulNoteIds.isNotEmpty()) {
             try {
-                val notesUrl = urlBuilder.getNotesUrl(serverUrl)
-                Logger.d(TAG, "⚡ Batch-fetching E-Tags via list(depth=1) for ${successfulNoteIds.size} notes")
-                val allResources = sardine.list(notesUrl, 1)
+                // 🆕 v2.7.0 (Folders): pro Ordner (inkl. Root = null) listen, der erfolgreiche Uploads hatte.
+                val foldersWithUploads: Set<String?> = results
+                    .filterIsInstance<UploadTaskResult.Success>()
+                    .mapNotNull { res -> pendingNotes.find { it.id == res.noteId } }
+                    .map { it.folderName }
+                    .toSet()
+
+                Logger.d(
+                    TAG,
+                    "⚡ Batch-fetching E-Tags via list(depth=1) for ${successfulNoteIds.size} notes " +
+                        "across ${foldersWithUploads.size} folder(s)"
+                )
 
                 val batchEtagUpdates = mutableMapOf<String, String?>()
-                for (resource in allResources) {
-                    val filename = resource.name
-                    if (!filename.endsWith(".json")) continue
-
-                    val noteId = filename.removeSuffix(".json")
-                    if (noteId in successfulNoteIds) {
-                        val etag = resource.etag
-                        batchEtagUpdates["etag_json_$noteId"] = etag
-                        if (etag != null) {
-                            Logger.d(TAG, "   ⚡ E-Tag: $noteId → ${etag.take(ETAG_PREVIEW_LENGTH)}")
+                for (folder in foldersWithUploads) {
+                    val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
+                    val allResources = sardine.list(folderUrl, 1)
+                    for (resource in allResources) {
+                        val filename = resource.name
+                        if (!filename.endsWith(".json")) continue
+                        val noteId = filename.removeSuffix(".json")
+                        if (noteId in successfulNoteIds) {
+                            val etag = resource.etag
+                            batchEtagUpdates["etag_json_$noteId"] = etag
+                            if (etag != null) {
+                                Logger.d(TAG, "   ⚡ E-Tag: $noteId → ${etag.take(ETAG_PREVIEW_LENGTH)}")
+                            }
                         }
                     }
                 }
@@ -176,7 +200,7 @@ internal class NoteUploader(
                     }
                 }
 
-                // 🆕 v1.9.0 (Opt 5): Content-Hashes für erfolgreiche Uploads speichern
+                // Content-Hashes für erfolgreiche Uploads speichern (unverändert)
                 for (noteId in successfulNoteIds) {
                     val note = pendingNotes.find { it.id == noteId }
                     if (note != null) {
@@ -187,7 +211,6 @@ internal class NoteUploader(
                 eTagCache.batchUpdate(batchEtagUpdates)
             } catch (e: Exception) {
                 Logger.e(TAG, "⚠️ Batch E-Tag fetch failed: ${e.message}")
-                // Fallback: Invalidiere alle E-Tags → nächster Sync holt sie einzeln
                 val invalidationMap = successfulNoteIds.associate { "etag_json_$it" to null as String? }
                 eTagCache.batchUpdate(invalidationMap)
             }
@@ -239,7 +262,7 @@ internal class NoteUploader(
 
         repeat(maxRetries + 1) { attempt ->
             try {
-                val notesUrl = urlBuilder.getNotesUrl(serverUrl)
+                val notesUrl = urlBuilder.getNotesFolderUrl(serverUrl, note.folderName)
                 val noteUrl = "$notesUrl${note.id}.json"
 
                 // 🆕 v1.9.0 (Opt 5): Skip-Logik per Content-Hash

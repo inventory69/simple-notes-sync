@@ -75,6 +75,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     companion object {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
+        const val EXTRA_FOLDER = "extra_folder"
         private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
         private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen"   // 🆕 v2.2.0
         private const val KEY_PICK_TARGET_NOTE = "pick_target_note"     // 🆕 v2.6.0
@@ -103,6 +104,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                 handle[NoteEditorViewModel.ARG_NOTE_ID] = intent.getStringExtra(EXTRA_NOTE_ID)
                 handle[NoteEditorViewModel.ARG_NOTE_TYPE] =
                     intent.getStringExtra(EXTRA_NOTE_TYPE) ?: NoteType.TEXT.name
+                handle[NoteEditorViewModel.ARG_FOLDER] = intent.getStringExtra(EXTRA_FOLDER)
 
                 // 🆕 v2.2.0: Share Intent — Text aus anderen Apps empfangen
                 if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {

@@ -186,4 +186,7 @@ object Constants {
     // WorkManager default (10s × 2^n, max 5h) is too aggressive for transient recovery.
     // 30s linear ≙ 3 retries within ~90s.
     const val WIFI_CONNECT_BACKOFF_SECONDS = 30L
+
+    // 🆕 v2.7.0 (Folders): Dirty-Flag für FolderStore — gesetzt bei User-Änderungen (Anlage, Farbe, Rename, Löschen)
+    const val KEY_FOLDERS_DIRTY = "folders_dirty"
 }

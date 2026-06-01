@@ -2,6 +2,9 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonParser
+import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
@@ -9,54 +12,65 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Persistent queue for server deletions that couldn't be executed
- * because the server was unreachable at the time of deletion.
+ * Persistent queue for server deletions that couldn't be executed because the server was
+ * unreachable at deletion time. Processed during the next successful sync (Step 4.5).
  *
- * Stored as a JSON array in the app's files directory.
- * Processed during the next successful sync (Step 4.5 in syncNotes()).
+ * 🆕 v2.7.0 (Folders): speichert pro Eintrag den folderName zum Löschzeitpunkt, damit der korrekte
+ * Server-Pfad (/notes/<folder>/<id>.json) gelöscht wird. Liest das alte Format (reines String-Array
+ * von IDs) backward-kompatibel als {id, folderName=null}.
  */
 class PendingServerDeletions(context: Context) {
     private val file = File(context.filesDir, FILENAME)
     private val mutex = Mutex()
     private val gson = Gson()
 
-    suspend fun add(noteIds: List<String>) = mutex.withLock {
+    data class PendingDeletion(
+        @SerializedName("id") val id: String,
+        @SerializedName("folderName") val folderName: String? = null
+    )
+
+    suspend fun add(deletions: List<PendingDeletion>) = mutex.withLock {
         val current = loadInternal()
-        val updated = (current + noteIds).distinct()
-        saveInternal(updated)
-        Logger.d(TAG, "📋 Pending server deletions: +${noteIds.size} → ${updated.size} total")
+        val merged = (current + deletions).distinctBy { it.id }
+        saveInternal(merged)
+        Logger.d(TAG, "📋 Pending server deletions: +${deletions.size} → ${merged.size} total")
     }
 
-    suspend fun getAll(): List<String> = mutex.withLock {
-        loadInternal()
-    }
+    suspend fun getAll(): List<PendingDeletion> = mutex.withLock { loadInternal() }
 
     suspend fun remove(noteIds: List<String>) = mutex.withLock {
         val current = loadInternal()
-        val updated = current - noteIds.toSet()
+        val idSet = noteIds.toSet()
+        val updated = current.filterNot { it.id in idSet }
         saveInternal(updated)
         Logger.d(TAG, "📋 Pending server deletions: -${noteIds.size} → ${updated.size} remaining")
     }
 
-    suspend fun isEmpty(): Boolean = mutex.withLock {
-        loadInternal().isEmpty()
-    }
+    suspend fun isEmpty(): Boolean = mutex.withLock { loadInternal().isEmpty() }
 
-    private fun loadInternal(): List<String> {
+    private fun loadInternal(): List<PendingDeletion> {
         if (!file.exists()) return emptyList()
         return try {
             val json = file.readText()
-            val type = object : TypeToken<List<String>>() {}.type
-            gson.fromJson<List<String>>(json, type) ?: emptyList()
+            if (json.isBlank()) return emptyList()
+            val root = JsonParser.parseString(json)
+            val arr: JsonArray = if (root.isJsonArray) root.asJsonArray else return emptyList()
+            // Altes Format: ["id1","id2",...]  →  {id, folderName=null}
+            if (arr.size() > 0 && arr[0].isJsonPrimitive) {
+                arr.map { PendingDeletion(it.asString, null) }
+            } else {
+                val type = object : TypeToken<List<PendingDeletion>>() {}.type
+                gson.fromJson<List<PendingDeletion>>(json, type) ?: emptyList()
+            }
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to load pending deletions: ${e.message}")
             emptyList()
         }
     }
 
-    private fun saveInternal(noteIds: List<String>) {
+    private fun saveInternal(deletions: List<PendingDeletion>) {
         try {
-            file.writeText(gson.toJson(noteIds))
+            file.writeText(gson.toJson(deletions))
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to save pending deletions: ${e.message}")
         }

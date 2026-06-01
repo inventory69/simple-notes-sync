@@ -45,6 +45,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         private const val TAG = "NoteEditorViewModel"
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
+        const val ARG_FOLDER = "folderName"
         const val ARG_SHARED_TEXT = "sharedText"           // 🆕 v2.2.0
         const val ARG_SHARED_SUBJECT = "sharedSubject"     // 🆕 v2.2.0
         const val ARG_APPEND_TO_NOTE_ID = "appendToNoteId" // 🆕 v2.6.0
@@ -53,6 +54,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private val storage = NotesStorage(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    private val initialFolderName: String? = savedStateHandle.get<String>(ARG_FOLDER)
 
     // ═══════════════════════════════════════════════════════════════════════
     // State
@@ -1028,6 +1030,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         noteType = NoteType.TEXT,
                         checklistItems = null,
                         color = state.color, // 🆕 v2.5.0
+                        folderName = initialFolderName, // 🆕 v2.7.0 (Folders)
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
@@ -1090,6 +1093,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         checklistItems = validItems,
                         checklistSortOption = _lastChecklistSortOption.value.name,
                         color = state.color, // 🆕 v2.5.0
+                        folderName = initialFolderName, // 🆕 v2.7.0 (Folders)
                         deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                         syncStatus = SyncStatus.LOCAL_ONLY
                     )
@@ -1146,6 +1150,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     noteType = NoteType.TEXT,
                     checklistItems = null,
                     color = state.color, // 🆕 v2.5.0
+                    folderName = initialFolderName, // 🆕 v2.7.0 (Folders)
                     deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
@@ -1213,6 +1218,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     checklistItems = validItems,
                     checklistSortOption = _lastChecklistSortOption.value.name, // 🆕 v1.8.1 (IMPL_03)
                     color = state.color, // 🆕 v2.5.0
+                    folderName = initialFolderName, // 🆕 v2.7.0 (Folders)
                     deviceId = DeviceIdGenerator.getDeviceId(getApplication()),
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )

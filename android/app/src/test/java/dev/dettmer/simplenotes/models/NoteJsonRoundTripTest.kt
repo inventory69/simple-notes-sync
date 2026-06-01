@@ -188,6 +188,28 @@ class NoteJsonRoundTripTest {
         assertTrue("Empty labels must not emit YAML key", !md.contains("labels:"))
     }
 
+    // ───── v2.7.0 (Folders): JSON round-trip für folderName ─────
+    @Test fun `json_roundTrip_preservesFolderName`() {
+        val note = baseNote().copy(folderName = "Rezepte")
+        val round = Note.fromJson(note.toJson())
+        assertEquals("Rezepte", round!!.folderName)
+    }
+
+    @Test fun `json_legacyWithoutFolder_isNullRoot`() {
+        val legacy = """
+            {"id":"l","title":"T","content":"B","createdAt":1,"updatedAt":1,
+             "deviceId":"d","syncStatus":"SYNCED","noteType":"TEXT"}
+        """.trimIndent()
+        assertNull(Note.fromJson(legacy)!!.folderName)
+    }
+
+    @Test fun `markdown_roundTrip_preservesFolder`() {
+        val note = baseNote().copy(folderName = "Reise 2024")
+        val md = note.toMarkdown()
+        assertTrue(md.contains("folder: \"Reise 2024\""))
+        assertEquals("Reise 2024", Note.fromMarkdown(md)!!.folderName)
+    }
+
     // ───── Markdown: invalides 'pinned' → null + Logger.w ─────
     @Test
     fun `markdown_invalidPinnedValue_returnsNull`() {
