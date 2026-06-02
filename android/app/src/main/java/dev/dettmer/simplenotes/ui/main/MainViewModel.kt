@@ -760,13 +760,46 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             SyncStateManager.showInfo(getString(R.string.snackbar_delete_queued_for_sync))
             return
         }
-        // Server reachable → delete immediately
-        val noteIds = deletions.map { it.id }
-        if (noteIds.size == 1) {
-            deleteNoteFromServer(noteIds[0])
-        } else {
-            deleteMultipleNotesFromServer(noteIds)
+        // Server reachable → delete immediately (folderName korrekt übergeben)
+        val total = deletions.size
+        var successCount = 0
+        var failCount = 0
+        if (total > 1) {
+            SyncStateManager.updateProgress(
+                phase = SyncPhase.DELETING,
+                current = 0,
+                total = total,
+                currentFileName = null
+            )
         }
+        for (deletion in deletions) {
+            if (total > 1) SyncStateManager.incrementProgress(currentFileName = null)
+            try {
+                val ok = withContext(ioDispatcher) {
+                    webdavService.deleteNoteFromServer(deletion.id, deletion.folderName)
+                }
+                if (ok) successCount++ else failCount++
+            } catch (e: Exception) {
+                Logger.w(TAG, "Failed to delete ${deletion.id} from server: ${e.message}")
+                failCount++
+            } finally {
+                _pendingDeletions.update { it - deletion.id }
+            }
+        }
+        val message = when {
+            failCount == 0 -> getQuantityString(
+                R.plurals.snackbar_notes_deleted_from_server,
+                successCount,
+                successCount
+            )
+            successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
+            else -> getString(
+                R.string.snackbar_notes_deleted_from_server_partial,
+                successCount,
+                successCount + failCount
+            )
+        }
+        if (failCount == 0) SyncStateManager.showInfo(message) else SyncStateManager.showError(message)
     }
 
     /**
@@ -791,68 +824,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } finally {
                 // Remove from pending deletions
                 _pendingDeletions.update { it - noteId }
-            }
-        }
-    }
-
-    /**
-     * Delete multiple notes from server with aggregated toast
-     * Shows single toast at the end instead of one per note
-     */
-    private fun deleteMultipleNotesFromServer(noteIds: List<String>) {
-        viewModelScope.launch {
-            val webdavService = WebDavSyncService(getApplication())
-            var successCount = 0
-            var failCount = 0
-            val total = noteIds.size
-
-            // 🆕 v1.10.0-P2: Show progress banner for server deletion (only for 2+)
-            if (total > 1) {
-                SyncStateManager.updateProgress(
-                    phase = SyncPhase.DELETING,
-                    current = 0,
-                    total = total,
-                    currentFileName = null
-                )
-            }
-
-            noteIds.forEach { noteId ->
-                try {
-                    // 🆕 v1.10.0-P2: Increment progress counter before each deletion
-                    if (total > 1) {
-                        SyncStateManager.incrementProgress(currentFileName = null)
-                    }
-
-                    val success = withContext(ioDispatcher) {
-                        webdavService.deleteNoteFromServer(noteId)
-                    }
-                    if (success) successCount++ else failCount++
-                } catch (e: Exception) {
-                    Logger.w(TAG, "Failed to delete note $noteId from server: ${e.message}")
-                    failCount++
-                } finally {
-                    _pendingDeletions.update { it - noteId }
-                }
-            }
-
-            // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO/ERROR
-            val message = when {
-                failCount == 0 -> getQuantityString(
-                    R.plurals.snackbar_notes_deleted_from_server,
-                    successCount,
-                    successCount
-                )
-                successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
-                else -> getString(
-                    R.string.snackbar_notes_deleted_from_server_partial,
-                    successCount,
-                    successCount + failCount
-                )
-            }
-            if (failCount > 0) {
-                SyncStateManager.showError(message)
-            } else {
-                SyncStateManager.showInfo(message)
             }
         }
     }
