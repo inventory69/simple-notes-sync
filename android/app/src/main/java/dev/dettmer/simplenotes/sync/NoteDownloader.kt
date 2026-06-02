@@ -160,11 +160,18 @@ internal class NoteDownloader(
                         .forEach { scanItems.add(ScanItem(it, folder)) }
                 }
 
-                val jsonFiles = scanItems.map { it.resource }
+                // Deduplizieren: gleiche noteId in mehreren Ordnern (Überbleibsel nach Ordner-Verschiebung)
+                // → nur den neuesten Eintrag behalten, damit kein PENDING-Loop entsteht.
+                val deduplicatedItems = scanItems
+                    .groupBy { it.resource.name.removeSuffix(".json") }
+                    .values
+                    .map { group -> group.maxByOrNull { it.resource.modified?.time ?: 0L }!! }
+
+                val jsonFiles = deduplicatedItems.map { it.resource }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server (incl. subfolders)")
 
                 // 🆕 v1.8.0 + v2.6.0: serverNoteIds + folderByNoteId füllen
-                scanItems.forEach { item ->
+                deduplicatedItems.forEach { item ->
                     val noteId = item.resource.name.removeSuffix(".json")
                     serverNoteIds.add(noteId)
                     folderByNoteId[noteId] = item.folder
