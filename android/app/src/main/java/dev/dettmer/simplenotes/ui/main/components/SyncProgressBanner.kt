@@ -60,8 +60,10 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
     // den Farbflash beim Ausblenden (z.B. rot→blau beim Dismiss eines Error-Banners).
     var lastVisibleBackgroundColor by remember { mutableStateOf(Color.Unspecified) }
     var lastVisibleContentColor by remember { mutableStateOf(Color.Unspecified) }
+    var lastVisibleProgress by remember { mutableStateOf(progress) }
 
     if (progress.isVisible) {
+        lastVisibleProgress = progress
         val isError = progress.phase == SyncPhase.ERROR
         val isInfo = progress.phase == SyncPhase.INFO
         lastVisibleBackgroundColor = when {
@@ -96,7 +98,7 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
             // 🆕 v1.10.0: AnimatedContent crossfadet Inhalte beim Phasenwechsel, damit
             // kurze Phasen (z.B. IMPORTING_MARKDOWN) leserlich übergeblendet werden
             AnimatedContent(
-                targetState = progress,
+                targetState = lastVisibleProgress,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(durationMillis = 220, easing = EaseOutCubic)) togetherWith
                         fadeOut(animationSpec = tween(durationMillis = 160, easing = EaseInCubic))
