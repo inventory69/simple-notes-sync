@@ -1237,7 +1237,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val folderCount = folderNames.size
         val message = when {
             folderCount > 0 && noteCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount) +
-                " · " + getQuantityString(R.plurals.snackbar_notes_deleted_local, noteCount, noteCount)
+                " · " + getQuantityString(
+                    if (deleteFromServer) R.plurals.snackbar_notes_deleted_server
+                    else R.plurals.snackbar_notes_deleted_local,
+                    noteCount, noteCount
+                )
             folderCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount)
             deleteFromServer -> getQuantityString(R.plurals.snackbar_notes_deleted_server, noteCount, noteCount)
             else -> getQuantityString(R.plurals.snackbar_notes_deleted_local, noteCount, noteCount)
