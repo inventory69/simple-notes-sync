@@ -1,0 +1,10 @@
+🔧 v2.7.1 - Folder Sync Fixes
+
+• Fix: orphan files left on server after folder delete
+• Fix: notes stuck in PENDING after folder move
+• Fix: silent sync clearing visible result banners
+• Fix: banner content flash during dismiss animation
+• Fix: keyboard & capitalization in folder dialog
+• Updated translations: Spanish, Simplified Chinese
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

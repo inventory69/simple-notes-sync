@@ -1,0 +1,10 @@
+🔧 v2.7.1 - Ordner-Sync-Fixes
+
+• Fix: Waisendateien auf Server nach Ordner-Löschen
+• Fix: Notizen in PENDING-Schleife nach Ordner-Move
+• Fix: Stiller Sync überschrieb sichtbare Banner
+• Fix: Banner-Flash beim Ausblenden
+• Fix: Tastatur & Großschreibung im Ordner-Dialog
+• Übersetzungsupdate: Spanisch, Vereinfachtes Chinesisch
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

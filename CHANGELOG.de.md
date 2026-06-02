@@ -8,6 +8,38 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.7.1] - 2026-06-02
+
+### 🐛 Bug-Fixes
+
+**Ordner-Sync: Waisendateien auf dem Server** ([77b4029](https://github.com/inventory69/simple-notes-sync/commit/77b4029))
+- Notizen, die beim Ordner-Löschen zurück ins Root verschoben werden, werden nun für die Server-Löschung aus ihrem alten Unterordner-Pfad vorgemerkt – keine verwaisten Dateien mehr auf dem Server
+- URL-kodierte Ordnernamen (Leerzeichen als `%20`) führten dazu, dass `deleteServerFolderIfEmpty` die Bereinigung übersprungen hat – behoben
+- Leere Server-Ordnerverzeichnisse werden nun nach Batch-Löschungen aufgeräumt ([4e05ad1](https://github.com/inventory69/simple-notes-sync/commit/4e05ad1))
+
+**Ordner-Sync: Endlosschleife PENDING nach Ordner-Verschieben** ([18f186a](https://github.com/inventory69/simple-notes-sync/commit/18f186a))
+- Der Server-Scan dedupliziert Notizen jetzt nach `noteId`; nach einem Ordner-Move konnte dieselbe Notiz in mehreren WebDAV-Verzeichnissen auftauchen und widersprüchliche Ordnerzuweisungen verursachen, was zu einem endlosen PENDING-Zustand führte
+
+**Sync: Stilles Sync überschreibt keine sichtbaren Banner mehr** ([1f43b50](https://github.com/inventory69/simple-notes-sync/commit/1f43b50))
+- Stille Hintergrund-Syncs können jetzt kein Ergebnis-Banner mehr leeren oder ersetzen, dessen Auto-Hide-Timer noch läuft
+
+**UI: Banner-Inhalt flackerte beim Ausblenden** ([af07399](https://github.com/inventory69/simple-notes-sync/commit/af07399))
+- Behoben: `AnimatedContent` erhielt `IDLE` während der Ausblend-Animation und renderte kurz den leeren Zustand; der sichtbare Inhalt bleibt jetzt stabil bis die Animation abgeschlossen ist
+
+**UI: Ordner-Dialog-Polishing** ([fb72623](https://github.com/inventory69/simple-notes-sync/commit/fb72623))
+- Tastatur öffnet sich jetzt automatisch beim Öffnen des Dialogs (kein extra Tap mehr nötig)
+- Erster Buchstabe des Ordnernamens wird automatisch großgeschrieben
+
+**UI: Falscher Plural-String beim Ordner-Löschen** ([99dfbae](https://github.com/inventory69/simple-notes-sync/commit/99dfbae))
+- Das Bestätigungs-Banner nach dem Ordner-Löschen nutzt jetzt die korrekte Plural-Ressource je nachdem, ob Notizen nur lokal oder auch auf dem Server gelöscht wurden
+
+### 🌍 Übersetzungen
+
+- **Spanisch**: von teilweise auf breite Abdeckung erweitert, Terminologie-Fix (`borrar` → `eliminar`) ([2f19d18](https://github.com/inventory69/simple-notes-sync/commit/2f19d18)), Locale in `locales_config` registriert ([974efe1](https://github.com/inventory69/simple-notes-sync/commit/974efe1))
+- **Vereinfachtes Chinesisch**: 7 Debug-Screen-Strings ergänzt (100% Abdeckung) ([2f19d18](https://github.com/inventory69/simple-notes-sync/commit/2f19d18))
+
+---
+
 ## [2.7.0] - 2026-05-30
 
 ### ✨ Neue Features

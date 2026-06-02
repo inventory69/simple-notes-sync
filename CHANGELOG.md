@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.7.1] - 2026-06-02
+
+### 🐛 Bug Fixes
+
+**Folder Sync: Server Orphan Files** ([77b4029](https://github.com/inventory69/simple-notes-sync/commit/77b4029))
+- Notes moved back to root during folder deletion are now queued for server deletion from their old subfolder path, preventing orphan files on the server
+- Fixed URL-encoded folder names (spaces as `%20`) causing `deleteServerFolderIfEmpty` to skip directory cleanup
+- Empty server folder directories are now cleaned up after batch pending deletions complete ([4e05ad1](https://github.com/inventory69/simple-notes-sync/commit/4e05ad1))
+
+**Folder Sync: Notes Stuck in PENDING After Folder Move** ([18f186a](https://github.com/inventory69/simple-notes-sync/commit/18f186a))
+- Server scan now deduplicates notes by `noteId`; after a folder move the same note could appear in multiple WebDAV directories, causing conflicting folder assignments and an endless PENDING state
+
+**Sync: Silent Sync No Longer Clears Visible Banners** ([1f43b50](https://github.com/inventory69/simple-notes-sync/commit/1f43b50))
+- Background silent syncs can no longer clear or replace a result banner whose auto-hide timer is still running
+
+**UI: Banner Content Flash During Dismiss** ([af07399](https://github.com/inventory69/simple-notes-sync/commit/af07399))
+- Fixed a blank flash in the sync result banner when `AnimatedContent` received `IDLE` during the dismiss animation; visible content now remains stable until the animation completes
+
+**UI: Create Folder Dialog Polish** ([fb72623](https://github.com/inventory69/simple-notes-sync/commit/fb72623))
+- Keyboard now opens automatically when the dialog appears (no extra tap required)
+- First letter of the folder name is auto-capitalized
+
+**UI: Folder Deletion Banner Plural String** ([99dfbae](https://github.com/inventory69/simple-notes-sync/commit/99dfbae))
+- Fixed the confirmation banner after folder deletion: now uses the correct plural resource depending on whether notes were deleted locally or also erased on the server
+
+### 🌍 Translations
+
+- **Spanish**: expanded from partial to broad coverage, terminology fix (`borrar` → `eliminar`) ([2f19d18](https://github.com/inventory69/simple-notes-sync/commit/2f19d18)), locale registered in `locales_config` ([974efe1](https://github.com/inventory69/simple-notes-sync/commit/974efe1))
+- **Simplified Chinese**: 7 debug screen strings added (100% coverage) ([2f19d18](https://github.com/inventory69/simple-notes-sync/commit/2f19d18))
+
+---
+
 ## [2.7.0] - 2026-05-30
 
 ### ✨ New Features

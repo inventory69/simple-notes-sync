@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 38  // 🆕 v2.7.0 - folder support, Spanish locale
-        versionName = "2.7.0"  // 🆕 v2.7.0 - folder support, Spanish locale
+        versionCode = 39  // 🆕 v2.7.1 - folder sync fixes, banner polish
+        versionName = "2.7.1"  // 🆕 v2.7.1 - folder sync fixes, banner polish
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
