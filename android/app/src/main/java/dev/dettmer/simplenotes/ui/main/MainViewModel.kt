@@ -1251,8 +1251,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             withContext(ioDispatcher) {
                 // Notizen löschen
                 notesToDelete.forEach { note -> storage.deleteNote(note.id) }
-                // Notizen nach Root verschieben
-                notesToRoot.forEach { note -> storage.moveNote(note.id, null) }
+                // Notizen nach Root verschieben + alten Server-Pfad für Löschung eintragen
+                notesToRoot.forEach { note ->
+                    storage.moveNote(note.id, null)
+                    if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
+                        pendingServerDeletions.add(
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, note.folderName))
+                        )
+                    }
+                }
                 // Ordner tombstonen
                 folderNames.forEach { name -> folderStore.deleteFolder(name) }
             }
@@ -1277,6 +1284,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
                     attemptServerDeletion(pendingDels)
                 }
+                // Ordner-Verzeichnisse vom Server löschen (Notizen bereits gelöscht)
+                if (folderNames.isNotEmpty() && hasServerConfig() && !isOfflineMode.value) {
+                    val service = WebDavSyncService(getApplication())
+                    folderNames.forEach { folderName ->
+                        try {
+                            withContext(ioDispatcher) { service.deleteServerFolderIfEmpty(folderName) }
+                        } catch (e: Exception) {
+                            Logger.w(TAG, "deleteServerFolderIfEmpty('$folderName') failed: ${e.message}")
+                        }
+                    }
+                }
+                triggerOnSaveSync()
             } else {
                 deleteIds.forEach { id -> finalizeDeletion(id) }
             }

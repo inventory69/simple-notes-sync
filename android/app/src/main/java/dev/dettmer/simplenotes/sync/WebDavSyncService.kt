@@ -643,6 +643,21 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         if (successIds.isNotEmpty()) {
                             pendingDeletions.remove(successIds)
                             Logger.d(TAG, "✅ Deleted ${successIds.size}/${pendingIds.size} pending notes from server")
+                            // Step 4.6: Clean up now-empty folder directories
+                            val processedFolderNames = pendingIds
+                                .filter { it.id in successIds && !it.folderName.isNullOrBlank() }
+                                .mapNotNull { it.folderName }
+                                .toSet()
+                            if (processedFolderNames.isNotEmpty()) {
+                                Logger.d(TAG, "📍 Step 4.6: Cleaning up empty folder directories (${processedFolderNames.size})")
+                                processedFolderNames.forEach { folderName ->
+                                    try {
+                                        deleteServerFolderIfEmpty(folderName)
+                                    } catch (e: Exception) {
+                                        Logger.w(TAG, "⚠️ Folder dir cleanup '$folderName' failed (non-fatal): ${e.message}")
+                                    }
+                                }
+                            }
                         }
                     } else {
                         Logger.d(TAG, "    ✅ No pending deletions")
@@ -1072,7 +1087,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             try {
                 val entries = (sardine as? SafeSardineWrapper)?.listOrNull(url) ?: sardine.list(url)
                 // depth=1 liefert das Verzeichnis selbst als ersten Eintrag → "leer" = nur Self.
-                val children = entries?.filter { !it.href.toString().trimEnd('/').endsWith(folderName) }
+                // Decoded-Pfad-Vergleich, damit Ordnernamen mit Sonderzeichen (z.B. "Test neu" →
+                // "Test%20neu" im href) korrekt als Self erkannt werden.
+                val dirPath = java.net.URI(url).path.trimEnd('/')
+                val children = entries?.filter { it.href.path.trimEnd('/') != dirPath }
                 if (children.isNullOrEmpty()) {
                     sardine.delete(url)
                     Logger.d(TAG, "🗑️ Deleted empty server folder: $url")
