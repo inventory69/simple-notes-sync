@@ -701,4 +701,11 @@
     <string name="confirm_convert_to_checklist">转换这个笔记为一个清单？每一行变成一个清单项目。带有勾选框符号 (- [ ] / - [x]) 的行保持它们的勾选状态。</string>
     <string name="confirm_convert_to_note">转换这个清单为一个笔记？每个项目变成文本中的一行，它的勾选状态保存完好。</string>
     <string name="action_convert">转换</string>
+    <string name="debug_sync_section">同步</string>
+    <string name="debug_clear_etag_cache_title">清理 E-Tag 缓存</string>
+    <string name="debug_clear_etag_cache_subtitle">移除已缓存的 E-Tags 和内容哈希。下一次同步与服务器完全地重新比较所有笔记。</string>
+    <string name="debug_clear_etag_cache_dialog_title">清理 E-Tag 缓存？</string>
+    <string name="debug_clear_etag_cache_dialog_message">移除所有笔记的已缓存的 E-Tags 和内容哈希。下一次同步与服务器完全地重新比较所有笔记。不更改笔记内容。</string>
+    <string name="debug_clear_etag_cache_confirm">清理</string>
+    <string name="debug_etag_cache_cleared">已清理 E-Tag 缓存。</string>
 </resources>
