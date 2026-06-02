@@ -69,6 +69,13 @@ data class SyncProgress(
             SyncPhase.IMPORTING_MARKDOWN
         )
 
+    /**
+     * Sichtbares Ergebnis-Banner (INFO / COMPLETED / ERROR) mit eigenem Auto-Hide-Timer.
+     * Stille Hintergrund-Syncs dürfen diesen Zustand nicht überschreiben oder löschen.
+     */
+    val isResultBanner: Boolean
+        get() = isVisible && !isActiveSync
+
     companion object {
         val IDLE = SyncProgress(phase = SyncPhase.IDLE)
     }

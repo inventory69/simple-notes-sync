@@ -105,11 +105,17 @@ object SyncStateManager {
             )
 
             // 🆕 v1.8.0: Sofort PREPARING-Phase setzen (Banner erscheint instant)
-            _syncProgress.value = SyncProgress(
-                phase = SyncPhase.PREPARING,
-                silent = silent,
-                startTime = System.currentTimeMillis()
-            )
+            // Ausnahme: Stiller Sync darf einen sichtbaren nicht-aktiven Banner (INFO, COMPLETED)
+            // nicht überschreiben — der Auto-Hide-Timer ist dafür zuständig.
+            val currentProgress = _syncProgress.value
+            val bannerOccupied = silent && currentProgress.isResultBanner
+            if (!bannerOccupied) {
+                _syncProgress.value = SyncProgress(
+                    phase = SyncPhase.PREPARING,
+                    silent = silent,
+                    startTime = System.currentTimeMillis()
+                )
+            }
 
             return true
         }
@@ -129,9 +135,13 @@ object SyncStateManager {
             Logger.d(TAG, "✅ Sync completed from: $currentSource (silent=$wasSilent)")
 
             if (wasSilent) {
-                // Silent-Sync: Direkt auf IDLE - kein Banner
+                // Silent-Sync: Direkt auf IDLE — aber nicht wenn ein sichtbarer nicht-aktiver
+                // Banner (z.B. INFO) läuft: der Auto-Hide-Timer kümmert sich darum.
                 _syncStatus.value = SyncStatus()
-                _syncProgress.value = SyncProgress.IDLE
+                val currentProgress = _syncProgress.value
+                if (!currentProgress.isResultBanner) {
+                    _syncProgress.value = SyncProgress.IDLE
+                }
             } else {
                 // Normaler Sync: COMPLETED mit Nachricht anzeigen
                 _syncStatus.value = SyncStatus(state = SyncState.COMPLETED, message = message, source = currentSource)
@@ -276,13 +286,14 @@ object SyncStateManager {
     fun updateProgress(phase: SyncPhase, current: Int = 0, total: Int = 0, currentFileName: String? = null) {
         synchronized(lock) {
             val existing = _syncProgress.value
+            if (_syncStatus.value.silent && existing.isResultBanner) return
             _syncProgress.value = SyncProgress(
                 phase = phase,
                 current = current,
                 total = total,
                 currentFileName = currentFileName,
-                silent = existing.silent,
-                startTime = existing.startTime
+                silent = _syncStatus.value.silent,
+                startTime = existing.startTime.takeIf { existing.isActiveSync } ?: System.currentTimeMillis()
             )
         }
     }
@@ -294,9 +305,11 @@ object SyncStateManager {
     fun incrementProgress(currentFileName: String? = null) {
         synchronized(lock) {
             val current = _syncProgress.value
+            if (_syncStatus.value.silent && current.isResultBanner) return
             _syncProgress.value = current.copy(
                 current = current.current + 1,
-                currentFileName = currentFileName
+                currentFileName = currentFileName,
+                silent = _syncStatus.value.silent
             )
         }
     }
@@ -306,10 +319,10 @@ object SyncStateManager {
      * Wird NICHT für COMPLETED/ERROR verwendet - nur für Cleanup
      */
     fun resetProgress() {
-        // Nicht zurücksetzen wenn COMPLETED/ERROR - die UI braucht den State noch für auto-hide
+        // Nicht zurücksetzen wenn COMPLETED/ERROR/INFO - die UI braucht den State noch für auto-hide
         synchronized(lock) {
             val current = _syncProgress.value
-            if (current.phase != SyncPhase.COMPLETED && current.phase != SyncPhase.ERROR) {
+            if (!current.isResultBanner) {
                 _syncProgress.value = SyncProgress.IDLE
             }
         }
