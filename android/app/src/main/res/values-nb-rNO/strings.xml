@@ -605,4 +605,36 @@
     <string name="confirm_convert_to_checklist">Konverter dette notatet til en sjekkliste? Hver linje blir et element i sjekklisten. Linjer med eksisterende sjekklistenotering (- [ ] / - [x]) beholder status på sjekkmerket.</string>
     <string name="confirm_convert_to_note">Konverter denne sjekklisten til et notat? Hver oppføring blir en linje med tekst med status på sjekkmerket beholdt.</string>
     <string name="action_convert">Konverter</string>
+    <string name="delete_folder_message">Hvordan vil du slette denne mappen?</string>
+    <string name="delete_folders_message">Hvordan vil du slette disse %1$d mappene?</string>
+    <string name="delete_selection_message">Hvordan vil du slette denne markeringen?</string>
+    <string name="debug_sync_section">Synk</string>
+    <string name="debug_clear_etag_cache_title">Tøm mellomlager for E-Tags</string>
+    <string name="debug_clear_etag_cache_subtitle">Fjerner mellomlagrede E-Tags og innholdssignaturer. Den neste synken vil sammenligne alle notater med tjener på nytt.</string>
+    <string name="debug_clear_etag_cache_dialog_title">Tøm mellomlager for E-Tags?</string>
+    <string name="debug_clear_etag_cache_dialog_message">Fjerner E-Tags og innholdssignaturer for alle notater. Den neste synken vil sammenligne alle notater med tjener på nytt. Notatinnhold blir ikke endret.</string>
+    <string name="debug_clear_etag_cache_confirm">Tøm</string>
+    <string name="debug_etag_cache_cleared">Mellomlager for E-Tags tømt.</string>
+    <string name="folder_rename_title">Gi mappe nytt navn</string>
+    <string name="folder_rename_action">Gi nytt navn</string>
+    <string name="action_rename_folder">Gi mappe nytt navn</string>
+    <string name="folder_delete_keep_notes">Behold notater (flytt til roten)</string>
+    <string name="folder_delete_selected_title">Slett markering</string>
+    <plurals name="snackbar_folders_deleted">
+        <item quantity="one">%1$d mappe slettet</item>
+        <item quantity="other">%1$d mapper slettet</item>
+    </plurals>
+    <string name="folder_section_header">Mapper</string>
+    <string name="folder_create_title">Ny mappe</string>
+    <string name="folder_create_hint">Mappenavn</string>
+    <string name="folder_create_action">Opprett</string>
+    <string name="folder_name_invalid">Ugyldig navn på mappe (ikke /, \\, : * ? \" &lt; &gt; |, maks 64 tegn)</string>
+    <string name="fab_create_folder">Ny mappe</string>
+    <string name="folder_move_title">Flytt til mappe</string>
+    <string name="folder_move_to_root">Rot (ingen mappe)</string>
+    <string name="folder_delete_confirm">Fjern mappe \"%1$s\"? Notatene forblir der de er.</string>
+    <string name="folder_delete_not_empty">Mappen \"%1$s\" inneholder fortsatt notater Den blir fjernet fra listen; notatene og tjenermappen forblir.</string>
+    <string name="cd_folder_card">Mappe %1$s</string>
+    <string name="action_move_to_folder">Flytt til mappe</string>
+    <string name="cd_more_options">Flere valg</string>
 </resources>
