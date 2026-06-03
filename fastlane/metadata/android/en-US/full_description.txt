@@ -1,46 +1,39 @@
-Simple Notes Sync – Private, offline-first notes with smart sync.
+Simple Notes Sync is a calm, private home for your notes and checklists. Everything lives on your device. When you want it everywhere, it syncs to your own server - no account, no cloud, no tracking. Ever.
 
-Write notes and checklists that stay on YOUR device. Sync to your own server when you want. No accounts, no ads, no data collection – ever.
+It stays out of your way: the whole app is under 5 MB, starts instantly, and works fully offline.
 
-Key Features:
-• Text notes and checklists (tap-to-check, drag & drop, sorting)
-• Undo/redo history in the note editor
-• Grid and list view (1–5 columns, configurable)
-• Homescreen widgets (quick-note for notes, interactive checklist)
-• Multi-device sync (phone, tablet, desktop)
-• WebDAV sync with your own server (Nextcloud, ownCloud, etc.)
-• Markdown export/import for desktop editors (such as Obsidian, VS Code)
-• WiFi-only sync, VPN support, parallel uploads & downloads (up to 5)
-• Configurable sync triggers: on save, on resume, WiFi connect, WiFi-only sync toggle, periodic (15/30/60 min), on boot
-• Fully usable offline – no internet required
+ORGANIZE
+• Text notes and checklists with tap-to-check and drag & drop
+• Colored folders to sort everything your way
+• Pin important notes to the top
+• Grid or list view, 1-5 columns
+• Sort by title, date, or type
 
-Privacy & Security:
-• Your data stays with you – no cloud, no tracking libraries
-• No account required – ever
-• Support for self-signed SSL certificates
-• Encrypted local backup & restore (JSON)
+YOUR SERVER, YOUR RULES
+• Sync with any WebDAV server (Nextcloud, ownCloud, and more)
+• Use it across phone, tablet, and desktop
+• Decide when it syncs: on save, on open, on Wi-Fi, periodically, or on boot
+• Wi-Fi-only sync, VPN support, parallel transfers, self-signed SSL
+• Live sync progress, smart conflict resolution, server-deletion detection
 
-Export & Sharing:
+COMING FROM ANOTHER APP?
+• Import your Google Keep archive (notes, checklists, labels)
+• Import and export Markdown for Obsidian, VS Code, Typora
+• Encrypted local backup & restore
+
+SHARE & EXPORT
 • Share notes as text or PDF
-• Export to calendar
-• Markdown export for desktop editors like Obsidian, VS Code, Typora
+• Export to your calendar
 
-Synchronization:
-• Parallel uploads and downloads (up to 5 simultaneous)
-• Live sync progress with phase indicators
-• Smart conflict resolution, server deletion detection
-• Post-update changelog dialog
-
-UI & Design:
-• Modern Jetpack Compose interface with animated theme transitions
-• Material Design 3, 7 color schemes (incl. AMOLED & Dynamic Color)
-• Note & checklist sorting (title, date, type, alphabetical)
+BEAUTIFUL & LIGHT
+• Modern Material 3 interface built with Jetpack Compose
+• 7 color schemes including AMOLED black and Dynamic Color
+• Home-screen widgets: quick note and interactive checklist
 • Battery-friendly background sync
 
-Multilingual:
-• Supports multiple languages with automatic detection
-• In-app language selector respects Android system preferences
-• Community translations via Weblate
+PRIVATE BY DESIGN
+• No account, no ads, no tracking libraries
+• Your data never touches our servers - because we don't have any
+• Open source (AGPL-3.0) and under 5 MB, on a modern, well-tested Kotlin codebase
 
-Open Source (AGPL-3.0) – source code available on GitHub:
-https://github.com/inventory69/simple-notes-sync
+Source code: https://github.com/inventory69/simple-notes-sync

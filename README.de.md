@@ -48,12 +48,12 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/1.png" width="250" alt="Sync status">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.png" width="250" alt="Edit note">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.png" width="250" alt="Edit checklist">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/4.png" width="250" alt="Settings">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/5.png" width="250" alt="Server settings">
-  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/7.png" width="250" alt="Sync settings">
+  <img src="docs/screenshots/de/1-overview.png" width="250" alt="Notizen-Übersicht">
+  <img src="docs/screenshots/de/2-editor.png" width="250" alt="Notiz-Editor">
+  <img src="docs/screenshots/de/3-checklist.png" width="250" alt="Checkliste">
+  <img src="docs/screenshots/de/4-sync.png" width="250" alt="Selbstgehostete Server-Einstellungen">
+  <img src="docs/screenshots/de/5-keep-import.png" width="250" alt="Google-Keep-Import">
+  <img src="docs/screenshots/de/6-themes.png" width="250" alt="Themes und AMOLED">
 </p>
 
 <div align="center">

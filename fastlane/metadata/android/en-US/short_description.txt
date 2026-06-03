@@ -1,1 +1,1 @@
-Offline notes & checklists with self-hosted WebDAV sync. No ads, no tracking.
+Offline notes & checklists, self-hosted sync. Under 5 MB, no ads, no tracking.

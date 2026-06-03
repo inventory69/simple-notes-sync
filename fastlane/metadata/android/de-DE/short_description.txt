@@ -1,1 +1,1 @@
-Offline-Notizen & Checklisten mit WebDAV-Sync. Kein Account, keine Werbung.
+Offline-Notizen & Checklisten, eigener Server. Unter 5 MB, kein Tracking.

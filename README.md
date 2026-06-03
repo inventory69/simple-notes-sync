@@ -52,12 +52,12 @@ alt="Get it on Google Play" align="center" height="80" style="margin: 0 -10px" /
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="250" alt="Sync status">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="250" alt="Edit note">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="250" alt="Edit checklist">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="250" alt="Settings">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="250" alt="Server settings">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="250" alt="Sync settings">
+  <img src="docs/screenshots/en/1-overview.png" width="250" alt="Notes overview">
+  <img src="docs/screenshots/en/2-editor.png" width="250" alt="Note editor">
+  <img src="docs/screenshots/en/3-checklist.png" width="250" alt="Checklist">
+  <img src="docs/screenshots/en/4-sync.png" width="250" alt="Self-hosted server settings">
+  <img src="docs/screenshots/en/5-keep-import.png" width="250" alt="Google Keep import">
+  <img src="docs/screenshots/en/6-themes.png" width="250" alt="Themes and AMOLED">
 </p>
 
 <div align="center">
