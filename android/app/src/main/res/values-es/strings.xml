@@ -209,4 +209,22 @@
     <string name="notifications_permission_settings_title">Notificaciones bloqueadas</string>
     <string name="notifications_permission_settings_message">El permiso de notificaciones fue negado permanentemente. Para habilitarlas, por favor conceda el permiso en los ajustes de la app.</string>
     <string name="notifications_permission_open_settings">Abrir ajustes</string>
+    <string name="sync_trigger_on_save_title">Después de guardar</string>
+    <string name="sync_trigger_on_save_subtitle">Sincronizar inmediatamente después de un cambio</string>
+    <string name="sync_trigger_on_resume_title">Al iniciar la app</string>
+    <string name="sync_trigger_on_resume_subtitle">Sincronizar cuando se abre la app</string>
+    <string name="sync_trigger_wifi_connect_title">Con conexión WiFi</string>
+    <string name="sync_trigger_wifi_connect_subtitle">Sincronizar cuando el WiFi está conectado</string>
+    <string name="sync_trigger_periodic_title">Automáticamente cada X minutos</string>
+    <string name="sync_trigger_periodic_subtitle">Sincronizar regularmente en segundo plano</string>
+    <string name="sync_trigger_boot_title">Después de reiniciar el dispositivo</string>
+    <string name="sync_trigger_boot_subtitle">Iniciar en segundo plano la sincronización después de reiniciar</string>
+    <string name="sync_wifi_only_title">Sincronizar solo con WiFi</string>
+    <string name="sync_wifi_only_subtitle">Sincronizar solo cuando el WiFi está conectado. Esto ahorra datos móviles y evita grandes tiempos de espera</string>
+    <string name="sync_manual_hint_disabled">La sincronización no esta disponible en modo sin conexión</string>
+    <string name="sync_offline_mode_message">Estás utilizando la app en modo sin conexión. Configura un servidor para sincronizar notas.</string>
+    <string name="sync_no_server_message">No hay un servidor configurado. Establece un servidor para sincronizar notas.</string>
+    <string name="sync_offline_mode_button">Configurar servidor</string>
+    <string name="markdown_export_complete">✅ Exportación completa</string>
+    <string name="markdown_export_progress">Exportando %1$d/%2$d notas…</string>
 </resources>
