@@ -28,6 +28,7 @@ internal data class DownloadResult(
     val downloadedCount: Int,
     val conflictCount: Int,
     val deletedOnServerCount: Int = 0,
+    val folderReconciledCount: Int = 0,
     val downloadFailed: Boolean = false,
     val downloadError: String? = null
 )
@@ -88,6 +89,7 @@ internal class NoteDownloader(
         var downloadedCount = 0
         var conflictCount = 0
         var skippedDeleted = 0 // Track skipped deleted notes
+        var folderReconciledCount = 0
         val processedIds = mutableSetOf<String>() // 🆕 v1.2.2: Track already loaded notes
 
         Logger.d(TAG, "📥 downloadAll() called:")
@@ -239,7 +241,8 @@ internal class NoteDownloader(
                     // PRIMARY: E-Tag check — erkennt Inhaltsänderungen zuverlässig
                     if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged)")
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged) [localStatus=${localNote?.syncStatus}]")
+                        if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
                         processedIds.add(noteId)
                         continue
                     }
@@ -253,7 +256,12 @@ internal class NoteDownloader(
                         serverModified <= lastSyncTime
                     if (noETagAndTimestampUnchanged) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)")
+                        Logger.d(
+                            TAG,
+                            "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)" +
+                                " [localStatus=${localNote?.syncStatus}]"
+                        )
+                        if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
                         processedIds.add(noteId)
                         continue
                     }
@@ -615,6 +623,7 @@ internal class NoteDownloader(
             downloadedCount = downloadedCount,
             conflictCount = conflictCount,
             deletedOnServerCount = deletedOnServerCount,
+            folderReconciledCount = folderReconciledCount,
             downloadFailed = downloadException != null,
             downloadError = downloadException?.message
         )
@@ -807,6 +816,52 @@ internal class NoteDownloader(
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to delete note from server: $noteId", e)
             false
+        }
+    }
+
+    /**
+     * Heilt eine übersprungene, lokal vorhandene Notiz, deren Server-File gerade
+     * verarbeitet wird (→ die Notiz ist nachweislich auf dem Server vorhanden), ohne
+     * Datei-Download:
+     *
+     * - DELETED_ON_SERVER: Die Notiz liegt in der aktuellen Server-Liste, wurde aber
+     *   lokal fälschlich als „gelöscht" markiert (z. B. durch einen v2.7.0-Ordner-Move-
+     *   Race auf E-Tag-losen Servern, der den Eintrag für einen Sync-Durchlauf aus der
+     *   PROPFIND-Liste fallen ließ; nichts setzt dieses Flag je zurück). Falsch-Flag
+     *   löschen: zurück auf SYNCED + autoritativen Server-Ordner übernehmen. Lokaler
+     *   Inhalt bleibt erhalten. Echt gelöschte Notizen sind NICHT in der Liste → ihr
+     *   File wird nie verarbeitet → dieser Zweig läuft für sie nie.
+     * - SYNCED: veraltetes folderName an den Server-Pfad angleichen.
+     * - PENDING / LOCAL_ONLY / CONFLICT: echter lokaler Zustand → unangetastet.
+     *
+     * @return true wenn auf Platte geschrieben wurde (→ UI muss neu laden).
+     */
+    private suspend fun reconcileSkippedNote(localNote: Note?, serverFolder: String?): Boolean {
+        if (localNote == null) return false
+        return when (localNote.syncStatus) {
+            SyncStatus.DELETED_ON_SERVER -> {
+                // updatedAt NICHT bumpen, Status nicht PENDING → kein Re-Upload, keine Schleife
+                storage.saveNote(
+                    localNote.copy(syncStatus = SyncStatus.SYNCED, folderName = serverFolder)
+                )
+                Logger.d(
+                    TAG,
+                    "   🔧 Cleared false DELETED_ON_SERVER for ${localNote.id}: " +
+                        "present in server listing → SYNCED, folder '$serverFolder'"
+                )
+                true
+            }
+            SyncStatus.SYNCED -> {
+                if (localNote.folderName == serverFolder) return false // kein unnötiger Write
+                storage.saveNote(localNote.copy(folderName = serverFolder))
+                Logger.d(
+                    TAG,
+                    "   📁 Reconciled folder for ${localNote.id}: " +
+                        "'${localNote.folderName}' → '$serverFolder'"
+                )
+                true
+            }
+            else -> false // PENDING / LOCAL_ONLY / CONFLICT → lokaler Zustand gewinnt
         }
     }
 

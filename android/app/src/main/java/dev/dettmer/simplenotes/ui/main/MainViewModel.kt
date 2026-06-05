@@ -1032,8 +1032,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
                     SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE
+                    // 🆕 v2.7.2: Ordner-Zuordnung wurde lokal geheilt → Notenliste neu laden
+                    if (result.foldersReconciled) loadNotes(forceReload = true)
                     // 🆕 v2.7.0 (Folders): Farbe leerer Ordner auch ohne Note-Sync ins UI laden
-                    if (result.foldersChanged) refreshFolders()
+                    if (result.foldersChanged || result.foldersReconciled) refreshFolders()
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
                     // Fehler werden IMMER angezeigt (auch bei Silent-Sync)

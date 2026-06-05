@@ -671,6 +671,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 Logger.d(TAG, "📍 Step 5: Downloading remote notes")
                 // Download remote notes
                 var deletedOnServerCount = 0 // 🆕 v1.8.0
+                var folderReconciledCount = 0 // 🆕 v2.7.2
                 try {
                     Logger.d(TAG, "⬇️ Downloading remote notes...")
                     val downloadResult = downloadRemoteNotes(
@@ -695,6 +696,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     syncedCount += downloadResult.downloadedCount
                     conflictCount += downloadResult.conflictCount
                     deletedOnServerCount = downloadResult.deletedOnServerCount // 🆕 v1.8.0
+                    folderReconciledCount = downloadResult.folderReconciledCount // 🆕 v2.7.2
                     Logger.d(
                         TAG,
                         "✅ Downloaded: ${downloadResult.downloadedCount} notes, " +
@@ -809,7 +811,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     syncedCount = effectiveSyncedCount,
                     conflictCount = conflictCount,
                     deletedOnServerCount = deletedOnServerCount, // 🆕 v1.8.0
-                    foldersChanged = foldersChanged // 🆕 v2.7.0 (Folders)
+                    foldersChanged = foldersChanged, // 🆕 v2.7.0 (Folders)
+                    foldersReconciled = folderReconciledCount > 0 // 🆕 v2.7.2
                 )
             } catch (e: Exception) {
                 Logger.e(TAG, "═══════════════════════════════════════")
