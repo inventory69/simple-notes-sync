@@ -708,4 +708,28 @@
     <string name="debug_clear_etag_cache_dialog_message">移除所有笔记的已缓存的 E-Tags 和内容哈希。下一次同步与服务器完全地重新比较所有笔记。不更改笔记内容。</string>
     <string name="debug_clear_etag_cache_confirm">清理</string>
     <string name="debug_etag_cache_cleared">已清理 E-Tag 缓存。</string>
+    <string name="delete_folder_message">你想怎样删除这个文件夹？</string>
+    <string name="delete_folders_message">你想怎样删除这些 %1$d 个文件夹？</string>
+    <string name="delete_selection_message">你想怎样删除这个选择？</string>
+    <string name="folder_rename_title">重命名文件夹</string>
+    <string name="folder_rename_action">重命名</string>
+    <string name="action_rename_folder">重命名文件夹</string>
+    <string name="folder_delete_keep_notes">保留笔记（移到根目录）</string>
+    <string name="folder_delete_selected_title">删除选择</string>
+    <plurals name="snackbar_folders_deleted">
+        <item quantity="other">已删除 %1$d 个文件夹</item>
+    </plurals>
+    <string name="folder_section_header">文件夹</string>
+    <string name="folder_create_title">新文件夹</string>
+    <string name="folder_create_hint">文件夹名字</string>
+    <string name="folder_create_action">创建</string>
+    <string name="folder_name_invalid">无效的文件夹名字（无 /, \\, : * ? \" &lt; &gt; |，最多64字符）</string>
+    <string name="fab_create_folder">新文件夹</string>
+    <string name="folder_move_title">移动到文件夹</string>
+    <string name="folder_move_to_root">根（无文件夹）</string>
+    <string name="folder_delete_confirm">移除文件夹 \"%1$s\"？笔记留在原位。</string>
+    <string name="folder_delete_not_empty">文件夹 \"%1$s\" 仍包含笔记。它会从列表中删除；笔记和服务器文件夹保留。</string>
+    <string name="cd_folder_card">文件夹 %1$s</string>
+    <string name="action_move_to_folder">移动到文件夹</string>
+    <string name="cd_more_options">更多选项</string>
 </resources>
