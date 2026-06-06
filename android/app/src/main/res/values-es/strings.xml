@@ -415,7 +415,7 @@
     <string name="notification_sync_in_progress_title">Sincronización en proceso</string>
     <string name="notification_sync_in_progress_message">Las notas se están sincronizando…</string>
     <string name="notification_sync_error_title">Error de sincronización</string>
-    <string name="keep_import_snackbar_done">Importación realizada: %1$s nuevas, %2$d saltadas</string>
+    <string name="keep_import_snackbar_done">Importación realizada: %1$d nuevas, %2$d saltadas</string>
     <string name="keep_import_snackbar_cancelled">Importación cancelada</string>
     <string name="keep_import_snackbar_error">La importación falló</string>
     <string name="keep_import_snackbar_retry_action">Reintentar</string>
