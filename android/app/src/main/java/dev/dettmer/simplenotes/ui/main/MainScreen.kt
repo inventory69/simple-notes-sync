@@ -21,8 +21,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -99,6 +99,15 @@ private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
 
 /** 🆕 v1.9.0 (F13): Delay before scrolling to top after manual sync, giving Compose time to recompose with new data. */
 private const val SYNC_SCROLL_DELAY_MS = 150L
+
+/**
+ * Grid-Top-Settle-Guard: LazyVerticalStaggeredGrid scrollt beim ersten Laden mit FullLine-Items
+ * (Pinned-Header/-Body) spontan ein Item nach unten, wodurch der "Angeheftet"-Header oben aus dem
+ * Viewport rutscht. Direkt nach dem ersten Erscheinen des Inhalts halten wir das Grid für ein
+ * kurzes Fenster auf Index 0, bis sich das Layout gesetzt hat.
+ */
+private const val GRID_TOP_SETTLE_FRAMES = 20
+private const val GRID_TOP_SETTLE_INTERVAL_MS = 30L
 
 /** 🆕 v2.7.0 (Folders): Dauer/Versatz der Ordner-Navigations-Animation (analog shared_axis_x, 200 ms). */
 private const val FOLDER_ANIM_DURATION_MS = 200
@@ -755,11 +764,32 @@ private fun NotesPane(
     onToggleSelection: (String) -> Unit,
     focusManager: FocusManager
 ) {
-    val listState = rememberLazyListState()
-    val gridState = rememberLazyStaggeredGridState()
+    // Scroll-State bewusst NICHT saveable (kein rememberSaveable): Position bleibt innerhalb
+    // der lebenden Komposition erhalten (Notiz öffnen & zurück, Background→Foreground, da der
+    // Editor eine eigene Activity ist und MainActivity nur gestoppt, nicht zerstört wird),
+    // wird aber NICHT in den savedInstanceState-Bundle geschrieben. Dadurch startet ein
+    // Kaltstart (Prozess-Tod) immer ganz oben mit sichtbarem "Angeheftet"-Header.
+    val listState = remember(folderKey) { LazyListState() }
+    val gridState = remember(folderKey) { LazyStaggeredGridState() }
     val foldersForPane = if (folderKey == null) folders else emptyList() // Ordner nur in der Root-Ansicht
     // 🆕 v2.7.0 (Folders): Notizen dieses Slots — eigener folderKey, nicht der gerade aktive Ordner.
     val paneNotes = remember(notes, folderKey) { notes.filter { it.folderName == folderKey } }
+
+    // Grid-Top-Settle-Guard: das Staggered-Grid scrollt beim ersten Laden spontan ein Item
+    // nach unten (Foundation-Quirk mit FullLine-Items) → Pinned-Header verschwindet. Direkt
+    // nach Erscheinen des Inhalts kurz auf Index 0 halten, bis das Layout sich gesetzt hat.
+    // Läuft nur einmal pro Komposition (Key = folderKey + "hat Inhalt"), stört spätere
+    // In-Session-Scrollposition nicht.
+    LaunchedEffect(folderKey, paneNotes.isEmpty()) {
+        if (isActive && displayMode == "grid" && paneNotes.isNotEmpty()) {
+            repeat(GRID_TOP_SETTLE_FRAMES) {
+                if (gridState.firstVisibleItemIndex != 0 || gridState.firstVisibleItemScrollOffset != 0) {
+                    gridState.scrollToItem(0)
+                }
+                kotlinx.coroutines.delay(GRID_TOP_SETTLE_INTERVAL_MS)
+            }
+        }
+    }
 
     LaunchedEffect(scrollToTop) {
         if (isActive && scrollToTop) {
