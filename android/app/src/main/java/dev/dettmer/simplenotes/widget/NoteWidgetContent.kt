@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
@@ -336,6 +337,7 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
                 if (isLocked) R.drawable.ic_lock_open else R.drawable.ic_lock
             ),
             contentDescription = if (isLocked) "Unlock" else "Lock",
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
             modifier = GlanceModifier
                 .size(36.dp)
                 .padding(6.dp)
@@ -354,6 +356,7 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
         Image(
             provider = ImageProvider(R.drawable.ic_refresh),
             contentDescription = "Refresh",
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
             modifier = GlanceModifier
                 .size(36.dp)
                 .padding(6.dp)
@@ -372,6 +375,7 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
         Image(
             provider = ImageProvider(R.drawable.ic_settings),
             contentDescription = "Settings",
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
             modifier = GlanceModifier
                 .size(36.dp)
                 .padding(6.dp)
@@ -390,6 +394,7 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
         Image(
             provider = ImageProvider(R.drawable.ic_open_in_new),
             contentDescription = "Open",
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
             modifier = GlanceModifier
                 .size(36.dp)
                 .padding(6.dp)
