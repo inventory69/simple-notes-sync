@@ -228,8 +228,8 @@
     <string name="markdown_export_complete">✅ Exportación completa</string>
     <string name="markdown_export_progress">Exportando %1$d/%2$d notas…</string>
     <string name="settings_sync_triggers_active">%d activadores activos</string>
-    <string name="settings_debug_logging_on">Logging: On</string>
-    <string name="settings_debug_logging_off">Logging: Off</string>
+    <string name="settings_debug_logging_on">Registrando: Activado</string>
+    <string name="settings_debug_logging_off">Registrando: Desactivado</string>
     <string name="server_timeout_label">Tiempo de espera de conexión agotado: %d segundos</string>
     <string name="server_status_offline_mode">📴 Modo sin conexión activado</string>
     <string name="server_offline_mode_title">📴 Modo sin conexión</string>
@@ -240,7 +240,7 @@
     <string name="markdown_settings_title">Integración con Markdown Desktop</string>
     <string name="markdown_dialog_title">Sincronización automática de Markdown</string>
     <string name="markdown_checking_server">Comprobando conexión con el servidor…</string>
-    <string name="markdown_info">📝 Exporta notas de forma adicional como archivos .md. Monta WebDAV como una unidad de red para editar desde VS Code, Typora entre otros editores de Markdown. La sincronización JSON aun sigue siendo el formato principal.</string>
+    <string name="markdown_info">📝 Exporta notas de forma adicional como archivos .md. Monta WebDAV como una unidad de red para editar desde VS Code, Typora entre otros editores de Markdown. La sincronización por JSON aun es el formato principal.</string>
     <string name="markdown_auto_sync_title">Sincronización autómatica de Markdown</string>
     <string name="markdown_auto_sync_subtitle">Sincroniza automáticamente las notas como un archivo .md (subir + descargar en cada sincronización)</string>
     <string name="markdown_manual_sync_info">La sincronización manual exporta todas las notas como archivos .md y importa del servidor archivos .md. Útil para sincronizar una sola vez.</string>
@@ -412,7 +412,7 @@
         <item quantity="other">%d notas tienen conflictos</item>
     </plurals>
     <string name="notification_sync_warning_title">⚠️ Aviso de sincronización</string>
-    <string name="notification_sync_in_progress_title">Sincronización en proceso</string>
+    <string name="notification_sync_in_progress_title">Sincronización en progreso</string>
     <string name="notification_sync_in_progress_message">Las notas se están sincronizando…</string>
     <string name="notification_sync_error_title">Error de sincronización</string>
     <string name="keep_import_snackbar_done">Importación realizada: %1$d nuevas, %2$d saltadas</string>
