@@ -8,6 +8,28 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.7.2] - 2026-06-07
+
+### 🐛 Bug-Fixes
+
+**Sync: Ordner & falsches Gelöscht-Flag auf no-ETag-Servern repariert** ([1d3a5a1](https://github.com/inventory69/simple-notes-sync/commit/1d3a5a1))
+- Auf WebDAV-Servern ohne ETags konnten übersprungene Notizen dauerhaft einen veralteten `folderName` oder ein falsches `DELETED_ON_SERVER`-Flag behalten; beide Fälle werden jetzt beim Überspringen korrigiert – ohne Re-Upload-Loop
+
+**UI: Notizliste startet nach Kaltstart wieder oben** ([a9d4533](https://github.com/inventory69/simple-notes-sync/commit/a9d4533))
+- Das Staggered-Grid scrollte beim initialen Laden automatisch von Index 0 weg (Compose-Foundation-Quirk) und versteckte den „Angeheftete"-Abschnittskopf; ein Top-Settle-Guard hält die Liste nun oben, bis das Layout stabil ist
+
+**Widget: OptionsBar-Icons im hellen Modus sichtbar** ([c448a43](https://github.com/inventory69/simple-notes-sync/commit/c448a43))
+- Widget-OptionsBar-Icons (Sperren, Aktualisieren, Einstellungen, In-App-Öffnen) hatten eine hartcodierte weiße Füllfarbe und waren auf hellen Hintergründen unsichtbar; sie passen sich jetzt über `ColorFilter.tint(onSurface)` dem System-Theme an
+
+### 🌍 Übersetzungen
+
+- **Spanisch**: weiter ausgebaut — Francisco Isaac Ordoñez Pedrero
+- **Indonesisch**: aktualisiert — Arif Budiman
+- **Vereinfachtes Chinesisch**: aktualisiert — heretic43
+- **Norwegisch Bokmål**: aktualisiert — xdpirate
+
+---
+
 ## [2.7.1] - 2026-06-02
 
 ### 🐛 Bug-Fixes

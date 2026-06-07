@@ -1,0 +1,10 @@
+🔧 v2.7.2 - Sync & UI Fixes
+
+• Fix: Folder & deleted-flag heal on no-ETag WebDAV servers
+• Fix: Notes list stays at top on cold start (Pinned header visible)
+• Fix: Widget icons now visible in light mode
+• Updated translations: Spanish, Indonesian, Chinese, Norwegian
+
+Thanks to Francisco Isaac Ordoñez Pedrero, Arif Budiman, heretic43, xdpirate!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

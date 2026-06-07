@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.7.2] - 2026-06-07
+
+### 🐛 Bug Fixes
+
+**Sync: Folder & Deleted-Flag Heal on no-ETag WebDAV Servers** ([1d3a5a1](https://github.com/inventory69/simple-notes-sync/commit/1d3a5a1))
+- On WebDAV servers that never return ETags, skipped notes could keep a stale `folderName` or a false `DELETED_ON_SERVER` flag indefinitely; both cases are now healed on each skip without triggering a re-upload loop
+
+**UI: Notes List Stays at Top on Cold Start** ([a9d4533](https://github.com/inventory69/simple-notes-sync/commit/a9d4533))
+- The staggered grid auto-scrolled away from index 0 on initial load (Compose Foundation quirk), hiding the "Pinned" section header; a top-settle guard now holds the list at the top until the layout stabilises
+
+**Widget: OptionsBar Icons Visible in Light Mode** ([c448a43](https://github.com/inventory69/simple-notes-sync/commit/c448a43))
+- Widget OptionsBar icons (lock, refresh, settings, open-in-app) had a hardcoded white fill and were invisible on light backgrounds; they now adapt to the system theme via `ColorFilter.tint(onSurface)`
+
+### 🌍 Translations
+
+- **Spanish**: continued expansion — Francisco Isaac Ordoñez Pedrero
+- **Indonesian**: updated — Arif Budiman
+- **Simplified Chinese**: updated — heretic43
+- **Norwegian Bokmål**: updated — xdpirate
+
+---
+
 ## [2.7.1] - 2026-06-02
 
 ### 🐛 Bug Fixes

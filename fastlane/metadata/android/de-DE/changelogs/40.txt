@@ -1,0 +1,10 @@
+🔧 v2.7.2 - Sync & UI Fixes
+
+• Fix: Ordner & falsches Gelöscht-Flag auf no-ETag-Servern korrigiert
+• Fix: Notizliste startet wieder oben (Angeheftete-Header sichtbar)
+• Fix: Widget-Icons nun im hellen Modus sichtbar
+• Übersetzungsupdate: Spanisch, Indonesisch, Chinesisch, Norwegisch
+
+Danke an Francisco Isaac Ordoñez Pedrero, Arif Budiman, heretic43, xdpirate!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md
