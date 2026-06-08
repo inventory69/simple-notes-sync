@@ -242,6 +242,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val keyboardController = LocalSoftwareKeyboardController.current
     val titleFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
+    var isTitleFocused by remember { mutableStateOf(false) }
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
@@ -637,7 +638,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 onValueChange = { viewModel.updateTitle(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(titleFocusRequester),
+                    .focusRequester(titleFocusRequester)
+                    .onFocusChanged { isTitleFocused = it.isFocused },
                 label = { Text(stringResource(R.string.title)) },
                 singleLine = true, // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
                 // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
@@ -700,10 +702,11 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 .weight(1f)
                         )
 
-                        // 🆕 v1.9.0 (F07): Markdown formatting toolbar below content
-                        MarkdownToolbar(
-                            textFieldState = textFieldState
-                        )
+                        if (!isTitleFocused) {
+                            MarkdownToolbar(
+                                textFieldState = textFieldState
+                            )
+                        }
                     }
                 }
 
