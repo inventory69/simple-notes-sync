@@ -1,0 +1,182 @@
+package dev.dettmer.simplenotes.markdown
+
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldBuffer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.sp
+
+private val headingSize1 = 24.sp
+private val headingSize2 = 20.sp
+private val headingSize3 = 18.sp
+
+private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
+private val mdTaskRegex = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
+private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
+
+class MarkdownOutputTransformation(
+    private val linkColor: Color,
+    private val codeBackground: Color,
+    private val codeColor: Color,
+    private val markerColor: Color,
+) : OutputTransformation {
+
+    override fun TextFieldBuffer.transformOutput() {
+        val text = toString()
+        val len = text.length
+        val codeRanges = findCodeBlockRanges(text)
+        val styles = mutableListOf<StyleSpan>()
+        collectLineStyles(text, codeRanges, styles)
+        collectInlineStyles(text, codeRanges, styles)
+        for (s in styles) {
+            val start = s.start.coerceIn(0, len)
+            val end = s.end.coerceIn(start, len)
+            if (end > start) addStyle(s.style, start, end)
+        }
+    }
+
+    private fun collectLineStyles(
+        text: String,
+        codeRanges: List<IntRange>,
+        styles: MutableList<StyleSpan>,
+    ) {
+        var lineStart = 0
+        for (line in text.split('\n')) {
+            if (codeRanges.none { lineStart in it }) {
+                lineStyles(line, lineStart, styles)
+            }
+            lineStart += line.length + 1
+        }
+    }
+
+    private fun lineStyles(
+        line: String,
+        lineStart: Int,
+        styles: MutableList<StyleSpan>,
+    ) {
+        val headingMatch = mdHeadingRegex.matchEntire(line)
+        val taskMatch = mdTaskRegex.matchEntire(line)
+        val marker = SpanStyle(color = markerColor)
+        when {
+            headingMatch != null -> {
+                val level = headingMatch.groupValues[1].length.coerceAtMost(3)
+                val prefixLen = level + 1
+                val fontSize = when (level) { 1 -> headingSize1; 2 -> headingSize2; else -> headingSize3 }
+                styles += StyleSpan(lineStart, lineStart + prefixLen, marker)
+                styles += StyleSpan(
+                    lineStart + prefixLen,
+                    lineStart + line.length,
+                    SpanStyle(fontWeight = FontWeight.Bold, fontSize = fontSize),
+                )
+            }
+            taskMatch != null -> {
+                val isChecked = taskMatch.groupValues[1].lowercase() == "x"
+                val taskText = taskMatch.groupValues[2]
+                val prefixLen = line.length - taskText.length
+                styles += StyleSpan(lineStart, lineStart + prefixLen, marker)
+                if (isChecked) {
+                    styles += StyleSpan(
+                        lineStart + prefixLen,
+                        lineStart + line.length,
+                        SpanStyle(textDecoration = TextDecoration.LineThrough, color = markerColor),
+                    )
+                }
+            }
+            mdListRegex.matchEntire(line) != null -> {
+                val bulletIdx = line.indexOfFirst { it == '-' || it == '*' || it == '+' }
+                if (bulletIdx >= 0) {
+                    styles += StyleSpan(lineStart + bulletIdx, lineStart + bulletIdx + 1, marker)
+                }
+            }
+        }
+    }
+
+    private fun collectInlineStyles(
+        text: String,
+        codeRanges: List<IntRange>,
+        styles: MutableList<StyleSpan>,
+    ) {
+        for (pattern in InlinePattern.entries) {
+            for (match in pattern.regex.findAll(text)) {
+                if (codeRanges.any { match.range.first in it }) continue
+                inlineStyles(pattern, match, styles)
+            }
+        }
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun inlineStyles(
+        pattern: InlinePattern,
+        match: MatchResult,
+        styles: MutableList<StyleSpan>,
+    ) {
+        val start = match.range.first
+        val end = match.range.last + 1
+        val marker = SpanStyle(color = markerColor)
+        when (pattern) {
+            InlinePattern.BOLD_ASTERISK, InlinePattern.BOLD_UNDERSCORE -> {
+                styles += StyleSpan(start, start + 2, marker)
+                styles += StyleSpan(start + 2, end - 2, SpanStyle(fontWeight = FontWeight.Bold))
+                styles += StyleSpan(end - 2, end, marker)
+            }
+            InlinePattern.ITALIC_ASTERISK, InlinePattern.ITALIC_UNDERSCORE -> {
+                styles += StyleSpan(start, start + 1, marker)
+                styles += StyleSpan(start + 1, end - 1, SpanStyle(fontStyle = FontStyle.Italic))
+                styles += StyleSpan(end - 1, end, marker)
+            }
+            InlinePattern.STRIKETHROUGH -> {
+                styles += StyleSpan(start, start + 2, marker)
+                styles += StyleSpan(start + 2, end - 2, SpanStyle(textDecoration = TextDecoration.LineThrough))
+                styles += StyleSpan(end - 2, end, marker)
+            }
+            InlinePattern.INLINE_CODE -> {
+                styles += StyleSpan(start, start + 1, marker)
+                styles += StyleSpan(
+                    start + 1,
+                    end - 1,
+                    SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor),
+                )
+                styles += StyleSpan(end - 1, end, marker)
+            }
+            InlinePattern.LINK -> {
+                val textEnd = start + 1 + match.groupValues[1].length
+                styles += StyleSpan(start, start + 1, marker)
+                styles += StyleSpan(
+                    start + 1,
+                    textEnd,
+                    SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
+                )
+                styles += StyleSpan(textEnd, end, marker)
+            }
+            InlinePattern.AUTO_URL -> {
+                styles += StyleSpan(start, end, SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
+            }
+        }
+    }
+}
+
+internal fun findCodeBlockRanges(text: String): List<IntRange> {
+    val ranges = mutableListOf<IntRange>()
+    var charOffset = 0
+    var inBlock = false
+    var blockStart = 0
+    for (line in text.split('\n')) {
+        if (line.trimStart().startsWith("```")) {
+            if (!inBlock) {
+                blockStart = charOffset
+                inBlock = true
+            } else {
+                ranges.add(blockStart..charOffset + line.length)
+                inBlock = false
+            }
+        }
+        charOffset += line.length + 1
+    }
+    return ranges
+}
+
+private data class StyleSpan(val start: Int, val end: Int, val style: SpanStyle)

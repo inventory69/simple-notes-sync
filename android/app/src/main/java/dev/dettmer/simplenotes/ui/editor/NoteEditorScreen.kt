@@ -91,6 +91,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,6 +104,7 @@ import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
@@ -147,6 +153,7 @@ private const val CHECK_ANIMATION_TOTAL_MS = 500L
 // Geräten, kurz genug, dass User es nicht wahrnehmen.
 private const val INITIAL_LAYOUT_SETTLE_TIMEOUT_MS = 250L
 private val DRAGGING_ELEVATION_DP = 8.dp
+private const val CHECKBOX_TAP_PREFIX_COLS = 5
 
 /**
  * Main Composable for the Note Editor screen.
@@ -663,6 +670,13 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
             when (uiState.noteType) {
                 NoteType.TEXT -> {
+                    val linkColor = MaterialTheme.colorScheme.primary
+                    val codeBackground = MaterialTheme.colorScheme.surfaceVariant
+                    val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    val markerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    val markdownTransformation = remember(linkColor, codeBackground, codeColor, markerColor) {
+                        MarkdownOutputTransformation(linkColor, codeBackground, codeColor, markerColor)
+                    }
                     if (isPreviewMode) {
                         // 🆕 v1.9.0 (F07): Markdown rendered preview
                         val blocks = remember(uiState.content) {
@@ -680,6 +694,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                             textFieldState = textFieldState,
                             onContentChange = { viewModel.updateContent(it) },
                             focusRequester = contentFocusRequester,
+                            outputTransformation = markdownTransformation,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f)
@@ -844,6 +859,7 @@ private fun TextNoteContent(
     textFieldState: TextFieldState,
     onContentChange: (String) -> Unit,
     focusRequester: FocusRequester,
+    outputTransformation: MarkdownOutputTransformation,
     modifier: Modifier = Modifier
 ) {
     // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
@@ -852,6 +868,29 @@ private fun TextNoteContent(
 
     // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
     var isFocused by remember { mutableStateOf(false) }
+
+    // Layout-Result für Tap-to-Toggle (Task-Checkboxes)
+    val textLayoutRef = remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    fun handleCheckboxTap(event: PointerEvent) {
+        if (event.type != PointerEventType.Press) return
+        val tapPos = event.changes.firstOrNull()?.position ?: return
+        val layout = textLayoutRef.value ?: return
+        val charOff = layout.getOffsetForPosition(tapPos)
+        val rawText = textFieldState.text.toString()
+        val lineStartOff = rawText.lastIndexOf('\n', (charOff - 1).coerceAtLeast(0))
+            .let { if (it < 0) 0 else it + 1 }
+        if (charOff - lineStartOff > CHECKBOX_TAP_PREFIX_COLS) return
+        val lineEndOff = rawText.indexOf('\n', lineStartOff).let { if (it < 0) rawText.length else it }
+        val rawLine = rawText.substring(lineStartOff, lineEndOff)
+        val isChecked = rawLine.startsWith("- [x] ", ignoreCase = true)
+        val isUnchecked = rawLine.startsWith("- [ ] ")
+        if (!isChecked && !isUnchecked) return
+        textFieldState.edit {
+            val idx = lineStartOff + 3
+            replace(idx, idx + 1, if (isChecked) " " else "x")
+        }
+    }
 
     // Text-Änderungen an ViewModel propagieren
     LaunchedEffect(textFieldState) {
@@ -878,6 +917,13 @@ private fun TextNoteContent(
             .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
+            }
+            .pointerInput(textFieldState) {
+                awaitPointerEventScope {
+                    while (true) {
+                        handleCheckboxTap(awaitPointerEvent(PointerEventPass.Initial))
+                    }
+                }
             },
         label = { Text(stringResource(R.string.content)) },
         // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
@@ -886,7 +932,9 @@ private fun TextNoteContent(
         ),
         shape = RoundedCornerShape(16.dp),
         // 🆕 v1.8.2 (IMPL_07): Externer ScrollState für programmatisches Auto-Scroll
-        scrollState = scrollState
+        scrollState = scrollState,
+        outputTransformation = outputTransformation,
+        onTextLayout = { getResult -> textLayoutRef.value = getResult() },
     )
 }
 
