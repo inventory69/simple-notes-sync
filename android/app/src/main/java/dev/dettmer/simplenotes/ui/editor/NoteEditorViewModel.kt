@@ -500,7 +500,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         } ?: _uiState.value.content
                         val rawItems = parseContentAsChecklistItems(latestContent)
                         val items = if (rawItems.isEmpty()) listOf(ChecklistItemState.createEmpty(0)) else rawItems
-                        _checklistItems.value = items
+                        _checklistItems.value = sortChecklistItems(items)
                         currentNoteType = NoteType.CHECKLIST
                         val newTitle = if (isNew) ToolbarTitle.NEW_CHECKLIST else ToolbarTitle.EDIT_CHECKLIST
                         _uiState.update { it.copy(noteType = NoteType.CHECKLIST, content = "", toolbarTitle = newTitle) }
