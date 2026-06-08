@@ -476,6 +476,8 @@
     <string name="autosave_toggle">Autosave</string>
     <string name="autosave_description">Saves after 3 s of inactivity and when leaving the editor</string>
     <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
+    <string name="editor_default_preview_mode_toggle">Open in preview mode</string>
+    <string name="editor_default_preview_mode_description">Text notes open in read mode by default. Disable to start in edit mode.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
     <string name="theme_mode_system">System (follow device)</string>

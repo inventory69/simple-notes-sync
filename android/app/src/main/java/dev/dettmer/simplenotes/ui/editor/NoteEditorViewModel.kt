@@ -60,7 +60,14 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     // State
     // ═══════════════════════════════════════════════════════════════════════
 
-    private val _uiState = MutableStateFlow(NoteEditorUiState())
+    private val _uiState = MutableStateFlow(
+        NoteEditorUiState(
+            defaultStartInPreviewMode = prefs.getBoolean(
+                Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE,
+                Constants.DEFAULT_START_IN_PREVIEW_MODE
+            )
+        )
+    )
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
 
     private val _checklistItems = MutableStateFlow<List<ChecklistItemState>>(emptyList())
@@ -1528,6 +1535,7 @@ data class NoteEditorUiState(
     val isLoading: Boolean = false,
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
+    val defaultStartInPreviewMode: Boolean = true, // 🆕 v2.8.0: user preference for open mode
 )
 
 data class ChecklistItemState(

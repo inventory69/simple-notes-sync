@@ -179,12 +179,19 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     // 🆕 v2.0.1: Markdown Preview default for existing TEXT notes
-    // New notes start in edit mode (user wants to type immediately),
-    // existing TEXT notes start in preview mode (read-first workflow).
-    // key() forces recomputation after async load changes isNewNote/noteType.
-    var isPreviewMode by remember(uiState.isNewNote) {
+    // v2.8.0: savedPreviewMode persists across TEXT↔CHECKLIST type changes so Undo
+    // can restore the exact mode the user was in before the conversion — not just the
+    // global default. Initialized from the user preference so first open is correct.
+    var savedPreviewMode by remember { mutableStateOf(uiState.defaultStartInPreviewMode) }
+    // Both isNewNote and noteType are keys so the value is recomputed synchronously
+    // (in the same frame) whenever the type changes — avoids a one-frame flash.
+    var isPreviewMode by remember(uiState.isNewNote, uiState.noteType) {
         mutableStateOf(
-            !uiState.isNewNote && uiState.noteType == NoteType.TEXT
+            when {
+                uiState.isNewNote -> false
+                uiState.noteType == NoteType.CHECKLIST -> false
+                else -> savedPreviewMode // TEXT: restore saved value (covers Undo)
+            }
         )
     }
     var showChecklistSortDialog by remember { mutableStateOf(false) } // 🔀 v1.8.0
@@ -252,15 +259,14 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         }
     }
 
-    // 🆕 v1.9.0 (F07): Reset preview mode if note type changes to CHECKLIST
-    LaunchedEffect(uiState.noteType) {
-        if (uiState.noteType == NoteType.CHECKLIST) {
-            isPreviewMode = false
-        }
-    }
-
     // 🆕 v1.9.0 (F07): Auto-show keyboard when switching from preview → edit
+    // v2.8.0: Also keeps savedPreviewMode in sync with isPreviewMode while in TEXT mode.
+    // Guard !isNewNote prevents overwriting savedPreviewMode during the initial composition
+    // (when isPreviewMode is false because the note hasn't loaded yet).
     LaunchedEffect(isPreviewMode) {
+        if (uiState.noteType == NoteType.TEXT && !uiState.isNewNote) {
+            savedPreviewMode = isPreviewMode
+        }
         if (!isPreviewMode && uiState.noteType == NoteType.TEXT && !uiState.isNewNote) {
             delay(LAYOUT_DELAY_MS)
             contentFocusRequester.requestFocus()
@@ -270,6 +276,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
     // v1.5.0: Auto-focus and show keyboard
     // v2.0.1: Skip auto-focus for existing TEXT notes (they start in preview mode)
+    // v2.8.0: Show keyboard when existing TEXT note loads directly in edit mode (user preference)
     LaunchedEffect(uiState.isNewNote) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
@@ -278,8 +285,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 titleFocusRequester.requestFocus()
                 keyboardController?.show()
             }
-            // v2.0.1: Existing TEXT notes start in preview mode — keyboard opens
-            // when user switches to edit via the LaunchedEffect(isPreviewMode) above
+            !isPreviewMode && uiState.noteType == NoteType.TEXT -> {
+                // Existing note opened in edit mode via user preference — isPreviewMode stays
+                // false (no state change), so LaunchedEffect(isPreviewMode) never fires here.
+                contentFocusRequester.requestFocus()
+                keyboardController?.show()
+            }
         }
     }
 
@@ -318,7 +329,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
                     }
                 }
-                is NoteEditorEvent.ActivatePreviewMode -> { isPreviewMode = true }
+                is NoteEditorEvent.ActivatePreviewMode -> { isPreviewMode = uiState.defaultStartInPreviewMode }
             }
         }
     }

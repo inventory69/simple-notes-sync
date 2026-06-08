@@ -328,6 +328,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val autosaveEnabled: StateFlow<Boolean> = _autosaveEnabled.asStateFlow()
 
+    // 🆕 v2.8.0: Default open mode for existing text notes
+    private val _defaultStartInPreviewMode = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE, Constants.DEFAULT_START_IN_PREVIEW_MODE)
+    )
+    val defaultStartInPreviewMode: StateFlow<Boolean> = _defaultStartInPreviewMode.asStateFlow()
+
     // 🆕 v1.10.0: Configurable connection timeout
     private val _connectionTimeoutSeconds = MutableStateFlow(
         prefs.getInt(
@@ -462,6 +468,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAutosaveEnabled(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_AUTOSAVE_ENABLED, enabled) }
         _autosaveEnabled.value = enabled
+    }
+
+    /**
+     * 🆕 v2.8.0: Toggle default open mode for existing text notes.
+     * true = preview/read mode (default), false = edit mode.
+     * NoteEditorViewModel reads the preference at init time.
+     */
+    fun setDefaultStartInPreviewMode(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE, enabled) }
+        _defaultStartInPreviewMode.value = enabled
     }
 
     /**

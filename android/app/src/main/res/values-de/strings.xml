@@ -435,6 +435,8 @@
     <string name="autosave_toggle">Automatisches Speichern</string>
     <string name="autosave_description">Speichert nach 3 s Inaktivität und beim Verlassen des Editors</string>
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
+    <string name="editor_default_preview_mode_toggle">In Vorschau öffnen</string>
+    <string name="editor_default_preview_mode_description">Textnotizen öffnen standardmäßig in der Leseansicht. Deaktivieren, um im Bearbeitungsmodus zu starten.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
     <string name="theme_mode_system">System (wie Gerät)</string>

@@ -63,6 +63,7 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val gridManualColumns by viewModel.gridManualColumns.collectAsState()
     val customAppTitle by viewModel.customAppTitle.collectAsState()
     val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
+    val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val colorTheme by viewModel.colorTheme.collectAsState()
 
@@ -202,6 +203,15 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
             SettingsInfoCard(
                 text = stringResource(R.string.autosave_info)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsSwitch(
+                title = stringResource(R.string.editor_default_preview_mode_toggle),
+                subtitle = stringResource(R.string.editor_default_preview_mode_description),
+                checked = defaultStartInPreviewMode,
+                onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
