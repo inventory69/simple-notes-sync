@@ -297,12 +297,12 @@ fun parseInlineFormatting(text: String): AnnotatedString {
  * Inline Markdown patterns with their regex matchers.
  * Order matters — bold (**) must be checked before italic (*).
  */
-private enum class InlinePattern(val regex: Regex) {
+internal enum class InlinePattern(val regex: Regex) {
     BOLD_ASTERISK(Regex("""\*\*(.+?)\*\*""")),
     BOLD_UNDERSCORE(Regex("""__(.+?)__""")),
     STRIKETHROUGH(Regex("""~~(.+?)~~""")),
-    ITALIC_ASTERISK(Regex("""\*(.+?)\*""")),
-    ITALIC_UNDERSCORE(Regex("""_(.+?)_""")),
+    ITALIC_ASTERISK(Regex("""(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)""")),
+    ITALIC_UNDERSCORE(Regex("""(?<!_)_(?!_)(.+?)(?<!_)_(?!_)""")),
     INLINE_CODE(Regex("""`([^`]+)`""")),
     AUTO_URL(Regex("""https?://[^\s<>"')\]!]+""")),
     LINK(Regex("""\[([^\]]+)\]\(([^)]+)\)"""))
