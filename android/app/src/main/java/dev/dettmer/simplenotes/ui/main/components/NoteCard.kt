@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.noteCardMarkdownPreview
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -174,19 +175,24 @@ fun NoteCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Preview
-                Text(
-                    text = when (note.noteType) {
-                        NoteType.TEXT -> note.content.take(100)
-                        NoteType.CHECKLIST -> {
-                            val items = note.checklistItems.orEmpty()
-                            stringResource(R.string.checklist_progress, items.count { it.isChecked }, items.size)
-                        }
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (note.noteType == NoteType.TEXT) {
+                    Text(
+                        text = noteCardMarkdownPreview(note.content),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    val items = note.checklistItems.orEmpty()
+                    Text(
+                        text = stringResource(R.string.checklist_progress, items.count { it.isChecked }, items.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

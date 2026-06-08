@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.noteCardMarkdownPreview
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteSize
 import dev.dettmer.simplenotes.models.NoteType
@@ -184,21 +185,25 @@ fun NoteCardGrid(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Preview - Dynamische Zeilen basierend auf NoteSize
-                Text(
-                    text = when (note.noteType) {
-                        NoteType.TEXT -> note.content
-                        NoteType.CHECKLIST -> {
-                            // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
-                            note.checklistItems?.let { items ->
-                                generateChecklistPreview(items, note.checklistSortOption)
-                            }.orEmpty()
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = previewMaxLines, // 🎯 Dynamisch: LARGE=6, SMALL=3
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (note.noteType == NoteType.TEXT) {
+                    Text(
+                        text = noteCardMarkdownPreview(note.content),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = previewMaxLines,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        text = note.checklistItems?.let { items ->
+                            generateChecklistPreview(items, note.checklistSortOption)
+                        }.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = previewMaxLines,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(6.dp))
 

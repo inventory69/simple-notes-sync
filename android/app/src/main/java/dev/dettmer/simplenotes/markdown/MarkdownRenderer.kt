@@ -17,8 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -189,107 +191,167 @@ fun parseInlineFormatting(text: String): AnnotatedString {
     val linkColor = MaterialTheme.colorScheme.primary
     val codeBackground = MaterialTheme.colorScheme.surfaceVariant
     val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
+    return parseInlineFormattingWithColors(text, linkColor, codeBackground, codeColor)
+}
 
-    return buildAnnotatedString {
-        var remaining = text
+internal fun parseInlineFormattingWithColors(
+    text: String,
+    linkColor: Color,
+    codeBackground: Color,
+    codeColor: Color
+): AnnotatedString = buildAnnotatedString {
+    var remaining = text
 
-        while (remaining.isNotEmpty()) {
-            val patterns = listOf(
-                InlinePattern.BOLD_ASTERISK,
-                InlinePattern.BOLD_UNDERSCORE,
-                InlinePattern.STRIKETHROUGH,
-                InlinePattern.ITALIC_ASTERISK,
-                InlinePattern.ITALIC_UNDERSCORE,
-                InlinePattern.INLINE_CODE,
-                InlinePattern.AUTO_URL,
-                InlinePattern.LINK
-            )
+    while (remaining.isNotEmpty()) {
+        val patterns = listOf(
+            InlinePattern.BOLD_ASTERISK,
+            InlinePattern.BOLD_UNDERSCORE,
+            InlinePattern.STRIKETHROUGH,
+            InlinePattern.ITALIC_ASTERISK,
+            InlinePattern.ITALIC_UNDERSCORE,
+            InlinePattern.INLINE_CODE,
+            InlinePattern.AUTO_URL,
+            InlinePattern.LINK
+        )
 
-            var earliestMatch: MatchResult? = null
-            var earliestPattern: InlinePattern? = null
+        var earliestMatch: MatchResult? = null
+        var earliestPattern: InlinePattern? = null
 
-            for (pattern in patterns) {
-                val match = pattern.regex.find(remaining)
-                if (match != null && (earliestMatch == null || match.range.first < earliestMatch.range.first)) {
-                    earliestMatch = match
-                    earliestPattern = pattern
-                }
+        for (pattern in patterns) {
+            val match = pattern.regex.find(remaining)
+            if (match != null && (earliestMatch == null || match.range.first < earliestMatch.range.first)) {
+                earliestMatch = match
+                earliestPattern = pattern
             }
-
-            if (earliestMatch == null || earliestPattern == null) {
-                append(remaining)
-                break
-            }
-
-            if (earliestMatch.range.first > 0) {
-                append(remaining.substring(0, earliestMatch.range.first))
-            }
-
-            when (earliestPattern) {
-                InlinePattern.BOLD_ASTERISK, InlinePattern.BOLD_UNDERSCORE -> {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(earliestMatch.groupValues[1])
-                    }
-                }
-                InlinePattern.ITALIC_ASTERISK, InlinePattern.ITALIC_UNDERSCORE -> {
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(earliestMatch.groupValues[1])
-                    }
-                }
-                InlinePattern.STRIKETHROUGH -> {
-                    withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                        append(earliestMatch.groupValues[1])
-                    }
-                }
-                InlinePattern.INLINE_CODE -> {
-                    withStyle(
-                        SpanStyle(
-                            fontFamily = FontFamily.Monospace,
-                            background = codeBackground,
-                            color = codeColor
-                        )
-                    ) {
-                        append(earliestMatch.groupValues[1])
-                    }
-                }
-                InlinePattern.AUTO_URL -> {
-                    val url = earliestMatch.value.trimEnd('!', '?', ',', '.', ';', ':')
-                    withLink(
-                        LinkAnnotation.Url(
-                            url = url,
-                            styles = TextLinkStyles(
-                                style = SpanStyle(
-                                    color = linkColor,
-                                    textDecoration = TextDecoration.Underline
-                                )
-                            )
-                        )
-                    ) { append(url) }
-                    // Append any trimmed trailing punctuation as plain text
-                    val trimmed = earliestMatch.value.length - url.length
-                    if (trimmed > 0) append(earliestMatch.value.takeLast(trimmed))
-                }
-                InlinePattern.LINK -> {
-                    val linkText = earliestMatch.groupValues[1]
-                    val linkUrl = earliestMatch.groupValues[2].trimEnd('!', '?', ',', '.', ';', ':')
-                    withLink(
-                        LinkAnnotation.Url(
-                            url = linkUrl,
-                            styles = TextLinkStyles(
-                                style = SpanStyle(
-                                    color = linkColor,
-                                    textDecoration = TextDecoration.Underline
-                                )
-                            )
-                        )
-                    ) {
-                        append(linkText)
-                    }
-                }
-            }
-
-            remaining = remaining.substring(earliestMatch.range.last + 1)
         }
+
+        if (earliestMatch == null || earliestPattern == null) {
+            append(remaining)
+            break
+        }
+
+        if (earliestMatch.range.first > 0) {
+            append(remaining.substring(0, earliestMatch.range.first))
+        }
+
+        when (earliestPattern) {
+            InlinePattern.BOLD_ASTERISK, InlinePattern.BOLD_UNDERSCORE -> {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append(earliestMatch.groupValues[1])
+                }
+            }
+            InlinePattern.ITALIC_ASTERISK, InlinePattern.ITALIC_UNDERSCORE -> {
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                    append(earliestMatch.groupValues[1])
+                }
+            }
+            InlinePattern.STRIKETHROUGH -> {
+                withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                    append(earliestMatch.groupValues[1])
+                }
+            }
+            InlinePattern.INLINE_CODE -> {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        background = codeBackground,
+                        color = codeColor
+                    )
+                ) {
+                    append(earliestMatch.groupValues[1])
+                }
+            }
+            InlinePattern.AUTO_URL -> {
+                val url = earliestMatch.value.trimEnd('!', '?', ',', '.', ';', ':')
+                withLink(
+                    LinkAnnotation.Url(
+                        url = url,
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        )
+                    )
+                ) { append(url) }
+                val trimmed = earliestMatch.value.length - url.length
+                if (trimmed > 0) append(earliestMatch.value.takeLast(trimmed))
+            }
+            InlinePattern.LINK -> {
+                val linkText = earliestMatch.groupValues[1]
+                val linkUrl = earliestMatch.groupValues[2].trimEnd('!', '?', ',', '.', ';', ':')
+                withLink(
+                    LinkAnnotation.Url(
+                        url = linkUrl,
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        )
+                    )
+                ) {
+                    append(linkText)
+                }
+            }
+        }
+
+        remaining = remaining.substring(earliestMatch.range.last + 1)
+    }
+}
+
+internal fun buildMarkdownCardPreview(
+    blocks: List<MarkdownBlock>,
+    linkColor: Color,
+    codeBackground: Color,
+    codeColor: Color
+): AnnotatedString = buildAnnotatedString {
+    blocks.forEachIndexed { i, block ->
+        if (i > 0) append("\n")
+        when (block) {
+            is MarkdownBlock.Heading -> {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(block.text) }
+            }
+            is MarkdownBlock.Paragraph -> {
+                append(parseInlineFormattingWithColors(block.text, linkColor, codeBackground, codeColor))
+            }
+            is MarkdownBlock.TaskList -> {
+                block.items.forEachIndexed { j, item ->
+                    if (j > 0) append("\n")
+                    append(if (item.isChecked) "☑ " else "☐ ")
+                    val itemText = parseInlineFormattingWithColors(item.text, linkColor, codeBackground, codeColor)
+                    if (item.isChecked) {
+                        withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) { append(itemText) }
+                    } else {
+                        append(itemText)
+                    }
+                }
+            }
+            is MarkdownBlock.UnorderedList -> {
+                block.items.forEachIndexed { j, itemText ->
+                    if (j > 0) append("\n")
+                    append("  •  ")
+                    append(parseInlineFormattingWithColors(itemText, linkColor, codeBackground, codeColor))
+                }
+            }
+            is MarkdownBlock.CodeBlock -> {
+                withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)) {
+                    append(block.code)
+                }
+            }
+            MarkdownBlock.HorizontalRule -> Unit
+        }
+    }
+}
+
+@Composable
+internal fun noteCardMarkdownPreview(content: String): AnnotatedString {
+    val linkColor = MaterialTheme.colorScheme.primary
+    val codeBackground = MaterialTheme.colorScheme.surfaceVariant
+    val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
+    return remember(content, linkColor, codeBackground, codeColor) {
+        val blocks = MarkdownEngine.parse(content)
+        buildMarkdownCardPreview(blocks, linkColor, codeBackground, codeColor)
     }
 }
 
