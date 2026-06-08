@@ -200,104 +200,57 @@ internal fun parseInlineFormattingWithColors(
     codeBackground: Color,
     codeColor: Color
 ): AnnotatedString = buildAnnotatedString {
-    var remaining = text
-
-    while (remaining.isNotEmpty()) {
-        val patterns = listOf(
-            InlinePattern.BOLD_ASTERISK,
-            InlinePattern.BOLD_UNDERSCORE,
-            InlinePattern.STRIKETHROUGH,
-            InlinePattern.ITALIC_ASTERISK,
-            InlinePattern.ITALIC_UNDERSCORE,
-            InlinePattern.INLINE_CODE,
-            InlinePattern.AUTO_URL,
-            InlinePattern.LINK
-        )
-
-        var earliestMatch: MatchResult? = null
-        var earliestPattern: InlinePattern? = null
-
-        for (pattern in patterns) {
-            val match = pattern.regex.find(remaining)
-            if (match != null && (earliestMatch == null || match.range.first < earliestMatch.range.first)) {
-                earliestMatch = match
-                earliestPattern = pattern
-            }
+    var pos = 0
+    for (match in INLINE_COMBINED_REGEX.findAll(text)) {
+        if (match.range.first > pos) {
+            append(text.substring(pos, match.range.first))
         }
-
-        if (earliestMatch == null || earliestPattern == null) {
-            append(remaining)
-            break
-        }
-
-        if (earliestMatch.range.first > 0) {
-            append(remaining.substring(0, earliestMatch.range.first))
-        }
-
-        when (earliestPattern) {
-            InlinePattern.BOLD_ASTERISK, InlinePattern.BOLD_UNDERSCORE -> {
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(earliestMatch.groupValues[1])
+        when {
+            match.groups[1] != null -> {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[1]) }
+            }
+            match.groups[2] != null -> {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[2]) }
+            }
+            match.groups[INLINE_GROUP_STRIKETHROUGH] != null -> {
+                withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) { append(match.groupValues[INLINE_GROUP_STRIKETHROUGH]) }
+            }
+            match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null -> {
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[INLINE_GROUP_ITALIC_ASTERISK]) }
+            }
+            match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null -> {
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[INLINE_GROUP_ITALIC_UNDERSCORE]) }
+            }
+            match.groups[INLINE_GROUP_INLINE_CODE] != null -> {
+                withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)) {
+                    append(match.groupValues[INLINE_GROUP_INLINE_CODE])
                 }
             }
-            InlinePattern.ITALIC_ASTERISK, InlinePattern.ITALIC_UNDERSCORE -> {
-                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                    append(earliestMatch.groupValues[1])
-                }
-            }
-            InlinePattern.STRIKETHROUGH -> {
-                withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                    append(earliestMatch.groupValues[1])
-                }
-            }
-            InlinePattern.INLINE_CODE -> {
-                withStyle(
-                    SpanStyle(
-                        fontFamily = FontFamily.Monospace,
-                        background = codeBackground,
-                        color = codeColor
-                    )
-                ) {
-                    append(earliestMatch.groupValues[1])
-                }
-            }
-            InlinePattern.AUTO_URL -> {
-                val url = earliestMatch.value.trimEnd('!', '?', ',', '.', ';', ':')
-                withLink(
-                    LinkAnnotation.Url(
-                        url = url,
-                        styles = TextLinkStyles(
-                            style = SpanStyle(
-                                color = linkColor,
-                                textDecoration = TextDecoration.Underline
-                            )
-                        )
-                    )
-                ) { append(url) }
-                val trimmed = earliestMatch.value.length - url.length
-                if (trimmed > 0) append(earliestMatch.value.takeLast(trimmed))
-            }
-            InlinePattern.LINK -> {
-                val linkText = earliestMatch.groupValues[1]
-                val linkUrl = earliestMatch.groupValues[2].trimEnd('!', '?', ',', '.', ';', ':')
+            match.groups[INLINE_GROUP_LINK_TEXT] != null -> {
+                val linkText = match.groupValues[INLINE_GROUP_LINK_TEXT]
+                val linkUrl = match.groupValues[INLINE_GROUP_LINK_URL].trimEnd('!', '?', ',', '.', ';', ':')
                 withLink(
                     LinkAnnotation.Url(
                         url = linkUrl,
-                        styles = TextLinkStyles(
-                            style = SpanStyle(
-                                color = linkColor,
-                                textDecoration = TextDecoration.Underline
-                            )
-                        )
+                        styles = TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
                     )
-                ) {
-                    append(linkText)
-                }
+                ) { append(linkText) }
+            }
+            else -> {
+                val url = match.value.trimEnd('!', '?', ',', '.', ';', ':')
+                withLink(
+                    LinkAnnotation.Url(
+                        url = url,
+                        styles = TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
+                    )
+                ) { append(url) }
+                val trimmed = match.value.length - url.length
+                if (trimmed > 0) append(match.value.takeLast(trimmed))
             }
         }
-
-        remaining = remaining.substring(earliestMatch.range.last + 1)
+        pos = match.range.last + 1
     }
+    if (pos < text.length) append(text.substring(pos))
 }
 
 internal fun buildMarkdownCardPreview(
@@ -356,16 +309,31 @@ internal fun noteCardMarkdownPreview(content: String): AnnotatedString {
 }
 
 /**
- * Inline Markdown patterns with their regex matchers.
- * Order matters — bold (**) must be checked before italic (*).
+ * Single combined regex for all inline Markdown patterns.
+ * Alternation order matters: bold (**) must appear before italic (*), double
+ * underscore before single, so that `**` is never mis-parsed as two `*`.
+ * A single findAll pass over this regex is sufficient — matched characters
+ * cannot be re-consumed by a later alternative, which correctly handles
+ * adjacent delimiters such as `*italic***bold**`.
+ *
+ * Capture groups:
+ *  1 = bold asterisk content    (**…**)
+ *  2 = bold underscore content  (__…__)
+ *  3 = strikethrough content    (~~…~~)
+ *  4 = italic asterisk content  (*…*)
+ *  5 = italic underscore content(_…_)
+ *  6 = inline code content      (`…`)
+ *  — = auto URL                 (no capture group)
+ *  7 = link display text        ([…](…))
+ *  8 = link URL
  */
-internal enum class InlinePattern(val regex: Regex) {
-    BOLD_ASTERISK(Regex("""\*\*(.+?)\*\*""")),
-    BOLD_UNDERSCORE(Regex("""__(.+?)__""")),
-    STRIKETHROUGH(Regex("""~~(.+?)~~""")),
-    ITALIC_ASTERISK(Regex("""(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)""")),
-    ITALIC_UNDERSCORE(Regex("""(?<!_)_(?!_)(.+?)(?<!_)_(?!_)""")),
-    INLINE_CODE(Regex("""`([^`]+)`""")),
-    AUTO_URL(Regex("""https?://[^\s<>"')\]!]+""")),
-    LINK(Regex("""\[([^\]]+)\]\(([^)]+)\)"""))
-}
+internal val INLINE_COMBINED_REGEX = Regex(
+    """\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_|`([^`]+)`|https?://[^\s<>"')\]!]+|\[([^\]]+)\]\(([^)]+)\)"""
+)
+
+internal const val INLINE_GROUP_STRIKETHROUGH = 3
+internal const val INLINE_GROUP_ITALIC_ASTERISK = 4
+internal const val INLINE_GROUP_ITALIC_UNDERSCORE = 5
+internal const val INLINE_GROUP_INLINE_CODE = 6
+internal const val INLINE_GROUP_LINK_TEXT = 7
+internal const val INLINE_GROUP_LINK_URL = 8

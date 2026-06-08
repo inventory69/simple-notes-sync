@@ -100,40 +100,37 @@ class MarkdownOutputTransformation(
         codeRanges: List<IntRange>,
         styles: MutableList<StyleSpan>,
     ) {
-        for (pattern in InlinePattern.entries) {
-            for (match in pattern.regex.findAll(text)) {
-                if (codeRanges.any { match.range.first in it }) continue
-                inlineStyles(pattern, match, styles)
-            }
+        for (match in INLINE_COMBINED_REGEX.findAll(text)) {
+            if (codeRanges.any { match.range.first in it }) continue
+            inlineStyles(match, styles)
         }
     }
 
     @Suppress("CyclomaticComplexMethod")
     private fun inlineStyles(
-        pattern: InlinePattern,
         match: MatchResult,
         styles: MutableList<StyleSpan>,
     ) {
         val start = match.range.first
         val end = match.range.last + 1
         val marker = SpanStyle(color = markerColor)
-        when (pattern) {
-            InlinePattern.BOLD_ASTERISK, InlinePattern.BOLD_UNDERSCORE -> {
+        when {
+            match.groups[1] != null || match.groups[2] != null -> {
                 styles += StyleSpan(start, start + 2, marker)
                 styles += StyleSpan(start + 2, end - 2, SpanStyle(fontWeight = FontWeight.Bold))
                 styles += StyleSpan(end - 2, end, marker)
             }
-            InlinePattern.ITALIC_ASTERISK, InlinePattern.ITALIC_UNDERSCORE -> {
-                styles += StyleSpan(start, start + 1, marker)
-                styles += StyleSpan(start + 1, end - 1, SpanStyle(fontStyle = FontStyle.Italic))
-                styles += StyleSpan(end - 1, end, marker)
-            }
-            InlinePattern.STRIKETHROUGH -> {
+            match.groups[INLINE_GROUP_STRIKETHROUGH] != null -> {
                 styles += StyleSpan(start, start + 2, marker)
                 styles += StyleSpan(start + 2, end - 2, SpanStyle(textDecoration = TextDecoration.LineThrough))
                 styles += StyleSpan(end - 2, end, marker)
             }
-            InlinePattern.INLINE_CODE -> {
+            match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null || match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null -> {
+                styles += StyleSpan(start, start + 1, marker)
+                styles += StyleSpan(start + 1, end - 1, SpanStyle(fontStyle = FontStyle.Italic))
+                styles += StyleSpan(end - 1, end, marker)
+            }
+            match.groups[INLINE_GROUP_INLINE_CODE] != null -> {
                 styles += StyleSpan(start, start + 1, marker)
                 styles += StyleSpan(
                     start + 1,
@@ -142,8 +139,8 @@ class MarkdownOutputTransformation(
                 )
                 styles += StyleSpan(end - 1, end, marker)
             }
-            InlinePattern.LINK -> {
-                val textEnd = start + 1 + match.groupValues[1].length
+            match.groups[INLINE_GROUP_LINK_TEXT] != null -> {
+                val textEnd = start + 1 + match.groupValues[INLINE_GROUP_LINK_TEXT].length
                 styles += StyleSpan(start, start + 1, marker)
                 styles += StyleSpan(
                     start + 1,
@@ -152,7 +149,7 @@ class MarkdownOutputTransformation(
                 )
                 styles += StyleSpan(textEnd, end, marker)
             }
-            InlinePattern.AUTO_URL -> {
+            else -> {
                 styles += StyleSpan(start, end, SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
             }
         }
