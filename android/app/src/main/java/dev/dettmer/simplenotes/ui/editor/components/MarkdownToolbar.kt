@@ -138,11 +138,12 @@ private fun wrapSelection(state: TextFieldState, prefix: String, suffix: String)
             insert(sel.start, "$prefix$suffix")
             selection = TextRange(sel.start + prefix.length)
         } else {
-            // Wrap selected text
-            val selectedText = toString().substring(sel.start, sel.end)
-            delete(sel.start, sel.end)
-            insert(sel.start, "$prefix$selectedText$suffix")
-            selection = TextRange(sel.start + prefix.length, sel.start + prefix.length + selectedText.length)
+            val start = sel.min
+            val end = sel.max
+            val selectedText = toString().substring(start, end)
+            delete(start, end)
+            insert(start, "$prefix$selectedText$suffix")
+            selection = TextRange(start + prefix.length, start + prefix.length + selectedText.length)
         }
     }
 }
@@ -153,7 +154,7 @@ private fun wrapSelection(state: TextFieldState, prefix: String, suffix: String)
 private fun insertHeading(state: TextFieldState) {
     state.edit {
         val text = toString()
-        val cursorPos = selection.start
+        val cursorPos = selection.min
         val lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1
 
         when {
@@ -188,12 +189,13 @@ private fun insertLink(state: TextFieldState) {
             insert(sel.start, "[](${LINK_URL_PLACEHOLDER})")
             selection = TextRange(sel.start + 1)
         } else {
-            val selectedText = toString().substring(sel.start, sel.end)
-            delete(sel.start, sel.end)
+            val start = sel.min
+            val end = sel.max
+            val selectedText = toString().substring(start, end)
+            delete(start, end)
             val link = "[$selectedText](${LINK_URL_PLACEHOLDER})"
-            insert(sel.start, link)
-            // Place cursor inside (url), selecting "url"
-            val urlStart = sel.start + selectedText.length + LINK_BRACKET_OFFSET
+            insert(start, link)
+            val urlStart = start + selectedText.length + LINK_BRACKET_OFFSET
             selection = TextRange(urlStart, urlStart + LINK_URL_PLACEHOLDER.length)
         }
     }
@@ -205,7 +207,7 @@ private fun insertLink(state: TextFieldState) {
 private fun insertListItem(state: TextFieldState) {
     state.edit {
         val text = toString()
-        val cursorPos = selection.start
+        val cursorPos = selection.min
         val lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1
 
         if (text.startsWith("- ", lineStart)) {
@@ -223,7 +225,7 @@ private fun insertListItem(state: TextFieldState) {
 private fun insertHorizontalRule(state: TextFieldState) {
     state.edit {
         val text = toString()
-        val cursorPos = selection.start
+        val cursorPos = selection.min
         val prefix = if (cursorPos > 0 && text[cursorPos - 1] != '\n') "\n" else ""
         val rule = "$prefix---\n"
         insert(cursorPos, rule)
@@ -242,17 +244,18 @@ private fun insertHorizontalRule(state: TextFieldState) {
 private fun insertChecklistItem(state: TextFieldState) {
     state.edit {
         val text = toString()
-        val cursorPos = selection.start
+        val cursorPos = selection.min
         val lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1
 
+        val checkboxCharIdx = 3  // offset of [ ]'s inner char within "- [ ] "
         when {
             text.startsWith("- [x] ", lineStart) || text.startsWith("- [X] ", lineStart) -> {
-                // Checked checklist → entfernen
-                delete(lineStart, lineStart + "- [x] ".length)
+                // Checked → unchecked (toggle state, keep prefix)
+                replace(lineStart + checkboxCharIdx, lineStart + checkboxCharIdx + 1, " ")
             }
             text.startsWith("- [ ] ", lineStart) -> {
-                // Unchecked checklist → entfernen
-                delete(lineStart, lineStart + "- [ ] ".length)
+                // Unchecked → checked (toggle state, keep prefix)
+                replace(lineStart + checkboxCharIdx, lineStart + checkboxCharIdx + 1, "x")
             }
             text.startsWith("- ", lineStart) -> {
                 // Einfache Liste → zu Checklist konvertieren
