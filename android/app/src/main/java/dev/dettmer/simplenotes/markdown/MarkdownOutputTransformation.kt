@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 private val headingSize1 = 24.sp
@@ -17,6 +18,7 @@ private val headingSize3 = 18.sp
 private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
 private val mdTaskRegex = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
 private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
+private val mdHorizontalRuleRegex = Regex("""^\s*([-*_])\s*(?:\1\s*){2,}$""")
 
 class MarkdownOutputTransformation(
     private val linkColor: Color,
@@ -62,6 +64,17 @@ class MarkdownOutputTransformation(
         val taskMatch = mdTaskRegex.matchEntire(line)
         val marker = SpanStyle(color = markerColor)
         when {
+            mdHorizontalRuleRegex.matchEntire(line) != null -> {
+                styles += StyleSpan(
+                    lineStart,
+                    lineStart + line.length,
+                    SpanStyle(
+                        color = markerColor,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.3.em,
+                    ),
+                )
+            }
             headingMatch != null -> {
                 val level = headingMatch.groupValues[1].length.coerceAtMost(3)
                 val prefixLen = level + 1
