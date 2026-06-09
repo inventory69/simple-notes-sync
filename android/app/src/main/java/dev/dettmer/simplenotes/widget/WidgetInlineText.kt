@@ -40,15 +40,26 @@ internal fun WidgetInlineText(
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
-    val textColor = context.resolveInlineTextColor(dimmed)
-    val html = if (addStrikethrough) "<s>${markdownInlineToHtml(text)}</s>"
-               else markdownInlineToHtml(text)
-    @Suppress("DEPRECATION")
+    val html = (if (addStrikethrough) "<s>${markdownInlineToHtml(text)}</s>"
+               else markdownInlineToHtml(text)).replace("\n", "<br>")
     val spanned = Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY)
     AndroidRemoteViews(
         remoteViews = RemoteViews(context.packageName, R.layout.widget_inline_text).apply {
             setTextViewText(R.id.widget_inline_text, spanned)
-            setTextColor(R.id.widget_inline_text, textColor)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // setColorInt registers both day and night values so Android switches automatically
+                // without requiring a widget recompose on mode change.
+                setColorInt(
+                    R.id.widget_inline_text,
+                    "setTextColor",
+                    context.resolveInlineTextColor(dimmed, isNight = false),
+                    context.resolveInlineTextColor(dimmed, isNight = true),
+                )
+            } else {
+                val isNight = context.resources.configuration.uiMode and
+                    Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+                setTextColor(R.id.widget_inline_text, context.resolveInlineTextColor(dimmed, isNight))
+            }
             setFloat(R.id.widget_inline_text, "setTextSize", fontSize)
             setInt(R.id.widget_inline_text, "setMaxLines", maxLines)
         },
@@ -56,9 +67,7 @@ internal fun WidgetInlineText(
     )
 }
 
-private fun Context.resolveInlineTextColor(dimmed: Boolean): Int {
-    val isNight = resources.configuration.uiMode and
-        Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+private fun Context.resolveInlineTextColor(dimmed: Boolean, isNight: Boolean): Int {
     val base = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         if (isNight) getColor(android.R.color.system_neutral1_100)
         else getColor(android.R.color.system_neutral1_900)
