@@ -4,7 +4,7 @@
     <!-- APP IDENTITY                  -->
     <!-- ============================= -->
     <string name="app_name">Simple Notes</string>
-    
+
     <!-- ============================= -->
     <!-- MAIN SCREEN                   -->
     <!-- ============================= -->
@@ -18,13 +18,13 @@
     <string name="selection_count">%d selected</string>
     <string name="section_pinned">Pinned</string>
     <string name="section_notes">Notes</string>
-    
+
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
     <string name="empty_state_title">No notes yet</string>
     <string name="empty_state_message">Tap + to create a new note</string>
-    
+
     <!-- ============================= -->
     <!-- FAB MENU                      -->
     <!-- ============================= -->
@@ -32,27 +32,27 @@
     <string name="fab_close">Close menu</string>
     <string name="fab_text_note">Text Note</string>
     <string name="fab_checklist">Checklist</string>
-    
+
     <!-- ============================= -->
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
     <string name="untitled">Untitled</string>
     <string name="checklist_progress">%1$d/%2$d done</string>
-    
+
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
     <string name="sync_status_completed">Sync completed</string>
     <string name="sync_status_error">Sync failed</string>
     <string name="sync_already_running">Sync already in progress</string>
-    
+
     <!-- 🆕 v1.8.0: SyncStatus enum values -->
     <string name="sync_status_synced">Synced with server</string>
     <string name="sync_status_pending">Waiting for sync</string>
     <string name="sync_status_conflict">Sync conflict detected</string>
     <string name="sync_status_local_only">Not yet synced</string>
     <string name="sync_status_deleted_on_server">Deleted on server</string>
-    
+
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
     <string name="sync_legend_button">Sync status help</string>
     <string name="sync_legend_title">Sync Status Icons</string>
@@ -67,10 +67,10 @@
     <string name="sync_legend_local_only_desc">This note has never been synced to the server yet.</string>
     <string name="sync_legend_deleted_label">Deleted on server</string>
     <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
-    
+
     <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
     <string name="sync_deleted_on_server_count">%d deleted on server</string>
-    
+
     <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
     <string name="sync_phase_preparing">Synchronizing…</string>
     <string name="sync_phase_uploading">Uploading…</string>
@@ -89,7 +89,7 @@
     <string name="sort_by_type">Type</string>
     <string name="sort_by_color">Color</string>
     <string name="close">Close</string>
-    
+
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->
     <string name="sort_checklist">Sort checklist</string>
     <string name="sort_checklist_manual">Manual</string>
@@ -103,7 +103,7 @@
     <string name="sync_phase_importing_markdown">Importing Markdown…</string>
     <string name="sync_phase_completed">Sync complete</string>
     <string name="sync_phase_error">Sync failed</string>
-    
+
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
@@ -124,7 +124,7 @@
     <string name="legacy_delete_dialog_title">Delete note</string>
     <string name="legacy_delete_dialog_message">\"%s\" will be deleted locally.\n\nAlso delete from server?</string>
     <string name="legacy_delete_from_server">Delete from server</string>
-    
+
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
@@ -151,7 +151,7 @@
     <string name="snackbar_server_unreachable">Server not reachable</string>
     <string name="snackbar_connection_timeout">Connection timeout</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nothing to sync</string>
-    
+
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
@@ -165,7 +165,7 @@
     <!-- 🔧 v2.3.0 (Issue #55): Better error messages for MKCOL/WebDAV failures -->
     <string name="sync_error_mkcol_failed">Cannot create sync folder. Please verify your WebDAV URL includes the full path (e.g. /remote.php/dav/files/USERNAME/).</string>
     <string name="sync_error_not_webdav">URL is not a WebDAV endpoint. Please verify the full WebDAV path (e.g. /remote.php/dav/files/USERNAME/).</string>
-    
+
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
@@ -175,7 +175,7 @@
     <string name="error_server_not_configured">WebDAV server not fully configured</string>
     <string name="error_sardine_client_failed">Sardine client could not be created</string>
     <string name="error_server_url_not_configured">Server URL not configured</string>
-    
+
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
     <!-- ============================= -->
@@ -196,7 +196,7 @@
     <string name="note_is_empty">Note is empty</string>
     <string name="note_saved">Note saved</string>
     <string name="note_deleted">Note deleted</string>
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->
     <!-- ============================= -->
@@ -249,7 +249,7 @@
     <string name="settings_debug">Debug &amp; Diagnostics</string>
     <string name="settings_debug_logging_on">Logging: On</string>
     <string name="settings_debug_logging_off">Logging: Off</string>
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
     <!-- ============================= -->
@@ -282,7 +282,7 @@
     <string name="server_offline_mode_subtitle">Disable all network features</string>
     <string name="test_connection">Test Connection</string>
     <string name="sync_now">Sync now</string>
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
@@ -291,9 +291,9 @@
     <string name="sync_interval_30min_title">✓ Every 30 minutes (Recommended)</string>
     <string name="sync_interval_60min_title">🔋 Every 60 minutes</string>
     <!-- Legacy -->
-    
+
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
-    
+
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">Sync Triggers</string>
     <string name="sync_section_network_performance">Network</string>
@@ -309,36 +309,36 @@
     <string name="notifications_permission_settings_title">Notifications blocked</string>
     <string name="notifications_permission_settings_message">Notification permission was permanently denied. To enable notifications, please allow them in the app settings.</string>
     <string name="notifications_permission_open_settings">Open Settings</string>
-    
+
     <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
     <string name="sync_wifi_only_error">Sync only works when WiFi is connected</string>
-    
+
     <string name="sync_trigger_on_save_title">After Saving</string>
     <string name="sync_trigger_on_save_subtitle">Sync immediately after each change</string>
-    
+
     <string name="sync_trigger_on_resume_title">On App Start</string>
     <string name="sync_trigger_on_resume_subtitle">Sync when the app is opened</string>
-    
+
     <string name="sync_trigger_wifi_connect_title">On WiFi Connection</string>
     <string name="sync_trigger_wifi_connect_subtitle">Sync when WiFi is connected</string>
-    
+
     <string name="sync_trigger_periodic_title">Automatically every X minutes</string>
     <string name="sync_trigger_periodic_subtitle">Regular background sync</string>
-    
+
     <string name="sync_trigger_boot_title">After Device Restart</string>
     <string name="sync_trigger_boot_subtitle">Starts background sync after reboot</string>
-    
+
     <!-- 🆕 v1.7.0: WiFi-Only Sync -->
     <string name="sync_wifi_only_title">WiFi-only sync</string>
     <string name="sync_wifi_only_subtitle">Sync only when connected to WiFi. Saves mobile data and prevents long wait times.</string>
-    
+
     <string name="sync_manual_hint">Manual sync (toolbar/pull-to-refresh) is also available.</string>
     <string name="sync_manual_hint_disabled">Sync is not available in offline mode.</string>
-    
+
     <string name="sync_offline_mode_message">You are using the app in offline mode. Set up a server to synchronize notes.</string>
     <string name="sync_no_server_message">No server configured. Set up a server to synchronize notes.</string>
     <string name="sync_offline_mode_button">Set Up Server</string>
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
@@ -352,7 +352,7 @@
     <string name="markdown_auto_sync_subtitle">Automatically syncs notes as .md files (upload + download on each sync)</string>
     <string name="markdown_manual_sync_info">Manual sync exports all notes as .md files and imports .md files from the server. Useful for one-time sync.</string>
     <string name="markdown_manual_sync_button">📝 Manual Markdown Sync</string>
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
@@ -361,7 +361,7 @@
     <string name="backup_local_section">Local Backup</string>
     <string name="backup_create">💾 Create Backup</string>
     <string name="backup_restore_file">📂 Restore from File</string>
-    
+
     <!-- 🔐 v1.7.0: Encryption -->
     <string name="backup_encryption_title">Encrypt Backup</string>
     <string name="backup_encryption_subtitle">Password-protect your backup file</string>
@@ -374,7 +374,7 @@
     <string name="backup_encryption_confirm">Confirm Password</string>
     <string name="backup_encryption_confirm_hint">Re-enter password</string>
     <string name="backup_decryption_required">🔒 Encrypted Backup</string>
-    
+
     <string name="backup_server_section">Server Backup</string>
     <string name="backup_restore_server">☁️ Restore from Server</string>
     <string name="backup_restore_dialog_title">⚠️ Restore Backup?</string>
@@ -391,7 +391,7 @@
     <string name="backup_restore_info">ℹ️ A safety backup will be automatically created before restoring.</string>
     <string name="backup_restore_button">Restore</string>
     <!-- Legacy -->
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - DEBUG              -->
     <!-- ============================= -->
@@ -434,7 +434,7 @@
     <string name="developer_options_unlocked">🔧 Developer options unlocked</string>
     <string name="developer_options_already_unlocked">Developer options are already unlocked</string>
     <!-- Legacy -->
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - LANGUAGE           -->
     <!-- ============================= -->
@@ -446,7 +446,7 @@
     <string name="language_ukrainian">Українська</string>
     <string name="language_chinese_simplified">Chinese (Simplified)</string>
     <string name="language_info">ℹ️ Choose your preferred language. The view will briefly refresh to apply the change.</string>
-    
+
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -540,33 +540,33 @@
     <string name="about_developer_subtitle">GitHub Profile: @inventory69</string>
     <string name="about_license_title">License</string>
     <string name="about_license_subtitle">AGPL v3 License - Open Source</string>
-    
+
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Full version history</string>
-    
+
     <!-- v1.8.0: Post-Update Changelog Dialog -->
     <string name="update_changelog_title">What\'s New</string>
     <string name="update_changelog_dismiss">Got it!</string>
-    
+
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Creating backup…</string>
     <string name="backup_progress_restoring">Restoring backup…</string>
     <string name="backup_progress_restoring_server">Downloading notes from server…</string>
-    
+
     <!-- v1.8.0: Backup Progress - Completion -->
     <string name="backup_progress_complete">Backup created!</string>
     <string name="restore_progress_complete">Restore complete!</string>
     <string name="restore_server_progress_complete">Download complete!</string>
-    
+
     <!-- v1.8.0: Backup Progress - Error -->
     <string name="backup_progress_failed">Backup failed</string>
     <string name="restore_progress_failed">Restore failed</string>
     <string name="restore_server_progress_failed">Download failed</string>
-    
+
     <string name="about_privacy_title">🔒 Privacy</string>
     <string name="about_privacy_text">This app collects no data. All notes are stored only locally on your device and on your own WebDAV server. No telemetry, no ads.</string>
-    
+
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
@@ -617,7 +617,7 @@
     <string name="restore_merge_result">%1$d new notes imported, %2$d skipped</string>
     <string name="restore_overwrite_result">%1$d new, %2$d overwritten</string>
     <string name="restore_replace_result">All notes replaced: %d imported</string>
-    
+
     <!-- ============================= -->
     <!-- RELATIVE TIME                 -->
     <!-- ============================= -->
@@ -634,7 +634,7 @@
         <item quantity="one">%d day ago</item>
         <item quantity="other">%d days ago</item>
     </plurals>
-    
+
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->
     <!-- ============================= -->
@@ -661,7 +661,7 @@
     <string name="notification_sync_in_progress_title">Synchronization in progress</string>
     <string name="notification_sync_in_progress_message">Notes are being synchronized…</string>
     <string name="notification_sync_error_title">Sync Error</string>
-    
+
     <!-- 🆕 v2.5.0: Google Keep Import — Snackbar messages (full set in Commit #12) -->
     <string name="keep_import_snackbar_done">Import done: %1$d new, %2$d skipped</string>
     <string name="keep_import_snackbar_cancelled">Import cancelled</string>
@@ -722,9 +722,9 @@
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
-    
-    
-    
+
+
+
 
     <!-- v1.8.0 (IMPL_017): Checklist separator -->
     <plurals name="checked_items_count">
@@ -763,6 +763,8 @@
     <string name="widget_lock_description">Prevent accidental edits</string>
     <string name="widget_opacity_label">Background opacity</string>
     <string name="widget_opacity_description">Adjust the transparency of the widget background</string>
+    <string name="widget_cards_opacity_label">Also apply to note cards</string>
+    <string name="widget_cards_opacity_description">Note card backgrounds will follow the opacity setting too</string>
     <string name="widget_preview_title">Shopping List</string>
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
     <string name="widget_note_not_found">Note not found</string>
@@ -850,5 +852,25 @@
     <string name="cd_folder_card">Folder %1$s</string>
     <string name="action_move_to_folder">Move to folder</string>
     <string name="cd_more_options">More options</string>
+
+    <!-- Notes List Scroll Widget -->
+    <string name="notes_list_widget_name">Notes List</string>
+    <string name="notes_list_widget_description">Scrollable list of all your notes</string>
+    <string name="notes_list_widget_config_title">Notes List Widget</string>
+    <string name="notes_list_widget_config_sort_label">Sort by</string>
+    <string name="notes_list_widget_config_filter_label">Show</string>
+    <string name="notes_list_widget_config_save">Save</string>
+    <string name="notes_list_widget_empty">No notes yet</string>
+    <string name="notes_list_widget_untitled">Untitled</string>
+    <string name="notes_list_widget_section_pinned">Pinned</string>
+    <string name="notes_list_widget_section_others">Notes</string>
+    <string name="notes_list_widget_section_folders">Folders</string>
+    <!-- Preview placeholder strings (not shown to users) -->
+    <string name="notes_list_widget_preview_title_1">Shopping list</string>
+    <string name="notes_list_widget_preview_content_1">• Milk\n• Bread\n• Eggs</string>
+    <string name="notes_list_widget_preview_title_2">Meeting notes</string>
+    <string name="notes_list_widget_preview_content_2">Discuss roadmap and upcoming milestones</string>
+    <string name="notes_list_widget_preview_title_3">Ideas</string>
+    <string name="notes_list_widget_preview_content_3">New feature concepts for next sprint</string>
 
 </resources>

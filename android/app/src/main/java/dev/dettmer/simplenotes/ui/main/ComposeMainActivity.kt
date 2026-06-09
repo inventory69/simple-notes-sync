@@ -68,6 +68,7 @@ class ComposeMainActivity : ComponentActivity() {
         private const val TAG = "ComposeMainActivity"
         private const val KEY_CAME_FROM_EDITOR = "cameFromEditor"
         private const val KEY_CAME_FROM_SETTINGS = "cameFromSettings"
+        const val EXTRA_FOLDER = MainViewModel.EXTRA_FOLDER
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -193,6 +194,10 @@ class ComposeMainActivity : ComponentActivity() {
             }
         }
 
+        if (savedInstanceState == null) {
+            viewModel.handleIncomingIntent(intent)
+        }
+
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
 
@@ -262,6 +267,12 @@ class ComposeMainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        viewModel.handleIncomingIntent(intent)
+    }
+
     override fun onResume() {
         super.onResume()
 
@@ -326,7 +337,7 @@ class ComposeMainActivity : ComponentActivity() {
      */
     private fun refreshAllWidgets() {
         lifecycleScope.launch {
-            WidgetUpdateHelper.refreshAllNoteWidgets(this@ComposeMainActivity)
+            WidgetUpdateHelper.refreshAllWidgets(this@ComposeMainActivity)
         }
     }
 

@@ -21,6 +21,7 @@ import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import android.content.Intent
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
@@ -59,6 +60,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "MainViewModel"
         private const val SNACKBAR_UNDO_DELAY_MS = 3500L
+        const val EXTRA_FOLDER = "extra_folder"
+    }
+
+    fun handleIncomingIntent(intent: Intent) {
+        intent.getStringExtra(EXTRA_FOLDER)?.let { enterFolder(it) }
     }
 
     private val storage = NotesStorage(application)
@@ -588,7 +594,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _folders.value = folderStore.loadFolders()
             clearSelection()
             loadNotes()
-            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
             triggerOnSaveSync()
         }
     }
@@ -613,7 +619,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             clearSelection()
             loadNotes()
             _scrollToTop.value = true
-            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
         }
     }
 
@@ -1215,7 +1221,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             clearSelection()
             loadNotes(forceReload = true)
             triggerOnSaveSync()
-            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
         }
     }
 
@@ -1347,7 +1353,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             clearSelection()
             loadNotes(forceReload = true)
             triggerOnSaveSync()
-            WidgetUpdateHelper.refreshAllNoteWidgets(getApplication())
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
         }
     }
 

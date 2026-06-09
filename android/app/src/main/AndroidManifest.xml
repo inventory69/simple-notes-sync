@@ -37,6 +37,7 @@
         <activity
             android:name=".ui.main.ComposeMainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.SimpleNotes.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -124,6 +125,24 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/new_note_widget_info" />
         </receiver>
+
+        <!-- Notes-List Scroll Widget Receiver -->
+        <receiver
+            android:name=".widget.NotesListWidgetReceiver"
+            android:exported="true"
+            android:label="@string/notes_list_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/notes_list_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.NotesListWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SimpleNotes" />
 
     </application>
 

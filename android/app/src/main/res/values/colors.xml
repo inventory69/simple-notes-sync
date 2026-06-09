@@ -64,4 +64,7 @@
     
     <color name="md_theme_dark_outline">#938F99</color>
     <color name="md_theme_dark_outlineVariant">#49454F</color>
+    <color name="widget_card_border">#33000000</color>
+    <!-- Explicit background for widget previewLayout — avoids unresolvable theme attributes in launcher process -->
+    <color name="widget_preview_bg">#FFFFFFFF</color>
 </resources>

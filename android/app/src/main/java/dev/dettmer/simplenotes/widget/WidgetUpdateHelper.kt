@@ -40,4 +40,32 @@ object WidgetUpdateHelper {
             Logger.w(TAG, "Failed to refresh note widgets: ${e.message}")
         }
     }
+
+    suspend fun refreshAllNotesListWidgets(context: Context) {
+        try {
+            val manager = GlanceAppWidgetManager(context)
+            val ids = manager.getGlanceIds(NotesListWidget::class.java)
+            if (ids.isEmpty()) {
+                Logger.d(TAG, "No notes-list widgets active — skipping refresh")
+                return
+            }
+            Logger.d(TAG, "Refreshing ${ids.size} notes-list widget(s)")
+            ids.forEach { id ->
+                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[NotesListWidgetState.KEY_LAST_UPDATED] = System.currentTimeMillis()
+                    }
+                }
+                NotesListWidget().update(context, id)
+            }
+            Logger.d(TAG, "Notes-list widget refresh completed")
+        } catch (e: Exception) {
+            Logger.w(TAG, "Failed to refresh notes-list widgets: ${e.message}")
+        }
+    }
+
+    suspend fun refreshAllWidgets(context: Context) {
+        refreshAllNoteWidgets(context)
+        refreshAllNotesListWidgets(context)
+    }
 }

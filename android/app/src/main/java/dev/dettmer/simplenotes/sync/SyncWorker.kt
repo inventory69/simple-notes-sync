@@ -375,7 +375,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 SyncEventBus.emit(SyncEvent.SyncCompleted(success = true, count = result.syncedCount))
 
                 // 🆕 v1.8.0: Alle Widgets aktualisieren nach Sync
-                dev.dettmer.simplenotes.widget.WidgetUpdateHelper.refreshAllNoteWidgets(applicationContext)
+                dev.dettmer.simplenotes.widget.WidgetUpdateHelper.refreshAllWidgets(applicationContext)
 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS")

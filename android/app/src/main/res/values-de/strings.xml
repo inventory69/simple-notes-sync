@@ -693,6 +693,8 @@
     <string name="widget_lock_description">Versehentliches Bearbeiten verhindern</string>
     <string name="widget_opacity_label">Hintergrund-Transparenz</string>
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
+    <string name="widget_cards_opacity_label">Auch auf Notizkarten anwenden</string>
+    <string name="widget_cards_opacity_description">Notizkarten-Hintergründe folgen ebenfalls der Transparenz-Einstellung</string>
     <string name="widget_preview_title">Einkaufsliste</string>
     <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
     <string name="widget_note_not_found">Notiz nicht gefunden</string>
@@ -776,4 +778,24 @@
     <string name="cd_folder_card">Ordner %1$s</string>
     <string name="action_move_to_folder">In Ordner verschieben</string>
     <string name="cd_more_options">Weitere Optionen</string>
+
+    <!-- Notes List Scroll Widget -->
+    <string name="notes_list_widget_name">Notizliste</string>
+    <string name="notes_list_widget_description">Scrollbare Liste aller Notizen</string>
+    <string name="notes_list_widget_config_title">Notizlisten-Widget</string>
+    <string name="notes_list_widget_config_sort_label">Sortierung</string>
+    <string name="notes_list_widget_config_filter_label">Anzeigen</string>
+    <string name="notes_list_widget_config_save">Speichern</string>
+    <string name="notes_list_widget_empty">Keine Notizen</string>
+    <string name="notes_list_widget_untitled">Ohne Titel</string>
+    <string name="notes_list_widget_section_pinned">Angeheftet</string>
+    <string name="notes_list_widget_section_others">Notizen</string>
+    <string name="notes_list_widget_section_folders">Ordner</string>
+    <!-- Preview placeholder strings (not shown to users) -->
+    <string name="notes_list_widget_preview_title_1">Einkaufsliste</string>
+    <string name="notes_list_widget_preview_content_1">• Milch\n• Brot\n• Eier</string>
+    <string name="notes_list_widget_preview_title_2">Meeting-Notizen</string>
+    <string name="notes_list_widget_preview_content_2">Roadmap und nächste Meilensteine besprechen</string>
+    <string name="notes_list_widget_preview_title_3">Ideen</string>
+    <string name="notes_list_widget_preview_content_3">Neue Feature-Ideen für den nächsten Sprint</string>
 </resources>
