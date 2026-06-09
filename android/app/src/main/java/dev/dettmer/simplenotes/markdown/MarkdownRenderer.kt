@@ -337,3 +337,59 @@ internal const val INLINE_GROUP_ITALIC_UNDERSCORE = 5
 internal const val INLINE_GROUP_INLINE_CODE = 6
 internal const val INLINE_GROUP_LINK_TEXT = 7
 internal const val INLINE_GROUP_LINK_URL = 8
+
+/**
+ * Strips inline Markdown delimiters from [text], returning plain readable text.
+ * Used where AnnotatedString is unavailable (e.g. Glance widgets).
+ *
+ * `**bold**` → `bold`, `_italic_` → `italic`, `[text](url)` → `text`, bare URLs kept as-is.
+ */
+internal fun stripInlineFormatting(text: String): String =
+    INLINE_COMBINED_REGEX.replace(text) { match ->
+        when {
+            match.groups[1] != null -> match.groupValues[1]
+            match.groups[2] != null -> match.groupValues[2]
+            match.groups[INLINE_GROUP_STRIKETHROUGH] != null -> match.groupValues[INLINE_GROUP_STRIKETHROUGH]
+            match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null -> match.groupValues[INLINE_GROUP_ITALIC_ASTERISK]
+            match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null -> match.groupValues[INLINE_GROUP_ITALIC_UNDERSCORE]
+            match.groups[INLINE_GROUP_INLINE_CODE] != null -> match.groupValues[INLINE_GROUP_INLINE_CODE]
+            match.groups[INLINE_GROUP_LINK_TEXT] != null -> match.groupValues[INLINE_GROUP_LINK_TEXT]
+            else -> match.value // bare URL — keep as-is
+        }
+    }
+
+private fun String.escapeHtml(): String =
+    replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+/**
+ * Converts inline Markdown in [text] to an HTML string suitable for [android.text.Html.fromHtml].
+ *
+ * Bold → `<b>`, italic → `<i>`, strikethrough → `<s>`, inline code → `<tt>`,
+ * links → link text only (URL discarded), bare URLs → kept as escaped plain text.
+ * All captured content is HTML-escaped to prevent injection into [android.text.Html.fromHtml].
+ */
+internal fun markdownInlineToHtml(text: String): String = buildString {
+    var pos = 0
+    for (match in INLINE_COMBINED_REGEX.findAll(text)) {
+        if (match.range.first > pos) {
+            append(text.substring(pos, match.range.first).escapeHtml())
+        }
+        when {
+            match.groups[1] != null -> append("<b>${match.groupValues[1].escapeHtml()}</b>")
+            match.groups[2] != null -> append("<b>${match.groupValues[2].escapeHtml()}</b>")
+            match.groups[INLINE_GROUP_STRIKETHROUGH] != null ->
+                append("<s>${match.groupValues[INLINE_GROUP_STRIKETHROUGH].escapeHtml()}</s>")
+            match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null ->
+                append("<i>${match.groupValues[INLINE_GROUP_ITALIC_ASTERISK].escapeHtml()}</i>")
+            match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null ->
+                append("<i>${match.groupValues[INLINE_GROUP_ITALIC_UNDERSCORE].escapeHtml()}</i>")
+            match.groups[INLINE_GROUP_INLINE_CODE] != null ->
+                append("<tt>${match.groupValues[INLINE_GROUP_INLINE_CODE].escapeHtml()}</tt>")
+            match.groups[INLINE_GROUP_LINK_TEXT] != null ->
+                append(match.groupValues[INLINE_GROUP_LINK_TEXT].escapeHtml())
+            else -> append(match.value.escapeHtml()) // bare URL — keep as plain text
+        }
+        pos = match.range.last + 1
+    }
+    if (pos < text.length) append(text.substring(pos).escapeHtml())
+}

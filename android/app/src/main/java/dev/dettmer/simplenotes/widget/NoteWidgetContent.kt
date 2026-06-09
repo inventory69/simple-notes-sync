@@ -41,6 +41,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.stripInlineFormatting
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -50,9 +51,8 @@ import dev.dettmer.simplenotes.utils.Logger
 
 private const val TAG = "NoteWidgetContent"
 
-// Maximum number of lines/items to render in the widget to prevent
+// Maximum checklist items to render in the widget to prevent
 // TransactionTooLargeException (1MB Binder limit for RemoteViews).
-private const val WIDGET_MAX_TEXT_LINES = 100
 private const val WIDGET_MAX_CHECKLIST_ITEMS = 100
 
 /**
@@ -231,7 +231,7 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.NARROW_MED -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            TextNoteFullView(note)
+                            WidgetMarkdownView(note.content)
                         }
                         NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
                             ChecklistCompactView(
@@ -249,7 +249,7 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.NARROW_TALL -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            TextNoteFullView(note)
+                            WidgetMarkdownView(note.content)
                         }
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
@@ -273,7 +273,7 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.WIDE_MED -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            TextNoteFullView(note)
+                            WidgetMarkdownView(note.content)
                         }
                         NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
                             ChecklistCompactView(
@@ -291,7 +291,7 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.WIDE_TALL -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            TextNoteFullView(note)
+                            WidgetMarkdownView(note.content)
                         }
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
@@ -410,46 +410,6 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
     }
 }
 
-// ── Text Note Views ──
-
-@Composable
-private fun TextNoteFullView(note: Note) {
-    LazyColumn(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
-    ) {
-        // 🆕 v1.8.0 Fix: Split text into individual lines instead of paragraphs.
-        // This ensures each line is a separate LazyColumn item that can scroll properly.
-        // Empty lines are preserved as small spacers for visual paragraph separation.
-        val lines = note.content.split("\n").let { allLines ->
-            if (allLines.size > WIDGET_MAX_TEXT_LINES) {
-                Logger.d(TAG, "Truncating text note from ${allLines.size} to $WIDGET_MAX_TEXT_LINES lines")
-                allLines.take(WIDGET_MAX_TEXT_LINES)
-            } else {
-                allLines
-            }
-        }
-        items(lines.size) { index ->
-            val line = lines[index]
-            if (line.isBlank()) {
-                // Preserve empty lines as spacing (paragraph separator)
-                Spacer(modifier = GlanceModifier.height(8.dp))
-            } else {
-                Text(
-                    text = line,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 14.sp
-                    ),
-                    maxLines = 5, // Allow wrapping but prevent single-item overflow
-                    modifier = GlanceModifier.padding(bottom = 4.dp) // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
-                )
-            }
-        }
-    }
-}
-
 // ── Checklist Views ──
 
 /**
@@ -506,23 +466,13 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
                         style = TextStyle(fontSize = 14.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
-                    // 🆕 v1.9.0 (F03): Strikethrough for completed items
-                    Text(
+                    WidgetInlineText(
                         text = item.text,
-                        style = TextStyle(
-                            color = if (item.isChecked) {
-                                GlanceTheme.colors.outline
-                            } else {
-                                GlanceTheme.colors.onSurface
-                            },
-                            fontSize = 13.sp,
-                            textDecoration = if (item.isChecked) {
-                                TextDecoration.LineThrough
-                            } else {
-                                TextDecoration.None
-                            }
-                        ),
-                        maxLines = 1
+                        fontSize = 14f,
+                        maxLines = 2,
+                        dimmed = item.isChecked,
+                        addStrikethrough = item.isChecked,
+                        modifier = GlanceModifier.defaultWeight()
                     )
                 }
             } else {
@@ -535,7 +485,7 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
                             NoteWidgetActionKeys.KEY_GLANCE_ID to glanceId.toString()
                         )
                     ),
-                    text = item.text,
+                    text = stripInlineFormatting(item.text),
                     // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
                         color = if (item.isChecked) {
@@ -636,23 +586,13 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
                         style = TextStyle(fontSize = 16.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))
-                    // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
-                    Text(
+                    WidgetInlineText(
                         text = item.text,
-                        style = TextStyle(
-                            color = if (item.isChecked) {
-                                GlanceTheme.colors.outline
-                            } else {
-                                GlanceTheme.colors.onSurface
-                            },
-                            fontSize = 14.sp,
-                            textDecoration = if (item.isChecked) {
-                                TextDecoration.LineThrough
-                            } else {
-                                TextDecoration.None
-                            }
-                        ),
-                        maxLines = 2
+                        fontSize = 14f,
+                        maxLines = 2,
+                        dimmed = item.isChecked,
+                        addStrikethrough = item.isChecked,
+                        modifier = GlanceModifier.defaultWeight()
                     )
                 }
             } else {
@@ -665,7 +605,7 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
                             NoteWidgetActionKeys.KEY_GLANCE_ID to glanceId.toString()
                         )
                     ),
-                    text = item.text,
+                    text = stripInlineFormatting(item.text),
                     // 🆕 v1.9.0 (F03): Strikethrough + dimmed color for completed items
                     style = TextStyle(
                         color = if (item.isChecked) {
