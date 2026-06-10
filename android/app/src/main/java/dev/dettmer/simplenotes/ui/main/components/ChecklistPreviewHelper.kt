@@ -1,5 +1,14 @@
 package dev.dettmer.simplenotes.ui.main.components
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 
@@ -67,5 +76,41 @@ fun generateChecklistPreview(items: List<ChecklistItem>, sortOptionName: String?
     return sorted.joinToString("\n") { item ->
         val prefix = if (item.isChecked) "☑️" else "☐"
         "$prefix ${item.text}"
+    }
+}
+
+@Composable
+fun ChecklistItemsPreview(
+    items: List<ChecklistItem>,
+    sortOptionName: String?,
+    maxItems: Int,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    val sorted = sortChecklistItemsForPreview(items, sortOptionName)
+    val remaining = (sorted.size - maxItems).coerceAtLeast(0)
+    // If only 1 item would be hidden, showing "+1 more" wastes a line vs. just showing the item
+    val effectiveMax = if (remaining == 1) maxItems + 1 else maxItems
+    val visible = sorted.take(effectiveMax)
+    val finalRemaining = (sorted.size - visible.size).coerceAtLeast(0)
+
+    Column(modifier = modifier) {
+        visible.forEach { item ->
+            val prefix = if (item.isChecked) "☑️" else "☐"
+            Text(
+                text = "$prefix ${item.text}",
+                style = style,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (finalRemaining > 0) {
+            Text(
+                text = stringResource(R.string.checklist_items_more, finalRemaining),
+                style = style,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
     }
 }

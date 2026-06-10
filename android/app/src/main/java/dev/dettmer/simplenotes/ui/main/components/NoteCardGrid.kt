@@ -194,14 +194,11 @@ fun NoteCardGrid(
                         overflow = TextOverflow.Ellipsis
                     )
                 } else {
-                    Text(
-                        text = note.checklistItems?.let { items ->
-                            generateChecklistPreview(items, note.checklistSortOption)
-                        }.orEmpty(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = previewMaxLines,
-                        overflow = TextOverflow.Ellipsis
+                    ChecklistItemsPreview(
+                        items = note.checklistItems.orEmpty(),
+                        sortOptionName = note.checklistSortOption,
+                        maxItems = previewMaxLines - 1,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
 

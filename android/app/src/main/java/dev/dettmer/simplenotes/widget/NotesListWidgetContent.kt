@@ -44,6 +44,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
+import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 
 private const val NOTE_CARD_CHECKLIST_MAX_ITEMS = 4
@@ -376,15 +377,15 @@ private fun NoteCardBody(note: Note) {
 
 @Composable
 private fun ChecklistCardPreview(note: Note) {
-    val allItems = note.checklistItems.orEmpty()
-    val uncheckedItems = allItems.filter { !it.isChecked }
-    val visibleItems = uncheckedItems.take(NOTE_CARD_CHECKLIST_MAX_ITEMS)
-    val remaining = (uncheckedItems.size - visibleItems.size).coerceAtLeast(0)
+    val sorted = sortChecklistItemsForPreview(note.checklistItems.orEmpty(), note.checklistSortOption)
+    val visibleItems = sorted.take(NOTE_CARD_CHECKLIST_MAX_ITEMS)
+    val remaining = (sorted.size - visibleItems.size).coerceAtLeast(0)
 
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         visibleItems.forEach { item ->
+            val prefix = if (item.isChecked) "☑️" else "☐"
             Text(
-                text = "• ${stripInlineFormatting(item.text)}",
+                text = "$prefix ${stripInlineFormatting(item.text)}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp

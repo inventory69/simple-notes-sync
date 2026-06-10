@@ -184,13 +184,11 @@ fun NoteCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 } else {
-                    val items = note.checklistItems.orEmpty()
-                    Text(
-                        text = stringResource(R.string.checklist_progress, items.count { it.isChecked }, items.size),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
+                    ChecklistItemsPreview(
+                        items = note.checklistItems.orEmpty(),
+                        sortOptionName = note.checklistSortOption,
+                        maxItems = 3,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
 

@@ -34,6 +34,7 @@
     <!-- ============================= -->
     <string name="untitled">Ohne Titel</string>
     <string name="checklist_progress">%1$d/%2$d erledigt</string>
+    <string name="checklist_items_more">+%d weitere</string>
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
