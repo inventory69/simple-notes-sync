@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.R
-import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.toEnumOrDefault
 
 /**
  * ThemeMode — controls dark/light behaviour of the app.
@@ -44,18 +44,12 @@ enum class ColorTheme(val displayNameResId: Int, val previewColor: Color) {
  * v2.0.0: Multi-theme system
  */
 object ThemePreferences {
-    private const val TAG = "ThemePreferences"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_COLOR_THEME = "color_theme"
 
     fun getThemeMode(prefs: SharedPreferences): ThemeMode {
         val stored = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
-        return try {
-            ThemeMode.valueOf(stored ?: ThemeMode.SYSTEM.name)
-        } catch (e: Exception) {
-            Logger.d(TAG, "Invalid theme mode value '$stored', falling back to SYSTEM: ${e.message}")
-            ThemeMode.SYSTEM
-        }
+        return stored.toEnumOrDefault(ThemeMode.SYSTEM)
     }
 
     fun setThemeMode(prefs: SharedPreferences, mode: ThemeMode) {
@@ -64,12 +58,7 @@ object ThemePreferences {
 
     fun getColorTheme(prefs: SharedPreferences): ColorTheme {
         val stored = prefs.getString(KEY_COLOR_THEME, ColorTheme.DYNAMIC.name)
-        return try {
-            ColorTheme.valueOf(stored ?: ColorTheme.DYNAMIC.name)
-        } catch (e: Exception) {
-            Logger.d(TAG, "Invalid color theme value '$stored', falling back to DYNAMIC: ${e.message}")
-            ColorTheme.DYNAMIC
-        }
+        return stored.toEnumOrDefault(ColorTheme.DYNAMIC)
     }
 
     fun setColorTheme(prefs: SharedPreferences, theme: ColorTheme) {

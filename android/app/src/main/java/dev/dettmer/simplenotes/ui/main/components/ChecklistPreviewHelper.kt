@@ -11,6 +11,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
+import dev.dettmer.simplenotes.utils.toEnumOrDefault
 
 /**
  * 🆕 v1.8.1 (IMPL_03): Helper-Funktionen für die Checklisten-Vorschau in Main Activity.
@@ -25,11 +26,7 @@ import dev.dettmer.simplenotes.models.ChecklistSortOption
  * gespeicherten Sortier-Option.
  */
 fun sortChecklistItemsForPreview(items: List<ChecklistItem>, sortOptionName: String?): List<ChecklistItem> {
-    val sortOption = try {
-        sortOptionName?.let { ChecklistSortOption.valueOf(it) }
-    } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
-        null
-    } ?: ChecklistSortOption.MANUAL
+    val sortOption = sortOptionName.toEnumOrDefault(ChecklistSortOption.MANUAL)
 
     return when (sortOption) {
         ChecklistSortOption.MANUAL,

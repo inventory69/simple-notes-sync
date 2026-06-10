@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.utils.NoteShareHelper
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.util.UUID
@@ -310,12 +311,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     private fun initNewNote(noteTypeString: String) {
-        currentNoteType = try {
-            NoteType.valueOf(noteTypeString)
-        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
-            Logger.w(TAG, "Invalid note type '$noteTypeString', defaulting to TEXT")
-            NoteType.TEXT
-        }
+        currentNoteType = noteTypeString.toEnumOrDefault(NoteType.TEXT)
 
         _uiState.update { state ->
             state.copy(
@@ -445,18 +441,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         return lines.mapIndexed { index, line -> normalizeLineToChecklistItem(line, index) }
     }
 
-    /**
-     * Safely parse a ChecklistSortOption from its string name.
-     * Falls back to MANUAL if the name is unknown (e.g., from older app versions).
-     */
-    private fun parseSortOption(sortName: String): ChecklistSortOption {
-        return try {
-            ChecklistSortOption.valueOf(sortName)
-        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
-            Logger.w(TAG, "Unknown sort option '$sortName', using MANUAL")
-            ChecklistSortOption.MANUAL
-        }
-    }
+    private fun parseSortOption(sortName: String): ChecklistSortOption =
+        sortName.toEnumOrDefault(ChecklistSortOption.MANUAL)
 
     // ═══════════════════════════════════════════════════════════════════════
     // Actions
