@@ -167,7 +167,7 @@ internal class NoteDownloader(
                 val deduplicatedItems = scanItems
                     .groupBy { it.resource.name.removeSuffix(".json") }
                     .values
-                    .map { group -> group.maxByOrNull { it.resource.modified?.time ?: 0L }!! }
+                    .mapNotNull { group -> group.maxByOrNull { it.resource.modified?.time ?: 0L } }
 
                 val jsonFiles = deduplicatedItems.map { it.resource }
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server (incl. subfolders)")

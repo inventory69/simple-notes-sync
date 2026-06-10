@@ -51,7 +51,7 @@ object ThemePreferences {
     fun getThemeMode(prefs: SharedPreferences): ThemeMode {
         val stored = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
         return try {
-            ThemeMode.valueOf(stored!!)
+            ThemeMode.valueOf(stored ?: ThemeMode.SYSTEM.name)
         } catch (e: Exception) {
             Logger.d(TAG, "Invalid theme mode value '$stored', falling back to SYSTEM: ${e.message}")
             ThemeMode.SYSTEM
@@ -65,7 +65,7 @@ object ThemePreferences {
     fun getColorTheme(prefs: SharedPreferences): ColorTheme {
         val stored = prefs.getString(KEY_COLOR_THEME, ColorTheme.DYNAMIC.name)
         return try {
-            ColorTheme.valueOf(stored!!)
+            ColorTheme.valueOf(stored ?: ColorTheme.DYNAMIC.name)
         } catch (e: Exception) {
             Logger.d(TAG, "Invalid color theme value '$stored', falling back to DYNAMIC: ${e.message}")
             ColorTheme.DYNAMIC

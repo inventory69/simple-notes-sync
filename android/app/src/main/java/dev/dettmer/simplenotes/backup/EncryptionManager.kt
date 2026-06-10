@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.backup
 import dev.dettmer.simplenotes.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
@@ -143,7 +144,7 @@ class EncryptionManager {
 
             Logger.d(TAG, "✅ Decryption successful: ${plaintext.size} bytes")
             plaintext
-        } catch (e: Exception) {
+        } catch (e: GeneralSecurityException) {
             Logger.e(TAG, "Decryption failed", e)
             throw EncryptionException("Decryption failed: ${e.message}. Wrong password?", e)
         }

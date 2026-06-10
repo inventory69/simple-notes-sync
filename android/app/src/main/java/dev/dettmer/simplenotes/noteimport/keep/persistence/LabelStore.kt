@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 /**
  * v2.5.0 — Mutex-geschützter Wrapper um den persistierten [LabelIndex].
@@ -68,7 +69,7 @@ class LabelStore(private val context: Context) {
         if (!file.exists()) return@withContext LabelIndex()
         val raw = try {
             file.readText(Charsets.UTF_8)
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Logger.w(TAG, "Failed reading $FILE_NAME: ${e.message}")
             return@withContext LabelIndex()
         }
@@ -88,7 +89,7 @@ class LabelStore(private val context: Context) {
                 file.writeText(index.toJson(), Charsets.UTF_8)
                 tmp.delete()
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Logger.w(TAG, "Failed writing $FILE_NAME: ${e.message}")
         }
     }

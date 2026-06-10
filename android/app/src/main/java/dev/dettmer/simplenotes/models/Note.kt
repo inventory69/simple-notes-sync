@@ -226,8 +226,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 var cleanTitle = rawNote.title
                 if (noteType == NoteType.CHECKLIST) {
                     val checklistPatternInTitle = Regex("""[-*]\s*\[([ xX])\]\s+""")
-                    if (checklistPatternInTitle.containsMatchIn(cleanTitle)) {
-                        val splitMatch = checklistPatternInTitle.find(cleanTitle)!!
+                    checklistPatternInTitle.find(cleanTitle)?.let { splitMatch ->
                         val rescuedText = cleanTitle.substring(splitMatch.range.first)
                         cleanTitle = cleanTitle.substring(0, splitMatch.range.first).trim()
 
@@ -364,8 +363,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 // Bug: fehlende Leerzeile in toMarkdown() führte zu "Titel- [ ] Item" als Titelzeile
                 val checklistPatternInTitle = Regex("""[-*]\s*\[([ xX])\]\s+""")
                 var rescuedItemLine: String? = null
-                if (checklistPatternInTitle.containsMatchIn(title)) {
-                    val splitMatch = checklistPatternInTitle.find(title)!!
+                checklistPatternInTitle.find(title)?.let { splitMatch ->
                     rescuedItemLine = title.substring(splitMatch.range.first).trim()
                     title = title.substring(0, splitMatch.range.first).trim()
                     Logger.w(TAG, "⚠️ CORRUPTION FIX: Checklist pattern in title → cleaned to '$title', rescued: '$rescuedItemLine'")

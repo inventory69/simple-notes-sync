@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.models
 
 import dev.dettmer.simplenotes.utils.Logger
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 data class DeletionRecord(val id: String, val deletedAt: Long, val deviceId: String)
@@ -65,7 +66,7 @@ data class DeletionTracker(val version: Int = 1, val deletedNotes: MutableList<D
                 }
 
                 DeletionTracker(version, deletedNotes)
-            } catch (e: Exception) {
+            } catch (e: JSONException) {
                 Logger.w(TAG, "Failed to parse DeletionTracker JSON: ${e.message}")
                 null
             }

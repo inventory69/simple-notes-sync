@@ -6,6 +6,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -95,10 +96,11 @@ class NotesStorage(private val context: Context) {
      */
     suspend fun loadAllNotes(forceReload: Boolean = false): List<Note> = withContext(Dispatchers.IO) {
         cacheMutex.withLock {
-            if (!forceReload && cachedNotes != null &&
+            val cached = cachedNotes
+            if (!forceReload && cached != null &&
                 System.currentTimeMillis() - cacheTimestamp < cacheTtlMs
             ) {
-                return@withLock cachedNotes!!
+                return@withLock cached
             }
             val versionBefore = cacheVersion.get()
             val notes = notesDir.listFiles()
@@ -176,7 +178,7 @@ class NotesStorage(private val context: Context) {
         return try {
             val json = file.readText()
             DeletionTracker.fromJson(json) ?: DeletionTracker()
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Logger.e(TAG, "Failed to load deletion tracker", e)
             DeletionTracker()
         }
@@ -192,7 +194,7 @@ class NotesStorage(private val context: Context) {
             }
 
             Logger.d(TAG, "✅ Deletion tracker saved (${tracker.deletedNotes.size} entries)")
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Logger.e(TAG, "Failed to save deletion tracker", e)
         }
     }
