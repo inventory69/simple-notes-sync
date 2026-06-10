@@ -803,4 +803,146 @@ Content.
         val expected = "Line1\\nLine2\\t\\\"quoted\\\""
         assertEquals(expected, input.escapeJson())
     }
+
+    // ═══════════════════════════════════════════════
+    // Corruption fix paths (FIX-02 / FIX-03, v2.2.0)
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `fromJson FIX-03 strips checklist pattern from title and rescues items`() {
+        val json = """
+            {
+                "id": "corrupt-json",
+                "title": "Einkaufen- [ ] Bacon- [x] Eggs",
+                "content": "",
+                "createdAt": 1700000000000,
+                "updatedAt": 1700001000000,
+                "deviceId": "dev",
+                "noteType": "CHECKLIST",
+                "checklistItems": []
+            }
+        """.trimIndent()
+
+        val note = Note.fromJson(json)
+        assertNotNull(note)
+        assertEquals("Einkaufen", note!!.title)
+        assertNotNull(note.checklistItems)
+        assertEquals(2, note.checklistItems!!.size)
+        assertEquals("Bacon", note.checklistItems!![0].text)
+        assertFalse(note.checklistItems!![0].isChecked)
+        assertEquals("Eggs", note.checklistItems!![1].text)
+        assertTrue(note.checklistItems!![1].isChecked)
+    }
+
+    @Test
+    fun `fromJson FIX-03 clean title is not modified`() {
+        val json = """
+            {
+                "id": "clean-json",
+                "title": "Groceries",
+                "content": "",
+                "createdAt": 1700000000000,
+                "updatedAt": 1700001000000,
+                "deviceId": "dev",
+                "noteType": "CHECKLIST",
+                "checklistItems": [{"id":"i1","text":"Milk","isChecked":false,"order":0}]
+            }
+        """.trimIndent()
+
+        val note = Note.fromJson(json)
+        assertNotNull(note)
+        assertEquals("Groceries", note!!.title)
+        assertEquals(1, note.checklistItems!!.size)
+    }
+
+    @Test
+    fun `fromMarkdown FIX-02 strips checklist pattern from title and rescues item line`() {
+        val md = """
+            ---
+            id: corrupt-md
+            device: dev
+            status: local_only
+            created: 2024-06-20T14:00:00Z
+            updated: 2024-06-20T14:00:00Z
+            type: checklist
+            ---
+
+            # Shopping List- [ ] Bacon
+
+            - [ ] Eggs
+        """.trimIndent()
+
+        val note = Note.fromMarkdown(md, serverModifiedTime = null)
+        assertNotNull(note)
+        assertEquals("Shopping List", note!!.title)
+    }
+
+    @Test
+    fun `fromMarkdown FIX-02 clean checklist title is not modified`() {
+        val md = """
+            ---
+            id: clean-md
+            device: dev
+            status: local_only
+            created: 2024-06-20T14:00:00Z
+            updated: 2024-06-20T14:00:00Z
+            type: checklist
+            ---
+
+            # Weekly Tasks
+
+            - [ ] Buy milk
+        """.trimIndent()
+
+        val note = Note.fromMarkdown(md, serverModifiedTime = null)
+        assertNotNull(note)
+        assertEquals("Weekly Tasks", note!!.title)
+    }
+
+    // ═══════════════════════════════════════════════
+    // ISO8601 Parsing — all 8 format patterns
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `parseISO8601 all 8 patterns produce identical timestamps for same moment`() {
+        // Reference: 2024-06-20T14:00:00 UTC
+        val refMs = Note.parseISO8601("2024-06-20T14:00:00Z")
+
+        val equivalents = listOf(
+            "2024-06-20T14:00:00Z",           // pattern 1: yyyy-MM-dd'T'HH:mm:ss'Z'
+            "2024-06-20T14:00:00.000Z",       // pattern 2: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+            "2024-06-20T14:00:00+00:00",      // pattern 3: yyyy-MM-dd'T'HH:mm:ssXXX
+            "2024-06-20T14:00:00.000+00:00",  // pattern 4: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+            "2024-06-20T14:00:00+0000",       // pattern 5: yyyy-MM-dd'T'HH:mm:ssZ (no colon)
+            "2024-06-20T14:00:00.000+0000",   // pattern 6: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+            "2024-06-20T14:00:00",            // pattern 7: yyyy-MM-dd'T'HH:mm:ss (no TZ → UTC)
+            "2024-06-20T14:00:00.000",        // pattern 8: yyyy-MM-dd'T'HH:mm:ss.SSS (no TZ → UTC)
+        )
+
+        for (input in equivalents) {
+            assertEquals("Mismatch for input: '$input'", refMs, Note.parseISO8601(input))
+        }
+    }
+
+    @Test
+    fun `parseISO8601 milliseconds with colon offset`() {
+        val withMs = Note.parseISO8601("2024-06-20T14:00:00.123+00:00")
+        val withZ = Note.parseISO8601("2024-06-20T14:00:00.123Z")
+        assertEquals(withZ, withMs)
+    }
+
+    @Test
+    fun `parseISO8601 milliseconds without colon offset`() {
+        val withMs = Note.parseISO8601("2024-06-20T14:00:00.123+0000")
+        val withZ = Note.parseISO8601("2024-06-20T14:00:00.123Z")
+        assertEquals(withZ, withMs)
+    }
+
+    @Test
+    fun `parseISO8601 no-timezone treated as UTC not local time`() {
+        // If interpreted as local time in any non-UTC timezone this would differ from the Z version
+        val withZ = Note.parseISO8601("2024-06-20T14:00:00Z")
+        val noTz = Note.parseISO8601("2024-06-20T14:00:00")
+        assertEquals(withZ, noTz)
+    }
 }

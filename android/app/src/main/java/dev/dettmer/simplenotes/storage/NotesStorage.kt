@@ -194,7 +194,7 @@ class NotesStorage(private val context: Context) {
             }
 
             Logger.d(TAG, "✅ Deletion tracker saved (${tracker.deletedNotes.size} entries)")
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Logger.e(TAG, "Failed to save deletion tracker", e)
         }
     }
