@@ -2,6 +2,8 @@ package dev.dettmer.simplenotes
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.foundation.ComposeFoundationFlags
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
@@ -39,8 +41,21 @@ class SimpleNotesApplication : Application() {
         super.attachBaseContext(base)
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate() {
         super.onCreate()
+
+        // 🔧 v2.7.0: Compose Foundation 1.11 (BOM 2026.05.01) unterdrückt während
+        // animateScrollToItem() sämtliche Modifier.animateItem-Placement-Animationen
+        // (LazyListState.skipItemPlacementAnimation → measureLazyList überspringt
+        // LazyLayoutItemAnimator.onMeasured). Das verschluckt die Uncheck-Reorder-
+        // Animation der Checkliste (Uncheck → ScrollToTop läuft im selben Fenster)
+        // und hinterlässt veraltete Animator-Baselines → Reorder-Artefakte beim
+        // nächsten User-Scroll. Flag aus → exaktes Foundation-1.10-Verhalten.
+        // Upstream-Rollout-Flag, wird in einer künftigen Version entfernt
+        // (b/493183465) → beim nächsten Compose-Bump prüfen; Details siehe
+        // project-docs/simple-notes-sync/FIX-checklist-reorder-animation-compose-1.11.md
+        ComposeFoundationFlags.isSkipItemPlacementAnimationFixEnabled = false
 
         val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -116,7 +131,10 @@ class SimpleNotesApplication : Application() {
             try {
                 val securePrefs = CredentialStore.getSecurePrefs(this)
                 if (securePrefs == null) {
-                    Logger.w(TAG, "⚠️ EncryptedSharedPreferences unavailable — credentials remain in regular prefs (KeyStore issue)")
+                    Logger.w(
+                        TAG,
+                        "⚠️ EncryptedSharedPreferences unavailable — credentials remain in regular prefs (KeyStore issue)"
+                    )
                     return
                 }
                 CredentialStore.setCredentials(
@@ -149,8 +167,8 @@ class SimpleNotesApplication : Application() {
         if (!prefs.contains(Constants.KEY_OFFLINE_MODE)) {
             val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
             val hasServerConfig = !serverUrl.isNullOrEmpty() &&
-                serverUrl != "http://" &&
-                serverUrl != "https://"
+                    serverUrl != "http://" &&
+                    serverUrl != "https://"
 
             // If server was configured → offlineMode = false (continue syncing)
             // If no server → offlineMode = true (new users / offline users)
