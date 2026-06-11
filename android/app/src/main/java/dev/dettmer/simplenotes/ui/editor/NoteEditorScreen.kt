@@ -987,6 +987,14 @@ private fun LazyItemScope.DraggableChecklistItem(
     // dem Reorder. Key item.id: Reset-Timer überlebt Reorder, weil Composition
     // erhalten bleibt.
     var isCheckAnimating by remember(item.id) { mutableStateOf(false) }
+    // Detect undo/redo-driven isChecked changes (onCheckboxTap never fires in those cases)
+    val prevChecked = remember(item.id) { mutableStateOf(item.isChecked) }
+    LaunchedEffect(item.isChecked) {
+        if (item.isChecked != prevChecked.value) {
+            isCheckAnimating = true
+            prevChecked.value = item.isChecked
+        }
+    }
     LaunchedEffect(isCheckAnimating, item.id) {
         if (isCheckAnimating) {
             delay(CHECK_ANIMATION_TOTAL_MS)
