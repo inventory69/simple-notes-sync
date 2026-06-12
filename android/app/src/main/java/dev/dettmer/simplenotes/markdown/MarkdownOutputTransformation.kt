@@ -30,15 +30,20 @@ class MarkdownOutputTransformation(
     override fun TextFieldBuffer.transformOutput() {
         val text = toString()
         val len = text.length
-        val codeRanges = findCodeBlockRanges(text)
-        val styles = mutableListOf<StyleSpan>()
-        collectLineStyles(text, codeRanges, styles)
-        collectInlineStyles(text, codeRanges, styles)
-        for (s in styles) {
+        for (s in computeMarkdownSpans(text)) {
             val start = s.start.coerceIn(0, len)
             val end = s.end.coerceIn(start, len)
             if (end > start) addStyle(s.style, start, end)
         }
+    }
+
+    internal fun computeMarkdownSpans(text: String): List<StyleSpan> {
+        val codeRanges = findCodeBlockRanges(text)
+        val styles = mutableListOf<StyleSpan>()
+        collectLineStyles(text, codeRanges, styles)
+        collectCodeBlockStyles(text, codeRanges, styles)
+        collectInlineStyles(text, codeRanges, styles)
+        return styles
     }
 
     private fun collectLineStyles(
@@ -108,13 +113,35 @@ class MarkdownOutputTransformation(
         }
     }
 
+    private fun collectCodeBlockStyles(
+        text: String,
+        codeRanges: List<IntRange>,
+        styles: MutableList<StyleSpan>,
+    ) {
+        val blockStyle = SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)
+        val markerStyle = SpanStyle(color = markerColor)
+        for (range in codeRanges) {
+            styles += StyleSpan(range.first, range.last + 1, blockStyle)
+            val firstNewline = text.indexOf('\n', range.first)
+            val openFenceEnd = if (firstNewline < 0) range.last + 1 else firstNewline + 1
+            styles += StyleSpan(range.first, openFenceEnd, markerStyle)
+            val lastNewlineBeforeClose = text.lastIndexOf('\n', range.last - 1)
+            val closeFenceStart = if (lastNewlineBeforeClose < 0) range.first else lastNewlineBeforeClose + 1
+            if (closeFenceStart > openFenceEnd) {
+                styles += StyleSpan(closeFenceStart, range.last + 1, markerStyle)
+            }
+        }
+    }
+
     private fun collectInlineStyles(
         text: String,
         codeRanges: List<IntRange>,
         styles: MutableList<StyleSpan>,
     ) {
-        for (match in INLINE_COMBINED_REGEX.findAll(text)) {
-            if (codeRanges.any { match.range.first in it }) continue
+        val masked = buildString(text.length) {
+            text.forEachIndexed { i, c -> append(if (codeRanges.any { i in it }) ' ' else c) }
+        }
+        for (match in INLINE_COMBINED_REGEX.findAll(masked)) {
             inlineStyles(match, styles)
         }
     }
@@ -189,4 +216,4 @@ internal fun findCodeBlockRanges(text: String): List<IntRange> {
     return ranges
 }
 
-private data class StyleSpan(val start: Int, val end: Int, val style: SpanStyle)
+internal data class StyleSpan(val start: Int, val end: Int, val style: SpanStyle)
