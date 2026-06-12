@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
 import dev.dettmer.simplenotes.utils.Constants
@@ -24,12 +25,14 @@ import kotlinx.coroutines.sync.withPermit
  * 🆕 v2.0.0: Extrahiert Upload-Logik aus WebDavSyncService.
  * Verantwortlich für Batch- und Einzel-Uploads von Notizen auf den WebDAV-Server.
  */
+@Suppress("LongParameterList") // Parameter spiegeln NoteDownloader — beide benötigen folderStore für Local-Only-Filter
 internal class NoteUploader(
     private val prefs: SharedPreferences,
     private val storage: NotesStorage,
     private val eTagCache: ETagCache,
     private val urlBuilder: SyncUrlBuilder,
     private val ioDispatcher: CoroutineDispatcher,
+    private val folderStore: FolderStore, // 🆕 v2.8.0 (Local-Only Folders)
     private val markdownExporter: ((Sardine, String, Note, Boolean) -> Unit)? = null
 ) {
     companion object {
@@ -75,8 +78,12 @@ internal class NoteUploader(
             true
         }
 
+        // 🆕 v2.8.0 (Local-Only Folders): Notizen in "nur lokal"-Ordnern nie hochladen.
+        // Case-insensitiver Vergleich — Ordnernamen sind im FolderStore case-insensitiv eindeutig.
+        val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
         val pendingNotes = localNotes.filter {
-            it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING
+            (it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING)
+                && it.folderName?.lowercase() !in localOnlyFolders
         }
         val totalToUpload = pendingNotes.size
 

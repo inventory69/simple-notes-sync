@@ -24,25 +24,69 @@ class FolderSyncManager(
     private val gson = Gson()
 
     /** Lädt Server-folders.json, merged per-Ordner-LWW mit lokal, schreibt beide Seiten zurück.
-     *  Gibt `true` zurück, wenn das Merge-Ergebnis vom lokalen Stand abweicht (Farbe/Name/Tombstone). */
+     *  Gibt `true` zurück, wenn das Merge-Ergebnis vom lokalen Stand abweicht (Farbe/Name/Tombstone).
+     *
+     *  🆕 v2.8.0 (Local-Only Folders): Local-only-Ordner sind für beide Richtungen unsichtbar —
+     *  Remote-Einträge gleichen Namens werden beim Merge ignoriert (sonst würde z. B. ein
+     *  Remote-Tombstone den lokalen Ordner löschen) und lokale Einträge nie hochgeladen.
+     *  Für die Upload-Seite wird stattdessen der Remote-Stand unverändert durchgereicht
+     *  („Auf Server behalten") bzw. als Tombstone geschrieben, wenn der Ordner in der
+     *  Server-Removal-Queue steht („Vom Server entfernen"). */
     suspend fun sync(sardine: Sardine, serverUrl: String): Boolean {
         return try {
             val url = foldersFileUrl(serverUrl)
             val remote = downloadRemote(sardine, url)
             val local = folderStore.loadMeta()
-            val merged = mergeByName(local, remote)
+
+            val localOnlyLower = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
+            val removalQueue = folderStore.getServerRemovalQueue()
+            val removalLower = removalQueue.map { it.lowercase() }.toSet()
+            val excludedLower = localOnlyLower + removalLower
+
+            val remoteVisible = remote.filterNot { it.name.lowercase() in excludedLower }
+            val merged = mergeByName(local, remoteVisible)
             folderStore.replaceMeta(merged)
+
+            val uploadList = buildUploadList(merged, remote, localOnlyLower, removalLower)
             val dirty = prefs.getBoolean(Constants.KEY_FOLDERS_DIRTY, false)
-            if (dirty || merged.toSet() != remote.toSet()) {
-                sardine.put(url, gson.toJson(merged).toByteArray(Charsets.UTF_8), "application/json")
+            if (dirty || uploadList.toSet() != remote.toSet()) {
+                sardine.put(url, gson.toJson(uploadList).toByteArray(Charsets.UTF_8), "application/json")
             }
             prefs.edit { putBoolean(Constants.KEY_FOLDERS_DIRTY, false) }
+            // Removal-Intents sind nach erfolgreichem Upload erledigt (Tombstone liegt auf dem Server).
+            if (removalQueue.isNotEmpty()) {
+                folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() - removalQueue)
+            }
             Logger.d(TAG, "📁 folders.json synced: ${merged.count { !it.deleted }} active, ${merged.count { it.deleted }} tombstones")
             merged.toSet() != local.toSet()
         } catch (e: Exception) {
             Logger.w(TAG, "folders.json sync failed (non-fatal): ${e.message}")
             false
         }
+    }
+
+    /** Upload-Sicht: merged ohne local-only-Einträge; für ausgeblendete Namen den Remote-Stand
+     *  durchreichen (keep-on-server) oder tombstonen (Removal-Queue). */
+    private fun buildUploadList(
+        merged: List<FolderMeta>,
+        remote: List<FolderMeta>,
+        localOnlyLower: Set<String>,
+        removalLower: Set<String>
+    ): List<FolderMeta> {
+        val excludedLower = localOnlyLower + removalLower
+        val remoteByLower = remote.associateBy { it.name.lowercase() }
+        val passThrough = excludedLower.mapNotNull { key ->
+            val remoteEntry = remoteByLower[key]
+            when {
+                key in removalLower -> when {
+                    remoteEntry == null -> null // war nie auf dem Server → nichts zu entfernen
+                    remoteEntry.deleted -> remoteEntry // bereits Tombstone → konvergiert
+                    else -> remoteEntry.copy(deleted = true, updatedAt = System.currentTimeMillis())
+                }
+                else -> remoteEntry // keep-on-server: Remote-Stand unverändert lassen
+            }
+        }
+        return merged.filterNot { it.name.lowercase() in excludedLower } + passThrough
     }
 
     private fun downloadRemote(sardine: Sardine, url: String): List<FolderMeta> = try {

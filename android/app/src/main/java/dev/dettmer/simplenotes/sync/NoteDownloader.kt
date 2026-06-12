@@ -149,8 +149,15 @@ internal class NoteDownloader(
                         res.name != "/" &&
                         !rootBaseUrl.trimEnd('/').endsWith("/" + res.name)
                 }
+                // 🆕 v2.8.0 (Local-Only Folders): einmalig lesen, alle Subdirs damit filtern.
+                // Case-insensitiv — Server-Verzeichnisname kann in der Groß-/Kleinschreibung abweichen.
+                val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
                 for (dir in subDirs) {
                     val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
+                    if (folder.lowercase() in localOnlyFolders) {
+                        Logger.d(TAG, "   ⏭️ Skipping local-only folder: $folder")
+                        continue
+                    }
                     discoveredFolders.add(folder)
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
                     val folderResources = when (sardine) {
@@ -641,7 +648,11 @@ internal class NoteDownloader(
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
      */
     suspend fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
-        val syncedNotes = localNotes.filter { it.syncStatus == SyncStatus.SYNCED }
+        // 🆕 v2.8.0 (Local-Only Folders): Notizen in lokalen Ordnern nie als server-gelöscht markieren.
+        val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
+        val syncedNotes = localNotes.filter {
+            it.syncStatus == SyncStatus.SYNCED && it.folderName?.lowercase() !in localOnlyFolders
+        }
 
         // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
         // Ein leeres Set bedeutet wahrscheinlich: PROPFIND fehlgeschlagen, /notes/ nicht gefunden,
@@ -660,6 +671,9 @@ internal class NoteDownloader(
         // Vorher: syncedNotes.size > 1 — blockierte legitime Massenlöschung bei 2–5 Notizen
         // User mit wenigen Notizen, die alle über Nextcloud-Web-UI löschen, bekamen nie
         // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
+        // 🆕 v2.8.0: Schwellenwert bewusst auf die GEFILTERTE Menge (ohne local-only-Ordner) —
+        // nur sie kann markiert werden. Ein Gesamt-Count würde z. B. bei 1 fehlenden Notiz +
+        // vielen local-only-Notizen legitime Einzellöschungen dauerhaft blockieren.
         val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
         if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
             Logger.e(

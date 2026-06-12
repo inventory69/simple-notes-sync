@@ -95,18 +95,19 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         ioDispatcher = ioDispatcher
     )
 
+    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(context) // 🆕 v2.7.0 (Folders)
+
     private val noteUploader = NoteUploader(
         prefs = prefs,
         storage = storage,
         eTagCache = eTagCache,
         urlBuilder = urlBuilder,
         ioDispatcher = ioDispatcher,
+        folderStore = folderStore, // 🆕 v2.8.0 (Local-Only Folders)
         markdownExporter = { sardine, serverUrl, note, mdDirExists ->
             markdownSyncManager.exportSingle(sardine, serverUrl, note, mdDirExists)
         }
     )
-
-    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(context) // 🆕 v2.7.0 (Folders)
 
     private val noteDownloader = NoteDownloader(
         prefs = prefs,
@@ -398,14 +399,24 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 return@withContext true
             }
 
+            // 🆕 v2.8.0 (Local-Only Folders): ausstehende „Vom Server entfernen"-Tombstones
+            if (folderStore.getServerRemovalQueue().isNotEmpty()) {
+                Logger.d(TAG, "📁 Folder server-removal queue pending - has changes: true")
+                return@withContext true
+            }
+
             // Check 2: Local changes (Timestamp ODER SyncStatus)
             // 🛡️ v1.8.2 (IMPL_19a): Klassen-Feld nutzen statt neue Instanz
             val allNotes = storage.loadAllNotes()
+            // 🆕 v2.8.0: local-only-Ordner-Notizen ausschließen — PENDING-Notizen dort werden
+            // nie hochgeladen und würden sonst eine Endlosschleife im Sync-Scheduler auslösen.
+            val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
             // 🛡️ v1.8.2 (IMPL_22): Auch PENDING-Status prüfen —
             // nach Server-Wechsel wird syncStatus auf PENDING gesetzt, aber updatedAt bleibt gleich
             val hasLocalChanges = allNotes.any { note ->
-                note.updatedAt > lastSyncTime ||
-                    note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING
+                note.folderName?.lowercase() !in localOnlyFolders &&
+                    (note.updatedAt > lastSyncTime ||
+                        note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING)
             }
 
             if (hasLocalChanges) {
