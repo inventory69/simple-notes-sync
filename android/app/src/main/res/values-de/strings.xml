@@ -792,6 +792,13 @@
     <string name="notes_list_widget_section_pinned">Angeheftet</string>
     <string name="notes_list_widget_section_others">Notizen</string>
     <string name="notes_list_widget_section_folders">Ordner</string>
+    <string name="notes_list_widget_config_visibility_label">Sichtbarkeit</string>
+    <string name="notes_list_widget_config_hide_pinned">Angepinnte Notizen ausblenden</string>
+    <string name="notes_list_widget_config_hide_pinned_desc">Angepinnte Notizen werden nicht im Widget angezeigt</string>
+    <string name="notes_list_widget_config_hide_folders">Ordner ausblenden</string>
+    <string name="notes_list_widget_config_hide_folders_desc">Ordner werden nicht im Widget angezeigt</string>
+    <string name="notes_list_widget_config_folder_label">Ordner</string>
+    <string name="notes_list_widget_config_folder_all">Alle Notizen</string>
     <!-- Preview placeholder strings (not shown to users) -->
     <string name="notes_list_widget_preview_title_1">Einkaufsliste</string>
     <string name="notes_list_widget_preview_content_1">• Milch\n• Brot\n• Eier</string>

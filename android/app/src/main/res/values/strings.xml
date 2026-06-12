@@ -866,6 +866,13 @@
     <string name="notes_list_widget_section_pinned">Pinned</string>
     <string name="notes_list_widget_section_others">Notes</string>
     <string name="notes_list_widget_section_folders">Folders</string>
+    <string name="notes_list_widget_config_visibility_label">Visibility</string>
+    <string name="notes_list_widget_config_hide_pinned">Hide pinned notes</string>
+    <string name="notes_list_widget_config_hide_pinned_desc">Pinned notes won\'t appear in the widget</string>
+    <string name="notes_list_widget_config_hide_folders">Hide folder cards</string>
+    <string name="notes_list_widget_config_hide_folders_desc">Folder cards won\'t appear in the widget</string>
+    <string name="notes_list_widget_config_folder_label">Folder</string>
+    <string name="notes_list_widget_config_folder_all">All notes</string>
     <!-- Preview placeholder strings (not shown to users) -->
     <string name="notes_list_widget_preview_title_1">Shopping list</string>
     <string name="notes_list_widget_preview_content_1">• Milk\n• Bread\n• Eggs</string>

@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
@@ -45,18 +46,18 @@ import dev.dettmer.simplenotes.models.SortOption
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesListWidgetConfigScreen(
-    initialSortOption: SortOption,
-    initialSortDirection: SortDirection,
-    initialFilter: NoteFilter,
-    initialOpacity: Float = 1.0f,
-    initialApplyOpacityToCards: Boolean = false,
-    onSave: (SortOption, SortDirection, NoteFilter, Float, Boolean) -> Unit
+    initialConfig: NotesListWidgetConfig,
+    folders: List<Folder> = emptyList(),
+    onSave: (NotesListWidgetConfig) -> Unit
 ) {
-    var sortOption by remember { mutableStateOf(initialSortOption) }
-    var sortDirection by remember { mutableStateOf(initialSortDirection) }
-    var noteFilter by remember { mutableStateOf(initialFilter) }
-    var opacity by remember { mutableFloatStateOf(initialOpacity) }
-    var applyOpacityToCards by remember { mutableStateOf(initialApplyOpacityToCards) }
+    var sortOption by remember { mutableStateOf(initialConfig.sortOption) }
+    var sortDirection by remember { mutableStateOf(initialConfig.sortDirection) }
+    var noteFilter by remember { mutableStateOf(initialConfig.filter) }
+    var opacity by remember { mutableFloatStateOf(initialConfig.opacity) }
+    var applyOpacityToCards by remember { mutableStateOf(initialConfig.applyOpacityToCards) }
+    var hidePinned by remember { mutableStateOf(initialConfig.hidePinned) }
+    var hideFolders by remember { mutableStateOf(initialConfig.hideFolders) }
+    var selectedFolder by remember { mutableStateOf(initialConfig.selectedFolder) }
 
     Scaffold(
         topBar = {
@@ -64,7 +65,12 @@ fun NotesListWidgetConfigScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onSave(sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards) }
+                onClick = {
+                    onSave(NotesListWidgetConfig(
+                        sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards,
+                        hidePinned, hideFolders, selectedFolder
+                    ))
+                }
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
@@ -151,6 +157,62 @@ fun NotesListWidgetConfigScreen(
                 }
             }
 
+            // ── Visibility ──
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Text(
+                text = stringResource(R.string.notes_list_widget_config_visibility_label),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.notes_list_widget_config_hide_pinned),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = stringResource(R.string.notes_list_widget_config_hide_pinned_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                Switch(checked = hidePinned, onCheckedChange = { hidePinned = it })
+            }
+            if (selectedFolder.isEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                        Text(
+                            text = stringResource(R.string.notes_list_widget_config_hide_folders),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = stringResource(R.string.notes_list_widget_config_hide_folders_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    Switch(checked = hideFolders, onCheckedChange = { hideFolders = it })
+                }
+            }
+
+            // ── Folder filter ──
+            if (folders.isNotEmpty()) {
+                FolderFilterSection(
+                    folders = folders,
+                    selectedFolder = selectedFolder,
+                    onSelectedFolderChange = { selectedFolder = it }
+                )
+            }
+
             // ── Background opacity ──
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Column(
@@ -213,6 +275,51 @@ fun NotesListWidgetConfigScreen(
 
             // Spacer so FAB doesn't cover the last item
             Spacer(Modifier.padding(bottom = 80.dp))
+        }
+    }
+}
+
+@Composable
+private fun FolderFilterSection(
+    folders: List<Folder>,
+    selectedFolder: String,
+    onSelectedFolderChange: (String) -> Unit
+) {
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    Text(
+        text = stringResource(R.string.notes_list_widget_config_folder_label),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 4.dp)
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelectedFolderChange("") }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selectedFolder.isEmpty(), onClick = { onSelectedFolderChange("") })
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.notes_list_widget_config_folder_all),
+            style = MaterialTheme.typography.bodyLarge
+        )
+    }
+    folders.forEach { folder ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onSelectedFolderChange(folder.name) }
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = selectedFolder == folder.name,
+                onClick = { onSelectedFolderChange(folder.name) }
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = folder.name, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

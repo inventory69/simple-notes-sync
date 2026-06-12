@@ -19,7 +19,10 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_APPLY_OPACITY_TO_CARDS
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_BACKGROUND_OPACITY
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FAB_EXPANDED
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_FOLDERS
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_PINNED
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_NOTE_FILTER
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SELECTED_FOLDER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_DIRECTION
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_OPTION
 
@@ -33,7 +36,6 @@ class NotesListWidget : GlanceAppWidget() {
         val storage = NotesStorage(context)
         val allNotes = storage.loadAllNotes()
         val folders = FolderStore(context).loadFolders()
-        val rootNotes = allNotes.filter { it.folderName == null }
         val folderNoteCounts = folders.associate { f -> f.name to allNotes.count { it.folderName == f.name } }
 
         provideContent {
@@ -45,13 +47,23 @@ class NotesListWidget : GlanceAppWidget() {
             val applyOpacityToCards = prefs[KEY_APPLY_OPACITY_TO_CARDS] ?: false
             val cardOpacity = if (applyOpacityToCards) bgOpacity else 1.0f
             val fabExpanded = prefs[KEY_FAB_EXPANDED] ?: false
+            val hidePinned = prefs[KEY_HIDE_PINNED] ?: false
+            val hideFolders = prefs[KEY_HIDE_FOLDERS] ?: false
+            val selectedFolder = prefs[KEY_SELECTED_FOLDER]?.takeIf { it.isNotEmpty() }
 
-            val notes = applyFilterAndSort(rootNotes, noteFilter, sortOption, sortDir)
+            val sourceNotes = if (selectedFolder != null) {
+                allNotes.filter { it.folderName == selectedFolder }
+            } else {
+                allNotes.filter { it.folderName == null }
+            }
+            val filteredByPinned = if (hidePinned) sourceNotes.filter { it.isPinned != true } else sourceNotes
+            val notes = applyFilterAndSort(filteredByPinned, noteFilter, sortOption, sortDir)
+            val foldersToShow = if (selectedFolder != null || hideFolders) emptyList() else folders
 
             GlanceTheme {
                 NotesListWidgetContent(
                     notes = notes,
-                    folders = folders,
+                    folders = foldersToShow,
                     folderNoteCounts = folderNoteCounts,
                     bgOpacity = bgOpacity,
                     cardBgOpacity = cardOpacity,
