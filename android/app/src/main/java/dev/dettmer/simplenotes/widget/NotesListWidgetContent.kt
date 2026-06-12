@@ -83,7 +83,8 @@ fun NotesListWidgetContent(
     folderNoteCounts: Map<String, Int> = emptyMap(),
     bgOpacity: Float = 1.0f,
     cardBgOpacity: Float = 1.0f,
-    fabExpanded: Boolean = false
+    fabExpanded: Boolean = false,
+    hasPinnedNotes: Boolean = false
 ) {
     val context = LocalContext.current
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
@@ -128,7 +129,7 @@ fun NotesListWidgetContent(
             } else {
                 val pinned = notes.filter { it.isPinned == true }
                 val others = notes.filter { it.isPinned != true }
-                val showSections = pinned.isNotEmpty() && others.isNotEmpty()
+                val showNotesHeader = others.isNotEmpty() && (pinned.isNotEmpty() || hasPinnedNotes)
 
                 LazyColumn(
                     modifier = GlanceModifier
@@ -136,7 +137,7 @@ fun NotesListWidgetContent(
                         .defaultWeight()
                         .padding(horizontal = 8.dp)
                 ) {
-                    if (showSections) {
+                    if (pinned.isNotEmpty()) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_pinned)) }
                     }
                     items(pinned.size) { i -> NoteCard(note = pinned[i], bgOpacity = cardBgOpacity) }
@@ -152,7 +153,7 @@ fun NotesListWidgetContent(
                         )
                     }
 
-                    if (showSections) {
+                    if (showNotesHeader) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_others)) }
                     }
                     items(others.size) { i -> NoteCard(note = others[i], bgOpacity = cardBgOpacity) }

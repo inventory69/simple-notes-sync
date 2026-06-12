@@ -56,6 +56,7 @@ class NotesListWidget : GlanceAppWidget() {
             } else {
                 allNotes.filter { it.folderName == null }
             }
+            val hasPinnedNotes = sourceNotes.any { it.isPinned == true }
             val filteredByPinned = if (hidePinned) sourceNotes.filter { it.isPinned != true } else sourceNotes
             val notes = applyFilterAndSort(filteredByPinned, noteFilter, sortOption, sortDir)
             val foldersToShow = if (selectedFolder != null || hideFolders) emptyList() else folders
@@ -67,7 +68,8 @@ class NotesListWidget : GlanceAppWidget() {
                     folderNoteCounts = folderNoteCounts,
                     bgOpacity = bgOpacity,
                     cardBgOpacity = cardOpacity,
-                    fabExpanded = fabExpanded
+                    fabExpanded = fabExpanded,
+                    hasPinnedNotes = hasPinnedNotes
                 )
             }
         }
