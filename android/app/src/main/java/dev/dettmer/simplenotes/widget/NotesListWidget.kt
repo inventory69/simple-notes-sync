@@ -26,7 +26,7 @@ import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_OPTION
 private const val NOTES_LIST_WIDGET_MAX_NOTES = 50
 
 class NotesListWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = SizeMode.Exact
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
