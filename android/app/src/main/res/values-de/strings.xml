@@ -779,6 +779,14 @@
     <string name="cd_folder_card">Ordner %1$s</string>
     <string name="action_move_to_folder">In Ordner verschieben</string>
     <string name="cd_more_options">Weitere Optionen</string>
+    <!-- 🆕 v2.8.0 (Local-Only Folders) -->
+    <string name="folder_exclude_from_sync">Nicht synchronisieren</string>
+    <string name="folder_include_in_sync">Synchronisieren</string>
+    <string name="folder_create_local_only">Nicht synchronisieren (nur dieses Gerät)</string>
+    <string name="folder_exclude_sync_title">Nicht mehr synchronisieren?</string>
+    <string name="folder_exclude_sync_message">Die Notizen bleiben auf diesem Gerät erhalten, werden aber nicht mehr synchronisiert. Was soll mit den bereits vorhandenen Kopien auf dem Server passieren?</string>
+    <string name="folder_exclude_remove_from_server">Vom Server entfernen</string>
+    <string name="folder_exclude_keep_on_server">Auf dem Server behalten</string>
 
     <!-- Notes List Scroll Widget -->
     <string name="notes_list_widget_name">Notizliste</string>

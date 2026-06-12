@@ -853,6 +853,14 @@
     <string name="cd_folder_card">Folder %1$s</string>
     <string name="action_move_to_folder">Move to folder</string>
     <string name="cd_more_options">More options</string>
+    <!-- 🆕 v2.8.0 (Local-Only Folders) -->
+    <string name="folder_exclude_from_sync">Exclude from sync</string>
+    <string name="folder_include_in_sync">Include in sync</string>
+    <string name="folder_create_local_only">Don\'t sync (this device only)</string>
+    <string name="folder_exclude_sync_title">Stop syncing?</string>
+    <string name="folder_exclude_sync_message">The notes stay on this device but will no longer be synced. What should happen to the copies already on the server?</string>
+    <string name="folder_exclude_remove_from_server">Remove from server</string>
+    <string name="folder_exclude_keep_on_server">Keep on server</string>
 
     <!-- Notes List Scroll Widget -->
     <string name="notes_list_widget_name">Notes List</string>
