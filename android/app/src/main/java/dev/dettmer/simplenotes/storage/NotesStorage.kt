@@ -53,15 +53,21 @@ class NotesStorage(private val context: Context) {
      * 🆕 v2.7.0 (Folders): Verschiebt eine Notiz in einen Ordner (oder zurück nach Root).
      * Setzt folderName, bumpt updatedAt (für updatedAt-basierte Konfliktauflösung) und markiert
      * PENDING. No-op, wenn die Notiz fehlt oder bereits im Zielordner liegt.
+     * 🆕 v2.8.0 (Local-Only Folders): [newStatus] erlaubt LOCAL_ONLY als Zielstatus,
+     * wenn der Zielordner vom Sync ausgeschlossen ist.
      */
-    suspend fun moveNote(noteId: String, targetFolder: String?) = withContext(Dispatchers.IO) {
+    suspend fun moveNote(
+        noteId: String,
+        targetFolder: String?,
+        newStatus: dev.dettmer.simplenotes.models.SyncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING
+    ) = withContext(Dispatchers.IO) {
         val note = loadNoteSync(noteId) ?: return@withContext
         if (note.folderName == targetFolder) return@withContext
         saveNote(
             note.copy(
                 folderName = targetFolder,
                 updatedAt = System.currentTimeMillis(),
-                syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING
+                syncStatus = newStatus
             )
         )
     }

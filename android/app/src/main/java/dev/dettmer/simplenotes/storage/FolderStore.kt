@@ -67,8 +67,9 @@ class FolderStore(private val context: Context) {
             .sortedBy { it.name.lowercase() }
     }
 
-    /** User-Anlage: Eintrag anlegen/re-aktivieren. Setzt dirty-Flag. */
-    suspend fun addFolder(name: String) {
+    /** User-Anlage: Eintrag anlegen/re-aktivieren. Setzt dirty-Flag (außer `dirty = false`,
+     *  z. B. bei local-only-Anlage, die keinen Sync-Lauf braucht). */
+    suspend fun addFolder(name: String, dirty: Boolean = true) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
         mutex.withLock {
@@ -82,7 +83,7 @@ class FolderStore(private val context: Context) {
                 current.add(FolderMeta(name = trimmed, updatedAt = now()))
             }
             writeMetaUnsafe(current.sortedBy { it.name.lowercase() })
-            markDirty()
+            if (dirty) markDirty()
         }
     }
 
@@ -114,16 +115,24 @@ class FolderStore(private val context: Context) {
         }
     }
 
-    /** Tombstoned old → new mit Farbe übernehmen. Setzt dirty-Flag. */
+    /** Tombstoned old → new mit Farbe übernehmen. Setzt dirty-Flag. Migriert local-only-Eintrag.
+     *  Local-only-Ordner: alter Eintrag wird hard-entfernt (kein Tombstone, kein dirty) —
+     *  ein Tombstone würde beim nächsten Sync propagieren und gleichnamige Ordner anderer
+     *  Geräte löschen, obwohl dieser Ordner den Server nie betreffen darf. */
     suspend fun rename(old: String, new: String) {
         val trimmedNew = new.trim()
         if (trimmedNew.isEmpty()) return
+        val localOnly = isLocalOnly(old)
         mutex.withLock {
             val current = loadMetaUnsafe().toMutableList()
             val oldIdx = current.indexOfFirst { it.name.equals(old, ignoreCase = true) }
             val oldColor = current.getOrNull(oldIdx)?.color
             if (oldIdx >= 0) {
-                current[oldIdx] = current[oldIdx].copy(deleted = true, updatedAt = now())
+                if (localOnly) {
+                    current.removeAt(oldIdx)
+                } else {
+                    current[oldIdx] = current[oldIdx].copy(deleted = true, updatedAt = now())
+                }
             }
             val newIdx = current.indexOfFirst { it.name.equals(trimmedNew, ignoreCase = true) }
             if (newIdx >= 0) {
@@ -132,25 +141,104 @@ class FolderStore(private val context: Context) {
                 current.add(FolderMeta(name = trimmedNew, color = oldColor, updatedAt = now()))
             }
             writeMetaUnsafe(current.sortedBy { it.name.lowercase() })
-            markDirty()
+            if (!localOnly) markDirty()
+        }
+        // local-only-Markierung auf den neuen Namen übertragen, alten Namen entfernen.
+        migrateLocalOnly(old, trimmedNew)
+    }
+
+    private fun migrateLocalOnly(oldName: String, newName: String) {
+        val current = getLocalOnlyFolderNames()
+        if (oldName in current) {
+            setLocalOnlyFolderNames(current - oldName + newName)
+        }
+        // Removal-Intent NICHT migrieren: er bezieht sich auf den alten Server-Eintrag.
+        // Die Notiz-Dateien wurden beim Ausschließen bereits via PendingServerDeletions
+        // eingeplant; der neue Name war nie auf dem Server.
+        val removal = getServerRemovalQueue()
+        if (oldName in removal) {
+            setServerRemovalQueue(removal - oldName)
         }
     }
 
-    /** Tombstone statt Hard-Remove. Setzt dirty-Flag. */
-    suspend fun deleteFolder(name: String) = mutex.withLock {
+    // ── Local-Only (device-only, not synced to WebDAV) ────────────────────
+
+    /** Gibt die Namen aller als "nur lokal" markierten Ordner zurück. */
+    fun getLocalOnlyFolderNames(): Set<String> =
+        prefs.getStringSet(KEY_LOCAL_ONLY_FOLDERS, emptySet()) ?: emptySet()
+
+    /** Ersetzt die gespeicherte Menge atomisch. */
+    fun setLocalOnlyFolderNames(names: Set<String>) {
+        prefs.edit { putStringSet(KEY_LOCAL_ONLY_FOLDERS, names.toSet()) }
+    }
+
+    /** Case-insensitive Prüfung — Ordnernamen sind im Store case-insensitiv eindeutig. */
+    fun isLocalOnly(name: String?): Boolean =
+        name != null && getLocalOnlyFolderNames().any { it.equals(name, ignoreCase = true) }
+
+    /** Setzt oder entfernt die "nur lokal"-Markierung. Beim Entfernen wird auch ein
+     *  evtl. offener Removal-Intent verworfen (nur sinnvoll solange local-only). */
+    fun setLocalOnly(name: String, localOnly: Boolean) {
+        val current = getLocalOnlyFolderNames().toMutableSet()
+        if (localOnly) current.add(name) else current.removeAll { it.equals(name, ignoreCase = true) }
+        prefs.edit { putStringSet(KEY_LOCAL_ONLY_FOLDERS, current) }
+        if (!localOnly) {
+            setServerRemovalQueue(getServerRemovalQueue().filterNot { it.equals(name, ignoreCase = true) }.toSet())
+        }
+    }
+
+    /** Ordner, deren Server-Eintrag beim nächsten folders.json-Sync tombstoned werden soll
+     *  („Vom Server entfernen" beim nachträglichen Ausschließen). Selbst-löschend nach Erfolg. */
+    fun getServerRemovalQueue(): Set<String> =
+        prefs.getStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, emptySet()) ?: emptySet()
+
+    fun setServerRemovalQueue(names: Set<String>) {
+        prefs.edit { putStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, names.toSet()) }
+    }
+
+    /** Re-Include nach local-only: updatedAt-Bump, damit der lokale aktive Eintrag einen evtl.
+     *  Server-Tombstone (aus „Vom Server entfernen") beim LWW-Merge schlägt. Setzt dirty-Flag. */
+    suspend fun touch(name: String) = mutex.withLock {
         val current = loadMetaUnsafe().toMutableList()
         val idx = current.indexOfFirst { it.name.equals(name, ignoreCase = true) && !it.deleted }
         if (idx >= 0) {
-            current[idx] = current[idx].copy(deleted = true, updatedAt = now())
+            current[idx] = current[idx].copy(updatedAt = now())
             writeMetaUnsafe(current)
             markDirty()
         }
     }
 
-    /** Nur für Tests / „Alle Daten löschen". */
+    /** Tombstone statt Hard-Remove. Setzt dirty-Flag. Bereinigt ggf. local-only-Eintrag.
+     *  Local-only-Ordner ohne Server-Propagation werden hard-entfernt — ein Tombstone würde
+     *  gleichnamige Ordner anderer Geräte löschen. */
+    suspend fun deleteFolder(name: String, propagateToServer: Boolean = true) {
+        val silentRemove = isLocalOnly(name) && !propagateToServer
+        mutex.withLock {
+            val current = loadMetaUnsafe().toMutableList()
+            val idx = current.indexOfFirst { it.name.equals(name, ignoreCase = true) && !it.deleted }
+            if (idx >= 0) {
+                if (silentRemove) {
+                    current.removeAt(idx)
+                    writeMetaUnsafe(current)
+                } else {
+                    current[idx] = current[idx].copy(deleted = true, updatedAt = now())
+                    writeMetaUnsafe(current)
+                    markDirty()
+                }
+            }
+        }
+        // Verwaisten Eintrag bereinigen: neuer Ordner gleichen Namens erbt sonst die Markierung.
+        setLocalOnly(name, false)
+    }
+
+    /** Nur für Tests / „Alle Daten löschen". Entfernt auch local-only-Markierungen. */
     suspend fun clear() = mutex.withLock {
         try { if (file.exists()) file.delete() } catch (e: Exception) {
             Logger.w(TAG, "clear failed: ${e.message}")
+        }
+        prefs.edit {
+            remove(KEY_LOCAL_ONLY_FOLDERS)
+            remove(KEY_LOCAL_ONLY_SERVER_REMOVAL)
         }
     }
 
@@ -204,5 +292,7 @@ class FolderStore(private val context: Context) {
     companion object {
         private const val TAG = "FolderStore"
         const val FILE_NAME = "folders.json"
+        private const val KEY_LOCAL_ONLY_FOLDERS = "local_only_folders"
+        private const val KEY_LOCAL_ONLY_SERVER_REMOVAL = "local_only_folders_server_removal"
     }
 }
