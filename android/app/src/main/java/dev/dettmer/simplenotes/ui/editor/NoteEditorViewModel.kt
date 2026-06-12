@@ -1034,7 +1034,6 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     existingNote = note
                 }
                 NoteType.CHECKLIST -> {
-                    hasUnsavedChecklistEdits = false
                     val validItems = _checklistItems.value
                         .filter { it.text.isNotBlank() }
                         .mapIndexed { index, item ->
@@ -1092,6 +1091,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     )
                     // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
                     // und MUSS synchron abschließen bevor die Activity zerstört wird.
+                    hasUnsavedChecklistEdits = false
                     @Suppress("BlockingMethodInNonBlockingContext")
                     runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
                     existingNote = note
@@ -1153,8 +1153,6 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             }
 
             NoteType.CHECKLIST -> {
-                // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
-                hasUnsavedChecklistEdits = false
                 // 🆕 v1.9.0 (F04): Preserve originalOrder for position restore
                 val validItems = _checklistItems.value
                     .filter { it.text.isNotBlank() }
@@ -1216,6 +1214,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
 
+                hasUnsavedChecklistEdits = false // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
                 storage.saveNote(note)
                 existingNote = note // 🆕 v1.9.0: keep reference current so next save is an update
             }
