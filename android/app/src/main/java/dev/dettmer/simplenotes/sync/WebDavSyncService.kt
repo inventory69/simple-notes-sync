@@ -612,6 +612,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 // Upload local notes
                 // 🆕 v1.11.0: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
                 var markdownExportedNoteIds: Set<String> = emptySet()
+                val mdExport = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
                 try {
                     Logger.d(TAG, "⬆️ Uploading local notes...")
                     val uploadResult = uploadLocalNotes(
@@ -619,7 +620,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         serverUrl,
                         onProgress = { current, total, noteTitle ->
                             SyncStateManager.updateProgress(
-                                phase = SyncPhase.UPLOADING,
+                                phase = if (mdExport) SyncPhase.UPLOADING_EXPORTING_MARKDOWN else SyncPhase.UPLOADING,
                                 current = current,
                                 total = total,
                                 currentFileName = noteTitle

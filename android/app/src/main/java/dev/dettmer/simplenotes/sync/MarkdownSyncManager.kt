@@ -372,22 +372,11 @@ internal class MarkdownSyncManager(
                 }
             }
 
-            // 🔧 v1.11.0: Phase erst hier setzen — nach dem Fast-Path-Check.
-            SyncStateManager.updateProgress(
-                phase = SyncPhase.IMPORTING_MARKDOWN,
-                current = 0,
-                total = mdResources.size
-            )
-
             var processedCount = 0
+            var importPhaseStarted = false
             for (mdItem in mdItems) {
                 val resource = mdItem.resource
-                SyncStateManager.updateProgress(
-                    phase = SyncPhase.IMPORTING_MARKDOWN,
-                    current = ++processedCount,
-                    total = mdResources.size,
-                    currentFileName = null
-                )
+                processedCount++
                 try {
                     val serverModifiedTime = resource.modified?.time ?: 0L
 
@@ -399,13 +388,6 @@ internal class MarkdownSyncManager(
                     }
 
                     Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
-
-                    SyncStateManager.updateProgress(
-                        phase = SyncPhase.IMPORTING_MARKDOWN,
-                        current = processedCount,
-                        total = mdResources.size,
-                        currentFileName = resource.name
-                    )
 
                     // Build full URL
                     val mdFileUrl = mdItem.fileUrl
@@ -508,6 +490,14 @@ internal class MarkdownSyncManager(
                     if (contentChanged) {
                         Logger.d(TAG, "      📝 Content differs from local!")
                     }
+
+                    importPhaseStarted = true
+                    SyncStateManager.updateProgress(
+                        phase = SyncPhase.IMPORTING_MARKDOWN,
+                        current = processedCount,
+                        total = mdResources.size,
+                        currentFileName = resource.name
+                    )
 
                     when {
                         localNote == null -> {

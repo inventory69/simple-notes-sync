@@ -379,6 +379,7 @@ class ComposeMainActivity : ComponentActivity() {
                             dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> Constants.BANNER_DELAY_ERROR_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
                             dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
+                            dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING_EXPORTING_MARKDOWN,
                             dev.dettmer.simplenotes.sync.SyncPhase.DOWNLOADING,
                             dev.dettmer.simplenotes.sync.SyncPhase.DELETING,
                             dev.dettmer.simplenotes.sync.SyncPhase.IMPORTING_MARKDOWN,
@@ -392,6 +393,7 @@ class ComposeMainActivity : ComponentActivity() {
                     // Cancel pending auto-hide if a new sync starts
                     dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
                     dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
+                    dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING_EXPORTING_MARKDOWN,
                     dev.dettmer.simplenotes.sync.SyncPhase.DOWNLOADING,
                     dev.dettmer.simplenotes.sync.SyncPhase.DELETING,
                     dev.dettmer.simplenotes.sync.SyncPhase.IMPORTING_MARKDOWN -> {

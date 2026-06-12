@@ -64,6 +64,7 @@ data class SyncProgress(
         get() = phase in listOf(
             SyncPhase.PREPARING,
             SyncPhase.UPLOADING,
+            SyncPhase.UPLOADING_EXPORTING_MARKDOWN,
             SyncPhase.DOWNLOADING,
             SyncPhase.DELETING,
             SyncPhase.IMPORTING_MARKDOWN
@@ -93,6 +94,9 @@ enum class SyncPhase {
 
     /** Lädt lokale Änderungen auf den Server hoch */
     UPLOADING,
+
+    /** Lädt hoch und exportiert dabei Markdown */
+    UPLOADING_EXPORTING_MARKDOWN,
 
     /** Lädt Server-Änderungen herunter */
     DOWNLOADING,

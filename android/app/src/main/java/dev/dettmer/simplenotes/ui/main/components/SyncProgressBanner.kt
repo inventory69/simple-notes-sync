@@ -217,6 +217,7 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.IDLE -> ""
         SyncPhase.PREPARING -> stringResource(R.string.sync_phase_preparing)
         SyncPhase.UPLOADING -> stringResource(R.string.sync_phase_uploading)
+        SyncPhase.UPLOADING_EXPORTING_MARKDOWN -> stringResource(R.string.sync_phase_uploading_exporting_markdown)
         SyncPhase.DOWNLOADING -> stringResource(R.string.sync_phase_downloading)
         SyncPhase.DELETING -> stringResource(R.string.sync_phase_deleting)
         SyncPhase.IMPORTING_MARKDOWN -> stringResource(R.string.sync_phase_importing_markdown)

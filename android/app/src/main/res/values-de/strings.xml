@@ -66,6 +66,7 @@
     <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
     <string name="sync_phase_preparing">Synchronisiere…</string>
     <string name="sync_phase_uploading">Hochladen…</string>
+    <string name="sync_phase_uploading_exporting_markdown">Hochladen &amp; Markdown exportieren…</string>
     <string name="sync_phase_downloading">Herunterladen…</string>
     <string name="sync_phase_deleting">Vom Server löschen…</string>
     <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
