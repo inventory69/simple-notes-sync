@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.SyncDisabled
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -83,6 +85,7 @@ import dev.dettmer.simplenotes.ui.main.components.CreateFolderDialog
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.DeleteSelectionDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
+import dev.dettmer.simplenotes.ui.main.components.ExcludeFolderSyncSheet
 import dev.dettmer.simplenotes.ui.main.components.FilterChipRow
 import dev.dettmer.simplenotes.ui.main.components.MoveToFolderSheet
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
@@ -154,6 +157,7 @@ fun MainScreen(
     val currentFolder by viewModel.currentFolder.collectAsState()
     val folders by viewModel.folders.collectAsState()
     val folderNoteCounts by viewModel.folderNoteCounts.collectAsState()
+    val localOnlyFolderNames by viewModel.localOnlyFolderNames.collectAsState() // 🆕 v2.8.0 (Local-Only Folders)
 
     // Back press handler for selection mode
     BackHandler(enabled = isSelectionMode) {
@@ -183,6 +187,8 @@ fun MainScreen(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var showMoveSheet by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    // 🆕 v2.8.0 (Local-Only Folders): Auswahl "Server behalten / entfernen" beim Ausschließen
+    var showExcludeSyncSheet by remember { mutableStateOf(false) }
 
     // 🆕 v1.8.0: Sync status legend dialog
     var showSyncLegend by remember { mutableStateOf(false) }
@@ -251,17 +257,29 @@ fun MainScreen(
                     enter = slideInVertically() + fadeIn(),
                     exit = slideOutVertically() + fadeOut()
                 ) {
+                    // 🆕 v2.8.0 (Local-Only Folders): alle selektierten Ordner bereits ausgeschlossen?
+                    val selectedAllLocalOnly = selectedFolders.isNotEmpty() &&
+                        selectedFolders.all { it in localOnlyFolderNames }
                     SelectionTopBar(
                         selectedNoteCount = selectedNotes.size,
                         selectedFolderCount = selectedFolders.size,
                         totalCount = notes.size + (if (currentFolder == null) folders.size else 0),
                         allSelectedPinned = notes.filter { it.id in selectedNotes }.all { it.isPinned == true },
+                        isSelectedFolderLocalOnly = selectedAllLocalOnly,
                         onCloseSelection = { viewModel.clearSelection() },
                         onSelectAll = { viewModel.selectAll() },
                         onTogglePinSelected = { viewModel.togglePinForSelected() },
                         onColorClick = { showBatchColorPicker = true },
                         onMoveClick = { showMoveSheet = true },
                         onRename = { showRenameDialog = true },
+                        onToggleLocalOnly = {
+                            when {
+                                selectedAllLocalOnly -> viewModel.includeFoldersInSync(selectedFolders)
+                                // Server konfiguriert → User entscheidet über die Server-Kopien
+                                isServerConfigured -> showExcludeSyncSheet = true
+                                else -> viewModel.excludeFoldersFromSync(selectedFolders, removeFromServer = false)
+                            }
+                        },
                         onDeleteSelected = { showBatchDeleteDialog = true }
                     )
                 }
@@ -368,6 +386,7 @@ fun MainScreen(
                                 isServerConfigured = isServerConfigured,
                                 selectedNotes = selectedNotes,
                                 selectedFolders = selectedFolders,
+                                localOnlyFolderNames = localOnlyFolderNames, // 🆕 v2.8.0 (Local-Only Folders)
                                 isSelectionMode = isSelectionMode,
                                 timestampTicker = timestampTicker,
                                 gridAdaptiveScaling = gridAdaptiveScaling,
@@ -477,8 +496,26 @@ fun MainScreen(
         // 🆕 v2.7.0 (Folders): Folder dialogs/sheet
         if (showCreateFolderDialog) {
             CreateFolderDialog(
-                onConfirm = { name -> viewModel.createFolder(name); showCreateFolderDialog = false },
+                showLocalOnlyOption = isServerConfigured, // 🆕 v2.8.0 (Local-Only Folders)
+                onConfirm = { name, localOnly ->
+                    viewModel.createFolder(name, localOnly)
+                    showCreateFolderDialog = false
+                },
                 onDismiss = { showCreateFolderDialog = false }
+            )
+        }
+        // 🆕 v2.8.0 (Local-Only Folders): Auswahl was mit den Server-Kopien passieren soll
+        if (showExcludeSyncSheet) {
+            ExcludeFolderSyncSheet(
+                onRemoveFromServer = {
+                    viewModel.excludeFoldersFromSync(selectedFolders, removeFromServer = true)
+                    showExcludeSyncSheet = false
+                },
+                onKeepOnServer = {
+                    viewModel.excludeFoldersFromSync(selectedFolders, removeFromServer = false)
+                    showExcludeSyncSheet = false
+                },
+                onDismiss = { showExcludeSyncSheet = false }
             )
         }
         if (showMoveSheet) {
@@ -605,19 +642,21 @@ private fun TopBarActions(
  * Selection mode TopBar - shows selected count and actions
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList") // 🆕 v2.7.0: Rename-Param erhöht Count über 10
+@Suppress("LongParameterList") // 🆕 v2.8.0: onToggleLocalOnly erhöht Count weiter
 @Composable
 private fun SelectionTopBar(
     selectedNoteCount: Int,
     selectedFolderCount: Int,  // 🆕 v2.7.0 (Folders)
     totalCount: Int,
     allSelectedPinned: Boolean,
+    isSelectedFolderLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
     onCloseSelection: () -> Unit,
     onSelectAll: () -> Unit,
     onTogglePinSelected: () -> Unit,
     onColorClick: () -> Unit,
     onMoveClick: () -> Unit = {},
-    onRename: () -> Unit = {},         // 🆕 v2.7.0 (Folders)
+    onRename: () -> Unit = {},          // 🆕 v2.7.0 (Folders)
+    onToggleLocalOnly: () -> Unit = {}, // 🆕 v2.8.0 (Local-Only Folders)
     onDeleteSelected: () -> Unit
 ) {
     val selectedCount = selectedNoteCount + selectedFolderCount
@@ -642,11 +681,13 @@ private fun SelectionTopBar(
                 selectedFolderCount = selectedFolderCount,
                 totalCount = totalCount,
                 allSelectedPinned = allSelectedPinned,
+                isSelectedFolderLocalOnly = isSelectedFolderLocalOnly,
                 onSelectAll = onSelectAll,
                 onTogglePin = onTogglePinSelected,
                 onColorClick = onColorClick,
                 onMoveClick = onMoveClick,
                 onRename = onRename,
+                onToggleLocalOnly = onToggleLocalOnly,
                 onDeleteSelected = onDeleteSelected
             )
         },
@@ -746,6 +787,7 @@ private fun NotesPane(
     isServerConfigured: Boolean,
     selectedNotes: Set<String>,
     selectedFolders: Set<String>,                    // 🆕 v2.7.0 (Folders)
+    localOnlyFolderNames: Set<String> = emptySet(), // 🆕 v2.8.0 (Local-Only Folders)
     isSelectionMode: Boolean,
     timestampTicker: Long,
     gridAdaptiveScaling: Boolean,
@@ -838,6 +880,7 @@ private fun NotesPane(
             folders = foldersForPane,
             folderNoteCounts = folderNoteCounts,
             selectedFolders = selectedFolders,
+            localOnlyFolderNames = localOnlyFolderNames,
             onFolderClick = { if (isSelectionMode) onFolderSelectionToggle(it) else onEnterFolder(it) },
             onFolderLongPress = onFolderLongPress,
             onFolderSelectionToggle = onFolderSelectionToggle
@@ -854,6 +897,7 @@ private fun NotesPane(
             folders = foldersForPane,
             folderNoteCounts = folderNoteCounts,
             selectedFolders = selectedFolders,
+            localOnlyFolderNames = localOnlyFolderNames,
             onFolderClick = { if (isSelectionMode) onFolderSelectionToggle(it) else onEnterFolder(it) },
             onFolderLongPress = onFolderLongPress,
             onFolderSelectionToggle = onFolderSelectionToggle,
@@ -888,11 +932,13 @@ private fun SelectionActions(
     selectedFolderCount: Int,  // 🆕 v2.7.0 (Folders)
     totalCount: Int,
     allSelectedPinned: Boolean,
+    isSelectedFolderLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
     onSelectAll: () -> Unit,
     onTogglePin: () -> Unit,
     onColorClick: () -> Unit,
     onMoveClick: () -> Unit,
-    onRename: () -> Unit,      // 🆕 v2.7.0 (Folders)
+    onRename: () -> Unit,           // 🆕 v2.7.0 (Folders)
+    onToggleLocalOnly: () -> Unit,  // 🆕 v2.8.0 (Local-Only Folders)
     onDeleteSelected: () -> Unit
 ) {
     val selectedCount = selectedNoteCount + selectedFolderCount
@@ -902,6 +948,9 @@ private fun SelectionActions(
     val colorLabel = stringResource(R.string.action_set_note_color)
     val moveLabel = stringResource(R.string.action_move_to_folder)
     val renameLabel = stringResource(R.string.action_rename_folder)
+    val localOnlyLabel = stringResource(
+        if (isSelectedFolderLocalOnly) R.string.folder_include_in_sync else R.string.folder_exclude_from_sync
+    )
     val deleteLabel = stringResource(R.string.action_delete_selected)
 
     val actions = buildList {
@@ -922,6 +971,11 @@ private fun SelectionActions(
         // Rename: genau 1 Ordner, 0 Notizen
         if (selectedFolderCount == 1 && selectedNoteCount == 0) {
             add(SelectionAction(Icons.Default.Edit, renameLabel, keepPriority = 2, enabled = true, onClick = onRename))
+        }
+        // Local-only toggle: mind. 1 Ordner, 0 Notizen (Mehrfachauswahl erlaubt)
+        if (selectedFolderCount >= 1 && selectedNoteCount == 0) {
+            val icon = if (isSelectedFolderLocalOnly) Icons.Outlined.Sync else Icons.Outlined.SyncDisabled
+            add(SelectionAction(icon, localOnlyLabel, keepPriority = 3, enabled = true, onClick = onToggleLocalOnly))
         }
         add(SelectionAction(Icons.Default.Delete, deleteLabel, keepPriority = 5, enabled = anySelected,
             isDestructive = true, onClick = onDeleteSelected))

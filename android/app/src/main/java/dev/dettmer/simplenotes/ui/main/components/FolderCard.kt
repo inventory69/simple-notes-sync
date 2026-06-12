@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.outlined.SyncDisabled
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ internal fun FolderCardList(
     color: String? = null,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
+    isLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -88,6 +90,15 @@ internal fun FolderCardList(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                if (isLocalOnly) {
+                    Icon(
+                        imageVector = Icons.Outlined.SyncDisabled,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
                 Text(
                     text = "$count",
                     style = MaterialTheme.typography.labelLarge,
@@ -109,6 +120,7 @@ internal fun FolderCardGrid(
     color: String? = null,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
+    isLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -152,12 +164,25 @@ internal fun FolderCardGrid(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "$count",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.align(Alignment.End)
-                )
+                ) {
+                    if (isLocalOnly) {
+                        Icon(
+                            imageVector = Icons.Outlined.SyncDisabled,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                    }
+                    Text(
+                        text = "$count",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             FolderSelectionOverlay(isSelected = isSelected, hasColor = hasColor, isSelectionMode = isSelectionMode)
         }

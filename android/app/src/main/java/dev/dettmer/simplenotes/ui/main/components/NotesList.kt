@@ -43,6 +43,7 @@ fun NotesList(
     folders: List<Folder> = emptyList(),              // 🆕 v2.7.0 (Folders): List<Folder>
     folderNoteCounts: Map<String, Int> = emptyMap(),
     selectedFolders: Set<String> = emptySet(),        // 🆕 v2.7.0 (Folders): Auswahl
+    localOnlyFolderNames: Set<String> = emptySet(),   // 🆕 v2.8.0 (Local-Only Folders)
     onFolderClick: (String) -> Unit = {},
     onFolderLongPress: (String) -> Unit = {},
     onFolderSelectionToggle: (String) -> Unit = {},   // 🆕 v2.7.0 (Folders)
@@ -89,6 +90,7 @@ fun NotesList(
                     color = folder.color,
                     isSelected = folder.name in selectedFolders,
                     isSelectionMode = isSelectionMode, // 🆕 v2.7.0 (Folders)
+                    isLocalOnly = folder.name in localOnlyFolderNames, // 🆕 v2.8.0 (Local-Only Folders)
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     onClick = { if (isSelectionMode) onFolderSelectionToggle(folder.name) else onFolderClick(folder.name) },
                     onLongClick = { onFolderLongPress(folder.name) }

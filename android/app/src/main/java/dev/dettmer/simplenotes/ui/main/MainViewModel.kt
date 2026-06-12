@@ -93,6 +93,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _folders = MutableStateFlow<List<Folder>>(emptyList())
     val folders: StateFlow<List<Folder>> = _folders.asStateFlow()
 
+    // 🆕 v2.8.0 (Local-Only Folders): gerätespezifische Ordner, die nicht synchronisiert werden.
+    private val _localOnlyFolderNames = MutableStateFlow<Set<String>>(emptySet())
+    val localOnlyFolderNames: StateFlow<Set<String>> = _localOnlyFolderNames.asStateFlow()
+
     // ═══════════════════════════════════════════════════════════════════════
     // Multi-Select State (v1.5.0)
     // ═══════════════════════════════════════════════════════════════════════
@@ -385,6 +389,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // (covers configuration changes without process kill)
         SyncStateManager.checkAndResetStaleState()
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
+        _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
         viewModelScope.launch(ioDispatcher) {
             loadNotesAsync()
             _folders.value = folderStore.loadFolders()
@@ -1179,11 +1184,88 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         folders.associate { f -> f.name to notes.count { it.folderName == f.name } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    fun createFolder(name: String) {
+    /** 🆕 v2.8.0 (Local-Only Folders): [localOnly] markiert den Ordner VOR dem Anlegen als
+     *  „nur lokal", damit kein zwischenzeitlicher Sync-Lauf ihn auf den Server hochlädt. */
+    fun createFolder(name: String, localOnly: Boolean = false) {
         val trimmed = name.trim()
+        // Bestehende Ordner nie still ausschließen — die Markierung gilt nur für echte Neuanlage.
+        val isNew = _folders.value.none { it.name.equals(trimmed, ignoreCase = true) }
+        val markLocalOnly = localOnly && isNew
         viewModelScope.launch {
-            withContext(ioDispatcher) { folderStore.addFolder(trimmed) }
+            withContext(ioDispatcher) {
+                if (markLocalOnly) {
+                    folderStore.setLocalOnly(trimmed, true)
+                    _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
+                }
+                folderStore.addFolder(trimmed, dirty = !markLocalOnly)
+            }
             _folders.value = folderStore.loadFolders()
+            if (!markLocalOnly) triggerOnSaveSync()
+        }
+    }
+
+    /**
+     * 🆕 v2.8.0 (Local-Only Folders): Ordner vom Sync ausschließen.
+     * Alle Notizen darin → LOCAL_ONLY (lokaler Stand bleibt vollständig erhalten).
+     *
+     * [removeFromServer] = true: Server-Kopien der Notizen werden (offline-fähig via
+     * PendingServerDeletions-Queue) gelöscht, leere Ordner-Verzeichnisse beim Sync aufgeräumt
+     * und der folders.json-Eintrag als Tombstone propagiert (Server-Removal-Queue).
+     * [removeFromServer] = false: Server-Stand bleibt unangetastet („Auf Server behalten").
+     */
+    fun excludeFoldersFromSync(folderNames: Set<String>, removeFromServer: Boolean) {
+        if (folderNames.isEmpty()) return
+        val updated = _localOnlyFolderNames.value + folderNames
+        folderStore.setLocalOnlyFolderNames(updated)
+        if (removeFromServer) {
+            folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() + folderNames)
+        }
+        _localOnlyFolderNames.value = updated
+        clearSelection()
+
+        viewModelScope.launch(ioDispatcher) {
+            // Status-Snapshot VOR der Konvertierung: nur Notizen mit (potenzieller) Server-Kopie
+            // landen in der Lösch-Queue. LOCAL_ONLY war nie auf dem Server, DELETED_ON_SERVER ist dort weg.
+            val serverResident = setOf(SyncStatus.SYNCED, SyncStatus.PENDING, SyncStatus.CONFLICT)
+            val deletions = mutableListOf<PendingServerDeletions.PendingDeletion>()
+            for (note in storage.loadAllNotes()) {
+                if (note.folderName !in folderNames) continue
+                if (removeFromServer && note.syncStatus in serverResident) {
+                    deletions.add(PendingServerDeletions.PendingDeletion(note.id, note.folderName))
+                }
+                if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
+                    storage.saveNote(note.copy(syncStatus = SyncStatus.LOCAL_ONLY))
+                }
+            }
+            if (deletions.isNotEmpty()) pendingServerDeletions.add(deletions)
+            loadNotesAsync(forceReload = true)
+            // Tombstone + Datei-Löschungen zeitnah ausführen; bei keep-on-server ändert sich
+            // serverseitig nichts → kein Sync nötig.
+            if (removeFromServer) triggerOnSaveSync()
+        }
+    }
+
+    /**
+     * 🆕 v2.8.0 (Local-Only Folders): Ordner wieder in den Sync aufnehmen.
+     * LOCAL_ONLY-Notizen → PENDING (Upload beim nächsten Sync). touch() bumpt updatedAt des
+     * Ordner-Eintrags, damit ein evtl. Server-Tombstone den Ordner nicht sofort wieder löscht.
+     */
+    fun includeFoldersInSync(folderNames: Set<String>) {
+        if (folderNames.isEmpty()) return
+        val updated = _localOnlyFolderNames.value - folderNames
+        folderStore.setLocalOnlyFolderNames(updated)
+        folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() - folderNames)
+        _localOnlyFolderNames.value = updated
+        clearSelection()
+
+        viewModelScope.launch(ioDispatcher) {
+            folderNames.forEach { folderStore.touch(it) }
+            for (note in storage.loadAllNotes()) {
+                if (note.folderName in folderNames && note.syncStatus == SyncStatus.LOCAL_ONLY) {
+                    storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
+                }
+            }
+            loadNotesAsync(forceReload = true)
             triggerOnSaveSync()
         }
     }
@@ -1204,11 +1286,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun renameFolder(oldName: String, newName: String) {
         val trimmed = newName.trim()
         if (trimmed.equals(oldName, ignoreCase = true) || _folders.value.any { it.name.equals(trimmed, ignoreCase = true) }) return
+        // 🆕 v2.8.0 (Local-Only Folders): Notizen behalten ihren LOCAL_ONLY-Status, Markierung wandert mit.
+        val localOnly = _localOnlyFolderNames.value.any { it.equals(oldName, ignoreCase = true) }
         viewModelScope.launch {
             withContext(ioDispatcher) {
                 _notes.value.filter { it.folderName == oldName }.forEach { note ->
-                    storage.moveNote(note.id, trimmed)
-                    if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
+                    storage.moveNote(
+                        note.id,
+                        trimmed,
+                        newStatus = if (localOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+                    )
+                    if (!localOnly && note.syncStatus != SyncStatus.LOCAL_ONLY) {
                         pendingServerDeletions.add(
                             listOf(PendingServerDeletions.PendingDeletion(note.id, oldName))
                         )
@@ -1216,6 +1304,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 folderStore.rename(oldName, trimmed)
             }
+            _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
             _folders.value = folderStore.loadFolders()
             if (_currentFolder.value == oldName) _currentFolder.value = trimmed
             clearSelection()
@@ -1230,6 +1319,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteSelection(deleteFromServer: Boolean, keepContainedNotes: Boolean) {
         val noteIds = _selectedNotes.value.toSet()
         val folderNames = _selectedFolders.value.toSet()
+        // 🆕 v2.8.0 (Local-Only Folders): Markierung für Undo sichern (deleteFolder räumt sie auf).
+        val localOnlyDeleted = folderNames.filter { name ->
+            _localOnlyFolderNames.value.any { it.equals(name, ignoreCase = true) }
+        }.toSet()
         val notesInFolders = _notes.value.filter { it.folderName in folderNames }
         val notesToDelete = (_notes.value.filter { it.id in noteIds } +
             if (!keepContainedNotes) notesInFolders else emptyList()).distinctBy { it.id }
@@ -1268,9 +1361,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
                 }
-                // Ordner tombstonen
-                folderNames.forEach { name -> folderStore.deleteFolder(name) }
+                // Ordner tombstonen — local-only-Ordner ohne Server-Löschung werden hard-entfernt,
+                // damit kein Tombstone zum Server propagiert (🆕 v2.8.0).
+                folderNames.forEach { name -> folderStore.deleteFolder(name, propagateToServer = deleteFromServer) }
             }
+            _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
             _folders.value = folderStore.loadFolders()
             if (_currentFolder.value in folderNames) _currentFolder.value = null
             loadNotes()
@@ -1279,7 +1374,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoDeleteSelection(notesToDelete, folderNames, notesToRoot) }
+                    onAction = { undoDeleteSelection(notesToDelete, folderNames, notesToRoot, localOnlyDeleted) }
                 )
             )
 
@@ -1313,15 +1408,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun undoDeleteSelection(
         deletedNotes: List<Note>,
         restoredFolders: Set<String>,
-        notesToRoot: List<Note>
+        notesToRoot: List<Note>,
+        localOnlyFolders: Set<String> = emptySet() // 🆕 v2.8.0 (Local-Only Folders)
     ) {
         _pendingDeletions.update { it - deletedNotes.map { n -> n.id }.toSet() }
         viewModelScope.launch {
             withContext(ioDispatcher) {
                 deletedNotes.forEach { note -> storage.saveNote(note) }
-                notesToRoot.forEach { note -> storage.moveNote(note.id, note.folderName) }
-                restoredFolders.forEach { name -> folderStore.addFolder(name) }
+                notesToRoot.forEach { note ->
+                    val intoLocalOnly = note.folderName != null && note.folderName in localOnlyFolders
+                    storage.moveNote(
+                        note.id,
+                        note.folderName,
+                        newStatus = if (intoLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+                    )
+                }
+                restoredFolders.forEach { name ->
+                    // Markierung VOR addFolder wiederherstellen, damit kein Sync-Lauf den Ordner hochlädt.
+                    val wasLocalOnly = name in localOnlyFolders
+                    if (wasLocalOnly) folderStore.setLocalOnly(name, true)
+                    folderStore.addFolder(name, dirty = !wasLocalOnly)
+                }
             }
+            _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
             _folders.value = folderStore.loadFolders()
             loadNotes()
         }
@@ -1335,12 +1444,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val ids = _selectedNotes.value.toList()
         if (ids.isEmpty()) return
         val toMove = _notes.value.filter { it.id in ids }
+        // 🆕 v2.8.0 (Local-Only Folders): Ziel ausgeschlossen → Notiz wird LOCAL_ONLY statt PENDING
+        // (sonst bliebe sie dauerhaft als „ausstehend" markiert, ohne je hochgeladen zu werden).
+        // Die Server-Kopie am alten Pfad wird weiterhin gelöscht — die Notiz verlässt den Sync.
+        val targetLocalOnly = targetFolder != null &&
+            _localOnlyFolderNames.value.any { it.equals(targetFolder, ignoreCase = true) }
         viewModelScope.launch {
             withContext(ioDispatcher) {
                 toMove.forEach { note ->
                     val oldFolder = note.folderName
                     if (oldFolder == targetFolder) return@forEach
-                    storage.moveNote(note.id, targetFolder)
+                    storage.moveNote(
+                        note.id,
+                        targetFolder,
+                        newStatus = if (targetLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+                    )
                     if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
                         pendingServerDeletions.add(
                             listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder))
