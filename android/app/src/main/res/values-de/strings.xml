@@ -787,6 +787,8 @@
     <string name="folder_exclude_sync_message">Die Notizen bleiben auf diesem Gerät erhalten, werden aber nicht mehr synchronisiert. Was soll mit den bereits vorhandenen Kopien auf dem Server passieren?</string>
     <string name="folder_exclude_remove_from_server">Vom Server entfernen</string>
     <string name="folder_exclude_keep_on_server">Auf dem Server behalten</string>
+    <string name="snackbar_folder_removed_from_server">Ordner vom Server entfernt</string>
+    <string name="snackbar_folder_sync_queued">Ordner wird bei Verbindung synchronisiert</string>
 
     <!-- Notes List Scroll Widget -->
     <string name="notes_list_widget_name">Notizliste</string>

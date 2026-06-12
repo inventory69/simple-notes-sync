@@ -1237,11 +1237,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     storage.saveNote(note.copy(syncStatus = SyncStatus.LOCAL_ONLY))
                 }
             }
-            if (deletions.isNotEmpty()) pendingServerDeletions.add(deletions)
             loadNotesAsync(forceReload = true)
-            // Tombstone + Datei-Löschungen zeitnah ausführen; bei keep-on-server ändert sich
-            // serverseitig nichts → kein Sync nötig.
-            if (removeFromServer) triggerOnSaveSync()
+            if (removeFromServer) {
+                if (deletions.isNotEmpty()) {
+                    attemptServerDeletion(deletions)
+                    val webdavService = WebDavSyncService(getApplication())
+                    for (folder in folderNames) {
+                        try { webdavService.deleteServerFolderIfEmpty(folder) } catch (_: Exception) { }
+                    }
+                } else {
+                    SyncStateManager.showInfo(getString(R.string.snackbar_folder_removed_from_server))
+                }
+                // Tombstone in folders.json propagieren; stiller Sync überschreibt das Banner nicht.
+                triggerOnSaveSync()
+            }
         }
     }
 
@@ -1260,13 +1269,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch(ioDispatcher) {
             folderNames.forEach { folderStore.touch(it) }
+            val noteIds = mutableListOf<String>()
             for (note in storage.loadAllNotes()) {
-                if (note.folderName in folderNames && note.syncStatus == SyncStatus.LOCAL_ONLY) {
+                if (note.folderName !in folderNames) continue
+                noteIds.add(note.id)
+                if (note.syncStatus == SyncStatus.LOCAL_ONLY) {
                     storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
                 }
             }
+            // Safety: evtl. noch in der Queue stehende Löschungen für diese Notizen entfernen.
+            // Verhindert offline-Remove → Re-enable → Notiz wird beim nächsten Sync trotzdem gelöscht.
+            if (noteIds.isNotEmpty()) pendingServerDeletions.remove(noteIds)
             loadNotesAsync(forceReload = true)
-            triggerOnSaveSync()
+            val webdavService = WebDavSyncService(getApplication())
+            val isReachable = try {
+                webdavService.isServerReachable()
+            } catch (_: Exception) {
+                false
+            }
+            if (isReachable) {
+                triggerManualSync(source = "folder-include")
+            } else {
+                SyncStateManager.showInfo(getString(R.string.snackbar_folder_sync_queued))
+                triggerOnSaveSync()
+            }
         }
     }
 

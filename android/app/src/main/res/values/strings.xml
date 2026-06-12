@@ -148,6 +148,8 @@
     <string name="snackbar_notes_deleted_from_server_partial">%1$d of %2$d notes deleted from server</string>
     <string name="snackbar_server_delete_failed">Server deletion failed</string>
     <string name="snackbar_delete_queued_for_sync">Server not reachable – deletion queued for next sync</string>
+    <string name="snackbar_folder_removed_from_server">Folder removed from server</string>
+    <string name="snackbar_folder_sync_queued">Folder will sync when reconnected</string>
     <string name="snackbar_server_error">Server error: %s</string>
     <string name="snackbar_server_unreachable">Server not reachable</string>
     <string name="snackbar_connection_timeout">Connection timeout</string>
