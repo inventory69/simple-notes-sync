@@ -26,7 +26,8 @@ internal class MarkdownSyncManager(
     private val urlBuilder: SyncUrlBuilder,
     private val connectionManager: ConnectionManager,
     private val timestampManager: SyncTimestampManager,
-    private val ioDispatcher: CoroutineDispatcher
+    private val ioDispatcher: CoroutineDispatcher,
+    private val folderStore: dev.dettmer.simplenotes.storage.FolderStore
 ) {
     companion object {
         private const val TAG = "MarkdownSyncManager"
@@ -368,8 +369,13 @@ internal class MarkdownSyncManager(
                     res.name != "/" &&
                     !mdUrl.trimEnd('/').endsWith("/" + res.name)
             }
+            val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
             for (dir in mdSubDirs) {
                 val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
+                if (folder.lowercase() in localOnlyFolders) {
+                    Logger.d(TAG, "   ⏭️ Skipping local-only folder (MD import): $folder")
+                    continue
+                }
                 val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
                 val sub = try { sardine.list(folderUrl) } catch (e: Exception) {
                     Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}"); continue

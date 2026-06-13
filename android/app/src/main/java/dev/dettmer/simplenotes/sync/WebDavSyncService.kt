@@ -85,6 +85,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
+    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(context) // 🆕 v2.7.0 (Folders)
+
     private val markdownSyncManager = MarkdownSyncManager(
         prefs = prefs,
         storage = storage,
@@ -92,10 +94,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         urlBuilder = urlBuilder,
         connectionManager = connectionManager,
         timestampManager = timestampManager,
-        ioDispatcher = ioDispatcher
+        ioDispatcher = ioDispatcher,
+        folderStore = folderStore
     )
-
-    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(context) // 🆕 v2.7.0 (Folders)
 
     private val noteUploader = NoteUploader(
         prefs = prefs,
