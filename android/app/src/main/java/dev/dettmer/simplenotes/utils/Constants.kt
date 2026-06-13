@@ -193,4 +193,12 @@ object Constants {
 
     // 🆕 v2.7.0 (Folders): Dirty-Flag für FolderStore — gesetzt bei User-Änderungen (Anlage, Farbe, Rename, Löschen)
     const val KEY_FOLDERS_DIRTY = "folders_dirty"
+
+    // 🆕 v2.9.0 (Trash): Aufbewahrungsdauer im Papierkorb. Fix, nicht konfigurierbar.
+    // Notizen mit `now - trashedAt >= TRASH_RETENTION_MS` werden automatisch endgültig gelöscht.
+    const val TRASH_RETENTION_DAYS = 30
+    const val TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24L * 60L * 60L * 1000L
+
+    // 🆕 v2.9.0 (Trash): Einmal-Migration bestehender DELETED_ON_SERVER-Notizen in den Papierkorb.
+    const val KEY_TRASH_MIGRATION_DONE = "trash_migration_done"
 }

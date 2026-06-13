@@ -43,8 +43,16 @@ data class Note(
     val isPinned: Boolean? = null,
     // 🆕 v2.7.0 (Folders): Ordner-Zuordnung. null = Root, sonst Verzeichnisname (ohne "/").
     // Lokal flach gespeichert; auf dem Server ein echtes Subdirectory (siehe FolderStore/Sync).
-    val folderName: String? = null
+    val folderName: String? = null,
+    // 🆕 v2.9.0 (Trash): Zeitpunkt (ms epoch), zu dem die Notiz in den Papierkorb verschoben wurde.
+    // null = aktive Notiz. Synct als normale Notiz-Änderung (LWW). Alte Clients ignorieren das Feld;
+    // Gson lässt null beim Serialisieren weg → ein Edit auf einem alten Client un-trasht automatisch.
+    // NICHT in toMarkdown()/fromMarkdown() — der MD-Spiegel wird beim Trashen serverseitig gelöscht.
+    val trashedAt: Long? = null
 ) {
+    /** v2.9.0 (Trash): true, wenn die Notiz im Papierkorb liegt. */
+    val isTrashed: Boolean get() = trashedAt != null
+
     /**
      * Serialisiert Note zu JSON
      * v1.4.0: Nutzt Gson für komplexe Strukturen
@@ -267,7 +275,9 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     labels = rawNote.labels,
                     color = rawNote.color,
                     isPinned = rawNote.isPinned,
-                    folderName = rawNote.folderName
+                    folderName = rawNote.folderName,
+                    // 🆕 v2.9.0 (Trash) — direkt aus rawNote; fehlendes Feld → null (= aktive Notiz)
+                    trashedAt = rawNote.trashedAt
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -291,7 +301,9 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
             val labels: List<String>? = null,
             val color: String? = null,
             val isPinned: Boolean? = null,
-            val folderName: String? = null
+            val folderName: String? = null,
+            // 🆕 v2.9.0 (Trash) — nullable: alte JSONs ohne dieses Feld lesen weiter sauber
+            val trashedAt: Long? = null
         )
 
         /**

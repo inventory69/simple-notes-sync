@@ -210,6 +210,42 @@ class NoteJsonRoundTripTest {
         assertEquals("Reise 2024", Note.fromMarkdown(md)!!.folderName)
     }
 
+    // ───── v2.9.0 (Trash): trashedAt überlebt JSON-Round-Trip ─────
+    @Test fun `json_roundTrip_preservesTrashedAt`() {
+        val note = baseNote().copy(trashedAt = 1_720_000_000_000L)
+        val json = note.toJson()
+        assertTrue("JSON must contain trashedAt", json.contains("\"trashedAt\""))
+        assertTrue(json.contains("1720000000000"))
+        val round = Note.fromJson(json)
+        assertEquals(1_720_000_000_000L, round!!.trashedAt)
+        assertTrue("isTrashed must be true", round.isTrashed)
+    }
+
+    // ───── v2.9.0 (Trash): JSON ohne Feld → null (= aktive Notiz) ─────
+    @Test fun `json_legacyWithoutTrashedAt_isNullActive`() {
+        val legacy = """
+            {"id":"l","title":"T","content":"B","createdAt":1,"updatedAt":1,
+             "deviceId":"d","syncStatus":"SYNCED","noteType":"TEXT"}
+        """.trimIndent()
+        val note = Note.fromJson(legacy)
+        assertNull("trashedAt defaults to null", note!!.trashedAt)
+        assertTrue("isTrashed must be false", !note.isTrashed)
+    }
+
+    // ───── v2.9.0 (Trash): un-getrashte Notiz serialisiert OHNE Key (LWW un-trash) ─────
+    @Test fun `json_activeNote_doesNotEmitTrashedAtKey`() {
+        val note = baseNote() // trashedAt == null
+        val json = note.toJson()
+        assertTrue("Active note must not emit trashedAt key", !json.contains("\"trashedAt\""))
+    }
+
+    // ───── v2.9.0 (Trash): trashedAt NICHT in Markdown ─────
+    @Test fun `markdown_doesNotEmitTrashedAt`() {
+        val note = baseNote().copy(trashedAt = 1_720_000_000_000L)
+        val md = note.toMarkdown()
+        assertTrue("Markdown must not contain trashed metadata", !md.contains("trashed"))
+    }
+
     // ───── Markdown: invalides 'pinned' → null + Logger.w ─────
     @Test
     fun `markdown_invalidPinnedValue_returnsNull`() {
