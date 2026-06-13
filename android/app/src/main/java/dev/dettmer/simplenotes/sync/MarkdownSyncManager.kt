@@ -126,6 +126,35 @@ internal class MarkdownSyncManager(
     }
 
     /**
+     * 🆕 v2.9.0 (Trash): Löscht den Server-Markdown-Spiegel einer Notiz, die soeben in den
+     * Papierkorb verschoben wurde. Spiegelt den MD-Delete-Block aus
+     * [NoteDownloader.deleteFromServer], 404-tolerant. Die Notiz existiert noch lokal, daher wird
+     * der Dateiname aus dem Titel abgeleitet (Fast-Path wie beim Export).
+     *
+     * Invalidiert anschließend MD-Content-Hash + E-Tag, damit ein späteres Restore die Datei neu
+     * exportiert (sonst würde der Skip-per-Hash den Re-Export verschlucken).
+     */
+    fun deleteSingle(sardine: Sardine, serverUrl: String, note: Note) {
+        val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
+        val filename = sanitizeFilename(note.title) + ".md"
+        val mdUrl = mdBaseUrl.trimEnd('/') + "/" + filename
+        try {
+            sardine.delete(mdUrl)
+            Logger.d(TAG, "🗑️ Deleted server MD (trashed): $filename")
+        } catch (e: java.io.IOException) {
+            if (e.message?.contains("404") == true) {
+                Logger.d(TAG, "ℹ️ Server MD not found (already gone): $filename")
+            } else {
+                throw e
+            }
+        }
+        prefs.edit {
+            remove("content_hash_md_${note.id}")
+            remove("etag_md_${note.id}")
+        }
+    }
+
+    /**
      * Exportiert ALLE lokalen Notizen als Markdown (Initial-Export).
      *
      * Wird beim ersten Aktivieren der Desktop-Integration aufgerufen.
@@ -157,7 +186,9 @@ internal class MarkdownSyncManager(
             ensureMarkdownDirExists(sardine, serverUrl)
 
             // Hole ALLE lokalen Notizen (inklusive SYNCED)
-            val allNotes = storage.loadAllNotes()
+            // 🆕 v2.9.0 (Trash): getrashte Notizen nicht exportieren — ihr MD-Spiegel wird beim
+            // Trashen gelöscht (siehe deleteSingle), ein Re-Export würde ihn wiederbeleben.
+            val allNotes = storage.loadAllNotes().filter { it.trashedAt == null }
             val totalCount = allNotes.size
             var exportedCount = 0
 
@@ -306,7 +337,7 @@ internal class MarkdownSyncManager(
      *
      * 🆕 v1.11.0: excludeNoteIds verhindert Re-Import von soeben exportierten Dateien.
      */
-    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements")
+    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements", "CyclomaticComplexMethod")
     suspend fun importAll(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")
@@ -515,7 +546,10 @@ internal class MarkdownSyncManager(
                                     "(local=${localNote.updatedAt}, md=${mdNote.updatedAt})"
                             )
                         }
-                        contentChanged && localNote.syncStatus == SyncStatus.SYNCED -> {
+                        // 🆕 v2.9.0 (Trash): trashedAt == null guarden — sonst würde eine veraltete
+                        // MD-Datei eine getrashte Notiz über diesen Force-Import-Pfad wiederbeleben.
+                        // Ein echt neuerer MD-Import (nächster Branch, LWW) darf bewusst un-trashen.
+                        contentChanged && localNote.syncStatus == SyncStatus.SYNCED && localNote.trashedAt == null -> {
                             val merged = mdNoteFoldered.copy(
                                 syncStatus = SyncStatus.PENDING,
                                 isPinned = mdNote.isPinned ?: localNote.isPinned,

@@ -1,12 +1,17 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
+import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -96,5 +101,27 @@ class MarkdownSyncManagerFilenameTest {
         val name2 = manager.getUniqueFilename(note2, used)
         assertEquals("Daily", name1)
         assertEquals("Daily_bbbb2222", name2)
+    }
+
+    // ─── v2.9.0 (Trash): deleteSingle ──────────────────────────────────────────
+
+    private fun trashNote() = Note(
+        id = "trash-1", title = "Gone", content = "x", deviceId = "dev", trashedAt = 123L
+    )
+
+    @Test fun `deleteSingle tolerates 404 (already gone)`() {
+        val sardine = mockk<Sardine>(relaxed = true)
+        every { sardine.delete(any()) } throws IOException("HTTP 404 Not Found")
+        // Must not throw — parallel purge on two devices is safe.
+        manager.deleteSingle(sardine, "http://server", trashNote())
+        verify { sardine.delete(any()) }
+    }
+
+    @Test fun `deleteSingle rethrows non-404 errors`() {
+        val sardine = mockk<Sardine>(relaxed = true)
+        every { sardine.delete(any()) } throws IOException("HTTP 500 Server Error")
+        assertThrows(IOException::class.java) {
+            manager.deleteSingle(sardine, "http://server", trashNote())
+        }
     }
 }

@@ -70,7 +70,12 @@
     <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
 
     <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
+    <!-- unused since v2.9.0 — server-deleted notes now move to trash (see sync_moved_to_trash_count) -->
     <string name="sync_deleted_on_server_count">%d deleted on server</string>
+    <!-- 🆕 v2.9.0 (Trash): server-deleted notes are moved to the trash -->
+    <string name="sync_moved_to_trash_count">%d moved to trash</string>
+    <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
+    <string name="sync_deleted_from_server_count">%1$d deleted from server</string>
 
     <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
     <string name="sync_phase_preparing">Synchronizing…</string>

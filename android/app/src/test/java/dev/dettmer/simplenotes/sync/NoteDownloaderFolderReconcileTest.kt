@@ -109,6 +109,22 @@ class NoteDownloaderFolderReconcileTest {
         assertEquals("Noltenius", storage.loadNote(noteId)!!.folderName)
     }
 
+    @Test fun `reconcile clears trashedAt when DELETED_ON_SERVER note is present on server`() = runTest {
+        storage.saveNote(
+            Note(
+                id = noteId, title = "T", content = "C", deviceId = "",
+                syncStatus = SyncStatus.DELETED_ON_SERVER, folderName = null, trashedAt = 999L
+            )
+        )
+
+        val result = downloader.downloadAll(mockSardine(), serverUrl)
+
+        assertEquals(1, result.folderReconciledCount)
+        val healed = storage.loadNote(noteId)!!
+        assertEquals(SyncStatus.SYNCED, healed.syncStatus)
+        assertNull("trashedAt must be cleared on heal", healed.trashedAt)
+    }
+
     @Test fun `false DELETED_ON_SERVER is cleared when note is still present on server`() = runTest {
         storage.saveNote(
             Note(

@@ -62,7 +62,12 @@
     <string name="sync_legend_deleted_label">Auf Server gelöscht</string>
     <string name="sync_legend_deleted_desc">Diese Notiz wurde auf einem anderen Gerät oder direkt auf dem Server gelöscht. Sie existiert noch lokal.</string>
     <!-- 🆕 v1.8.0 (IMPL_022): Sync-Banner Löschungsanzahl -->
+    <!-- unused since v2.9.0 — auf dem Server gelöschte Notizen wandern jetzt in den Papierkorb -->
     <string name="sync_deleted_on_server_count">%d auf Server gelöscht</string>
+    <!-- 🆕 v2.9.0 (Trash): auf dem Server gelöschte Notizen wandern in den Papierkorb -->
+    <string name="sync_moved_to_trash_count">%d in den Papierkorb verschoben</string>
+    <!-- 🆕 v2.9.x (Trash): via „Papierkorb leeren" vom Server gelöschte Notizen -->
+    <string name="sync_deleted_from_server_count">%1$d vom Server gelöscht</string>
     <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
     <string name="sync_phase_preparing">Synchronisiere…</string>
     <string name="sync_phase_uploading">Hochladen…</string>

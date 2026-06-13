@@ -347,7 +347,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     runAttempt = runAttemptCount,
                 )
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
-                SyncStateManager.markCompleted()
+                if (result.purgedFromServerCount > 0) {
+                    SyncStateManager.promoteToVisible()
+                    SyncStateManager.markCompleted(buildSyncResultBanner(applicationContext, result))
+                } else {
+                    SyncStateManager.markCompleted()
+                }
 
                 // Nur Notification zeigen wenn tatsächlich etwas gesynct wurde
                 // UND die App nicht im Vordergrund ist (sonst sieht User die Änderungen direkt)

@@ -33,7 +33,9 @@ internal class NoteUploader(
     private val urlBuilder: SyncUrlBuilder,
     private val ioDispatcher: CoroutineDispatcher,
     private val folderStore: FolderStore, // 🆕 v2.8.0 (Local-Only Folders)
-    private val markdownExporter: ((Sardine, String, Note, Boolean) -> Unit)? = null
+    private val markdownExporter: ((Sardine, String, Note, Boolean) -> Unit)? = null,
+    // 🆕 v2.9.0 (Trash): löscht den Server-MD-Spiegel getrashter Notizen statt sie zu exportieren.
+    private val markdownDeleter: ((Sardine, String, Note) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "NoteUploader"
@@ -310,14 +312,20 @@ internal class NoteUploader(
                 // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
                 // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
                 var didExportMarkdown = false // 🆕 v1.11.0
-                if (markdownExportEnabled && markdownExporter != null) {
+                if (markdownExportEnabled) {
                     mdExportMutex.withLock {
                         try {
-                            markdownExporter.invoke(sardine, serverUrl, noteToUpload, markdownDirExists)
-                            didExportMarkdown = true // 🆕 v1.11.0
-                            Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
+                            if (noteToUpload.isTrashed) {
+                                // 🆕 v2.9.0 (Trash): MD-Export überspringen, Server-MD stattdessen löschen.
+                                markdownDeleter?.invoke(sardine, serverUrl, noteToUpload)
+                                Logger.d(TAG, "   🗑️ MD deleted (trashed): ${noteToUpload.title}")
+                            } else {
+                                markdownExporter?.invoke(sardine, serverUrl, noteToUpload, markdownDirExists)
+                                didExportMarkdown = true // 🆕 v1.11.0
+                                Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
+                            }
                         } catch (e: Exception) {
-                            Logger.e(TAG, "MD-Export failed for ${noteToUpload.id}: ${e.message}")
+                            Logger.e(TAG, "MD-Export/-Delete failed for ${noteToUpload.id}: ${e.message}")
                         }
                     }
                 }

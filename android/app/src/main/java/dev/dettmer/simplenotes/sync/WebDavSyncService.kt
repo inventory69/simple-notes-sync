@@ -106,6 +106,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         folderStore = folderStore, // 🆕 v2.8.0 (Local-Only Folders)
         markdownExporter = { sardine, serverUrl, note, mdDirExists ->
             markdownSyncManager.exportSingle(sardine, serverUrl, note, mdDirExists)
+        },
+        // 🆕 v2.9.0 (Trash): getrashte Notiz → Server-MD löschen statt exportieren.
+        markdownDeleter = { sardine, serverUrl, note ->
+            markdownSyncManager.deleteSingle(sardine, serverUrl, note)
         }
     )
 
@@ -405,6 +409,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 return@withContext true
             }
 
+            // 🆕 v2.9.x (Trash): ausstehende Server-Löschungen aus „Papierkorb leeren"
+            if (PendingServerDeletions(context).getAll().isNotEmpty()) {
+                Logger.d(TAG, "🗑️ Pending server deletions - has changes: true")
+                return@withContext true
+            }
+
             // Check 2: Local changes (Timestamp ODER SyncStatus)
             // 🛡️ v1.8.2 (IMPL_19a): Klassen-Feld nutzen statt neue Instanz
             val allNotes = storage.loadAllNotes()
@@ -599,6 +609,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
                 var syncedCount = 0
                 var conflictCount = 0
+                var purgedFromServerCount = 0
 
                 Logger.d(TAG, "📍 Step 3: Checking server directory")
                 // ⚡ v1.3.1: Verwende gecachte Directory-Checks
@@ -654,6 +665,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         }
                         if (successIds.isNotEmpty()) {
                             pendingDeletions.remove(successIds)
+                            purgedFromServerCount = successIds.size
                             Logger.d(TAG, "✅ Deleted ${successIds.size}/${pendingIds.size} pending notes from server")
                             // Step 4.6: Clean up now-empty folder directories
                             val processedFolderNames = pendingIds
@@ -823,6 +835,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     syncedCount = effectiveSyncedCount,
                     conflictCount = conflictCount,
                     deletedOnServerCount = deletedOnServerCount, // 🆕 v1.8.0
+                    purgedFromServerCount = purgedFromServerCount, // 🆕 v2.9.x (Trash)
                     foldersChanged = foldersChanged, // 🆕 v2.7.0 (Folders)
                     foldersReconciled = folderReconciledCount > 0 // 🆕 v2.7.2
                 )

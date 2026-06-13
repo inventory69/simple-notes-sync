@@ -14,7 +14,9 @@ class SyncResultTest {
         assertEquals(0, result.syncedCount)
         assertEquals(0, result.conflictCount)
         assertEquals(0, result.deletedOnServerCount)
+        assertEquals(0, result.purgedFromServerCount)
         assertFalse(result.foldersChanged)
+        assertFalse(result.hasPurgedFromServer)
         assertNull(result.errorMessage)
         assertNull(result.infoMessage)
     }
@@ -70,19 +72,34 @@ class SyncResultTest {
     }
 
     @Test
+    fun `hasPurgedFromServer is true when purgedFromServerCount greater than 0`() {
+        val result = SyncResult(isSuccess = true, purgedFromServerCount = 2)
+        assertTrue(result.hasPurgedFromServer)
+    }
+
+    @Test
+    fun `hasPurgedFromServer is false when purgedFromServerCount is 0`() {
+        val result = SyncResult(isSuccess = true, purgedFromServerCount = 0)
+        assertFalse(result.hasPurgedFromServer)
+    }
+
+    @Test
     fun `full result with all fields`() {
         val result = SyncResult(
             isSuccess = true,
             syncedCount = 10,
             conflictCount = 2,
             deletedOnServerCount = 3,
+            purgedFromServerCount = 5,
             errorMessage = null,
             infoMessage = "Sync complete"
         )
         assertEquals(10, result.syncedCount)
         assertEquals(2, result.conflictCount)
         assertEquals(3, result.deletedOnServerCount)
+        assertEquals(5, result.purgedFromServerCount)
         assertTrue(result.hasConflicts)
         assertTrue(result.hasServerDeletions)
+        assertTrue(result.hasPurgedFromServer)
     }
 }

@@ -42,7 +42,7 @@ internal data class DownloadResult(
  * - detectDeletions()  ← detectServerDeletions()
  * - deleteFromServer() ← deleteNoteFromServer()
  */
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class NoteDownloader(
     private val prefs: SharedPreferences,
     private val storage: NotesStorage,
@@ -702,15 +702,34 @@ internal class NoteDownloader(
             // - CONFLICT: Wird separat behandelt
             // - DELETED_ON_SERVER: Bereits markiert
             if (note.id !in serverNoteIds) {
-                val updatedNote = note.copy(syncStatus = SyncStatus.DELETED_ON_SERVER)
-                storage.saveNote(updatedNote)
-                deletedCount++
+                if (note.trashedAt != null) {
+                    // 🆕 v2.9.0 (Trash): Die Notiz lag bereits im Papierkorb und ist jetzt auch vom
+                    // Server verschwunden → ein anderes Gerät hat sie endgültig gelöscht (purge).
+                    // Lokal hart löschen; der DeletionTracker-Eintrag verhindert Zombie-Wiederkehr.
+                    storage.deleteNote(note.id)
+                    Logger.d(
+                        TAG,
+                        "🔥 Trashed note '${note.title}' (${note.id}) purged on another device → " +
+                            "hard-deleted locally"
+                    )
+                } else {
+                    // 🆕 v2.9.0 (Trash): Echte Server-Löschung → in den Papierkorb verschieben.
+                    // KEIN updatedAt-Bump und KEIN PENDING: Ein Upload würde die Notiz auf dem Server
+                    // wiederbeleben und mit dem DeletionTracker des anderen Clients ping-pongen. Ein
+                    // bewusstes Restore durch den Nutzer setzt später PENDING + neuen Timestamp.
+                    val updatedNote = note.copy(
+                        syncStatus = SyncStatus.DELETED_ON_SERVER,
+                        trashedAt = System.currentTimeMillis()
+                    )
+                    storage.saveNote(updatedNote)
+                    deletedCount++
 
-                Logger.d(
-                    TAG,
-                    "🗑️ Note '${note.title}' (${note.id}) " +
-                        "was deleted on server, marked as DELETED_ON_SERVER"
-                )
+                    Logger.d(
+                        TAG,
+                        "🗑️ Note '${note.title}' (${note.id}) " +
+                            "was deleted on server → moved to trash (DELETED_ON_SERVER)"
+                    )
+                }
             }
         }
 
@@ -718,7 +737,7 @@ internal class NoteDownloader(
             Logger.d(
                 TAG,
                 "📊 Server deletion detection complete: " +
-                    "$deletedCount of ${syncedNotes.size} synced notes deleted on server"
+                    "$deletedCount of ${syncedNotes.size} synced notes moved to trash"
             )
         }
 
@@ -855,8 +874,14 @@ internal class NoteDownloader(
         return when (localNote.syncStatus) {
             SyncStatus.DELETED_ON_SERVER -> {
                 // updatedAt NICHT bumpen, Status nicht PENDING → kein Re-Upload, keine Schleife
+                // 🆕 v2.9.0 (Trash): trashedAt ebenfalls löschen — die Notiz ist nachweislich auf dem
+                // Server vorhanden, die „in den Papierkorb verschoben"-Markierung war also falsch.
                 storage.saveNote(
-                    localNote.copy(syncStatus = SyncStatus.SYNCED, folderName = serverFolder)
+                    localNote.copy(
+                        syncStatus = SyncStatus.SYNCED,
+                        folderName = serverFolder,
+                        trashedAt = null
+                    )
                 )
                 Logger.d(
                     TAG,
@@ -890,6 +915,9 @@ internal class NoteDownloader(
         if (a.isPinned != b.isPinned) return true
         if (a.color != b.color) return true
         if (a.folderName != b.folderName) return true
+        // 🆕 v2.9.0 (Trash): Trash/Restore ist ein echter Unterschied — sonst schluckt der
+        // E-Tag-Refresh-Branch ein Trash/Restore und die Notiz erscheint nicht im Papierkorb.
+        if (a.trashedAt != b.trashedAt) return true
 
         return when (a.noteType) {
             NoteType.CHECKLIST -> {
