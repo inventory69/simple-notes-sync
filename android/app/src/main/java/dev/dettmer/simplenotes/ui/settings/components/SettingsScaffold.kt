@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.settings.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.widthIn
@@ -35,7 +36,13 @@ import dev.dettmer.simplenotes.R
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Modifier, content: @Composable (PaddingValues) -> Unit) {
+fun SettingsScaffold(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit
+) {
     Scaffold(
         modifier = modifier.imePadding(),
         topBar = {
@@ -54,6 +61,7 @@ fun SettingsScaffold(title: String, onBack: () -> Unit, modifier: Modifier = Mod
                         )
                     }
                 },
+                actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = Color.Transparent,

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.GridView
@@ -266,6 +267,16 @@ fun SettingsMainScreen(
                     title = stringResource(R.string.settings_import_title),
                     subtitle = stringResource(R.string.settings_import_subtitle),
                     onClick = { onNavigate(SettingsRoute.Import) }
+                )
+            }
+
+            // 🆕 v2.9.0 (Trash): Papierkorb — Untertitel direkt sichtbar für leichte Auffindbarkeit.
+            item {
+                SettingsCard(
+                    icon = Icons.Default.DeleteOutline,
+                    title = stringResource(R.string.trash_title),
+                    subtitle = stringResource(R.string.settings_trash_subtitle),
+                    onClick = { onNavigate(SettingsRoute.Trash) }
                 )
             }
 

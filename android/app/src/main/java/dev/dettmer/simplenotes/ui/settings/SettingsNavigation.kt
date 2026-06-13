@@ -33,6 +33,7 @@ import dev.dettmer.simplenotes.ui.settings.screens.MarkdownSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SyncSettingsScreen
+import dev.dettmer.simplenotes.ui.settings.screens.TrashScreen
 import kotlinx.coroutines.launch
 
 // v2.0.0: Smooth fade transitions for Settings sub-screens
@@ -162,6 +163,22 @@ fun SettingsNavHost(navController: NavHostController, viewModel: SettingsViewMod
                 DisplaySettingsScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            // 🆕 v2.9.0 (Trash): Papierkorb
+            composable(SettingsRoute.Trash.route) {
+                TrashScreen(
+                    onBack = { navController.popBackStack() },
+                    onShowSnackbar = { message ->
+                        scope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(
+                                message = message,
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
                 )
             }
 

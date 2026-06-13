@@ -24,4 +24,6 @@ sealed class SettingsRoute(val route: String) {
     data object Display : SettingsRoute("settings_display") // 🎨 v1.7.0
 
     data object Import : SettingsRoute("settings_import") // 🆕 Issue #21
+
+    data object Trash : SettingsRoute("settings_trash") // 🆕 v2.9.0 (Trash)
 }
