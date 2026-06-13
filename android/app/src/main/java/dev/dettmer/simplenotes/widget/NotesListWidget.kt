@@ -20,6 +20,7 @@ import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_APPLY_OPACITY_TO_
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_BACKGROUND_OPACITY
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FAB_EXPANDED
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_FOLDERS
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_HEADER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_PINNED
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_NOTE_FILTER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SELECTED_FOLDER
@@ -47,6 +48,7 @@ class NotesListWidget : GlanceAppWidget() {
             val applyOpacityToCards = prefs[KEY_APPLY_OPACITY_TO_CARDS] ?: false
             val cardOpacity = if (applyOpacityToCards) bgOpacity else 1.0f
             val fabExpanded = prefs[KEY_FAB_EXPANDED] ?: false
+            val hideHeader = prefs[KEY_HIDE_HEADER] ?: false
             val hidePinned = prefs[KEY_HIDE_PINNED] ?: false
             val hideFolders = prefs[KEY_HIDE_FOLDERS] ?: false
             val selectedFolder = prefs[KEY_SELECTED_FOLDER]?.takeIf { it.isNotEmpty() }
@@ -69,7 +71,8 @@ class NotesListWidget : GlanceAppWidget() {
                     bgOpacity = bgOpacity,
                     cardBgOpacity = cardOpacity,
                     fabExpanded = fabExpanded,
-                    hasPinnedNotes = hasPinnedNotes
+                    hasPinnedNotes = hasPinnedNotes,
+                    hideHeader = hideHeader
                 )
             }
         }

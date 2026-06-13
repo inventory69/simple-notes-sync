@@ -84,7 +84,8 @@ fun NotesListWidgetContent(
     bgOpacity: Float = 1.0f,
     cardBgOpacity: Float = 1.0f,
     fabExpanded: Boolean = false,
-    hasPinnedNotes: Boolean = false
+    hasPinnedNotes: Boolean = false,
+    hideHeader: Boolean = false
 ) {
     val context = LocalContext.current
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
@@ -96,32 +97,34 @@ fun NotesListWidgetContent(
             .then(bgModifier)
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.Vertical.CenterVertically
-            ) {
-                Spacer(GlanceModifier.width(48.dp))
-                Box(
-                    modifier = GlanceModifier.defaultWeight(),
-                    contentAlignment = Alignment.Center
+            if (!hideHeader) {
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.Vertical.CenterVertically
                 ) {
-                    Text(
-                        text = context.getString(R.string.notes_list_widget_name),
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurface,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                    Spacer(GlanceModifier.width(48.dp))
+                    Box(
+                        modifier = GlanceModifier.defaultWeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = context.getString(R.string.notes_list_widget_name),
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurface,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
                         )
+                    }
+                    CircleIconButton(
+                        imageProvider = ImageProvider(R.drawable.ic_settings),
+                        contentDescription = context.getString(R.string.notes_list_widget_config_title),
+                        backgroundColor = null,
+                        contentColor = GlanceTheme.colors.onSurface,
+                        onClick = actionRunCallback<OpenNotesListConfigAction>()
                     )
                 }
-                CircleIconButton(
-                    imageProvider = ImageProvider(R.drawable.ic_settings),
-                    contentDescription = context.getString(R.string.notes_list_widget_config_title),
-                    backgroundColor = null,
-                    contentColor = GlanceTheme.colors.onSurface,
-                    onClick = actionRunCallback<OpenNotesListConfigAction>()
-                )
             }
 
             if (notes.isEmpty() && folders.isEmpty()) {
@@ -169,6 +172,21 @@ fun NotesListWidgetContent(
                     .fillMaxSize()
                     .clickable(actionRunCallback<ToggleFabExpandedAction>())
             ) {}
+        }
+
+        if (hideHeader) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 4.dp),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                CircleIconButton(
+                    imageProvider = ImageProvider(R.drawable.ic_settings),
+                    contentDescription = context.getString(R.string.notes_list_widget_config_title),
+                    backgroundColor = null,
+                    contentColor = GlanceTheme.colors.onSurface,
+                    onClick = actionRunCallback<OpenNotesListConfigAction>()
+                )
+            }
         }
 
         Box(

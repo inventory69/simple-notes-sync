@@ -878,6 +878,8 @@
     <string name="notes_list_widget_section_others">Notes</string>
     <string name="notes_list_widget_section_folders">Folders</string>
     <string name="notes_list_widget_config_visibility_label">Visibility</string>
+    <string name="notes_list_widget_config_hide_header">Hide widget title</string>
+    <string name="notes_list_widget_config_hide_header_desc">The gear icon will float in the top corner instead</string>
     <string name="notes_list_widget_config_hide_pinned">Hide pinned notes</string>
     <string name="notes_list_widget_config_hide_pinned_desc">Pinned notes won\'t appear in the widget</string>
     <string name="notes_list_widget_config_hide_folders">Hide folder cards</string>

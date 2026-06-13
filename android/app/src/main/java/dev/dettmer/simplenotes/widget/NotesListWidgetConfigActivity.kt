@@ -49,6 +49,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
             var initialFilter = NoteFilter.ALL
             var initialOpacity = 1.0f
             var initialApplyOpacityToCards = false
+            var initialHideHeader = false
             var initialHidePinned = false
             var initialHideFolders = false
             var initialSelectedFolder = ""
@@ -74,6 +75,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                 )
                 initialOpacity = prefs[NotesListWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
                 initialApplyOpacityToCards = prefs[NotesListWidgetState.KEY_APPLY_OPACITY_TO_CARDS] ?: false
+                initialHideHeader = prefs[NotesListWidgetState.KEY_HIDE_HEADER] ?: false
                 initialHidePinned = prefs[NotesListWidgetState.KEY_HIDE_PINNED] ?: false
                 initialHideFolders = prefs[NotesListWidgetState.KEY_HIDE_FOLDERS] ?: false
                 initialSelectedFolder = prefs[NotesListWidgetState.KEY_SELECTED_FOLDER] ?: ""
@@ -94,6 +96,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                             filter = initialFilter,
                             opacity = initialOpacity,
                             applyOpacityToCards = initialApplyOpacityToCards,
+                            hideHeader = initialHideHeader,
                             hidePinned = initialHidePinned,
                             hideFolders = initialHideFolders,
                             selectedFolder = initialSelectedFolder
@@ -118,6 +121,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                     prefs[NotesListWidgetState.KEY_NOTE_FILTER] = config.filter.prefsValue
                     prefs[NotesListWidgetState.KEY_BACKGROUND_OPACITY] = config.opacity
                     prefs[NotesListWidgetState.KEY_APPLY_OPACITY_TO_CARDS] = config.applyOpacityToCards
+                    prefs[NotesListWidgetState.KEY_HIDE_HEADER] = config.hideHeader
                     prefs[NotesListWidgetState.KEY_HIDE_PINNED] = config.hidePinned
                     prefs[NotesListWidgetState.KEY_HIDE_FOLDERS] = config.hideFolders
                     prefs[NotesListWidgetState.KEY_SELECTED_FOLDER] = config.selectedFolder

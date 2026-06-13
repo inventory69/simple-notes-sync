@@ -804,6 +804,8 @@
     <string name="notes_list_widget_section_others">Notizen</string>
     <string name="notes_list_widget_section_folders">Ordner</string>
     <string name="notes_list_widget_config_visibility_label">Sichtbarkeit</string>
+    <string name="notes_list_widget_config_hide_header">Widget-Titel ausblenden</string>
+    <string name="notes_list_widget_config_hide_header_desc">Das Zahnrad-Symbol wird dann oben schwebend angezeigt</string>
     <string name="notes_list_widget_config_hide_pinned">Angepinnte Notizen ausblenden</string>
     <string name="notes_list_widget_config_hide_pinned_desc">Angepinnte Notizen werden nicht im Widget angezeigt</string>
     <string name="notes_list_widget_config_hide_folders">Ordner ausblenden</string>

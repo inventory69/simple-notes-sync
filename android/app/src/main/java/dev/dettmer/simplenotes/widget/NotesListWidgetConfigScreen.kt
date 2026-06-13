@@ -55,6 +55,7 @@ fun NotesListWidgetConfigScreen(
     var noteFilter by remember { mutableStateOf(initialConfig.filter) }
     var opacity by remember { mutableFloatStateOf(initialConfig.opacity) }
     var applyOpacityToCards by remember { mutableStateOf(initialConfig.applyOpacityToCards) }
+    var hideHeader by remember { mutableStateOf(initialConfig.hideHeader) }
     var hidePinned by remember { mutableStateOf(initialConfig.hidePinned) }
     var hideFolders by remember { mutableStateOf(initialConfig.hideFolders) }
     var selectedFolder by remember { mutableStateOf(initialConfig.selectedFolder) }
@@ -68,7 +69,7 @@ fun NotesListWidgetConfigScreen(
                 onClick = {
                     onSave(NotesListWidgetConfig(
                         sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards,
-                        hidePinned, hideFolders, selectedFolder
+                        hideHeader, hidePinned, hideFolders, selectedFolder
                     ))
                 }
             ) {
@@ -165,6 +166,24 @@ fun NotesListWidgetConfigScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.notes_list_widget_config_hide_header),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = stringResource(R.string.notes_list_widget_config_hide_header_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                Switch(checked = hideHeader, onCheckedChange = { hideHeader = it })
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
