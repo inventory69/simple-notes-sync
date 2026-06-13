@@ -58,7 +58,8 @@
     <string name="sync_legend_conflict_label">Konflikt</string>
     <string name="sync_legend_conflict_desc">Diese Notiz wurde auf mehreren Geräten gleichzeitig geändert. Die neueste Version wurde beibehalten.</string>
     <string name="sync_legend_local_only_label">Nur lokal</string>
-    <string name="sync_legend_local_only_desc">Diese Notiz wurde noch nie mit dem Server synchronisiert.</string>
+    <string name="sync_legend_local_only_desc">Diese Notiz bleibt nur auf diesem Gerät - entweder wurde sie noch nicht synchronisiert oder sie liegt in einem vom Sync ausgeschlossenen Ordner.</string>
+    <string name="sync_legend_trash_hint">Gelöschte Notizen - und auf einem anderen Gerät entfernte Notizen - landen im Papierkorb, wo du sie %1$d Tage lang wiederherstellen kannst.</string>
     <string name="sync_legend_deleted_label">Auf Server gelöscht</string>
     <string name="sync_legend_deleted_desc">Diese Notiz wurde auf einem anderen Gerät oder direkt auf dem Server gelöscht. Sie existiert noch lokal.</string>
     <!-- 🆕 v1.8.0 (IMPL_022): Sync-Banner Löschungsanzahl -->

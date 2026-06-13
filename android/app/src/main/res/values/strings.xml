@@ -65,7 +65,9 @@
     <string name="sync_legend_conflict_label">Conflict</string>
     <string name="sync_legend_conflict_desc">This note was changed on multiple devices simultaneously. The latest version was kept.</string>
     <string name="sync_legend_local_only_label">Local only</string>
-    <string name="sync_legend_local_only_desc">This note has never been synced to the server yet.</string>
+    <string name="sync_legend_local_only_desc">This note stays on this device only - either it hasn\'t been synced yet, or it\'s in a folder you excluded from sync.</string>
+    <string name="sync_legend_trash_hint">Deleted notes - and notes removed on another device - move to the trash, where you can restore them for %1$d days.</string>
+    <!-- unused since v2.9.0 — DELETED_ON_SERVER legend removed; strings kept to avoid ExtraTranslation in community locales -->
     <string name="sync_legend_deleted_label">Deleted on server</string>
     <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
 

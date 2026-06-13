@@ -29,12 +29,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.utils.Constants
 
 /**
  * 🆕 v1.8.0: Dialog showing the sync status icon legend
  *
- * Displays all 5 SyncStatus values with their icons, colors,
- * and descriptions. Helps users understand what each icon means.
+ * Displays 4 visible SyncStatus values with their icons, colors,
+ * and descriptions, plus a trash hint footnote.
  */
 @Composable
 fun SyncStatusLegendDialog(onDismiss: () -> Unit) {
@@ -92,12 +93,12 @@ fun SyncStatusLegendDialog(onDismiss: () -> Unit) {
                     description = stringResource(R.string.sync_legend_local_only_desc)
                 )
 
-                // ☁️✗ DELETED_ON_SERVER
-                LegendRow(
-                    icon = Icons.Outlined.CloudOff,
-                    tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                    label = stringResource(R.string.sync_legend_deleted_label),
-                    description = stringResource(R.string.sync_legend_deleted_desc)
+                HorizontalDivider()
+
+                Text(
+                    text = stringResource(R.string.sync_legend_trash_hint, Constants.TRASH_RETENTION_DAYS),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
