@@ -129,6 +129,20 @@ class NotesStorage(private val context: Context) {
         }
     }
 
+    /**
+     * 🆕 v2.9.0 (Trash): Lädt nur aktive (nicht getrashte) Notizen.
+     * Choke-Point für Liste/Suche/Filter/Widgets/Picker. `loadAllNotes()` bleibt
+     * für Sync/Backup/Repair unverändert (die brauchen auch getrashte Notizen).
+     */
+    suspend fun loadActiveNotes(forceReload: Boolean = false): List<Note> =
+        loadAllNotes(forceReload).filter { it.trashedAt == null }
+
+    /**
+     * 🆕 v2.9.0 (Trash): Lädt nur Notizen im Papierkorb (trashedAt != null).
+     */
+    suspend fun loadTrashedNotes(forceReload: Boolean = false): List<Note> =
+        loadAllNotes(forceReload).filter { it.trashedAt != null }
+
     suspend fun deleteNote(id: String): Boolean = withContext(Dispatchers.IO) {
         val file = File(notesDir, "$id.json")
         val deleted = file.delete()
