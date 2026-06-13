@@ -83,7 +83,8 @@ fun NoteWidgetConfigScreen(
     @Suppress("UNUSED_PARAMETER") onCancel: () -> Unit // Reserved for future use
 ) {
     val allNotes by produceState<List<Note>>(initialValue = emptyList()) {
-        value = storage.loadAllNotes().sortedByDescending { it.updatedAt }
+        // 🆕 v2.9.0 (Trash): getrashte Notizen nicht zur Widget-Auswahl anbieten.
+        value = storage.loadActiveNotes().sortedByDescending { it.updatedAt }
     }
     var lockWidget by remember { mutableStateOf(initialLock) }
     var opacity by remember { mutableFloatStateOf(initialOpacity) }

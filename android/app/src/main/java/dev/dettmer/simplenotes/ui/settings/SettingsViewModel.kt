@@ -920,8 +920,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     }
 
                     // Check if there are notes to export
+                    // 🆕 v2.9.0 (Trash): getrashte Notizen werden nicht exportiert (siehe exportAll).
                     val noteStorage = dev.dettmer.simplenotes.storage.NotesStorage(getApplication())
-                    val noteCount = withContext(ioDispatcher) { noteStorage.loadAllNotes().size }
+                    val noteCount = withContext(ioDispatcher) { noteStorage.loadActiveNotes().size }
 
                     if (noteCount > 0) {
                         val syncService = WebDavSyncService(getApplication())

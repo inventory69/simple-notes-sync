@@ -36,7 +36,8 @@ class NotesListWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val storage = NotesStorage(context)
-        val allNotes = storage.loadAllNotes()
+        // 🆕 v2.9.0 (Trash): getrashte Notizen nie im Widget anzeigen.
+        val allNotes = storage.loadActiveNotes()
         val folders = FolderStore(context).loadFolders()
         val folderNoteCounts = folders.associate { f -> f.name to allNotes.count { it.folderName == f.name } }
 

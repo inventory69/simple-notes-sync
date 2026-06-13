@@ -166,6 +166,8 @@ class ComposeMainActivity : ComponentActivity() {
         // v1.4.1: Migrate checklists for backwards compatibility
         lifecycleScope.launch {
             migrateChecklistsForBackwardsCompat()
+            // 🆕 v2.9.0 (Trash): bestehende DELETED_ON_SERVER-Notizen in den Papierkorb übernehmen.
+            migrateDeletedOnServerToTrash()
         }
 
         // 🆕 v2.3.0: One-time battery optimization migration for existing users
@@ -459,6 +461,29 @@ class ComposeMainActivity : ComponentActivity() {
 
         // Mark migration as done
         prefs.edit { putBoolean(migrationKey, true) }
+    }
+
+    /**
+     * 🆕 v2.9.0 (Trash): One-time migration — bestehende DELETED_ON_SERVER-Notizen erhalten ein
+     * `trashedAt`, damit sie im Papierkorb erscheinen. Kein `updatedAt`-Bump und kein Status-Wechsel
+     * (sonst würde ein Upload die Notiz auf dem Server wiederbeleben).
+     */
+    private suspend fun migrateDeletedOnServerToTrash() {
+        if (prefs.getBoolean(Constants.KEY_TRASH_MIGRATION_DONE, false)) return
+
+        val storage = NotesStorage(this)
+        withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val toMigrate = storage.loadAllNotes(forceReload = true)
+                .filter { it.syncStatus == SyncStatus.DELETED_ON_SERVER && it.trashedAt == null }
+            for (note in toMigrate) {
+                storage.saveNote(note.copy(trashedAt = now))
+            }
+            if (toMigrate.isNotEmpty()) {
+                Logger.d(TAG, "🗑️ v2.9.0 Trash migration: moved ${toMigrate.size} DELETED_ON_SERVER note(s) to trash")
+            }
+        }
+        prefs.edit { putBoolean(Constants.KEY_TRASH_MIGRATION_DONE, true) }
     }
 
     /**

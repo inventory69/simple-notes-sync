@@ -72,7 +72,8 @@ class NoteWidget : GlanceAppWidget() {
             // Load note synchronously inside provideContent so it re-reads on every
             // widget update (state change). provideContent runs on a Glance SessionWorker
             // thread, not the main thread, so synchronous file I/O is safe here.
-            val note = noteId?.let { storage.loadNoteSync(it) }
+            // 🆕 v2.9.0 (Trash): getrashte Notiz wie gelöscht behandeln → „nicht gefunden"-Fallback.
+            val note = noteId?.let { storage.loadNoteSync(it) }?.takeIf { it.trashedAt == null }
 
             GlanceTheme {
                 NoteWidgetContent(
