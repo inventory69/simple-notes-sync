@@ -115,6 +115,7 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
+import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import androidx.compose.runtime.withFrameNanos
@@ -676,8 +677,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     val codeBackground = MaterialTheme.colorScheme.surfaceVariant
                     val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
                     val markerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    val markdownTransformation = remember(linkColor, codeBackground, codeColor, markerColor) {
-                        MarkdownOutputTransformation(linkColor, codeBackground, codeColor, markerColor)
+                    val fontSizeMultiplier = LocalFontSizeMultiplier.current
+                    val markdownTransformation = remember(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier) {
+                        MarkdownOutputTransformation(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier)
                     }
                     if (isPreviewMode) {
                         // 🆕 v1.9.0 (F07): Markdown rendered preview

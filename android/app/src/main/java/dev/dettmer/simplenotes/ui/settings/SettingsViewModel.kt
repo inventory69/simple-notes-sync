@@ -14,6 +14,7 @@ import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
@@ -279,6 +280,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _colorTheme = MutableStateFlow(ThemePreferences.getColorTheme(prefs))
     val colorTheme: StateFlow<ColorTheme> = _colorTheme.asStateFlow()
 
+    private val _fontSizeScale = MutableStateFlow(ThemePreferences.getFontSizeScale(prefs))
+    val fontSizeScale: StateFlow<FontSizeScale> = _fontSizeScale.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
         ThemePreferences.setThemeMode(prefs, mode)
@@ -287,6 +291,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setColorTheme(theme: ColorTheme) {
         _colorTheme.value = theme
         ThemePreferences.setColorTheme(prefs, theme)
+    }
+
+    fun setFontSizeScale(scale: FontSizeScale) {
+        _fontSizeScale.value = scale
+        ThemePreferences.setFontSizeScale(prefs, scale)
     }
 
     // 🎨 v1.7.0: Display Settings State

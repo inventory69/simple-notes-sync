@@ -38,6 +38,7 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.settings.ComposeSettingsActivity
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
@@ -110,6 +111,7 @@ class ComposeMainActivity : ComponentActivity() {
     // v2.0.0: Theme state — initialized in onCreate, refreshed in onResume after returning from Settings
     private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
     private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
+    private var fontSizeScale by mutableStateOf(FontSizeScale.SYSTEM)
 
     // 🆕 v1.10.0: Separate Job for banner auto-hide — survives collect re-emissions
     private var bannerAutoHideJob: kotlinx.coroutines.Job? = null
@@ -145,6 +147,7 @@ class ComposeMainActivity : ComponentActivity() {
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(prefs)
         colorTheme = ThemePreferences.getColorTheme(prefs)
+        fontSizeScale = ThemePreferences.getFontSizeScale(prefs)
 
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
@@ -199,7 +202,7 @@ class ComposeMainActivity : ComponentActivity() {
         }
 
         setContent {
-            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
 
                 // Dialog state for delete confirmation
                 var deleteDialogData by remember { mutableStateOf<MainViewModel.DeleteDialogData?>(null) }
@@ -281,6 +284,7 @@ class ComposeMainActivity : ComponentActivity() {
         // v2.0.0: Refresh theme state when returning from Settings
         themeMode = ThemePreferences.getThemeMode(prefs)
         colorTheme = ThemePreferences.getColorTheme(prefs)
+        fontSizeScale = ThemePreferences.getFontSizeScale(prefs)
 
         // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
         // This ensures UI reflects current offline mode when returning from Settings

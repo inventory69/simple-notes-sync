@@ -45,6 +45,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.utils.Constants
 
@@ -66,6 +67,7 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val colorTheme by viewModel.colorTheme.collectAsState()
+    val fontSizeScale by viewModel.fontSizeScale.collectAsState()
 
     SettingsScaffold(
         title = stringResource(R.string.display_settings_title),
@@ -95,6 +97,16 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             ColorThemeSelector(
                 currentTheme = colorTheme,
                 onThemeSelected = { viewModel.setColorTheme(it) }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Text Size Section ──
+            SettingsSectionHeader(text = stringResource(R.string.font_size_title))
+
+            FontSizeSelector(
+                currentScale = fontSizeScale,
+                onScaleSelected = { viewModel.setFontSizeScale(it) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -552,6 +564,66 @@ private fun ColorThemeChip(theme: ColorTheme, selected: Boolean, enabled: Boolea
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FontSizeSelector + FontSizeChip — chip row for text size preference
+// 5 static options: System / Small / Normal / Large / Extra large.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FontSizeSelector(currentScale: FontSizeScale, onScaleSelected: (FontSizeScale) -> Unit) {
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        FontSizeScale.entries.forEach { scale ->
+            FontSizeChip(
+                scale = scale,
+                selected = currentScale == scale,
+                onClick = { onScaleSelected(scale) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FontSizeChip(scale: FontSizeScale, selected: Boolean, onClick: () -> Unit) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Aa",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * (scale.multiplier ?: 1.0f)
+                ),
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(scale.displayNameResId),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

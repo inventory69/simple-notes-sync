@@ -497,6 +497,12 @@
     <string name="theme_color_orange">Orange</string>
     <string name="theme_color_dynamic">Dynamic</string>
     <string name="theme_color_dynamic_unavailable">Dynamic colors require Android 12+</string>
+    <string name="font_size_title">Text size</string>
+    <string name="font_size_system">System</string>
+    <string name="font_size_small">Small</string>
+    <string name="font_size_normal">Normal</string>
+    <string name="font_size_large">Large</string>
+    <string name="font_size_xlarge">Extra large</string>
     <string name="autosave_indicator">✓ Saved</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Undo</string>

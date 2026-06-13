@@ -87,11 +87,12 @@ class ComposeSettingsActivity : AppCompatActivity() {
             // changes in DisplaySettingsScreen are immediately reflected here.
             val themeMode by viewModel.themeMode.collectAsState()
             val colorTheme by viewModel.colorTheme.collectAsState()
+            val fontSizeScale by viewModel.fontSizeScale.collectAsState()
             // v2.1.0: NavController must live ABOVE SimpleNotesTheme so it survives
             // the Crossfade composition recreation on theme changes — otherwise
             // navigation resets to the start destination on every theme switch.
             val navController = rememberNavController()
-            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
                 val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
 
                 // Battery optimization dialog (state-driven)

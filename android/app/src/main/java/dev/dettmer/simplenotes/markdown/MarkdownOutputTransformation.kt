@@ -11,10 +11,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
-private val headingSize1 = 24.sp
-private val headingSize2 = 20.sp
-private val headingSize3 = 18.sp
-
 private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
 private val mdTaskRegex = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
 private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
@@ -25,7 +21,12 @@ class MarkdownOutputTransformation(
     private val codeBackground: Color,
     private val codeColor: Color,
     private val markerColor: Color,
+    private val fontSizeMultiplier: Float = 1.0f,
 ) : OutputTransformation {
+
+    private val headingSize1 = (24 * fontSizeMultiplier).sp
+    private val headingSize2 = (20 * fontSizeMultiplier).sp
+    private val headingSize3 = (18 * fontSizeMultiplier).sp
 
     override fun TextFieldBuffer.transformOutput() {
         val text = toString()

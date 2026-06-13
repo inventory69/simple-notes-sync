@@ -9,8 +9,11 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -35,12 +38,38 @@ import androidx.core.view.WindowCompat
  * - ComposeNoteEditorActivity (Note editor)
  * - NoteWidgetConfigActivity (Widget configuration)
  */
+private fun scaleTypography(multiplier: Float): Typography {
+    val base = Typography()
+    return Typography(
+        displayLarge = base.displayLarge.copy(fontSize = base.displayLarge.fontSize * multiplier),
+        displayMedium = base.displayMedium.copy(fontSize = base.displayMedium.fontSize * multiplier),
+        displaySmall = base.displaySmall.copy(fontSize = base.displaySmall.fontSize * multiplier),
+        headlineLarge = base.headlineLarge.copy(fontSize = base.headlineLarge.fontSize * multiplier),
+        headlineMedium = base.headlineMedium.copy(fontSize = base.headlineMedium.fontSize * multiplier),
+        headlineSmall = base.headlineSmall.copy(fontSize = base.headlineSmall.fontSize * multiplier),
+        titleLarge = base.titleLarge.copy(fontSize = base.titleLarge.fontSize * multiplier),
+        titleMedium = base.titleMedium.copy(fontSize = base.titleMedium.fontSize * multiplier),
+        titleSmall = base.titleSmall.copy(fontSize = base.titleSmall.fontSize * multiplier),
+        bodyLarge = base.bodyLarge.copy(fontSize = base.bodyLarge.fontSize * multiplier),
+        bodyMedium = base.bodyMedium.copy(fontSize = base.bodyMedium.fontSize * multiplier),
+        bodySmall = base.bodySmall.copy(fontSize = base.bodySmall.fontSize * multiplier),
+        labelLarge = base.labelLarge.copy(fontSize = base.labelLarge.fontSize * multiplier),
+        labelMedium = base.labelMedium.copy(fontSize = base.labelMedium.fontSize * multiplier),
+        labelSmall = base.labelSmall.copy(fontSize = base.labelSmall.fontSize * multiplier),
+    )
+}
+
 @Composable
 fun SimpleNotesTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     colorTheme: ColorTheme = ColorTheme.DYNAMIC,
+    fontSizeScale: FontSizeScale = FontSizeScale.SYSTEM,
     content: @Composable () -> Unit
 ) {
+    val fontMultiplier = fontSizeScale.multiplier
+    val typography = remember(fontSizeScale) {
+        if (fontMultiplier == null) Typography() else scaleTypography(fontMultiplier)
+    }
     val isDark = when (themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
@@ -91,27 +120,30 @@ fun SimpleNotesTheme(
     // IMPORTANT: NavController and other persistent state must be created ABOVE
     // this composable (i.e. before SimpleNotesTheme is called) so they survive
     // the composition recreation that Crossfade triggers on key change.
-    Crossfade(
-        targetState = themeMode to colorTheme,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
-        label = "ThemeCrossfade"
-    ) { (mode, palette) ->
-        val context = LocalContext.current
-        val dark = when (mode) {
-            ThemeMode.SYSTEM -> isSystemInDarkTheme()
-            ThemeMode.LIGHT -> false
-            ThemeMode.DARK -> true
-            ThemeMode.AMOLED -> true
+    CompositionLocalProvider(LocalFontSizeMultiplier provides (fontMultiplier ?: 1.0f)) {
+        Crossfade(
+            targetState = themeMode to colorTheme,
+            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+            label = "ThemeCrossfade"
+        ) { (mode, palette) ->
+            val context = LocalContext.current
+            val dark = when (mode) {
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.AMOLED -> true
+            }
+            val colorScheme = ColorPalettes.getColorScheme(
+                colorTheme = palette,
+                isDark = dark,
+                isAmoled = mode == ThemeMode.AMOLED,
+                context = context
+            )
+            MaterialTheme(
+                colorScheme = colorScheme,
+                typography = typography,
+                content = content
+            )
         }
-        val colorScheme = ColorPalettes.getColorScheme(
-            colorTheme = palette,
-            isDark = dark,
-            isAmoled = mode == ThemeMode.AMOLED,
-            context = context
-        )
-        MaterialTheme(
-            colorScheme = colorScheme,
-            content = content
-        )
     }
 }

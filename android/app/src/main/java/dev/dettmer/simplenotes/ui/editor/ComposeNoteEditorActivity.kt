@@ -50,6 +50,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
+import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
@@ -132,6 +133,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     private val editorPrefs by lazy { getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE) }
     private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
     private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
+    private var fontSizeScale by mutableStateOf(FontSizeScale.SYSTEM)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,6 +141,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)
+        fontSizeScale = ThemePreferences.getFontSizeScale(editorPrefs)
 
         // Apply Dynamic Colors for Android 12+ (Material You)
         DynamicColors.applyToActivityIfAvailable(this)
@@ -185,7 +188,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         }
 
         setContent {
-            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme) {
+            SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
                 when {
                     isShareIntent && !isShareTypeChosen && isPickingTargetNote -> {
                         // 🆕 v2.6.0: Note-Picker-Dialog für Append-Modus
@@ -252,6 +255,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         // v2.0.0: Refresh theme in case user returned from Settings
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)
+        fontSizeScale = ThemePreferences.getFontSizeScale(editorPrefs)
         // 🆕 v2.2.0: Guard — nur wenn ViewModel bereits initialisiert (Share-Dialog abgeschlossen)
         if (isShareTypeChosen) {
             viewModel.reloadFromStorage()

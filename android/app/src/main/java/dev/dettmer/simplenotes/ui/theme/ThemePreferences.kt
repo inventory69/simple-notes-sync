@@ -1,10 +1,27 @@
 package dev.dettmer.simplenotes.ui.theme
 
 import android.content.SharedPreferences
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
+
+/**
+ * FontSizeScale — app-level text size override applied on top of the M3 typography.
+ * [multiplier] null means "use system default" (no override); non-null values scale
+ * all M3 TextStyle font sizes by the given factor.
+ */
+enum class FontSizeScale(val displayNameResId: Int, val multiplier: Float?) {
+    SYSTEM(R.string.font_size_system, null),
+    SMALL(R.string.font_size_small, 0.85f),
+    NORMAL(R.string.font_size_normal, 1.0f),
+    LARGE(R.string.font_size_large, 1.15f),
+    XLARGE(R.string.font_size_xlarge, 1.3f)
+}
+
+/** Provides the effective font size multiplier (1.0f when SYSTEM is selected). */
+val LocalFontSizeMultiplier = staticCompositionLocalOf { 1.0f }
 
 /**
  * ThemeMode — controls dark/light behaviour of the app.
@@ -46,6 +63,7 @@ enum class ColorTheme(val displayNameResId: Int, val previewColor: Color) {
 object ThemePreferences {
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_COLOR_THEME = "color_theme"
+    private const val KEY_FONT_SIZE_SCALE = "font_size_scale"
 
     fun getThemeMode(prefs: SharedPreferences): ThemeMode {
         val stored = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
@@ -63,5 +81,14 @@ object ThemePreferences {
 
     fun setColorTheme(prefs: SharedPreferences, theme: ColorTheme) {
         prefs.edit { putString(KEY_COLOR_THEME, theme.name) }
+    }
+
+    fun getFontSizeScale(prefs: SharedPreferences): FontSizeScale {
+        val stored = prefs.getString(KEY_FONT_SIZE_SCALE, FontSizeScale.SYSTEM.name)
+        return stored.toEnumOrDefault(FontSizeScale.SYSTEM)
+    }
+
+    fun setFontSizeScale(prefs: SharedPreferences, scale: FontSizeScale) {
+        prefs.edit { putString(KEY_FONT_SIZE_SCALE, scale.name) }
     }
 }
