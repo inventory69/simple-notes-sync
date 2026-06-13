@@ -113,7 +113,6 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
-import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
@@ -171,9 +170,6 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val uiState by viewModel.uiState.collectAsState()
     val checklistItems by viewModel.checklistItems.collectAsState()
 
-    // 🌟 v1.6.0: Offline mode state
-    val isOfflineMode by viewModel.isOfflineMode.collectAsState()
-
     // 🔧 v2.3.0: Block ALL rendering until async note load completes.
     // Must be before any remember/LaunchedEffect blocks so they never
     // execute with stale UiState defaults (noteType=TEXT, isNewNote=true).
@@ -185,7 +181,6 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         return
     }
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
     // 🆕 v2.0.1: Markdown Preview default for existing TEXT notes
     // v2.8.0: savedPreviewMode persists across TEXT↔CHECKLIST type changes so Undo
     // can restore the exact mode the user was in before the conversion — not just the
@@ -317,7 +312,6 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     scope.launch { snackbarHostState.showSnackbar(message) }
                 }
                 is NoteEditorEvent.NavigateBack -> onNavigateBack()
-                is NoteEditorEvent.ShowDeleteConfirmation -> showDeleteDialog = true
                 is NoteEditorEvent.RestoreContent -> { // 🆕 v1.10.0: Undo/Redo
                     textFieldState.edit {
                         replace(0, length, event.content)
@@ -599,7 +593,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                     },
                                     onClick = {
                                         showOverflowMenu = false
-                                        showDeleteDialog = true
+                                        // 🆕 v2.9.0 (Trash): direkt in den Papierkorb, kein Bestätigungs-Dialog.
+                                        viewModel.deleteNote()
                                     }
                                 )
                             }
@@ -760,23 +755,6 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
             }
             }
         }
-    }
-
-    // Delete Confirmation Dialog - v1.5.0: Use shared component with server/local options
-    if (showDeleteDialog) {
-        DeleteConfirmationDialog(
-            noteCount = 1,
-            isOfflineMode = isOfflineMode,
-            onDismiss = { showDeleteDialog = false },
-            onDeleteLocal = {
-                showDeleteDialog = false
-                viewModel.deleteNote(deleteOnServer = false)
-            },
-            onDeleteEverywhere = {
-                showDeleteDialog = false
-                viewModel.deleteNote(deleteOnServer = true)
-            }
-        )
     }
 
     // 🔀 v1.8.0: Checklist Sort Dialog

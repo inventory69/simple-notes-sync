@@ -162,6 +162,38 @@
     <string name="snackbar_nothing_to_sync">ℹ️ Nothing to sync</string>
 
     <!-- ============================= -->
+    <!-- TRASH (v2.9.0)                -->
+    <!-- ============================= -->
+    <string name="trash_title">Trash</string>
+    <string name="settings_trash_subtitle">Restore notes or delete them permanently</string>
+    <string name="trash_empty_state">Trash is empty</string>
+    <string name="trash_retention_hint">Notes in the trash are deleted permanently after %1$d days.</string>
+    <plurals name="trash_days_left">
+        <item quantity="one">%d day left</item>
+        <item quantity="other">%d days left</item>
+    </plurals>
+    <string name="trash_restore">Restore</string>
+    <string name="trash_restore_cd">Restore note</string>
+    <string name="trash_delete_forever">Delete permanently</string>
+    <string name="trash_delete_forever_cd">Delete note permanently</string>
+    <string name="trash_delete_forever_title">Delete permanently?</string>
+    <string name="trash_delete_forever_message">\"%s\" will be permanently deleted. This cannot be undone.</string>
+    <string name="trash_empty_action">Empty trash</string>
+    <string name="trash_empty_confirm_title">Empty trash?</string>
+    <plurals name="trash_empty_confirm_message">
+        <item quantity="one">%d note will be permanently deleted. This cannot be undone.</item>
+        <item quantity="other">%d notes will be permanently deleted. This cannot be undone.</item>
+    </plurals>
+    <string name="trash_empty_confirm_server_hint">Synced notes are also deleted from the server.</string>
+    <string name="snackbar_note_trashed">\"%s\" moved to trash</string>
+    <plurals name="snackbar_notes_trashed">
+        <item quantity="one">%d note moved to trash</item>
+        <item quantity="other">%d notes moved to trash</item>
+    </plurals>
+    <string name="snackbar_note_restored">Note restored</string>
+    <string name="snackbar_trash_emptied">Trash emptied</string>
+
+    <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
     <string name="sync_error_ssl">SSL error</string>

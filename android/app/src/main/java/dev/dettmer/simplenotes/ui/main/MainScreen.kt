@@ -82,7 +82,6 @@ import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.CreateFolderDialog
-import dev.dettmer.simplenotes.ui.main.components.DeleteConfirmationDialog
 import dev.dettmer.simplenotes.ui.main.components.DeleteSelectionDialog
 import dev.dettmer.simplenotes.ui.main.components.EmptyState
 import dev.dettmer.simplenotes.ui.main.components.ExcludeFolderSyncSheet
@@ -280,7 +279,15 @@ fun MainScreen(
                                 else -> viewModel.excludeFoldersFromSync(selectedFolders, removeFromServer = false)
                             }
                         },
-                        onDeleteSelected = { showBatchDeleteDialog = true }
+                        // 🆕 v2.9.0 (Trash): reine Notiz-Auswahl wandert direkt in den Papierkorb
+                        // (kein Bestätigungs-Sheet); nur bei Ordnern im Spiel erscheint der Dialog.
+                        onDeleteSelected = {
+                            if (selectedFolders.isNotEmpty()) {
+                                showBatchDeleteDialog = true
+                            } else {
+                                viewModel.moveSelectedToTrash()
+                            }
+                        }
                     )
                 }
                 AnimatedVisibility(
@@ -412,39 +419,18 @@ fun MainScreen(
                 }
             }
             if (showBatchDeleteDialog) {
-                if (selectedFolders.isNotEmpty()) {
-                    // 🆕 v2.7.0 (Folders): gemischte Auswahl (Notizen + Ordner)
-                    val hasNonEmptyFolders = selectedFolders.any { (folderNoteCounts[it] ?: 0) > 0 }
-                    DeleteSelectionDialog(
-                        noteCount = selectedNotes.size,
-                        folderCount = selectedFolders.size,
-                        hasNonEmptyFolders = hasNonEmptyFolders,
-                        isOfflineMode = isOfflineMode,
-                        onDismiss = { showBatchDeleteDialog = false },
-                        onDeleteLocal = { keep ->
-                            viewModel.deleteSelection(deleteFromServer = false, keepContainedNotes = keep)
-                            showBatchDeleteDialog = false
-                        },
-                        onDeleteEverywhere = { keep ->
-                            viewModel.deleteSelection(deleteFromServer = true, keepContainedNotes = keep)
-                            showBatchDeleteDialog = false
-                        }
-                    )
-                } else {
-                    DeleteConfirmationDialog(
-                        noteCount = selectedNotes.size,
-                        isOfflineMode = isOfflineMode,
-                        onDismiss = { showBatchDeleteDialog = false },
-                        onDeleteLocal = {
-                            viewModel.deleteSelectedNotes(deleteFromServer = false)
-                            showBatchDeleteDialog = false
-                        },
-                        onDeleteEverywhere = {
-                            viewModel.deleteSelectedNotes(deleteFromServer = true)
-                            showBatchDeleteDialog = false
-                        }
-                    )
-                }
+                // 🆕 v2.9.0 (Trash): nur noch der Ordner-Branch; Notizen-only löscht direkt (siehe oben).
+                val hasNonEmptyFolders = selectedFolders.any { (folderNoteCounts[it] ?: 0) > 0 }
+                DeleteSelectionDialog(
+                    noteCount = selectedNotes.size,
+                    folderCount = selectedFolders.size,
+                    hasNonEmptyFolders = hasNonEmptyFolders,
+                    onDismiss = { showBatchDeleteDialog = false },
+                    onConfirm = { keep ->
+                        viewModel.deleteSelection(keepContainedNotes = keep)
+                        showBatchDeleteDialog = false
+                    }
+                )
             }
 
             // 🆕 v1.8.0: Sync Status Legend Dialog

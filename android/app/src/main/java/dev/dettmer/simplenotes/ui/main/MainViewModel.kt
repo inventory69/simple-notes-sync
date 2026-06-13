@@ -20,6 +20,7 @@ import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.sync.buildSyncResultBanner
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import android.content.Intent
 import dev.dettmer.simplenotes.utils.Constants
@@ -71,6 +72,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val pendingServerDeletions = PendingServerDeletions(application)
     private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(application)
+    // 🆕 v2.9.0 (Trash): Papierkorb-Operationen (Löschen = in den Papierkorb verschieben).
+    private val trashManager = dev.dettmer.simplenotes.storage.TrashManager(
+        storage = storage,
+        pendingServerDeletions = pendingServerDeletions,
+        folderStore = folderStore
+    )
 
     // ═══════════════════════════════════════════════════════════════════════
     // Notes State
@@ -347,9 +354,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // UI Events
     // ═══════════════════════════════════════════════════════════════════════
 
-    private val _showDeleteDialog = MutableSharedFlow<DeleteDialogData>()
-    val showDeleteDialog: SharedFlow<DeleteDialogData> = _showDeleteDialog.asSharedFlow()
-
     private val _showSnackbar = MutableSharedFlow<SnackbarData>()
     val showSnackbar: SharedFlow<SnackbarData> = _showSnackbar.asSharedFlow()
 
@@ -365,8 +369,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ═══════════════════════════════════════════════════════════════════════
     // Data Classes
     // ═══════════════════════════════════════════════════════════════════════
-
-    data class DeleteDialogData(val note: Note, val originalList: List<Note>)
 
     data class SnackbarData(
         val message: String,
@@ -391,6 +393,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
         viewModelScope.launch(ioDispatcher) {
+            // 🆕 v2.9.0 (Trash): abgelaufene Papierkorb-Einträge automatisch endgültig löschen.
+            val purged = trashManager.purgeExpired()
+            if (purged > 0) triggerOnSaveSync()
             loadNotesAsync()
             _folders.value = folderStore.loadFolders()
             _isReady.value = true
@@ -406,7 +411,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * This prevents UI blocking during app startup
      */
     private suspend fun loadNotesAsync(forceReload: Boolean = false) {
-        val allNotes = storage.loadAllNotes(forceReload)
+        // 🆕 v2.9.0 (Trash): nur aktive Notizen — getrashte erscheinen ausschließlich im Papierkorb.
+        val allNotes = storage.loadActiveNotes(forceReload)
         val pendingIds = _pendingDeletions.value
         val filteredNotes = allNotes.filter { it.id !in pendingIds }
 
@@ -524,9 +530,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun getSelectedCount(): Int = _selectedNotes.value.size
 
     /**
-     * Delete all selected notes
+     * 🆕 v2.9.0 (Trash): Verschiebt alle selektierten Notizen in den Papierkorb (mit Undo).
+     * Ersetzt das frühere harte `deleteSelectedNotes()`. Der Sync (der die Trash-Markierung
+     * hochlädt) wird erst nach Ablauf des Undo-Fensters ausgelöst.
      */
-    fun deleteSelectedNotes(deleteFromServer: Boolean) {
+    fun moveSelectedToTrash() {
         val selectedIds = _selectedNotes.value.toList()
         val selectedNotes = _notes.value.filter { it.id in selectedIds }
 
@@ -535,15 +543,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _pendingDeletions.update { it + selectedIds.toSet() }
 
         val count = selectedNotes.size
-        val message = if (deleteFromServer) {
-            getQuantityString(R.plurals.snackbar_notes_deleted_server, count, count)
-        } else {
-            getQuantityString(R.plurals.snackbar_notes_deleted_local, count, count)
-        }
+        val message = getQuantityString(R.plurals.snackbar_notes_trashed, count, count)
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
-                selectedNotes.forEach { note -> storage.deleteNote(note.id) }
+                trashManager.moveToTrash(selectedNotes)
             }
             clearSelection()
             loadNotes()
@@ -552,21 +556,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoDeleteMultiple(selectedNotes) }
+                    onAction = { undoTrash(selectedNotes) }
                 )
             )
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
-            if (deleteFromServer) {
-                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-                val idsToDelete = selectedIds.filter { it in _pendingDeletions.value }
-                if (idsToDelete.isNotEmpty()) {
-                    val pendingDels = selectedNotes
-                        .filter { it.id in idsToDelete }
-                        .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
-                    attemptServerDeletion(pendingDels)
-                }
-            } else {
-                selectedIds.forEach { noteId -> finalizeDeletion(noteId) }
+            kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
+            val stillPending = selectedIds.filter { it in _pendingDeletions.value }
+            if (stillPending.isNotEmpty()) {
+                stillPending.forEach { finalizeDeletion(it) }
+                triggerOnSaveSync()
             }
         }
     }
@@ -629,9 +628,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Undo deletion of multiple notes
+     * 🆕 v2.9.0 (Trash): Undo für „in den Papierkorb verschieben" — speichert die unveränderten
+     * Originale (trashedAt = null, ursprünglicher Status/Timestamp) zurück. Wird vor Ablauf des
+     * Undo-Fensters aufgerufen, daher wurde noch kein Sync ausgelöst.
      */
-    private fun undoDeleteMultiple(notes: List<Note>) {
+    private fun undoTrash(notes: List<Note>) {
         _pendingDeletions.update { it - notes.map { note -> note.id }.toSet() }
 
         viewModelScope.launch {
@@ -639,92 +640,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 notes.forEach { note -> storage.saveNote(note) }
             }
             loadNotes()
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
         }
     }
 
     /**
-     * Called when user long-presses a note to delete
-     * Shows dialog for delete confirmation (replaces swipe-to-delete for performance)
+     * 🆕 v2.9.0 (Trash): Verschiebt eine einzelne Notiz in den Papierkorb (mit Undo).
+     * Ersetzt das frühere harte `deleteNoteConfirmed()`. Der Sync wird erst nach Ablauf des
+     * Undo-Fensters ausgelöst (lädt die Trash-Markierung hoch).
      */
-    fun onNoteLongPressDelete(note: Note) {
-        val alwaysDeleteFromServer = prefs.getBoolean(Constants.KEY_ALWAYS_DELETE_FROM_SERVER, false)
-
-        // Store original list for potential restore
-        val originalList = _notes.value.toList()
-
-        if (alwaysDeleteFromServer) {
-            // Auto-delete without dialog
-            deleteNoteConfirmed(note, deleteFromServer = true)
-        } else {
-            // Show dialog - don't remove from UI yet (user can cancel)
-            viewModelScope.launch {
-                _showDeleteDialog.emit(DeleteDialogData(note, originalList))
-            }
-        }
-    }
-
-    /**
-     * Called when user swipes to delete a note (legacy - kept for compatibility)
-     * Shows dialog if "always delete from server" is not enabled
-     */
-    fun onNoteSwipedToDelete(note: Note) {
-        onNoteLongPressDelete(note) // Delegate to long-press handler
-    }
-
-    /**
-     * Restore note after swipe (user cancelled dialog)
-     */
-    fun restoreNoteAfterSwipe(originalList: List<Note>) {
-        _notes.value = originalList
-    }
-
-    /**
-     * Confirm note deletion (from dialog or auto-delete)
-     */
-    fun deleteNoteConfirmed(note: Note, deleteFromServer: Boolean) {
+    fun moveToTrash(note: Note) {
         _pendingDeletions.update { it + note.id }
-
-        val message = if (deleteFromServer) {
-            getString(R.string.snackbar_note_deleted_server, note.title)
-        } else {
-            getString(R.string.snackbar_note_deleted_local, note.title)
-        }
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
-                storage.deleteNote(note.id)
+                trashManager.moveToTrash(listOf(note))
             }
             loadNotes()
 
             _showSnackbar.emit(
                 SnackbarData(
-                    message = message,
+                    message = getString(R.string.snackbar_note_trashed, note.title),
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoDelete(note) }
+                    onAction = { undoTrash(listOf(note)) }
                 )
             )
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
-            if (deleteFromServer) {
-                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-                if (note.id in _pendingDeletions.value) {
-                    attemptServerDeletion(listOf(PendingServerDeletions.PendingDeletion(note.id, note.folderName)))
-                }
-            } else {
+            kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
+            if (note.id in _pendingDeletions.value) {
                 finalizeDeletion(note.id)
+                triggerOnSaveSync()
             }
         }
     }
 
     /**
-     * 🆕 v1.10.0-P2: Called when a note was deleted from the editor.
-     * Loads the note from storage (not yet deleted) then delegates to
-     * [deleteNoteConfirmed] which shows the undo snackbar.
+     * 🆕 v2.9.0 (Trash): Wird aufgerufen, wenn eine Notiz im Editor gelöscht wurde.
+     * Lädt die (noch vorhandene) Notiz und verschiebt sie in den Papierkorb (mit Undo-Snackbar).
      */
-    fun deleteNoteFromEditor(noteId: String, deleteFromServer: Boolean) {
+    fun moveToTrashFromEditor(noteId: String) {
         viewModelScope.launch {
             val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
-            deleteNoteConfirmed(note, deleteFromServer)
-            triggerOnSaveSync()
+            moveToTrash(note)
         }
     }
 
@@ -736,20 +694,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun triggerOnSaveSync() {
         syncScheduler.triggerOnSaveSync(reason = "onDelete")
-    }
-
-    /**
-     * Undo note deletion
-     */
-    fun undoDelete(note: Note) {
-        _pendingDeletions.update { it - note.id }
-
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                storage.saveNote(note)
-            }
-            loadNotes()
-        }
     }
 
     /**
@@ -938,19 +882,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (result.isSuccess) {
-                    // 🆕 v1.8.0 (IMPL_022): Erweiterte Banner-Nachricht mit Löschungen
-                    val bannerMessage = buildString {
-                        if (result.syncedCount > 0) {
-                            append(getString(R.string.toast_sync_success, result.syncedCount))
-                        }
-                        if (result.deletedOnServerCount > 0) {
-                            if (isNotEmpty()) append(" · ")
-                            append(getString(R.string.sync_deleted_on_server_count, result.deletedOnServerCount))
-                        }
-                        if (isEmpty()) {
-                            append(getString(R.string.snackbar_nothing_to_sync))
-                        }
-                    }
+                    val bannerMessage = buildSyncResultBanner(getApplication(), result)
+                        ?: getString(R.string.snackbar_nothing_to_sync)
                     SyncStateManager.markCompleted(bannerMessage)
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
@@ -1040,6 +973,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders)
+                } else if (result.isSuccess && result.purgedFromServerCount > 0) {
+                    Logger.d(TAG, "✅ Auto-sync ($source): ${result.purgedFromServerCount} purged from server")
+                    SyncStateManager.promoteToVisible()
+                    SyncStateManager.markCompleted(buildSyncResultBanner(getApplication(), result))
+                    loadNotes(forceReload = true)
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
                     SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE
@@ -1340,9 +1278,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** 🆕 v2.7.0 (Folders): Unified Delete — Notizen + Ordner (mit Undo). */
-    @Suppress("LongMethod")
-    fun deleteSelection(deleteFromServer: Boolean, keepContainedNotes: Boolean) {
+    /**
+     * 🆕 v2.7.0 (Folders) / 🆕 v2.9.0 (Trash): Unified Delete — Notizen + Ordner (mit Undo).
+     * Notizen wandern in den Papierkorb; Ordner werden gelöscht (auf dem Server tombstoned, außer
+     * nur-lokale Ordner). Notizen aus gelöschten Ordnern werden im Papierkorb auf Root gesetzt; ihr
+     * alter Server-Pfad wird zum Löschen vorgemerkt, sonst belebt der nächste Sync den Ordner per
+     * `discoveredFolders` wieder. „Nur lokal löschen" entfällt — Löschen heißt jetzt Papierkorb.
+     */
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    fun deleteSelection(keepContainedNotes: Boolean) {
         val noteIds = _selectedNotes.value.toSet()
         val folderNames = _selectedFolders.value.toSet()
         // 🆕 v2.8.0 (Local-Only Folders): Markierung für Undo sichern (deleteFolder räumt sie auf).
@@ -1350,35 +1294,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _localOnlyFolderNames.value.any { it.equals(name, ignoreCase = true) }
         }.toSet()
         val notesInFolders = _notes.value.filter { it.folderName in folderNames }
-        val notesToDelete = (_notes.value.filter { it.id in noteIds } +
+        val notesToTrash = (_notes.value.filter { it.id in noteIds } +
             if (!keepContainedNotes) notesInFolders else emptyList()).distinctBy { it.id }
         val notesToRoot = if (keepContainedNotes) notesInFolders.filter { it.id !in noteIds } else emptyList()
 
-        if (notesToDelete.isEmpty() && folderNames.isEmpty()) return
+        if (notesToTrash.isEmpty() && folderNames.isEmpty()) return
 
-        val deleteIds = notesToDelete.map { it.id }
-        _pendingDeletions.update { it + deleteIds.toSet() }
+        val trashIds = notesToTrash.map { it.id }
+        _pendingDeletions.update { it + trashIds.toSet() }
         clearSelection()
 
-        val noteCount = notesToDelete.size
+        val noteCount = notesToTrash.size
         val folderCount = folderNames.size
         val message = when {
             folderCount > 0 && noteCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount) +
-                " · " + getQuantityString(
-                    if (deleteFromServer) R.plurals.snackbar_notes_deleted_server
-                    else R.plurals.snackbar_notes_deleted_local,
-                    noteCount, noteCount
-                )
+                " · " + getQuantityString(R.plurals.snackbar_notes_trashed, noteCount, noteCount)
             folderCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount)
-            deleteFromServer -> getQuantityString(R.plurals.snackbar_notes_deleted_server, noteCount, noteCount)
-            else -> getQuantityString(R.plurals.snackbar_notes_deleted_local, noteCount, noteCount)
+            else -> getQuantityString(R.plurals.snackbar_notes_trashed, noteCount, noteCount)
         }
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
-                // Notizen löschen
-                notesToDelete.forEach { note -> storage.deleteNote(note.id) }
-                // Notizen nach Root verschieben + alten Server-Pfad für Löschung eintragen
+                // Notizen → Papierkorb. Notizen aus gelöschten Ordnern landen auf Root (Ordner verschwindet).
+                val processed = notesToTrash.map { note ->
+                    if (note.folderName != null && note.folderName in folderNames) note.copy(folderName = null) else note
+                }
+                trashManager.moveToTrash(processed)
+                // Notizen behalten → nach Root verschieben + alten Server-Pfad für Löschung eintragen.
                 notesToRoot.forEach { note ->
                     storage.moveNote(note.id, null)
                     if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
@@ -1387,9 +1329,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
                 }
-                // Ordner tombstonen — local-only-Ordner ohne Server-Löschung werden hard-entfernt,
-                // damit kein Tombstone zum Server propagiert (🆕 v2.8.0).
-                folderNames.forEach { name -> folderStore.deleteFolder(name, propagateToServer = deleteFromServer) }
+                // Ordner tombstonen — nur-lokale Ordner werden hard-entfernt, kein Tombstone zum Server.
+                folderNames.forEach { name ->
+                    folderStore.deleteFolder(name, propagateToServer = name !in localOnlyDeleted)
+                }
             }
             _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
             _folders.value = folderStore.loadFolders()
@@ -1400,34 +1343,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoDeleteSelection(notesToDelete, folderNames, notesToRoot, localOnlyDeleted) }
+                    onAction = { undoDeleteSelection(notesToTrash, folderNames, notesToRoot, localOnlyDeleted) }
                 )
             )
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
-            if (deleteFromServer) {
-                kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-                val idsToDelete = deleteIds.filter { it in _pendingDeletions.value }
-                if (idsToDelete.isNotEmpty()) {
-                    val pendingDels = notesToDelete
-                        .filter { it.id in idsToDelete }
-                        .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
-                    attemptServerDeletion(pendingDels)
+            kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
+            val stillPending = trashIds.filter { it in _pendingDeletions.value }
+            if (stillPending.isEmpty() && folderNames.isEmpty()) return@launch
+
+            // Server-Kopien der nach Root verschobenen getrashten Notizen (alter Ordnerpfad) löschen,
+            // damit der gelöschte Ordner nicht über eine zurückbleibende Datei wieder auftaucht.
+            val dels = notesToTrash
+                .filter {
+                    it.id in stillPending && it.folderName != null && it.folderName in folderNames &&
+                        it.syncStatus != SyncStatus.LOCAL_ONLY && !folderStore.isLocalOnly(it.folderName)
                 }
-                // Ordner-Verzeichnisse vom Server löschen (Notizen bereits gelöscht)
-                if (folderNames.isNotEmpty() && hasServerConfig() && !isOfflineMode.value) {
-                    val service = WebDavSyncService(getApplication())
-                    folderNames.forEach { folderName ->
-                        try {
-                            withContext(ioDispatcher) { service.deleteServerFolderIfEmpty(folderName) }
-                        } catch (e: Exception) {
-                            Logger.w(TAG, "deleteServerFolderIfEmpty('$folderName') failed: ${e.message}")
-                        }
+                .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
+            if (dels.isNotEmpty()) pendingServerDeletions.add(dels)
+            stillPending.forEach { finalizeDeletion(it) }
+
+            // Leere Ordner-Verzeichnisse vom Server löschen.
+            if (folderNames.isNotEmpty() && hasServerConfig() && !isOfflineMode.value) {
+                val service = WebDavSyncService(getApplication())
+                folderNames.filter { it !in localOnlyDeleted }.forEach { folderName ->
+                    try {
+                        withContext(ioDispatcher) { service.deleteServerFolderIfEmpty(folderName) }
+                    } catch (e: Exception) {
+                        Logger.w(TAG, "deleteServerFolderIfEmpty('$folderName') failed: ${e.message}")
                     }
                 }
-                triggerOnSaveSync()
-            } else {
-                deleteIds.forEach { id -> finalizeDeletion(id) }
             }
+            triggerOnSaveSync()
         }
     }
 

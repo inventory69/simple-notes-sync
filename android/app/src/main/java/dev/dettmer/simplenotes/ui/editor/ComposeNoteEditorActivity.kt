@@ -84,7 +84,6 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
         const val RESULT_EXTRA_NOTE_ID = "result_note_id"
-        const val RESULT_EXTRA_DELETE_FROM_SERVER = "result_delete_from_server"
     }
 
     // 🆕 v2.2.0: Share Intent — Typ-Auswahl-State
@@ -290,7 +289,6 @@ class ComposeNoteEditorActivity : ComponentActivity() {
                     is NoteEditorEvent.NoteDeleteRequested -> {
                         val resultIntent = Intent().apply {
                             putExtra(RESULT_EXTRA_NOTE_ID, event.noteId)
-                            putExtra(RESULT_EXTRA_DELETE_FROM_SERVER, event.deleteFromServer)
                         }
                         setResult(RESULT_NOTE_DELETED, resultIntent)
                         finishWithTransition()
@@ -452,7 +450,8 @@ private fun ShareNotePickerDialog(
     onDismiss: () -> Unit
 ) {
     val allNotes by produceState<List<Note>>(initialValue = emptyList()) {
-        value = withContext(Dispatchers.IO) { storage.loadAllNotes() }
+        // 🆕 v2.9.0 (Trash): getrashte Notizen nicht im Share-Picker anbieten.
+        value = withContext(Dispatchers.IO) { storage.loadActiveNotes() }
             .sortedByDescending { it.updatedAt }
     }
     AlertDialog(

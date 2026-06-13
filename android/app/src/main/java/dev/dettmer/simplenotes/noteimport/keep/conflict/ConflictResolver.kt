@@ -41,7 +41,9 @@ class ConflictResolver(private val storage: NotesStorage) {
 
         val candidateHash = computeContentHash(candidate)
         val existing = try {
-            storage.loadAllNotes().firstOrNull { computeContentHash(it) == candidateHash }
+            // 🆕 v2.9.0 (Trash): getrashte Notizen ignorieren — der Import legt sonst keine frische
+            // Kopie an, sondern überspringt still gegen eine bereits gelöschte Notiz.
+            storage.loadActiveNotes().firstOrNull { computeContentHash(it) == candidateHash }
         } catch (e: Exception) {
             Logger.w(TAG, "Conflict scan failed: ${e.message}")
             null

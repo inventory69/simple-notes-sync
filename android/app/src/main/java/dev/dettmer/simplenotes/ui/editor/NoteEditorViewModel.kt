@@ -805,7 +805,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         viewModelScope.launch {
             val currentId = existingNote?.id
             val checklists = withContext(Dispatchers.IO) {
-                storage.loadAllNotes()
+                // 🆕 v2.9.0 (Trash): getrashte Checklisten nicht im Ziel-Picker anbieten.
+                storage.loadActiveNotes()
                     .filter { it.noteType == NoteType.CHECKLIST && it.id != currentId }
                     .sortedBy { it.title.lowercase() }
             }
@@ -1418,23 +1419,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     /**
-     * Delete the current note
-     * @param deleteOnServer if true, also triggers server deletion; if false, only deletes locally
-     * v1.5.0: Added deleteOnServer parameter for unified delete dialog
+     * 🆕 v2.9.0 (Trash): Verschiebt die aktuelle Notiz in den Papierkorb.
+     * Die eigentliche Operation übernimmt der MainViewModel (Undo-Snackbar), daher wird hier nur
+     * das Event emittiert. Kein Bestätigungs-Dialog mehr — Löschen = Papierkorb.
      */
-    fun deleteNote(deleteOnServer: Boolean = true) {
+    fun deleteNote() {
         viewModelScope.launch {
             existingNote?.let { note ->
-                // 🆕 v1.10.0-P2: Don't delete here — let ComposeMainActivity handle deletion
-                // so MainViewModel can show the undo snackbar.
-                _events.emit(NoteEditorEvent.NoteDeleteRequested(note.id, deleteOnServer))
+                _events.emit(NoteEditorEvent.NoteDeleteRequested(note.id))
             }
-        }
-    }
-
-    fun showDeleteConfirmation() {
-        viewModelScope.launch {
-            _events.emit(NoteEditorEvent.ShowDeleteConfirmation)
         }
     }
 
@@ -1571,12 +1564,10 @@ sealed interface NoteEditorEvent {
 
     data object NavigateBack : NoteEditorEvent
 
-    data object ShowDeleteConfirmation : NoteEditorEvent
-
     data class RestoreContent(val content: String) : NoteEditorEvent // 🆕 v1.10.0: Undo/Redo
 
     /** 🆕 v1.10.0-P2: Signals Activity to set result and finish so MainViewModel shows undo snackbar. */
-    data class NoteDeleteRequested(val noteId: String, val deleteFromServer: Boolean) : NoteEditorEvent
+    data class NoteDeleteRequested(val noteId: String) : NoteEditorEvent
 
     // 🆕 v1.10.0-Papa: Calendar & Share events
     data class OpenCalendar(val title: String, val description: String) : NoteEditorEvent

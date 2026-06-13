@@ -14,11 +14,8 @@ import androidx.activity.viewModels
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
@@ -86,11 +83,8 @@ class ComposeMainActivity : ComponentActivity() {
             val noteId =
                 result.data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID)
                     ?: return@registerForActivityResult
-            val deleteFromServer = result.data?.getBooleanExtra(
-                ComposeNoteEditorActivity.RESULT_EXTRA_DELETE_FROM_SERVER,
-                false
-            ) ?: false
-            viewModel.deleteNoteFromEditor(noteId, deleteFromServer)
+            // 🆕 v2.9.0 (Trash): Editor-Löschung → in den Papierkorb (mit Undo-Snackbar).
+            viewModel.moveToTrashFromEditor(noteId)
         }
     }
 
@@ -203,35 +197,6 @@ class ComposeMainActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
-
-                // Dialog state for delete confirmation
-                var deleteDialogData by remember { mutableStateOf<MainViewModel.DeleteDialogData?>(null) }
-
-                // Handle delete dialog events
-                LaunchedEffect(Unit) {
-                    viewModel.showDeleteDialog.collect { data ->
-                        deleteDialogData = data
-                    }
-                }
-
-                // Delete confirmation dialog
-                deleteDialogData?.let { data ->
-                    DeleteConfirmationDialog(
-                        noteTitle = data.note.title,
-                        onDismiss = {
-                            viewModel.restoreNoteAfterSwipe(data.originalList)
-                            deleteDialogData = null
-                        },
-                        onDeleteLocal = {
-                            viewModel.deleteNoteConfirmed(data.note, deleteFromServer = false)
-                            deleteDialogData = null
-                        },
-                        onDeleteFromServer = {
-                            viewModel.deleteNoteConfirmed(data.note, deleteFromServer = true)
-                            deleteDialogData = null
-                        }
-                    )
-                }
 
                 // 🆕 v2.3.0: Battery optimization migration dialog
                 if (showBatteryOptDialog) {
@@ -525,31 +490,4 @@ class ComposeMainActivity : ComponentActivity() {
         showBatteryOptDialog = true
     }
 
-}
-
-/**
- * Delete confirmation dialog
- */
-@Composable
-private fun DeleteConfirmationDialog(noteTitle: String, onDismiss: () -> Unit, onDeleteLocal: () -> Unit, onDeleteFromServer: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.legacy_delete_dialog_title)) },
-        text = {
-            Text(stringResource(R.string.legacy_delete_dialog_message, noteTitle))
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDeleteLocal) {
-                Text(stringResource(R.string.delete_local_only))
-            }
-            TextButton(onClick = onDeleteFromServer) {
-                Text(stringResource(R.string.legacy_delete_from_server))
-            }
-        }
-    )
 }

@@ -145,6 +145,39 @@
     <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
     <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
+
+    <!-- ============================= -->
+    <!-- TRASH (v2.9.0)                -->
+    <!-- ============================= -->
+    <string name="trash_title">Papierkorb</string>
+    <string name="settings_trash_subtitle">Notizen wiederherstellen oder endgültig löschen</string>
+    <string name="trash_empty_state">Papierkorb ist leer</string>
+    <string name="trash_retention_hint">Notizen im Papierkorb werden nach %1$d Tagen endgültig gelöscht.</string>
+    <plurals name="trash_days_left">
+        <item quantity="one">noch %d Tag</item>
+        <item quantity="other">noch %d Tage</item>
+    </plurals>
+    <string name="trash_restore">Wiederherstellen</string>
+    <string name="trash_restore_cd">Notiz wiederherstellen</string>
+    <string name="trash_delete_forever">Endgültig löschen</string>
+    <string name="trash_delete_forever_cd">Notiz endgültig löschen</string>
+    <string name="trash_delete_forever_title">Endgültig löschen?</string>
+    <string name="trash_delete_forever_message">\"%s\" wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="trash_empty_action">Papierkorb leeren</string>
+    <string name="trash_empty_confirm_title">Papierkorb leeren?</string>
+    <plurals name="trash_empty_confirm_message">
+        <item quantity="one">%d Notiz wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">%d Notizen werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</item>
+    </plurals>
+    <string name="trash_empty_confirm_server_hint">Synchronisierte Notizen werden auch vom Server gelöscht.</string>
+    <string name="snackbar_note_trashed">\"%s\" in den Papierkorb verschoben</string>
+    <plurals name="snackbar_notes_trashed">
+        <item quantity="one">%d Notiz in den Papierkorb verschoben</item>
+        <item quantity="other">%d Notizen in den Papierkorb verschoben</item>
+    </plurals>
+    <string name="snackbar_note_restored">Notiz wiederhergestellt</string>
+    <string name="snackbar_trash_emptied">Papierkorb geleert</string>
+
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
