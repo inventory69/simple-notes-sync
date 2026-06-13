@@ -86,7 +86,7 @@ private fun DpSize.toSizeClass(): WidgetSizeClass = when {
  * Glance-kompatible Version von CheckedItemsSeparator.
  */
 @Composable
-private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
+private fun WidgetCheckedItemsSeparator(checkedCount: Int, fontSizeScale: Float = 1.0f) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -98,7 +98,7 @@ private fun WidgetCheckedItemsSeparator(checkedCount: Int) {
             text = "── $checkedCount ✔ ──",
             style = TextStyle(
                 color = GlanceTheme.colors.outline,
-                fontSize = 11.sp
+                fontSize = (11 * fontSizeScale).sp
             )
         )
     }
@@ -143,13 +143,20 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
 }
 
 @Composable
-fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOpacity: Float, glanceId: GlanceId) {
+fun NoteWidgetContent(
+    note: Note?,
+    isLocked: Boolean,
+    showOptions: Boolean,
+    bgOpacity: Float,
+    fontSizeScale: Float = 1.0f,
+    glanceId: GlanceId
+) {
     val size = LocalSize.current
     val context = LocalContext.current
     val sizeClass = size.toSizeClass()
 
     if (note == null) {
-        EmptyWidgetContent(bgOpacity)
+        EmptyWidgetContent(bgOpacity, fontSizeScale)
         return
     }
 
@@ -231,14 +238,15 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.NARROW_MED -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content)
+                            WidgetMarkdownView(note.content, fontSizeScale)
                         }
                         NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
                             ChecklistCompactView(
                                 note = note,
                                 maxItems = 2,
                                 isLocked = isLocked,
-                                glanceId = glanceId
+                                glanceId = glanceId,
+                                fontSizeScale = fontSizeScale
                             )
                         }
                     }
@@ -249,7 +257,7 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.NARROW_TALL -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content)
+                            WidgetMarkdownView(note.content, fontSizeScale)
                         }
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
@@ -262,7 +270,8 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                                 ChecklistFullView(
                                     note = note,
                                     isLocked = isLocked,
-                                    glanceId = glanceId
+                                    glanceId = glanceId,
+                                    fontSizeScale = fontSizeScale
                                 )
                             }
                         }
@@ -273,14 +282,15 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.WIDE_MED -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content)
+                            WidgetMarkdownView(note.content, fontSizeScale)
                         }
                         NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
                             ChecklistCompactView(
                                 note = note,
                                 maxItems = 3,
                                 isLocked = isLocked,
-                                glanceId = glanceId
+                                glanceId = glanceId,
+                                fontSizeScale = fontSizeScale
                             )
                         }
                     }
@@ -291,7 +301,7 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                 WidgetSizeClass.WIDE_TALL -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content)
+                            WidgetMarkdownView(note.content, fontSizeScale)
                         }
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
@@ -304,7 +314,8 @@ fun NoteWidgetContent(note: Note?, isLocked: Boolean, showOptions: Boolean, bgOp
                                 ChecklistFullView(
                                     note = note,
                                     isLocked = isLocked,
-                                    glanceId = glanceId
+                                    glanceId = glanceId,
+                                    fontSizeScale = fontSizeScale
                                 )
                             }
                         }
@@ -417,7 +428,7 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
  * Zeigt maxItems interaktive Checkboxen + Zusammenfassung.
  */
 @Composable
-private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, glanceId: GlanceId) {
+private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, glanceId: GlanceId, fontSizeScale: Float = 1.0f) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
     val items = note.checklistItems?.let { rawItems ->
         sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
@@ -450,7 +461,7 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
         visibleItems.forEach { item ->
             // 🆕 v1.8.1: Separator vor dem ersten checked Item anzeigen
             if (showSeparator && !separatorShown && item.isChecked) {
-                WidgetCheckedItemsSeparator(checkedCount = checkedCount)
+                WidgetCheckedItemsSeparator(checkedCount = checkedCount, fontSizeScale = fontSizeScale)
                 separatorShown = true
             }
 
@@ -463,12 +474,12 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
                 ) {
                     Text(
                         text = if (item.isChecked) "☑️" else "☐", // 🆕 v1.8.1 (IMPL_06)
-                        style = TextStyle(fontSize = 14.sp)
+                        style = TextStyle(fontSize = (14 * fontSizeScale).sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     WidgetInlineText(
                         text = item.text,
-                        fontSize = 14f,
+                        fontSize = 14f * fontSizeScale,
                         maxLines = 2,
                         dimmed = item.isChecked,
                         addStrikethrough = item.isChecked,
@@ -493,7 +504,7 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
                         } else {
                             GlanceTheme.colors.onSurface
                         },
-                        fontSize = 13.sp,
+                        fontSize = (13 * fontSizeScale).sp,
                         textDecoration = if (item.isChecked) {
                             TextDecoration.LineThrough
                         } else {
@@ -512,7 +523,7 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
                 text = "+$remainingCount more · ✔ $checkedCount/${items.size}",
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
-                    fontSize = 12.sp
+                    fontSize = (12 * fontSizeScale).sp
                 ),
                 modifier = GlanceModifier.padding(top = 2.dp, start = 4.dp)
             )
@@ -524,7 +535,7 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
  * Vollständige Checklist-Ansicht für LARGE-Größen.
  */
 @Composable
-private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId) {
+private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId, fontSizeScale: Float = 1.0f) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
     val items = note.checklistItems?.let { rawItems ->
         val sorted = sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
@@ -566,7 +577,7 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
         items(totalItems) { index ->
             // 🆕 v1.8.1: Separator an Position uncheckedCount einfügen
             if (showSeparator && index == uncheckedCount) {
-                WidgetCheckedItemsSeparator(checkedCount = checkedCount)
+                WidgetCheckedItemsSeparator(checkedCount = checkedCount, fontSizeScale = fontSizeScale)
                 return@items
             }
 
@@ -583,12 +594,12 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
                 ) {
                     Text(
                         text = if (item.isChecked) "☑️" else "☐", // 🆕 v1.8.1 (IMPL_06)
-                        style = TextStyle(fontSize = 16.sp)
+                        style = TextStyle(fontSize = (16 * fontSizeScale).sp)
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))
                     WidgetInlineText(
                         text = item.text,
-                        fontSize = 14f,
+                        fontSize = 14f * fontSizeScale,
                         maxLines = 2,
                         dimmed = item.isChecked,
                         addStrikethrough = item.isChecked,
@@ -613,7 +624,7 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
                         } else {
                             GlanceTheme.colors.onSurface
                         },
-                        fontSize = 14.sp,
+                        fontSize = (14 * fontSizeScale).sp,
                         textDecoration = if (item.isChecked) {
                             TextDecoration.LineThrough
                         } else {
@@ -632,7 +643,7 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId)
 // ── Empty State ──
 
 @Composable
-private fun EmptyWidgetContent(bgOpacity: Float) {
+private fun EmptyWidgetContent(bgOpacity: Float, fontSizeScale: Float = 1.0f) {
     // 🆕 v1.9.0 (F01): Translucenter Hintergrund mit Monet-Tint bei beliebiger Opacity
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
     val context = LocalContext.current
@@ -653,7 +664,7 @@ private fun EmptyWidgetContent(bgOpacity: Float) {
                 text = context.getString(R.string.widget_note_not_found),
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
-                    fontSize = 14.sp
+                    fontSize = (14 * fontSizeScale).sp
                 )
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
@@ -661,7 +672,7 @@ private fun EmptyWidgetContent(bgOpacity: Float) {
                 text = context.getString(R.string.widget_tap_to_reconfigure),
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
-                    fontSize = 12.sp
+                    fontSize = (12 * fontSizeScale).sp
                 )
             )
         }

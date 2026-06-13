@@ -701,6 +701,8 @@
     <string name="widget_lock_description">Versehentliches Bearbeiten verhindern</string>
     <string name="widget_opacity_label">Hintergrund-Transparenz</string>
     <string name="widget_opacity_description">Transparenz des Widget-Hintergrunds anpassen</string>
+    <string name="widget_font_size_label">Schriftgröße</string>
+    <string name="widget_font_size_description">Schriftgröße im Widget anpassen</string>
     <string name="widget_cards_opacity_label">Auch auf Notizkarten anwenden</string>
     <string name="widget_cards_opacity_description">Notizkarten-Hintergründe folgen ebenfalls der Transparenz-Einstellung</string>
     <string name="widget_preview_title">Einkaufsliste</string>

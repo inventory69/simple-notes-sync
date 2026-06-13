@@ -53,6 +53,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
             var initialHidePinned = false
             var initialHideFolders = false
             var initialSelectedFolder = ""
+            var initialFontSizeScale = 1.0f
             var folders: List<Folder> = emptyList()
 
             try {
@@ -79,6 +80,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                 initialHidePinned = prefs[NotesListWidgetState.KEY_HIDE_PINNED] ?: false
                 initialHideFolders = prefs[NotesListWidgetState.KEY_HIDE_FOLDERS] ?: false
                 initialSelectedFolder = prefs[NotesListWidgetState.KEY_SELECTED_FOLDER] ?: ""
+                initialFontSizeScale = prefs[NotesListWidgetState.KEY_FONT_SIZE_SCALE] ?: 1.0f
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to load existing widget config, using defaults: ${e.message}")
             }
@@ -87,7 +89,8 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                 val widgetPrefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
                 SimpleNotesTheme(
                     themeMode = ThemePreferences.getThemeMode(widgetPrefs),
-                    colorTheme = ThemePreferences.getColorTheme(widgetPrefs)
+                    colorTheme = ThemePreferences.getColorTheme(widgetPrefs),
+                    fontSizeScale = ThemePreferences.getFontSizeScale(widgetPrefs)
                 ) {
                     NotesListWidgetConfigScreen(
                         initialConfig = NotesListWidgetConfig(
@@ -99,7 +102,8 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                             hideHeader = initialHideHeader,
                             hidePinned = initialHidePinned,
                             hideFolders = initialHideFolders,
-                            selectedFolder = initialSelectedFolder
+                            selectedFolder = initialSelectedFolder,
+                            fontSizeScale = initialFontSizeScale
                         ),
                         folders = folders,
                         onSave = { config -> onSave(config) }
@@ -125,6 +129,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                     prefs[NotesListWidgetState.KEY_HIDE_PINNED] = config.hidePinned
                     prefs[NotesListWidgetState.KEY_HIDE_FOLDERS] = config.hideFolders
                     prefs[NotesListWidgetState.KEY_SELECTED_FOLDER] = config.selectedFolder
+                    prefs[NotesListWidgetState.KEY_FONT_SIZE_SCALE] = config.fontSizeScale
                     prefs[NotesListWidgetState.KEY_LAST_UPDATED] = System.currentTimeMillis()
                 }
 

@@ -24,6 +24,9 @@ object NoteWidgetState {
     /** Hintergrund-Transparenz (0.0 = vollständig transparent, 1.0 = opak) */
     val KEY_BACKGROUND_OPACITY = floatPreferencesKey("widget_bg_opacity")
 
+    /** Schriftgröße-Faktor (0.85 = Klein, 1.0 = Normal, 1.15 = Groß, 1.3 = Sehr groß) */
+    val KEY_FONT_SIZE_SCALE = floatPreferencesKey("widget_font_scale")
+
     /** Timestamp des letzten Updates — erzwingt Widget-Recomposition */
     val KEY_LAST_UPDATED = longPreferencesKey("widget_last_updated")
 }

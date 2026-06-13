@@ -24,6 +24,7 @@ import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_HEADER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_PINNED
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_NOTE_FILTER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SELECTED_FOLDER
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FONT_SIZE_SCALE
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_DIRECTION
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_OPTION
 
@@ -52,6 +53,7 @@ class NotesListWidget : GlanceAppWidget() {
             val hidePinned = prefs[KEY_HIDE_PINNED] ?: false
             val hideFolders = prefs[KEY_HIDE_FOLDERS] ?: false
             val selectedFolder = prefs[KEY_SELECTED_FOLDER]?.takeIf { it.isNotEmpty() }
+            val fontSizeScale = prefs[KEY_FONT_SIZE_SCALE] ?: 1.0f
 
             val sourceNotes = if (selectedFolder != null) {
                 allNotes.filter { it.folderName == selectedFolder }
@@ -72,7 +74,8 @@ class NotesListWidget : GlanceAppWidget() {
                     cardBgOpacity = cardOpacity,
                     fabExpanded = fabExpanded,
                     hasPinnedNotes = hasPinnedNotes,
-                    hideHeader = hideHeader
+                    hideHeader = hideHeader,
+                    fontSizeScale = fontSizeScale
                 )
             }
         }

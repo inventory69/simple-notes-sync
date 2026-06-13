@@ -45,6 +45,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
     private var currentSelectedNoteId: String? = null
     private var currentLockState: Boolean = false
     private var currentOpacity: Float = 1.0f
+    private var currentFontSizeScale: Float = 1.0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,7 +60,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                 override fun handleOnBackPressed() {
                     // Auto-Save nur bei Reconfigure (wenn bereits eine Note konfiguriert war)
                     currentSelectedNoteId?.also { noteId ->
-                        configureWidget(noteId, currentLockState, currentOpacity)
+                        configureWidget(noteId, currentLockState, currentOpacity, currentFontSizeScale)
                     } ?: finish()
                 }
             }
@@ -83,6 +84,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
             var existingNoteId: String? = null
             var existingLock = false
             var existingOpacity = 1.0f
+            var existingFontSizeScale = 1.0f
             var configLoadError = false
 
             try {
@@ -96,6 +98,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                 existingNoteId = prefs[NoteWidgetState.KEY_NOTE_ID]
                 existingLock = prefs[NoteWidgetState.KEY_IS_LOCKED] ?: false
                 existingOpacity = prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
+                existingFontSizeScale = prefs[NoteWidgetState.KEY_FONT_SIZE_SCALE] ?: 1.0f
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to load widget config, using defaults: ${e.message}")
                 configLoadError = true
@@ -105,31 +108,35 @@ class NoteWidgetConfigActivity : ComponentActivity() {
             currentSelectedNoteId = existingNoteId
             currentLockState = existingLock
             currentOpacity = existingOpacity
+            currentFontSizeScale = existingFontSizeScale
 
             setContent {
                 val widgetPrefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
                 SimpleNotesTheme(
                     themeMode = ThemePreferences.getThemeMode(widgetPrefs),
-                    colorTheme = ThemePreferences.getColorTheme(widgetPrefs)
+                    colorTheme = ThemePreferences.getColorTheme(widgetPrefs),
+                    fontSizeScale = ThemePreferences.getFontSizeScale(widgetPrefs)
                 ) {
                     NoteWidgetConfigScreen(
                         storage = storage,
                         initialLock = existingLock,
                         initialOpacity = existingOpacity,
+                        initialFontSizeScale = existingFontSizeScale,
                         selectedNoteId = existingNoteId,
                         configLoadError = configLoadError,
-                        onNoteSelected = { noteId, isLocked, opacity ->
-                            configureWidget(noteId, isLocked, opacity)
+                        onNoteSelected = { noteId, isLocked, opacity, fontSizeScale ->
+                            configureWidget(noteId, isLocked, opacity, fontSizeScale)
                         },
                         // 🆕 v1.8.0 (IMPL_025): Save-FAB Callback
-                        onSave = { noteId, isLocked, opacity ->
-                            configureWidget(noteId, isLocked, opacity)
+                        onSave = { noteId, isLocked, opacity, fontSizeScale ->
+                            configureWidget(noteId, isLocked, opacity, fontSizeScale)
                         },
                         // 🆕 v1.8.0 (IMPL_025): Settings-Änderungen tracken für Auto-Save
-                        onSettingsChanged = { noteId, isLocked, opacity ->
+                        onSettingsChanged = { noteId, isLocked, opacity, fontSizeScale ->
                             currentSelectedNoteId = noteId
                             currentLockState = isLocked
                             currentOpacity = opacity
+                            currentFontSizeScale = fontSizeScale
                         },
                         onCancel = { finish() }
                     )
@@ -138,7 +145,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
         }
     }
 
-    private fun configureWidget(noteId: String, isLocked: Boolean, opacity: Float) {
+    private fun configureWidget(noteId: String, isLocked: Boolean, opacity: Float, fontSizeScale: Float = 1.0f) {
         lifecycleScope.launch {
             val glanceId = GlanceAppWidgetManager(this@NoteWidgetConfigActivity)
                 .getGlanceIdBy(appWidgetId)
@@ -149,6 +156,7 @@ class NoteWidgetConfigActivity : ComponentActivity() {
                 prefs[NoteWidgetState.KEY_IS_LOCKED] = isLocked
                 prefs[NoteWidgetState.KEY_SHOW_OPTIONS] = false
                 prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] = opacity
+                prefs[NoteWidgetState.KEY_FONT_SIZE_SCALE] = fontSizeScale
             }
 
             // Widget initial rendern

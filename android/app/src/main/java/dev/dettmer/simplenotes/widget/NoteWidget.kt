@@ -67,6 +67,7 @@ class NoteWidget : GlanceAppWidget() {
             val isLocked = prefs[NoteWidgetState.KEY_IS_LOCKED] ?: false
             val showOptions = prefs[NoteWidgetState.KEY_SHOW_OPTIONS] ?: false
             val bgOpacity = prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
+            val fontSizeScale = prefs[NoteWidgetState.KEY_FONT_SIZE_SCALE] ?: 1.0f
 
             // Load note synchronously inside provideContent so it re-reads on every
             // widget update (state change). provideContent runs on a Glance SessionWorker
@@ -79,6 +80,7 @@ class NoteWidget : GlanceAppWidget() {
                     isLocked = isLocked,
                     showOptions = showOptions,
                     bgOpacity = bgOpacity,
+                    fontSizeScale = fontSizeScale,
                     glanceId = id
                 )
             }

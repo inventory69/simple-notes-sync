@@ -57,17 +57,29 @@ import kotlin.math.roundToInt
 
 private const val NOTE_PREVIEW_MAX_LENGTH = 50
 
+private val WIDGET_FONT_SCALE_STEPS = listOf(0.85f, 1.0f, 1.15f, 1.3f)
+
+private fun fontScaleToSlider(scale: Float): Float {
+    val idx = WIDGET_FONT_SCALE_STEPS.indexOfFirst { kotlin.math.abs(it - scale) < 0.05f }
+    return if (idx < 0) 1f else idx.toFloat()
+}
+
+private fun sliderToFontScale(pos: Float): Float =
+    WIDGET_FONT_SCALE_STEPS[pos.roundToInt().coerceIn(0, WIDGET_FONT_SCALE_STEPS.lastIndex)]
+
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList")
 @Composable
 fun NoteWidgetConfigScreen(
     storage: NotesStorage,
     initialLock: Boolean = false,
     initialOpacity: Float = 1.0f,
+    initialFontSizeScale: Float = 1.0f,
     selectedNoteId: String? = null,
     configLoadError: Boolean = false,
-    onNoteSelected: (noteId: String, isLocked: Boolean, opacity: Float) -> Unit,
-    onSave: ((noteId: String, isLocked: Boolean, opacity: Float) -> Unit)? = null,
-    onSettingsChanged: ((noteId: String?, isLocked: Boolean, opacity: Float) -> Unit)? = null,
+    onNoteSelected: (noteId: String, isLocked: Boolean, opacity: Float, fontSizeScale: Float) -> Unit,
+    onSave: ((noteId: String, isLocked: Boolean, opacity: Float, fontSizeScale: Float) -> Unit)? = null,
+    onSettingsChanged: ((noteId: String?, isLocked: Boolean, opacity: Float, fontSizeScale: Float) -> Unit)? = null,
     @Suppress("UNUSED_PARAMETER") onCancel: () -> Unit // Reserved for future use
 ) {
     val allNotes by produceState<List<Note>>(initialValue = emptyList()) {
@@ -75,6 +87,7 @@ fun NoteWidgetConfigScreen(
     }
     var lockWidget by remember { mutableStateOf(initialLock) }
     var opacity by remember { mutableFloatStateOf(initialOpacity) }
+    var fontSizeScale by remember { mutableFloatStateOf(initialFontSizeScale) }
     var currentSelectedId by remember { mutableStateOf(selectedNoteId) }
 
     Scaffold(
@@ -89,8 +102,8 @@ fun NoteWidgetConfigScreen(
                 FloatingActionButton(
                     onClick = {
                         currentSelectedId?.let { noteId ->
-                            onSave?.invoke(noteId, lockWidget, opacity)
-                                ?: onNoteSelected(noteId, lockWidget, opacity)
+                            onSave?.invoke(noteId, lockWidget, opacity, fontSizeScale)
+                                ?: onNoteSelected(noteId, lockWidget, opacity, fontSizeScale)
                         }
                     }
                 ) {
@@ -138,7 +151,7 @@ fun NoteWidgetConfigScreen(
                     onCheckedChange = {
                         lockWidget = it
                         // 🆕 v1.8.0 (IMPL_025): Settings-Änderung an Activity melden
-                        onSettingsChanged?.invoke(currentSelectedId, lockWidget, opacity)
+                        onSettingsChanged?.invoke(currentSelectedId, lockWidget, opacity, fontSizeScale)
                     }
                 )
             }
@@ -175,10 +188,54 @@ fun NoteWidgetConfigScreen(
                     onValueChange = {
                         opacity = it
                         // 🆕 v1.8.0 (IMPL_025): Settings-Änderung an Activity melden
-                        onSettingsChanged?.invoke(currentSelectedId, lockWidget, opacity)
+                        onSettingsChanged?.invoke(currentSelectedId, lockWidget, opacity, fontSizeScale)
                     },
                     valueRange = 0f..1f,
                     steps = 9
+                )
+            }
+
+            // Font size slider
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                val fontSizeLabel = when (fontScaleToSlider(fontSizeScale).roundToInt()) {
+                    0 -> stringResource(R.string.font_size_small)
+                    2 -> stringResource(R.string.font_size_large)
+                    3 -> stringResource(R.string.font_size_xlarge)
+                    else -> stringResource(R.string.font_size_normal)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.widget_font_size_label),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = fontSizeLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.widget_font_size_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Slider(
+                    value = fontScaleToSlider(fontSizeScale),
+                    onValueChange = {
+                        fontSizeScale = sliderToFontScale(it)
+                        onSettingsChanged?.invoke(currentSelectedId, lockWidget, opacity, fontSizeScale)
+                    },
+                    valueRange = 0f..3f,
+                    steps = 2
                 )
             }
 
@@ -204,7 +261,7 @@ fun NoteWidgetConfigScreen(
                         onClick = {
                             currentSelectedId = note.id
                             // 🐛 FIX: Nur auswählen + Settings-Tracking, NICHT sofort konfigurieren
-                            onSettingsChanged?.invoke(note.id, lockWidget, opacity)
+                            onSettingsChanged?.invoke(note.id, lockWidget, opacity, fontSizeScale)
                         }
                     )
                 }

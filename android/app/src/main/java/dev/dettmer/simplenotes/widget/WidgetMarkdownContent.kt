@@ -90,7 +90,7 @@ private fun flattenToRenderItems(
 }
 
 @Composable
-internal fun WidgetMarkdownView(content: String) {
+internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
     val renderItems = flattenToRenderItems(
         blocks = MarkdownEngine.parse(content),
         maxItems = WIDGET_MAX_MD_ITEMS
@@ -105,9 +105,9 @@ internal fun WidgetMarkdownView(content: String) {
             when (val item = renderItems[index]) {
                 is WidgetRenderItem.Heading -> {
                     val fontSize = when (item.level) {
-                        1 -> 18.sp
-                        2 -> 16.sp
-                        else -> 15.sp
+                        1 -> (18 * fontSizeScale).sp
+                        2 -> (16 * fontSizeScale).sp
+                        else -> (15 * fontSizeScale).sp
                     }
                     Text(
                         text = item.text,
@@ -126,7 +126,7 @@ internal fun WidgetMarkdownView(content: String) {
                     } else {
                         WidgetInlineText(
                             text = item.text,
-                            fontSize = 14f,
+                            fontSize = 14f * fontSizeScale,
                             maxLines = 5,
                             modifier = GlanceModifier.padding(bottom = 4.dp)
                         )
@@ -148,13 +148,13 @@ internal fun WidgetMarkdownView(content: String) {
                                 } else {
                                     GlanceTheme.colors.onSurface
                                 },
-                                fontSize = 14.sp
+                                fontSize = (14 * fontSizeScale).sp
                             )
                         )
                         Spacer(modifier = GlanceModifier.width(6.dp))
                         WidgetInlineText(
                             text = item.text,
-                            fontSize = 14f,
+                            fontSize = 14f * fontSizeScale,
                             maxLines = 2,
                             dimmed = item.isChecked,
                             addStrikethrough = item.isChecked,
@@ -174,13 +174,13 @@ internal fun WidgetMarkdownView(content: String) {
                             text = "•",
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurface,
-                                fontSize = 14.sp
+                                fontSize = (14 * fontSizeScale).sp
                             ),
                             modifier = GlanceModifier.width(20.dp)
                         )
                         WidgetInlineText(
                             text = item.text,
-                            fontSize = 14f,
+                            fontSize = 14f * fontSizeScale,
                             maxLines = 3,
                             modifier = GlanceModifier.defaultWeight()
                         )
@@ -192,7 +192,7 @@ internal fun WidgetMarkdownView(content: String) {
                         text = item.text.ifEmpty { " " },
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 12.sp
+                            fontSize = (12 * fontSizeScale).sp
                         ),
                         maxLines = 1,
                         modifier = GlanceModifier.padding(start = 8.dp, bottom = 1.dp)

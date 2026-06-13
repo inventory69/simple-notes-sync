@@ -85,7 +85,8 @@ fun NotesListWidgetContent(
     cardBgOpacity: Float = 1.0f,
     fabExpanded: Boolean = false,
     hasPinnedNotes: Boolean = false,
-    hideHeader: Boolean = false
+    hideHeader: Boolean = false,
+    fontSizeScale: Float = 1.0f
 ) {
     val context = LocalContext.current
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
@@ -111,7 +112,7 @@ fun NotesListWidgetContent(
                             text = context.getString(R.string.notes_list_widget_name),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurface,
-                                fontSize = 16.sp,
+                                fontSize = (16 * fontSizeScale).sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
@@ -128,7 +129,7 @@ fun NotesListWidgetContent(
             }
 
             if (notes.isEmpty() && folders.isEmpty()) {
-                EmptyNotesState(modifier = GlanceModifier.fillMaxWidth().defaultWeight())
+                EmptyNotesState(modifier = GlanceModifier.fillMaxWidth().defaultWeight(), fontSizeScale = fontSizeScale)
             } else {
                 val pinned = notes.filter { it.isPinned == true }
                 val others = notes.filter { it.isPinned != true }
@@ -141,25 +142,26 @@ fun NotesListWidgetContent(
                         .padding(horizontal = 8.dp)
                 ) {
                     if (pinned.isNotEmpty()) {
-                        item { SectionHeader(context.getString(R.string.notes_list_widget_section_pinned)) }
+                        item { SectionHeader(context.getString(R.string.notes_list_widget_section_pinned), fontSizeScale) }
                     }
-                    items(pinned.size) { i -> NoteCard(note = pinned[i], bgOpacity = cardBgOpacity) }
+                    items(pinned.size) { i -> NoteCard(note = pinned[i], bgOpacity = cardBgOpacity, fontSizeScale = fontSizeScale) }
 
                     if (folders.isNotEmpty()) {
-                        item { SectionHeader(context.getString(R.string.notes_list_widget_section_folders)) }
+                        item { SectionHeader(context.getString(R.string.notes_list_widget_section_folders), fontSizeScale) }
                     }
                     items(folders.size) { i ->
                         FolderCard(
                             folder = folders[i],
                             noteCount = folderNoteCounts[folders[i].name] ?: 0,
-                            bgOpacity = cardBgOpacity
+                            bgOpacity = cardBgOpacity,
+                            fontSizeScale = fontSizeScale
                         )
                     }
 
                     if (showNotesHeader) {
-                        item { SectionHeader(context.getString(R.string.notes_list_widget_section_others)) }
+                        item { SectionHeader(context.getString(R.string.notes_list_widget_section_others), fontSizeScale) }
                     }
-                    items(others.size) { i -> NoteCard(note = others[i], bgOpacity = cardBgOpacity) }
+                    items(others.size) { i -> NoteCard(note = others[i], bgOpacity = cardBgOpacity, fontSizeScale = fontSizeScale) }
 
                     item { Spacer(GlanceModifier.height(72.dp)) }
                 }
@@ -201,12 +203,12 @@ fun NotesListWidgetContent(
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun SectionHeader(title: String, fontSizeScale: Float = 1.0f) {
     Text(
         text = title,
         style = TextStyle(
             color = GlanceTheme.colors.onSurfaceVariant,
-            fontSize = 11.sp,
+            fontSize = (11 * fontSizeScale).sp,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center
         ),
@@ -215,7 +217,7 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun NoteCard(note: Note, bgOpacity: Float) {
+private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f) {
     val context = LocalContext.current
     val slot = NoteColorPalette.fromHex(note.color)
     val cardBg = if (slot != null) {
@@ -246,15 +248,15 @@ private fun NoteCard(note: Note, bgOpacity: Float) {
                 )
         ) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(10.dp)) {
-                NoteCardTitle(note)
-                NoteCardBody(note)
+                NoteCardTitle(note, fontSizeScale)
+                NoteCardBody(note, fontSizeScale)
             }
         }
     }
 }
 
 @Composable
-private fun FolderCard(folder: Folder, noteCount: Int, bgOpacity: Float) {
+private fun FolderCard(folder: Folder, noteCount: Int, bgOpacity: Float, fontSizeScale: Float = 1.0f) {
     val context = LocalContext.current
     val slot = NoteColorPalette.fromHex(folder.color)
     val folderBg = if (slot != null) {
@@ -299,7 +301,7 @@ private fun FolderCard(folder: Folder, noteCount: Int, bgOpacity: Float) {
                     text = folder.name,
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
-                        fontSize = 13.sp,
+                        fontSize = (13 * fontSizeScale).sp,
                         fontWeight = FontWeight.Bold
                     ),
                     maxLines = 1,
@@ -307,7 +309,7 @@ private fun FolderCard(folder: Folder, noteCount: Int, bgOpacity: Float) {
                 )
                 Text(
                     text = "$noteCount",
-                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp)
+                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = (12 * fontSizeScale).sp)
                 )
             }
         }
@@ -327,7 +329,7 @@ private fun NoteTypeIcon(noteType: NoteType) {
 }
 
 @Composable
-private fun NoteCardTitle(note: Note) {
+private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f) {
     val context = LocalContext.current
     val hasTitle = note.title.isNotBlank()
     val isBlankNote = note.title.isBlank() && when (note.noteType) {
@@ -353,7 +355,7 @@ private fun NoteCardTitle(note: Note) {
                 text = note.title,
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = 13.sp,
+                    fontSize = (13 * fontSizeScale).sp,
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1,
@@ -369,7 +371,7 @@ private fun NoteCardTitle(note: Note) {
                 text = context.getString(R.string.notes_list_widget_untitled),
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
-                    fontSize = 13.sp
+                    fontSize = (13 * fontSizeScale).sp
                 ),
                 maxLines = 1
             )
@@ -379,23 +381,23 @@ private fun NoteCardTitle(note: Note) {
 }
 
 @Composable
-private fun NoteCardBody(note: Note) {
+private fun NoteCardBody(note: Note, fontSizeScale: Float = 1.0f) {
     when (note.noteType) {
         NoteType.TEXT -> {
             if (note.content.isNotBlank()) {
                 WidgetInlineText(
                     text = note.content,
-                    fontSize = 12f,
+                    fontSize = 12f * fontSizeScale,
                     maxLines = 4,
                 )
             }
         }
-        NoteType.CHECKLIST -> ChecklistCardPreview(note)
+        NoteType.CHECKLIST -> ChecklistCardPreview(note, fontSizeScale)
     }
 }
 
 @Composable
-private fun ChecklistCardPreview(note: Note) {
+private fun ChecklistCardPreview(note: Note, fontSizeScale: Float = 1.0f) {
     val sorted = sortChecklistItemsForPreview(note.checklistItems.orEmpty(), note.checklistSortOption)
     val visibleItems = sorted.take(NOTE_CARD_CHECKLIST_MAX_ITEMS)
     val remaining = (sorted.size - visibleItems.size).coerceAtLeast(0)
@@ -407,7 +409,7 @@ private fun ChecklistCardPreview(note: Note) {
                 text = "$prefix ${stripInlineFormatting(item.text)}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = 12.sp
+                    fontSize = (12 * fontSizeScale).sp
                 ),
                 maxLines = 1
             )
@@ -417,7 +419,7 @@ private fun ChecklistCardPreview(note: Note) {
                 text = "+$remaining more",
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
-                    fontSize = 12.sp
+                    fontSize = (12 * fontSizeScale).sp
                 )
             )
         }
@@ -511,7 +513,7 @@ private fun FabSubAction(iconRes: Int, label: String, noteType: NoteType) {
 }
 
 @Composable
-private fun EmptyNotesState(modifier: GlanceModifier = GlanceModifier) {
+private fun EmptyNotesState(modifier: GlanceModifier = GlanceModifier, fontSizeScale: Float = 1.0f) {
     val context = LocalContext.current
 
     Column(
@@ -530,7 +532,7 @@ private fun EmptyNotesState(modifier: GlanceModifier = GlanceModifier) {
             text = context.getString(R.string.notes_list_widget_empty),
             style = TextStyle(
                 color = GlanceTheme.colors.outline,
-                fontSize = 13.sp
+                fontSize = (13 * fontSizeScale).sp
             )
         )
     }

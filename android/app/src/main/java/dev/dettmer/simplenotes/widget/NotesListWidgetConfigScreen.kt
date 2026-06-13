@@ -32,7 +32,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -42,6 +41,18 @@ import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
+import kotlin.math.abs
+import kotlin.math.roundToInt
+
+private val WIDGET_FONT_SCALE_STEPS = listOf(0.85f, 1.0f, 1.15f, 1.3f)
+
+private fun fontScaleToSlider(scale: Float): Float {
+    val idx = WIDGET_FONT_SCALE_STEPS.indexOfFirst { abs(it - scale) < 0.05f }
+    return if (idx < 0) 1f else idx.toFloat()
+}
+
+private fun sliderToFontScale(pos: Float): Float =
+    WIDGET_FONT_SCALE_STEPS[pos.roundToInt().coerceIn(0, WIDGET_FONT_SCALE_STEPS.lastIndex)]
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +70,7 @@ fun NotesListWidgetConfigScreen(
     var hidePinned by remember { mutableStateOf(initialConfig.hidePinned) }
     var hideFolders by remember { mutableStateOf(initialConfig.hideFolders) }
     var selectedFolder by remember { mutableStateOf(initialConfig.selectedFolder) }
+    var fontSizeScale by remember { mutableFloatStateOf(initialConfig.fontSizeScale) }
 
     Scaffold(
         topBar = {
@@ -69,7 +81,7 @@ fun NotesListWidgetConfigScreen(
                 onClick = {
                     onSave(NotesListWidgetConfig(
                         sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards,
-                        hideHeader, hidePinned, hideFolders, selectedFolder
+                        hideHeader, hidePinned, hideFolders, selectedFolder, fontSizeScale
                     ))
                 }
             ) {
@@ -292,9 +304,62 @@ fun NotesListWidgetConfigScreen(
                 }
             }
 
+            // ── Text size ──
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            WidgetFontSizeSlider(
+                fontSizeScale = fontSizeScale,
+                onFontSizeScaleChange = { fontSizeScale = it }
+            )
+
             // Spacer so FAB doesn't cover the last item
             Spacer(Modifier.padding(bottom = 80.dp))
         }
+    }
+}
+
+@Composable
+private fun WidgetFontSizeSlider(
+    fontSizeScale: Float,
+    onFontSizeScaleChange: (Float) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        val fontSizeLabel = when (fontScaleToSlider(fontSizeScale).roundToInt()) {
+            0 -> stringResource(R.string.font_size_small)
+            2 -> stringResource(R.string.font_size_large)
+            3 -> stringResource(R.string.font_size_xlarge)
+            else -> stringResource(R.string.font_size_normal)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.widget_font_size_label),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = fontSizeLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Text(
+            text = stringResource(R.string.widget_font_size_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Slider(
+            value = fontScaleToSlider(fontSizeScale),
+            onValueChange = { onFontSizeScaleChange(sliderToFontScale(it)) },
+            valueRange = 0f..3f,
+            steps = 2
+        )
     }
 }
 

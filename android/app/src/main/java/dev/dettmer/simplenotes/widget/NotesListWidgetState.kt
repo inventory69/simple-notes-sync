@@ -17,7 +17,8 @@ data class NotesListWidgetConfig(
     val hideHeader: Boolean = false,
     val hidePinned: Boolean = false,
     val hideFolders: Boolean = false,
-    val selectedFolder: String = ""
+    val selectedFolder: String = "",
+    val fontSizeScale: Float = 1.0f
 )
 
 object NotesListWidgetState {
@@ -32,4 +33,5 @@ object NotesListWidgetState {
     val KEY_HIDE_PINNED = booleanPreferencesKey("nl_hide_pinned")
     val KEY_HIDE_FOLDERS = booleanPreferencesKey("nl_hide_folders")
     val KEY_SELECTED_FOLDER = stringPreferencesKey("nl_selected_folder")
+    val KEY_FONT_SIZE_SCALE = floatPreferencesKey("nl_font_scale")
 }
