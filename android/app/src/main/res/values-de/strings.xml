@@ -68,6 +68,7 @@
     <string name="sync_moved_to_trash_count">%d in den Papierkorb verschoben</string>
     <!-- 🆕 v2.9.x (Trash): via „Papierkorb leeren" vom Server gelöschte Notizen -->
     <string name="sync_deleted_from_server_count">%1$d vom Server gelöscht</string>
+    <string name="sync_trashed_from_server_count">%1$d im Papierkorb</string>
     <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
     <string name="sync_phase_preparing">Synchronisiere…</string>
     <string name="sync_phase_uploading">Hochladen…</string>

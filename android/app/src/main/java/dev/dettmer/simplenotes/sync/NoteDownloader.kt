@@ -29,6 +29,7 @@ internal data class DownloadResult(
     val conflictCount: Int,
     val deletedOnServerCount: Int = 0,
     val folderReconciledCount: Int = 0,
+    val trashedDownloadedCount: Int = 0,
     val downloadFailed: Boolean = false,
     val downloadError: String? = null
 )
@@ -90,6 +91,7 @@ internal class NoteDownloader(
         var conflictCount = 0
         var skippedDeleted = 0 // Track skipped deleted notes
         var folderReconciledCount = 0
+        var trashedDownloadedCount = 0
         val processedIds = mutableSetOf<String>() // 🆕 v1.2.2: Track already loaded notes
 
         Logger.d(TAG, "📥 downloadAll() called:")
@@ -378,7 +380,7 @@ internal class NoteDownloader(
                                     localNote == null -> {
                                         // New note from server
                                         storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
-                                        downloadedCount++
+                                        if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(TAG, "   ✅ Downloaded from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                         // ⚡ Batch E-Tag for later
@@ -389,7 +391,7 @@ internal class NoteDownloader(
                                     forceOverwrite -> {
                                         // OVERWRITE mode: Always replace regardless of timestamps
                                         storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
-                                        downloadedCount++
+                                        if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(
                                             TAG,
                                             "   ♻️ Overwritten from /$activeSyncFolderName/: ${remoteNote.id}"
@@ -409,7 +411,7 @@ internal class NoteDownloader(
                                         } else {
                                             // Safe to overwrite
                                             storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
-                                            downloadedCount++
+                                            if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                             Logger.d(TAG, "   ✅ Updated from /$activeSyncFolderName/: ${remoteNote.id}")
 
                                             if (result.etag != null) {
@@ -566,13 +568,13 @@ internal class NoteDownloader(
                             when {
                                 localNote == null -> {
                                     storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                                    downloadedCount++
+                                    if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                     Logger.d(TAG, "   ✅ Downloaded from ROOT: ${remoteNote.id}")
                                 }
                                 forceOverwrite -> {
                                     // OVERWRITE mode: Always replace regardless of timestamps
                                     storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                                    downloadedCount++
+                                    if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                     Logger.d(TAG, "   ♻️ Overwritten from ROOT: ${remoteNote.id}")
                                 }
                                 localNote.updatedAt < remoteNote.updatedAt -> {
@@ -581,7 +583,7 @@ internal class NoteDownloader(
                                         conflictCount++
                                     } else {
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
-                                        downloadedCount++
+                                        if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(TAG, "   ✅ Updated from ROOT: ${remoteNote.id}")
                                     }
                                 }
@@ -623,7 +625,7 @@ internal class NoteDownloader(
 
         // 🆕 v1.8.0: Server-Deletions erkennen (nach Downloads)
         val allLocalNotes = storage.loadAllNotes()
-        val deletedOnServerCount = detectDeletions(serverNoteIds, allLocalNotes)
+        val deletedOnServerCount = detectDeletions(serverNoteIds, allLocalNotes, deletionTracker)
 
         if (deletedOnServerCount > 0) {
             Logger.d(TAG, "$deletedOnServerCount note(s) detected as deleted on server")
@@ -635,6 +637,7 @@ internal class NoteDownloader(
             conflictCount = conflictCount,
             deletedOnServerCount = deletedOnServerCount,
             folderReconciledCount = folderReconciledCount,
+            trashedDownloadedCount = trashedDownloadedCount,
             downloadFailed = downloadException != null,
             downloadError = downloadException?.message
         )
@@ -651,7 +654,11 @@ internal class NoteDownloader(
      * @param localNotes Alle lokalen Notizen
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
      */
-    suspend fun detectDeletions(serverNoteIds: Set<String>, localNotes: List<Note>): Int {
+    suspend fun detectDeletions(
+        serverNoteIds: Set<String>,
+        localNotes: List<Note>,
+        deletionTracker: dev.dettmer.simplenotes.models.DeletionTracker = dev.dettmer.simplenotes.models.DeletionTracker()
+    ): Int {
         // 🆕 v2.8.0 (Local-Only Folders): Notizen in lokalen Ordnern nie als server-gelöscht markieren.
         val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
         val syncedNotes = localNotes.filter {
@@ -706,15 +713,17 @@ internal class NoteDownloader(
             // - CONFLICT: Wird separat behandelt
             // - DELETED_ON_SERVER: Bereits markiert
             if (note.id !in serverNoteIds) {
-                if (note.trashedAt != null) {
-                    // 🆕 v2.9.0 (Trash): Die Notiz lag bereits im Papierkorb und ist jetzt auch vom
-                    // Server verschwunden → ein anderes Gerät hat sie endgültig gelöscht (purge).
-                    // Lokal hart löschen; der DeletionTracker-Eintrag verhindert Zombie-Wiederkehr.
+                val purgedRemotely = deletionTracker.isDeleted(note.id) &&
+                    (deletionTracker.getDeletionTimestamp(note.id) ?: 0L) >= note.updatedAt
+                if (note.trashedAt != null || purgedRemotely) {
+                    // 🆕 v2.9.0 (Trash): already trashed + gone from server → purged on another device.
+                    // 🆕 shared ledger: id in deletions.json with deletedAt ≥ updatedAt → hard-delete.
+                    // Timestamp guard preserves a note legitimately re-created after the recorded purge.
                     storage.deleteNote(note.id)
                     Logger.d(
                         TAG,
-                        "🔥 Trashed note '${note.title}' (${note.id}) purged on another device → " +
-                            "hard-deleted locally"
+                        "🔥 Note '${note.title}' (${note.id}) purged remotely → hard-deleted locally" +
+                            if (purgedRemotely && note.trashedAt == null) " (shared ledger)" else ""
                     )
                 } else {
                     // 🆕 v2.9.0 (Trash): Echte Server-Löschung → in den Papierkorb verschieben.

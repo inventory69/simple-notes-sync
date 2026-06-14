@@ -77,6 +77,7 @@
     <string name="sync_moved_to_trash_count">%d moved to trash</string>
     <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
     <string name="sync_deleted_from_server_count">%1$d deleted from server</string>
+    <string name="sync_trashed_from_server_count">%1$d in trash</string>
 
     <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
     <string name="sync_phase_preparing">Synchronizing…</string>

@@ -8,8 +8,10 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.PendingServerDeletions.PendingDeletion
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
+import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncException
 import java.io.IOException
@@ -130,6 +132,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         folderStore = folderStore,
         prefs = prefs
     )
+
+    private val deletionSyncManager = DeletionSyncManager(urlBuilder) // 🆕 shared ledger
 
     /**
      * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
@@ -658,53 +662,16 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
                 // Step 4.5: Process pending server deletions (queued from offline deletes)
                 Logger.d(TAG, "📍 Step 4.5: Processing pending server deletions")
-                try {
-                    val pendingDeletions = PendingServerDeletions(context)
-                    val pendingIds = pendingDeletions.getAll()
-                    if (pendingIds.isNotEmpty()) {
-                        Logger.d(TAG, "🗑️ Processing ${pendingIds.size} pending server deletions")
-                        val successIds = mutableListOf<String>()
-                        pendingIds.forEach { pd ->
-                            try {
-                                val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
-                                if (deleted) successIds.add(pd.id)
-                            } catch (e: Exception) {
-                                Logger.w(TAG, "⚠️ Failed to delete pending note ${pd.id} from server: ${e.message}")
-                            }
-                        }
-                        if (successIds.isNotEmpty()) {
-                            pendingDeletions.remove(successIds)
-                            purgedFromServerCount = successIds.size
-                            Logger.d(TAG, "✅ Deleted ${successIds.size}/${pendingIds.size} pending notes from server")
-                            // Step 4.6: Clean up now-empty folder directories
-                            val processedFolderNames = pendingIds
-                                .filter { it.id in successIds && !it.folderName.isNullOrBlank() }
-                                .mapNotNull { it.folderName }
-                                .toSet()
-                            if (processedFolderNames.isNotEmpty()) {
-                                Logger.d(TAG, "📍 Step 4.6: Cleaning up empty folder directories (${processedFolderNames.size})")
-                                processedFolderNames.forEach { folderName ->
-                                    try {
-                                        deleteServerFolderIfEmpty(folderName)
-                                    } catch (e: Exception) {
-                                        Logger.w(TAG, "⚠️ Folder dir cleanup '$folderName' failed (non-fatal): ${e.message}")
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        Logger.d(TAG, "    ✅ No pending deletions")
-                    }
-                } catch (e: Exception) {
-                    Logger.e(TAG, "⚠️ Pending deletions step failed (non-fatal)", e)
-                    // Non-fatal: pending deletions will be retried on next sync
-                }
+                purgedFromServerCount = processPendingServerDeletions(sardine, serverUrl)
+
+                seedDeletionTrackerFromSharedLedger(sardine, serverUrl)
 
                 // 🆕 v1.8.0: Phase 3 - Downloading (Phase wird nur bei echten Downloads gesetzt)
                 Logger.d(TAG, "📍 Step 5: Downloading remote notes")
                 // Download remote notes
                 var deletedOnServerCount = 0 // 🆕 v1.8.0
                 var folderReconciledCount = 0 // 🆕 v2.7.2
+                var trashedFromServerCount = 0
                 try {
                     Logger.d(TAG, "⬇️ Downloading remote notes...")
                     val downloadResult = downloadRemoteNotes(
@@ -730,6 +697,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     conflictCount += downloadResult.conflictCount
                     deletedOnServerCount = downloadResult.deletedOnServerCount // 🆕 v1.8.0
                     folderReconciledCount = downloadResult.folderReconciledCount // 🆕 v2.7.2
+                    trashedFromServerCount = downloadResult.trashedDownloadedCount
                     Logger.d(
                         TAG,
                         "✅ Downloaded: ${downloadResult.downloadedCount} notes, " +
@@ -846,6 +814,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     conflictCount = conflictCount,
                     deletedOnServerCount = deletedOnServerCount, // 🆕 v1.8.0
                     purgedFromServerCount = purgedFromServerCount, // 🆕 v2.9.x (Trash)
+                    trashedFromServerCount = trashedFromServerCount,
                     foldersChanged = foldersChanged, // 🆕 v2.7.0 (Folders)
                     foldersReconciled = folderReconciledCount > 0 // 🆕 v2.7.2
                 )
@@ -880,6 +849,82 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             SyncStateManager.resetProgress()
             // 🔒 v1.3.1: Sync-Mutex freigeben
             syncMutex.unlock()
+        }
+    }
+
+    private suspend fun processPendingServerDeletions(sardine: Sardine, serverUrl: String): Int {
+        return try {
+            val pendingDeletions = PendingServerDeletions(context)
+            val pendingIds = pendingDeletions.getAll()
+            if (pendingIds.isEmpty()) {
+                Logger.d(TAG, "    ✅ No pending deletions")
+                return 0
+            }
+            Logger.d(TAG, "🗑️ Processing ${pendingIds.size} pending server deletions")
+            val successIds = mutableListOf<String>()
+            val deviceId = DeviceIdGenerator.getDeviceId(context)
+            val deletionsUrl = deletionSyncManager.deletionsFileUrl(serverUrl)
+            pendingIds.forEach { pd ->
+                try {
+                    val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
+                    if (deleted) {
+                        successIds.add(pd.id)
+                        deletionSyncManager.appendAndUpload(sardine, deletionsUrl, pd.id, deviceId)
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "⚠️ Failed to delete pending note ${pd.id} from server: ${e.message}")
+                }
+            }
+            if (successIds.isNotEmpty()) {
+                pendingDeletions.remove(successIds)
+                Logger.d(TAG, "✅ Deleted ${successIds.size}/${pendingIds.size} pending notes from server")
+                cleanupEmptyFolderDirs(pendingIds, successIds)
+            }
+            successIds.size
+        } catch (e: Exception) {
+            Logger.e(TAG, "⚠️ Pending deletions step failed (non-fatal)", e)
+            0
+        }
+    }
+
+    private suspend fun cleanupEmptyFolderDirs(
+        pendingIds: List<PendingDeletion>,
+        successIds: List<String>
+    ) {
+        val folderNames = pendingIds
+            .filter { it.id in successIds && !it.folderName.isNullOrBlank() }
+            .mapNotNull { it.folderName }
+            .toSet()
+        if (folderNames.isEmpty()) return
+        Logger.d(TAG, "📍 Step 4.6: Cleaning up empty folder directories (${folderNames.size})")
+        folderNames.forEach { folderName ->
+            try {
+                deleteServerFolderIfEmpty(folderName)
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ Folder dir cleanup '$folderName' failed (non-fatal): ${e.message}")
+            }
+        }
+    }
+
+    private fun seedDeletionTrackerFromSharedLedger(sardine: Sardine, serverUrl: String) {
+        try {
+            val url = deletionSyncManager.deletionsFileUrl(serverUrl)
+            val remoteLedger = deletionSyncManager.downloadRemote(sardine, url)
+            if (remoteLedger.deletedNotes.isEmpty()) return
+            val localTracker = storage.loadDeletionTracker()
+            val now = System.currentTimeMillis()
+            remoteLedger.deletedNotes.forEach { record ->
+                val existing = localTracker.deletedNotes.find { it.id == record.id }
+                if (existing == null || record.deletedAt > existing.deletedAt) {
+                    localTracker.deletedNotes.removeIf { it.id == record.id }
+                    localTracker.deletedNotes.add(record)
+                }
+            }
+            localTracker.deletedNotes.removeIf { now - it.deletedAt > Constants.TRASH_RETENTION_MS }
+            storage.saveDeletionTracker(localTracker)
+            Logger.d(TAG, "📋 Seeded local DeletionTracker from shared ledger (${remoteLedger.deletedNotes.size} remote records)")
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ Shared deletions ledger seed failed (non-fatal): ${e.message}")
         }
     }
 
