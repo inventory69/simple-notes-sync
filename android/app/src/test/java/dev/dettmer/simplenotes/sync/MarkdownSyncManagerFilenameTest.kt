@@ -27,7 +27,8 @@ class MarkdownSyncManagerFilenameTest {
             urlBuilder = mockk(relaxed = true),
             connectionManager = mockk(relaxed = true),
             timestampManager = mockk(relaxed = true),
-            ioDispatcher = Dispatchers.Unconfined
+            ioDispatcher = Dispatchers.Unconfined,
+            folderStore = mockk(relaxed = true)
         )
     }
 

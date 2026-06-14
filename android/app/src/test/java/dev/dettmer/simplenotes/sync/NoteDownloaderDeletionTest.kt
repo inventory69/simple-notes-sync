@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
+import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
@@ -100,6 +101,43 @@ class NoteDownloaderDeletionTest {
 
         assertEquals(0, count)
         assertNotNull(storage.loadNote("c"))
+    }
+
+    @Test fun `active note missing on server but in shared ledger with deletedAt ge updatedAt is hard-deleted`() = runTest {
+        val n = note("purged", trashedAt = null, updatedAt = 1_000L)
+        storage.saveNote(n)
+
+        val tracker = DeletionTracker()
+        tracker.addDeletion("purged", "desktop-abc")
+        // Patch the deletedAt to be >= note.updatedAt (addDeletion uses now, which is >> 1_000)
+        val count = downloader.detectDeletions(
+            serverNoteIds = setOf("other"),
+            localNotes = listOf(n),
+            deletionTracker = tracker
+        )
+
+        assertEquals("purged by shared ledger must not count as moved-to-trash", 0, count)
+        assertNull("note must be hard-deleted locally", storage.loadNote("purged"))
+    }
+
+    @Test fun `active note in ledger but updatedAt greater than deletedAt is still moved to trash`() = runTest {
+        val futureUpdate = System.currentTimeMillis() + 60_000L
+        val n = note("resurrected", trashedAt = null, updatedAt = futureUpdate)
+        storage.saveNote(n)
+
+        val tracker = DeletionTracker()
+        tracker.addDeletion("resurrected", "desktop-abc")
+        // deletedAt set by addDeletion is now() which is < futureUpdate → guard kicks in
+
+        val count = downloader.detectDeletions(
+            serverNoteIds = setOf("other"),
+            localNotes = listOf(n),
+            deletionTracker = tracker
+        )
+
+        assertEquals("re-created note must be moved to trash, not hard-deleted", 1, count)
+        val updated = storage.loadNote("resurrected")!!
+        assertEquals(SyncStatus.DELETED_ON_SERVER, updated.syncStatus)
     }
 
     @Test fun `all-deleted guard aborts when every synced note is missing`() = runTest {
