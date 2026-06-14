@@ -664,8 +664,9 @@ private fun SelectionTopBar(
         },
         title = {
             Text(
-                text = stringResource(R.string.selection_count, selectedCount),
-                style = MaterialTheme.typography.titleLarge
+                text = selectedCount.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1
             )
         },
         actions = {
