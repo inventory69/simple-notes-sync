@@ -46,9 +46,8 @@ class KeepImportViewModel internal constructor(
     private val zipReader: KeepZipReader,
     private val syncScheduler: dev.dettmer.simplenotes.sync.SyncScheduler =
         dev.dettmer.simplenotes.sync.SyncScheduler(application),
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AndroidViewModel(application) {
-
     private val _state = MutableStateFlow<KeepImportUiState>(KeepImportUiState.Idle)
     val state: StateFlow<KeepImportUiState> = _state.asStateFlow()
 
@@ -58,7 +57,7 @@ class KeepImportViewModel internal constructor(
      */
     private val _showSnackbar = MutableSharedFlow<MainViewModel.SnackbarData>(
         replay = 0,
-        extraBufferCapacity = 1,
+        extraBufferCapacity = 1
     )
     val showSnackbar: SharedFlow<MainViewModel.SnackbarData> = _showSnackbar.asSharedFlow()
 
@@ -100,10 +99,12 @@ class KeepImportViewModel internal constructor(
      */
     fun onConfigConfirmed(options: KeepImportOptionsHolder) {
         val current = _state.value as? KeepImportUiState.Configuring ?: return
-        val scan = current.preScan ?: return  // Sollte UI bereits verhindern
+        val scan = current.preScan ?: return // Sollte UI bereits verhindern
         if (scan.sizeBytes > LARGE_ZIP_THRESHOLD_BYTES) {
             _state.value = KeepImportUiState.ConfirmLargeZip(
-                zipUri = current.zipUri, preScan = scan, options = options,
+                zipUri = current.zipUri,
+                preScan = scan,
+                options = options
             )
         } else {
             startImport(current.zipUri, scan, options)
@@ -135,13 +136,13 @@ class KeepImportViewModel internal constructor(
     private fun startImport(
         uri: Uri,
         preScan: KeepPreScanResult,
-        options: KeepImportOptionsHolder,
+        options: KeepImportOptionsHolder
     ) {
         // Initialer Progress-Snapshot, damit der Running-Dialog sofort etwas anzeigt.
         val initialTotal = preScan.matchingCount(options.includeArchived, options.includeTrashed)
         _state.value = KeepImportUiState.Running(
             progress = KeepImportProgress(processed = 0, total = initialTotal, currentName = ""),
-            cancellable = true,
+            cancellable = true
         )
 
         importJob = viewModelScope.launch(ioDispatcher) {
@@ -151,20 +152,20 @@ class KeepImportViewModel internal constructor(
                     options = KeepImportOptions(
                         includeArchived = options.includeArchived,
                         includeTrashed = options.includeTrashed,
-                        conflictStrategy = options.conflictStrategy,
+                        conflictStrategy = options.conflictStrategy
                     ),
                     preScan = preScan,
                     onProgress = { p ->
                         // StateFlow ist thread-safe — kein expliziter Main-Switch nötig.
                         _state.value = KeepImportUiState.Running(progress = p, cancellable = true)
-                    },
+                    }
                 )
                 _state.value = KeepImportUiState.Done(summary = summary)
                 emitSnackbar(
                     appString(
                         R.string.keep_import_snackbar_done,
                         summary.imported,
-                        summary.skipped,
+                        summary.skipped
                     )
                 )
                 // 🆕 v2.5.0: einmaliger Sync-Trigger am Ende (Analyseplan §7.1 Annahme #4).
@@ -198,7 +199,7 @@ class KeepImportViewModel internal constructor(
             MainViewModel.SnackbarData(
                 message = message,
                 actionLabel = appString(R.string.keep_import_snackbar_retry_action),
-                onAction = { onZipPicked(retryUri) },
+                onAction = { onZipPicked(retryUri) }
             )
         } else {
             MainViewModel.SnackbarData(message = message)
@@ -220,6 +221,6 @@ class KeepImportViewModel internal constructor(
 
     companion object {
         private const val TAG = "KeepImportViewModel"
-        const val LARGE_ZIP_THRESHOLD_BYTES: Long = 200L * 1024 * 1024  // 200 MB (Analyseplan §7.2)
+        const val LARGE_ZIP_THRESHOLD_BYTES: Long = 200L * 1024 * 1024 // 200 MB (Analyseplan §7.2)
     }
 }

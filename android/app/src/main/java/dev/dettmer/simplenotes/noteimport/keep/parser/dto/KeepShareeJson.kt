@@ -8,5 +8,5 @@ import com.google.gson.annotations.SerializedName
  * (`sharedNotesImported`) verwendet.
  */
 internal data class KeepShareeJson(
-    @SerializedName("email") val email: String? = null,
+    @SerializedName("email") val email: String? = null
 )

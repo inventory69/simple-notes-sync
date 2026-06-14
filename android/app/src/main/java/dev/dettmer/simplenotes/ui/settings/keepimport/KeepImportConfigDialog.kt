@@ -44,7 +44,7 @@ private const val LARGE_ZIP_WARN_MB = 200L
 fun KeepImportConfigDialog(
     state: KeepImportUiState.Configuring,
     onConfirm: (KeepImportOptionsHolder) -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     var includeArchived by remember { mutableStateOf(false) }
     var includeTrashed by remember { mutableStateOf(false) }
@@ -54,7 +54,7 @@ fun KeepImportConfigDialog(
         title = { Text(stringResource(R.string.keep_import_config_title)) },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 // Pre-Scan-Vorschau
                 if (state.scanning || state.preScan == null) {
@@ -63,7 +63,7 @@ fun KeepImportConfigDialog(
                         Spacer(Modifier.size(Dimensions.SpacingMedium))
                         Text(
                             stringResource(R.string.keep_import_config_scanning),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 } else {
@@ -76,12 +76,12 @@ fun KeepImportConfigDialog(
                 SwitchRow(
                     label = stringResource(R.string.keep_import_config_include_archived),
                     checked = includeArchived,
-                    onCheckedChange = { includeArchived = it },
+                    onCheckedChange = { includeArchived = it }
                 )
                 SwitchRow(
                     label = stringResource(R.string.keep_import_config_include_trashed),
                     checked = includeTrashed,
-                    onCheckedChange = { includeTrashed = it },
+                    onCheckedChange = { includeTrashed = it }
                 )
 
                 Spacer(Modifier.height(Dimensions.SpacingLarge))
@@ -89,22 +89,22 @@ fun KeepImportConfigDialog(
                 // RadioGroup
                 Text(
                     stringResource(R.string.keep_import_config_conflict_label),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleSmall
                 )
                 ConflictRadio(
                     label = stringResource(R.string.keep_import_config_conflict_always_create),
                     selected = conflictStrategy == ConflictStrategy.ALWAYS_CREATE,
-                    onSelect = { conflictStrategy = ConflictStrategy.ALWAYS_CREATE },
+                    onSelect = { conflictStrategy = ConflictStrategy.ALWAYS_CREATE }
                 )
                 ConflictRadio(
                     label = stringResource(R.string.keep_import_config_conflict_skip),
                     selected = conflictStrategy == ConflictStrategy.SKIP,
-                    onSelect = { conflictStrategy = ConflictStrategy.SKIP },
+                    onSelect = { conflictStrategy = ConflictStrategy.SKIP }
                 )
                 ConflictRadio(
                     label = stringResource(R.string.keep_import_config_conflict_replace),
                     selected = conflictStrategy == ConflictStrategy.REPLACE,
-                    onSelect = { conflictStrategy = ConflictStrategy.REPLACE },
+                    onSelect = { conflictStrategy = ConflictStrategy.REPLACE }
                 )
 
                 Spacer(Modifier.height(Dimensions.SpacingLarge))
@@ -112,17 +112,17 @@ fun KeepImportConfigDialog(
                 // InfoTexts
                 Text(
                     stringResource(R.string.keep_import_config_info_labels),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(Modifier.height(Dimensions.SpacingMedium))
                 Text(
                     stringResource(R.string.keep_import_config_info_attachments),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(Modifier.height(Dimensions.SpacingMedium))
                 Text(
                     stringResource(R.string.keep_import_config_info_color_pin),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
         },
@@ -133,11 +133,11 @@ fun KeepImportConfigDialog(
                         KeepImportOptionsHolder(
                             includeArchived = includeArchived,
                             includeTrashed = includeTrashed,
-                            conflictStrategy = conflictStrategy,
+                            conflictStrategy = conflictStrategy
                         )
                     )
                 },
-                enabled = !state.scanning && state.preScan != null,
+                enabled = !state.scanning && state.preScan != null
             ) {
                 Text(stringResource(R.string.keep_import_config_button_start))
             }
@@ -146,7 +146,7 @@ fun KeepImportConfigDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.keep_import_config_button_cancel))
             }
-        },
+        }
     )
 }
 
@@ -156,7 +156,7 @@ private fun PreScanSummary(scan: KeepPreScanResult) {
     Column {
         Text(
             stringResource(R.string.keep_import_prescan_header),
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleSmall
         )
         Spacer(Modifier.height(Dimensions.SpacingMedium))
         Text(stringResource(R.string.keep_import_prescan_active, scan.activeCount))
@@ -170,7 +170,7 @@ private fun PreScanSummary(scan: KeepPreScanResult) {
             Text(
                 stringResource(R.string.keep_import_prescan_large_warning, sizeMb),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -182,7 +182,7 @@ private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = Dimensions.SpacingMedium),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
         Switch(checked = checked, onCheckedChange = onCheckedChange)
@@ -196,7 +196,7 @@ private fun ConflictRadio(label: String, selected: Boolean, onSelect: () -> Unit
             .fillMaxWidth()
             .selectable(selected = selected, onClick = onSelect)
             .padding(vertical = Dimensions.SpacingMedium),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected = selected, onClick = onSelect)
         Spacer(Modifier.size(Dimensions.SpacingMedium))

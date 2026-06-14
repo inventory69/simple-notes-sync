@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.editor
 
-import dev.dettmer.simplenotes.utils.Logger
+import android.content.ClipData
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -46,7 +48,6 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
@@ -79,22 +80,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -117,20 +121,17 @@ import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
-import androidx.compose.runtime.withFrameNanos
+import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
-import android.content.ClipData
-import android.os.Build
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
+import kotlinx.coroutines.launch
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
 private const val ITEM_CORNER_RADIUS_DP = 8
 private const val DRAGGING_ITEM_Z_INDEX = 10f
+
 // 🆕 v2.5.0: Z-Index für Items in Check/Uncheck-Animation. Liegt zwischen 0f
 // (Standard-Items) und DRAGGING_ITEM_Z_INDEX (10f). Hebt das animierende Item
 // während der LazyColumn-Placement-Animation über seine Nachbarn — behebt die
@@ -138,12 +139,14 @@ private const val DRAGGING_ITEM_Z_INDEX = 10f
 // gezeichnet werden, weil ihre neue (niedrigere) Composition-Position sie früher
 // im Draw-Tree platziert. Drag dominiert weiterhin (10f > 5f).
 private const val CHECKING_ITEM_Z_INDEX = 5f
+
 // 🆕 v2.5.0: Gesamt-Dauer der Check-Tap-Animation in Millisekunden. Deckt
 // Scale-Up (CHECK_ANIM_SCALE_UP_MS = 80ms) + Spring-Back + Glow-Fade-Out
 // (CHECK_GLOW_FADE_OUT_MS = 450ms) + LazyColumn-Placement-Spring komfortabel ab.
 // Wird vom LaunchedEffect in DraggableChecklistItem genutzt, um isCheckAnimating
 // zurückzusetzen (deterministischer Reset statt finishedListener-Race).
 private const val CHECK_ANIMATION_TOTAL_MS = 500L
+
 // 🔧 v2.5.x: Maximale Wartezeit, bis das initiale LazyColumn-Layout als „stabil"
 // gilt. Sicherheitsnetz für den Settle-LaunchedEffect in ChecklistEditor: falls externe
 // Effekte (Text-Messung, dynamische Höhen, Sync-Updates) die Liste länger als diese
@@ -203,7 +206,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val canUndo by viewModel.canUndo.collectAsState() // 🆕 v1.10.0
     val canRedo by viewModel.canRedo.collectAsState() // 🆕 v1.10.0
     var showOverflowMenu by remember { mutableStateOf(false) } // 🆕 v1.10.0-Papa
-    var showColorPicker by remember { mutableStateOf(false) }  // 🆕 v2.5.0
+    var showColorPicker by remember { mutableStateOf(false) } // 🆕 v2.5.0
     var showConvertDialog by remember { mutableStateOf(false) }
     var focusNewItemId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -332,7 +335,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
                     }
                 }
-                is NoteEditorEvent.ActivatePreviewMode -> { isPreviewMode = uiState.defaultStartInPreviewMode }
+                is NoteEditorEvent.ActivatePreviewMode -> {
+                    isPreviewMode = uiState.defaultStartInPreviewMode
+                }
             }
         }
     }
@@ -490,19 +495,21 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 text = {
                                     Text(
                                         stringResource(
-                                            if (uiState.noteType == NoteType.CHECKLIST)
+                                            if (uiState.noteType == NoteType.CHECKLIST) {
                                                 R.string.action_convert_to_note
-                                            else
+                                            } else {
                                                 R.string.action_convert_to_checklist
+                                            }
                                         )
                                     )
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        if (uiState.noteType == NoteType.CHECKLIST)
+                                        if (uiState.noteType == NoteType.CHECKLIST) {
                                             Icons.AutoMirrored.Outlined.Notes
-                                        else
-                                            Icons.Outlined.Checklist,
+                                        } else {
+                                            Icons.Outlined.Checklist
+                                        },
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -628,131 +635,134 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
                     .padding(16.dp)
             ) {
-            // Title Input (for both types)
-            OutlinedTextField(
-                value = uiState.title,
-                onValueChange = { viewModel.updateTitle(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(titleFocusRequester)
-                    .onFocusChanged { isTitleFocused = it.isFocused },
-                label = { Text(stringResource(R.string.title)) },
-                singleLine = true, // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
-                // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words,
-                    imeAction = ImeAction.Next // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
-                ),
-                // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
-                keyboardActions = KeyboardActions(
-                    onNext = {
-                        when (uiState.noteType) {
-                            NoteType.TEXT -> {
-                                // Text-Notiz: Fokus direkt ins Content-Feld
-                                contentFocusRequester.requestFocus()
-                            }
-                            NoteType.CHECKLIST -> {
-                                // Checkliste: Fokus auf erstes Item
-                                val firstItemId = checklistItems.firstOrNull()?.id
-                                if (firstItemId != null) {
-                                    focusNewItemId = firstItemId
+                // Title Input (for both types)
+                OutlinedTextField(
+                    value = uiState.title,
+                    onValueChange = { viewModel.updateTitle(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(titleFocusRequester)
+                        .onFocusChanged { isTitleFocused = it.isFocused },
+                    label = { Text(stringResource(R.string.title)) },
+                    singleLine = true, // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
+                    // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Next // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
+                    ),
+                    // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            when (uiState.noteType) {
+                                NoteType.TEXT -> {
+                                    // Text-Notiz: Fokus direkt ins Content-Feld
+                                    contentFocusRequester.requestFocus()
+                                }
+                                NoteType.CHECKLIST -> {
+                                    // Checkliste: Fokus auf erstes Item
+                                    val firstItemId = checklistItems.firstOrNull()?.id
+                                    if (firstItemId != null) {
+                                        focusNewItemId = firstItemId
+                                    }
                                 }
                             }
                         }
-                    }
-                ),
-                shape = RoundedCornerShape(16.dp)
-            )
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            when (uiState.noteType) {
-                NoteType.TEXT -> {
-                    val linkColor = MaterialTheme.colorScheme.primary
-                    val codeBackground = MaterialTheme.colorScheme.surfaceVariant
-                    val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    val markerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    val fontSizeMultiplier = LocalFontSizeMultiplier.current
-                    val markdownTransformation = remember(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier) {
-                        MarkdownOutputTransformation(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier)
-                    }
-                    if (isPreviewMode) {
-                        // 🆕 v1.9.0 (F07): Markdown rendered preview
-                        val blocks = remember(uiState.content) {
-                            MarkdownEngine.parse(uiState.content)
+                when (uiState.noteType) {
+                    NoteType.TEXT -> {
+                        val linkColor = MaterialTheme.colorScheme.primary
+                        val codeBackground = MaterialTheme.colorScheme.surfaceVariant
+                        val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        val markerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        val fontSizeMultiplier = LocalFontSizeMultiplier.current
+                        val markdownTransformation = remember(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier) {
+                            MarkdownOutputTransformation(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier)
                         }
-                        MarkdownPreview(
-                            blocks = blocks,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        )
-                    } else {
-                        // Content Input for TEXT notes
-                        TextNoteContent(
-                            textFieldState = textFieldState,
-                            onContentChange = { viewModel.updateContent(it) },
-                            focusRequester = contentFocusRequester,
-                            outputTransformation = markdownTransformation,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        )
-
-                        if (!isTitleFocused) {
-                            MarkdownToolbar(
-                                textFieldState = textFieldState
+                        if (isPreviewMode) {
+                            // 🆕 v1.9.0 (F07): Markdown rendered preview
+                            val blocks = remember(uiState.content) {
+                                MarkdownEngine.parse(uiState.content)
+                            }
+                            MarkdownPreview(
+                                blocks = blocks,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
                             )
+                        } else {
+                            // Content Input for TEXT notes
+                            TextNoteContent(
+                                textFieldState = textFieldState,
+                                onContentChange = { viewModel.updateContent(it) },
+                                focusRequester = contentFocusRequester,
+                                outputTransformation = markdownTransformation,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+
+                            if (!isTitleFocused) {
+                                MarkdownToolbar(
+                                    textFieldState = textFieldState
+                                )
+                            }
                         }
                     }
-                }
 
-                NoteType.CHECKLIST -> {
-                    // Checklist Editor
-                    ChecklistEditor(
-                        items = checklistItems,
-                        scope = scope,
-                        focusNewItemId = focusNewItemId,
-                        currentSortOption = lastChecklistSortOption, // 🔀 v1.8.0
-                        checklistScrollAction = viewModel.checklistScrollAction, // 🆕 v1.9.0 (F14)
-                        onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
-                        onCheckedChange = { id, checked ->
-                            viewModel.updateChecklistItemChecked(id, checked)
-                        },
-                        onDelete = { id -> viewModel.deleteChecklistItem(id) },
-                        onAddNewItemAfter = { id ->
-                            val newId = viewModel.addChecklistItemAfter(id)
-                            focusNewItemId = newId
-                        },
-                        onCopyText = { itemId ->                                     // 🆕 v2.2.0
-                            val text = checklistItems.find { it.id == itemId }?.text
-                            if (!text.isNullOrBlank()) {
-                                scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", text))) }
-                            }
-                        },
-                        onDuplicate = { itemId ->                                    // 🆕 v2.2.0
-                            val newId = viewModel.duplicateChecklistItem(itemId)
-                            if (newId != null) {
+                    NoteType.CHECKLIST -> {
+                        // Checklist Editor
+                        ChecklistEditor(
+                            items = checklistItems,
+                            scope = scope,
+                            focusNewItemId = focusNewItemId,
+                            currentSortOption = lastChecklistSortOption, // 🔀 v1.8.0
+                            checklistScrollAction = viewModel.checklistScrollAction, // 🆕 v1.9.0 (F14)
+                            onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
+                            onCheckedChange = { id, checked ->
+                                viewModel.updateChecklistItemChecked(id, checked)
+                            },
+                            onDelete = { id -> viewModel.deleteChecklistItem(id) },
+                            onAddNewItemAfter = { id ->
+                                val newId = viewModel.addChecklistItemAfter(id)
                                 focusNewItemId = newId
-                            }
-                        },
-                        onCopyToChecklist = { itemId ->                              // 🆕 v2.2.0
-                            copyToChecklistItemId = itemId
-                            viewModel.loadOtherChecklists()
-                        },
-                        onAddItemAtEnd = {
-                            val newId = viewModel.addChecklistItemAtEnd()
-                            focusNewItemId = newId
-                        },
-                        onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
-                        onFocusHandled = { focusNewItemId = null },
-                        onSortClick = { showChecklistSortDialog = true }, // 🔀 v1.8.0
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    )
+                            },
+                            onCopyText = { itemId ->
+                                // 🆕 v2.2.0
+                                val text = checklistItems.find { it.id == itemId }?.text
+                                if (!text.isNullOrBlank()) {
+                                    scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", text))) }
+                                }
+                            },
+                            onDuplicate = { itemId ->
+                                // 🆕 v2.2.0
+                                val newId = viewModel.duplicateChecklistItem(itemId)
+                                if (newId != null) {
+                                    focusNewItemId = newId
+                                }
+                            },
+                            onCopyToChecklist = { itemId ->
+                                // 🆕 v2.2.0
+                                copyToChecklistItemId = itemId
+                                viewModel.loadOtherChecklists()
+                            },
+                            onAddItemAtEnd = {
+                                val newId = viewModel.addChecklistItemAtEnd()
+                                focusNewItemId = newId
+                            },
+                            onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
+                            onFocusHandled = { focusNewItemId = null },
+                            onSortClick = { showChecklistSortDialog = true }, // 🔀 v1.8.0
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
                 }
-            }
             }
         }
     }
@@ -776,7 +786,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
             onColorSelected = { hex ->
                 viewModel.setColor(hex)
             },
-            onDismiss = { showColorPicker = false },
+            onDismiss = { showColorPicker = false }
         )
     }
 
@@ -786,20 +796,22 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
             title = {
                 Text(
                     stringResource(
-                        if (uiState.noteType == NoteType.CHECKLIST)
+                        if (uiState.noteType == NoteType.CHECKLIST) {
                             R.string.action_convert_to_note
-                        else
+                        } else {
                             R.string.action_convert_to_checklist
+                        }
                     )
                 )
             },
             text = {
                 Text(
                     stringResource(
-                        if (uiState.noteType == NoteType.CHECKLIST)
+                        if (uiState.noteType == NoteType.CHECKLIST) {
                             R.string.confirm_convert_to_note
-                        else
+                        } else {
                             R.string.confirm_convert_to_checklist
+                        }
                     )
                 )
             },
@@ -917,7 +929,7 @@ private fun TextNoteContent(
         // 🆕 v1.8.2 (IMPL_07): Externer ScrollState für programmatisches Auto-Scroll
         scrollState = scrollState,
         outputTransformation = outputTransformation,
-        onTextLayout = { getResult -> textLayoutRef.value = getResult() },
+        onTextLayout = { getResult -> textLayoutRef.value = getResult() }
     )
 }
 
@@ -935,9 +947,9 @@ private fun LazyItemScope.DraggableChecklistItem(
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onAddNewItemAfter: (String) -> Unit,
-    onCopyText: (String) -> Unit,          // 🆕 v2.2.0: Aktion 1
-    onDuplicate: (String) -> Unit,         // 🆕 v2.2.0: Aktion 2
-    onCopyToChecklist: (String) -> Unit,   // 🆕 v2.2.0: Aktion 3
+    onCopyText: (String) -> Unit, // 🆕 v2.2.0: Aktion 1
+    onDuplicate: (String) -> Unit, // 🆕 v2.2.0: Aktion 2
+    onCopyToChecklist: (String) -> Unit, // 🆕 v2.2.0: Aktion 3
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
     placementAnimationsEnabled: Boolean // 🔧 v2.5.x: Gate gegen Open-Burst
@@ -988,11 +1000,11 @@ private fun LazyItemScope.DraggableChecklistItem(
         onCheckedChange = { onCheckedChange(item.id, it) },
         onDelete = { onDelete(item.id) },
         onAddNewItem = { onAddNewItemAfter(item.id) },
-        onCopyText = { onCopyText(item.id) },             // 🆕 v2.2.0
-        onDuplicate = { onDuplicate(item.id) },            // 🆕 v2.2.0
-        onCopyToChecklist = { onCopyToChecklist(item.id) },// 🆕 v2.2.0
-        isCheckAnimating = isCheckAnimating,               // 🆕 v2.5.0
-        onCheckboxTap = { isCheckAnimating = true },       // 🆕 v2.5.0
+        onCopyText = { onCopyText(item.id) }, // 🆕 v2.2.0
+        onDuplicate = { onDuplicate(item.id) }, // 🆕 v2.2.0
+        onCopyToChecklist = { onCopyToChecklist(item.id) }, // 🆕 v2.2.0
+        isCheckAnimating = isCheckAnimating, // 🆕 v2.5.0
+        onCheckboxTap = { isCheckAnimating = true }, // 🆕 v2.5.0
         requestFocus = shouldFocus,
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.isAnyItemDragging,
@@ -1060,9 +1072,9 @@ private fun ChecklistEditor(
     onCheckedChange: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onAddNewItemAfter: (String) -> Unit,
-    onCopyText: (String) -> Unit,          // 🆕 v2.2.0: Aktion 1
-    onDuplicate: (String) -> Unit,         // 🆕 v2.2.0: Aktion 2
-    onCopyToChecklist: (String) -> Unit,   // 🆕 v2.2.0: Aktion 3
+    onCopyText: (String) -> Unit, // 🆕 v2.2.0: Aktion 1
+    onDuplicate: (String) -> Unit, // 🆕 v2.2.0: Aktion 2
+    onCopyToChecklist: (String) -> Unit, // 🆕 v2.2.0: Aktion 3
     onAddItemAtEnd: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onFocusHandled: () -> Unit,
@@ -1354,12 +1366,12 @@ private fun ChecklistEditor(
                         },
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
-                        onCopyText = onCopyText,                 // 🆕 v2.2.0
-                        onDuplicate = onDuplicate,               // 🆕 v2.2.0
-                        onCopyToChecklist = onCopyToChecklist,   // 🆕 v2.2.0
+                        onCopyText = onCopyText, // 🆕 v2.2.0
+                        onDuplicate = onDuplicate, // 🆕 v2.2.0
+                        onCopyToChecklist = onCopyToChecklist, // 🆕 v2.2.0
                         onFocusHandled = onFocusHandled,
                         onHeightChanged = { scrollToItemIndex = visualIndex },
-                        placementAnimationsEnabled = placementAnimationsEnabled,
+                        placementAnimationsEnabled = placementAnimationsEnabled
                     )
                 }
             }

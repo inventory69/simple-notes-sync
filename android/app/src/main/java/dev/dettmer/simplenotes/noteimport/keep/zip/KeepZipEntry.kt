@@ -7,13 +7,14 @@ package dev.dettmer.simplenotes.noteimport.keep.zip
 data class KeepZipEntry(
     val name: String,
     val bytes: ByteArray,
-    val sizeBytes: Long,
+    val sizeBytes: Long
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is KeepZipEntry) return false
         return name == other.name && sizeBytes == other.sizeBytes && bytes.contentEquals(other.bytes)
     }
+
     override fun hashCode(): Int {
         var result = name.hashCode()
         result = 31 * result + bytes.contentHashCode()

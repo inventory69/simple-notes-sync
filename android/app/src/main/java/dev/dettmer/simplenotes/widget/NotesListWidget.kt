@@ -19,12 +19,12 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_APPLY_OPACITY_TO_CARDS
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_BACKGROUND_OPACITY
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FAB_EXPANDED
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FONT_SIZE_SCALE
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_FOLDERS
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_HEADER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_PINNED
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_NOTE_FILTER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SELECTED_FOLDER
-import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FONT_SIZE_SCALE
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_DIRECTION
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_OPTION
 

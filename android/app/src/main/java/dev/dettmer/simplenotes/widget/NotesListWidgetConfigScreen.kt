@@ -79,10 +79,12 @@ fun NotesListWidgetConfigScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    onSave(NotesListWidgetConfig(
-                        sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards,
-                        hideHeader, hidePinned, hideFolders, selectedFolder, fontSizeScale
-                    ))
+                    onSave(
+                        NotesListWidgetConfig(
+                            sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards,
+                            hideHeader, hidePinned, hideFolders, selectedFolder, fontSizeScale
+                        )
+                    )
                 }
             ) {
                 Icon(

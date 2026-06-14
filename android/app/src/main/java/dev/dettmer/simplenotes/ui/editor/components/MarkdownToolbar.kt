@@ -12,11 +12,11 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatStrikethrough
-import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.InsertLink
 import androidx.compose.material.icons.filled.Title
@@ -247,7 +247,7 @@ private fun insertChecklistItem(state: TextFieldState) {
         val cursorPos = selection.min
         val lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1
 
-        val checkboxCharIdx = 3  // offset of [ ]'s inner char within "- [ ] "
+        val checkboxCharIdx = 3 // offset of [ ]'s inner char within "- [ ] "
         when {
             text.startsWith("- [x] ", lineStart) || text.startsWith("- [X] ", lineStart) -> {
                 // Checked → unchecked (toggle state, keep prefix)

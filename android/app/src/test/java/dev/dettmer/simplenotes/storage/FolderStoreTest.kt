@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import io.mockk.every
 import io.mockk.mockk
+import java.io.File
+import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -12,8 +14,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.nio.file.Files
 
 class FolderStoreTest {
     private lateinit var tmpDir: File
@@ -32,7 +32,9 @@ class FolderStoreTest {
         store = FolderStore(context)
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     @Test fun `add and load deduplicates case-insensitively`() = runBlocking {
         store.addFolder("Rezepte")

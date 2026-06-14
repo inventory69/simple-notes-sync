@@ -89,5 +89,5 @@ data class EditorSnapshot(
     val title: String,
     val content: String,
     val checklistItems: List<ChecklistItemState>,
-    val noteType: NoteType = NoteType.TEXT,
+    val noteType: NoteType = NoteType.TEXT
 )

@@ -82,7 +82,7 @@ fun ChecklistItemsPreview(
     sortOptionName: String?,
     maxItems: Int,
     style: TextStyle,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val sorted = sortChecklistItemsForPreview(items, sortOptionName)
     val remaining = (sorted.size - maxItems).coerceAtLeast(0)

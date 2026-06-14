@@ -34,7 +34,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class KeepImportViewModelTest {
-
     private val dispatcher = StandardTestDispatcher()
     private lateinit var app: Application
     private lateinit var useCase: KeepImportUseCase
@@ -55,8 +54,11 @@ class KeepImportViewModelTest {
         zipReader = mockk()
         syncScheduler = mockk(relaxed = true)
         vm = KeepImportViewModel(
-            application = app, useCase = useCase, zipReader = zipReader,
-            syncScheduler = syncScheduler, ioDispatcher = dispatcher,
+            application = app,
+            useCase = useCase,
+            zipReader = zipReader,
+            syncScheduler = syncScheduler,
+            ioDispatcher = dispatcher
         )
     }
 
@@ -66,14 +68,20 @@ class KeepImportViewModelTest {
     }
 
     private fun preScan(size: Long = 1_000L) = KeepPreScanResult(
-        totalNotes = 2, activeCount = 2, archivedCount = 0, trashedCount = 0,
-        labelCount = 0, sharedCount = 0, notesWithAttachments = 0, sizeBytes = size,
+        totalNotes = 2,
+        activeCount = 2,
+        archivedCount = 0,
+        trashedCount = 0,
+        labelCount = 0,
+        sharedCount = 0,
+        notesWithAttachments = 0,
+        sizeBytes = size
     )
 
     private val defaultOptions = KeepImportOptionsHolder(
         includeArchived = false,
         includeTrashed = false,
-        conflictStrategy = ConflictStrategy.ALWAYS_CREATE,
+        conflictStrategy = ConflictStrategy.ALWAYS_CREATE
     )
 
     // ───── onZipPicked → Configuring(scanning=true) → preScan-Update ─────
@@ -257,8 +265,15 @@ class KeepImportViewModelTest {
 
         // End-State ist Done, aber wir verifizieren, dass Use-Case korrekt aufgerufen wurde.
         assertTrue(vm.state.value is KeepImportUiState.Done)
-        coVerify { useCase.import(any(), match<KeepImportOptions> {
-            !it.includeArchived && !it.includeTrashed && it.conflictStrategy == ConflictStrategy.ALWAYS_CREATE
-        }, any(), any()) }
+        coVerify {
+            useCase.import(
+                any(),
+                match<KeepImportOptions> {
+                    !it.includeArchived && !it.includeTrashed && it.conflictStrategy == ConflictStrategy.ALWAYS_CREATE
+                },
+                any(),
+                any()
+            )
+        }
     }
 }

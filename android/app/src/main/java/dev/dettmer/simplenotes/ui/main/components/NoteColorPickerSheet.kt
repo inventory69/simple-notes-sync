@@ -56,7 +56,7 @@ import dev.dettmer.simplenotes.ui.theme.NoteColorSlot
 fun NoteColorPickerSheet(
     currentColor: String?,
     onColorSelected: (String?) -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -66,19 +66,19 @@ fun NoteColorPickerSheet(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = Dimensions.SpacingXSmall,
+        tonalElevation = Dimensions.SpacingXSmall
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Dimensions.SpacingLarge)
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
         ) {
             // Title
             Text(
                 text = stringResource(R.string.action_set_note_color),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Dimensions.SpacingLarge))
@@ -87,7 +87,7 @@ fun NoteColorPickerSheet(
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
             ) {
                 // ── None ────────────────────────────────────────────────────
                 ColorSwatch(
@@ -95,7 +95,7 @@ fun NoteColorPickerSheet(
                     isSelected = currentColor == null,
                     isNone = true,
                     a11yLabel = stringResource(R.string.note_color_none),
-                    onClick = { onColorSelected(null) },
+                    onClick = { onColorSelected(null) }
                 )
 
                 // ── 11 Keep colours ─────────────────────────────────────────
@@ -105,7 +105,7 @@ fun NoteColorPickerSheet(
                         isSelected = currentColor == slot.hex,
                         isNone = false,
                         a11yLabel = stringResource(slot.labelRes()),
-                        onClick = { onColorSelected(slot.hex) },
+                        onClick = { onColorSelected(slot.hex) }
                     )
                 }
             }
@@ -132,7 +132,7 @@ private fun ColorSwatch(
     isNone: Boolean,
     a11yLabel: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val borderWidth = if (isSelected) 3.dp else 1.dp
     val borderColor = if (isSelected) {
@@ -153,7 +153,7 @@ private fun ColorSwatch(
                 role = Role.Button
             }
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         when {
             isSelected -> Icon(
@@ -164,13 +164,13 @@ private fun ColorSwatch(
                 } else {
                     Color.Black.copy(alpha = 0.6f)
                 },
-                modifier = Modifier.size(Dimensions.IconSizeMedium),
+                modifier = Modifier.size(Dimensions.IconSizeMedium)
             )
             isNone -> Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimensions.IconSizeMedium),
+                modifier = Modifier.size(Dimensions.IconSizeMedium)
             )
         }
     }
@@ -189,5 +189,5 @@ private fun NoteColorSlot.labelRes(): Int =
         "#D7AEFB" -> R.string.note_color_purple
         "#FDCFE8" -> R.string.note_color_pink
         "#E6C9A8" -> R.string.note_color_brown
-        else      -> R.string.note_color_gray   // "#E8EAED"
+        else -> R.string.note_color_gray // "#E8EAED"
     }

@@ -39,7 +39,7 @@ sealed class KeepImportUiState {
     data class Configuring(
         val zipUri: Uri,
         val preScan: KeepPreScanResult? = null,
-        val scanning: Boolean = true,
+        val scanning: Boolean = true
     ) : KeepImportUiState()
 
     /**
@@ -49,12 +49,12 @@ sealed class KeepImportUiState {
     data class ConfirmLargeZip(
         val zipUri: Uri,
         val preScan: KeepPreScanResult,
-        val options: KeepImportOptionsHolder,
+        val options: KeepImportOptionsHolder
     ) : KeepImportUiState()
 
     data class Running(
         val progress: KeepImportProgress,
-        val cancellable: Boolean = true,
+        val cancellable: Boolean = true
     ) : KeepImportUiState()
 
     data class Done(val summary: KeepImportSummary) : KeepImportUiState()
@@ -71,5 +71,5 @@ sealed class KeepImportUiState {
 data class KeepImportOptionsHolder(
     val includeArchived: Boolean,
     val includeTrashed: Boolean,
-    val conflictStrategy: dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy,
+    val conflictStrategy: dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 )

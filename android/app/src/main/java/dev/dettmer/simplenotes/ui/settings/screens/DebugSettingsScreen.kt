@@ -135,13 +135,15 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                         return@SettingsButton
                     }
                     viewModel.showSnackbar(exportPreparingMsg)
-                    val uris = ArrayList(logFiles.map { file ->
-                        FileProvider.getUriForFile(
-                            context,
-                            "${BuildConfig.APPLICATION_ID}.fileprovider",
-                            file
-                        )
-                    })
+                    val uris = ArrayList(
+                        logFiles.map { file ->
+                            FileProvider.getUriForFile(
+                                context,
+                                "${BuildConfig.APPLICATION_ID}.fileprovider",
+                                file
+                            )
+                        }
+                    )
                     val shareIntent = if (uris.size == 1) {
                         Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"

@@ -30,7 +30,6 @@
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
     <string name="untitled">无标题</string>
-    <string name="checklist_progress">%1$d/%2$d 完成</string>
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
@@ -89,25 +88,13 @@
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
-    <string name="delete_note_title">删除笔记？</string>
-    <string name="delete_notes_title">删除 %d 个笔记？</string>
-    <string name="delete_note_message">你想怎样删除这个笔记？</string>
-    <string name="delete_notes_message">你想怎样删除这些 %d 个笔记？</string>
-    <string name="delete_everywhere">所有地方删除（包括服务器）</string>
-    <string name="delete_everywhere_offline_hint">在离线模式不可用</string>
-    <string name="delete_local_only">仅本地删除</string>
     <string name="delete">删除</string>
     <string name="cancel">取消</string>
     <string name="ok">确定</string>
-    <string name="legacy_delete_dialog_title">删除笔记</string>
-    <string name="legacy_delete_dialog_message">“%s”会仅本地删除。\n\n要从服务器删除吗？</string>
-    <string name="legacy_delete_from_server">从服务器删除</string>
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
     <string name="snackbar_undo">撤销</string>
-    <string name="snackbar_note_deleted_local">“%s”在本地已删除</string>
-    <string name="snackbar_note_deleted_server">“%s”会从服务器删除</string>
     <string name="snackbar_deleted_from_server">已经从服务器删除</string>
     <string name="snackbar_notes_deleted_from_server_partial">已经从服务器删除 %1$d 个笔记总数 %2$d</string>
     <string name="snackbar_server_delete_failed">服务器删除失败</string>
@@ -125,12 +112,6 @@
     <string name="sync_error_server">服务器错误</string>
     <string name="sync_error_http">HTTP 错误：%d</string>
     <string name="sync_error_unknown">未知的错误</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="other">本地删除了 %d 个笔记</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="other">会从服务器删除 %d 个笔记</item>
-    </plurals>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="other">已经从服务器删除 %d 个笔记</item>
     </plurals>

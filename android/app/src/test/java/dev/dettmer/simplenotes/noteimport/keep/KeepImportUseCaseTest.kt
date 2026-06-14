@@ -17,19 +17,18 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import java.util.UUID
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.util.UUID
 
 /**
  * v2.5.0 — Tests #36 bis #40 aus Analyseplan §5.1 + 1 Defensiv-Test.
  */
 class KeepImportUseCaseTest {
-
     private lateinit var zipReader: KeepZipReader
     private lateinit var entryParser: KeepEntryParser
     private lateinit var mapper: KeepToNoteMapper
@@ -51,23 +50,27 @@ class KeepImportUseCaseTest {
             coEvery { load() } returns LabelIndex()
         }
         useCase = KeepImportUseCase(
-            zipReader = zipReader, entryParser = entryParser, mapper = mapper,
-            conflictResolver = resolver, storage = storage, labelStore = labelStore,
-            nowMsProvider = { 1_000L },
+            zipReader = zipReader,
+            entryParser = entryParser,
+            mapper = mapper,
+            conflictResolver = resolver,
+            storage = storage,
+            labelStore = labelStore,
+            nowMsProvider = { 1_000L }
         )
     }
 
     private fun keepNoteOf(
         title: String = "T",
         state: KeepNoteState = KeepNoteState.ACTIVE,
-        labels: List<String> = emptyList(),
+        labels: List<String> = emptyList()
     ) = KeepNote(
         title = title, textContent = "x", checklist = emptyList(),
         labels = labels.map(::KeepLabel),
         attachments = emptyList(), annotations = emptyList(),
         color = "DEFAULT", isPinned = false, isShared = false,
         state = state, createdTimestampUsec = 0L, userEditedTimestampUsec = 0L,
-        sourceJsonName = "${title}.json",
+        sourceJsonName = "$title.json"
     )
 
     private fun stubZipWith(jsonNames: List<String>) {
@@ -80,8 +83,13 @@ class KeepImportUseCaseTest {
     private fun stubPreScan(active: Int = 0, archived: Int = 0, trashed: Int = 0) {
         coEvery { zipReader.preScan(fakeUri) } returns KeepPreScanResult(
             totalNotes = active + archived + trashed,
-            activeCount = active, archivedCount = archived, trashedCount = trashed,
-            labelCount = 0, sharedCount = 0, notesWithAttachments = 0, sizeBytes = 0L,
+            activeCount = active,
+            archivedCount = archived,
+            trashedCount = trashed,
+            labelCount = 0,
+            sharedCount = 0,
+            notesWithAttachments = 0,
+            sizeBytes = 0L
         )
     }
 
@@ -167,12 +175,12 @@ class KeepImportUseCaseTest {
             ConflictResolver.Resolution.Create,
             ConflictResolver.Resolution.Replace(existingId = "OLD"),
             ConflictResolver.Resolution.Skip(reason = "dupe"),
-            ConflictResolver.Resolution.Create,
+            ConflictResolver.Resolution.Create
         )
 
         val s = useCase.import(fakeUri, KeepImportOptions())
         assertEquals(4, s.totalEntries)
-        assertEquals(2, s.imported)   // a + d
+        assertEquals(2, s.imported) // a + d
         assertEquals(1, s.replaced)
         assertEquals(1, s.skipped)
         assertEquals(0, s.failed)

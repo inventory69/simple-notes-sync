@@ -21,9 +21,8 @@ import java.util.UUID
  * Konstruiert die komplette Use-Case-Pipeline einmalig pro ViewModel-Lebenszyklus.
  */
 class KeepImportViewModelFactory(
-    private val application: Application,
+    private val application: Application
 ) : ViewModelProvider.Factory {
-
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(KeepImportViewModel::class.java)) {
@@ -35,7 +34,7 @@ class KeepImportViewModelFactory(
         val parser = KeepEntryParserImpl(htmlFallback)
         val mapper = KeepToNoteMapper(
             deviceIdProvider = { DeviceIdGenerator.getDeviceId(application) },
-            idGenerator = { UUID.randomUUID().toString() },
+            idGenerator = { UUID.randomUUID().toString() }
         )
         val resolver = ConflictResolver(storage)
         val labelStore = LabelStore(application)
@@ -45,14 +44,14 @@ class KeepImportViewModelFactory(
             mapper = mapper,
             conflictResolver = resolver,
             storage = storage,
-            labelStore = labelStore,
+            labelStore = labelStore
         )
         val syncScheduler = dev.dettmer.simplenotes.sync.SyncScheduler(application)
         return KeepImportViewModel(
             application = application,
             useCase = useCase,
             zipReader = zipReader,
-            syncScheduler = syncScheduler,
+            syncScheduler = syncScheduler
         ) as T
     }
 }

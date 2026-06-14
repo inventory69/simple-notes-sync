@@ -19,30 +19,38 @@ import org.junit.Test
  * Wir mocken `NotesStorage` mit MockK (bereits Pflicht-Test-Lib im Projekt).
  */
 class ConflictResolverTest {
-
     private fun textNote(
         id: String = "n1",
         title: String = "T",
-        content: String = "Hello",
+        content: String = "Hello"
     ) = Note(
-        id = id, title = title, content = content,
-        createdAt = 1L, updatedAt = 2L, deviceId = "dev",
-        syncStatus = SyncStatus.LOCAL_ONLY, noteType = NoteType.TEXT,
+        id = id,
+        title = title,
+        content = content,
+        createdAt = 1L,
+        updatedAt = 2L,
+        deviceId = "dev",
+        syncStatus = SyncStatus.LOCAL_ONLY,
+        noteType = NoteType.TEXT
     )
 
     private fun checklistNote(
         id: String = "c1",
         title: String = "L",
-        items: List<ChecklistItem>,
+        items: List<ChecklistItem>
     ) = Note(
         id = id, title = title, content = "",
         createdAt = 1L, updatedAt = 2L, deviceId = "dev",
         syncStatus = SyncStatus.LOCAL_ONLY, noteType = NoteType.CHECKLIST,
-        checklistItems = items,
+        checklistItems = items
     )
 
     private fun item(text: String, checked: Boolean, order: Int) = ChecklistItem(
-        id = "i$order", text = text, isChecked = checked, order = order, originalOrder = order,
+        id = "i$order",
+        text = text,
+        isChecked = checked,
+        order = order,
+        originalOrder = order
     )
 
     // ───── #27 ───────────────────────────────────────────────────────
@@ -103,14 +111,18 @@ class ConflictResolverTest {
     fun `computeContentHash_checklistOrderMatters`() {
         val storage = mockk<NotesStorage>()
         val resolver = ConflictResolver(storage)
-        val a = checklistNote(items = listOf(
-            item("Milch", false, 0),
-            item("Brot", false, 1),
-        ))
-        val b = checklistNote(items = listOf(
-            item("Brot", false, 0),
-            item("Milch", false, 1),
-        ))
+        val a = checklistNote(
+            items = listOf(
+                item("Milch", false, 0),
+                item("Brot", false, 1)
+            )
+        )
+        val b = checklistNote(
+            items = listOf(
+                item("Brot", false, 0),
+                item("Milch", false, 1)
+            )
+        )
         assertNotEquals(resolver.computeContentHash(a), resolver.computeContentHash(b))
     }
 

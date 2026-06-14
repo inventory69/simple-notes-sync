@@ -20,7 +20,7 @@ import dev.dettmer.simplenotes.ui.main.MainViewModel
  */
 @Composable
 fun KeepImportHost(
-    onSnackbarEvent: (MainViewModel.SnackbarData) -> Unit,
+    onSnackbarEvent: (MainViewModel.SnackbarData) -> Unit
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as Application
@@ -39,28 +39,28 @@ fun KeepImportHost(
         is KeepImportUiState.Configuring -> KeepImportConfigDialog(
             state = s,
             onConfirm = vm::onConfigConfirmed,
-            onDismiss = vm::onResultDismissed,  // semantisch: zurück zu Idle
+            onDismiss = vm::onResultDismissed // semantisch: zurück zu Idle
         )
         is KeepImportUiState.ConfirmLargeZip -> KeepImportLargeZipDialog(
             preScan = s.preScan,
             onConfirm = vm::onLargeZipConfirmed,
-            onDismiss = vm::onLargeZipDeclined,
+            onDismiss = vm::onLargeZipDeclined
         )
         is KeepImportUiState.Running -> KeepImportProgressDialog(
             progress = s.progress,
             cancellable = s.cancellable,
-            onCancel = vm::onCancel,
+            onCancel = vm::onCancel
         )
         is KeepImportUiState.Done -> KeepImportResultDialog(
             summary = s.summary,
-            onDismiss = vm::onResultDismissed,
+            onDismiss = vm::onResultDismissed
         )
         is KeepImportUiState.Error -> KeepImportResultDialog(
             // Reuse Result-Dialog mit leerer Summary für die Error-Anzeige —
             // Fehlermeldung steht im Title-Strang via Snackbar; UI bleibt
             // konsistent, ohne einen extra Composable zu erfordern.
             summary = dev.dettmer.simplenotes.noteimport.keep.KeepImportSummary.EMPTY,
-            onDismiss = vm::onResultDismissed,
+            onDismiss = vm::onResultDismissed
         )
     }
 }

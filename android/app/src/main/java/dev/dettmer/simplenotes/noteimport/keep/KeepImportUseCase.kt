@@ -41,9 +41,8 @@ internal class KeepImportUseCase(
     private val conflictResolver: ConflictResolver,
     private val storage: NotesStorage,
     private val labelStore: LabelStore,
-    private val nowMsProvider: () -> Long = { System.currentTimeMillis() },
+    private val nowMsProvider: () -> Long = { System.currentTimeMillis() }
 ) {
-
     /**
      * Streamt den Import. `preScan` ist optional vor-berechnet (vom ViewModel
      * für die Configuring-Dialog-Vorschau); fehlt er, wird intern berechnet.
@@ -55,7 +54,7 @@ internal class KeepImportUseCase(
         zipUri: Uri,
         options: KeepImportOptions,
         preScan: KeepPreScanResult? = null,
-        onProgress: suspend (KeepImportProgress) -> Unit = {},
+        onProgress: suspend (KeepImportProgress) -> Unit = {}
     ): KeepImportSummary {
         val scan = preScan ?: zipReader.preScan(zipUri)
         val total = scan.matchingCount(options.includeArchived, options.includeTrashed)
@@ -151,7 +150,7 @@ internal class KeepImportUseCase(
             sharedNotesImported = sharedImported,
             notesWithColor = notesWithColor,
             notesWithPin = notesWithPin,
-            errors = errors.toList(),
+            errors = errors.toList()
         )
     }
 
@@ -165,7 +164,7 @@ internal class KeepImportUseCase(
         onProgress: suspend (KeepImportProgress) -> Unit,
         processed: Int,
         total: Int,
-        currentName: String,
+        currentName: String
     ) {
         try {
             onProgress(KeepImportProgress(processed = processed, total = total, currentName = currentName))

@@ -15,7 +15,6 @@
     <string name="fab_text_note">Catatan Teks</string>
     <string name="fab_checklist">Daftar Periksa</string>
     <string name="untitled">Tanpa Judul</string>
-    <string name="checklist_progress">%1$d/%2$d selesai</string>
     <string name="sync_status_completed">Sinkronisasi selesai</string>
     <string name="sync_status_error">Sinkronisasi gagal</string>
     <string name="sync_already_running">Sinkronisasi sedang berlangsung</string>
@@ -63,28 +62,10 @@
     <string name="sync_phase_importing_markdown">Mengimpor Markdown…</string>
     <string name="sync_phase_completed">Sinkronisasi selesai</string>
     <string name="sync_phase_error">Sinkronisasi gagal</string>
-    <string name="delete_note_title">Hapus catatan?</string>
-    <string name="delete_notes_title">Hapus %d catatan?</string>
-    <string name="delete_note_message">Bagaimana Anda ingin menghapus catatan ini?</string>
-    <string name="delete_notes_message">Bagaimana Anda ingin menghapus %d catatan ini?</string>
-    <string name="delete_everywhere">Hapus di mana saja (termasuk server)</string>
-    <string name="delete_everywhere_offline_hint">Tidak tersedia dalam mode offline</string>
-    <string name="delete_local_only">Hapus hanya lokal</string>
     <string name="delete">Hapus</string>
     <string name="cancel">Batal</string>
     <string name="ok">OK</string>
-    <string name="legacy_delete_dialog_title">Hapus catatan</string>
-    <string name="legacy_delete_dialog_message">\"%s\" akan dihapus secara lokal.\n\nHapus juga dari server?</string>
-    <string name="legacy_delete_from_server">Hapus dari server</string>
     <string name="snackbar_undo">BATALKAN</string>
-    <string name="snackbar_note_deleted_local">\"%s\" dihapus secara lokal</string>
-    <string name="snackbar_note_deleted_server">\"%s\" akan dihapus dari server</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="other">%d catatan dihapus secara lokal</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="other">%d catatan akan dihapus dari server</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Dihapus dari server</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="other">%d catatan dihapus dari server</item>

@@ -5,8 +5,8 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
-import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.ChecklistSortOption
+import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Logger

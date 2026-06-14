@@ -15,7 +15,6 @@
     <string name="fab_text_note">Annotazione</string>
     <string name="fab_checklist">Checklist</string>
     <string name="untitled">senza titolo</string>
-    <string name="checklist_progress">%1$d/%2$d fatto</string>
     <string name="sync_status_completed">sincronizzazione completata</string>
     <string name="sync_status_error">sincronizzazione fallita</string>
     <string name="sync_already_running">sincronizzazione già avviata</string>
@@ -62,33 +61,11 @@
     <string name="sync_phase_importing_markdown">Importazione Markdown…</string>
     <string name="sync_phase_completed">Sincronizzazione completata</string>
     <string name="sync_phase_error">Sincronizzazione fallita</string>
-    <string name="delete_note_title">Cancella annotazione ?</string>
-    <string name="delete_notes_title">Cancella annotazione %d?</string>
-    <string name="delete_note_message">Come vuoi cancellare questa annotazione?</string>
-    <string name="delete_notes_message">Come vuoi cancellare le %d annotazioni selezionate?</string>
-    <string name="delete_everywhere">Cancella ovunque (anche dal server)</string>
-    <string name="delete_everywhere_offline_hint">Non disponibile in modalità Offline</string>
-    <string name="delete_local_only">Cancella solo localmente</string>
     <string name="delete">Cancella</string>
     <string name="cancel">Annulla</string>
     <string name="ok">OK</string>
-    <string name="legacy_delete_dialog_title">Cancella annotazione</string>
     <string name="sync_quota_warning">⚠️ La sincronizzazione è ritardata a causa della gestione risorse di Android. Apri regola la App o disattiva l\'ottimizzazione della batteria per sincronizzare regolarmente anche senza aprire la App.</string>
-    <string name="legacy_delete_dialog_message">\"%s\" sarà cancellato localmente.\n\nCancellare anche dal server?</string>
-    <string name="legacy_delete_from_server">Cancella dal server</string>
     <string name="snackbar_undo">ANNULLA</string>
-    <string name="snackbar_note_deleted_local">\"%s\" cancellato localmente</string>
-    <string name="snackbar_note_deleted_server">\"%s\" sarà cancellato dal server</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d annotazione cancellata localmente</item>
-        <item quantity="many">%d annotazioni cancellate localmente</item>
-        <item quantity="other">%d annotazioni cancellate localmente</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d annotazione sarà cancellata dal server</item>
-        <item quantity="many">%d annotazioni saranno cancellate dal server</item>
-        <item quantity="other">%d annotazioni saranno cancellate dal server</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Cancellata dal server</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d annotazione cancellata dal server</item>

@@ -2,16 +2,16 @@ package dev.dettmer.simplenotes.noteimport.keep.zip
 
 import android.net.Uri
 import io.mockk.mockk
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 /**
  * v2.5.0 — Tests #33, #34, #35 aus Analyseplan §5.1 + 4 Defensiv-Tests.
@@ -22,10 +22,8 @@ import java.util.zip.ZipOutputStream
  * Context-frei spiegeln.
  */
 class KeepZipReaderTest {
-
     /** Test-Implementierung: liest direkt aus einem ByteArray statt aus einem SAF-Uri. */
     private class TestReader(private val zipBytes: ByteArray) : KeepZipReader {
-
         override suspend fun preScan(uri: Uri): KeepPreScanResult =
             PreScanLogic.run(zipBytes)
 
@@ -48,13 +46,12 @@ class KeepZipReaderTest {
 
     /** Spiegelt die preScan-Klassifikation für den Test-Pfad. */
     private object PreScanLogic {
-
         private data class Counts(
             var active: Int = 0,
             var archived: Int = 0,
             var trashed: Int = 0,
             var shared: Int = 0,
-            var withAttach: Int = 0,
+            var withAttach: Int = 0
         )
 
         fun run(zipBytes: ByteArray): KeepPreScanResult {
@@ -70,21 +67,30 @@ class KeepZipReaderTest {
                     if (!e.isDirectory && e.name.endsWith(".json", true)) {
                         total++
                         val dto = parseEntry(zin, gson)
-                        if (dto == null) { counts.active++ } else { applyDto(dto, labels, counts) }
+                        if (dto == null) {
+                            counts.active++
+                        } else {
+                            applyDto(dto, labels, counts)
+                        }
                     }
                     e = zin.nextEntry
                 }
             }
             return KeepPreScanResult(
-                totalNotes = total, activeCount = counts.active, archivedCount = counts.archived,
-                trashedCount = counts.trashed, labelCount = labels.size, sharedCount = counts.shared,
-                notesWithAttachments = counts.withAttach, sizeBytes = size,
+                totalNotes = total,
+                activeCount = counts.active,
+                archivedCount = counts.archived,
+                trashedCount = counts.trashed,
+                labelCount = labels.size,
+                sharedCount = counts.shared,
+                notesWithAttachments = counts.withAttach,
+                sizeBytes = size
             )
         }
 
         private fun parseEntry(
             zin: ZipInputStream,
-            gson: com.google.gson.Gson,
+            gson: com.google.gson.Gson
         ): dev.dettmer.simplenotes.noteimport.keep.parser.dto.KeepNoteJson? {
             val bytes = zin.readBytes()
             val raw = String(bytes, Charsets.UTF_8).let {
@@ -95,13 +101,15 @@ class KeepZipReaderTest {
                     raw,
                     dev.dettmer.simplenotes.noteimport.keep.parser.dto.KeepNoteJson::class.java
                 )
-            } catch (_: Exception) { null }
+            } catch (_: Exception) {
+                null
+            }
         }
 
         private fun applyDto(
             dto: dev.dettmer.simplenotes.noteimport.keep.parser.dto.KeepNoteJson,
             labels: HashSet<String>,
-            counts: Counts,
+            counts: Counts
         ) {
             when {
                 dto.isTrashed == true -> counts.trashed++
@@ -173,7 +181,7 @@ class KeepZipReaderTest {
         assertEquals(4, r.activeCount)
         assertEquals(1, r.archivedCount)
         assertEquals(1, r.trashedCount)
-        assertEquals(2, r.labelCount)              // Privat (×2) + Reise = 2 distinkte
+        assertEquals(2, r.labelCount) // Privat (×2) + Reise = 2 distinkte
         assertEquals(1, r.sharedCount)
         assertEquals(1, r.notesWithAttachments)
         assertTrue(r.sizeBytes > 0L)
@@ -218,8 +226,14 @@ class KeepZipReaderTest {
     @Test
     fun `matchingCount_includesActiveAlways_archivedAndTrashedConditionally`() {
         val r = KeepPreScanResult(
-            totalNotes = 10, activeCount = 5, archivedCount = 3, trashedCount = 2,
-            labelCount = 0, sharedCount = 0, notesWithAttachments = 0, sizeBytes = 0L,
+            totalNotes = 10,
+            activeCount = 5,
+            archivedCount = 3,
+            trashedCount = 2,
+            labelCount = 0,
+            sharedCount = 0,
+            notesWithAttachments = 0,
+            sizeBytes = 0L
         )
         assertEquals(5, r.matchingCount(includeArchived = false, includeTrashed = false))
         assertEquals(8, r.matchingCount(includeArchived = true, includeTrashed = false))

@@ -50,16 +50,23 @@ class NoteDownloaderDeletionTest {
         )
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     private fun note(
         id: String,
         status: SyncStatus = SyncStatus.SYNCED,
         trashedAt: Long? = null,
-        updatedAt: Long = 12_345L,
+        updatedAt: Long = 12_345L
     ) = Note(
-        id = id, title = "T-$id", content = "C", deviceId = "dev",
-        syncStatus = status, trashedAt = trashedAt, updatedAt = updatedAt,
+        id = id,
+        title = "T-$id",
+        content = "C",
+        deviceId = "dev",
+        syncStatus = status,
+        trashedAt = trashedAt,
+        updatedAt = updatedAt
     )
 
     @Test fun `active synced note missing on server is moved to trash`() = runTest {

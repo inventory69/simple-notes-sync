@@ -377,8 +377,11 @@ private fun ColorFilterSwatch(
                 // 2dp aktiv / 1dp inaktiv: kontextspezifische visuelle Abstufung
                 .border(
                     width = if (isSelected) 2.dp else 1.dp,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    },
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center

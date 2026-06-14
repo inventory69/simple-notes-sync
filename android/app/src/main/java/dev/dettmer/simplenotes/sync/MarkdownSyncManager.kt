@@ -206,7 +206,9 @@ internal class MarkdownSyncManager(
 
                     val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
                     if (note.folderName != null && ensuredFolders.add(note.folderName)) {
-                        try { sardine.createDirectory(folderUrl) } catch (e: Exception) {
+                        try {
+                            sardine.createDirectory(folderUrl)
+                        } catch (e: Exception) {
                             Logger.w(TAG, "createDirectory($folderUrl) failed: ${e.message}")
                         }
                     }
@@ -377,8 +379,11 @@ internal class MarkdownSyncManager(
                     continue
                 }
                 val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
-                val sub = try { sardine.list(folderUrl) } catch (e: Exception) {
-                    Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}"); continue
+                val sub = try {
+                    sardine.list(folderUrl)
+                } catch (e: Exception) {
+                    Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}")
+                    continue
                 }
                 sub.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
                     mdItems.add(MdItem(it, folderUrl.trimEnd('/') + "/" + it.name, folder))
@@ -559,7 +564,7 @@ internal class MarkdownSyncManager(
                             val merged = mdNoteFoldered.copy(
                                 syncStatus = SyncStatus.PENDING,
                                 isPinned = mdNote.isPinned ?: localNote.isPinned,
-                                color = mdNote.color ?: localNote.color,
+                                color = mdNote.color ?: localNote.color
                             )
                             storage.saveNote(merged)
                             importedCount++

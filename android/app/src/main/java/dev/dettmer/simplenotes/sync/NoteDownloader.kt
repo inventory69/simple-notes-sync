@@ -162,7 +162,11 @@ internal class NoteDownloader(
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
                     val folderResources = when (sardine) {
                         is SafeSardineWrapper -> sardine.listOrNull(folderUrl)
-                        else -> try { sardine.list(folderUrl) } catch (_: java.io.IOException) { null }
+                        else -> try {
+                            sardine.list(folderUrl)
+                        } catch (_: java.io.IOException) {
+                            null
+                        }
                     } ?: continue
                     folderResources
                         .filter { !it.isDirectory && it.name.endsWith(".json") }
@@ -248,7 +252,7 @@ internal class NoteDownloader(
                     // PRIMARY: E-Tag check — erkennt Inhaltsänderungen zuverlässig
                     if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
                         skippedUnchanged++
-                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged) [localStatus=${localNote?.syncStatus}]")
+                        Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged) [localStatus=${localNote.syncStatus}]")
                         if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
                         processedIds.add(noteId)
                         continue
@@ -266,7 +270,7 @@ internal class NoteDownloader(
                         Logger.d(
                             TAG,
                             "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)" +
-                                " [localStatus=${localNote?.syncStatus}]"
+                                " [localStatus=${localNote.syncStatus}]"
                         )
                         if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
                         processedIds.add(noteId)

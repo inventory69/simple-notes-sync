@@ -13,7 +13,6 @@ import org.junit.Test
  * Hilfsmethoden auf `KeepNote` und der Lookup-Tabelle `KeepColor`.
  */
 class KeepNoteTest {
-
     private fun base(
         textContent: String? = "Body",
         attachments: List<KeepAttachment> = emptyList(),

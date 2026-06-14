@@ -15,7 +15,6 @@
     <string name="fab_text_note">Текстовая заметка</string>
     <string name="fab_checklist">Чек-лист</string>
     <string name="untitled">Без названия</string>
-    <string name="checklist_progress">%1$d/%2$d выполнено</string>
     <string name="sync_status_completed">Синхронизация завершена</string>
     <string name="sync_status_error">Ошибка синхронизации</string>
     <string name="sync_already_running">Синхронизация уже выполняется</string>
@@ -63,21 +62,10 @@
     <string name="sync_phase_importing_markdown">Импорт Markdown…</string>
     <string name="sync_phase_completed">Синхронизация завершена</string>
     <string name="sync_phase_error">Ошибка синхронизации</string>
-    <string name="delete_note_title">Удалить заметку?</string>
-    <string name="delete_notes_title">Удалить %d заметок?</string>
-    <string name="delete_note_message">Как вы хотите удалить эту заметку?</string>
-    <string name="delete_notes_message">Как вы хотите удалить эти %d заметок?</string>
-    <string name="delete_everywhere">Удалить везде (включая сервер)</string>
-    <string name="delete_everywhere_offline_hint">Недоступно в офлайн‑режиме</string>
-    <string name="delete_local_only">Удалить только локально</string>
     <string name="delete">Удалить</string>
     <string name="cancel">Отменить</string>
     <string name="ok">Хорошо</string>
-    <string name="legacy_delete_dialog_title">Удалить заметку</string>
-    <string name="legacy_delete_from_server">Удалить с сервера</string>
     <string name="snackbar_undo">ОТМЕНИТЬ</string>
-    <string name="snackbar_note_deleted_local">\"%s\" удалена локально</string>
-    <string name="snackbar_note_deleted_server">\"%s\" будет удалена с сервера</string>
     <string name="snackbar_deleted_from_server">Удалено с сервера</string>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d из %2$d заметок удалено с сервера</string>
     <string name="snackbar_server_delete_failed">Не удалось удалить с сервера</string>
@@ -469,19 +457,6 @@
     <string name="checklist_copy_to_checklist_untitled">Чек-лист без названия</string>
     <string name="checklist_copy_to_checklist_item_count">%d пунктов</string>
     <string name="checklist_item_copied_toast">Пункт скопирован в чек-лист</string>
-    <string name="legacy_delete_dialog_message">\"%s» будет удалён(а) локально.\n\nТакже удалить с сервера?</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d заметка удалена локально</item>
-        <item quantity="few">%d заметки удалены локально</item>
-        <item quantity="many">%d заметок удалено локально</item>
-        <item quantity="other">%d заметок удалено локально</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d заметка будет удалена с сервера</item>
-        <item quantity="few">%d заметки будут удалены с сервера</item>
-        <item quantity="many">%d заметок будут удалено с сервера</item>
-        <item quantity="other">%d заметок будут удалено с сервера</item>
-    </plurals>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d заметка удалена с сервера</item>
         <item quantity="few">%d заметки удалены с сервера</item>

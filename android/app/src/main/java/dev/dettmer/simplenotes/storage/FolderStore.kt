@@ -233,7 +233,9 @@ class FolderStore(private val context: Context) {
 
     /** Nur für Tests / „Alle Daten löschen". Entfernt auch local-only-Markierungen. */
     suspend fun clear() = mutex.withLock {
-        try { if (file.exists()) file.delete() } catch (e: Exception) {
+        try {
+            if (file.exists()) file.delete()
+        } catch (e: Exception) {
             Logger.w(TAG, "clear failed: ${e.message}")
         }
         prefs.edit {
@@ -252,8 +254,11 @@ class FolderStore(private val context: Context) {
 
     private suspend fun loadMetaUnsafe(): List<FolderMeta> = withContext(Dispatchers.IO) {
         if (!file.exists()) return@withContext emptyList()
-        val raw = try { file.readText() } catch (e: Exception) {
-            Logger.w(TAG, "read failed: ${e.message}"); return@withContext emptyList()
+        val raw = try {
+            file.readText()
+        } catch (e: Exception) {
+            Logger.w(TAG, "read failed: ${e.message}")
+            return@withContext emptyList()
         }
         if (raw.isBlank()) return@withContext emptyList()
         try {

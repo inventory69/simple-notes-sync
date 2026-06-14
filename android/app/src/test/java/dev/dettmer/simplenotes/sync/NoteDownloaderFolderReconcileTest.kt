@@ -12,6 +12,9 @@ import dev.dettmer.simplenotes.utils.Constants
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.io.File
+import java.nio.file.Files
+import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -19,9 +22,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.nio.file.Files
-import java.util.Date
 
 class NoteDownloaderFolderReconcileTest {
     private lateinit var tmpDir: File
@@ -56,7 +56,9 @@ class NoteDownloaderFolderReconcileTest {
         )
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     private fun folderDir(dirName: String): DavResource = mockk(relaxed = true) {
         every { isDirectory } returns true
@@ -112,8 +114,13 @@ class NoteDownloaderFolderReconcileTest {
     @Test fun `reconcile clears trashedAt when DELETED_ON_SERVER note is present on server`() = runTest {
         storage.saveNote(
             Note(
-                id = noteId, title = "T", content = "C", deviceId = "",
-                syncStatus = SyncStatus.DELETED_ON_SERVER, folderName = null, trashedAt = 999L
+                id = noteId,
+                title = "T",
+                content = "C",
+                deviceId = "",
+                syncStatus = SyncStatus.DELETED_ON_SERVER,
+                folderName = null,
+                trashedAt = 999L
             )
         )
 
@@ -128,8 +135,12 @@ class NoteDownloaderFolderReconcileTest {
     @Test fun `false DELETED_ON_SERVER is cleared when note is still present on server`() = runTest {
         storage.saveNote(
             Note(
-                id = noteId, title = "T", content = "C", deviceId = "",
-                syncStatus = SyncStatus.DELETED_ON_SERVER, folderName = null
+                id = noteId,
+                title = "T",
+                content = "C",
+                deviceId = "",
+                syncStatus = SyncStatus.DELETED_ON_SERVER,
+                folderName = null
             )
         )
         val sardine = mockSardine()

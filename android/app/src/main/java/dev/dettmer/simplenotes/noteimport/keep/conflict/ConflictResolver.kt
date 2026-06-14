@@ -21,10 +21,11 @@ import java.security.MessageDigest
  * pro Kandidat (vom Mapper vergeben) ändern den Hash nicht.
  */
 class ConflictResolver(private val storage: NotesStorage) {
-
     sealed class Resolution {
         object Create : Resolution()
+
         data class Replace(val existingId: String) : Resolution()
+
         data class Skip(val reason: String) : Resolution()
     }
 

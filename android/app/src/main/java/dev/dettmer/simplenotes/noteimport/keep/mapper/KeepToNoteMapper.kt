@@ -31,9 +31,8 @@ import java.util.UUID
  */
 class KeepToNoteMapper(
     private val deviceIdProvider: () -> String,
-    private val idGenerator: () -> String = { UUID.randomUUID().toString() },
+    private val idGenerator: () -> String = { UUID.randomUUID().toString() }
 ) {
-
     /**
      * @param importedAtMs Wert für [Note.importedAt] — typischerweise
      * `System.currentTimeMillis()`, aber injizierbar für Tests.
@@ -65,7 +64,7 @@ class KeepToNoteMapper(
             importedAt = importedAtMs,
             labels = labels.takeIf { it.isNotEmpty() },
             color = color,
-            isPinned = keep.isPinned.takeIf { it },
+            isPinned = keep.isPinned.takeIf { it }
         )
     }
 
@@ -83,7 +82,7 @@ class KeepToNoteMapper(
                 isChecked = k.isChecked,
                 order = idx,
                 originalOrder = idx,
-                indentationLevel = k.indentationLevel.coerceIn(0, MAX_INDENT_LEVEL),
+                indentationLevel = k.indentationLevel.coerceIn(0, MAX_INDENT_LEVEL)
             )
         }
 

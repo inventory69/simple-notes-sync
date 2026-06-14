@@ -17,7 +17,7 @@ private const val MB_DIVISOR = 1024L * 1024L
 fun KeepImportLargeZipDialog(
     preScan: KeepPreScanResult,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val sizeMb = preScan.sizeBytes / MB_DIVISOR
     AlertDialog(
@@ -33,6 +33,6 @@ fun KeepImportLargeZipDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.keep_import_large_zip_button_cancel))
             }
-        },
+        }
     )
 }

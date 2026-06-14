@@ -30,7 +30,7 @@ import dev.dettmer.simplenotes.ui.theme.Dimensions
 @Composable
 fun KeepImportResultDialog(
     summary: KeepImportSummary,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     var showErrors by remember { mutableStateOf(false) }
 
@@ -48,9 +48,9 @@ fun KeepImportResultDialog(
                     Text(
                         stringResource(
                             R.string.keep_import_result_attachments_dropped,
-                            summary.notesWithDroppedAttachments,
+                            summary.notesWithDroppedAttachments
                         ),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 Spacer(Modifier.height(Dimensions.SpacingMedium))
@@ -59,7 +59,7 @@ fun KeepImportResultDialog(
                     Text(
                         stringResource(
                             R.string.keep_import_result_shared,
-                            summary.sharedNotesImported,
+                            summary.sharedNotesImported
                         )
                     )
                 }
@@ -87,7 +87,7 @@ fun KeepImportResultDialog(
                                 Text(
                                     "• ${err.sourceName}: ${err.message}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error,
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
@@ -99,6 +99,6 @@ fun KeepImportResultDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.keep_import_result_button_close))
             }
-        },
+        }
     )
 }

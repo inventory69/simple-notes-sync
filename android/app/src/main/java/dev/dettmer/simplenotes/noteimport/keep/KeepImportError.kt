@@ -6,5 +6,5 @@ package dev.dettmer.simplenotes.noteimport.keep
  */
 data class KeepImportError(
     val sourceName: String,
-    val message: String,
+    val message: String
 )

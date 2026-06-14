@@ -104,9 +104,9 @@ class NetworkMonitor(context: Context) {
     private fun evaluateAndMaybeTrigger(network: Network, caps: NetworkCapabilities?) {
         val networkState = SyncDebugLogger.snapshotNetwork(context)
 
-        val isWifi    = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
         val validated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-        val internet  = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        val internet = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 
         Logger.d(TAG, "    Evaluate: wifi=$isWifi validated=$validated internet=$internet")
 
@@ -124,7 +124,7 @@ class NetworkMonitor(context: Context) {
                 triggerType = "WIFI_CONNECT",
                 outcome = SyncDebugLogger.Outcome.SKIPPED,
                 reason = "not validated yet (validated=$validated internet=$internet)",
-                networkState = networkState,
+                networkState = networkState
             )
             return
         }
@@ -149,7 +149,7 @@ class NetworkMonitor(context: Context) {
                 triggerType = "WIFI_CONNECT",
                 outcome = SyncDebugLogger.Outcome.SKIPPED,
                 reason = "callback before init",
-                networkState = networkState,
+                networkState = networkState
             )
             return
         }
@@ -175,7 +175,7 @@ class NetworkMonitor(context: Context) {
                 triggerType = "WIFI_CONNECT",
                 outcome = SyncDebugLogger.Outcome.SKIPPED,
                 reason = "cold-start guard (${msSinceStart}ms < ${COLD_START_GUARD_MS}ms)",
-                networkState = networkState,
+                networkState = networkState
             )
             return
         }
@@ -190,7 +190,7 @@ class NetworkMonitor(context: Context) {
 
         val wifiConnectEnabled = prefs.getBoolean(
             Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
-            Constants.DEFAULT_TRIGGER_WIFI_CONNECT,
+            Constants.DEFAULT_TRIGGER_WIFI_CONNECT
         )
         if (!wifiConnectEnabled) {
             Logger.d(TAG, "    ⏭️ WiFi-Connect trigger disabled in settings")
@@ -198,7 +198,7 @@ class NetworkMonitor(context: Context) {
                 triggerType = "WIFI_CONNECT",
                 outcome = SyncDebugLogger.Outcome.SKIPPED,
                 reason = "trigger disabled in settings",
-                networkState = networkState,
+                networkState = networkState
             )
         } else {
             Logger.d(TAG, "    ✅ Triggering WiFi-Connect sync...")
@@ -206,7 +206,7 @@ class NetworkMonitor(context: Context) {
                 triggerType = "WIFI_CONNECT",
                 outcome = SyncDebugLogger.Outcome.STARTED,
                 reason = triggerReason,
-                networkState = networkState,
+                networkState = networkState
             )
             triggerWifiConnectSync()
         }
@@ -279,7 +279,8 @@ class NetworkMonitor(context: Context) {
             .build()
 
         val fallbackRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-            Constants.WIFI_FALLBACK_INTERVAL_MINUTES, TimeUnit.MINUTES
+            Constants.WIFI_FALLBACK_INTERVAL_MINUTES,
+            TimeUnit.MINUTES
         )
             .setConstraints(constraints)
             .setBackoffCriteria(

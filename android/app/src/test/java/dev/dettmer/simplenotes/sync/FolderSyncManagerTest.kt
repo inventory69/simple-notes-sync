@@ -5,21 +5,20 @@ import android.content.SharedPreferences
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
+import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
+import java.io.File
+import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.nio.file.Files
 
 class FolderSyncManagerTest {
-
     private lateinit var manager: FolderSyncManager
     private lateinit var folderStore: FolderStore
     private lateinit var tmpDir: File
@@ -41,7 +40,9 @@ class FolderSyncManagerTest {
         )
     }
 
-    @org.junit.After fun tearDown() { tmpDir.deleteRecursively() }
+    @org.junit.After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     // ── mergeByName: LWW ──────────────────────────────────────────────────
 

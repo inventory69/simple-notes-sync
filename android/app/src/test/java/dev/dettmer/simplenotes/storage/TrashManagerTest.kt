@@ -26,7 +26,6 @@ import org.junit.Test
  * Die [TrashManager.clock] ist gemockt → deterministische 30-Tage-Grenze.
  */
 class TrashManagerTest {
-
     private lateinit var tmpDir: File
     private lateinit var storage: NotesStorage
     private lateinit var folderStore: FolderStore
@@ -52,7 +51,9 @@ class TrashManagerTest {
         pendingDeletions = PendingServerDeletions(context)
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     private fun manager() = TrashManager(storage, pendingDeletions, folderStore) { fakeNow }
 
@@ -60,7 +61,7 @@ class TrashManagerTest {
         id: String = "n",
         status: SyncStatus = SyncStatus.SYNCED,
         folderName: String? = null,
-        trashedAt: Long? = null,
+        trashedAt: Long? = null
     ) = Note(
         id = id,
         title = "T-$id",
@@ -68,7 +69,7 @@ class TrashManagerTest {
         deviceId = "dev",
         syncStatus = status,
         folderName = folderName,
-        trashedAt = trashedAt,
+        trashedAt = trashedAt
     )
 
     // ─── moveToTrash status matrix ──────────────────────────────────────────

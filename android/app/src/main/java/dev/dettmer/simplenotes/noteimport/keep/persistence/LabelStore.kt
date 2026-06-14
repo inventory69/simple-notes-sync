@@ -2,12 +2,12 @@ package dev.dettmer.simplenotes.noteimport.keep.persistence
 
 import android.content.Context
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.IOException
 
 /**
  * v2.5.0 — Mutex-geschützter Wrapper um den persistierten [LabelIndex].
@@ -24,7 +24,6 @@ import java.io.IOException
  * Beschleunigungs-Cache.
  */
 class LabelStore(private val context: Context) {
-
     private val mutex = Mutex()
 
     private val file: File

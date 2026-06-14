@@ -7,7 +7,6 @@ import org.junit.Test
  * v2.5.0 — Tests #17, #18, #19 aus Analyseplan §5.1.
  */
 class TimestampMapperTest {
-
     // #17 — Mikro→Milli expliziter Faktor 1_000
     @Test
     fun `usecToMs_factor1000`() {

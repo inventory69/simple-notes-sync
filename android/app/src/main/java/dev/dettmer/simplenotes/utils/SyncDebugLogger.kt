@@ -24,8 +24,7 @@ import java.util.Locale
  * wieder aktivieren.
  */
 object SyncDebugLogger {
-
-    private const val FILE_NAME     = "sync_debug.log"
+    private const val FILE_NAME = "sync_debug.log"
     private const val FILE_NAME_BAK = "sync_debug.log.1"
     private const val MAX_FILE_BYTES = 2L * 1024L * 1024L // 2 MB
     private const val TAG = "SyncDebugLogger"
@@ -37,13 +36,14 @@ object SyncDebugLogger {
         val wifiConnected: Boolean,
         val internetCapable: Boolean,
         val validated: Boolean,
-        val transport: String, // "WIFI" | "CELLULAR" | "ETHERNET" | "OTHER" | "NONE"
+        val transport: String // "WIFI" | "CELLULAR" | "ETHERNET" | "OTHER" | "NONE"
     )
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.ROOT)
     private val fileLock = Any()
 
     @Volatile private var enabledOverride: Boolean? = null
+
     @Volatile private var appContext: Context? = null
 
     fun init(context: Context) {
@@ -76,7 +76,7 @@ object SyncDebugLogger {
         reason: String? = null,
         networkState: NetworkSnapshot? = null,
         runAttempt: Int = 0,
-        holder: String? = null,
+        holder: String? = null
     ) {
         val ctx = appContext ?: return
         if (!isEnabled(ctx)) return
@@ -102,16 +102,16 @@ object SyncDebugLogger {
         val caps = cm.getNetworkCapabilities(net)
             ?: return NetworkSnapshot(false, false, false, "NONE")
         val transport = when {
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)     -> "WIFI"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
             caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
             caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
             else -> "OTHER"
         }
         return NetworkSnapshot(
-            wifiConnected   = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
+            wifiConnected = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
             internetCapable = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
-            validated       = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
-            transport       = transport,
+            validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+            transport = transport
         )
     }
 
@@ -151,7 +151,7 @@ object SyncDebugLogger {
         reason: String?,
         networkState: NetworkSnapshot?,
         runAttempt: Int,
-        holder: String?,
+        holder: String?
     ): String {
         val ts = dateFormat.format(Date())
         val net = if (networkState != null) {

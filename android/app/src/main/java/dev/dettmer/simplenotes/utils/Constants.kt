@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.utils
 object Constants {
     // SharedPreferences
     const val PREFS_NAME = "simple_notes_prefs"
+
     /** Legacy prefs name — used only for credential migration fallback in CredentialStore. */
     const val PREFS_NAME_LEGACY = PREFS_NAME
     const val KEY_SERVER_URL = "server_url"
@@ -156,6 +157,7 @@ object Constants {
 
     // 🆕 v2.2.0: WiFi-Connect Fallback Worker — überlebt Prozess-Tod
     const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
+
     // 🔥 v2.4.0: Reduziert von 6 h → 30 min, da WiFi-Connect-Trigger nach Process-Death
     // nicht feuert (NetworkCallback ist prozessgebunden, CONNECTIVITY_ACTION-Broadcast
     // seit Android 7 für Manifest-Receiver blockiert). UNMETERED-Constraint stellt

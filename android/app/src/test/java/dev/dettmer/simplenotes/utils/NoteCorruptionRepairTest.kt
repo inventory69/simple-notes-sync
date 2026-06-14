@@ -28,7 +28,6 @@ import org.junit.Test
  * The actual title-rescue logic is covered in NoteTest (fromJson FIX-03 tests).
  */
 class NoteCorruptionRepairTest {
-
     private lateinit var tmpDir: File
     private lateinit var storage: NotesStorage
     private lateinit var prefs: SharedPreferences
@@ -52,7 +51,9 @@ class NoteCorruptionRepairTest {
         }
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     // ─── Flag gating ──────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ class NoteCorruptionRepairTest {
             title = "Task- [ ] Something",
             content = "body",
             deviceId = "dev",
-            noteType = NoteType.TEXT,
+            noteType = NoteType.TEXT
         )
         storage.saveNote(n)
         NoteCorruptionRepair.repairIfNeeded(storage, prefs)
@@ -103,7 +104,7 @@ class NoteCorruptionRepairTest {
             content = "",
             deviceId = "dev",
             noteType = NoteType.CHECKLIST,
-            checklistItems = listOf(ChecklistItem("i1", "Milk", false, 0)),
+            checklistItems = listOf(ChecklistItem("i1", "Milk", false, 0))
         )
         storage.saveNote(n)
         NoteCorruptionRepair.repairIfNeeded(storage, prefs)
@@ -124,7 +125,7 @@ class NoteCorruptionRepairTest {
         val notesDir = File(tmpDir, "notes").also { it.mkdirs() }
         File(notesDir, "corrupt.json").writeText(
             """{"id":"corrupt","title":"List- [ ] Milk- [x] Eggs","content":"","createdAt":1700000000000,""" +
-            """"updatedAt":1700001000000,"deviceId":"dev","noteType":"CHECKLIST","checklistItems":[]}"""
+                """"updatedAt":1700001000000,"deviceId":"dev","noteType":"CHECKLIST","checklistItems":[]}"""
         )
 
         NoteCorruptionRepair.repairIfNeeded(storage, prefs)

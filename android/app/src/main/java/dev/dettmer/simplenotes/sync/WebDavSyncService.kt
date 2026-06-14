@@ -355,10 +355,16 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val hasFolderChanges = try {
                 val resources = when (sardine) {
                     is SafeSardineWrapper -> sardine.listOrNull(foldersUrl)
-                    else -> try { sardine.list(foldersUrl) } catch (_: IOException) { null }
+                    else -> try {
+                        sardine.list(foldersUrl)
+                    } catch (_: IOException) {
+                        null
+                    }
                 }
                 resources?.firstOrNull { !it.isDirectory }?.modified?.time?.let { it > lastSyncTime } ?: false
-            } catch (_: Exception) { false }
+            } catch (_: Exception) {
+                false
+            }
 
             if (hasFolderChanges) {
                 Logger.d(TAG, "📁 folders.json has changes (modified after lastSync)")
@@ -426,8 +432,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // nach Server-Wechsel wird syncStatus auf PENDING gesetzt, aber updatedAt bleibt gleich
             val hasLocalChanges = allNotes.any { note ->
                 note.folderName?.lowercase() !in localOnlyFolders &&
-                    (note.updatedAt > lastSyncTime ||
-                        note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING)
+                    (
+                        note.updatedAt > lastSyncTime ||
+                            note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.PENDING
+                        )
             }
 
             if (hasLocalChanges) {
@@ -743,9 +751,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 }
 
                 // 🆕 v2.7.0 (Folders): Step 5.6 — Ordner-Metadaten syncen (Namen + Farben + Tombstones).
-                var foldersChanged = false
-                try { foldersChanged = folderSyncManager.sync(sardine, serverUrl) }
-                catch (e: Exception) { Logger.w(TAG, "folder metadata sync failed (non-fatal): ${e.message}") }
+                val foldersChanged = syncFolderMetadataSafe(sardine, serverUrl)
 
                 Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
 
@@ -784,8 +790,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         // 🔧 v2.2.1 (Issue #50): Include pref values for easier diagnosis
                         val mdExport = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
                         val mdImport = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
-                        Logger.d(TAG, "⏭️ Markdown auto-import disabled " +
-                            "(KEY_MARKDOWN_EXPORT=$mdExport, KEY_MARKDOWN_AUTO_IMPORT=$mdImport)")
+                        Logger.d(
+                            TAG,
+                            "⏭️ Markdown auto-import disabled " +
+                                "(KEY_MARKDOWN_EXPORT=$mdExport, KEY_MARKDOWN_AUTO_IMPORT=$mdImport)"
+                        )
                     }
                 } catch (e: Exception) {
                     Logger.e(TAG, "⚠️ Markdown auto-import failed (non-fatal)", e)
@@ -873,6 +882,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             syncMutex.unlock()
         }
     }
+
+    private suspend fun syncFolderMetadataSafe(sardine: Sardine, serverUrl: String): Boolean =
+        try {
+            folderSyncManager.sync(sardine, serverUrl)
+        } catch (e: Exception) {
+            Logger.w(TAG, "folder metadata sync failed (non-fatal): ${e.message}")
+            false
+        }
 
     /**
      * 🔧 v1.9.0: Parallele Uploads mit bounded concurrency

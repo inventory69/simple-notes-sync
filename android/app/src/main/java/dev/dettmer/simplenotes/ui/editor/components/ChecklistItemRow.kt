@@ -1,9 +1,8 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
-import dev.dettmer.simplenotes.utils.Logger
-import androidx.compose.animation.core.Spring            // 🆕 v2.5.0
+import androidx.compose.animation.core.Spring // 🆕 v2.5.0
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring            // 🆕 v2.5.0
+import androidx.compose.animation.core.spring // 🆕 v2.5.0
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -19,12 +18,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,23 +44,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind              // 🆕 v2.5.0 flash
-import androidx.compose.ui.draw.scale                   // 🆕 v2.5.0
+import androidx.compose.ui.draw.drawBehind // 🆕 v2.5.0 flash
+import androidx.compose.ui.draw.scale // 🆕 v2.5.0
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
@@ -71,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
+import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.delay
 
 /**
@@ -91,13 +91,13 @@ fun ChecklistItemRow(
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onAddNewItem: () -> Unit,
-    onCopyText: () -> Unit,              // 🆕 v2.2.0: Aktion 1 — Text kopieren
-    onDuplicate: () -> Unit,             // 🆕 v2.2.0: Aktion 2 — Eintrag duplizieren
-    onCopyToChecklist: () -> Unit,       // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
-    isCheckAnimating: Boolean = false,   // 🆕 v2.5.0: Hoisted check-tap trigger (owned by DraggableChecklistItem)
-    onCheckboxTap: () -> Unit = {},      // 🆕 v2.5.0: Notifies parent to set isCheckAnimating = true
+    onCopyText: () -> Unit, // 🆕 v2.2.0: Aktion 1 — Text kopieren
+    onDuplicate: () -> Unit, // 🆕 v2.2.0: Aktion 2 — Eintrag duplizieren
+    onCopyToChecklist: () -> Unit, // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
     modifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
+    isCheckAnimating: Boolean = false, // 🆕 v2.5.0: Hoisted check-tap trigger (owned by DraggableChecklistItem)
+    onCheckboxTap: () -> Unit = {}, // 🆕 v2.5.0: Notifies parent to set isCheckAnimating = true
     requestFocus: Boolean = false,
     isDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Drag state
     isAnyItemDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
@@ -345,11 +345,11 @@ fun ChecklistItemRow(
         Checkbox(
             checked = item.isChecked,
             onCheckedChange = { checked ->
-                onCheckboxTap()                  // 🆕 v2.5.0: Trigger Z-Index + Animation im Parent
+                onCheckboxTap() // 🆕 v2.5.0: Trigger Z-Index + Animation im Parent
                 onCheckedChange(checked)
             },
             modifier = Modifier
-                .scale(checkScale)  // 🆕 v2.5.0: Scale-pop animation
+                .scale(checkScale) // 🆕 v2.5.0: Scale-pop animation
                 .alpha(alpha)
         )
 
@@ -477,7 +477,7 @@ fun ChecklistItemRow(
             // Textbereich visuell verdecken (surfaceColor ≈ opaker Hintergrund).
             // (1f - glowAlpha) blendet den Gradient aus, während der Glow aktiv ist,
             // und lässt ihn nach dem Abklingen sanft zurückkehren.
-            val effectiveTopAlpha    = topGradientAlpha    * (1f - glowAlpha)
+            val effectiveTopAlpha = topGradientAlpha * (1f - glowAlpha)
             val effectiveBottomAlpha = bottomGradientAlpha * (1f - glowAlpha)
 
             // Oben: sichtbar wenn nach unten gescrollt (Text oberhalb versteckt)
@@ -594,7 +594,7 @@ private const val DRAG_END_LAYOUT_DELAY_MS = 50L
 
 // 🆕 v2.5.0: Scale-pop animation values for checkbox tap feedback.
 // Phase 1: tween to peak (CHECK_ANIM_SCALE_UP_MS ms), Phase 2: spring back to 1f.
-private const val CHECK_ANIM_SCALE_PEAK = 1.5f          // raised from 1.25f for visibility
+private const val CHECK_ANIM_SCALE_PEAK = 1.5f // raised from 1.25f for visibility
 private const val CHECK_ANIM_SCALE_UP_MS = 80
 
 // 🆕 v2.5.0: Radial glow animation values for checkbox tap feedback.

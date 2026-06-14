@@ -12,8 +12,15 @@ private const val DAYS_THRESHOLD = 7L
 private const val TRUNCATE_SUFFIX_LENGTH = 3
 
 inline fun <reified T : Enum<T>> String?.toEnumOrDefault(default: T): T =
-    if (this == null) default
-    else try { enumValueOf(this) } catch (_: IllegalArgumentException) { default }
+    if (this == null) {
+        default
+    } else {
+        try {
+            enumValueOf(this)
+        } catch (_: IllegalArgumentException) {
+            default
+        }
+    }
 
 // Toast Extensions
 @Deprecated("Use ViewModel.emitSnackbar() instead", level = DeprecationLevel.WARNING)

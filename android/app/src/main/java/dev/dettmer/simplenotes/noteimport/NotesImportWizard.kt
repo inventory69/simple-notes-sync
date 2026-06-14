@@ -295,7 +295,9 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                         val newId = UUID.randomUUID().toString()
                         Logger.d(TAG, "🔀 UUID collision for '${candidate.name}': ${note.id} → $newId")
                         note.copy(id = newId)
-                    } else note
+                    } else {
+                        note
+                    }
                     Pair(safeNote.copy(syncStatus = syncStatus), "")
                 }
             }
@@ -339,6 +341,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     // ══════════════════════════════════════════════════════════════
     // Parser — Format-spezifisches Parsing
     // ══════════════════════════════════════════════════════════════
+
     /**
      * Markdown-Parser: Unterstützt Plain-MD und MD mit Simple-Notes-Frontmatter.
      */

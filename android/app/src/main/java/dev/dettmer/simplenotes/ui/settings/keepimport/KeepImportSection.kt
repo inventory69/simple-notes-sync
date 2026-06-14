@@ -28,10 +28,10 @@ private const val TAG = "KeepImportSection"
 @Composable
 fun KeepImportSection(
     onZipPicked: (android.net.Uri) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
+        contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) onZipPicked(uri)
     }
@@ -53,7 +53,7 @@ fun KeepImportSection(
                     launcher.launch("*/*")
                 }
             },
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
 }

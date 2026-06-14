@@ -103,7 +103,8 @@ class NotesStorage(private val context: Context) {
     suspend fun loadAllNotes(forceReload: Boolean = false): List<Note> = withContext(Dispatchers.IO) {
         cacheMutex.withLock {
             val cached = cachedNotes
-            if (!forceReload && cached != null &&
+            if (!forceReload &&
+                cached != null &&
                 System.currentTimeMillis() - cacheTimestamp < cacheTtlMs
             ) {
                 return@withLock cached

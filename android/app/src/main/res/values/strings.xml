@@ -37,7 +37,6 @@
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
     <string name="untitled">Untitled</string>
-    <string name="checklist_progress">%1$d/%2$d done</string>
     <string name="checklist_items_more">+%d more</string>
 
     <!-- ============================= -->
@@ -68,12 +67,12 @@
     <string name="sync_legend_local_only_desc">This note stays on this device only - either it hasn\'t been synced yet, or it\'s in a folder you excluded from sync.</string>
     <string name="sync_legend_trash_hint">Deleted notes - and notes removed on another device - move to the trash, where you can restore them for %1$d days.</string>
     <!-- unused since v2.9.0 — DELETED_ON_SERVER legend removed; strings kept to avoid ExtraTranslation in community locales -->
-    <string name="sync_legend_deleted_label">Deleted on server</string>
-    <string name="sync_legend_deleted_desc">This note was deleted on another device or directly on the server. It still exists locally.</string>
+    <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Deleted on server</string>
+    <string name="sync_legend_deleted_desc" tools:ignore="UnusedResources">This note was deleted on another device or directly on the server. It still exists locally.</string>
 
     <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
     <!-- unused since v2.9.0 — server-deleted notes now move to trash (see sync_moved_to_trash_count) -->
-    <string name="sync_deleted_on_server_count">%d deleted on server</string>
+    <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d deleted on server</string>
     <!-- 🆕 v2.9.0 (Trash): server-deleted notes are moved to the trash -->
     <string name="sync_moved_to_trash_count">%d moved to trash</string>
     <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
@@ -116,38 +115,16 @@
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
-    <string name="delete_note_title">Delete note?</string>
-    <string name="delete_notes_title">Delete %d notes?</string>
-    <string name="delete_note_message">How do you want to delete this note?</string>
-    <string name="delete_notes_message">How do you want to delete these %d notes?</string>
     <string name="delete_folder_message">How do you want to delete this folder?</string>
     <string name="delete_folders_message">How do you want to delete these %1$d folders?</string>
     <string name="delete_selection_message">How do you want to delete this selection?</string>
-    <string name="delete_everywhere">Delete everywhere (also server)</string>
-    <string name="delete_everywhere_offline_hint">Not available in offline mode</string>
-    <string name="delete_local_only">Delete local only</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
-    <!-- Legacy delete dialogs -->
-    <string name="legacy_delete_dialog_title">Delete note</string>
-    <string name="legacy_delete_dialog_message">\"%s\" will be deleted locally.\n\nAlso delete from server?</string>
-    <string name="legacy_delete_from_server">Delete from server</string>
-
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
     <string name="snackbar_undo">UNDO</string>
-    <string name="snackbar_note_deleted_local">\"%s\" deleted locally</string>
-    <string name="snackbar_note_deleted_server">\"%s\" will be deleted from server</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d note deleted locally</item>
-        <item quantity="other">%d notes deleted locally</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d note will be deleted from server</item>
-        <item quantity="other">%d notes will be deleted from server</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Deleted from server</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d note deleted from server</item>
@@ -174,7 +151,6 @@
         <item quantity="one">%d day left</item>
         <item quantity="other">%d days left</item>
     </plurals>
-    <string name="trash_restore">Restore</string>
     <string name="trash_restore_cd">Restore note</string>
     <string name="trash_delete_forever">Delete permanently</string>
     <string name="trash_delete_forever_cd">Delete note permanently</string>

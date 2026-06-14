@@ -78,8 +78,8 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         const val EXTRA_NOTE_TYPE = "extra_note_type"
         const val EXTRA_FOLDER = "extra_folder"
         private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
-        private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen"   // 🆕 v2.2.0
-        private const val KEY_PICK_TARGET_NOTE = "pick_target_note"     // 🆕 v2.6.0
+        private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen" // 🆕 v2.2.0
+        private const val KEY_PICK_TARGET_NOTE = "pick_target_note" // 🆕 v2.6.0
 
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
@@ -93,6 +93,7 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     private var isShareTypeChosen by mutableStateOf(false)
     private var isShareIntent = false
     private var eventCollectionStarted = false
+
     // 🆕 v2.6.0: Append-to-note flow state
     private var isPickingTargetNote by mutableStateOf(false)
     private var chosenAppendNoteId: String? = null

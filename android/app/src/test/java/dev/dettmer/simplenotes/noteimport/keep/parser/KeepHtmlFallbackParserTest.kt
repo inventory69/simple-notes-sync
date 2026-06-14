@@ -9,7 +9,6 @@ import org.junit.Test
  * v2.5.0 — Tests #13, #14, #15, #16 aus Analyseplan §5.1.
  */
 class KeepHtmlFallbackParserTest {
-
     private lateinit var parser: KeepHtmlFallbackParser
 
     @Before

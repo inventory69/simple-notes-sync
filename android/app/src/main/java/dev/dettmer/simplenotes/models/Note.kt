@@ -252,8 +252,11 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                         if (rescuedItems.isNotEmpty()) {
                             checklistItems = (rescuedItems + (checklistItems ?: emptyList()))
                                 .mapIndexed { i, item -> item.copy(order = i) }
-                            Logger.w(TAG, "⚠️ CORRUPTION FIX (JSON): '${rawNote.title}' → '$cleanTitle', " +
-                                "rescued ${rescuedItems.size} item(s)")
+                            Logger.w(
+                                TAG,
+                                "⚠️ CORRUPTION FIX (JSON): '${rawNote.title}' → '$cleanTitle', " +
+                                    "rescued ${rescuedItems.size} item(s)"
+                            )
                         }
                     }
                 }

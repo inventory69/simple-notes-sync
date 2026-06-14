@@ -22,5 +22,5 @@ internal data class KeepNoteJson(
     @SerializedName("listContent") val listContent: List<KeepListItemJson>? = null,
     @SerializedName("attachments") val attachments: List<KeepAttachmentJson>? = null,
     @SerializedName("annotations") val annotations: List<KeepAnnotationJson>? = null,
-    @SerializedName("sharees") val sharees: List<KeepShareeJson>? = null,
+    @SerializedName("sharees") val sharees: List<KeepShareeJson>? = null
 )

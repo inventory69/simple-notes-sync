@@ -17,7 +17,6 @@ import org.junit.Test
  * - createEmpty_defaultIndentation_isZero
  */
 class ChecklistItemRoundTripTest {
-
     private val gson = Gson()
 
     // ───── #45: legacy JSON ohne indentationLevel → 0 ─────

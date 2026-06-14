@@ -7,7 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FolderNameValidatorTest {
-
     @Test fun `valid simple names`() {
         assertTrue(FolderNameValidator.isValid("Rezepte"))
         assertTrue(FolderNameValidator.isValid("Work 2024"))

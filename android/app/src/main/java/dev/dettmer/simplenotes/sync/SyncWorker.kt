@@ -134,7 +134,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     outcome = SyncDebugLogger.Outcome.SKIPPED,
                     reason = "global cooldown active",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                    runAttempt = runAttemptCount,
+                    runAttempt = runAttemptCount
                 )
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (cooldown)")
@@ -151,7 +151,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     reason = "another sync in progress",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
                     runAttempt = runAttemptCount,
-                    holder = SyncStateManager.currentSyncOwner(),
+                    holder = SyncStateManager.currentSyncOwner()
                 )
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (already syncing)")
@@ -183,7 +183,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                         else -> gateResult.blockReason ?: "offline/no server"
                     },
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                    runAttempt = runAttemptCount,
+                    runAttempt = runAttemptCount
                 )
 
                 // 🆕 v2.4.0 (FIX-SSBE-006): Visibility-aware Termination
@@ -238,7 +238,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     outcome = outcome,
                     reason = "server unreachable (attempt=${runAttemptCount + 1}/${Constants.MAX_WIFI_CONNECT_RETRY_COUNT})",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                    runAttempt = runAttemptCount,
+                    runAttempt = runAttemptCount
                 )
                 if (canRetry) {
                     Logger.d(
@@ -281,7 +281,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     triggerType = tagOrUnknown(),
                     outcome = SyncDebugLogger.Outcome.NO_CHANGES,
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                    runAttempt = runAttemptCount,
+                    runAttempt = runAttemptCount
                 )
 
                 // 🆕 v2.4.0 (FIX-SSBE-005): Visibility-aware Termination
@@ -307,7 +307,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 triggerType = tagOrUnknown(),
                 outcome = SyncDebugLogger.Outcome.STARTED,
                 networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                runAttempt = runAttemptCount,
+                runAttempt = runAttemptCount
             )
             // Try-catch um syncNotes
             val result = try {
@@ -344,7 +344,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     outcome = SyncDebugLogger.Outcome.SUCCESS,
                     reason = "synced=${result.syncedCount}",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                    runAttempt = runAttemptCount,
+                    runAttempt = runAttemptCount
                 )
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 if (result.purgedFromServerCount > 0) {
@@ -397,7 +397,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     outcome = SyncDebugLogger.Outcome.FAILED,
                     reason = result.errorMessage ?: "unknown",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                    runAttempt = runAttemptCount,
+                    runAttempt = runAttemptCount
                 )
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 SyncStateManager.markError(result.errorMessage)
@@ -424,7 +424,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 outcome = SyncDebugLogger.Outcome.CANCELLED,
                 reason = e.message,
                 networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                runAttempt = runAttemptCount,
+                runAttempt = runAttemptCount
             )
 
             // 🆕 v1.10.0-P2: Detailed stop reason logging + quota/standby tracking
@@ -463,7 +463,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 outcome = SyncDebugLogger.Outcome.FAILED,
                 reason = "exception: ${e.javaClass.simpleName}: ${e.message}",
                 networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
-                runAttempt = runAttemptCount,
+                runAttempt = runAttemptCount
             )
 
             // 🆕 v1.8.2: State cleanup — verhindert "Sync already in progress" Deadlock

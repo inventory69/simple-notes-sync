@@ -73,7 +73,7 @@ fun ImportSettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit,
     // 🆕 v2.5.0: Keep-Import-Snackbar-Bridge an SettingsNavHost
-    onKeepImportSnackbar: (dev.dettmer.simplenotes.ui.main.MainViewModel.SnackbarData) -> Unit = {},
+    onKeepImportSnackbar: (dev.dettmer.simplenotes.ui.main.MainViewModel.SnackbarData) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
 
@@ -334,7 +334,7 @@ private fun ScanResultsCard(
             Spacer(modifier = Modifier.height(12.dp))
             ImportConflictStrategyPicker(
                 selected = conflictStrategy,
-                onSelectionChange = onStrategyChange,
+                onSelectionChange = onStrategyChange
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -375,7 +375,7 @@ private fun LocalImportSection(
 private fun LocalImportConfigDialog(
     fileCount: Int,
     onConfirm: (ConflictStrategy) -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     var conflictStrategy by remember { mutableStateOf(ConflictStrategy.SKIP) }
     AlertDialog(
@@ -384,7 +384,7 @@ private fun LocalImportConfigDialog(
         text = {
             ImportConflictStrategyPicker(
                 selected = conflictStrategy,
-                onSelectionChange = { conflictStrategy = it },
+                onSelectionChange = { conflictStrategy = it }
             )
         },
         confirmButton = {
@@ -396,7 +396,7 @@ private fun LocalImportConfigDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.import_cancel))
             }
-        },
+        }
     )
 }
 

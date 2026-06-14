@@ -62,7 +62,7 @@ import dev.dettmer.simplenotes.models.NoteType
 @Composable
 fun NoteTypeFAB(
     modifier: Modifier = Modifier,
-    showCreateFolder: Boolean = false,  // 🆕 v2.7.0 (Folders): nur im Root true
+    showCreateFolder: Boolean = false, // 🆕 v2.7.0 (Folders): nur im Root true
     onCreateNote: (NoteType) -> Unit,
     onCreateFolder: () -> Unit = {}
 ) {
@@ -135,7 +135,10 @@ fun NoteTypeFAB(
                     icon = Icons.Outlined.CreateNewFolder,
                     scale = 1f,
                     alpha = 1f,
-                    onClick = { expanded = false; onCreateFolder() }
+                    onClick = {
+                        expanded = false
+                        onCreateFolder()
+                    }
                 )
             }
 

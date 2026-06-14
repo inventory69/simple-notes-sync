@@ -8,7 +8,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class MarkdownOutputTransformationTest {
-
     private val linkColor = Color(0xFF0000FFu)
     private val codeBg = Color(0xFFAAAAAAu)
     private val codeColor = Color(0xFF333333u)

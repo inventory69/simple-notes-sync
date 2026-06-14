@@ -3,6 +3,8 @@ package dev.dettmer.simplenotes.noteimport.keep.persistence
 import android.content.Context
 import io.mockk.every
 import io.mockk.mockk
+import java.io.File
+import java.nio.file.Files
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,8 +17,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.nio.file.Files
 
 /**
  * v2.5.0 — Tests #41 + #42 aus Analyseplan §5.1.
@@ -25,7 +25,6 @@ import java.nio.file.Files
  * temporären Verzeichnis. Kein Robolectric nötig (JVM-Test-Runner reicht).
  */
 class LabelStoreTest {
-
     private lateinit var tmpDir: File
     private lateinit var context: Context
     private lateinit var store: LabelStore

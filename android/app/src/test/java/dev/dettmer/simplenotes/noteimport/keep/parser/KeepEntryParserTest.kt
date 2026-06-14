@@ -14,7 +14,6 @@ import org.junit.Test
  * v2.5.0 — Tests #1 bis #12 aus Analyseplan §5.1.
  */
 class KeepEntryParserTest {
-
     private lateinit var parser: KeepEntryParserImpl
 
     @Before

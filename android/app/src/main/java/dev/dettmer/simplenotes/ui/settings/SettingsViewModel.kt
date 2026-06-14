@@ -3,7 +3,7 @@ package dev.dettmer.simplenotes.ui.settings
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import dev.dettmer.simplenotes.utils.Logger
+import android.os.PowerManager
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,8 +19,8 @@ import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
+import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
-import android.os.PowerManager
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher

@@ -24,7 +24,7 @@ import dev.dettmer.simplenotes.ui.theme.Dimensions
 fun KeepImportProgressDialog(
     progress: KeepImportProgress,
     cancellable: Boolean,
-    onCancel: () -> Unit,
+    onCancel: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = { /* Nicht-dismissable, User MUSS Cancel drücken. */ },
@@ -33,10 +33,12 @@ fun KeepImportProgressDialog(
             Column {
                 val ratio = if (progress.total > 0) {
                     progress.processed.toFloat() / progress.total.toFloat()
-                } else 0f
+                } else {
+                    0f
+                }
                 LinearProgressIndicator(
                     progress = { ratio.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(Dimensions.SpacingMedium))
                 Text(
@@ -44,9 +46,9 @@ fun KeepImportProgressDialog(
                         R.string.keep_import_progress_status,
                         progress.processed,
                         progress.total,
-                        progress.currentName,
+                        progress.currentName
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         },
@@ -54,6 +56,6 @@ fun KeepImportProgressDialog(
             TextButton(onClick = onCancel, enabled = cancellable) {
                 Text(stringResource(R.string.keep_import_progress_button_cancel))
             }
-        },
+        }
     )
 }

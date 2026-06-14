@@ -909,14 +909,14 @@ Content.
         val refMs = Note.parseISO8601("2024-06-20T14:00:00Z")
 
         val equivalents = listOf(
-            "2024-06-20T14:00:00Z",           // pattern 1: yyyy-MM-dd'T'HH:mm:ss'Z'
-            "2024-06-20T14:00:00.000Z",       // pattern 2: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
-            "2024-06-20T14:00:00+00:00",      // pattern 3: yyyy-MM-dd'T'HH:mm:ssXXX
-            "2024-06-20T14:00:00.000+00:00",  // pattern 4: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-            "2024-06-20T14:00:00+0000",       // pattern 5: yyyy-MM-dd'T'HH:mm:ssZ (no colon)
-            "2024-06-20T14:00:00.000+0000",   // pattern 6: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-            "2024-06-20T14:00:00",            // pattern 7: yyyy-MM-dd'T'HH:mm:ss (no TZ → UTC)
-            "2024-06-20T14:00:00.000",        // pattern 8: yyyy-MM-dd'T'HH:mm:ss.SSS (no TZ → UTC)
+            "2024-06-20T14:00:00Z", // pattern 1: yyyy-MM-dd'T'HH:mm:ss'Z'
+            "2024-06-20T14:00:00.000Z", // pattern 2: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+            "2024-06-20T14:00:00+00:00", // pattern 3: yyyy-MM-dd'T'HH:mm:ssXXX
+            "2024-06-20T14:00:00.000+00:00", // pattern 4: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+            "2024-06-20T14:00:00+0000", // pattern 5: yyyy-MM-dd'T'HH:mm:ssZ (no colon)
+            "2024-06-20T14:00:00.000+0000", // pattern 6: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+            "2024-06-20T14:00:00", // pattern 7: yyyy-MM-dd'T'HH:mm:ss (no TZ → UTC)
+            "2024-06-20T14:00:00.000" // pattern 8: yyyy-MM-dd'T'HH:mm:ss.SSS (no TZ → UTC)
         )
 
         for (input in equivalents) {

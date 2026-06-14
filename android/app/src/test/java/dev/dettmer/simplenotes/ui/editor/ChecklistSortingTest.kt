@@ -386,7 +386,7 @@ class ChecklistSortingTest {
             sorterItem("10", checked = false, order = 0, originalOrder = 9),
             sorterItem("11", checked = false, order = 1, originalOrder = 10),
             sorterItem("12", checked = false, order = 2, originalOrder = 11),
-            sorterItem("1",  checked = true,  order = 3, originalOrder = 0)
+            sorterItem("1", checked = true, order = 3, originalOrder = 0)
         )
 
         val result = ChecklistSorter.sort(items, ChecklistSortOption.UNCHECKED_FIRST)
@@ -403,11 +403,11 @@ class ChecklistSortingTest {
         // State after flipping Zeckenmittel to checked: it sits at position 2 in the pre-sort list
         // (unchecked group), while existing checked items are at positions 3–4.
         val items = listOf(
-            sorterItem("A",            checked = false, order = 0),
-            sorterItem("B",            checked = false, order = 1),
-            sorterItem("Zeckenmittel", checked = true,  order = 2), // just flipped
-            sorterItem("C",            checked = true,  order = 3),
-            sorterItem("D",            checked = true,  order = 4)
+            sorterItem("A", checked = false, order = 0),
+            sorterItem("B", checked = false, order = 1),
+            sorterItem("Zeckenmittel", checked = true, order = 2), // just flipped
+            sorterItem("C", checked = true, order = 3),
+            sorterItem("D", checked = true, order = 4)
         )
 
         val result = ChecklistSorter.sort(items, ChecklistSortOption.UNCHECKED_FIRST)
@@ -429,7 +429,7 @@ class ChecklistSortingTest {
             sorterItem("B", checked = false, order = 0, originalOrder = 0),
             sorterItem("C", checked = false, order = 1, originalOrder = 1),
             sorterItem("A", checked = false, order = 2, originalOrder = 2),
-            sorterItem("X", checked = true,  order = 3, originalOrder = 3)
+            sorterItem("X", checked = true, order = 3, originalOrder = 3)
         )
 
         val result = ChecklistSorter.sort(items, ChecklistSortOption.UNCHECKED_FIRST)
@@ -446,7 +446,7 @@ class ChecklistSortingTest {
         val items = listOf(
             sorterItem("A", checked = false, order = 0, originalOrder = 2),
             sorterItem("B", checked = false, order = 1, originalOrder = 0),
-            sorterItem("C", checked = true,  order = 2, originalOrder = 1)
+            sorterItem("C", checked = true, order = 2, originalOrder = 1)
         )
 
         val result = ChecklistSorter.sort(items, ChecklistSortOption.MANUAL)

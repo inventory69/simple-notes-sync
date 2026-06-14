@@ -55,7 +55,7 @@ private fun scaleTypography(multiplier: Float): Typography {
         bodySmall = base.bodySmall.copy(fontSize = base.bodySmall.fontSize * multiplier),
         labelLarge = base.labelLarge.copy(fontSize = base.labelLarge.fontSize * multiplier),
         labelMedium = base.labelMedium.copy(fontSize = base.labelMedium.fontSize * multiplier),
-        labelSmall = base.labelSmall.copy(fontSize = base.labelSmall.fontSize * multiplier),
+        labelSmall = base.labelSmall.copy(fontSize = base.labelSmall.fontSize * multiplier)
     )
 }
 

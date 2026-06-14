@@ -30,7 +30,6 @@
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
     <string name="untitled">Başlıksız</string>
-    <string name="checklist_progress">%1$d/%2$d tamamlandı</string>
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
@@ -89,34 +88,14 @@
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
-    <string name="delete_note_title">Not silinsin mi?</string>
-    <string name="delete_notes_title">%d not silinsin mi?</string>
-    <string name="delete_note_message">Bu notu nasıl silmek istiyorsunuz?</string>
-    <string name="delete_notes_message">Bu %d notu nasıl silmek istiyorsunuz?</string>
-    <string name="delete_everywhere">Her yerden sil (sunucu dahil)</string>
-    <string name="delete_everywhere_offline_hint">Çevrimdışı modda kullanılamaz</string>
-    <string name="delete_local_only">Yalnızca yerel olarak sil</string>
     <string name="delete">Sil</string>
     <string name="cancel">İptal</string>
     <string name="ok">Tamam</string>
     <!-- Legacy delete dialogs -->
-    <string name="legacy_delete_dialog_title">Notu sil</string>
-    <string name="legacy_delete_dialog_message">\"%s\" yerel olarak silinecek.\n\nSunucudan da silinsin mi?</string>
-    <string name="legacy_delete_from_server">Sunucudan sil</string>
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
     <string name="snackbar_undo">GERİ AL</string>
-    <string name="snackbar_note_deleted_local">\"%s\" yerel olarak silindi</string>
-    <string name="snackbar_note_deleted_server">\"%s\" sunucudan silinecek</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d not yerel olarak silindi</item>
-        <item quantity="other">%d not yerel olarak silindi</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d not sunucudan silinecek</item>
-        <item quantity="other">%d not sunucudan silinecek</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Sunucudan silindi</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d not sunucudan silindi</item>

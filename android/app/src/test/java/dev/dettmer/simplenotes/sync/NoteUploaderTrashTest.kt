@@ -44,7 +44,9 @@ class NoteUploaderTrashTest {
         storage = NotesStorage(context)
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     @Test fun `trashed note triggers MD delete not export but still uploads JSON`() = runTest {
         var exportCalls = 0
@@ -57,13 +59,17 @@ class NoteUploaderTrashTest {
             ioDispatcher = Dispatchers.Unconfined,
             folderStore = FolderStore(mockk(relaxed = true)),
             markdownExporter = { _, _, _, _ -> exportCalls++ },
-            markdownDeleter = { _, _, _ -> deleteCalls++ },
+            markdownDeleter = { _, _, _ -> deleteCalls++ }
         )
 
         storage.saveNote(
             Note(
-                id = "tn", title = "Gone", content = "x", deviceId = "dev",
-                syncStatus = SyncStatus.PENDING, trashedAt = 123L
+                id = "tn",
+                title = "Gone",
+                content = "x",
+                deviceId = "dev",
+                syncStatus = SyncStatus.PENDING,
+                trashedAt = 123L
             )
         )
 

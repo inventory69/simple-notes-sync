@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
  * `Map<basename, KeepZipEntry>` im Use-Case gehalten — nicht hier.
  */
 interface KeepZipReader {
-
     /**
      * Klassifizierender Pass über das ZIP. Liest jeden JSON-Entry
      * vollständig, parst nur die für die Klassifikation nötigen Felder

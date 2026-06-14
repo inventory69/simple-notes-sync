@@ -15,7 +15,6 @@
     <string name="fab_text_note">Текстова Нотатка</string>
     <string name="fab_checklist">Чеклист</string>
     <string name="untitled">Без назви</string>
-    <string name="checklist_progress">%1$d/%2$d готово</string>
     <string name="sync_status_completed">Синхронізація виконана</string>
     <string name="sync_status_error">Синхронізація не вдалася</string>
     <string name="sync_already_running">Синхронізація вже у процесі</string>
@@ -61,34 +60,10 @@
     <string name="sync_phase_importing_markdown">Імпортування Markdown…</string>
     <string name="sync_phase_completed">Синхронізація виконана</string>
     <string name="sync_phase_error">Синхронізація не вдалася</string>
-    <string name="delete_note_title">Видалити нотатку?</string>
-    <string name="delete_notes_title">Видалити нотатки (кількість: %d)?</string>
-    <string name="delete_note_message">Як ви бажаєте видалити цю нотатку?</string>
-    <string name="delete_notes_message">Як ви бажаєте видалити ці нотатки (кількість: %d)?</string>
-    <string name="delete_everywhere">Видалити усюди (і на сервері)</string>
-    <string name="delete_everywhere_offline_hint">Недоступно в офлайн режимі</string>
-    <string name="delete_local_only">Видалити лише локально</string>
     <string name="delete">Видалити</string>
     <string name="cancel">Скасувати</string>
     <string name="ok">Гаразд</string>
-    <string name="legacy_delete_dialog_title">Видалити нотатку</string>
-    <string name="legacy_delete_dialog_message">«%s» буде видалено локально.\n\nВидалити із сервера також?</string>
-    <string name="legacy_delete_from_server">Видалити із сервера</string>
     <string name="snackbar_undo">СКАСУВАТИ</string>
-    <string name="snackbar_note_deleted_local">«%s» видалено локально</string>
-    <string name="snackbar_note_deleted_server">«%s» буде видалено із сервера</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d нотатка видалена локально</item>
-        <item quantity="few">%d нотатки видалено локально</item>
-        <item quantity="many">%d нотаток видалено локально</item>
-        <item quantity="other">%d нотаток видалено локально</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d нотатка буде видалена із сервера</item>
-        <item quantity="few">%d нотатки буде видалено із сервера</item>
-        <item quantity="many">%d нотаток буде видалено із сервера</item>
-        <item quantity="other">%d нотаток буде видалено із сервера</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Видалено із сервера</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d нотатка видалена із сервера</item>

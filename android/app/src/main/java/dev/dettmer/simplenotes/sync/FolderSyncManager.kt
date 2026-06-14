@@ -92,7 +92,11 @@ class FolderSyncManager(
     private fun downloadRemote(sardine: Sardine, url: String): List<FolderMeta> = try {
         val exists = when (sardine) {
             is SafeSardineWrapper -> sardine.exists(url)
-            else -> try { sardine.exists(url) } catch (_: Exception) { false }
+            else -> try {
+                sardine.exists(url)
+            } catch (_: Exception) {
+                false
+            }
         }
         if (!exists) {
             emptyList()

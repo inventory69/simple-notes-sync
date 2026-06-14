@@ -28,11 +28,11 @@ import dev.dettmer.simplenotes.utils.Logger
 class SyncScheduler(
     private val context: Context,
     private val prefs: SharedPreferences = context.getSharedPreferences(
-        Constants.PREFS_NAME, Context.MODE_PRIVATE,
+        Constants.PREFS_NAME,
+        Context.MODE_PRIVATE
     ),
-    private val nowMsProvider: () -> Long = { System.currentTimeMillis() },
+    private val nowMsProvider: () -> Long = { System.currentTimeMillis() }
 ) {
-
     fun triggerOnSaveSync(reason: String = "onSave"): Boolean {
         if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_SAVE, Constants.DEFAULT_TRIGGER_ON_SAVE)) {
             Logger.d(TAG, "⏭️ $reason sync disabled - skipping")

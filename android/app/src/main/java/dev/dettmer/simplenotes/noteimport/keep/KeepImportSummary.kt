@@ -25,13 +25,13 @@ data class KeepImportSummary(
     val sharedNotesImported: Int,
     val notesWithColor: Int,
     val notesWithPin: Int,
-    val errors: List<KeepImportError>,
+    val errors: List<KeepImportError>
 ) {
     companion object {
         val EMPTY = KeepImportSummary(
             totalEntries = 0, imported = 0, skipped = 0, replaced = 0, failed = 0,
             notesWithDroppedAttachments = 0, labelsImported = 0, sharedNotesImported = 0,
-            notesWithColor = 0, notesWithPin = 0, errors = emptyList(),
+            notesWithColor = 0, notesWithPin = 0, errors = emptyList()
         )
     }
 }

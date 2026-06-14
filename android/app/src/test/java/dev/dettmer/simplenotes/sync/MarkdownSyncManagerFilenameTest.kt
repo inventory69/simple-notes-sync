@@ -17,7 +17,6 @@ import org.junit.Before
 import org.junit.Test
 
 class MarkdownSyncManagerFilenameTest {
-
     private lateinit var manager: MarkdownSyncManager
 
     @Before fun setUp() {
@@ -28,7 +27,7 @@ class MarkdownSyncManagerFilenameTest {
             urlBuilder = mockk(relaxed = true),
             connectionManager = mockk(relaxed = true),
             timestampManager = mockk(relaxed = true),
-            ioDispatcher = Dispatchers.Unconfined,
+            ioDispatcher = Dispatchers.Unconfined
         )
     }
 
@@ -106,7 +105,11 @@ class MarkdownSyncManagerFilenameTest {
     // ─── v2.9.0 (Trash): deleteSingle ──────────────────────────────────────────
 
     private fun trashNote() = Note(
-        id = "trash-1", title = "Gone", content = "x", deviceId = "dev", trashedAt = 123L
+        id = "trash-1",
+        title = "Gone",
+        content = "x",
+        deviceId = "dev",
+        trashedAt = 123L
     )
 
     @Test fun `deleteSingle tolerates 404 (already gone)`() {

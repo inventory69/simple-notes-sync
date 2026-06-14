@@ -12,8 +12,8 @@ import androidx.glance.appwidget.AndroidRemoteViews
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
 
-private const val TEXT_FALLBACK_DAY_COLOR = 0x1C1B1F   // MD3 onSurface light
-private const val TEXT_FALLBACK_NIGHT_COLOR = 0xE6E1E5  // MD3 onSurface dark
+private const val TEXT_FALLBACK_DAY_COLOR = 0x1C1B1F // MD3 onSurface light
+private const val TEXT_FALLBACK_NIGHT_COLOR = 0xE6E1E5 // MD3 onSurface dark
 private const val FULL_ALPHA = 0xFF
 private const val DIMMED_ALPHA = 0x99 // ~60 %
 private const val COLOR_RGB_MASK = 0x00FFFFFF
@@ -40,8 +40,13 @@ internal fun WidgetInlineText(
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
-    val html = (if (addStrikethrough) "<s>${markdownInlineToHtml(text)}</s>"
-               else markdownInlineToHtml(text)).replace("\n", "<br>")
+    val html = (
+        if (addStrikethrough) {
+            "<s>${markdownInlineToHtml(text)}</s>"
+        } else {
+            markdownInlineToHtml(text)
+        }
+        ).replace("\n", "<br>")
     val spanned = Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY)
     AndroidRemoteViews(
         remoteViews = RemoteViews(context.packageName, R.layout.widget_inline_text).apply {
@@ -53,7 +58,7 @@ internal fun WidgetInlineText(
                     R.id.widget_inline_text,
                     "setTextColor",
                     context.resolveInlineTextColor(dimmed, isNight = false),
-                    context.resolveInlineTextColor(dimmed, isNight = true),
+                    context.resolveInlineTextColor(dimmed, isNight = true)
                 )
             } else {
                 val isNight = context.resources.configuration.uiMode and
@@ -69,8 +74,11 @@ internal fun WidgetInlineText(
 
 private fun Context.resolveInlineTextColor(dimmed: Boolean, isNight: Boolean): Int {
     val base = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        if (isNight) getColor(android.R.color.system_neutral1_100)
-        else getColor(android.R.color.system_neutral1_900)
+        if (isNight) {
+            getColor(android.R.color.system_neutral1_100)
+        } else {
+            getColor(android.R.color.system_neutral1_900)
+        }
     } else {
         if (isNight) TEXT_FALLBACK_NIGHT_COLOR else TEXT_FALLBACK_DAY_COLOR
     }

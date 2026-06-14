@@ -14,13 +14,13 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import kotlin.math.max
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
+import kotlin.math.max
 
 /**
  * 🎨 v1.7.0: Staggered Grid Layout - OPTIMIERT
@@ -47,13 +47,13 @@ fun NotesStaggeredGrid(
     timestampTicker: Long = 0L,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit,
-    folders: List<Folder> = emptyList(),                    // 🆕 v2.7.0 (Folders): List<Folder>
+    folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
     folderNoteCounts: Map<String, Int> = emptyMap(),
-    selectedFolders: Set<String> = emptySet(),              // 🆕 v2.7.0 (Folders): Auswahl
-    localOnlyFolderNames: Set<String> = emptySet(),         // 🆕 v2.8.0 (Local-Only Folders)
+    selectedFolders: Set<String> = emptySet(), // 🆕 v2.7.0 (Folders): Auswahl
+    localOnlyFolderNames: Set<String> = emptySet(), // 🆕 v2.8.0 (Local-Only Folders)
     onFolderClick: (String) -> Unit = {},
     onFolderLongPress: (String) -> Unit = {},
-    onFolderSelectionToggle: (String) -> Unit = {}          // 🆕 v2.7.0 (Folders)
+    onFolderSelectionToggle: (String) -> Unit = {} // 🆕 v2.7.0 (Folders)
 ) {
     val pinnedNotes = remember(notes) { notes.filter { it.isPinned == true } }
     val unpinnedNotes = remember(notes) { notes.filter { it.isPinned != true } }
@@ -76,7 +76,7 @@ fun NotesStaggeredGrid(
             item(
                 key = "header_pinned",
                 contentType = "SectionHeader",
-                span = StaggeredGridItemSpan.FullLine,
+                span = StaggeredGridItemSpan.FullLine
             ) {
                 SectionHeaderText(stringResource(R.string.section_pinned))
             }
@@ -117,7 +117,7 @@ fun NotesStaggeredGrid(
             item(
                 key = "header_notes",
                 contentType = "SectionHeader",
-                span = StaggeredGridItemSpan.FullLine,
+                span = StaggeredGridItemSpan.FullLine
             ) {
                 SectionHeaderText(stringResource(R.string.section_notes))
             }

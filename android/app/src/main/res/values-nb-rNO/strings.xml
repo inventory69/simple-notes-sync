@@ -15,7 +15,6 @@
     <string name="fab_text_note">Tekstnotat</string>
     <string name="fab_checklist">Sjekkliste</string>
     <string name="untitled">Ikke navngitt</string>
-    <string name="checklist_progress">%1$d/%2$d fullført</string>
     <string name="sync_status_completed">Synk fullført</string>
     <string name="sync_status_error">Synk mislykket</string>
     <string name="sync_already_running">Synk kjører allerede</string>
@@ -63,30 +62,10 @@
     <string name="sync_phase_importing_markdown">Importerer Markdown…</string>
     <string name="sync_phase_completed">Synk fullført</string>
     <string name="sync_phase_error">Synk mislykket</string>
-    <string name="delete_note_title">Slett notat?</string>
-    <string name="delete_notes_title">Slett %d notater?</string>
-    <string name="delete_note_message">Hvordan vil du slettet dette notatet?</string>
-    <string name="delete_notes_message">Hvordan vil du slette disse %d notatene?</string>
-    <string name="delete_everywhere">Slett overalt (inkl. på tjener)</string>
-    <string name="delete_everywhere_offline_hint">Ikke tilgjengelig i frakoblet modus</string>
-    <string name="delete_local_only">Slett kun lokalt</string>
     <string name="delete">Slett</string>
     <string name="cancel">Avbryt</string>
     <string name="ok">OK</string>
-    <string name="legacy_delete_dialog_title">Slett notat</string>
-    <string name="legacy_delete_dialog_message">\"%s\" blir slettet lokalt.\n\nSlett fra tjener også?</string>
-    <string name="legacy_delete_from_server">Slett fra tjener</string>
     <string name="snackbar_undo">ANGRE</string>
-    <string name="snackbar_note_deleted_local">\"%s\" slettet lokalt</string>
-    <string name="snackbar_note_deleted_server">\"%s\" vil bli slettet fra tjener</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d notat slettet lokalt</item>
-        <item quantity="other">%d notater slettet lokalt</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d notat vil bli slettet fra tjener</item>
-        <item quantity="other">%d notater vil bli slettet fra tjener</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Slettet fra tjener</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d notat slettet fra tjener</item>
@@ -176,7 +155,7 @@
     <string name="server_connection_http">🏠 Intern (HTTP)</string>
     <string name="server_connection_https">🌐 Ekstern (HTTPS)</string>
     <string name="server_connection_http_hint">HTTP kun for lokale nettverk (e.g. 192.168.x.x, 10.x.x.x)</string>
-    <string name="server_connection_https_hint">HTTPS for sikre tilkoblinger over internett</string>
+    <string name="server_connection_https_hint">HTTPS for sikre tilkoblinger over Internett</string>
     <string name="server_address">Tjeneradresse</string>
     <string name="server_address_hint">f.eks. http://192.168.0.188:8080/notes</string>
     <string name="server_advanced_settings">Avansert</string>

@@ -332,10 +332,11 @@ private fun NoteTypeIcon(noteType: NoteType) {
 private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f) {
     val context = LocalContext.current
     val hasTitle = note.title.isNotBlank()
-    val isBlankNote = note.title.isBlank() && when (note.noteType) {
-        NoteType.TEXT -> note.content.isBlank()
-        NoteType.CHECKLIST -> note.checklistItems.isNullOrEmpty()
-    }
+    val isBlankNote = note.title.isBlank() &&
+        when (note.noteType) {
+            NoteType.TEXT -> note.content.isBlank()
+            NoteType.CHECKLIST -> note.checklistItems.isNullOrEmpty()
+        }
 
     when {
         hasTitle -> Row(
@@ -388,7 +389,7 @@ private fun NoteCardBody(note: Note, fontSizeScale: Float = 1.0f) {
                 WidgetInlineText(
                     text = note.content,
                     fontSize = 12f * fontSizeScale,
-                    maxLines = 4,
+                    maxLines = 4
                 )
             }
         }

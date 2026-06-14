@@ -14,7 +14,6 @@ package dev.dettmer.simplenotes.models
  * v2.3.0: Audit 3-01, 12-01
  */
 object ChecklistSorter {
-
     /**
      * Sorts [items] according to [option], identical to the toggle path in NoteEditorViewModel.
      *

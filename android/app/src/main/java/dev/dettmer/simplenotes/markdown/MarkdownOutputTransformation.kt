@@ -21,9 +21,8 @@ class MarkdownOutputTransformation(
     private val codeBackground: Color,
     private val codeColor: Color,
     private val markerColor: Color,
-    private val fontSizeMultiplier: Float = 1.0f,
+    private val fontSizeMultiplier: Float = 1.0f
 ) : OutputTransformation {
-
     private val headingSize1 = (24 * fontSizeMultiplier).sp
     private val headingSize2 = (20 * fontSizeMultiplier).sp
     private val headingSize3 = (18 * fontSizeMultiplier).sp
@@ -50,7 +49,7 @@ class MarkdownOutputTransformation(
     private fun collectLineStyles(
         text: String,
         codeRanges: List<IntRange>,
-        styles: MutableList<StyleSpan>,
+        styles: MutableList<StyleSpan>
     ) {
         var lineStart = 0
         for (line in text.split('\n')) {
@@ -64,7 +63,7 @@ class MarkdownOutputTransformation(
     private fun lineStyles(
         line: String,
         lineStart: Int,
-        styles: MutableList<StyleSpan>,
+        styles: MutableList<StyleSpan>
     ) {
         val headingMatch = mdHeadingRegex.matchEntire(line)
         val taskMatch = mdTaskRegex.matchEntire(line)
@@ -77,19 +76,23 @@ class MarkdownOutputTransformation(
                     SpanStyle(
                         color = markerColor,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.3.em,
-                    ),
+                        letterSpacing = 0.3.em
+                    )
                 )
             }
             headingMatch != null -> {
                 val level = headingMatch.groupValues[1].length.coerceAtMost(3)
                 val prefixLen = level + 1
-                val fontSize = when (level) { 1 -> headingSize1; 2 -> headingSize2; else -> headingSize3 }
+                val fontSize = when (level) {
+                    1 -> headingSize1
+                    2 -> headingSize2
+                    else -> headingSize3
+                }
                 styles += StyleSpan(lineStart, lineStart + prefixLen, marker)
                 styles += StyleSpan(
                     lineStart + prefixLen,
                     lineStart + line.length,
-                    SpanStyle(fontWeight = FontWeight.Bold, fontSize = fontSize),
+                    SpanStyle(fontWeight = FontWeight.Bold, fontSize = fontSize)
                 )
             }
             taskMatch != null -> {
@@ -101,7 +104,7 @@ class MarkdownOutputTransformation(
                     styles += StyleSpan(
                         lineStart + prefixLen,
                         lineStart + line.length,
-                        SpanStyle(textDecoration = TextDecoration.LineThrough, color = markerColor),
+                        SpanStyle(textDecoration = TextDecoration.LineThrough, color = markerColor)
                     )
                 }
             }
@@ -117,7 +120,7 @@ class MarkdownOutputTransformation(
     private fun collectCodeBlockStyles(
         text: String,
         codeRanges: List<IntRange>,
-        styles: MutableList<StyleSpan>,
+        styles: MutableList<StyleSpan>
     ) {
         val blockStyle = SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)
         val markerStyle = SpanStyle(color = markerColor)
@@ -137,7 +140,7 @@ class MarkdownOutputTransformation(
     private fun collectInlineStyles(
         text: String,
         codeRanges: List<IntRange>,
-        styles: MutableList<StyleSpan>,
+        styles: MutableList<StyleSpan>
     ) {
         val masked = buildString(text.length) {
             text.forEachIndexed { i, c -> append(if (codeRanges.any { i in it }) ' ' else c) }
@@ -150,7 +153,7 @@ class MarkdownOutputTransformation(
     @Suppress("CyclomaticComplexMethod")
     private fun inlineStyles(
         match: MatchResult,
-        styles: MutableList<StyleSpan>,
+        styles: MutableList<StyleSpan>
     ) {
         val start = match.range.first
         val end = match.range.last + 1
@@ -176,7 +179,7 @@ class MarkdownOutputTransformation(
                 styles += StyleSpan(
                     start + 1,
                     end - 1,
-                    SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor),
+                    SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)
                 )
                 styles += StyleSpan(end - 1, end, marker)
             }
@@ -186,7 +189,7 @@ class MarkdownOutputTransformation(
                 styles += StyleSpan(
                     start + 1,
                     textEnd,
-                    SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
+                    SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
                 )
                 styles += StyleSpan(textEnd, end, marker)
             }

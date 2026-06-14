@@ -17,7 +17,7 @@ data class KeepPreScanResult(
     val labelCount: Int,
     val sharedCount: Int,
     val notesWithAttachments: Int,
-    val sizeBytes: Long,
+    val sizeBytes: Long
 ) {
     /**
      * Wieviele Notizen würden mit den gegebenen Filter-Schaltern verarbeitet?
@@ -39,7 +39,7 @@ data class KeepPreScanResult(
             labelCount = 0,
             sharedCount = 0,
             notesWithAttachments = 0,
-            sizeBytes = 0L,
+            sizeBytes = 0L
         )
     }
 }

@@ -6,5 +6,5 @@ package dev.dettmer.simplenotes.noteimport.keep
 data class KeepImportProgress(
     val processed: Int,
     val total: Int,
-    val currentName: String,
+    val currentName: String
 )

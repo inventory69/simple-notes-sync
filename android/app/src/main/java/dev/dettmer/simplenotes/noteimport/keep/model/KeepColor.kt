@@ -34,11 +34,11 @@ object KeepColor {
         "GREEN" to "#CCFF90",
         "TEAL" to "#A7FFEB",
         "BLUE" to "#CBF0F8",
-        "CERULEAN" to "#AECBFA",   // Keep-API-Name für "Dunkelblau"
+        "CERULEAN" to "#AECBFA", // Keep-API-Name für "Dunkelblau"
         "PURPLE" to "#D7AEFB",
         "PINK" to "#FDCFE8",
         "BROWN" to "#E6C9A8",
-        "GRAY" to "#E8EAED",
+        "GRAY" to "#E8EAED"
     )
 
     /**
@@ -50,7 +50,7 @@ object KeepColor {
      *   CERULEAN-Slot (#AECBFA) abgebildet.
      */
     private val ALIAS = mapOf(
-        "DARK_BLUE" to "#AECBFA",
+        "DARK_BLUE" to "#AECBFA"
     )
 
     private val MAP: Map<String, String?> = CANONICAL + ALIAS
@@ -66,7 +66,7 @@ object KeepColor {
             Logger.w(
                 TAG,
                 "Unknown Keep color '$keepColorName' — falling back to no color. " +
-                    "Consider adding it to KeepColor.ALIAS.",
+                    "Consider adding it to KeepColor.ALIAS."
             )
             return null
         }

@@ -6,15 +6,15 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import dev.dettmer.simplenotes.noteimport.keep.parser.dto.KeepNoteJson
 import dev.dettmer.simplenotes.utils.Logger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import java.io.BufferedInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 /**
  * v2.5.0 — `ZipInputStream`-basierte Implementierung.
@@ -26,7 +26,6 @@ import java.util.zip.ZipInputStream
  * werden direkt aus dem `ZipInputStream` gelesen (keine Zwischendatei).
  */
 class KeepZipReaderImpl(private val context: Context) : KeepZipReader {
-
     override suspend fun preScan(uri: Uri): KeepPreScanResult {
         return try {
             openZip(uri).use { zin -> scanZipStats(zin) }
@@ -87,7 +86,7 @@ class KeepZipReaderImpl(private val context: Context) : KeepZipReader {
             labelCount = labels.size,
             sharedCount = shared,
             notesWithAttachments = withAttachments,
-            sizeBytes = sizeBytes,
+            sizeBytes = sizeBytes
         )
     }
 
@@ -102,7 +101,7 @@ class KeepZipReaderImpl(private val context: Context) : KeepZipReader {
                             KeepZipEntry(
                                 name = entry.name,
                                 bytes = bytes,
-                                sizeBytes = entry.size.coerceAtLeast(0L),
+                                sizeBytes = entry.size.coerceAtLeast(0L)
                             )
                         )
                     } else {

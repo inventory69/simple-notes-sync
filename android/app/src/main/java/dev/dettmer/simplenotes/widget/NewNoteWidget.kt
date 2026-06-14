@@ -20,7 +20,6 @@ import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.unit.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -36,6 +35,7 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
@@ -58,7 +58,6 @@ import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
  * Feature Request: GitHub Discussion #49 von @Stowaway2979
  */
 class NewNoteWidget : GlanceAppWidget() {
-
     // Exact mode: render at the precise size the launcher reports.
     // Avoids SizeMode.Responsive breakpoint selection failures that caused
     // the two-button layout to never appear on certain launchers.

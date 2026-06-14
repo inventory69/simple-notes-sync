@@ -20,7 +20,6 @@ import org.junit.Before
 import org.junit.Test
 
 class NotesStorageTest {
-
     private lateinit var tmpDir: File
     private lateinit var storage: NotesStorage
 
@@ -36,12 +35,14 @@ class NotesStorageTest {
         storage = NotesStorage(context)
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     private fun note(
         id: String = "note-1",
         title: String = "Title",
-        content: String = "Body",
+        content: String = "Body"
     ) = Note(id = id, title = title, content = content, deviceId = "dev")
 
     // ─── save / load ──────────────────────────────────────────────────────────
@@ -171,7 +172,7 @@ class NotesStorageTest {
             title = "Shopping",
             content = "",
             deviceId = "dev",
-            noteType = NoteType.CHECKLIST,
+            noteType = NoteType.CHECKLIST
         )
         storage.saveNote(n)
         val loaded = storage.loadNote("cl-1")

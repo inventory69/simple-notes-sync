@@ -22,9 +22,8 @@ import dev.dettmer.simplenotes.utils.Logger
  */
 internal class KeepEntryParserImpl(
     private val htmlFallback: KeepHtmlFallbackParser,
-    private val gson: Gson = Gson(),
+    private val gson: Gson = Gson()
 ) : KeepEntryParser {
-
     override fun parse(jsonEntry: KeepZipEntry, htmlEntry: KeepZipEntry?): KeepNote? {
         val raw = readUtf8Stripped(jsonEntry.bytes)
         if (raw.isBlank()) {
@@ -85,7 +84,7 @@ internal class KeepEntryParserImpl(
             state = state,
             createdTimestampUsec = dto.createdTimestampUsec ?: 0L,
             userEditedTimestampUsec = dto.userEditedTimestampUsec ?: 0L,
-            sourceJsonName = jsonEntry.name,
+            sourceJsonName = jsonEntry.name
         )
     }
 
@@ -111,7 +110,7 @@ internal class KeepEntryParserImpl(
         return KeepChecklistItem(
             text = raw.trimStart(),
             isChecked = item.isChecked ?: false,
-            indentationLevel = indent.coerceIn(0, MAX_INDENT_LEVEL),
+            indentationLevel = indent.coerceIn(0, MAX_INDENT_LEVEL)
         )
     }
 

@@ -22,12 +22,11 @@ data class NoteColorSlot(
     /** Card container colour for light mode. */
     val containerColor: Color,
     /** Card container colour for dark / AMOLED mode. */
-    val containerColorDark: Color,
+    val containerColorDark: Color
 )
 
 @Suppress("MagicNumber") // Keep-derived palette — hex literals are design constants
 object NoteColorPalette {
-
     /** All 11 available colour slots, in display order (matches Keep palette order). */
     val slots: List<NoteColorSlot> = listOf(
         NoteColorSlot("#F28B82", Color(0xFFF28B82), Color(0xFF7A3028)),
@@ -40,7 +39,7 @@ object NoteColorPalette {
         NoteColorSlot("#D7AEFB", Color(0xFFD7AEFB), Color(0xFF3D1060)),
         NoteColorSlot("#FDCFE8", Color(0xFFFDCFE8), Color(0xFF6B1940)),
         NoteColorSlot("#E6C9A8", Color(0xFFE6C9A8), Color(0xFF4A2D10)),
-        NoteColorSlot("#E8EAED", Color(0xFFE8EAED), Color(0xFF2E3135)),
+        NoteColorSlot("#E8EAED", Color(0xFFE8EAED), Color(0xFF2E3135))
     )
 
     private val byHex: Map<String, NoteColorSlot> = slots.associateBy { it.hex }

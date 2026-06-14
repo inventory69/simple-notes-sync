@@ -13,7 +13,6 @@ import org.junit.Before
 import org.junit.Test
 
 class SyncSchedulerTest {
-
     private lateinit var ctx: Context
     private lateinit var prefs: SharedPreferences
 
@@ -47,7 +46,7 @@ class SyncSchedulerTest {
         mockkConstructor(WebDavSyncService::class)
         every { anyConstructed<WebDavSyncService>().canSync() } returns
             SyncGateResult(canSync = true, blockReason = null)
-        val scheduler = SyncScheduler(ctx, prefs) { 1_000L + 1_000L }  // 1 s seit letztem Sync (<5 s default)
+        val scheduler = SyncScheduler(ctx, prefs) { 1_000L + 1_000L } // 1 s seit letztem Sync (<5 s default)
         assertFalse(scheduler.triggerOnSaveSync())
     }
 

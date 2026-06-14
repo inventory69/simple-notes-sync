@@ -8,5 +8,5 @@ import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 data class KeepImportOptions(
     val includeArchived: Boolean = false,
     val includeTrashed: Boolean = false,
-    val conflictStrategy: ConflictStrategy = ConflictStrategy.ALWAYS_CREATE,
+    val conflictStrategy: ConflictStrategy = ConflictStrategy.ALWAYS_CREATE
 )

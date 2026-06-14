@@ -20,7 +20,6 @@ import org.junit.Test
  * `toMarkdown`/`fromMarkdown` erweitert (siehe Analyseplan §2.4.1 Bullet 2).
  */
 class NoteJsonRoundTripTest {
-
     private fun baseNote(
         importedAt: Long? = null,
         labels: List<String>? = null,

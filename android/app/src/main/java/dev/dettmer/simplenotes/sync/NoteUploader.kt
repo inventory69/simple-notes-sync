@@ -84,8 +84,8 @@ internal class NoteUploader(
         // Case-insensitiver Vergleich — Ordnernamen sind im FolderStore case-insensitiv eindeutig.
         val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
         val pendingNotes = localNotes.filter {
-            (it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING)
-                && it.folderName?.lowercase() !in localOnlyFolders
+            (it.syncStatus == SyncStatus.LOCAL_ONLY || it.syncStatus == SyncStatus.PENDING) &&
+                it.folderName?.lowercase() !in localOnlyFolders
         }
         val totalToUpload = pendingNotes.size
 

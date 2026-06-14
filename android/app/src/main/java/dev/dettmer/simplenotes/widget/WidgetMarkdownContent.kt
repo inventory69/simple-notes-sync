@@ -1,8 +1,8 @@
 package dev.dettmer.simplenotes.widget
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -28,11 +28,17 @@ private const val CODE_BLOCK_MAX_LINES = 10
 
 private sealed interface WidgetRenderItem {
     data class Heading(val level: Int, val text: String) : WidgetRenderItem
+
     data class Paragraph(val text: String) : WidgetRenderItem
+
     data class TaskItem(val text: String, val isChecked: Boolean) : WidgetRenderItem
+
     data class ListItem(val text: String) : WidgetRenderItem
+
     data class CodeLine(val text: String) : WidgetRenderItem
+
     data object Divider : WidgetRenderItem
+
     data object BlockSpacer : WidgetRenderItem
 }
 

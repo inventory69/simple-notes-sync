@@ -8,19 +8,18 @@ import dev.dettmer.simplenotes.noteimport.keep.model.KeepChecklistItem
 import dev.dettmer.simplenotes.noteimport.keep.model.KeepLabel
 import dev.dettmer.simplenotes.noteimport.keep.model.KeepNote
 import dev.dettmer.simplenotes.noteimport.keep.model.KeepNoteState
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * v2.5.0 — Tests #20 bis #26 aus Analyseplan §5.1.
  */
 class KeepToNoteMapperTest {
-
     private lateinit var mapper: KeepToNoteMapper
     private val counter = AtomicInteger(0)
 
@@ -29,7 +28,7 @@ class KeepToNoteMapperTest {
         counter.set(0)
         mapper = KeepToNoteMapper(
             deviceIdProvider = { "test-device" },
-            idGenerator = { "id-${counter.incrementAndGet()}" },
+            idGenerator = { "id-${counter.incrementAndGet()}" }
         )
     }
 
@@ -48,13 +47,13 @@ class KeepToNoteMapperTest {
         isShared: Boolean = false,
         state: KeepNoteState = KeepNoteState.ACTIVE,
         createdUsec: Long = 1_690_000_000_000_000L,
-        updatedUsec: Long = 1_700_000_000_000_000L,
+        updatedUsec: Long = 1_700_000_000_000_000L
     ) = KeepNote(
         title = title, textContent = text, checklist = checklist, labels = labels,
         attachments = attachments, annotations = annotations, color = color,
         isPinned = isPinned, isShared = isShared, state = state,
         createdTimestampUsec = createdUsec, userEditedTimestampUsec = updatedUsec,
-        sourceJsonName = "test.json",
+        sourceJsonName = "test.json"
     )
 
     // ───── #20 ───────────────────────────────────────────────────────
@@ -78,8 +77,8 @@ class KeepToNoteMapperTest {
             text = null,
             checklist = listOf(
                 KeepChecklistItem("Milch", false, 0),
-                KeepChecklistItem("Brot", true, 0),
-            ),
+                KeepChecklistItem("Brot", true, 0)
+            )
         )
         val n = mapper.map(keep, importedAtMs = 1L)
         assertEquals(NoteType.CHECKLIST, n.noteType)
@@ -111,8 +110,8 @@ class KeepToNoteMapperTest {
         val keep = keepNoteOf(
             attachments = listOf(
                 KeepAttachment("a.jpg", "image/jpeg", null),
-                KeepAttachment("b.png", "image/png", null),
-            ),
+                KeepAttachment("b.png", "image/png", null)
+            )
         )
         val n = mapper.map(keep, importedAtMs = 0L)
         // Note hat kein attachments-Feld → der Mapper darf nichts daran ändern.
@@ -130,7 +129,7 @@ class KeepToNoteMapperTest {
             KeepChecklistItem("Obst", false, 0),
             KeepChecklistItem("Äpfel", false, 1),
             KeepChecklistItem("Granny", false, 2),
-            KeepChecklistItem("Brot", false, 0),
+            KeepChecklistItem("Brot", false, 0)
         )
         val out = mapper.mapChecklist(items)
         assertEquals(4, out.size)
@@ -163,8 +162,8 @@ class KeepToNoteMapperTest {
             text = "Article snippet",
             annotations = listOf(
                 KeepAnnotation("WEBLINK", "https://example.org/a", "A"),
-                KeepAnnotation("WEBLINK", "https://example.org/b", "B"),
-            ),
+                KeepAnnotation("WEBLINK", "https://example.org/b", "B")
+            )
         )
         val n = mapper.map(keep, importedAtMs = 0L)
         assertTrue(n.content.contains("Article snippet"))

@@ -193,13 +193,13 @@ fun SettingsNavHost(navController: NavHostController, viewModel: SettingsViewMod
                             val result = snackbarHostState.showSnackbar(
                                 message = data.message,
                                 actionLabel = data.actionLabel,
-                                duration = SnackbarDuration.Short,
+                                duration = SnackbarDuration.Short
                             )
                             if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                                 data.onAction?.invoke()
                             }
                         }
-                    },
+                    }
                 )
             }
         }

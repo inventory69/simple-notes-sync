@@ -16,8 +16,8 @@ import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
-import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.utils.NoteShareHelper
+import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -47,8 +47,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         const val ARG_NOTE_ID = "noteId"
         const val ARG_NOTE_TYPE = "noteType"
         const val ARG_FOLDER = "folderName"
-        const val ARG_SHARED_TEXT = "sharedText"           // 🆕 v2.2.0
-        const val ARG_SHARED_SUBJECT = "sharedSubject"     // 🆕 v2.2.0
+        const val ARG_SHARED_TEXT = "sharedText" // 🆕 v2.2.0
+        const val ARG_SHARED_SUBJECT = "sharedSubject" // 🆕 v2.2.0
         const val ARG_APPEND_TO_NOTE_ID = "appendToNoteId" // 🆕 v2.6.0
         private const val CALENDAR_TITLE_FALLBACK_MAX_LENGTH = 50 // 🆕 v1.10.0-Papa
     }
@@ -126,7 +126,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private val _existingNote = MutableStateFlow<Note?>(null)
     private var existingNote: Note?
         get() = _existingNote.value
-        set(value) { _existingNote.value = value }
+        set(value) {
+            _existingNote.value = value
+        }
     private var currentNoteType: NoteType = NoteType.TEXT
     private var isConverting = false
 
@@ -141,7 +143,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private val _hasUnsavedChecklistEdits = MutableStateFlow(false)
     private var hasUnsavedChecklistEdits: Boolean
         get() = _hasUnsavedChecklistEdits.value
-        set(value) { _hasUnsavedChecklistEdits.value = value }
+        set(value) {
+            _hasUnsavedChecklistEdits.value = value
+        }
 
     // 🆕 v1.9.0: Autosave with debounce
     private val autosaveEnabled = prefs.getBoolean(
@@ -149,11 +153,14 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         Constants.DEFAULT_AUTOSAVE_ENABLED
     )
     private var autosaveJob: kotlinx.coroutines.Job? = null
+
     // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
     private val _isDirty = MutableStateFlow(false)
     private var isDirty: Boolean
         get() = _isDirty.value
-        set(value) { _isDirty.value = value } // 🆕 v1.9.0: only autosave when content has actually changed
+        set(value) {
+            _isDirty.value = value
+        } // 🆕 v1.9.0: only autosave when content has actually changed
 
     // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
     private val _autosaveIndicatorVisible = MutableStateFlow(false)
@@ -164,11 +171,14 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     val canUndo: StateFlow<Boolean> = undoRedoManager.canUndo
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedo
     private var snapshotDebounceJob: kotlinx.coroutines.Job? = null
+
     // v2.3.0 (REF-012): MutableStateFlow-backed for thread-safety.
     private val _isRestoringSnapshot = MutableStateFlow(false)
     private var isRestoringSnapshot: Boolean
         get() = _isRestoringSnapshot.value
-        set(value) { _isRestoringSnapshot.value = value }
+        set(value) {
+            _isRestoringSnapshot.value = value
+        }
 
     // 🔧 v1.10.0: Snapshot des zuletzt gespeicherten Zustands.
     // Wird beim Öffnen und nach jedem erfolgreichen Save gesetzt.
@@ -381,9 +391,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             // Extract as title when separated by a blank line, or when next line is a list item
             val secondLine = lines.getOrNull(1)?.trim() ?: ""
             val bodyStart = when {
-                secondLine.isBlank()              -> 2
+                secondLine.isBlank() -> 2
                 listItemRegex.matches(secondLine) -> 1
-                else                              -> null
+                else -> null
             }
             if (bodyStart != null) {
                 firstLine to lines.drop(bodyStart).joinToString("\n").trim()
@@ -397,30 +407,30 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     private fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
-        val gfmRegex       = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
-        val markerRegex    = Regex("""^[-*•]\s+(.*)$""")
-        val cbRegex        = Regex("""^\[([ xX])\]\s*(.*)$""") // group 1 = mark, group 2 = text
+        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
+        val markerRegex = Regex("""^[-*•]\s+(.*)$""")
+        val cbRegex = Regex("""^\[([ xX])\]\s*(.*)$""") // group 1 = mark, group 2 = text
         val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
         val t = line.trim()
         val gfm = gfmRegex.find(t)
         return if (gfm != null) {
             ChecklistItemState.createEmpty(index).copy(
-                text      = gfm.groupValues[2].trim(),
+                text = gfm.groupValues[2].trim(),
                 isChecked = gfm.groupValues[1].lowercase() != " "
             )
         } else {
             val checkmark = checkmarkRegex.find(t)
             if (checkmark != null) {
                 ChecklistItemState.createEmpty(index).copy(
-                    text      = checkmark.groupValues[1].trim(),
+                    text = checkmark.groupValues[1].trim(),
                     isChecked = true
                 )
             } else {
                 val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
-                val cbMatch     = cbRegex.find(afterMarker.trim())
+                val cbMatch = cbRegex.find(afterMarker.trim())
                 if (cbMatch != null) {
                     ChecklistItemState.createEmpty(index).copy(
-                        text      = cbMatch.groupValues[2].trim(),
+                        text = cbMatch.groupValues[2].trim(),
                         isChecked = cbMatch.groupValues[1].lowercase() != " "
                     )
                 } else {
@@ -546,15 +556,23 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
         val asChecklistItems = items.map { s ->
             ChecklistItem(
-                id = s.id, text = s.text, isChecked = s.isChecked,
-                order = s.order, originalOrder = s.originalOrder, createdAt = s.createdAt
+                id = s.id,
+                text = s.text,
+                isChecked = s.isChecked,
+                order = s.order,
+                originalOrder = s.originalOrder,
+                createdAt = s.createdAt
             )
         }
         val sorted = ChecklistSorter.sort(asChecklistItems, _lastChecklistSortOption.value)
         return sorted.map { item ->
             ChecklistItemState(
-                id = item.id, text = item.text, isChecked = item.isChecked,
-                order = item.order, originalOrder = item.originalOrder, createdAt = item.createdAt
+                id = item.id,
+                text = item.text,
+                isChecked = item.isChecked,
+                order = item.order,
+                originalOrder = item.originalOrder,
+                createdAt = item.createdAt
             )
         }
     }
@@ -1180,7 +1198,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     val existingItems = currentNote.checklistItems.orEmpty()
                     val existingTitle = currentNote.title
                     val noContentChange = existingTitle == title &&
-                        currentNote.color == state.color && // 🆕 v2.5.x Fix: colour change must not be blocked by guard
+                        currentNote.color == state.color &&
+                        // 🆕 v2.5.x Fix: colour change must not be blocked by guard
                         existingItems.size == validItems.size &&
                         existingItems.zip(validItems).all { (old, new) ->
                             old.id == new.id &&
@@ -1233,7 +1252,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         title = _uiState.value.title,
         content = _uiState.value.content,
         checklistItems = _checklistItems.value.toList(),
-        noteType = currentNoteType,
+        noteType = currentNoteType
     )
 
     private fun pushUndoSnapshot() {
@@ -1272,16 +1291,18 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         val isNew = _uiState.value.isNewNote
         val restoredToolbarTitle = when {
             snapshot.noteType == NoteType.CHECKLIST && isNew -> ToolbarTitle.NEW_CHECKLIST
-            snapshot.noteType == NoteType.CHECKLIST          -> ToolbarTitle.EDIT_CHECKLIST
-            isNew                                            -> ToolbarTitle.NEW_NOTE
-            else                                             -> ToolbarTitle.EDIT_NOTE
+            snapshot.noteType == NoteType.CHECKLIST -> ToolbarTitle.EDIT_CHECKLIST
+            isNew -> ToolbarTitle.NEW_NOTE
+            else -> ToolbarTitle.EDIT_NOTE
         }
-        _uiState.update { it.copy(
-            title        = snapshot.title,
-            content      = snapshot.content,
-            noteType     = snapshot.noteType,
-            toolbarTitle = restoredToolbarTitle,
-        ) }
+        _uiState.update {
+            it.copy(
+                title = snapshot.title,
+                content = snapshot.content,
+                noteType = snapshot.noteType,
+                toolbarTitle = restoredToolbarTitle
+            )
+        }
         _checklistItems.value = snapshot.checklistItems
 
         // 🔧 v1.10.0: isDirty-Reset wenn Undo/Redo den gespeicherten Zustand wiederherstellt
@@ -1513,7 +1534,7 @@ data class NoteEditorUiState(
     val isLoading: Boolean = false,
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
-    val defaultStartInPreviewMode: Boolean = true, // 🆕 v2.8.0: user preference for open mode
+    val defaultStartInPreviewMode: Boolean = true // 🆕 v2.8.0: user preference for open mode
 )
 
 data class ChecklistItemState(

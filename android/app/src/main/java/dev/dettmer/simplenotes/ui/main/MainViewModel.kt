@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.main
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,7 +23,6 @@ import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.sync.buildSyncResultBanner
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
-import android.content.Intent
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
@@ -72,6 +72,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val pendingServerDeletions = PendingServerDeletions(application)
     private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(application)
+
     // 🆕 v2.9.0 (Trash): Papierkorb-Operationen (Löschen = in den Papierkorb verschieben).
     private val trashManager = dev.dettmer.simplenotes.storage.TrashManager(
         storage = storage,
@@ -128,8 +129,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
     val isServerConfigured: StateFlow<Boolean> = _isOfflineMode.map { offline ->
-        if (offline) false
-        else hasServerConfig()
+        if (offline) {
+            false
+        } else {
+            hasServerConfig()
+        }
     }.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
@@ -262,7 +266,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // zu einem Paar zusammengefasst, damit der Flow weiterhin 5 Flows nutzt.
     // 🆕 v2.7.0 (Folders): Ordner-Filter ist NICHT mehr Teil dieser Pipeline — er wird erst
     // pro AnimatedContent-Pane angewandt (sonst Flackern beim Ordnerwechsel, siehe MainScreen).
-    private val _filterCriteria =
+    private val filterCriteria =
         combine(_noteFilter, _colorFilter) { f, c -> f to c }
 
     // 🆕 v1.9.0 (F10): Search Query State
@@ -273,7 +277,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
      * 🆕 v1.9.0 (F06): + Filter nach NoteType
      * 🆕 v1.9.0 (F10): + Volltextsuche über Titel und Inhalt
-     * 🆕 v2.5.0: + Farbfilter (via _filterCriteria)
+     * 🆕 v2.5.0: + Farbfilter (via filterCriteria)
      * 🆕 v2.7.0 (Folders): OHNE Ordner-Filter — jede AnimatedContent-Pane filtert selbst nach ihrem
      * `folderKey` (verhindert Flackern, weil die abgehende Pane sonst kurz die Notizen des neuen
      * Ordners zeigt). Ordner-bezogene Auswahl (selectAll) filtert `.value` ad hoc nach `_currentFolder`.
@@ -282,7 +286,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _notes,
         _sortOption,
         _sortDirection,
-        _filterCriteria,        // 🆕 v2.5.0: vorher _noteFilter
+        filterCriteria, // 🆕 v2.5.0: vorher _noteFilter
         _searchQuery
     ) { notes, option, direction, filterCriteria, query ->
         val (filter, colorFilter) = filterCriteria
@@ -363,6 +367,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Track first note ID in sorted order to detect new notes at top
     private var previousFirstSortedNoteId: String? = null
+
     // Flag: set when returning from editor, cleared after loadNotes comparison
     private var expectNewNoteCheck = false
 
@@ -588,7 +593,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             note.copy(
                                 color = hex,
                                 updatedAt = System.currentTimeMillis(),
-                                syncStatus = SyncStatus.PENDING,
+                                syncStatus = SyncStatus.PENDING
                             )
                         )
                     }
@@ -615,7 +620,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         note.copy(
                             isPinned = newPinned,
                             updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING,
+                            syncStatus = SyncStatus.PENDING
                         )
                     )
                 }
@@ -1008,12 +1013,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun filterNotes(
         notes: List<Note>,
         filter: NoteFilter,
-        colorFilter: String? = null       // 🆕 v2.5.0
+        colorFilter: String? = null // 🆕 v2.5.0
     ): List<Note> {
         // 🆕 v2.7.0 (Folders): Kein Ordner-Filter hier — das übernimmt jede Pane selbst (s. sortedNotesUnfoldered).
         val byType = when (filter) {
-            NoteFilter.ALL            -> notes
-            NoteFilter.TEXT_ONLY      -> notes.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.ALL -> notes
+            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
             NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
         }
         return if (colorFilter != null) byType.filter { it.color == colorFilter } else byType
@@ -1101,11 +1106,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Map-Key: Hex-String ("#F28B82") oder null (keine Farbe zugewiesen).
      */
     val availableColors: StateFlow<Map<String?, Int>> = combine(
-        _notes, _noteFilter
+        _notes,
+        _noteFilter
     ) { notes, filter ->
         val byType = when (filter) {
-            NoteFilter.ALL            -> notes
-            NoteFilter.TEXT_ONLY      -> notes.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.ALL -> notes
+            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
             NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
         }
         byType.groupingBy { it.color }.eachCount()
@@ -1181,7 +1187,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     attemptServerDeletion(deletions)
                     val webdavService = WebDavSyncService(getApplication())
                     for (folder in folderNames) {
-                        try { webdavService.deleteServerFolderIfEmpty(folder) } catch (_: Exception) { }
+                        try {
+                            webdavService.deleteServerFolderIfEmpty(folder)
+                        } catch (_: Exception) {
+                        }
                     }
                 } else {
                     SyncStateManager.showInfo(getString(R.string.snackbar_folder_removed_from_server))
@@ -1294,8 +1303,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _localOnlyFolderNames.value.any { it.equals(name, ignoreCase = true) }
         }.toSet()
         val notesInFolders = _notes.value.filter { it.folderName in folderNames }
-        val notesToTrash = (_notes.value.filter { it.id in noteIds } +
-            if (!keepContainedNotes) notesInFolders else emptyList()).distinctBy { it.id }
+        val notesToTrash = (
+            _notes.value.filter { it.id in noteIds } +
+                if (!keepContainedNotes) notesInFolders else emptyList()
+            ).distinctBy { it.id }
         val notesToRoot = if (keepContainedNotes) notesInFolders.filter { it.id !in noteIds } else emptyList()
 
         if (notesToTrash.isEmpty() && folderNames.isEmpty()) return
@@ -1356,8 +1367,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // damit der gelöschte Ordner nicht über eine zurückbleibende Datei wieder auftaucht.
             val dels = notesToTrash
                 .filter {
-                    it.id in stillPending && it.folderName != null && it.folderName in folderNames &&
-                        it.syncStatus != SyncStatus.LOCAL_ONLY && !folderStore.isLocalOnly(it.folderName)
+                    it.id in stillPending &&
+                        it.folderName != null &&
+                        it.folderName in folderNames &&
+                        it.syncStatus != SyncStatus.LOCAL_ONLY &&
+                        !folderStore.isLocalOnly(it.folderName)
                 }
                 .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
             if (dels.isNotEmpty()) pendingServerDeletions.add(dels)
@@ -1409,9 +1423,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun enterFolder(name: String) { _currentFolder.value = name }
+    fun enterFolder(name: String) {
+        _currentFolder.value = name
+    }
 
-    fun goToRoot() { _currentFolder.value = null }
+    fun goToRoot() {
+        _currentFolder.value = null
+    }
 
     fun moveSelectedNotesTo(targetFolder: String?) {
         val ids = _selectedNotes.value.toList()

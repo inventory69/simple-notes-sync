@@ -9,7 +9,6 @@
     <string name="section_notes">Notas</string>
     <string name="fab_close">Cerrar menu</string>
     <string name="untitled">Sin titulo</string>
-    <string name="checklist_progress">%1$d/%2$d hecho</string>
     <string name="sync_status_synced">Sincronizado con el servidor</string>
     <string name="sync_status_pending">Esperando para sincronizar</string>
     <string name="sync_legend_description">Cada nota muestra un pequeño icono indicando su estado de sincronización:</string>
@@ -32,31 +31,10 @@
     <string name="sync_phase_importing_markdown">Importando Markdown…</string>
     <string name="sync_phase_completed">Sincronización completada</string>
     <string name="sync_phase_error">Sincronización fallida</string>
-    <string name="delete_note_title">¿Eliminar la nota?</string>
-    <string name="delete_notes_title">¿Borrar %d notas?</string>
-    <string name="delete_note_message">¿Cómo quieres eliminar esta nota?</string>
-    <string name="delete_notes_message">¿Cómo quieres eliminar estas %d notas?</string>
-    <string name="delete_everywhere">Eliminar en todos (también el servidor)</string>
-    <string name="delete_everywhere_offline_hint">No disponible en modo offline</string>
     <string name="delete">Eliminar</string>
     <string name="cancel">Cancelar</string>
     <string name="ok">OK</string>
-    <string name="legacy_delete_dialog_title">Eliminar nota</string>
-    <string name="legacy_delete_dialog_message">\"%s\" se eliminarán localmente.\n\n¿También del servidor?</string>
-    <string name="legacy_delete_from_server">Eliminar del servidor</string>
     <string name="snackbar_undo">Deshacer</string>
-    <string name="snackbar_note_deleted_local">\"%s\" eliminados localmente</string>
-    <string name="snackbar_note_deleted_server">\"%s\" serán eliminados del servidor</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d nota eliminada localmente</item>
-        <item quantity="many">%d notas eliminadas localmente</item>
-        <item quantity="other">%d notas eliminadas localmente</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d nota será eliminada del servidor</item>
-        <item quantity="many">%d notas serán eliminadas del servidor</item>
-        <item quantity="other">%d notas serán eliminadas del servidor</item>
-    </plurals>
     <string name="snackbar_delete_queued_for_sync">Sin conexión al servidor - Se eliminara para la siguiente sincronización</string>
     <string name="snackbar_server_error">Error del servidor: %s</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nada por sincronizar</string>
@@ -83,7 +61,6 @@
     <string name="sync_status_conflict">Conflicto de sincronización detectado</string>
     <string name="sync_status_local_only">Aún sin sincronizar</string>
     <string name="sync_phase_uploading">Subiendo…</string>
-    <string name="delete_local_only">Eliminar localmente</string>
     <string name="snackbar_deleted_from_server">Eliminado del servidor</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">Nota %d eliminada del servidor</item>

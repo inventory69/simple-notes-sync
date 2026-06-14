@@ -15,7 +15,6 @@ import dev.dettmer.simplenotes.utils.Logger
  * **kein** Crash (Analyseplan §3.3).
  */
 class KeepHtmlFallbackParser {
-
     /**
      * Extrahiert Plaintext aus dem Render-HTML.
      *

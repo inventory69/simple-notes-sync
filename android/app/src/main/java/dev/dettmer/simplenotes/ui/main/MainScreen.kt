@@ -69,8 +69,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -88,10 +89,10 @@ import dev.dettmer.simplenotes.ui.main.components.ExcludeFolderSyncSheet
 import dev.dettmer.simplenotes.ui.main.components.FilterChipRow
 import dev.dettmer.simplenotes.ui.main.components.MoveToFolderSheet
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
-import dev.dettmer.simplenotes.ui.main.components.RenameFolderDialog
 import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
+import dev.dettmer.simplenotes.ui.main.components.RenameFolderDialog
 import dev.dettmer.simplenotes.ui.main.components.SortDialog
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
@@ -366,9 +367,9 @@ fun MainScreen(
                             FilterChipRow(
                                 currentFilter = noteFilter,
                                 onFilterSelected = { viewModel.setNoteFilter(it) },
-                                currentColorFilter = colorFilter,                           // 🆕 v2.5.0
-                                onColorFilterSelected = { viewModel.setColorFilter(it) },   // 🆕 v2.5.0
-                                availableColors = availableColors,                          // 🆕 v2.5.0
+                                currentColorFilter = colorFilter, // 🆕 v2.5.0
+                                onColorFilterSelected = { viewModel.setColorFilter(it) }, // 🆕 v2.5.0
+                                availableColors = availableColors, // 🆕 v2.5.0
                                 searchQuery = searchQuery,
                                 onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                                 onSortClick = { showSortDialog = true },
@@ -475,7 +476,7 @@ fun MainScreen(
                     viewModel.setColorForSelected(hex)
                     showBatchColorPicker = false
                 },
-                onDismiss = { showBatchColorPicker = false },
+                onDismiss = { showBatchColorPicker = false }
             )
         }
 
@@ -508,8 +509,14 @@ fun MainScreen(
             MoveToFolderSheet(
                 folders = folders,
                 currentFolder = currentFolder,
-                onMoveToRoot = { viewModel.moveSelectedNotesTo(null); showMoveSheet = false },
-                onMoveToFolder = { f -> viewModel.moveSelectedNotesTo(f); showMoveSheet = false },
+                onMoveToRoot = {
+                    viewModel.moveSelectedNotesTo(null)
+                    showMoveSheet = false
+                },
+                onMoveToFolder = { f ->
+                    viewModel.moveSelectedNotesTo(f)
+                    showMoveSheet = false
+                },
                 onCreateFolder = { name -> viewModel.createFolder(name) },
                 onDismiss = { showMoveSheet = false }
             )
@@ -632,7 +639,7 @@ private fun TopBarActions(
 @Composable
 private fun SelectionTopBar(
     selectedNoteCount: Int,
-    selectedFolderCount: Int,  // 🆕 v2.7.0 (Folders)
+    selectedFolderCount: Int, // 🆕 v2.7.0 (Folders)
     totalCount: Int,
     allSelectedPinned: Boolean,
     isSelectedFolderLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
@@ -641,7 +648,7 @@ private fun SelectionTopBar(
     onTogglePinSelected: () -> Unit,
     onColorClick: () -> Unit,
     onMoveClick: () -> Unit = {},
-    onRename: () -> Unit = {},          // 🆕 v2.7.0 (Folders)
+    onRename: () -> Unit = {}, // 🆕 v2.7.0 (Folders)
     onToggleLocalOnly: () -> Unit = {}, // 🆕 v2.8.0 (Local-Only Folders)
     onDeleteSelected: () -> Unit
 ) {
@@ -772,7 +779,7 @@ private fun NotesPane(
     folderNoteCounts: Map<String, Int>,
     isServerConfigured: Boolean,
     selectedNotes: Set<String>,
-    selectedFolders: Set<String>,                    // 🆕 v2.7.0 (Folders)
+    selectedFolders: Set<String>, // 🆕 v2.7.0 (Folders)
     localOnlyFolderNames: Set<String> = emptySet(), // 🆕 v2.8.0 (Local-Only Folders)
     isSelectionMode: Boolean,
     timestampTicker: Long,
@@ -786,7 +793,7 @@ private fun NotesPane(
     onResetSyncScrollToTop: () -> Unit,
     onEnterFolder: (String) -> Unit,
     onFolderLongPress: (String) -> Unit,
-    onFolderSelectionToggle: (String) -> Unit,       // 🆕 v2.7.0 (Folders)
+    onFolderSelectionToggle: (String) -> Unit, // 🆕 v2.7.0 (Folders)
     onOpenNote: (String) -> Unit,
     onStartSelection: (String) -> Unit,
     onToggleSelection: (String) -> Unit,
@@ -915,7 +922,7 @@ private data class SelectionAction(
 @Composable
 private fun SelectionActions(
     selectedNoteCount: Int,
-    selectedFolderCount: Int,  // 🆕 v2.7.0 (Folders)
+    selectedFolderCount: Int, // 🆕 v2.7.0 (Folders)
     totalCount: Int,
     allSelectedPinned: Boolean,
     isSelectedFolderLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
@@ -923,8 +930,8 @@ private fun SelectionActions(
     onTogglePin: () -> Unit,
     onColorClick: () -> Unit,
     onMoveClick: () -> Unit,
-    onRename: () -> Unit,           // 🆕 v2.7.0 (Folders)
-    onToggleLocalOnly: () -> Unit,  // 🆕 v2.8.0 (Local-Only Folders)
+    onRename: () -> Unit, // 🆕 v2.7.0 (Folders)
+    onToggleLocalOnly: () -> Unit, // 🆕 v2.8.0 (Local-Only Folders)
     onDeleteSelected: () -> Unit
 ) {
     val selectedCount = selectedNoteCount + selectedFolderCount
@@ -963,12 +970,20 @@ private fun SelectionActions(
             val icon = if (isSelectedFolderLocalOnly) Icons.Outlined.Sync else Icons.Outlined.SyncDisabled
             add(SelectionAction(icon, localOnlyLabel, keepPriority = 3, enabled = true, onClick = onToggleLocalOnly))
         }
-        add(SelectionAction(Icons.Default.Delete, deleteLabel, keepPriority = 5, enabled = anySelected,
-            isDestructive = true, onClick = onDeleteSelected))
+        add(
+            SelectionAction(
+                Icons.Default.Delete,
+                deleteLabel,
+                keepPriority = 5,
+                enabled = anySelected,
+                isDestructive = true,
+                onClick = onDeleteSelected
+            )
+        )
     }
 
     // Verfügbare Icon-Slots aus der Bildschirmbreite ableiten (recomposed bei Rotation).
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val screenWidthDp = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp().value.toInt() }
     val budget = (screenWidthDp - SELECTION_TITLE_RESERVE_DP).coerceAtLeast(SELECTION_ICON_WIDTH_DP)
     val maxIcons = (budget / SELECTION_ICON_WIDTH_DP).coerceAtLeast(1)
 
@@ -1000,7 +1015,10 @@ private fun SelectionActions(
                     text = { Text(a.label) },
                     enabled = a.enabled,
                     leadingIcon = { Icon(a.icon, contentDescription = null) },
-                    onClick = { expanded = false; a.onClick() }
+                    onClick = {
+                        expanded = false
+                        a.onClick()
+                    }
                 )
             }
         }

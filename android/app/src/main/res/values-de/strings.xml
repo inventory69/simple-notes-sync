@@ -33,7 +33,6 @@
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
     <string name="untitled">Ohne Titel</string>
-    <string name="checklist_progress">%1$d/%2$d erledigt</string>
     <string name="checklist_items_more">+%d weitere</string>
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
@@ -103,37 +102,17 @@
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
-    <string name="delete_note_title">Notiz löschen?</string>
-    <string name="delete_notes_title">%d Notizen löschen?</string>
-    <string name="delete_note_message">Wie möchtest du diese Notiz löschen?</string>
-    <string name="delete_notes_message">Wie möchtest du diese %d Notizen löschen?</string>
     <string name="delete_folder_message">Wie möchtest du diesen Ordner löschen?</string>
     <string name="delete_folders_message">Wie möchtest du diese %1$d Ordner löschen?</string>
     <string name="delete_selection_message">Wie möchtest du diese Auswahl löschen?</string>
-    <string name="delete_everywhere">Überall löschen (auch Server)</string>
-    <string name="delete_everywhere_offline_hint">Nicht verfügbar im Offline-Modus</string>
-    <string name="delete_local_only">Nur lokal löschen</string>
     <string name="delete">Löschen</string>
     <string name="cancel">Abbrechen</string>
     <string name="ok">OK</string>
     <!-- Legacy delete dialogs -->
-    <string name="legacy_delete_dialog_title">Notiz löschen</string>
-    <string name="legacy_delete_dialog_message">\"%s\" wird lokal gelöscht.\n\nAuch vom Server löschen?</string>
-    <string name="legacy_delete_from_server">Vom Server löschen</string>
     <!-- ============================= -->
     <!-- SNACKBAR MESSAGES             -->
     <!-- ============================= -->
     <string name="snackbar_undo">RÜCKGÄNGIG</string>
-    <string name="snackbar_note_deleted_local">\"%s\" lokal gelöscht</string>
-    <string name="snackbar_note_deleted_server">\"%s\" wird vom Server gelöscht</string>
-    <plurals name="snackbar_notes_deleted_local">
-        <item quantity="one">%d Notiz lokal gelöscht</item>
-        <item quantity="other">%d Notizen lokal gelöscht</item>
-    </plurals>
-    <plurals name="snackbar_notes_deleted_server">
-        <item quantity="one">%d Notiz wird vom Server gelöscht</item>
-        <item quantity="other">%d Notizen werden vom Server gelöscht</item>
-    </plurals>
     <string name="snackbar_deleted_from_server">Vom Server gelöscht</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d Notiz vom Server gelöscht</item>
@@ -158,7 +137,6 @@
         <item quantity="one">noch %d Tag</item>
         <item quantity="other">noch %d Tage</item>
     </plurals>
-    <string name="trash_restore">Wiederherstellen</string>
     <string name="trash_restore_cd">Notiz wiederherstellen</string>
     <string name="trash_delete_forever">Endgültig löschen</string>
     <string name="trash_delete_forever_cd">Notiz endgültig löschen</string>

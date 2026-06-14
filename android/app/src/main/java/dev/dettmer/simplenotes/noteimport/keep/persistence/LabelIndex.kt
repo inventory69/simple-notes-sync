@@ -14,7 +14,7 @@ import dev.dettmer.simplenotes.utils.Logger
  * Default-Sortierung anzeigen kann.
  */
 data class LabelIndex(
-    val labels: MutableMap<String, MutableSet<String>> = LinkedHashMap(),
+    val labels: MutableMap<String, MutableSet<String>> = LinkedHashMap()
 ) {
     fun add(label: String, noteId: String) {
         labels.getOrPut(label) { LinkedHashSet() }.add(noteId)

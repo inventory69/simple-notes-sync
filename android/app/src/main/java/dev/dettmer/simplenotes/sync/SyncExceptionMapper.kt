@@ -42,7 +42,7 @@ class SyncExceptionMapper(private val context: Context) {
                     // MKCOL can fail with 401, which is an auth problem, not a path problem.
                     // Also catches IOException("Authentication failed (401)...") from exists().
                     msg.contains("401") && (msg.contains("unauthorized") || msg.contains("authentication failed"))
-                        -> context.getString(R.string.sync_error_auth_failed)
+                    -> context.getString(R.string.sync_error_auth_failed)
                     msg.contains("mkcol failed") -> context.getString(R.string.sync_error_mkcol_failed)
                     msg.contains("timeout") -> context.getString(R.string.snackbar_connection_timeout)
                     msg.contains("refused") -> context.getString(R.string.snackbar_server_unreachable)

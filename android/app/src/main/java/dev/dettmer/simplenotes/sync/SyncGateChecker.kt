@@ -123,7 +123,6 @@ class SyncGateChecker(
 
         return SyncGateResult(canSync = true, blockReason = null)
     }
-
 }
 
 /**

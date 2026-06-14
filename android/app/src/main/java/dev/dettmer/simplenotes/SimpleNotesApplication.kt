@@ -5,9 +5,9 @@ import android.content.Context
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.core.content.edit
+import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
-import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
@@ -167,8 +167,8 @@ class SimpleNotesApplication : Application() {
         if (!prefs.contains(Constants.KEY_OFFLINE_MODE)) {
             val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
             val hasServerConfig = !serverUrl.isNullOrEmpty() &&
-                    serverUrl != "http://" &&
-                    serverUrl != "https://"
+                serverUrl != "http://" &&
+                serverUrl != "https://"
 
             // If server was configured → offlineMode = false (continue syncing)
             // If no server → offlineMode = true (new users / offline users)

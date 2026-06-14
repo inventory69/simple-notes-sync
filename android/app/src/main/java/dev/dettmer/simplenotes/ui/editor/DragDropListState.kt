@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.editor
 
-import dev.dettmer.simplenotes.utils.Logger
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListItemInfo
@@ -19,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

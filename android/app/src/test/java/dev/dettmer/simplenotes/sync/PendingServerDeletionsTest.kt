@@ -3,14 +3,14 @@ package dev.dettmer.simplenotes.sync
 import android.content.Context
 import io.mockk.every
 import io.mockk.mockk
+import java.io.File
+import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.nio.file.Files
 
 class PendingServerDeletionsTest {
     private lateinit var tmpDir: File
@@ -22,21 +22,29 @@ class PendingServerDeletionsTest {
         store = PendingServerDeletions(context)
     }
 
-    @After fun tearDown() { tmpDir.deleteRecursively() }
+    @After fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     @Test fun `add and getAll preserves folderName`() = runBlocking {
-        store.add(listOf(
-            PendingServerDeletions.PendingDeletion("id1", "Rezepte"),
-            PendingServerDeletions.PendingDeletion("id2", null)
-        ))
+        store.add(
+            listOf(
+                PendingServerDeletions.PendingDeletion("id1", "Rezepte"),
+                PendingServerDeletions.PendingDeletion("id2", null)
+            )
+        )
         val all = store.getAll().associateBy { it.id }
         assertEquals("Rezepte", all["id1"]!!.folderName)
         assertNull(all["id2"]!!.folderName)
     }
 
     @Test fun `remove by id`() = runBlocking {
-        store.add(listOf(PendingServerDeletions.PendingDeletion("id1", "A"),
-                         PendingServerDeletions.PendingDeletion("id2", "B")))
+        store.add(
+            listOf(
+                PendingServerDeletions.PendingDeletion("id1", "A"),
+                PendingServerDeletions.PendingDeletion("id2", "B")
+            )
+        )
         store.remove(listOf("id1"))
         assertEquals(listOf("id2"), store.getAll().map { it.id })
     }

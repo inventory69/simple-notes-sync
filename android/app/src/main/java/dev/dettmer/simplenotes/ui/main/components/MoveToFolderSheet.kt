@@ -79,7 +79,11 @@ fun MoveToFolderSheet(
 
     if (showCreate) {
         CreateFolderDialog(
-            onConfirm = { name, _ -> onCreateFolder(name); onMoveToFolder(name); showCreate = false },
+            onConfirm = { name, _ ->
+                onCreateFolder(name)
+                onMoveToFolder(name)
+                showCreate = false
+            },
             onDismiss = { showCreate = false }
         )
     }

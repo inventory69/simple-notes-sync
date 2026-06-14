@@ -219,9 +219,14 @@ fun SettingsMainScreen(
                     title = stringResource(R.string.settings_sync),
                     subtitle = syncSubtitle,
                     statusText = if (!isServerConfigured) {
-                        if (offlineMode) stringResource(R.string.settings_sync_offline_mode)
-                        else stringResource(R.string.settings_server_status_not_configured)
-                    } else null,
+                        if (offlineMode) {
+                            stringResource(R.string.settings_sync_offline_mode)
+                        } else {
+                            stringResource(R.string.settings_server_status_not_configured)
+                        }
+                    } else {
+                        null
+                    },
                     statusColor = if (!isServerConfigured) MaterialTheme.colorScheme.tertiary else Color.Gray,
                     onClick = { onNavigate(SettingsRoute.Sync) }
                 )
@@ -242,9 +247,14 @@ fun SettingsMainScreen(
                         null
                     },
                     statusText = if (!isServerConfigured) {
-                        if (offlineMode) stringResource(R.string.settings_sync_offline_mode)
-                        else stringResource(R.string.settings_server_status_not_configured)
-                    } else null,
+                        if (offlineMode) {
+                            stringResource(R.string.settings_sync_offline_mode)
+                        } else {
+                            stringResource(R.string.settings_server_status_not_configured)
+                        }
+                    } else {
+                        null
+                    },
                     statusColor = if (!isServerConfigured) MaterialTheme.colorScheme.tertiary else Color.Gray,
                     onClick = { onNavigate(SettingsRoute.Markdown) }
                 )

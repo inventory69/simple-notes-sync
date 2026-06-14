@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,11 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import dev.dettmer.simplenotes.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -39,9 +40,8 @@ import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
-import android.os.PowerManager
-import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
@@ -199,7 +199,6 @@ class ComposeMainActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
-
                 // 🆕 v2.3.0: Battery optimization migration dialog
                 if (showBatteryOptDialog) {
                     AlertDialog(
@@ -514,5 +513,4 @@ class ComposeMainActivity : ComponentActivity() {
         Logger.d(TAG, "🔋 Showing one-time battery optimization migration prompt")
         showBatteryOptDialog = true
     }
-
 }
