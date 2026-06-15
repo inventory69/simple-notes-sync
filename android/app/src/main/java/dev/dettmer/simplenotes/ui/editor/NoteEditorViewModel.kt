@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.Constants
@@ -54,6 +55,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     private val storage = NotesStorage(application)
+    private val folderStore = FolderStore(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val initialFolderName: String? = savedStateHandle.get<String>(ARG_FOLDER)
 
@@ -870,7 +872,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 val updatedNote = targetNote.copy(
                     checklistItems = existingItems + newItem,
                     updatedAt = System.currentTimeMillis(),
-                    syncStatus = SyncStatus.PENDING
+                    syncStatus = pendingOrLocalOnly(targetNote.folderName)
                 )
                 storage.saveNote(updatedNote)
                 true
@@ -1035,7 +1037,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         checklistItems = null,
                         color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
-                        syncStatus = SyncStatus.PENDING
+                        syncStatus = pendingOrLocalOnly(existingNote?.folderName)
                     ) ?: Note(
                         title = title,
                         content = content,
@@ -1096,7 +1098,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         checklistSortOption = _lastChecklistSortOption.value.name,
                         color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
-                        syncStatus = SyncStatus.PENDING
+                        syncStatus = pendingOrLocalOnly(existingNote?.folderName)
                     ) ?: Note(
                         title = title,
                         content = "",
@@ -1155,7 +1157,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     checklistItems = null,
                     color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
-                    syncStatus = SyncStatus.PENDING
+                    syncStatus = pendingOrLocalOnly(existingNote?.folderName)
                 ) ?: Note(
                     title = title,
                     content = content,
@@ -1221,7 +1223,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     checklistSortOption = _lastChecklistSortOption.value.name, // 🆕 v1.8.1 (IMPL_03)
                     color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
-                    syncStatus = SyncStatus.PENDING
+                    syncStatus = pendingOrLocalOnly(existingNote?.folderName)
                 ) ?: Note(
                     title = title,
                     content = "",
@@ -1243,6 +1245,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
         return true
     }
+
+    private fun pendingOrLocalOnly(folderName: String?): SyncStatus =
+        if (folderStore.isLocalOnly(folderName)) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
 
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.10.0: Undo/Redo
