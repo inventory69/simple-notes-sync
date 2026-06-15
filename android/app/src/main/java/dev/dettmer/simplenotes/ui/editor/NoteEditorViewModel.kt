@@ -1539,7 +1539,7 @@ data class NoteEditorUiState(
     val isLoading: Boolean = false,
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
-    val defaultStartInPreviewMode: Boolean = true // 🆕 v2.8.0: user preference for open mode
+    val defaultStartInPreviewMode: Boolean = false
 )
 
 data class ChecklistItemState(

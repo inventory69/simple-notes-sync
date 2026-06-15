@@ -104,7 +104,7 @@ object Constants {
 
     // 🆕 v2.8.0: Default open mode for existing text notes
     const val KEY_DEFAULT_START_IN_PREVIEW_MODE = "default_start_in_preview_mode"
-    const val DEFAULT_START_IN_PREVIEW_MODE = true // preview = current default behaviour
+    const val DEFAULT_START_IN_PREVIEW_MODE = false
     const val AUTOSAVE_DEBOUNCE_MS = 3_000L // 3 seconds after last edit
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400 // fade animation duration (ms)
