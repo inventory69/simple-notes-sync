@@ -58,7 +58,9 @@ fun CreateFolderDialog(
                     singleLine = true,
                     isError = showError,
                     label = { Text(stringResource(R.string.folder_create_hint)) },
-                    modifier = Modifier.focusRequester(focusRequester),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                 )
                 if (showError) {
