@@ -517,6 +517,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         _uiState.update { it.copy(noteType = NoteType.TEXT, content = text, toolbarTitle = newTitle) }
                         _events.emit(NoteEditorEvent.RestoreContent(text))
                         _events.emit(NoteEditorEvent.ActivatePreviewMode)
+                        _events.emit(NoteEditorEvent.RequestContentFocus)
                     }
                 }
                 isDirty = true
@@ -1616,4 +1617,6 @@ sealed interface NoteEditorEvent {
     data class CopyToClipboard(val text: String) : NoteEditorEvent
 
     data object ActivatePreviewMode : NoteEditorEvent
+
+    data object RequestContentFocus : NoteEditorEvent
 }

@@ -242,6 +242,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val titleFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
     var isTitleFocused by remember { mutableStateOf(false) }
+    var isContentFocused by remember { mutableStateOf(false) }
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
@@ -337,6 +338,11 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 }
                 is NoteEditorEvent.ActivatePreviewMode -> {
                     isPreviewMode = uiState.defaultStartInPreviewMode
+                }
+                is NoteEditorEvent.RequestContentFocus -> {
+                    delay(LAYOUT_DELAY_MS)
+                    contentFocusRequester.requestFocus()
+                    keyboardController?.show()
                 }
             }
         }
@@ -701,12 +707,13 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 onContentChange = { viewModel.updateContent(it) },
                                 focusRequester = contentFocusRequester,
                                 outputTransformation = markdownTransformation,
+                                onFocusChanged = { isContentFocused = it },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
                             )
 
-                            if (!isTitleFocused) {
+                            if (isContentFocused) {
                                 MarkdownToolbar(
                                     textFieldState = textFieldState
                                 )
@@ -858,6 +865,7 @@ private fun TextNoteContent(
     onContentChange: (String) -> Unit,
     focusRequester: FocusRequester,
     outputTransformation: MarkdownOutputTransformation,
+    onFocusChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
@@ -915,6 +923,7 @@ private fun TextNoteContent(
             .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
+                onFocusChanged(focusState.isFocused)
             }
             .pointerInput(textFieldState) {
                 awaitPointerEventScope {
