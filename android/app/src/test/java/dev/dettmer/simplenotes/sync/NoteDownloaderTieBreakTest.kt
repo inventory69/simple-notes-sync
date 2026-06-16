@@ -97,13 +97,23 @@ class NoteDownloaderTieBreakTest {
     @Test fun `tied timestamp with changed server content adopts remote and marks PENDING`() = runTest {
         storage.saveNote(
             Note(
-                id = noteId, title = "T", content = "LOCAL", deviceId = "",
-                updatedAt = tiedTimestamp, syncStatus = SyncStatus.SYNCED, folderName = folder
+                id = noteId,
+                title = "T",
+                content = "LOCAL",
+                deviceId = "",
+                updatedAt = tiedTimestamp,
+                syncStatus = SyncStatus.SYNCED,
+                folderName = folder
             )
         )
         val remoteJson = Note(
-            id = noteId, title = "T", content = "SERVER", deviceId = "",
-            updatedAt = tiedTimestamp, syncStatus = SyncStatus.SYNCED, folderName = folder
+            id = noteId,
+            title = "T",
+            content = "SERVER",
+            deviceId = "",
+            updatedAt = tiedTimestamp,
+            syncStatus = SyncStatus.SYNCED,
+            folderName = folder
         ).toJson()
 
         val result = downloader.downloadAll(mockSardine(remoteJson), serverUrl)
@@ -118,13 +128,23 @@ class NoteDownloaderTieBreakTest {
     @Test fun `genuinely newer local content is kept and not adopted from remote`() = runTest {
         storage.saveNote(
             Note(
-                id = noteId, title = "T", content = "LOCAL", deviceId = "",
-                updatedAt = tiedTimestamp + 1_000L, syncStatus = SyncStatus.SYNCED, folderName = folder
+                id = noteId,
+                title = "T",
+                content = "LOCAL",
+                deviceId = "",
+                updatedAt = tiedTimestamp + 1_000L,
+                syncStatus = SyncStatus.SYNCED,
+                folderName = folder
             )
         )
         val remoteJson = Note(
-            id = noteId, title = "T", content = "SERVER", deviceId = "",
-            updatedAt = tiedTimestamp, syncStatus = SyncStatus.SYNCED, folderName = folder
+            id = noteId,
+            title = "T",
+            content = "SERVER",
+            deviceId = "",
+            updatedAt = tiedTimestamp,
+            syncStatus = SyncStatus.SYNCED,
+            folderName = folder
         ).toJson()
 
         val result = downloader.downloadAll(mockSardine(remoteJson), serverUrl)

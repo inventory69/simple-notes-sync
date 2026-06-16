@@ -445,7 +445,8 @@ internal class NoteDownloader(
                                                 val cachedETag = eTagCache.getJsonETag(result.noteId)
                                                 if (localNote.updatedAt == remoteNote.updatedAt &&
                                                     localNote.syncStatus == SyncStatus.SYNCED &&
-                                                    serverETag != null && serverETag != cachedETag
+                                                    serverETag != null &&
+                                                    serverETag != cachedETag
                                                 ) {
                                                     // Adopt the server content, but mark PENDING (not SYNCED) so the
                                                     // next upload re-pushes the JSON and re-exports the MD mirror —
