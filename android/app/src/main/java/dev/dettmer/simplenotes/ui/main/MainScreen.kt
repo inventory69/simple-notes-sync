@@ -167,8 +167,6 @@ fun MainScreen(
         viewModel.goToRoot()
     }
 
-    // 🌟 v1.6.0: Reactive offline mode state
-    val isOfflineMode by viewModel.isOfflineMode.collectAsState()
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
     // 🎨 v1.7.0: Display mode (list or grid)
@@ -223,11 +221,7 @@ fun MainScreen(
     // Compute isSyncing once
     val isSyncing = syncState == SyncStateManager.SyncState.SYNCING
 
-    // 🌟 v1.6.0: Reactive sync availability (recomposes when offline mode changes)
-    // Note: isOfflineMode is updated via StateFlow from MainViewModel.refreshOfflineModeState()
-    // which is called in ComposeMainActivity.onResume() when returning from Settings
-    val hasServerConfig = viewModel.hasServerConfig()
-    val isSyncAvailable = !isOfflineMode && hasServerConfig
+    val isSyncAvailable = isServerConfigured
     val canSync = isSyncAvailable && !isSyncing
 
     // Handle snackbar events from ViewModel
