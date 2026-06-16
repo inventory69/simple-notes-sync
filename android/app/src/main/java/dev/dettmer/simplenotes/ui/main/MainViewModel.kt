@@ -1451,8 +1451,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         newStatus = if (targetLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
                     )
                     if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
+                        // Ziel = normaler Sync-Ordner → Relocation (kein Ledger). Ziel = local-only →
+                        // die Notiz verlässt den Server echt → als Löschung ins Ledger (wie Desktop).
                         pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder, isMove = true))
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder, isMove = !targetLocalOnly))
                         )
                     }
                 }
