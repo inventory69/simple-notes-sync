@@ -750,6 +750,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 copyToChecklistItemId = itemId
                                 viewModel.loadOtherChecklists()
                             },
+                            onAddToCalendar = { itemId ->
+                                viewModel.openChecklistItemInCalendar(itemId)
+                            },
                             onAddItemAtEnd = {
                                 val newId = viewModel.addChecklistItemAtEnd()
                                 focusNewItemId = newId
@@ -950,6 +953,7 @@ private fun LazyItemScope.DraggableChecklistItem(
     onCopyText: (String) -> Unit, // 🆕 v2.2.0: Aktion 1
     onDuplicate: (String) -> Unit, // 🆕 v2.2.0: Aktion 2
     onCopyToChecklist: (String) -> Unit, // 🆕 v2.2.0: Aktion 3
+    onAddToCalendar: (String) -> Unit,
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
     placementAnimationsEnabled: Boolean // 🔧 v2.5.x: Gate gegen Open-Burst
@@ -1003,6 +1007,7 @@ private fun LazyItemScope.DraggableChecklistItem(
         onCopyText = { onCopyText(item.id) }, // 🆕 v2.2.0
         onDuplicate = { onDuplicate(item.id) }, // 🆕 v2.2.0
         onCopyToChecklist = { onCopyToChecklist(item.id) }, // 🆕 v2.2.0
+        onAddToCalendar = { onAddToCalendar(item.id) },
         isCheckAnimating = isCheckAnimating, // 🆕 v2.5.0
         onCheckboxTap = { isCheckAnimating = true }, // 🆕 v2.5.0
         requestFocus = shouldFocus,
@@ -1075,6 +1080,7 @@ private fun ChecklistEditor(
     onCopyText: (String) -> Unit, // 🆕 v2.2.0: Aktion 1
     onDuplicate: (String) -> Unit, // 🆕 v2.2.0: Aktion 2
     onCopyToChecklist: (String) -> Unit, // 🆕 v2.2.0: Aktion 3
+    onAddToCalendar: (String) -> Unit,
     onAddItemAtEnd: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onFocusHandled: () -> Unit,
@@ -1369,6 +1375,7 @@ private fun ChecklistEditor(
                         onCopyText = onCopyText, // 🆕 v2.2.0
                         onDuplicate = onDuplicate, // 🆕 v2.2.0
                         onCopyToChecklist = onCopyToChecklist, // 🆕 v2.2.0
+                        onAddToCalendar = onAddToCalendar,
                         onFocusHandled = onFocusHandled,
                         onHeightChanged = { scrollToItemIndex = visualIndex },
                         placementAnimationsEnabled = placementAnimationsEnabled

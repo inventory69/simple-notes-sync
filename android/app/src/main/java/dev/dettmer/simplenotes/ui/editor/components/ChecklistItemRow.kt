@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -94,6 +95,7 @@ fun ChecklistItemRow(
     onCopyText: () -> Unit, // 🆕 v2.2.0: Aktion 1 — Text kopieren
     onDuplicate: () -> Unit, // 🆕 v2.2.0: Aktion 2 — Eintrag duplizieren
     onCopyToChecklist: () -> Unit, // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
+    onAddToCalendar: () -> Unit,
     modifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     isCheckAnimating: Boolean = false, // 🆕 v2.5.0: Hoisted check-tap trigger (owned by DraggableChecklistItem)
@@ -563,6 +565,21 @@ fun ChecklistItemRow(
                         )
                     }
                 )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.share_to_calendar)) },
+                    onClick = {
+                        onAddToCalendar()
+                        showContextMenu = false
+                    },
+                    enabled = item.text.isNotBlank(),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                )
             }
         }
 
@@ -627,6 +644,7 @@ private fun ChecklistItemRowShortTextPreview() {
         onCopyText = {},
         onDuplicate = {},
         onCopyToChecklist = {},
+        onAddToCalendar = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -654,6 +672,7 @@ private fun ChecklistItemRowLongTextPreview() {
         onCopyText = {},
         onDuplicate = {},
         onCopyToChecklist = {},
+        onAddToCalendar = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -676,6 +695,7 @@ private fun ChecklistItemRowCheckedPreview() {
         onCopyText = {},
         onDuplicate = {},
         onCopyToChecklist = {},
+        onAddToCalendar = {},
         isDragging = false,
         dragModifier = Modifier
     )
@@ -699,6 +719,7 @@ private fun ChecklistItemRowDraggingPreview() {
         onCopyText = {},
         onDuplicate = {},
         onCopyToChecklist = {},
+        onAddToCalendar = {},
         isDragging = true,
         dragModifier = Modifier
     )

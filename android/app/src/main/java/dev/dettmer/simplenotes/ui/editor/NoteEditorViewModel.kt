@@ -1383,6 +1383,17 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
+    fun openChecklistItemInCalendar(itemId: String) {
+        viewModelScope.launch {
+            val item = _checklistItems.value.find { it.id == itemId } ?: return@launch
+            if (item.text.isBlank()) return@launch
+            val noteTitle = _uiState.value.title.trim()
+            val calTitle = item.text.trim().take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH)
+            val description = if (noteTitle.isNotBlank()) "($noteTitle)" else ""
+            _events.emit(NoteEditorEvent.OpenCalendar(title = calTitle, description = description))
+        }
+    }
+
     /**
      * 🆕 v1.10.0-Papa: Shares the current note as plain text via ACTION_SEND intent.
      */
