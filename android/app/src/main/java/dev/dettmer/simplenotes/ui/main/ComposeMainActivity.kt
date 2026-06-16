@@ -66,6 +66,7 @@ class ComposeMainActivity : ComponentActivity() {
         private const val TAG = "ComposeMainActivity"
         private const val KEY_CAME_FROM_EDITOR = "cameFromEditor"
         private const val KEY_CAME_FROM_SETTINGS = "cameFromSettings"
+        private const val KEY_NOTIFICATION_AUTO_PROMPTED = "notification_permission_auto_prompted"
         const val EXTRA_FOLDER = MainViewModel.EXTRA_FOLDER
     }
 
@@ -418,7 +419,11 @@ class ComposeMainActivity : ComponentActivity() {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
             ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                val prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
+                if (!prefs.getBoolean(KEY_NOTIFICATION_AUTO_PROMPTED, false)) {
+                    prefs.edit { putBoolean(KEY_NOTIFICATION_AUTO_PROMPTED, true) }
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
         }
     }
