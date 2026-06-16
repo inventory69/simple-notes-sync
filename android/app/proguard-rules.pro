@@ -2,9 +2,17 @@
 # simple-notes-sync — ProGuard / R8 Configuration
 #
 # Audit-Referenz:
-#   project-docs/simple-notes-sync/v2.3.0/audit-proguard-r8.md
+#   project-docs/simple-notes-sync/v2.7.2/audit-proguard-r8.md  (Re-Audit)
+#   project-docs/simple-notes-sync/v2.3.0/audit-proguard-r8.md  (Original)
 #
-# Stand: v2.3.0 (Audit 2026-04-18)
+# Stand: v2.7.2 (Re-Audit 2026-06-16)
+#
+# Hinweis: Gson ≥2.11 liefert eigene Consumer-Rules (METAINF/proguard/gson.pro),
+# die @SerializedName-Felder + TypeToken-Subtypen abdecken. Der App-seitige
+# @SerializedName-Catch-all (unten) ist dadurch teilweise redundant, wird aber
+# bewusst belassen (R8 dedupliziert, Ersparnis = 0, Entfernen = Risiko).
+# Der models.**-Keep bleibt ZWINGEND: Note/ChecklistItem nutzen KEIN
+# @SerializedName und sind daher auf Feldnamen-Stabilität angewiesen.
 # ═══════════════════════════════════════════════════════════════════════
 
 # ─── Crash-Report-Attribute ──────────────────────────────────────────
@@ -108,6 +116,19 @@
 -keep,allowobfuscation class dev.dettmer.simplenotes.backup.AppSettings { <init>(...); }
 -keepclassmembers class dev.dettmer.simplenotes.backup.BackupData { <fields>; }
 -keepclassmembers class dev.dettmer.simplenotes.backup.AppSettings { <fields>; }
+
+# ═══════════════════════════════════════════════════════════════════════
+# Weitere Gson-Datenklassen (v2.7.0 Folders + Pending-Deletions-Queue)
+# ═══════════════════════════════════════════════════════════════════════
+# Beide nutzen aktuell durchgehend @SerializedName und wären damit bereits
+# durch den globalen @SerializedName-Catch-all abgedeckt. Explizite Keeps
+# machen die Feld-Erhaltung unabhängig von der Annotation — wichtig, da
+# FolderMeta als folders.json geräteübergreifend auf den Server gesynct wird
+# (FolderSyncManager) und PendingDeletion als lokaler Queue-File persistiert.
+-keep,allowobfuscation class dev.dettmer.simplenotes.storage.FolderMeta { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.storage.FolderMeta { <fields>; }
+-keep,allowobfuscation class dev.dettmer.simplenotes.sync.PendingServerDeletions$PendingDeletion { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.sync.PendingServerDeletions$PendingDeletion { <fields>; }
 
 # ═══════════════════════════════════════════════════════════════════════
 # WorkManager — SyncWorker wird per FQN aus WorkRequest instanziiert
