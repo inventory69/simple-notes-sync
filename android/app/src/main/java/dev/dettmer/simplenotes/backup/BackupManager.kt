@@ -9,6 +9,8 @@ import com.google.gson.GsonBuilder
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.storage.FolderMeta
+import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
@@ -39,6 +41,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
     }
 
     private val storage = NotesStorage(context)
+    private val folderStore = FolderStore(context)
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val encryptionManager = EncryptionManager() // 🔐 v1.7.0
     private val prefs: SharedPreferences =
@@ -169,13 +172,20 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     null
                 }
 
+                // 🆕 Folders are core user data → always included (not gated by settings).
+                val folderMeta = folderStore.loadMeta()
+                Logger.d(TAG, "   Found ${folderMeta.size} folder entries to backup")
+
                 val backupData = BackupData(
                     backupVersion = BACKUP_VERSION,
                     createdAt = System.currentTimeMillis(),
                     notesCount = allNotes.size,
                     appVersion = BuildConfig.VERSION_NAME,
                     notes = allNotes,
-                    appSettings = appSettings
+                    appSettings = appSettings,
+                    folders = folderMeta,
+                    localOnlyFolders = folderStore.getLocalOnlyFolderNames().toList(),
+                    localOnlyServerRemoval = folderStore.getServerRemovalQueue().toList()
                 )
 
                 val jsonString = gson.toJson(backupData)
@@ -231,7 +241,10 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 createdAt = System.currentTimeMillis(),
                 notesCount = allNotes.size,
                 appVersion = BuildConfig.VERSION_NAME,
-                notes = allNotes
+                notes = allNotes,
+                folders = folderStore.loadMeta(),
+                localOnlyFolders = folderStore.getLocalOnlyFolderNames().toList(),
+                localOnlyServerRemoval = folderStore.getServerRemovalQueue().toList()
             )
 
             file.writeText(gson.toJson(backupData))
@@ -366,6 +379,9 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 RestoreMode.REPLACE -> restoreReplace(backupData.notes)
                 RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(backupData.notes)
             }
+
+            // 🆕 Ordner wiederherstellen (oder aus Notizen ableiten bei Alt-Backups).
+            restoreFolders(backupData, mode)
 
             Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
             result
@@ -544,6 +560,53 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
     }
 
     /**
+     * 🆕 Stellt Ordner-Metadaten (folders.json) + local-only-Markierungen wieder her.
+     *
+     * Enthält das Backup Ordner-Daten, werden sie je nach Modus gemerged/ersetzt. Alte Backups
+     * (vor Folder-Support) tragen keine Ordner-Daten — dann werden die Ordnernamen aus den
+     * `folderName`-Feldern der Notizen abgeleitet (wie die Server-Discovery: ohne Farbe, kein dirty).
+     */
+    private suspend fun restoreFolders(backupData: BackupData, mode: RestoreMode) {
+        val backupFolders = backupData.folders.orEmpty().filter { !it.name.isNullOrBlank() }
+
+        if (backupFolders.isEmpty()) {
+            // Fallback für Alt-Backups: Ordner aus Notiz-Ordnernamen ableiten.
+            val derived = backupData.notes
+                .mapNotNull { it.folderName?.trim()?.takeIf(String::isNotEmpty) }
+                .toSet()
+            folderStore.addFolders(derived)
+            return
+        }
+
+        when (mode) {
+            RestoreMode.REPLACE -> folderStore.replaceMeta(backupFolders)
+            RestoreMode.MERGE, RestoreMode.OVERWRITE_DUPLICATES -> {
+                // Name-basierter Merge (case-insensitiv). MERGE: bestehender Eintrag gewinnt,
+                // OVERWRITE_DUPLICATES: Backup-Eintrag gewinnt.
+                val backupWins = mode == RestoreMode.OVERWRITE_DUPLICATES
+                val merged = LinkedHashMap<String, FolderMeta>()
+                folderStore.loadMeta().forEach { merged[it.name.lowercase()] = it }
+                backupFolders.forEach { meta ->
+                    val key = meta.name.lowercase()
+                    if (backupWins || key !in merged) merged[key] = meta
+                }
+                folderStore.replaceMeta(merged.values.toList())
+            }
+        }
+
+        // Local-only-Status wiederherstellen.
+        val backupLocalOnly = backupData.localOnlyFolders.orEmpty().toSet()
+        val backupRemoval = backupData.localOnlyServerRemoval.orEmpty().toSet()
+        if (mode == RestoreMode.REPLACE) {
+            folderStore.setLocalOnlyFolderNames(backupLocalOnly)
+            folderStore.setServerRemovalQueue(backupRemoval)
+        } else {
+            folderStore.setLocalOnlyFolderNames(folderStore.getLocalOnlyFolderNames() + backupLocalOnly)
+            folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() + backupRemoval)
+        }
+    }
+
+    /**
      * Löscht Auto-Backups älter als RETENTION_DAYS
      */
     private fun cleanupOldAutoBackups(autoBackupDir: File) {
@@ -580,7 +643,16 @@ data class BackupData(
     // v1.9.0: Optional app settings snapshot (only present when user opted in).
     // Previously keyed as "server_settings"; broadened to cover all settings.
     @com.google.gson.annotations.SerializedName("app_settings")
-    val appSettings: AppSettings? = null
+    val appSettings: AppSettings? = null,
+    // 🆕 Folder metadata (folders.json: names, colors, tombstones). Always included for
+    // backups created with this version; null for older backups (folders then derived from notes).
+    @com.google.gson.annotations.SerializedName("folders")
+    val folders: List<FolderMeta>? = null,
+    // 🆕 Device-only folder markings (not synced to WebDAV) and pending server-removal queue.
+    @com.google.gson.annotations.SerializedName("local_only_folders")
+    val localOnlyFolders: List<String>? = null,
+    @com.google.gson.annotations.SerializedName("local_only_server_removal")
+    val localOnlyServerRemoval: List<String>? = null
 )
 
 /**
