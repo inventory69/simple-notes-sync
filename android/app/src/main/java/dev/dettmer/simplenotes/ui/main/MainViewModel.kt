@@ -128,17 +128,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
-    val isServerConfigured: StateFlow<Boolean> = _isOfflineMode.map { offline ->
-        if (offline) {
-            false
-        } else {
-            hasServerConfig()
-        }
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        initialValue = !_isOfflineMode.value && hasServerConfig()
-    )
+    private val _isServerConfigured = MutableStateFlow(!_isOfflineMode.value && hasServerConfig())
+    val isServerConfigured: StateFlow<Boolean> = _isServerConfigured.asStateFlow()
 
     /**
      * Refresh offline mode state from SharedPreferences
@@ -148,6 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val oldValue = _isOfflineMode.value
         val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
         _isOfflineMode.value = newValue
+        _isServerConfigured.value = !newValue && hasServerConfig()
         Logger.d(TAG, "🔄 refreshOfflineModeState: offlineMode=$oldValue → $newValue")
     }
 
@@ -395,6 +387,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // v2.3.0 (FIX-013): Check for stale sync state on every ViewModel init
         // (covers configuration changes without process kill)
         SyncStateManager.checkAndResetStaleState()
+        viewModelScope.launch {
+            _isOfflineMode.collect { offline ->
+                _isServerConfigured.value = !offline && hasServerConfig()
+            }
+        }
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
         viewModelScope.launch(ioDispatcher) {
