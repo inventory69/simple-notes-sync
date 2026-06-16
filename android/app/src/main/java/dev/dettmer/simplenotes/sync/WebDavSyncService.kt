@@ -862,14 +862,23 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             }
             Logger.d(TAG, "🗑️ Processing ${pendingIds.size} pending server deletions")
             val successIds = mutableListOf<String>()
+            // Nur echte Löschungen zählen für die UI ("X vom Server gelöscht"). Move-Cleanups
+            // (Ordner-Rename / Notiz verschieben) räumen nur den alten Pfad auf und sind keine
+            // benutzer­sichtbare Löschung — sonst irreführende Sync-Meldung.
+            var purgedCount = 0
             val deviceId = DeviceIdGenerator.getDeviceId(context)
             val deletionsUrl = deletionSyncManager.deletionsFileUrl(serverUrl)
             pendingIds.forEach { pd ->
                 try {
                     val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
-                    if (deleted) {
-                        successIds.add(pd.id)
+                    if (!deleted) return@forEach
+                    successIds.add(pd.id)
+                    // 🔒 Moves räumen nur den alten Pfad auf — die Note-ID darf NICHT ins geteilte
+                    // Lösch-Ledger, sonst wird die nur verschobene Notiz geräteweit als gelöscht
+                    // markiert und beim Download wieder getilgt (Datenverlust bei Ordner-Rename).
+                    if (!pd.isMove) {
                         deletionSyncManager.appendAndUpload(sardine, deletionsUrl, pd.id, deviceId)
+                        purgedCount++
                     }
                 } catch (e: Exception) {
                     Logger.w(TAG, "⚠️ Failed to delete pending note ${pd.id} from server: ${e.message}")
@@ -877,10 +886,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             }
             if (successIds.isNotEmpty()) {
                 pendingDeletions.remove(successIds)
-                Logger.d(TAG, "✅ Deleted ${successIds.size}/${pendingIds.size} pending notes from server")
+                Logger.d(
+                    TAG,
+                    "✅ Processed ${successIds.size}/${pendingIds.size} pending " +
+                        "($purgedCount deletions, ${successIds.size - purgedCount} moves)"
+                )
                 cleanupEmptyFolderDirs(pendingIds, successIds)
             }
-            successIds.size
+            purgedCount
         } catch (e: Exception) {
             Logger.e(TAG, "⚠️ Pending deletions step failed (non-fatal)", e)
             0

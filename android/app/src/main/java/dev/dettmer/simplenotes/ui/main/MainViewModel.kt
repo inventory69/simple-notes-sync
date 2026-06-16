@@ -1271,7 +1271,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
                     if (!localOnly && note.syncStatus != SyncStatus.LOCAL_ONLY) {
                         pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldName))
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldName, isMove = true))
                         )
                     }
                 }
@@ -1336,7 +1336,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     storage.moveNote(note.id, null)
                     if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
                         pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, note.folderName))
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, note.folderName, isMove = true))
                         )
                     }
                 }
@@ -1452,7 +1452,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
                     if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
                         pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder))
+                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder, isMove = true))
                         )
                     }
                 }

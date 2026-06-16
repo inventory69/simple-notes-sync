@@ -26,12 +26,19 @@ class PendingServerDeletions(context: Context) {
 
     data class PendingDeletion(
         @SerializedName("id") val id: String,
-        @SerializedName("folderName") val folderName: String? = null
+        @SerializedName("folderName") val folderName: String? = null,
+        // 🆕 true = die Notiz wurde nur verschoben; nur den alten Server-Pfad aufräumen,
+        // KEINEN Eintrag im geteilten Lösch-Ledger (deletions.json) erzeugen.
+        @SerializedName("isMove") val isMove: Boolean = false
     )
 
     suspend fun add(deletions: List<PendingDeletion>) = mutex.withLock {
         val current = loadInternal()
-        val merged = (current + deletions).distinctBy { it.id }
+        // Bei ID-Kollision gewinnt der echte Delete (isMove=false) über einen Move-Eintrag,
+        // damit eine endgültige Löschung niemals als bloßer Move behandelt wird.
+        val merged = (current + deletions)
+            .groupBy { it.id }
+            .map { (_, group) -> group.firstOrNull { !it.isMove } ?: group.first() }
         saveInternal(merged)
         Logger.d(TAG, "📋 Pending server deletions: +${deletions.size} → ${merged.size} total")
     }

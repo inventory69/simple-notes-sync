@@ -56,4 +56,42 @@ class PendingServerDeletionsTest {
         assertNull(all.first().folderName)
         assertEquals(setOf("legacy-1", "legacy-2"), all.map { it.id }.toSet())
     }
+
+    @Test fun `isMove defaults to false and roundtrips`() = runBlocking {
+        store.add(
+            listOf(
+                PendingServerDeletions.PendingDeletion("mv", "A", isMove = true),
+                PendingServerDeletions.PendingDeletion("del", "B")
+            )
+        )
+        val all = store.getAll().associateBy { it.id }
+        assertEquals(true, all["mv"]!!.isMove)
+        assertEquals(false, all["del"]!!.isMove)
+    }
+
+    @Test fun `legacy entries read as non-move`() = runBlocking {
+        File(tmpDir, PendingServerDeletions.FILENAME)
+            .writeText("""[{"id":"old","folderName":"A"}]""")
+        assertEquals(false, store.getAll().first().isMove)
+    }
+
+    @Test fun `real delete wins over move on id collision`() = runBlocking {
+        store.add(listOf(PendingServerDeletions.PendingDeletion("x", "A", isMove = true)))
+        store.add(listOf(PendingServerDeletions.PendingDeletion("x", "A", isMove = false)))
+        val entries = store.getAll().filter { it.id == "x" }
+        assertEquals(1, entries.size)
+        assertEquals(false, entries.first().isMove)
+    }
+
+    @Test fun `real delete wins over move within a single add`() = runBlocking {
+        store.add(
+            listOf(
+                PendingServerDeletions.PendingDeletion("x", "A", isMove = true),
+                PendingServerDeletions.PendingDeletion("x", "A", isMove = false)
+            )
+        )
+        val entries = store.getAll().filter { it.id == "x" }
+        assertEquals(1, entries.size)
+        assertEquals(false, entries.first().isMove)
+    }
 }
