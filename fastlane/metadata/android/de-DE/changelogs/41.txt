@@ -1,0 +1,14 @@
+✨ v2.8.0 - Papierkorb & vieles mehr
+
+• Papierkorb: gelöschte Notizen wiederherstellbar & autom. geleert
+• Lokale Ordner, die nie zum Server synchronisieren
+• Scrollbares Notizlisten-Widget mit Markdown & Optionen
+• Live-Markdown im Editor & Aufgaben per Tipp abhaken
+• App-weite und Widget-Schriftgröße
+• Checklisten-Einträge in den Kalender übernehmen
+
+…und vieles mehr.
+
+Danke an @lincomax, @alas-he, @xdpirate & Papa!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.de.md

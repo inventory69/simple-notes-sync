@@ -8,6 +8,69 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.8.0] - 2026-06-16
+
+### ✨ New Features
+
+**Trash / Recycle Bin** ([1d6fa60](https://github.com/inventory69/simple-notes-sync/commit/1d6fa60), [d2dd414](https://github.com/inventory69/simple-notes-sync/commit/d2dd414))
+- Deleting a note now moves it to a Trash instead of erasing it; a new Trash screen (reachable from Settings) lets you restore or permanently delete notes
+- Trashed notes are automatically purged after a retention period
+- Notes deleted on the server are routed to the local Trash instead of vanishing, so a remote delete can still be recovered ([7d9d4b3](https://github.com/inventory69/simple-notes-sync/commit/7d9d4b3))
+
+**Local-Only Folders** ([6a0dd97](https://github.com/inventory69/simple-notes-sync/commit/6a0dd97), [72cb314](https://github.com/inventory69/simple-notes-sync/commit/72cb314))
+- Folders can now be marked local-only so their notes never sync to your WebDAV server - ideal for private or device-specific notes
+- Thanks to [@alas-he](https://github.com/alas-he) for the request (discussion #88)!
+
+**Scrollable Notes-List Widget** ([ca30ad7](https://github.com/inventory69/simple-notes-sync/commit/ca30ad7), [0566ce9](https://github.com/inventory69/simple-notes-sync/commit/0566ce9))
+- A new home-screen widget shows a scrollable list of your notes with inline markdown formatting ([11c069f](https://github.com/inventory69/simple-notes-sync/commit/11c069f))
+- Options to hide the header, hide pinned, hide folders, filter by folder, and set the font size
+- Thanks to [@lincomax](https://github.com/lincomax) for the requests!
+
+**Live Markdown in the Editor & Previews** ([9c96cc0](https://github.com/inventory69/simple-notes-sync/commit/9c96cc0), [17ad8d8](https://github.com/inventory69/simple-notes-sync/commit/17ad8d8))
+- The editor now highlights markdown live and lets you tap checkboxes to toggle tasks
+- Note list and grid card previews render markdown, including checklist ☑/☐ prefixes and styled fenced code blocks ([f48209a](https://github.com/inventory69/simple-notes-sync/commit/f48209a), [a4324a6](https://github.com/inventory69/simple-notes-sync/commit/a4324a6))
+
+**Font Size Options** ([30de416](https://github.com/inventory69/simple-notes-sync/commit/30de416), [2cda14d](https://github.com/inventory69/simple-notes-sync/commit/2cda14d))
+- New app-wide font size setting plus an independent per-widget font size
+- Thanks to [@lincomax](https://github.com/lincomax) for the request!
+
+**Add Checklist Items to Calendar** ([82f3bfc](https://github.com/inventory69/simple-notes-sync/commit/82f3bfc))
+- Each checklist item now has an "Add to calendar" entry in its context menu
+- Thanks to Papa for the request!
+
+**Default Open Mode Toggle** ([5a70f14](https://github.com/inventory69/simple-notes-sync/commit/5a70f14), [1882210](https://github.com/inventory69/simple-notes-sync/commit/1882210))
+- Choose whether text notes open in edit or preview mode by default (now edit by default)
+
+### 🐛 Bug Fixes
+
+**Sync Loop & Folder Fixes** ([516cd15](https://github.com/inventory69/simple-notes-sync/commit/516cd15), [741ba37](https://github.com/inventory69/simple-notes-sync/commit/741ba37), [f3062c0](https://github.com/inventory69/simple-notes-sync/commit/f3062c0))
+- Tied-timestamp edits now adopt the server copy to break an upload/download loop
+- Notes moved during a folder rename are no longer deleted from the server
+- Moving a note into a local-only folder is correctly ledgered as a server deletion
+
+**Backup Includes Folder Metadata** ([a854fb9](https://github.com/inventory69/simple-notes-sync/commit/a854fb9))
+- Backups now store and restore folder metadata instead of losing it on restore
+
+**Notification Permission Prompt Only Once** ([58f6e7c](https://github.com/inventory69/simple-notes-sync/commit/58f6e7c))
+- The notification permission is now auto-requested only once instead of on repeated launches
+- Thanks to [@xdpirate](https://github.com/xdpirate) for the report!
+
+**Editor & Markdown Polish** ([552f44d](https://github.com/inventory69/simple-notes-sync/commit/552f44d), [27ae90d](https://github.com/inventory69/simple-notes-sync/commit/27ae90d), [e15ecb0](https://github.com/inventory69/simple-notes-sync/commit/e15ecb0))
+- Markdown toolbar shows only when the content field is focused, and is hidden while editing the title
+- Fixed adjacent inline delimiters and italic detection not rendering correctly
+
+**Widget Fixes** ([ec761f7](https://github.com/inventory69/simple-notes-sync/commit/ec761f7), [a9aa973](https://github.com/inventory69/simple-notes-sync/commit/a9aa973), [cb6a937](https://github.com/inventory69/simple-notes-sync/commit/cb6a937))
+- Correct header/pinned visibility, full-height resize, and automatic day/night text color
+
+**Checklist Animation Fixes** ([a6002fd](https://github.com/inventory69/simple-notes-sync/commit/a6002fd), [cac2e3b](https://github.com/inventory69/simple-notes-sync/commit/cac2e3b), [de5347a](https://github.com/inventory69/simple-notes-sync/commit/de5347a))
+- Empty items are preserved when backgrounding the editor, the check animation plays on undo/redo, and items sort immediately after note-to-checklist conversion
+
+**Other UI Fixes** ([5f3c10e](https://github.com/inventory69/simple-notes-sync/commit/5f3c10e), [c3bf07f](https://github.com/inventory69/simple-notes-sync/commit/c3bf07f), [40c9148](https://github.com/inventory69/simple-notes-sync/commit/40c9148))
+- The help button and pull-to-refresh now react immediately to server configuration changes
+- The create-folder dialog no longer expands too wide, and the multiselect top bar shows only the count
+
+---
+
 ## [2.7.2] - 2026-06-07
 
 ### 🐛 Bug Fixes

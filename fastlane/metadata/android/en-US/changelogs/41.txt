@@ -1,0 +1,14 @@
+✨ v2.8.0 - Trash & much more
+
+• Trash: deleted notes are recoverable and auto-purged later
+• Local-only folders that never sync to your server
+• Scrollable notes-list widget with markdown & options
+• Live markdown highlighting & tap-to-toggle tasks in the editor
+• App-wide and per-widget font size options
+• Add checklist items to your calendar
+
+…and much more.
+
+Thanks to @lincomax, @alas-he, @xdpirate & Papa!
+
+https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md

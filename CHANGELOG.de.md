@@ -8,6 +8,69 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.8.0] - 2026-06-16
+
+### ✨ Neue Funktionen
+
+**Papierkorb** ([1d6fa60](https://github.com/inventory69/simple-notes-sync/commit/1d6fa60), [d2dd414](https://github.com/inventory69/simple-notes-sync/commit/d2dd414))
+- Das Löschen einer Notiz verschiebt sie nun in einen Papierkorb, statt sie zu entfernen; ein neuer Papierkorb-Bildschirm (über die Einstellungen erreichbar) erlaubt das Wiederherstellen oder endgültige Löschen
+- Notizen im Papierkorb werden nach einer Aufbewahrungsfrist automatisch geleert
+- Auf dem Server gelöschte Notizen landen im lokalen Papierkorb, statt zu verschwinden - so lässt sich auch eine Server-Löschung wiederherstellen ([7d9d4b3](https://github.com/inventory69/simple-notes-sync/commit/7d9d4b3))
+
+**Lokale Ordner** ([6a0dd97](https://github.com/inventory69/simple-notes-sync/commit/6a0dd97), [72cb314](https://github.com/inventory69/simple-notes-sync/commit/72cb314))
+- Ordner können nun als lokal markiert werden, sodass ihre Notizen nie zum WebDAV-Server synchronisiert werden - ideal für private oder gerätespezifische Notizen
+- Danke an [@alas-he](https://github.com/alas-he) für den Vorschlag (Diskussion #88)!
+
+**Scrollbares Notizlisten-Widget** ([ca30ad7](https://github.com/inventory69/simple-notes-sync/commit/ca30ad7), [0566ce9](https://github.com/inventory69/simple-notes-sync/commit/0566ce9))
+- Ein neues Homescreen-Widget zeigt eine scrollbare Liste deiner Notizen mit Inline-Markdown-Formatierung ([11c069f](https://github.com/inventory69/simple-notes-sync/commit/11c069f))
+- Optionen, um Kopfzeile, angeheftete Notizen und Ordner auszublenden, nach Ordner zu filtern und die Schriftgröße einzustellen
+- Danke an [@lincomax](https://github.com/lincomax) für die Vorschläge!
+
+**Live-Markdown im Editor & in Vorschauen** ([9c96cc0](https://github.com/inventory69/simple-notes-sync/commit/9c96cc0), [17ad8d8](https://github.com/inventory69/simple-notes-sync/commit/17ad8d8))
+- Der Editor hebt Markdown nun live hervor und erlaubt das Abhaken von Aufgaben per Tipp
+- Notizlisten- und Raster-Karten-Vorschauen rendern Markdown, inklusive ☑/☐-Präfixen für Checklisten und gestylter Code-Blöcke ([f48209a](https://github.com/inventory69/simple-notes-sync/commit/f48209a), [a4324a6](https://github.com/inventory69/simple-notes-sync/commit/a4324a6))
+
+**Schriftgrößen-Optionen** ([30de416](https://github.com/inventory69/simple-notes-sync/commit/30de416), [2cda14d](https://github.com/inventory69/simple-notes-sync/commit/2cda14d))
+- Neue app-weite Schriftgröße plus eine unabhängige Schriftgröße pro Widget
+- Danke an [@lincomax](https://github.com/lincomax) für den Vorschlag!
+
+**Checklisten-Einträge in den Kalender** ([82f3bfc](https://github.com/inventory69/simple-notes-sync/commit/82f3bfc))
+- Jeder Checklisten-Eintrag hat nun einen Eintrag „In Kalender eintragen" im Kontextmenü
+- Danke an Papa für den Vorschlag!
+
+**Standard-Öffnungsmodus** ([5a70f14](https://github.com/inventory69/simple-notes-sync/commit/5a70f14), [1882210](https://github.com/inventory69/simple-notes-sync/commit/1882210))
+- Wähle, ob Textnotizen standardmäßig im Bearbeiten- oder Vorschaumodus öffnen (jetzt standardmäßig Bearbeiten)
+
+### 🐛 Bug-Fixes
+
+**Sync-Loop- & Ordner-Fixes** ([516cd15](https://github.com/inventory69/simple-notes-sync/commit/516cd15), [741ba37](https://github.com/inventory69/simple-notes-sync/commit/741ba37), [f3062c0](https://github.com/inventory69/simple-notes-sync/commit/f3062c0))
+- Bearbeitungen mit gleichem Zeitstempel übernehmen nun die Server-Kopie, um eine Upload/Download-Schleife zu durchbrechen
+- Beim Umbenennen eines Ordners verschobene Notizen werden nicht mehr vom Server gelöscht
+- Das Verschieben einer Notiz in einen lokalen Ordner wird korrekt als Server-Löschung vorgemerkt
+
+**Backup enthält Ordner-Metadaten** ([a854fb9](https://github.com/inventory69/simple-notes-sync/commit/a854fb9))
+- Backups speichern und stellen nun Ordner-Metadaten wieder her, statt sie beim Wiederherstellen zu verlieren
+
+**Benachrichtigungsberechtigung nur einmal anfragen** ([58f6e7c](https://github.com/inventory69/simple-notes-sync/commit/58f6e7c))
+- Die Benachrichtigungsberechtigung wird nun nur einmal automatisch angefragt statt bei jedem Start
+- Danke an [@xdpirate](https://github.com/xdpirate) für die Meldung!
+
+**Editor- & Markdown-Politur** ([552f44d](https://github.com/inventory69/simple-notes-sync/commit/552f44d), [27ae90d](https://github.com/inventory69/simple-notes-sync/commit/27ae90d), [e15ecb0](https://github.com/inventory69/simple-notes-sync/commit/e15ecb0))
+- Die Markdown-Symbolleiste erscheint nur, wenn das Inhaltsfeld fokussiert ist, und ist beim Bearbeiten des Titels ausgeblendet
+- Aneinandergrenzende Inline-Trennzeichen und die Kursiv-Erkennung rendern nun korrekt
+
+**Widget-Fixes** ([ec761f7](https://github.com/inventory69/simple-notes-sync/commit/ec761f7), [a9aa973](https://github.com/inventory69/simple-notes-sync/commit/a9aa973), [cb6a937](https://github.com/inventory69/simple-notes-sync/commit/cb6a937))
+- Korrekte Sichtbarkeit von Kopf-/Angeheftet-Bereich, Größenänderung auf volle Höhe und automatische Tag-/Nacht-Textfarbe
+
+**Checklisten-Animationsfixes** ([a6002fd](https://github.com/inventory69/simple-notes-sync/commit/a6002fd), [cac2e3b](https://github.com/inventory69/simple-notes-sync/commit/cac2e3b), [de5347a](https://github.com/inventory69/simple-notes-sync/commit/de5347a))
+- Leere Einträge bleiben erhalten, wenn der Editor in den Hintergrund geht, die Abhak-Animation läuft bei Rückgängig/Wiederholen, und Einträge sortieren sich sofort nach der Umwandlung von Notiz zu Checkliste
+
+**Weitere UI-Fixes** ([5f3c10e](https://github.com/inventory69/simple-notes-sync/commit/5f3c10e), [c3bf07f](https://github.com/inventory69/simple-notes-sync/commit/c3bf07f), [40c9148](https://github.com/inventory69/simple-notes-sync/commit/40c9148))
+- Hilfe-Button und Pull-to-Refresh reagieren nun sofort auf Änderungen der Serverkonfiguration
+- Der Ordner-erstellen-Dialog wird nicht mehr zu breit, und die Mehrfachauswahl-Leiste zeigt nur noch die Anzahl
+
+---
+
 ## [2.7.2] - 2026-06-07
 
 ### 🐛 Bug-Fixes
