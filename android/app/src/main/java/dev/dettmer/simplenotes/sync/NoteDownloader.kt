@@ -31,7 +31,10 @@ internal data class DownloadResult(
     val folderReconciledCount: Int = 0,
     val trashedDownloadedCount: Int = 0,
     val downloadFailed: Boolean = false,
-    val downloadError: String? = null
+    val downloadError: String? = null,
+    // 🆕 IDs whose JSON was adopted/confirmed this cycle (server edit at tied timestamp).
+    // The MD import phase must not override these so JSON stays authoritative.
+    val adoptedNoteIds: Set<String> = emptySet()
 )
 
 /**
@@ -93,6 +96,7 @@ internal class NoteDownloader(
         var folderReconciledCount = 0
         var trashedDownloadedCount = 0
         val processedIds = mutableSetOf<String>() // 🆕 v1.2.2: Track already loaded notes
+        val adoptedNoteIds = mutableSetOf<String>() // 🆕 JSON adopted at tied timestamp (server wins)
 
         Logger.d(TAG, "📥 downloadAll() called:")
         Logger.d(TAG, "   includeRootFallback: $includeRootFallback")
@@ -430,10 +434,46 @@ internal class NoteDownloader(
                                             localNote.syncStatus == SyncStatus.PENDING
                                         ) {
                                             if (noteContentDiffers(localNote, remoteNote)) {
-                                                if (localNote.syncStatus == SyncStatus.SYNCED) {
+                                                // 🆕 Tie-break: a server file edited directly (e.g. via WebDAV)
+                                                // without bumping `updatedAt` produces an equal timestamp but
+                                                // different content. LWW cannot resolve a tie, and the uploader
+                                                // skips re-uploading unchanged local content (hash match) →
+                                                // endless download → PENDING → skip-upload loop. When the server
+                                                // E-Tag changed at a tied timestamp, treat the server edit as
+                                                // authoritative and adopt it (server wins, mirrors MD import).
+                                                val serverETag = result.etag
+                                                val cachedETag = eTagCache.getJsonETag(result.noteId)
+                                                if (localNote.updatedAt == remoteNote.updatedAt &&
+                                                    localNote.syncStatus == SyncStatus.SYNCED &&
+                                                    serverETag != null && serverETag != cachedETag
+                                                ) {
+                                                    // Adopt the server content, but mark PENDING (not SYNCED) so the
+                                                    // next upload re-pushes the JSON and re-exports the MD mirror —
+                                                    // otherwise a stale MD file would revert this edit next cycle.
+                                                    // adoptedNoteIds guards against the MD import overriding it THIS
+                                                    // cycle (see WebDavSyncService → importMarkdownFiles excludeIds).
+                                                    storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.PENDING))
+                                                    if (remoteNote.trashedAt == null) {
+                                                        downloadedCount++
+                                                    } else {
+                                                        trashedDownloadedCount++
+                                                    }
+                                                    etagUpdates["etag_json_${result.noteId}"] = serverETag
+                                                    adoptedNoteIds.add(result.noteId)
+                                                    // Drop the stale upload hash so the re-upload is not skipped.
+                                                    prefs.edit { remove("content_hash_${result.noteId}") }
+                                                    Logger.d(
+                                                        TAG,
+                                                        "   ⬇️ ${result.noteId}: tied timestamp but server changed " +
+                                                            "— adopted remote (server wins, marked PENDING to refresh MD)"
+                                                    )
+                                                } else if (localNote.syncStatus == SyncStatus.SYNCED) {
                                                     storage.saveNote(
                                                         localNote.copy(syncStatus = SyncStatus.PENDING)
                                                     )
+                                                    // Clear stale upload hash so the intended re-upload
+                                                    // is not silently skipped by the content-hash cache.
+                                                    prefs.edit { remove("content_hash_${result.noteId}") }
                                                     Logger.d(
                                                         TAG,
                                                         "   🔄 ${result.noteId}: local newer with different content " +
@@ -639,7 +679,8 @@ internal class NoteDownloader(
             folderReconciledCount = folderReconciledCount,
             trashedDownloadedCount = trashedDownloadedCount,
             downloadFailed = downloadException != null,
-            downloadError = downloadException?.message
+            downloadError = downloadException?.message,
+            adoptedNoteIds = adoptedNoteIds
         )
     }
 

@@ -561,8 +561,19 @@ internal class MarkdownSyncManager(
                         // MD-Datei eine getrashte Notiz über diesen Force-Import-Pfad wiederbeleben.
                         // Ein echt neuerer MD-Import (nächster Branch, LWW) darf bewusst un-trashen.
                         contentChanged && localNote.syncStatus == SyncStatus.SYNCED && localNote.trashedAt == null -> {
+                            // 🔧 Force-import of changed MD content fires regardless of timestamp.
+                            // When the MD timestamp is tied with (or older than) local, the JSON hash
+                            // stays unchanged → the uploader skips the re-upload → endless import loop.
+                            // Bump updatedAt so the re-upload actually happens and the note converges.
+                            // (A genuinely newer MD keeps its own timestamp.)
+                            val mergedUpdatedAt = if (mdNote.updatedAt > localNote.updatedAt) {
+                                mdNote.updatedAt
+                            } else {
+                                System.currentTimeMillis()
+                            }
                             val merged = mdNoteFoldered.copy(
                                 syncStatus = SyncStatus.PENDING,
+                                updatedAt = mergedUpdatedAt,
                                 isPinned = mdNote.isPinned ?: localNote.isPinned,
                                 color = mdNote.color ?: localNote.color
                             )

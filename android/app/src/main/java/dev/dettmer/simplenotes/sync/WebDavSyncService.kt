@@ -636,6 +636,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 // Upload local notes
                 // 🆕 v1.11.0: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
                 var markdownExportedNoteIds: Set<String> = emptySet()
+                // 🆕 IDs whose JSON was adopted at a tied timestamp (server edit wins) — these
+                // must be excluded from MD import so a divergent MD mirror cannot override JSON.
+                var adoptedFromDownloadIds: Set<String> = emptySet()
                 val mdExport = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
                 try {
                     Logger.d(TAG, "⬆️ Uploading local notes...")
@@ -698,6 +701,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     deletedOnServerCount = downloadResult.deletedOnServerCount // 🆕 v1.8.0
                     folderReconciledCount = downloadResult.folderReconciledCount // 🆕 v2.7.2
                     trashedFromServerCount = downloadResult.trashedDownloadedCount
+                    adoptedFromDownloadIds = downloadResult.adoptedNoteIds
                     Logger.d(
                         TAG,
                         "✅ Downloaded: ${downloadResult.downloadedCount} notes, " +
@@ -736,8 +740,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         // verarbeitet werden müssen (nicht beim Fast-Path).
 
                         Logger.d(TAG, "📥 Auto-importing Markdown files...")
-                        // 🆕 v1.11.0: Pass exported note IDs to prevent re-import of just-exported files
-                        markdownImportedCount = importMarkdownFiles(sardine, serverUrl, markdownExportedNoteIds)
+                        // 🆕 v1.11.0: Pass exported note IDs to prevent re-import of just-exported files.
+                        // 🆕 Also exclude IDs adopted from a server JSON edit at a tied timestamp so a
+                        // divergent MD mirror cannot override the authoritative JSON in the same cycle.
+                        markdownImportedCount = importMarkdownFiles(
+                            sardine,
+                            serverUrl,
+                            markdownExportedNoteIds + adoptedFromDownloadIds
+                        )
                         Logger.d(TAG, "✅ Auto-imported: $markdownImportedCount Markdown files")
 
                         // 🔧 v1.7.2 (IMPL_014): Re-upload notes that were updated from Markdown
