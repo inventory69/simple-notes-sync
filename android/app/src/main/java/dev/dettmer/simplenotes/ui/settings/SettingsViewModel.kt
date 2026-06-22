@@ -47,6 +47,9 @@ import kotlinx.coroutines.withTimeout
  *
  * Manages all settings state and actions across the Settings navigation graph.
  */
+// ponytail: file-level flag, process-scoped, resets on process death
+private var devOptionsUnlocked = false
+
 @Suppress("TooManyFunctions") // v1.7.0: 35 Funktionen durch viele kleine Setter (setTrigger*, set*)
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -259,7 +262,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val syncDebugLoggingEnabled: StateFlow<Boolean> = _syncDebugLoggingEnabled.asStateFlow()
 
     // 🔧 v1.11.0: Developer Options (Easter-Egg) — session-only, nicht persistiert
-    private val _developerOptionsUnlocked = MutableStateFlow(false)
+    private val _developerOptionsUnlocked = MutableStateFlow(devOptionsUnlocked)
     val developerOptionsUnlocked: StateFlow<Boolean> = _developerOptionsUnlocked.asStateFlow()
 
     /**
@@ -267,6 +270,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Nur In-Memory — wird bei Prozess-Tod zurückgesetzt.
      */
     fun unlockDeveloperOptions() {
+        devOptionsUnlocked = true
         _developerOptionsUnlocked.value = true
     }
 
