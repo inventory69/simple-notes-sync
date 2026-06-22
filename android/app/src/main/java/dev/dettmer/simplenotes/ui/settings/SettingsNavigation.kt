@@ -45,7 +45,12 @@ private const val NAV_ANIM_DURATION_MS = 500
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun SettingsNavHost(navController: NavHostController, viewModel: SettingsViewModel, onFinish: () -> Unit) {
+fun SettingsNavHost(
+    navController: NavHostController,
+    viewModel: SettingsViewModel,
+    onFinish: () -> Unit,
+    startDestination: String = SettingsRoute.Main.route
+) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -74,7 +79,7 @@ fun SettingsNavHost(navController: NavHostController, viewModel: SettingsViewMod
     ) {
         NavHost(
             navController = navController,
-            startDestination = SettingsRoute.Main.route,
+            startDestination = startDestination,
             // v2.0.0: Smooth fade transitions for Settings sub-screens
             enterTransition = {
                 fadeIn(animationSpec = tween(NAV_ANIM_DURATION_MS))
@@ -153,7 +158,9 @@ fun SettingsNavHost(navController: NavHostController, viewModel: SettingsViewMod
             }
 
             composable(SettingsRoute.Changelog.route) {
-                ChangelogScreen(onBack = { navController.popBackStack() })
+                ChangelogScreen(onBack = {
+                    if (!navController.popBackStack()) onFinish()
+                })
             }
 
             // Debug Settings

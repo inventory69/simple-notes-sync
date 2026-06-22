@@ -35,6 +35,7 @@ import dev.dettmer.simplenotes.sync.SyncEventBus
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.settings.ComposeSettingsActivity
+import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
@@ -232,7 +233,7 @@ class ComposeMainActivity : ComponentActivity() {
                 )
 
                 // v1.8.0: Post-Update Changelog (shows once after update)
-                UpdateChangelogSheet()
+                UpdateChangelogSheet(onViewChangelog = { openSettingsChangelog() })
             }
         }
     }
@@ -406,6 +407,18 @@ class ComposeMainActivity : ComponentActivity() {
     private fun openSettings() {
         cameFromSettings = true
         val intent = Intent(this, ComposeSettingsActivity::class.java)
+        val options = ActivityOptionsCompat.makeCustomAnimation(
+            this,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
+            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
+        )
+        settingsLauncher.launch(intent, options)
+    }
+
+    private fun openSettingsChangelog() {
+        cameFromSettings = true
+        val intent = Intent(this, ComposeSettingsActivity::class.java)
+            .putExtra(ComposeSettingsActivity.EXTRA_INITIAL_ROUTE, SettingsRoute.Changelog.route)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,

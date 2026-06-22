@@ -526,6 +526,7 @@
     <!-- v1.8.0: Post-Update Changelog Dialog -->
     <string name="update_changelog_title">Was ist neu</string>
     <string name="update_changelog_dismiss">Alles klar!</string>
+    <string name="update_changelog_view_all">Changelog ansehen</string>
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Backup wird erstellt…</string>
     <string name="backup_progress_restoring">Backup wird wiederhergestellt…</string>

@@ -2,7 +2,9 @@ package dev.dettmer.simplenotes.ui.main
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,6 +15,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,7 +52,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UpdateChangelogSheet() {
+fun UpdateChangelogSheet(onViewChangelog: () -> Unit = {}) {
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -134,21 +137,36 @@ fun UpdateChangelogSheet() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Dismiss button
-            Button(
-                onClick = {
-                    scope.launch {
-                        sheetState.hide()
-                    }.invokeOnCompletion {
-                        showSheet = false
-                        prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
-                    }
-                },
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.update_changelog_dismiss))
+                TextButton(
+                    onClick = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            showSheet = false
+                            prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
+                            onViewChangelog()
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.update_changelog_view_all))
+                }
+                Button(
+                    onClick = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            showSheet = false
+                            prefs.edit { putInt(Constants.KEY_LAST_SHOWN_CHANGELOG_VERSION, currentVersionCode) }
+                        }
+                    },
+                    modifier = Modifier.weight(2f)
+                ) {
+                    Text(stringResource(R.string.update_changelog_dismiss))
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

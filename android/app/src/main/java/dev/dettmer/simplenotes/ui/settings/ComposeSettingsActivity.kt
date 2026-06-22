@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
@@ -36,6 +37,7 @@ import kotlinx.coroutines.launch
 class ComposeSettingsActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "ComposeSettingsActivity"
+        const val EXTRA_INITIAL_ROUTE = "initial_route"
     }
 
     private val viewModel: SettingsViewModel by viewModels()
@@ -119,13 +121,17 @@ class ComposeSettingsActivity : AppCompatActivity() {
                     )
                 }
 
+                val initialRoute = remember {
+                    intent.getStringExtra(EXTRA_INITIAL_ROUTE) ?: SettingsRoute.Main.route
+                }
                 SettingsNavHost(
                     navController = navController,
                     viewModel = viewModel,
                     onFinish = {
                         setResult(RESULT_OK)
                         finishWithTransition()
-                    }
+                    },
+                    startDestination = initialRoute
                 )
             }
         }
