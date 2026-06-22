@@ -6,7 +6,7 @@ import urllib.request
 from pathlib import Path
 
 REPO = "inventory69/simple-notes-sync"
-CONTRIBUTORS_FILE = Path(__file__).parent.parent / "contributors.json"
+CONTRIBUTORS_FILE = Path(__file__).parent.parent / "android" / "contributors.json"
 
 
 def _is_bot(login: str) -> bool:

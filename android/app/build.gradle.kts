@@ -281,7 +281,7 @@ tasks.register<Copy>("copyChangelogsToAssets") {
 }
 
 val copyContributorsToAssets by tasks.registering(Copy::class) {
-    from("$rootDir/../contributors.json")
+    from("$rootDir/contributors.json")
     into("$projectDir/src/main/assets")
 }
 
