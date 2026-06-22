@@ -280,6 +280,11 @@ tasks.register<Copy>("copyChangelogsToAssets") {
     }
 }
 
+val copyContributorsToAssets by tasks.registering(Copy::class) {
+    from("$rootDir/../contributors.json")
+    into("$projectDir/src/main/assets")
+}
+
 // ponytail: In-App nur die letzten N Versionen bündeln; volle Historie bleibt im
 // Repo-CHANGELOG.md und in den GitHub-Releases. Spart ~58 KB APK (40 → N Versionen).
 val changelogVersionsInApp = 15
@@ -301,4 +306,5 @@ val copyFullChangelogToAssets by tasks.registering {
 tasks.named("preBuild") {
     dependsOn("copyChangelogsToAssets")
     dependsOn(copyFullChangelogToAssets)
+    dependsOn(copyContributorsToAssets)
 }

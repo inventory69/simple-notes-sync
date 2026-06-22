@@ -1,0 +1,53 @@
+{
+  "contributors": [
+    {
+      "login": "inventory69",
+      "role": "code",
+      "note": "Hauptentwickler & Maintainer"
+    },
+    {
+      "login": "afoni95",
+      "role": "testing"
+    },
+    {
+      "login": "WuTangWilli",
+      "role": "testing"
+    },
+    {
+      "login": "heretic43",
+      "role": "translation"
+    },
+    {
+      "login": "FromKaniv",
+      "role": "translation"
+    },
+    {
+      "login": "SilentCoderHere",
+      "role": "translation"
+    },
+    {
+      "login": "arifpedia",
+      "role": "translation"
+    },
+    {
+      "login": "italianhanno",
+      "role": "translation"
+    },
+    {
+      "login": "xdpirate",
+      "role": "translation"
+    },
+    {
+      "login": "PONYATIN",
+      "role": "translation"
+    },
+    {
+      "login": "PaikLC",
+      "role": "translation"
+    },
+    {
+      "login": "ksuheyl",
+      "role": "translation"
+    }
+  ]
+}

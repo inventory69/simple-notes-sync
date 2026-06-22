@@ -523,6 +523,11 @@
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Vollständige Versionshistorie</string>
+    <string name="contributors_title">Mitwirkende</string>
+    <string name="contributors_subtitle">Alle, die an dieser App mitgewirkt haben</string>
+    <string name="contributors_role_code">Code</string>
+    <string name="contributors_role_translation">Übersetzungen</string>
+    <string name="contributors_role_testing">Tests</string>
     <!-- v1.8.0: Post-Update Changelog Dialog -->
     <string name="update_changelog_title">Was ist neu</string>
     <string name="update_changelog_dismiss">Alles klar!</string>

@@ -26,6 +26,7 @@ import androidx.navigation.compose.composable
 import dev.dettmer.simplenotes.ui.settings.screens.AboutScreen
 import dev.dettmer.simplenotes.ui.settings.screens.BackupSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ChangelogScreen
+import dev.dettmer.simplenotes.ui.settings.screens.ContributorsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DebugSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DisplaySettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ImportSettingsScreen
@@ -161,6 +162,10 @@ fun SettingsNavHost(
                 ChangelogScreen(onBack = {
                     if (!navController.popBackStack()) onFinish()
                 })
+            }
+
+            composable(SettingsRoute.Contributors.route) {
+                ContributorsScreen(onBack = { navController.popBackStack() })
             }
 
             // Debug Settings

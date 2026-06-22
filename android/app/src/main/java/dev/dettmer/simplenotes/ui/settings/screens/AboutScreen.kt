@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Policy
@@ -186,6 +187,14 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                     val intent = Intent(Intent.ACTION_VIEW, githubProfileUrl.toUri())
                     context.startActivity(intent)
                 }
+            )
+
+            // Contributors
+            AboutLinkItem(
+                icon = Icons.Default.Groups,
+                title = stringResource(R.string.contributors_title),
+                subtitle = stringResource(R.string.contributors_subtitle),
+                onClick = { onNavigate(SettingsRoute.Contributors) }
             )
 
             // License
