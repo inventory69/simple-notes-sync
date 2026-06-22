@@ -129,8 +129,8 @@
     <string name="import_dialog_complete">%1$d importados, %2$d omitidos, %3$d fallaron</string>
     <string name="import_zero_notes_hint">No se lograron importar notas. El archivo puede estar corrompido o en un formato desconocido.</string>
     <string name="settings_markdown">Integración con Markdown Desktop</string>
-    <string name="settings_markdown_auto_on">Sincronización automática: On</string>
-    <string name="settings_markdown_auto_off">Sincronización automática: Off</string>
+    <string name="settings_markdown_auto_on">Sincronización automática: Activada</string>
+    <string name="settings_markdown_auto_off">Sincronización automática: Desactivada</string>
     <string name="settings_backup">Respaldar y restaurar</string>
     <string name="settings_backup_subtitle">Respaldo local o de servidor</string>
     <string name="import_server_info">Escanea el servidor WebDAV para archivos importables de notas en todos los subcarpetas. Archivos JSON con ID de nota iguales serán sincronizados directamente.</string>
@@ -451,7 +451,32 @@
     <string name="snackbar_folder_removed_from_server">Carpeta removida del servidor</string>
     <string name="snackbar_folder_sync_queued">La carpeta se sincronizará cuando se vuelva a conectar</string>
     <string name="snackbar_server_unreachable">Servidor inalcanzable</string>
-    <string name="trash_title">Basura</string>
+    <string name="trash_title">Papelera de reciclaje</string>
     <string name="settings_trash_subtitle">Restaura notas o eliminalas permanentemente</string>
     <string name="snackbar_note_restored">Nota restaurada</string>
+    <string name="sync_legend_local_only_desc">Esta nota esta solo en el dispositivo, Ya sea que aun no se sincroniza o esta en una carpeta excluida de la sincronizacion.</string>
+    <string name="sync_legend_trash_hint">Notas eliminadas - y notas que se quitaron en otro dispositivo - se movieron a la papelera, donde se pueden restaurar durante %1$d dias.</string>
+    <string name="trash_empty_state">La papelera está vacía</string>
+    <plurals name="trash_days_left">
+        <item quantity="one">%d día restante</item>
+        <item quantity="many">%d días restantes</item>
+        <item quantity="other">%d días restantes</item>
+    </plurals>
+    <string name="trash_restore_cd">Restaurar nota</string>
+    <string name="trash_delete_forever">Eliminar permanentemente</string>
+    <string name="trash_delete_forever_cd">Nota eliminada permanentemente</string>
+    <string name="trash_delete_forever_title">¿Eliminar permanentemente?</string>
+    <string name="trash_delete_forever_message">\"%s\" se eliminara permanentemente. Esto no se puede deshacer.</string>
+    <string name="trash_empty_action">La papelera esta vacía</string>
+    <string name="trash_empty_confirm_title">¿Vaciar la papelera?</string>
+    <string name="settings_server_status_offline_mode">📴 Modo sin conexión</string>
+    <string name="import_info_text">Importar archivos .md, .json o .txt como Simple Notes. Las notas importadas se sincronizarán después. Los archivos originales no tienen cambios.</string>
+    <string name="backup_restore_file">📂 Restaurar desde un archivo</string>
+    <string name="backup_encryption_title">Cifrar respaldo</string>
+    <string name="backup_encryption_subtitle">Protege tu archivo de respaldo con una contraseña</string>
+    <string name="backup_restore_server_settings_label">Restaurar la configuración de la app (si se incluye en el respaldo)</string>
+    <string name="backup_decryption_required">🔒 Respaldo cifrado</string>
+    <string name="backup_restore_server">☁️ Restaurar desde el servidor</string>
+    <string name="backup_restore_dialog_title">⚠️ ¿Restaurar desde el respaldo?</string>
+    <string name="backup_restore_mode_label">Modo de restauración:</string>
 </resources>
