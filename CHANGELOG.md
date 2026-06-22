@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.9.0] - 2026-06-22
+
+### ✨ New Features
+
+**In-App Changelog** ([60a275c](https://github.com/inventory69/simple-notes-sync/commit/60a275c), [d4e2702](https://github.com/inventory69/simple-notes-sync/commit/d4e2702), [db7a682](https://github.com/inventory69/simple-notes-sync/commit/db7a682))
+- A native Changelog screen is now available directly in the app, reachable from Settings and via a "View changelog" button in the "What's New" sheet
+- Changelog and Contributors are grouped under an "App" section in About
+
+**Contributors Screen** ([5c614ca](https://github.com/inventory69/simple-notes-sync/commit/5c614ca))
+- A new Contributors screen in About credits everyone who has contributed to the project
+
+**Selectable Markdown Preview** ([b07a112](https://github.com/inventory69/simple-notes-sync/commit/b07a112))
+- Text in the markdown preview can now be selected and copied
+- Thanks to [@victoriamontero443-wq](https://github.com/victoriamontero443-wq) for the request!
+
+### 🐛 Bug Fixes
+
+**Developer Options Visibility** ([fb9a97f](https://github.com/inventory69/simple-notes-sync/commit/fb9a97f))
+- Once unlocked, developer options stay visible until the app process is restarted instead of disappearing
+
+### 🌍 Translations
+
+- **Spanish** (64%): [@PaikLC](https://github.com/PaikLC) / Francisco Isaac Ordoñez Pedrero
+- **Chinese (Simplified)** (99%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.8.0] - 2026-06-16
 
 ### ✨ New Features

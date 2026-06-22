@@ -1,0 +1,9 @@
+📜 v2.9.0 - Changelog in der App
+
+• Neu: nativer Changelog-Bildschirm, erreichbar über Einstellungen und das "Neuigkeiten"-Fenster
+• Neu: Mitwirkende-Bildschirm im Über-Bereich
+• Neu: Text in der Markdown-Vorschau ist jetzt markierbar
+• Fix: Entwickleroptionen bleiben bis zum App-Neustart sichtbar
+• Übersetzungsupdate: Spanisch, Chinesisch (vereinfacht)
+
+Danke an victoriamontero443-wq, PaikLC und heretic43!

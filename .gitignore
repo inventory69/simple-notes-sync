@@ -45,7 +45,3 @@ Thumbs.db
 test-apks/
 server-test/
 
-# F-Droid metadata (managed in fdroiddata repo)
-# Exclude fastlane metadata (we want to track those screenshots)
-metadata/
-!fastlane/metadata/

@@ -1,0 +1,9 @@
+📜 v2.9.0 - In-app changelog
+
+• New: native in-app Changelog screen, opened from Settings and the "What's New" sheet
+• New: Contributors screen in About
+• New: text in the markdown preview is now selectable
+• Fix: developer options stay visible until the app restarts
+• Updated translations: Spanish, Chinese (Simplified)
+
+Thanks to victoriamontero443-wq, PaikLC and heretic43!

@@ -8,6 +8,33 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.9.0] - 2026-06-22
+
+### ✨ Neue Funktionen
+
+**Changelog in der App** ([60a275c](https://github.com/inventory69/simple-notes-sync/commit/60a275c), [d4e2702](https://github.com/inventory69/simple-notes-sync/commit/d4e2702), [db7a682](https://github.com/inventory69/simple-notes-sync/commit/db7a682))
+- Ein nativer Changelog-Bildschirm ist jetzt direkt in der App verfügbar, erreichbar über die Einstellungen und einen "Changelog anzeigen"-Button im "Neuigkeiten"-Fenster
+- Changelog und Mitwirkende sind im Über-Bereich unter einem Abschnitt "App" gruppiert
+
+**Mitwirkende-Bildschirm** ([5c614ca](https://github.com/inventory69/simple-notes-sync/commit/5c614ca))
+- Ein neuer Mitwirkende-Bildschirm im Über-Bereich würdigt alle, die zum Projekt beigetragen haben
+
+**Markierbare Markdown-Vorschau** ([b07a112](https://github.com/inventory69/simple-notes-sync/commit/b07a112))
+- Text in der Markdown-Vorschau kann jetzt markiert und kopiert werden
+- Danke an [@victoriamontero443-wq](https://github.com/victoriamontero443-wq) für den Vorschlag!
+
+### 🐛 Bug-Fixes
+
+**Sichtbarkeit der Entwickleroptionen** ([fb9a97f](https://github.com/inventory69/simple-notes-sync/commit/fb9a97f))
+- Einmal freigeschaltet, bleiben die Entwickleroptionen bis zum Neustart des App-Prozesses sichtbar, statt zu verschwinden
+
+### 🌍 Übersetzungen
+
+- **Spanisch** (64%): [@PaikLC](https://github.com/PaikLC) / Francisco Isaac Ordoñez Pedrero
+- **Chinesisch (vereinfacht)** (99%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.8.0] - 2026-06-16
 
 ### ✨ Neue Funktionen
