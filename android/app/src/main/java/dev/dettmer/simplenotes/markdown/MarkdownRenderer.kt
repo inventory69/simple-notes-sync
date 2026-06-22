@@ -26,6 +26,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -37,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 
+private const val COMPACT_HEADING_LEVEL = 3
+
 /**
  * 🆕 v1.9.0 (F07): Renders parsed [MarkdownBlock]s as Compose UI.
  *
@@ -44,40 +47,52 @@ import dev.dettmer.simplenotes.ui.theme.Dimensions
  * and inline formatting (bold, italic, strikethrough, inline code, links).
  */
 @Composable
-fun MarkdownPreview(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier) {
+fun MarkdownPreview(
+    blocks: List<MarkdownBlock>,
+    modifier: Modifier = Modifier,
+    scrollEnabled: Boolean = true,
+    compactHeaders: Boolean = false
+) {
+    val bodyStyle = if (compactHeaders) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
     SelectionContainer {
+        val scrollModifier = if (scrollEnabled) Modifier.verticalScroll(rememberScrollState()) else Modifier
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .then(scrollModifier)
                 .padding(horizontal = Dimensions.SpacingSmall)
         ) {
             blocks.forEach { block ->
                 when (block) {
                     is MarkdownBlock.Heading -> {
-                        HeadingBlock(block)
-                        Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
+                        HeadingBlock(block, compactHeaders)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingLarge))
                     }
+
                     is MarkdownBlock.Paragraph -> {
                         Text(
                             text = parseInlineFormatting(block.text),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = bodyStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
+
                     is MarkdownBlock.TaskList -> {
-                        TaskListBlock(block)
+                        TaskListBlock(block, bodyStyle)
                         Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
+
                     is MarkdownBlock.UnorderedList -> {
-                        UnorderedListBlock(block)
+                        UnorderedListBlock(block, bodyStyle)
                         Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
+
                     is MarkdownBlock.CodeBlock -> {
                         CodeBlockSurface(block)
                         Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
+
                     MarkdownBlock.HorizontalRule -> {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = Dimensions.SpacingMediumLarge),
@@ -92,7 +107,28 @@ fun MarkdownPreview(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier) 
 }
 
 @Composable
-private fun HeadingBlock(heading: MarkdownBlock.Heading) {
+private fun HeadingBlock(heading: MarkdownBlock.Heading, compact: Boolean = false) {
+    if (compact && heading.level == COMPACT_HEADING_LEVEL) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = Dimensions.SpacingMediumLarge),
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shape = MaterialTheme.shapes.small
+        ) {
+            Text(
+                text = heading.text,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(
+                    horizontal = Dimensions.SpacingMediumLarge,
+                    vertical = Dimensions.SpacingMedium
+                )
+            )
+        }
+        return
+    }
     val style = when (heading.level) {
         1 -> MaterialTheme.typography.headlineLarge
         2 -> MaterialTheme.typography.headlineMedium
@@ -107,7 +143,7 @@ private fun HeadingBlock(heading: MarkdownBlock.Heading) {
 }
 
 @Composable
-private fun TaskListBlock(taskList: MarkdownBlock.TaskList) {
+private fun TaskListBlock(taskList: MarkdownBlock.TaskList, bodyStyle: TextStyle = MaterialTheme.typography.bodyLarge) {
     Column {
         taskList.items.forEach { item ->
             Row(
@@ -122,7 +158,7 @@ private fun TaskListBlock(taskList: MarkdownBlock.TaskList) {
                 Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
                 Text(
                     text = parseInlineFormatting(item.text),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = bodyStyle,
                     color = if (item.isChecked) {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
@@ -141,7 +177,7 @@ private fun TaskListBlock(taskList: MarkdownBlock.TaskList) {
 }
 
 @Composable
-private fun UnorderedListBlock(list: MarkdownBlock.UnorderedList) {
+private fun UnorderedListBlock(list: MarkdownBlock.UnorderedList, bodyStyle: TextStyle = MaterialTheme.typography.bodyLarge) {
     Column {
         list.items.forEach { itemText ->
             Text(
@@ -149,7 +185,7 @@ private fun UnorderedListBlock(list: MarkdownBlock.UnorderedList) {
                     append("  \u2022  ")
                     append(parseInlineFormatting(itemText))
                 },
-                style = MaterialTheme.typography.bodyLarge,
+                style = bodyStyle,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
@@ -212,39 +248,62 @@ internal fun parseInlineFormattingWithColors(
             match.groups[1] != null -> {
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[1]) }
             }
+
             match.groups[2] != null -> {
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[2]) }
             }
+
             match.groups[INLINE_GROUP_STRIKETHROUGH] != null -> {
                 withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) { append(match.groupValues[INLINE_GROUP_STRIKETHROUGH]) }
             }
+
             match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null -> {
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[INLINE_GROUP_ITALIC_ASTERISK]) }
             }
+
             match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null -> {
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[INLINE_GROUP_ITALIC_UNDERSCORE]) }
             }
+
             match.groups[INLINE_GROUP_INLINE_CODE] != null -> {
-                withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)) {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        background = codeBackground,
+                        color = codeColor
+                    )
+                ) {
                     append(match.groupValues[INLINE_GROUP_INLINE_CODE])
                 }
             }
+
             match.groups[INLINE_GROUP_LINK_TEXT] != null -> {
                 val linkText = match.groupValues[INLINE_GROUP_LINK_TEXT]
                 val linkUrl = match.groupValues[INLINE_GROUP_LINK_URL].trimEnd('!', '?', ',', '.', ';', ':')
                 withLink(
                     LinkAnnotation.Url(
                         url = linkUrl,
-                        styles = TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        )
                     )
                 ) { append(linkText) }
             }
+
             else -> {
                 val url = match.value.trimEnd('!', '?', ',', '.', ';', ':')
                 withLink(
                     LinkAnnotation.Url(
                         url = url,
-                        styles = TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        )
                     )
                 ) { append(url) }
                 val trimmed = match.value.length - url.length
@@ -268,9 +327,11 @@ internal fun buildMarkdownCardPreview(
             is MarkdownBlock.Heading -> {
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(block.text) }
             }
+
             is MarkdownBlock.Paragraph -> {
                 append(parseInlineFormattingWithColors(block.text, linkColor, codeBackground, codeColor))
             }
+
             is MarkdownBlock.TaskList -> {
                 block.items.forEachIndexed { j, item ->
                     if (j > 0) append("\n")
@@ -283,6 +344,7 @@ internal fun buildMarkdownCardPreview(
                     }
                 }
             }
+
             is MarkdownBlock.UnorderedList -> {
                 block.items.forEachIndexed { j, itemText ->
                     if (j > 0) append("\n")
@@ -290,11 +352,19 @@ internal fun buildMarkdownCardPreview(
                     append(parseInlineFormattingWithColors(itemText, linkColor, codeBackground, codeColor))
                 }
             }
+
             is MarkdownBlock.CodeBlock -> {
-                withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground, color = codeColor)) {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        background = codeBackground,
+                        color = codeColor
+                    )
+                ) {
                     append(block.code)
                 }
             }
+
             MarkdownBlock.HorizontalRule -> Unit
         }
     }
@@ -382,14 +452,19 @@ internal fun markdownInlineToHtml(text: String): String = buildString {
             match.groups[2] != null -> append("<b>${match.groupValues[2].escapeHtml()}</b>")
             match.groups[INLINE_GROUP_STRIKETHROUGH] != null ->
                 append("<s>${match.groupValues[INLINE_GROUP_STRIKETHROUGH].escapeHtml()}</s>")
+
             match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null ->
                 append("<i>${match.groupValues[INLINE_GROUP_ITALIC_ASTERISK].escapeHtml()}</i>")
+
             match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null ->
                 append("<i>${match.groupValues[INLINE_GROUP_ITALIC_UNDERSCORE].escapeHtml()}</i>")
+
             match.groups[INLINE_GROUP_INLINE_CODE] != null ->
                 append("<tt>${match.groupValues[INLINE_GROUP_INLINE_CODE].escapeHtml()}</tt>")
+
             match.groups[INLINE_GROUP_LINK_TEXT] != null ->
                 append(match.groupValues[INLINE_GROUP_LINK_TEXT].escapeHtml())
+
             else -> append(match.value.escapeHtml()) // bare URL — keep as plain text
         }
         pos = match.range.last + 1

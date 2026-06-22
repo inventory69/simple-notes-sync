@@ -44,6 +44,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
@@ -54,7 +55,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun AboutScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
+fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
 
@@ -69,7 +70,6 @@ fun AboutScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val githubRepoUrl = "https://github.com/inventory69/simple-notes-sync"
     val githubProfileUrl = "https://github.com/inventory69"
     val licenseUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/LICENSE"
-    val changelogUrl = "https://github.com/inventory69/simple-notes-sync/blob/main/CHANGELOG.md" // v1.8.0
 
     SettingsScaffold(
         title = stringResource(R.string.about_settings_title),
@@ -199,15 +199,11 @@ fun AboutScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 }
             )
 
-            // v1.8.0: Changelog
             AboutLinkItem(
                 icon = Icons.Default.History,
                 title = stringResource(R.string.about_changelog_title),
                 subtitle = stringResource(R.string.about_changelog_subtitle),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, changelogUrl.toUri())
-                    context.startActivity(intent)
-                }
+                onClick = { onNavigate(SettingsRoute.Changelog) }
             )
 
             SettingsDivider()

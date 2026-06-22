@@ -280,7 +280,25 @@ tasks.register<Copy>("copyChangelogsToAssets") {
     }
 }
 
+// ponytail: In-App nur die letzten N Versionen bündeln; volle Historie bleibt im
+// Repo-CHANGELOG.md und in den GitHub-Releases. Spart ~58 KB APK (40 → N Versionen).
+val changelogVersionsInApp = 15
+val copyFullChangelogToAssets by tasks.registering {
+    description = "Copies the last $changelogVersionsInApp CHANGELOG versions to app assets for in-app display"
+    doLast {
+        listOf("CHANGELOG.md" to "changelog.md", "CHANGELOG.de.md" to "changelog.de.md")
+            .forEach { (src, dst) ->
+                val parts = file("$rootDir/../$src").readText().split(Regex("(?m)^## "))
+                val trimmed = parts.drop(1).take(changelogVersionsInApp)
+                    .joinToString("") { "## $it" }
+                file("$projectDir/src/main/assets/$dst")
+                    .apply { parentFile.mkdirs() }.writeText(trimmed)
+            }
+    }
+}
+
 // Run before preBuild to ensure changelogs are available
 tasks.named("preBuild") {
     dependsOn("copyChangelogsToAssets")
+    dependsOn(copyFullChangelogToAssets)
 }

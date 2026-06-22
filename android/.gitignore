@@ -19,3 +19,5 @@ key.properties
 *.jks
 *.keystore
 /app/src/main/assets/changelogs/
+/app/src/main/assets/changelog.md
+/app/src/main/assets/changelog.de.md
