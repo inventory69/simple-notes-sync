@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
@@ -44,44 +45,46 @@ import dev.dettmer.simplenotes.ui.theme.Dimensions
  */
 @Composable
 fun MarkdownPreview(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Dimensions.SpacingSmall)
-    ) {
-        blocks.forEach { block ->
-            when (block) {
-                is MarkdownBlock.Heading -> {
-                    HeadingBlock(block)
-                    Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
-                }
-                is MarkdownBlock.Paragraph -> {
-                    Text(
-                        text = parseInlineFormatting(block.text),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
-                }
-                is MarkdownBlock.TaskList -> {
-                    TaskListBlock(block)
-                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
-                }
-                is MarkdownBlock.UnorderedList -> {
-                    UnorderedListBlock(block)
-                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
-                }
-                is MarkdownBlock.CodeBlock -> {
-                    CodeBlockSurface(block)
-                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
-                }
-                MarkdownBlock.HorizontalRule -> {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = Dimensions.SpacingMediumLarge),
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
+    SelectionContainer {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimensions.SpacingSmall)
+        ) {
+            blocks.forEach { block ->
+                when (block) {
+                    is MarkdownBlock.Heading -> {
+                        HeadingBlock(block)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
+                    }
+                    is MarkdownBlock.Paragraph -> {
+                        Text(
+                            text = parseInlineFormatting(block.text),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    }
+                    is MarkdownBlock.TaskList -> {
+                        TaskListBlock(block)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    }
+                    is MarkdownBlock.UnorderedList -> {
+                        UnorderedListBlock(block)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    }
+                    is MarkdownBlock.CodeBlock -> {
+                        CodeBlockSurface(block)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    }
+                    MarkdownBlock.HorizontalRule -> {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = Dimensions.SpacingMediumLarge),
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
                 }
             }
         }
