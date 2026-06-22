@@ -69,6 +69,17 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Hilfe-Button und Pull-to-Refresh reagieren nun sofort auf Änderungen der Serverkonfiguration
 - Der Ordner-erstellen-Dialog wird nicht mehr zu breit, und die Mehrfachauswahl-Leiste zeigt nur noch die Anzahl
 
+### 🔧 Technisches
+
+**Dependency-Updates** ([4d5cc1e](https://github.com/inventory69/simple-notes-sync/commit/4d5cc1e))
+- Compose BOM 2026.03.00 - 2026.05.01 (Foundation 1.11, Material3 1.4)
+- Material 1.13.0 - 1.14.0
+- Coroutines 1.10.2 - 1.11.0
+- Gson 2.13.2 - 2.14.0
+- WorkManager 2.11.1 - 2.11.2
+- MockK 1.14.9 - 1.14.11
+- Compose Foundation 1.11 unterdrückt `animateItem`-Platzierungsanimationen während `animateScrollToItem()`; der upstream Rollout-Flag wurde deaktiviert, um das Verhalten von 1.10 wiederherzustellen, bis der Fix upstream landet ([b/493183465](https://issuetracker.google.com/issues/493183465))
+
 ---
 
 ## [2.7.2] - 2026-06-07
