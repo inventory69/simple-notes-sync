@@ -165,6 +165,23 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            SettingsSectionHeader(text = stringResource(R.string.about_app_section))
+
+            AboutLinkItem(
+                icon = Icons.Default.History,
+                title = stringResource(R.string.about_changelog_title),
+                subtitle = stringResource(R.string.about_changelog_subtitle),
+                onClick = { onNavigate(SettingsRoute.Changelog) }
+            )
+
+            // Contributors
+            AboutLinkItem(
+                icon = Icons.Default.Groups,
+                title = stringResource(R.string.contributors_title),
+                subtitle = stringResource(R.string.contributors_subtitle),
+                onClick = { onNavigate(SettingsRoute.Contributors) }
+            )
+
             SettingsSectionHeader(text = stringResource(R.string.about_links_section))
 
             // GitHub Repository
@@ -189,14 +206,6 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                 }
             )
 
-            // Contributors
-            AboutLinkItem(
-                icon = Icons.Default.Groups,
-                title = stringResource(R.string.contributors_title),
-                subtitle = stringResource(R.string.contributors_subtitle),
-                onClick = { onNavigate(SettingsRoute.Contributors) }
-            )
-
             // License
             AboutLinkItem(
                 icon = Icons.Default.Policy,
@@ -206,13 +215,6 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                     val intent = Intent(Intent.ACTION_VIEW, licenseUrl.toUri())
                     context.startActivity(intent)
                 }
-            )
-
-            AboutLinkItem(
-                icon = Icons.Default.History,
-                title = stringResource(R.string.about_changelog_title),
-                subtitle = stringResource(R.string.about_changelog_subtitle),
-                onClick = { onNavigate(SettingsRoute.Changelog) }
             )
 
             SettingsDivider()
