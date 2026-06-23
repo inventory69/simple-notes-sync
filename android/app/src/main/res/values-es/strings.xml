@@ -40,7 +40,7 @@
     <string name="snackbar_nothing_to_sync">ℹ️ Nada por sincronizar</string>
     <string name="sync_error_ssl">Error SSL</string>
     <string name="sync_phase_deleting">Eliminando del servidor…</string>
-    <string name="sync_quota_warning">⚠️ La sincronización fue retrasada por el administrador de energía de Android. Usa la app regularmente o desactiva la optimización en segundo plano de la batería.</string>
+    <string name="sync_quota_warning">⚠️ Sincronización retrasada por el administrador de energía de Android. Usa la app regularmente o desactiva la optimización en segundo plano de la batería.</string>
     <string name="sort_notes">Ordenar notas</string>
     <string name="sort_ascending">Ascendente</string>
     <string name="sort_descending">Descendente</string>
@@ -76,9 +76,9 @@
     <string name="sync_error_server">Error del servidor</string>
     <string name="sync_error_http">Error HTTP: %d</string>
     <string name="sync_error_unknown">Error desconocido</string>
-    <string name="sync_error_mkcol_failed">No se puede crear el folder de sincronización. Verifica la URL WebDAV contenga toda la ruta (ej. /remote.php/dav/files/USERNAME/).</string>
+    <string name="sync_error_mkcol_failed">No se puede crear la carpeta de sincronización. Verifica que la URL WebDAV contenga toda la ruta (ej. /remote.php/dav/files/USERNAME/).</string>
     <string name="sync_error_not_webdav">La URL no es un endpoint WebDAV. Verifica la ruta completa WebDAV (ej. /remote.php/dav/files/USERNAME/).</string>
-    <string name="error_http_local_only">HTTP solo esta permitido para servidores locales (ej. 192.168.x.x, 10.x.x.x, nas.local). Para servidores públicos use HTTPS.</string>
+    <string name="error_http_local_only">HTTP esta permitido solo para servidores locales (ej. 192.168.x.x, 10.x.x.x, nas.local). Para servidores públicos use HTTPS.</string>
     <string name="error_invalid_protocol">Protocolo inválido: %s. Por favor utilice HTTP o HTTPS.</string>
     <string name="error_invalid_url">URL inválida: %s</string>
     <string name="error_server_not_configured">Servidor WebDAV sin configuración completa</string>
@@ -110,7 +110,7 @@
     <string name="settings_server_status_unreachable">❌ Inaccesible</string>
     <string name="settings_server_status_checking">🔍 Revisando…</string>
     <string name="settings_server_status_not_configured">📴 Sin configurar</string>
-    <string name="settings_sync">Sincronización y notificaciones</string>
+    <string name="settings_sync">Sincronización y Notificaciones</string>
     <string name="settings_sync_manual_only">Sólo sincronización manual</string>
     <string name="settings_sync_notifications_enabled">Notificaciones habilitadas</string>
     <string name="settings_sync_notifications_errors_only">Sólo errores y avisos</string>
@@ -126,17 +126,17 @@
     <string name="import_button_import">Importar %d archivos</string>
     <string name="import_no_files_found">No se encontraron archivos para importar</string>
     <string name="import_summary_title">Resultado de importación</string>
-    <string name="import_dialog_complete">%1$d importados, %2$d omitidos, %3$d fallaron</string>
-    <string name="import_zero_notes_hint">No se lograron importar notas. El archivo puede estar corrompido o en un formato desconocido.</string>
+    <string name="import_dialog_complete">%1$d importados, %2$d omitidos, %3$d fallados</string>
+    <string name="import_zero_notes_hint">No se lograron importar notas. El archivo puede estar corrompido o en un formato sin soporte.</string>
     <string name="settings_markdown">Integración con Markdown Desktop</string>
     <string name="settings_markdown_auto_on">Sincronización automática: Activada</string>
     <string name="settings_markdown_auto_off">Sincronización automática: Desactivada</string>
     <string name="settings_backup">Respaldar y restaurar</string>
     <string name="settings_backup_subtitle">Respaldo local o de servidor</string>
-    <string name="import_server_info">Escanea el servidor WebDAV para archivos importables de notas en todos los subcarpetas. Archivos JSON con ID de nota iguales serán sincronizados directamente.</string>
+    <string name="import_server_info">Escanea el servidor WebDAV para archivos importables de notas en todas las subcarpetas. Archivos JSON con ID de nota iguales serán sincronizados directamente.</string>
     <string name="import_local_info">Selecciona archivos .md, .json o .txt directamente desde el almacenamiento del dispositivo.</string>
     <string name="import_conflict_label">Estrategia ante conflictos</string>
-    <string name="import_conflict_always_create">Siempre crear (podría duplicar)</string>
+    <string name="import_conflict_always_create">Crear siempre (podría duplicar)</string>
     <string name="import_conflict_skip">Saltar existente (Predeterminado)</string>
     <string name="import_conflict_replace">Reemplazar existente</string>
     <string name="import_cancel">Cancelar</string>
@@ -204,7 +204,7 @@
     <string name="sync_offline_mode_button">Configurar servidor</string>
     <string name="markdown_export_complete">✅ Exportación completa</string>
     <string name="markdown_export_progress">Exportando %1$d/%2$d notas…</string>
-    <string name="settings_sync_triggers_active">%d activadores activos</string>
+    <string name="settings_sync_triggers_active">%d mecánicas activas</string>
     <string name="settings_debug_logging_on">Registrando: Activado</string>
     <string name="settings_debug_logging_off">Registrando: Desactivado</string>
     <string name="server_timeout_label">Tiempo de espera de conexión agotado: %d segundos</string>
@@ -433,7 +433,7 @@
     <string name="backup_create">💾 Crear Respaldo</string>
     <string name="backup_include_server_settings_subtitle">También respalda las configuraciones de conexión al servidor, sincronización y notificaciones</string>
     <string name="backup_restore_button">Restaurar</string>
-    <string name="empty_state_title">Sin notas aún</string>
+    <string name="empty_state_title">Sin notas</string>
     <string name="empty_state_message">Toca el + para crear una nueva nota</string>
     <string name="sync_legend_button">Ayuda del estado de sincronización</string>
     <string name="sync_legend_title">Iconos del estado de sicronización</string>
@@ -447,15 +447,15 @@
     <string name="sort_checklist">Ordenar checklist</string>
     <string name="sort_checklist_unchecked_first">Sin marcar primero</string>
     <string name="sort_checklist_checked_first">Marcados primero</string>
-    <string name="delete_selection_message">¿Cómo quieres eliminar lo seleccionado?</string>
+    <string name="delete_selection_message">¿Cómo deseas eliminar lo seleccionado?</string>
     <string name="snackbar_folder_removed_from_server">Carpeta removida del servidor</string>
     <string name="snackbar_folder_sync_queued">La carpeta se sincronizará cuando se vuelva a conectar</string>
     <string name="snackbar_server_unreachable">Servidor inalcanzable</string>
     <string name="trash_title">Papelera de reciclaje</string>
     <string name="settings_trash_subtitle">Restaura notas o eliminalas permanentemente</string>
     <string name="snackbar_note_restored">Nota restaurada</string>
-    <string name="sync_legend_local_only_desc">Esta nota esta solo en el dispositivo, Ya sea que aun no se sincroniza o esta en una carpeta excluida de la sincronizacion.</string>
-    <string name="sync_legend_trash_hint">Notas eliminadas - y notas que se quitaron en otro dispositivo - se movieron a la papelera, donde se pueden restaurar durante %1$d dias.</string>
+    <string name="sync_legend_local_only_desc">Esta nota esta solo en el dispositivo, puede que aun no se sincronice o esta en una carpeta excluida para sincronización.</string>
+    <string name="sync_legend_trash_hint">Notas eliminadas - y notas removidas en otro dispositivo - se mueven a la papelera, donde se pueden restaurar durante %1$d días.</string>
     <string name="trash_empty_state">La papelera está vacía</string>
     <plurals name="trash_days_left">
         <item quantity="one">%d día restante</item>
@@ -479,4 +479,7 @@
     <string name="backup_restore_server">☁️ Restaurar desde el servidor</string>
     <string name="backup_restore_dialog_title">⚠️ ¿Restaurar desde el respaldo?</string>
     <string name="backup_restore_mode_label">Modo de restauración:</string>
+    <string name="fab_checklist">Lista de tareas</string>
+    <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Eliminado en servidor</string>
+    <string name="settings_sync_offline_mode">📴 Modo sin conexión</string>
 </resources>
