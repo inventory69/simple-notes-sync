@@ -437,7 +437,7 @@
     <string name="empty_state_message">Toca el + para crear una nueva nota</string>
     <string name="sync_legend_button">Ayuda del estado de sincronización</string>
     <string name="sync_legend_title">Iconos del estado de sicronización</string>
-    <string name="sync_legend_local_only_label">Sólo localmente</string>
+    <string name="sync_legend_local_only_label">Solo en local</string>
     <string name="checklist_items_more">+%d más</string>
     <string name="sync_status_deleted_on_server">Eliminado en el servidor</string>
     <string name="sync_moved_to_trash_count">%d movidas a la basura</string>
@@ -482,4 +482,5 @@
     <string name="fab_checklist">Lista de tareas</string>
     <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Eliminado en servidor</string>
     <string name="settings_sync_offline_mode">📴 Modo sin conexión</string>
+    <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d eliminada del servidor</string>
 </resources>
