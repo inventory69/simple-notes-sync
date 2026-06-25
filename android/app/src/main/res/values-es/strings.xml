@@ -449,7 +449,7 @@
     <string name="sort_checklist_checked_first">Marcados primero</string>
     <string name="delete_selection_message">¿Cómo deseas eliminar lo seleccionado?</string>
     <string name="snackbar_folder_removed_from_server">Carpeta removida del servidor</string>
-    <string name="snackbar_folder_sync_queued">La carpeta se sincronizará cuando se vuelva a conectar</string>
+    <string name="snackbar_folder_sync_queued">La carpeta se sincronizará al re conectarse</string>
     <string name="snackbar_server_unreachable">Servidor inalcanzable</string>
     <string name="trash_title">Papelera de reciclaje</string>
     <string name="settings_trash_subtitle">Restaura notas o eliminalas permanentemente</string>
@@ -467,7 +467,7 @@
     <string name="trash_delete_forever_cd">Nota eliminada permanentemente</string>
     <string name="trash_delete_forever_title">¿Eliminar permanentemente?</string>
     <string name="trash_delete_forever_message">\"%s\" se eliminara permanentemente. Esto no se puede deshacer.</string>
-    <string name="trash_empty_action">La papelera esta vacía</string>
+    <string name="trash_empty_action">Vaciar papelera</string>
     <string name="trash_empty_confirm_title">¿Vaciar la papelera?</string>
     <string name="settings_server_status_offline_mode">📴 Modo sin conexión</string>
     <string name="import_info_text">Importar archivos .md, .json o .txt como Simple Notes. Las notas importadas se sincronizarán después. Los archivos originales no tienen cambios.</string>
@@ -483,4 +483,5 @@
     <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Eliminado en servidor</string>
     <string name="settings_sync_offline_mode">📴 Modo sin conexión</string>
     <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d eliminada del servidor</string>
+    <string name="trash_retention_hint">Las notas en la papelera de reciclaje serán eliminadas de manera permanente luego de %1$d días.</string>
 </resources>
