@@ -133,7 +133,16 @@
     <string name="trash_title">Papierkorb</string>
     <string name="settings_trash_subtitle">Notizen wiederherstellen oder endgültig löschen</string>
     <string name="trash_empty_state">Papierkorb ist leer</string>
+    <string name="trash_retention_duration_title">Notizen im Papierkorb löschen nach</string>
+    <string name="trash_retention_settings_cd">Aufbewahrungsdauer einstellen</string>
+    <string name="trash_retention_immediate">Sofort</string>
+    <string name="trash_retention_immediate_hint">Bereits im Papierkorb liegende Einträge werden sofort gelöscht.</string>
     <string name="trash_retention_hint">Notizen im Papierkorb werden nach %1$d Tagen endgültig gelöscht.</string>
+    <string name="trash_retention_hint_immediate">Gelöschte Notizen werden direkt nach dem Undo-Fenster endgültig entfernt.</string>
+    <plurals name="days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
     <plurals name="trash_days_left">
         <item quantity="one">noch %d Tag</item>
         <item quantity="other">noch %d Tage</item>
@@ -151,6 +160,11 @@
     </plurals>
     <string name="trash_empty_confirm_server_hint">Synchronisierte Notizen werden auch vom Server gelöscht.</string>
     <string name="snackbar_note_trashed">\"%s\" in den Papierkorb verschoben</string>
+    <string name="snackbar_note_deleted_permanently">\"%1$s\" endgültig gelöscht</string>
+    <plurals name="snackbar_notes_deleted_permanently">
+        <item quantity="one">%d Notiz endgültig gelöscht</item>
+        <item quantity="other">%d Notizen endgültig gelöscht</item>
+    </plurals>
     <plurals name="snackbar_notes_trashed">
         <item quantity="one">%d Notiz in den Papierkorb verschoben</item>
         <item quantity="other">%d Notizen in den Papierkorb verschoben</item>

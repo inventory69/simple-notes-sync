@@ -55,7 +55,8 @@ class TrashManagerTest {
         tmpDir.deleteRecursively()
     }
 
-    private fun manager() = TrashManager(storage, pendingDeletions, folderStore) { fakeNow }
+    private fun manager(retentionMs: Long = Constants.TRASH_RETENTION_MS) =
+        TrashManager(storage, pendingDeletions, folderStore, clock = { fakeNow }, retentionMs = { retentionMs })
 
     private fun note(
         id: String = "n",
@@ -179,6 +180,31 @@ class TrashManagerTest {
         assertNull("expired purged", storage.loadNote("old"))
         assertTrue("not-yet-expired kept", storage.loadNote("young") != null)
         assertTrue("active note untouched", storage.loadNote("active") != null)
+    }
+
+    // ─── configurable retention ──────────────────────────────────────────────
+
+    @Test fun `purgeExpired with retention 0 purges all trashed notes immediately`() = runBlocking {
+        storage.saveNote(note(id = "zero", status = SyncStatus.SYNCED, trashedAt = fakeNow - 1L))
+        storage.saveNote(note(id = "active", status = SyncStatus.SYNCED, trashedAt = null))
+
+        val count = manager(retentionMs = 0L).purgeExpired()
+
+        assertEquals(1, count)
+        assertNull("trashed note purged", storage.loadNote("zero"))
+        assertTrue("active note untouched", storage.loadNote("active") != null)
+    }
+
+    @Test fun `purgeExpired with retention 7 days purges at boundary and keeps fresh`() = runBlocking {
+        val sevenDayMs = 7 * Constants.DAY_MS
+        storage.saveNote(note(id = "expired", trashedAt = fakeNow - sevenDayMs))
+        storage.saveNote(note(id = "fresh", trashedAt = fakeNow - sevenDayMs + 1L))
+
+        val count = manager(retentionMs = sevenDayMs).purgeExpired()
+
+        assertEquals(1, count)
+        assertNull("7-day-old note purged", storage.loadNote("expired"))
+        assertTrue("6d23h note kept", storage.loadNote("fresh") != null)
     }
 
     // ─── emptyTrash ──────────────────────────────────────────────────────────
