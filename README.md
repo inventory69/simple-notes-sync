@@ -69,18 +69,24 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 ## ✨ Highlights
 
 - 📝 **Offline-first** - Works without internet
-- 📊 **Flexible views** - Switch between list and grid layout, 1–5 column scaling
-- ✅ **Checklists** - Tap-to-check, drag & drop
+- 📁 **Folders** - Organize notes into folders, with optional local-only folders that never sync
+- 📌 **Pinned notes** - Keep important notes at the top
+- 🗑️ **Trash** - Deleted notes move to a recycle bin with configurable retention (0–90 days)
+- ✅ **Checklists** - Tap-to-check, drag & drop, convert text ↔ checklist
+- ✍️ **Live Markdown** - Live highlighting in the editor and rendered list/grid previews
+- 🎨 **Note colors** - Color-code notes, then filter and sort by color
+- 📥 **Google Keep import** - Bring your notes over from a Keep export
+- 📊 **Flexible views** - List or grid layout, 1–5 column scaling, adjustable font size
+- 🧩 **Widgets** - Single-note, scrollable note-list, and quick-new-note home screen widgets
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
-- 📌 **Widgets** - Home screen quick-note and note list widgets
-- 🔀 **Smart sorting** - By title, date modified, date created, type
-- ⚡ **Parallel sync** - Downloads up to 5 notes simultaneously
-- 🌍 **Multilingual** - English/German with language selector
-- 🔒 **Self-hosted** - Your data stays with you (WebDAV)
-- 💾 **Local backup** - Export/Import as JSON file (encryption available)
+- ⚡ **Parallel sync** - Uploads/downloads up to 5 notes simultaneously
+- 🔒 **Self-hosted** - Your data stays with you (WebDAV, encrypted credentials)
+- 💾 **Local backup** - Export/Import as JSON file
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
-- 📤 **Share & export** - Share as text or PDF, export to calendar
+- 💻 **Desktop editor** _(beta)_ - Edit your notes on Windows & Linux with [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop), the WebDAV-synced companion app
+- 📤 **Share & export** - Receive shared text, share as text or PDF, export to calendar
 - ↩️ **Undo/Redo** - Full undo/redo history in the note editor
+- 🌍 **Multilingual** - 11 languages with in-app language selector
 - 🎨 **Material Design 3** - 7 color schemes incl. AMOLED & Dynamic Color, animated theme transitions
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
@@ -121,11 +127,14 @@ docker compose up -d
 | **[FEATURES.md](docs/FEATURES.md)** | Complete feature list |
 | **[BACKUP.md](docs/BACKUP.md)** | Backup & restore guide |
 | **[DESKTOP.md](docs/DESKTOP.md)** | Desktop integration (Markdown) |
+| **[Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop)** | Desktop editor for Windows & Linux _(beta)_ 💻 |
 | **[SELF_SIGNED_SSL.md](docs/SELF_SIGNED_SSL.md)** | Self-signed SSL certificate setup |
 | **[DOCS.md](docs/DOCS.md)** | Technical details & troubleshooting |
 | **[CHANGELOG.md](CHANGELOG.md)** | Version history |
 | **[UPCOMING.md](docs/UPCOMING.md)** | Upcoming features 🚀 |
 | **[TRANSLATING.md](docs/TRANSLATING.md)** | Translation guide 🌍 |
+
+## 🛠️ Development
 
 ```bash
 cd android
