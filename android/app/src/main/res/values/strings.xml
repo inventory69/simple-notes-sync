@@ -931,6 +931,29 @@
     <string name="notes_list_widget_config_hide_folders_desc">Folder cards won\'t appear in the widget</string>
     <string name="notes_list_widget_config_folder_label">Folder</string>
     <string name="notes_list_widget_config_folder_all">All notes</string>
+    <!-- ============================= -->
+    <!-- v2.10.0: APP LOCK            -->
+    <!-- ============================= -->
+    <string name="settings_security">Security</string>
+    <string name="settings_security_subtitle_on">App lock active</string>
+    <string name="settings_security_subtitle_off">Off</string>
+    <string name="app_lock_section">App lock</string>
+    <string name="app_lock_toggle">Biometric unlock</string>
+    <string name="app_lock_toggle_subtitle">Unlock the app with fingerprint, face, or device PIN</string>
+    <string name="app_lock_timeout_title">Lock after</string>
+    <string name="app_lock_timeout_immediately">Immediately</string>
+    <string name="app_lock_timeout_30s">30 sec</string>
+    <string name="app_lock_timeout_1min">1 min</string>
+    <string name="app_lock_timeout_5min">5 min</string>
+    <string name="app_lock_info">When enabled, the app requires biometric authentication (fingerprint, face) or your device PIN / pattern as a fallback before content is shown.</string>
+    <string name="app_lock_locked_title">App locked</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_prompt_title">Unlock Simple Notes</string>
+    <string name="app_lock_prompt_subtitle">Confirm that it\'s you</string>
+    <string name="app_lock_no_biometric_title">No lock screen set up</string>
+    <string name="app_lock_no_biometric_message">Set up a fingerprint, face, or screen lock in your device settings to use app lock.</string>
+    <string name="app_lock_open_settings">Open Settings</string>
+
     <!-- Preview placeholder strings (not shown to users) -->
     <string name="notes_list_widget_preview_title_1">Shopping list</string>
     <string name="notes_list_widget_preview_content_1">• Milk\n• Bread\n• Eggs</string>

@@ -211,6 +211,12 @@ object Constants {
 
     // 🆕 v2.9.0 (Trash): Einmal-Migration bestehender DELETED_ON_SERVER-Notizen in den Papierkorb.
     const val KEY_TRASH_MIGRATION_DONE = "trash_migration_done"
+
+    // v2.10.0: Biometric app lock
+    const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
+    const val DEFAULT_APP_LOCK_ENABLED = false
+    const val KEY_APP_LOCK_GRACE_MS = "app_lock_grace_ms"
+    const val DEFAULT_APP_LOCK_GRACE_MS = 30_000L
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed

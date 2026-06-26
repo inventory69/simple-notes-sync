@@ -203,6 +203,10 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
+    // v2.10.0: Biometric app lock
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.lifecycle.process)
+
     // Testing (bleiben so)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

@@ -30,4 +30,6 @@ sealed class SettingsRoute(val route: String) {
     data object Changelog : SettingsRoute("settings_changelog")
 
     data object Contributors : SettingsRoute("settings_contributors")
+
+    data object Security : SettingsRoute("settings_security")
 }
