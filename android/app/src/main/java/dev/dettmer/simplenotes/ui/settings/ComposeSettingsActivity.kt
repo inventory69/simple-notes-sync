@@ -18,6 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.SimpleNotesApplication
+import dev.dettmer.simplenotes.security.AppLock
+import dev.dettmer.simplenotes.security.AppLockGate
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Logger
@@ -44,6 +46,8 @@ class ComposeSettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        AppLock.applySecureFlag(this)
 
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
@@ -95,46 +99,53 @@ class ComposeSettingsActivity : AppCompatActivity() {
             // navigation resets to the start destination on every theme switch.
             val navController = rememberNavController()
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
-                val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
+                AppLockGate {
+                    val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
 
-                // Battery optimization dialog (state-driven)
-                if (showBatteryDialog) {
-                    AlertDialog(
-                        onDismissRequest = { viewModel.dismissBatteryOptimizationDialog() },
-                        title = { Text(getString(R.string.battery_optimization_dialog_title)) },
-                        text = { Text(getString(R.string.battery_optimization_dialog_full_message)) },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                viewModel.dismissBatteryOptimizationDialog()
-                                if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
-                                    viewModel.showSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                    // Battery optimization dialog (state-driven)
+                    if (showBatteryDialog) {
+                        AlertDialog(
+                            onDismissRequest = { viewModel.dismissBatteryOptimizationDialog() },
+                            title = { Text(getString(R.string.battery_optimization_dialog_title)) },
+                            text = { Text(getString(R.string.battery_optimization_dialog_full_message)) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    viewModel.dismissBatteryOptimizationDialog()
+                                    if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
+                                        viewModel.showSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                                    }
+                                }) {
+                                    Text(getString(R.string.battery_optimization_open_settings))
                                 }
-                            }) {
-                                Text(getString(R.string.battery_optimization_open_settings))
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { viewModel.dismissBatteryOptimizationDialog() }) {
+                                    Text(getString(R.string.battery_optimization_later))
+                                }
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { viewModel.dismissBatteryOptimizationDialog() }) {
-                                Text(getString(R.string.battery_optimization_later))
-                            }
-                        }
-                    )
-                }
+                        )
+                    }
 
-                val initialRoute = remember {
-                    intent.getStringExtra(EXTRA_INITIAL_ROUTE) ?: SettingsRoute.Main.route
-                }
-                SettingsNavHost(
-                    navController = navController,
-                    viewModel = viewModel,
-                    onFinish = {
-                        setResult(RESULT_OK)
-                        finishWithTransition()
-                    },
-                    startDestination = initialRoute
-                )
+                    val initialRoute = remember {
+                        intent.getStringExtra(EXTRA_INITIAL_ROUTE) ?: SettingsRoute.Main.route
+                    }
+                    SettingsNavHost(
+                        navController = navController,
+                        viewModel = viewModel,
+                        onFinish = {
+                            setResult(RESULT_OK)
+                            finishWithTransition()
+                        },
+                        startDestination = initialRoute
+                    )
+                } // AppLockGate
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        AppLock.applySecureFlag(this)
     }
 
     private fun finishWithTransition() {
