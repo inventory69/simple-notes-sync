@@ -25,7 +25,7 @@ alt="Get it on IzzyOnDroid" align="center" height="80" /></a>
 
 <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync">
 <img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png"
-alt="Get it on Obtainium" align="center" height="54" />
+alt="Get it on Obtainium" align="center" height="80" />
 </a>
 
 <a href="https://f-droid.org/packages/dev.dettmer.simplenotes">
@@ -34,7 +34,7 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 
 <a href="https://play.google.com/store/apps/details?id=dev.dettmer.simplenotes">
 <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-alt="Get it on Google Play" align="center" height="80" style="margin: 0 -10px" /></a>
+alt="Get it on Google Play" align="center" height="80" /></a>
   
 </div>
 
