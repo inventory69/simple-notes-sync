@@ -8,11 +8,11 @@
 
 ## 📋 Overview
 
-Simple Notes Sync currently supports:
-- 🇺🇸 **English** (en) - Primary language
-- 🇩🇪 **German** (de) - Fully translated
+Simple Notes Sync currently ships **11 languages**:
 
-We welcome new translations!
+🇺🇸 English (en, primary) · 🇩🇪 German (de) · 🇪🇸 Spanish (es) · 🇮🇹 Italian (it) · 🇷🇺 Russian (ru) · 🇺🇦 Ukrainian (uk) · 🇹🇷 Turkish (tr) · 🇮🇳 Hindi (hi) · 🇮🇩 Indonesian (in) · 🇳🇴 Norwegian Bokmål (nb-rNO) · 🇨🇳 Chinese, Simplified (zh-rCN)
+
+We welcome new translations and improvements to existing ones!
 
 ---
 
@@ -84,6 +84,15 @@ Add your language to `android/app/src/main/res/xml/locales_config.xml`:
     <locale android:name="de" />
     <locale android:name="fr" />  <!-- NEW -->
 </locale-config>
+```
+
+**Also register the locale for the build:** add it to `localeFilters` in `android/app/build.gradle.kts`, otherwise the new language is stripped from the APK to keep its size down:
+
+```kotlin
+localeFilters += listOf(
+    "en", "de", "es", "hi", "in", "it", "nb-rNO", "ru", "tr", "uk", "zh-rCN",
+    "fr",  // NEW
+)
 ```
 
 ### 5. Create Pull Request

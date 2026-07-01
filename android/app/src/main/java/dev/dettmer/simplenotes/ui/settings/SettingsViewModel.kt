@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
+import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
@@ -334,6 +335,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             ?: Constants.DEFAULT_SYNC_FOLDER_NAME
     )
     val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
+
+    // v2.10.0: App lock
+    private val _appLockEnabled = MutableStateFlow(AppLock.isEnabled(application))
+    val appLockEnabled: StateFlow<Boolean> = _appLockEnabled.asStateFlow()
+
+    private val _appLockGraceMs = MutableStateFlow(AppLock.graceMillis(application))
+    val appLockGraceMs: StateFlow<Long> = _appLockGraceMs.asStateFlow()
+
+    fun setAppLockEnabled(on: Boolean) {
+        AppLock.setEnabled(getApplication(), on)
+        _appLockEnabled.value = on
+    }
+
+    fun setAppLockGraceMs(ms: Long) {
+        AppLock.setGraceMillis(getApplication(), ms)
+        _appLockGraceMs.value = ms
+    }
 
     // 🆕 v1.9.0: Autosave
     private val _autosaveEnabled = MutableStateFlow(

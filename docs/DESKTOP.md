@@ -282,6 +282,8 @@ Removed:
 4. **Markdown is exported** (`/notes-md/Note_Title.md`) _(only if Desktop Integration ON)_
 5. **Desktop editor shows changes** (after refresh)
 
+> 📁 **Folders** _(v2.7.0)_ - Notes inside a folder sync to a matching subdirectory, e.g. `/notes/Work/abc-123.json` and `/notes-md/Work/Note_Title.md`. Folders marked **local-only** stay on the device and are never uploaded.
+
 ### Workflow: Desktop → Android
 
 1. **Edit Markdown file** (in mounted folder)
@@ -502,4 +504,4 @@ Planned for v1.3.0+:
 - [FEATURES.en.md](FEATURES.en.md) - Complete feature list
 - [BACKUP.en.md](BACKUP.en.md) - Backup & restore
 
-**Last update:** v1.2.1 (2026-01-05)
+**Last update:** v2.7.0 (2026-05-30)

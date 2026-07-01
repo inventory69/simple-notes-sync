@@ -282,6 +282,8 @@ Entfernt werden:
 4. **Markdown wird exportiert** (`/notes-md/Notiz_Titel.md`) _(nur wenn Desktop-Integration AN)_
 5. **Desktop-Editor zeigt Änderungen** (nach Refresh)
 
+> 📁 **Ordner** _(v2.7.0)_ - Notizen in einem Ordner synchronisieren in ein passendes Unterverzeichnis, z. B. `/notes/Work/abc-123.json` und `/notes-md/Work/Notiz_Titel.md`. Als **nur lokal** markierte Ordner bleiben auf dem Gerät und werden nie hochgeladen.
+
 ### Workflow: Desktop → Android
 
 1. **Markdown-Datei bearbeiten** (im gemounteten Ordner)
@@ -502,4 +504,4 @@ Geplant für v1.3.0+:
 - [FEATURES.md](FEATURES.md) - Vollständige Feature-Liste
 - [BACKUP.md](BACKUP.md) - Backup & Wiederherstellung
 
-**Letzte Aktualisierung:** v1.2.1 (2026-01-05)
+**Letzte Aktualisierung:** v2.7.0 (2026-05-30)

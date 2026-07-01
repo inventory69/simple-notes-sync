@@ -199,4 +199,55 @@ class DeletionTrackerTest {
         val tracker = DeletionTracker()
         assertEquals(1, tracker.version)
     }
+
+    // ═══════════════════════════════════════════════
+    // upsertIfNewer
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `upsertIfNewer adds record when none exists`() {
+        val tracker = DeletionTracker()
+        tracker.upsertIfNewer(DeletionRecord("note-1", 1000L, "device-1"))
+
+        assertEquals(1, tracker.deletedNotes.size)
+        assertEquals(1000L, tracker.getDeletionTimestamp("note-1"))
+    }
+
+    @Test
+    fun `upsertIfNewer replaces older record with newer one`() {
+        val tracker = DeletionTracker()
+        tracker.upsertIfNewer(DeletionRecord("note-1", 1000L, "device-1"))
+        tracker.upsertIfNewer(DeletionRecord("note-1", 2000L, "device-2"))
+
+        assertEquals(1, tracker.deletedNotes.size)
+        assertEquals(2000L, tracker.getDeletionTimestamp("note-1"))
+    }
+
+    @Test
+    fun `upsertIfNewer keeps existing record when candidate is older`() {
+        val tracker = DeletionTracker()
+        tracker.upsertIfNewer(DeletionRecord("note-1", 2000L, "device-1"))
+        tracker.upsertIfNewer(DeletionRecord("note-1", 1000L, "device-2"))
+
+        assertEquals(1, tracker.deletedNotes.size)
+        assertEquals(2000L, tracker.getDeletionTimestamp("note-1"))
+    }
+
+    // ═══════════════════════════════════════════════
+    // pruneOlderThan
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `pruneOlderThan removes only expired entries`() {
+        val tracker = DeletionTracker()
+        val now = 10_000L
+        tracker.upsertIfNewer(DeletionRecord("expired", now - 5_000L, "device-1"))
+        tracker.upsertIfNewer(DeletionRecord("fresh", now - 100L, "device-1"))
+
+        tracker.pruneOlderThan(maxAgeMs = 1_000L, now = now)
+
+        assertFalse(tracker.isDeleted("expired"))
+        assertTrue(tracker.isDeleted("fresh"))
+        assertEquals(1, tracker.deletedNotes.size)
+    }
 }

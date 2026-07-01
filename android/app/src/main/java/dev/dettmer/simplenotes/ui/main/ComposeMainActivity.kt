@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -29,6 +29,8 @@ import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.security.AppLock
+import dev.dettmer.simplenotes.security.AppLockGate
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncEvent
 import dev.dettmer.simplenotes.sync.SyncEventBus
@@ -62,7 +64,7 @@ import kotlinx.coroutines.withContext
  * - Material 3 Design with Dynamic Colors (Material You)
  * - Design consistent with ComposeSettingsActivity
  */
-class ComposeMainActivity : ComponentActivity() {
+class ComposeMainActivity : FragmentActivity() {
     companion object {
         private const val TAG = "ComposeMainActivity"
         private const val KEY_CAME_FROM_EDITOR = "cameFromEditor"
@@ -145,6 +147,8 @@ class ComposeMainActivity : ComponentActivity() {
         colorTheme = ThemePreferences.getColorTheme(prefs)
         fontSizeScale = ThemePreferences.getFontSizeScale(prefs)
 
+        AppLock.applySecureFlag(this)
+
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
 
@@ -201,39 +205,44 @@ class ComposeMainActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
-                // 🆕 v2.3.0: Battery optimization migration dialog
-                if (showBatteryOptDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showBatteryOptDialog = false },
-                        title = { Text(stringResource(R.string.battery_optimization_dialog_title)) },
-                        text = { Text(stringResource(R.string.battery_optimization_dialog_full_message)) },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                showBatteryOptDialog = false
-                                if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
-                                    viewModel.emitSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                AppLockGate {
+                    // 🆕 v2.3.0: Battery optimization migration dialog
+                    if (showBatteryOptDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showBatteryOptDialog = false },
+                            title = { Text(stringResource(R.string.battery_optimization_dialog_title)) },
+                            text = { Text(stringResource(R.string.battery_optimization_dialog_full_message)) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showBatteryOptDialog = false
+                                    if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
+                                        viewModel.emitSnackbar(getString(R.string.battery_optimization_open_settings_failed))
+                                    }
+                                }) {
+                                    Text(stringResource(R.string.battery_optimization_open_settings))
                                 }
-                            }) {
-                                Text(stringResource(R.string.battery_optimization_open_settings))
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showBatteryOptDialog = false }) {
+                                    Text(stringResource(R.string.battery_optimization_later))
+                                }
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showBatteryOptDialog = false }) {
-                                Text(stringResource(R.string.battery_optimization_later))
-                            }
-                        }
+                        )
+                    }
+
+                    MainScreen(
+                        viewModel = viewModel,
+                        onOpenNote = { noteId -> openNoteEditor(noteId) },
+                        onOpenSettings = { openSettings() },
+                        onCreateNote = { noteType, folder -> createNote(noteType, folder) }
                     )
-                }
 
-                MainScreen(
-                    viewModel = viewModel,
-                    onOpenNote = { noteId -> openNoteEditor(noteId) },
-                    onOpenSettings = { openSettings() },
-                    onCreateNote = { noteType, folder -> createNote(noteType, folder) }
-                )
-
-                // v1.8.0: Post-Update Changelog (shows once after update)
-                UpdateChangelogSheet(onViewChangelog = { openSettingsChangelog() })
+                    // v1.8.0: Post-Update Changelog (shows once after update)
+                    UpdateChangelogSheet(
+                        onViewChangelog = { openSettingsChangelog() },
+                        onDismissed = { viewModel.onChangelogDismissed() } // 🆕 unlocks the section-reorder hint gate
+                    )
+                } // AppLockGate
             }
         }
     }
@@ -315,6 +324,7 @@ class ComposeMainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        AppLock.applySecureFlag(this)
         // 🆕 v1.9.0 (F09): Refresh widgets when the user leaves the app.
         // cameFromEditor is true when navigating to the editor (in-app); the
         // editor already updates widgets on save — skip here to avoid double-update.

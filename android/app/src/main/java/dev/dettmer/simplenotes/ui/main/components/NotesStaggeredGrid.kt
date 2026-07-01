@@ -53,12 +53,35 @@ fun NotesStaggeredGrid(
     localOnlyFolderNames: Set<String> = emptySet(), // 🆕 v2.8.0 (Local-Only Folders)
     onFolderClick: (String) -> Unit = {},
     onFolderLongPress: (String) -> Unit = {},
-    onFolderSelectionToggle: (String) -> Unit = {} // 🆕 v2.7.0 (Folders)
+    onFolderSelectionToggle: (String) -> Unit = {}, // 🆕 v2.7.0 (Folders)
+    collapsedSections: Set<String> = emptySet(), // 🆕 collapsible sections
+    onToggleSection: (String) -> Unit = {}, // 🆕 collapsible sections
+    sectionOrder: List<String> = listOf(SECTION_PINNED, SECTION_FOLDERS, SECTION_NOTES), // 🆕 section reordering
+    onMoveSection: (from: String, to: String?) -> Unit = { _, _ -> } // 🆕 section reordering
 ) {
     val pinnedNotes = remember(notes) { notes.filter { it.isPinned == true } }
     val unpinnedNotes = remember(notes) { notes.filter { it.isPinned != true } }
     // 🆕 v2.7.0 (Folders): Reihenfolge Pinned → Folders → Notes
     val showNotesHeader = remember(notes, folders) { unpinnedNotes.isNotEmpty() && (pinnedNotes.isNotEmpty() || folders.isNotEmpty()) }
+
+    // 🆕 section reordering: a section only counts for move-up/down adjacency if its header is
+    // actually rendered this frame (mirrors each section's existing visibility rule).
+    val headerVisible = remember(pinnedNotes, folders, showNotesHeader) {
+        mapOf(
+            SECTION_PINNED to pinnedNotes.isNotEmpty(),
+            SECTION_FOLDERS to folders.isNotEmpty(),
+            SECTION_NOTES to showNotesHeader
+        )
+    }
+    val visibleHeaderOrder = remember(sectionOrder, headerVisible) {
+        sectionOrder.filter { headerVisible[it] == true }
+    }
+
+    fun adjacentSection(section: String, delta: Int): String? {
+        val idx = visibleHeaderOrder.indexOf(section)
+        if (idx == -1) return null
+        return visibleHeaderOrder.getOrNull(idx + delta)
+    }
 
     LazyVerticalStaggeredGrid(
         columns = if (adaptiveScaling) {
@@ -72,72 +95,129 @@ fun NotesStaggeredGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp
     ) {
-        if (pinnedNotes.isNotEmpty()) {
-            item(
-                key = "header_pinned",
-                contentType = "SectionHeader",
-                span = StaggeredGridItemSpan.FullLine
-            ) {
-                SectionHeaderText(stringResource(R.string.section_pinned))
-            }
-            item(key = "pinned_notes_body", contentType = "PinnedSection", span = StaggeredGridItemSpan.FullLine) {
-                PinnedNotesGrid(
-                    notes = pinnedNotes,
-                    adaptiveScaling = adaptiveScaling,
-                    manualColumns = manualColumns,
-                    showSyncStatus = showSyncStatus,
-                    selectedNoteIds = selectedNoteIds,
-                    isSelectionMode = isSelectionMode,
-                    timestampTicker = timestampTicker,
-                    onNoteClick = onNoteClick,
-                    onNoteLongClick = onNoteLongClick
-                )
-            }
-        }
+        for (section in sectionOrder) {
+            when (section) {
+                SECTION_PINNED -> {
+                    if (pinnedNotes.isNotEmpty()) {
+                        item(
+                            key = "header_pinned",
+                            contentType = "SectionHeader",
+                            span = StaggeredGridItemSpan.FullLine
+                        ) {
+                            SectionHeaderText(
+                                text = stringResource(R.string.section_pinned),
+                                collapsed = SECTION_PINNED in collapsedSections,
+                                onToggleCollapse = { onToggleSection(SECTION_PINNED) },
+                                canMoveUp = adjacentSection(SECTION_PINNED, -1) != null,
+                                canMoveDown = adjacentSection(SECTION_PINNED, +1) != null,
+                                onMoveUp = { onMoveSection(SECTION_PINNED, adjacentSection(SECTION_PINNED, -1)) },
+                                onMoveDown = { onMoveSection(SECTION_PINNED, adjacentSection(SECTION_PINNED, +1)) }
+                            )
+                        }
+                        if (SECTION_PINNED !in collapsedSections) {
+                            item(
+                                key = "pinned_notes_body",
+                                contentType = "PinnedSection",
+                                span = StaggeredGridItemSpan.FullLine
+                            ) {
+                                PinnedNotesGrid(
+                                    notes = pinnedNotes,
+                                    adaptiveScaling = adaptiveScaling,
+                                    manualColumns = manualColumns,
+                                    showSyncStatus = showSyncStatus,
+                                    selectedNoteIds = selectedNoteIds,
+                                    isSelectionMode = isSelectionMode,
+                                    timestampTicker = timestampTicker,
+                                    onNoteClick = onNoteClick,
+                                    onNoteLongClick = onNoteLongClick
+                                )
+                            }
+                        }
+                    }
+                }
 
-        if (folders.isNotEmpty()) {
-            item(key = "header_folders", contentType = "SectionHeader", span = StaggeredGridItemSpan.FullLine) {
-                SectionHeaderText(stringResource(R.string.folder_section_header))
-            }
-            items(items = folders, key = { "folder_${it.name}" }, contentType = { "FolderCardGrid" }) { folder ->
-                FolderCardGrid(
-                    name = folder.name,
-                    count = folderNoteCounts[folder.name] ?: 0,
-                    color = folder.color,
-                    isSelected = folder.name in selectedFolders,
-                    isSelectionMode = isSelectionMode, // 🆕 v2.7.0 (Folders)
-                    isLocalOnly = folder.name in localOnlyFolderNames, // 🆕 v2.8.0 (Local-Only Folders)
-                    onClick = { if (isSelectionMode) onFolderSelectionToggle(folder.name) else onFolderClick(folder.name) },
-                    onLongClick = { onFolderLongPress(folder.name) }
-                )
-            }
-        }
+                SECTION_FOLDERS -> {
+                    if (folders.isNotEmpty()) {
+                        item(
+                            key = "header_folders",
+                            contentType = "SectionHeader",
+                            span = StaggeredGridItemSpan.FullLine
+                        ) {
+                            SectionHeaderText(
+                                text = stringResource(R.string.folder_section_header),
+                                collapsed = SECTION_FOLDERS in collapsedSections,
+                                onToggleCollapse = { onToggleSection(SECTION_FOLDERS) },
+                                canMoveUp = adjacentSection(SECTION_FOLDERS, -1) != null,
+                                canMoveDown = adjacentSection(SECTION_FOLDERS, +1) != null,
+                                onMoveUp = { onMoveSection(SECTION_FOLDERS, adjacentSection(SECTION_FOLDERS, -1)) },
+                                onMoveDown = { onMoveSection(SECTION_FOLDERS, adjacentSection(SECTION_FOLDERS, +1)) }
+                            )
+                        }
+                        if (SECTION_FOLDERS !in collapsedSections) {
+                            items(
+                                items = folders,
+                                key = { "folder_${it.name}" },
+                                contentType = { "FolderCardGrid" }
+                            ) { folder ->
+                                FolderCardGrid(
+                                    name = folder.name,
+                                    count = folderNoteCounts[folder.name] ?: 0,
+                                    color = folder.color,
+                                    isSelected = folder.name in selectedFolders,
+                                    isSelectionMode = isSelectionMode, // 🆕 v2.7.0 (Folders)
+                                    isLocalOnly = folder.name in localOnlyFolderNames, // 🆕 v2.8.0 (Local-Only Folders)
+                                    onClick = {
+                                        if (isSelectionMode) {
+                                            onFolderSelectionToggle(folder.name)
+                                        } else {
+                                            onFolderClick(folder.name)
+                                        }
+                                    },
+                                    onLongClick = { onFolderLongPress(folder.name) }
+                                )
+                            }
+                        }
+                    }
+                }
 
-        if (showNotesHeader) {
-            item(
-                key = "header_notes",
-                contentType = "SectionHeader",
-                span = StaggeredGridItemSpan.FullLine
-            ) {
-                SectionHeaderText(stringResource(R.string.section_notes))
+                SECTION_NOTES -> {
+                    if (showNotesHeader) {
+                        item(
+                            key = "header_notes",
+                            contentType = "SectionHeader",
+                            span = StaggeredGridItemSpan.FullLine
+                        ) {
+                            SectionHeaderText(
+                                text = stringResource(R.string.section_notes),
+                                collapsed = SECTION_NOTES in collapsedSections,
+                                onToggleCollapse = { onToggleSection(SECTION_NOTES) },
+                                canMoveUp = adjacentSection(SECTION_NOTES, -1) != null,
+                                canMoveDown = adjacentSection(SECTION_NOTES, +1) != null,
+                                onMoveUp = { onMoveSection(SECTION_NOTES, adjacentSection(SECTION_NOTES, -1)) },
+                                onMoveDown = { onMoveSection(SECTION_NOTES, adjacentSection(SECTION_NOTES, +1)) }
+                            )
+                        }
+                    }
+                    if (SECTION_NOTES !in collapsedSections) {
+                        items(
+                            items = unpinnedNotes,
+                            key = { it.id },
+                            contentType = { "NoteCardGrid" }
+                            // 🎨 v1.7.0: KEIN span mehr - alle Items sind SingleLane (halbe Breite)
+                        ) { note ->
+                            NoteCardGrid(
+                                note = note,
+                                showSyncStatus = showSyncStatus,
+                                isSelected = selectedNoteIds.contains(note.id),
+                                isSelectionMode = isSelectionMode,
+                                timestampTicker = timestampTicker,
+                                onClick = { onNoteClick(note) },
+                                onLongClick = { onNoteLongClick(note) }
+                            )
+                        }
+                    }
+                }
             }
-        }
-
-        items(
-            items = unpinnedNotes,
-            key = { it.id },
-            contentType = { "NoteCardGrid" }
-            // 🎨 v1.7.0: KEIN span mehr - alle Items sind SingleLane (halbe Breite)
-        ) { note ->
-            NoteCardGrid(
-                note = note,
-                showSyncStatus = showSyncStatus,
-                isSelected = selectedNoteIds.contains(note.id),
-                isSelectionMode = isSelectionMode,
-                timestampTicker = timestampTicker,
-                onClick = { onNoteClick(note) },
-                onLongClick = { onNoteLongClick(note) }
-            )
         }
     }
 }

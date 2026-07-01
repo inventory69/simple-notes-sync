@@ -8,6 +8,53 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.10.0] - 2026-07-01
+
+### ✨ Neue Funktionen
+
+**Biometrische App-Sperre** ([a6e1f20](https://github.com/inventory69/simple-notes-sync/commit/a6e1f20), [a2f0628](https://github.com/inventory69/simple-notes-sync/commit/a2f0628))
+- Optionale App-Sperre via Fingerabdruck, Gesichtserkennung oder Geräte-PIN, mit konfigurierbarer Karenzzeit vor der erneuten Sperrung
+- `FLAG_SECURE` blockiert Screenshots/Bildschirmaufnahmen und verbirgt Inhalte im Recents-Thumbnail während die App gesperrt ist
+
+**Konfigurierbare Papierkorb-Aufbewahrung** ([e6b2df3](https://github.com/inventory69/simple-notes-sync/commit/e6b2df3))
+- Einstellbar, wie lange gelöschte Notizen im Papierkorb bleiben, bevor sie endgültig gelöscht werden: Sofort, 7, 14, 30 (Standard) oder 90 Tage
+- Danke an [@xdpirate](https://github.com/xdpirate) für die Anfrage!
+
+**Formatiertes Einfügen** ([bf003d1](https://github.com/inventory69/simple-notes-sync/commit/bf003d1))
+- HTML-Einfügen aus Telegram, Word, Google Docs oder einem Browser wird jetzt zu Markdown konvertiert (Fett/Kursiv/Links/Listen/Überschriften/Code/Zitate) statt die Formatierung zu verwerfen, mit Klartext-Fallback
+
+**Einklappbare und verschiebbare Bereiche** ([6d50b81](https://github.com/inventory69/simple-notes-sync/commit/6d50b81))
+- Angeheftet/Ordner/Notizen-Bereichsköpfe lassen sich einklappen und per Long-Press neu anordnen; beides bleibt über Neustarts erhalten
+
+### 🐛 Bug-Fixes
+
+**Scroll-Hänger bei langen Vorschauen** ([a51394c](https://github.com/inventory69/simple-notes-sync/commit/a51394c))
+- Notiz-Vorschautext wird jetzt vor dem Layout gekürzt, was ein ANR beim Scrollen von Listen mit sehr langen Notizen verhindert
+
+**Sicherheits-Einstellungen-Untertitel** ([ddbc3a4](https://github.com/inventory69/simple-notes-sync/commit/ddbc3a4))
+- Der Sicherheit-Untertitel zeigt jetzt „Biometrische Entsperrung aus" statt nur „Aus"
+
+### ⚡ Performance-Verbesserungen
+
+**Schnellere Notiz-(De-)Serialisierung** ([452e557](https://github.com/inventory69/simple-notes-sync/commit/452e557), [e084759](https://github.com/inventory69/simple-notes-sync/commit/e084759))
+- `Note.fromJson()` streamt jetzt JSON statt einen vollständigen Parse-Baum via Reflection aufzubauen, was den Kaltstart bei tausenden Notizen beschleunigt
+
+**Schnelleres Listen-Rendering & Sync-Buchführung** ([845c3ec](https://github.com/inventory69/simple-notes-sync/commit/845c3ec), [4d7a240](https://github.com/inventory69/simple-notes-sync/commit/4d7a240), [50bfebe](https://github.com/inventory69/simple-notes-sync/commit/50bfebe), [1cba7a7](https://github.com/inventory69/simple-notes-sync/commit/1cba7a7))
+- Aufteilung in angeheftet/nicht angeheftet und Checklisten-Vorschau-Sortierung werden gecacht statt bei jedem Frame neu berechnet
+- Notiz-Sortierung/-Filterung/-Suche laufen jetzt außerhalb des Hauptthreads
+- `DeletionTracker` wird von einer Map statt einer Liste unterstützt
+- `NotesStorage.loadAllNotes` liest Dateien parallel
+
+### 🌍 Übersetzungen
+
+- **Spanisch** (66%): [@PaikLC](https://github.com/PaikLC) / Francisco Isaac Ordoñez Pedrero, [@Kiimby](https://github.com/Kiimby) / Kimby
+- **Indonesisch** (100%): [@arifpedia](https://github.com/arifpedia) / Arif Budiman
+- **Italienisch** (46%): GVE
+- **Norwegisch (Bokmål)** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.9.0] - 2026-06-22
 
 ### ✨ Neue Funktionen

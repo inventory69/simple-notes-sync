@@ -56,7 +56,8 @@ The backup system works **completely offline** and independent from the WebDAV s
 
 **Format details:**
 - ✅ Human-readable (formatted JSON)
-- ✅ All data included (title, content, IDs, timestamps)
+- ✅ Complete note data (title, content, IDs, timestamps, color, pin state, folder, checklist items)
+- ✅ App settings & folder metadata included _(v2.0.0+ / v2.8.0)_
 - ✅ Version info for compatibility
 - ✅ Note count for validation
 
@@ -322,4 +323,4 @@ Step-by-step:
 - [FEATURES.md](FEATURES.md) - Complete feature list
 - [DESKTOP.md](DESKTOP.md) - Desktop integration with Markdown
 
-**Last update:** v1.8.1 (2026-02-11)
+**Last update:** v2.8.0 (2026-06-16)

@@ -244,7 +244,7 @@
 
 ## v2.2.0 - Share-Intent, Widgets & Editor-Verbesserungen
 
-> **Status:** Geplant 📋
+> **Status:** Veröffentlicht 🎉 (März 2026)
 
 ### 📤 Share-Intent
 
@@ -265,24 +265,31 @@
 
 ---
 
+## v2.3.0 – v2.9.0 ✅
+
+> **Status:** Veröffentlicht 🎉
+
+Seit der letzten Überarbeitung dieser Roadmap erschienen: verschlüsselte Zugangsdaten, der persistente Sync-Debug-Logger, **Google-Keep-Import**, **Notiz-Farben**, **angeheftete Notizen**, Umwandlung Text ↔ Checkliste, **Ordner** (inkl. nur-lokal), ein **Papierkorb** mit konfigurierbarer Aufbewahrung, Live-Markdown im Editor und in Karten-Vorschauen, das scrollbare Notizlisten-Widget, ein In-App-Changelog und Mitwirkende-Screen sowie der Ausbau auf 11 Sprachen. Siehe den [CHANGELOG](../CHANGELOG.de.md) für die vollständige Versionshistorie.
+
+---
+
 ## 📋 Backlog
 
 > Features für zukünftige Überlegungen
 
 ### 🔐 Sicherheits-Verbesserungen
 
-- **Passwortgeschützte lokale Backups** - Backup-ZIP mit Passwort verschlüsseln
-- **Biometrische Entsperrung** - Fingerabdruck/Gesichtserkennung für App
+- **Passwortgeschützte lokale Backups** - Backup-Datei mit Passwort verschlüsseln
 
 ### 🎨 UI Features
 
-- **Ordner / Tags / Notebooks** - Notizen in Verzeichnisse oder mit Tags organisieren für bessere Trennung (z.B. persönliche Notizen vs. geteilte Rezepte). Unterverzeichnisse auf WebDAV ermöglichen auch ordnerbezogene Zugriffskontrolle. ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) von @happy-turtle)
 - **Erledigte Checklisten ausblenden** - Option, Checklisten bei denen alle Items abgehakt sind auszublenden, mit separater Ansicht zum späteren Wiederherstellen. ([#45](https://github.com/inventory69/simple-notes-sync/discussions/45) von @isawaway)
-- **Suche** - Volltextsuche in Notizen
 
-### 🌍 Community
+### ✅ Kürzlich geliefert
 
-- **Zusätzliche Sprachen** - Community-Übersetzungen (FR, ES, IT, ...)
+- **Ordner / Notebooks** ✅ _(v2.7.0)_ - inkl. nur-lokaler Ordner, die nie synchronisieren ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) von @happy-turtle)
+- **Suche** ✅ _(v1.9.0)_ - Inline-Suche in der Filter-Zeile
+- **Zusätzliche Sprachen** ✅ - jetzt 11 Sprachen via Weblate
 
 ---
 

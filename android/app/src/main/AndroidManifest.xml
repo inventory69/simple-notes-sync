@@ -20,6 +20,9 @@
     <!-- BOOT Permission - CRITICAL für Auto-Sync nach Neustart! -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- v2.10.0: Biometric app lock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
     <application
         android:name=".SimpleNotesApplication"
         android:allowBackup="true"

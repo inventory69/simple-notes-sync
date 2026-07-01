@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -84,7 +85,7 @@ fun ChecklistItemsPreview(
     style: TextStyle,
     modifier: Modifier = Modifier
 ) {
-    val sorted = sortChecklistItemsForPreview(items, sortOptionName)
+    val sorted = remember(items, sortOptionName) { sortChecklistItemsForPreview(items, sortOptionName) }
     val remaining = (sorted.size - maxItems).coerceAtLeast(0)
     // If only 1 item would be hidden, showing "+1 more" wastes a line vs. just showing the item
     val effectiveMax = if (remaining == 1) maxItems + 1 else maxItems

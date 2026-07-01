@@ -936,14 +936,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             if (remoteLedger.deletedNotes.isEmpty()) return
             val localTracker = storage.loadDeletionTracker()
             val now = System.currentTimeMillis()
-            remoteLedger.deletedNotes.forEach { record ->
-                val existing = localTracker.deletedNotes.find { it.id == record.id }
-                if (existing == null || record.deletedAt > existing.deletedAt) {
-                    localTracker.deletedNotes.removeIf { it.id == record.id }
-                    localTracker.deletedNotes.add(record)
-                }
-            }
-            localTracker.deletedNotes.removeIf { now - it.deletedAt > Constants.TRASH_RETENTION_MS }
+            remoteLedger.deletedNotes.forEach { record -> localTracker.upsertIfNewer(record) }
+            localTracker.pruneOlderThan(Constants.TRASH_RETENTION_MS, now)
             storage.saveDeletionTracker(localTracker)
             Logger.d(TAG, "📋 Seeded local DeletionTracker from shared ledger (${remoteLedger.deletedNotes.size} remote records)")
         } catch (e: Exception) {

@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.delete
+import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.placeCursorAtEnd
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
@@ -95,11 +98,13 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,6 +112,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
@@ -859,6 +865,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TextNoteContent(
     textFieldState: TextFieldState,
@@ -917,6 +924,8 @@ private fun TextNoteContent(
         }
     }
 
+    val context = LocalContext.current
+
     OutlinedTextField(
         state = textFieldState,
         modifier = modifier
@@ -924,6 +933,38 @@ private fun TextNoteContent(
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
                 onFocusChanged(focusState.isFocused)
+            }
+            .contentReceiver { transferable ->
+                val html = transferable.clipEntry.firstHtmlText()
+                if (html == null ||
+                    html.length > HtmlToMarkdown.MAX_HTML_LENGTH ||
+                    !HtmlToMarkdown.hasRichContent(html)
+                ) {
+                    transferable // nicht zuständig → normaler Paste
+                } else {
+                    val item = transferable.clipEntry.clipData.getItemAt(0)
+                    val plain = item.coerceToText(context).toString()
+                    val markdown = HtmlToMarkdown.convert(html, plain)
+                    if (markdown == plain) {
+                        transferable // nichts gewonnen → normaler Paste
+                    } else {
+                        val sel = textFieldState.selection
+                        val start = sel.min
+                        // Stufe 1: Rohtext einfügen (eigener Undo-Eintrag)
+                        textFieldState.edit {
+                            if (!sel.collapsed) delete(sel.min, sel.max)
+                            insert(start, plain)
+                            selection = TextRange(start + plain.length)
+                        }
+                        // Stufe 2: zu Markdown ersetzen (zweiter Undo-Eintrag →
+                        // direktes Undo stellt den Rohtext wieder her)
+                        textFieldState.edit {
+                            replace(start, start + plain.length, markdown)
+                            selection = TextRange(start + markdown.length)
+                        }
+                        null // konsumiert
+                    }
+                }
             }
             .pointerInput(textFieldState) {
                 awaitPointerEventScope {
@@ -1456,4 +1497,14 @@ private fun NoteEditorToolbarTitle(toolbarTitle: ToolbarTitle, autosaveIndicator
             )
         }
     }
+}
+
+/** First non-blank `text/html` payload across all clip items, or null. */
+private fun ClipEntry.firstHtmlText(): String? {
+    val data = clipData
+    for (i in 0 until data.itemCount) {
+        val html = data.getItemAt(i).htmlText
+        if (!html.isNullOrBlank()) return html
+    }
+    return null
 }

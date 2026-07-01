@@ -25,12 +25,16 @@ alt="Get it on IzzyOnDroid" align="center" height="80" /></a>
 
 <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/inventory69/simple-notes-sync">
 <img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png"
-alt="Get it on Obtainium" align="center" height="54" />
+alt="Get it on Obtainium" align="center" height="80" />
 </a>
 
 <a href="https://f-droid.org/packages/dev.dettmer.simplenotes">
 <img src="https://f-droid.org/badge/get-it-on.png"
 alt="Get it on F-Droid" align="center" height="80" /></a>
+
+<a href="https://play.google.com/store/apps/details?id=dev.dettmer.simplenotes">
+<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+alt="Get it on Google Play" align="center" height="80" /></a>
 
 </div>
 
@@ -65,18 +69,26 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 ## ✨ Highlights
 
 - 📝 **Offline-first** – Funktioniert ohne Internet
-- 📊 **Flexible Ansichten** – Listen- und Grid-Layout, 1–5 Spalten konfigurierbar
-- ✅ **Checklisten** – Tap-to-Check, Drag & Drop
+- 📁 **Ordner** – Notizen in Ordnern organisieren, optional als „nur lokal" (kein Sync)
+- 📌 **Angeheftete Notizen** – Wichtige Notizen bleiben oben
+- 🗑️ **Papierkorb** – Gelöschte Notizen wandern in den Papierkorb mit konfigurierbarer Aufbewahrung (0–90 Tage)
+- ✅ **Checklisten** – Tap-to-Check, Drag & Drop, Umwandlung Text ↔ Checkliste
+- ✍️ **Live-Markdown** – Live-Hervorhebung im Editor und gerenderte Listen-/Grid-Vorschauen
+- 📋 **Formatiertes Einfügen** – HTML-Einfügen aus Telegram, Word, Google Docs & Browsern wird zu Markdown konvertiert
+- 🎨 **Notiz-Farben** – Notizen farblich kennzeichnen, danach filtern und sortieren
+- 📥 **Google-Keep-Import** – Notizen aus einem Keep-Export übernehmen
+- 📊 **Flexible Ansichten** – Listen- oder Grid-Layout, 1–5 Spalten, einstellbare Schriftgröße, einklapp- und verschiebbare Bereiche
+- 🧩 **Widgets** – Einzelnotiz-, scrollbares Notizlisten- und Schnell-Notiz-Widget
 - 🔄 **Konfigurierbare Sync-Trigger** – onSave, onResume, WiFi, periodisch (15/30/60 Min), Boot
-- 📌 **Widgets** – Home-Screen Quick-Note und Notizlisten-Widget
-- 🔀 **Smartes Sortieren** – Nach Titel, Änderungsdatum, Erstelldatum, Typ
-- ⚡ **Paralleler Sync** – Lädt bis zu 5 Notizen gleichzeitig herunter
-- 🌍 **Mehrsprachig** – Deutsch/Englisch mit Sprachauswahl
-- 🔒 **Self-hosted** – Deine Daten bleiben bei dir (WebDAV)
-- 💾 **Lokales Backup** – Export/Import als JSON-Datei (optional verschlüsselt)
+- ⚡ **Paralleler Sync** – Lädt bis zu 5 Notizen gleichzeitig hoch/herunter
+- 🔒 **Self-hosted** – Deine Daten bleiben bei dir (WebDAV, verschlüsselte Zugangsdaten)
+- 🔐 **App-Sperre** – Optionale biometrische/PIN-Entsperrung mit Screenshot-Schutz
+- 💾 **Lokales Backup** – Export/Import als JSON-Datei
 - 🖥️ **Desktop-Integration** – Markdown-Export für Obsidian, VS Code, Typora
-- 📤 **Teilen & Exportieren** – Als Text oder PDF teilen, in Kalender exportieren
+- 💻 **Desktop-Editor** _(Beta)_ – Notizen unter Windows & Linux bearbeiten mit [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop), der WebDAV-synchronisierten Begleit-App
+- 📤 **Teilen & Exportieren** – Geteilten Text empfangen, als Text oder PDF teilen, in Kalender exportieren
 - ↩️ **Rückgängig/Wiederherstellen** – Vollständige Undo/Redo-Historie im Notiz-Editor
+- 🌍 **Mehrsprachig** – 11 Sprachen mit In-App-Sprachauswahl
 - 🎨 **Material Design 3** - 7 Farbschemata inkl. AMOLED & Dynamic Color, animierte Theme-Übergänge
 
 ➡️ **Vollständige Feature-Liste:** [docs/FEATURES.de.md](docs/FEATURES.de.md)
@@ -117,6 +129,7 @@ docker compose up -d
 | **[FEATURES.de.md](docs/FEATURES.de.md)** | Vollständige Feature-Liste |
 | **[BACKUP.de.md](docs/BACKUP.de.md)** | Backup & Wiederherstellung |
 | **[DESKTOP.de.md](docs/DESKTOP.de.md)** | Desktop-Integration (Markdown) |
+| **[Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop)** | Desktop-Editor für Windows & Linux _(Beta)_ 💻 |
 | **[SELF_SIGNED_SSL.md](docs/SELF_SIGNED_SSL.md)** | Self-signed SSL Zertifikat Setup |
 | **[DOCS.de.md](docs/DOCS.de.md)** | Technische Details & Troubleshooting |
 | **[CHANGELOG.de.md](CHANGELOG.de.md)** | Versionshistorie |
@@ -131,6 +144,18 @@ cd android
 ```
 
 ➡️ **Build-Anleitung:** [docs/DOCS.de.md#-build--deployment](docs/DOCS.de.md#-build--deployment)
+
+## 💡 Feature-Wünsche & Ideen
+
+Du hast eine Idee für ein neues Feature oder eine Verbesserung? Wir freuen uns darauf!
+
+➡️ **So schlägst du Features vor:**
+
+1. Schau in die [bestehenden Discussions](https://github.com/inventory69/simple-notes-sync/discussions), ob es jemand schon vorgeschlagen hat
+2. Falls nicht, starte eine neue Discussion in der Kategorie „Feature Requests / Ideas"
+3. Stimme (👍) für Features ab, die du dir wünschst
+
+Features mit genug Community-Zuspruch werden für die Umsetzung in Betracht gezogen. Bitte bedenke, dass diese App bewusst einfach und benutzerfreundlich bleiben soll.
 
 ## 🌍 Übersetzungen
 
@@ -159,6 +184,6 @@ GNU Affero General Public License v3.0 – siehe [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v2.5.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.10.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

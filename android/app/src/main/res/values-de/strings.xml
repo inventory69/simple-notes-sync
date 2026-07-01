@@ -17,6 +17,11 @@
     <string name="selection_count">%d ausgewählt</string>
     <string name="section_pinned">Angeheftet</string>
     <string name="section_notes">Notizen</string>
+    <string name="action_collapse_section">Abschnitt „%1$s" einklappen</string>
+    <string name="action_expand_section">Abschnitt „%1$s" ausklappen</string>
+    <string name="action_move_section_up">Nach oben verschieben</string>
+    <string name="action_move_section_down">Nach unten verschieben</string>
+    <string name="section_reorder_hint">Tipp: Halte den Pfeil-Button gedrückt, um Abschnitte zu verschieben.</string>
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
@@ -133,7 +138,16 @@
     <string name="trash_title">Papierkorb</string>
     <string name="settings_trash_subtitle">Notizen wiederherstellen oder endgültig löschen</string>
     <string name="trash_empty_state">Papierkorb ist leer</string>
+    <string name="trash_retention_duration_title">Notizen im Papierkorb löschen nach</string>
+    <string name="trash_retention_settings_cd">Aufbewahrungsdauer einstellen</string>
+    <string name="trash_retention_immediate">Sofort</string>
+    <string name="trash_retention_immediate_hint">Bereits im Papierkorb liegende Einträge werden sofort gelöscht.</string>
     <string name="trash_retention_hint">Notizen im Papierkorb werden nach %1$d Tagen endgültig gelöscht.</string>
+    <string name="trash_retention_hint_immediate">Gelöschte Notizen werden direkt nach dem Undo-Fenster endgültig entfernt.</string>
+    <plurals name="days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
     <plurals name="trash_days_left">
         <item quantity="one">noch %d Tag</item>
         <item quantity="other">noch %d Tage</item>
@@ -151,6 +165,11 @@
     </plurals>
     <string name="trash_empty_confirm_server_hint">Synchronisierte Notizen werden auch vom Server gelöscht.</string>
     <string name="snackbar_note_trashed">\"%s\" in den Papierkorb verschoben</string>
+    <string name="snackbar_note_deleted_permanently">\"%1$s\" endgültig gelöscht</string>
+    <plurals name="snackbar_notes_deleted_permanently">
+        <item quantity="one">%d Notiz endgültig gelöscht</item>
+        <item quantity="other">%d Notizen endgültig gelöscht</item>
+    </plurals>
     <plurals name="snackbar_notes_trashed">
         <item quantity="one">%d Notiz in den Papierkorb verschoben</item>
         <item quantity="other">%d Notizen in den Papierkorb verschoben</item>
@@ -845,6 +864,29 @@
     <string name="notes_list_widget_config_hide_folders_desc">Ordner werden nicht im Widget angezeigt</string>
     <string name="notes_list_widget_config_folder_label">Ordner</string>
     <string name="notes_list_widget_config_folder_all">Alle Notizen</string>
+    <!-- ============================= -->
+    <!-- v2.10.0: APP-SPERRE          -->
+    <!-- ============================= -->
+    <string name="settings_security">Sicherheit</string>
+    <string name="settings_security_subtitle_on">App-Sperre aktiv</string>
+    <string name="settings_security_subtitle_off">Biometrische Entsperrung aus</string>
+    <string name="app_lock_section">App-Sperre</string>
+    <string name="app_lock_toggle">Biometrische Entsperrung</string>
+    <string name="app_lock_toggle_subtitle">App mit Fingerabdruck, Gesicht oder Geräte-PIN entsperren</string>
+    <string name="app_lock_timeout_title">Sperren nach</string>
+    <string name="app_lock_timeout_immediately">Sofort</string>
+    <string name="app_lock_timeout_30s">30 Sek.</string>
+    <string name="app_lock_timeout_1min">1 Min.</string>
+    <string name="app_lock_timeout_5min">5 Min.</string>
+    <string name="app_lock_info">Wenn aktiv, wird vor dem Anzeigen der Inhalte eine biometrische Authentifizierung (Fingerabdruck, Gesicht) oder die Geräte-PIN/Muster als Fallback verlangt.</string>
+    <string name="app_lock_locked_title">App gesperrt</string>
+    <string name="app_lock_unlock">Entsperren</string>
+    <string name="app_lock_prompt_title">Simple Notes entsperren</string>
+    <string name="app_lock_prompt_subtitle">Bestätige, dass du es bist</string>
+    <string name="app_lock_no_biometric_title">Keine Sperre eingerichtet</string>
+    <string name="app_lock_no_biometric_message">Richte in den Geräteeinstellungen Fingerabdruck, Gesicht oder eine Bildschirmsperre ein, um die App-Sperre zu nutzen.</string>
+    <string name="app_lock_open_settings">Einstellungen öffnen</string>
+
     <!-- Preview placeholder strings (not shown to users) -->
     <string name="notes_list_widget_preview_title_1">Einkaufsliste</string>
     <string name="notes_list_widget_preview_content_1">• Milch\n• Brot\n• Eier</string>

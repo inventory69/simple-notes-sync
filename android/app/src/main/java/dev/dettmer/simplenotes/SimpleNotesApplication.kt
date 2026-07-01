@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.core.content.edit
+import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
@@ -56,6 +57,8 @@ class SimpleNotesApplication : Application() {
         // (b/493183465) → beim nächsten Compose-Bump prüfen; Details siehe
         // project-docs/simple-notes-sync/FIX-checklist-reorder-animation-compose-1.11.md
         ComposeFoundationFlags.isSkipItemPlacementAnimationFixEnabled = false
+
+        AppLock.init(this)
 
         val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
 

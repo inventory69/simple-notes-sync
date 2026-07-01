@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -42,7 +43,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
  * Main Settings overview screen with clickable group cards
  * v1.5.0: Jetpack Compose Settings Redesign
  */
-@Suppress("MagicNumber") // Color hex values
+@Suppress("MagicNumber", "LongMethod") // Color hex values; pre-established large composable
 @Composable
 fun SettingsMainScreen(
     viewModel: SettingsViewModel,
@@ -50,6 +51,7 @@ fun SettingsMainScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val appLockEnabled by viewModel.appLockEnabled.collectAsState()
     val serverUrl by viewModel.serverUrl.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
     val autoSyncEnabled by viewModel.autoSyncEnabled.collectAsState()
@@ -141,6 +143,22 @@ fun SettingsMainScreen(
                     title = stringResource(R.string.display_settings_title),
                     subtitle = displaySubtitle,
                     onClick = { onNavigate(SettingsRoute.Display) }
+                )
+            }
+
+            // v2.10.0: Security Settings
+            item {
+                SettingsCard(
+                    icon = Icons.Default.Lock,
+                    title = stringResource(R.string.settings_security),
+                    subtitle = stringResource(
+                        if (appLockEnabled) {
+                            R.string.settings_security_subtitle_on
+                        } else {
+                            R.string.settings_security_subtitle_off
+                        }
+                    ),
+                    onClick = { onNavigate(SettingsRoute.Security) }
                 )
             }
 

@@ -176,6 +176,15 @@ object Constants {
     const val GRID_MIN_COLUMNS = 1
     const val GRID_MAX_COLUMNS = 5
 
+    // 🆕 collapsible sections: Set<String> von "pinned"/"folders"/"notes"
+    const val KEY_COLLAPSED_SECTIONS = "collapsed_sections"
+
+    // 🆕 section reordering: comma-joined ordered list of "pinned"/"folders"/"notes"
+    const val KEY_SECTION_ORDER = "section_order"
+
+    // 🆕 one-time onboarding hint: "long-press the arrow to reorder sections"
+    const val KEY_SECTION_REORDER_HINT_SHOWN = "section_reorder_hint_shown"
+
     // 🆕 v2.2.0: Persistent sync debug logging
     const val KEY_SYNC_DEBUG_LOGGING = "sync_debug_logging"
 
@@ -196,11 +205,30 @@ object Constants {
     // 🆕 v2.7.0 (Folders): Dirty-Flag für FolderStore — gesetzt bei User-Änderungen (Anlage, Farbe, Rename, Löschen)
     const val KEY_FOLDERS_DIRTY = "folders_dirty"
 
-    // 🆕 v2.9.0 (Trash): Aufbewahrungsdauer im Papierkorb. Fix, nicht konfigurierbar.
-    // Notizen mit `now - trashedAt >= TRASH_RETENTION_MS` werden automatisch endgültig gelöscht.
-    const val TRASH_RETENTION_DAYS = 30
-    const val TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24L * 60L * 60L * 1000L
+    // 🆕 v2.9.0 (Trash): Aufbewahrungsdauer im Papierkorb — konfigurierbar (0–90 Tage).
+    // Notizen mit `now - trashedAt >= retentionMs` werden automatisch endgültig gelöscht.
+    // 0 = sofort nach Undo-Fenster (über Deletion-Ledger, siehe MainViewModel).
+    const val KEY_TRASH_RETENTION_DAYS = "trash_retention_days"
+    const val DEFAULT_TRASH_RETENTION_DAYS = 30
+    const val MIN_TRASH_RETENTION_DAYS = 0
+    const val MAX_TRASH_RETENTION_DAYS = 90
+    const val DAY_MS = 24L * 60L * 60L * 1000L
+
+    // Fallback-Konstanten für bestehende Referenzen und TrashManager ohne injizierten Provider.
+    const val TRASH_RETENTION_DAYS = DEFAULT_TRASH_RETENTION_DAYS
+    const val TRASH_RETENTION_MS = DEFAULT_TRASH_RETENTION_DAYS * DAY_MS
 
     // 🆕 v2.9.0 (Trash): Einmal-Migration bestehender DELETED_ON_SERVER-Notizen in den Papierkorb.
     const val KEY_TRASH_MIGRATION_DONE = "trash_migration_done"
+
+    // v2.10.0: Biometric app lock
+    const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
+    const val DEFAULT_APP_LOCK_ENABLED = false
+    const val KEY_APP_LOCK_GRACE_MS = "app_lock_grace_ms"
+    const val DEFAULT_APP_LOCK_GRACE_MS = 30_000L
 }
+
+// ponytail: extension over a new class — single getInt call, no wrapper needed
+fun android.content.SharedPreferences.trashRetentionDays(): Int =
+    getInt(Constants.KEY_TRASH_RETENTION_DAYS, Constants.DEFAULT_TRASH_RETENTION_DAYS)
+        .coerceIn(Constants.MIN_TRASH_RETENTION_DAYS, Constants.MAX_TRASH_RETENTION_DAYS)

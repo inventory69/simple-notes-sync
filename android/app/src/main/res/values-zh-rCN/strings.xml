@@ -53,7 +53,7 @@
     <string name="sync_legend_conflict_label">冲突</string>
     <string name="sync_legend_conflict_desc">这个笔记在多个设备上同时被更改。已保留最新版本。</string>
     <string name="sync_legend_local_only_label">仅本地</string>
-    <string name="sync_legend_local_only_desc">这个笔记还未被同步到服务器。</string>
+    <string name="sync_legend_local_only_desc">这个笔记仅保存在这个设备 - 要么它还未同步，要么它在一个排除在同步外的文件夹。</string>
     <string name="sync_legend_deleted_label">已在服务器上删除</string>
     <string name="sync_legend_deleted_desc">在其他设备或直接在服务器删除了这个笔记。它仍存在于本地。</string>
     <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
@@ -790,4 +790,11 @@
     <string name="notes_list_widget_preview_content_2">讨论路线图和即将到来的里程碑</string>
     <string name="notes_list_widget_preview_title_3">想法</string>
     <string name="notes_list_widget_preview_content_3">下个迭代的新功能概念</string>
+    <string name="about_app_section">应用程序</string>
+    <string name="contributors_title">贡献者</string>
+    <string name="contributors_subtitle">所有帮助开发这个应用的人</string>
+    <string name="contributors_role_code">代码</string>
+    <string name="contributors_role_translation">翻译</string>
+    <string name="contributors_role_testing">测试</string>
+    <string name="update_changelog_view_all">查看更新日志</string>
 </resources>

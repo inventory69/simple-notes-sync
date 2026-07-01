@@ -1,0 +1,10 @@
+🚪 v2.10.0 - Sperren & Aufräumen
+
+• App-Sperre: Biometrie/PIN-Entsperrung, blockiert Screenshots währenddessen
+• Papierkorb: konfigurierbare Auto-Löschung (Sofort-90 Tage)
+• Formatiertes Einfügen (Word/Docs/Telegram) wird zu Markdown
+• Einklapp- und verschiebbare Listen-Bereiche
+• Fix: App hängt beim Scrollen langer Notiz-Vorschauen
+• Übersetzungsupdate: ES, IT, ID, NB, ZH-Hans
+
+Danke an @xdpirate für die Anfrage!

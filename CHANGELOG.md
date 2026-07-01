@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.10.0] - 2026-07-01
+
+### ✨ New Features
+
+**Biometric App Lock** ([a6e1f20](https://github.com/inventory69/simple-notes-sync/commit/a6e1f20), [a2f0628](https://github.com/inventory69/simple-notes-sync/commit/a2f0628))
+- Opt-in app lock backed by fingerprint, face, or device PIN, with a configurable grace period before re-locking
+- `FLAG_SECURE` blocks screenshots/screen recording and hides content in the Recents thumbnail while locked
+
+**Configurable Trash Retention** ([e6b2df3](https://github.com/inventory69/simple-notes-sync/commit/e6b2df3))
+- Choose how long deleted notes stay in Trash before being purged: Immediately, 7, 14, 30 (default), or 90 days
+- Thanks to [@xdpirate](https://github.com/xdpirate) for the request!
+
+**Rich Clipboard Paste** ([bf003d1](https://github.com/inventory69/simple-notes-sync/commit/bf003d1))
+- Pasting HTML from Telegram, Word, Google Docs, or a browser now converts formatting (bold/italic/links/lists/headings/code/blockquotes) to Markdown instead of dropping it, with a plain-text fallback
+
+**Collapsible & Reorderable Sections** ([6d50b81](https://github.com/inventory69/simple-notes-sync/commit/6d50b81))
+- Pinned/Folders/Notes section headers can be collapsed, and long-pressed to reorder; both persist across restarts
+
+### 🐛 Bug Fixes
+
+**Scroll Freeze on Long Previews** ([a51394c](https://github.com/inventory69/simple-notes-sync/commit/a51394c))
+- Note preview text is now truncated before layout, preventing an ANR while scrolling lists with very long notes
+
+**Security Settings Subtitle** ([ddbc3a4](https://github.com/inventory69/simple-notes-sync/commit/ddbc3a4))
+- The Security subtitle now says "Biometric unlock off" instead of just "Off"
+
+### ⚡ Performance Improvements
+
+**Faster Note (De)serialization** ([452e557](https://github.com/inventory69/simple-notes-sync/commit/452e557), [e084759](https://github.com/inventory69/simple-notes-sync/commit/e084759))
+- `Note.fromJson()` now streams JSON instead of building a full parse tree and using reflection, reducing cold-start time with thousands of notes
+
+**Faster List Rendering & Sync Bookkeeping** ([845c3ec](https://github.com/inventory69/simple-notes-sync/commit/845c3ec), [4d7a240](https://github.com/inventory69/simple-notes-sync/commit/4d7a240), [50bfebe](https://github.com/inventory69/simple-notes-sync/commit/50bfebe), [1cba7a7](https://github.com/inventory69/simple-notes-sync/commit/1cba7a7))
+- Pinned/unpinned split and checklist preview sort are cached instead of recomputed every frame
+- Note sort/filter/search now run off the main thread
+- `DeletionTracker` is backed by a map instead of a list
+- `NotesStorage.loadAllNotes` reads files in parallel
+
+### 🌍 Translations
+
+- **Spanish** (66%): [@PaikLC](https://github.com/PaikLC) / Francisco Isaac Ordoñez Pedrero, [@Kiimby](https://github.com/Kiimby) / Kimby
+- **Indonesian** (100%): [@arifpedia](https://github.com/arifpedia) / Arif Budiman
+- **Italian** (46%): GVE
+- **Norwegian Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.9.0] - 2026-06-22
 
 ### ✨ New Features

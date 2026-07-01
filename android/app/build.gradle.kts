@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 42  // 🆕 v2.9.0 - in-app changelog, contributors screen, selectable markdown
-        versionName = "2.9.0"  // 🆕 v2.9.0 - in-app changelog, contributors screen, selectable markdown
+        versionCode = 43  // 🆕 v2.10.0 - app lock, collapsible sections, rich clipboard paste
+        versionName = "2.10.0"  // 🆕 v2.10.0 - app lock, collapsible sections, rich clipboard paste
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
@@ -203,6 +203,10 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
+    // v2.10.0: Biometric app lock
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.lifecycle.process)
+
     // Testing (bleiben so)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
@@ -211,6 +215,9 @@ dependencies {
     testImplementation(libs.androidx.arch.core.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 // ✅ v1.6.1: ktlint reaktiviert nach Code-Cleanup
