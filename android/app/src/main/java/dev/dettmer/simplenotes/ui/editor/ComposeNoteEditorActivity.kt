@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.CalendarContract
-import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
@@ -48,6 +48,8 @@ import com.google.android.material.color.DynamicColors
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.security.AppLock
+import dev.dettmer.simplenotes.security.AppLockGate
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
@@ -72,7 +74,7 @@ import kotlinx.coroutines.withContext
  * - CHECKLIST notes with drag & drop reordering
  * - Auto-keyboard focus for new checklist items
  */
-class ComposeNoteEditorActivity : ComponentActivity() {
+class ComposeNoteEditorActivity : FragmentActivity() {
     companion object {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
@@ -138,6 +140,8 @@ class ComposeNoteEditorActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        AppLock.applySecureFlag(this)
+
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)
@@ -189,44 +193,46 @@ class ComposeNoteEditorActivity : ComponentActivity() {
 
         setContent {
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
-                when {
-                    isShareIntent && !isShareTypeChosen && isPickingTargetNote -> {
-                        // 🆕 v2.6.0: Note-Picker-Dialog für Append-Modus
-                        ShareNotePickerDialog(
-                            storage = NotesStorage(this@ComposeNoteEditorActivity),
-                            onNoteSelected = { noteId ->
-                                chosenAppendNoteId = noteId
-                                isPickingTargetNote = false
-                                isShareTypeChosen = true
-                                startEventCollectionIfNeeded()
-                            },
-                            onDismiss = { isPickingTargetNote = false }
-                        )
+                AppLockGate {
+                    when {
+                        isShareIntent && !isShareTypeChosen && isPickingTargetNote -> {
+                            // 🆕 v2.6.0: Note-Picker-Dialog für Append-Modus
+                            ShareNotePickerDialog(
+                                storage = NotesStorage(this@ComposeNoteEditorActivity),
+                                onNoteSelected = { noteId ->
+                                    chosenAppendNoteId = noteId
+                                    isPickingTargetNote = false
+                                    isShareTypeChosen = true
+                                    startEventCollectionIfNeeded()
+                                },
+                                onDismiss = { isPickingTargetNote = false }
+                            )
+                        }
+                        isShareIntent && !isShareTypeChosen -> {
+                            // 🆕 v2.2.0: Typ-Auswahl-Dialog für Share Intent
+                            ShareNoteTypeDialog(
+                                onTextNote = {
+                                    chosenShareNoteType = NoteType.TEXT.name
+                                    isShareTypeChosen = true
+                                    startEventCollectionIfNeeded()
+                                },
+                                onChecklist = {
+                                    chosenShareNoteType = NoteType.CHECKLIST.name
+                                    isShareTypeChosen = true
+                                    startEventCollectionIfNeeded()
+                                },
+                                onAppendNote = { isPickingTargetNote = true },
+                                onDismiss = { finishWithTransition() }
+                            )
+                        }
+                        else -> {
+                            NoteEditorScreen(
+                                viewModel = viewModel,
+                                onNavigateBack = { finishWithTransition() }
+                            )
+                        }
                     }
-                    isShareIntent && !isShareTypeChosen -> {
-                        // 🆕 v2.2.0: Typ-Auswahl-Dialog für Share Intent
-                        ShareNoteTypeDialog(
-                            onTextNote = {
-                                chosenShareNoteType = NoteType.TEXT.name
-                                isShareTypeChosen = true
-                                startEventCollectionIfNeeded()
-                            },
-                            onChecklist = {
-                                chosenShareNoteType = NoteType.CHECKLIST.name
-                                isShareTypeChosen = true
-                                startEventCollectionIfNeeded()
-                            },
-                            onAppendNote = { isPickingTargetNote = true },
-                            onDismiss = { finishWithTransition() }
-                        )
-                    }
-                    else -> {
-                        NoteEditorScreen(
-                            viewModel = viewModel,
-                            onNavigateBack = { finishWithTransition() }
-                        )
-                    }
-                }
+                } // AppLockGate
             }
         }
 
@@ -260,6 +266,11 @@ class ComposeNoteEditorActivity : ComponentActivity() {
         if (isShareTypeChosen) {
             viewModel.reloadFromStorage()
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        AppLock.applySecureFlag(this)
     }
 
     // v2.0.0: Save unsaved changes when activity pauses (Back gesture, Home, task switch).

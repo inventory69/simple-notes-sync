@@ -32,6 +32,7 @@ import dev.dettmer.simplenotes.ui.settings.screens.DisplaySettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ImportSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.LanguageSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.MarkdownSettingsScreen
+import dev.dettmer.simplenotes.ui.settings.screens.SecuritySettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SyncSettingsScreen
@@ -197,6 +198,14 @@ fun SettingsNavHost(
                             )
                         }
                     }
+                )
+            }
+
+            // v2.10.0: Security Settings
+            composable(SettingsRoute.Security.route) {
+                SecuritySettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

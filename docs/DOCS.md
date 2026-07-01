@@ -31,7 +31,10 @@ app/
 │   ├── Note.kt              # Data class for notes
 │   └── SyncStatus.kt        # Sync status enum
 ├── storage/
-│   └── NotesStorage.kt      # Local JSON file storage
+│   ├── NotesStorage.kt      # Local JSON file storage
+│   ├── FolderStore.kt       # Folder definitions & metadata
+│   └── TrashManager.kt      # Trash / retention handling
+├── noteimport/              # Notes import wizard (incl. Google Keep)
 ├── sync/
 │   ├── WebDavSyncService.kt # Sync facade (delegates to modules)
 │   ├── SyncGateChecker.kt   # Pre-sync validation
@@ -41,6 +44,7 @@ app/
 │   ├── NoteUploader.kt      # Upload logic
 │   ├── NoteDownloader.kt    # Download logic
 │   ├── MarkdownSyncManager.kt # Markdown bidirectional sync
+│   ├── FolderSyncManager.kt # Folder ↔ subdirectory sync
 │   ├── NetworkMonitor.kt    # WiFi detection
 │   ├── SyncWorker.kt        # WorkManager background worker
 │   └── BootReceiver.kt      # Device reboot handler
@@ -446,15 +450,15 @@ cd android
 
 ```bash
 cd android
-./gradlew assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleFdroidDebug
+# APK: app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk
 ```
 
 ### Release Build
 
 ```bash
-./gradlew assembleRelease
-# APK: app/build/outputs/apk/release/app-release-unsigned.apk
+./gradlew assembleFdroidRelease
+# APK: app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
 
 ### Sign (for Distribution)
@@ -519,19 +523,27 @@ Check:
 ## 📚 Dependencies
 
 ```gradle
+// Kotlin 2.3.20
+
 // Core
-androidx.core:core-ktx:1.12.0
-androidx.appcompat:appcompat:1.6.1
-com.google.android.material:material:1.11.0
+androidx.core:core-ktx:1.18.0
+androidx.appcompat:appcompat:1.7.1
+com.google.android.material:material:1.14.0
+
+// Jetpack Compose (BOM) — incl. Glance for widgets
+androidx.compose:compose-bom:2026.05.01
 
 // Lifecycle
-androidx.lifecycle:lifecycle-runtime-ktx:2.7.0
+androidx.lifecycle:lifecycle-runtime-ktx:2.10.0
 
 // Coroutines
-org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0
 
 // WorkManager
-androidx.work:work-runtime-ktx:2.9.0
+androidx.work:work-runtime-ktx:2.11.2
+
+// JSON
+com.google.code.gson:gson:2.14.0
 
 // WebDAV Client
 com.github.thegrizzlylabs:sardine-android:0.8
@@ -554,4 +566,4 @@ See [UPCOMING.md](UPCOMING.md) for the full roadmap and planned features.
 
 ---
 
-**Last updated:** February 2026
+**Last updated:** June 2026

@@ -25,6 +25,7 @@ import dev.dettmer.simplenotes.sync.buildSyncResultBanner
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.trashRetentionDays
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -80,7 +81,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val trashManager = dev.dettmer.simplenotes.storage.TrashManager(
         storage = storage,
         pendingServerDeletions = pendingServerDeletions,
-        folderStore = folderStore
+        folderStore = folderStore,
+        retentionMs = { prefs.trashRetentionDays() * Constants.DAY_MS }
     )
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -556,7 +558,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _pendingDeletions.update { it + selectedIds.toSet() }
 
         val count = selectedNotes.size
-        val message = getQuantityString(R.plurals.snackbar_notes_trashed, count, count)
+        val message = if (prefs.trashRetentionDays() == 0) {
+            getQuantityString(R.plurals.snackbar_notes_deleted_permanently, count, count)
+        } else {
+            getQuantityString(R.plurals.snackbar_notes_trashed, count, count)
+        }
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
@@ -575,11 +581,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
             kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            val stillPending = selectedIds.filter { it in _pendingDeletions.value }
-            if (stillPending.isNotEmpty()) {
-                stillPending.forEach { finalizeDeletion(it) }
-                triggerOnSaveSync()
-            }
+            finalizeTrashOrPurge(selectedNotes)
         }
     }
 
@@ -671,9 +673,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             loadNotes()
 
+            val message = if (prefs.trashRetentionDays() == 0) {
+                getString(R.string.snackbar_note_deleted_permanently, note.title)
+            } else {
+                getString(R.string.snackbar_note_trashed, note.title)
+            }
             _showSnackbar.emit(
                 SnackbarData(
-                    message = getString(R.string.snackbar_note_trashed, note.title),
+                    message = message,
                     actionLabel = getString(R.string.snackbar_undo),
                     onAction = { undoTrash(listOf(note)) }
                 )
@@ -681,10 +688,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
             kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            if (note.id in _pendingDeletions.value) {
-                finalizeDeletion(note.id)
-                triggerOnSaveSync()
-            }
+            finalizeTrashOrPurge(listOf(note))
         }
     }
 
@@ -801,6 +805,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun finalizeDeletion(noteId: String) {
         _pendingDeletions.update { it - noteId }
+    }
+
+    /** Nach Ablauf des Undo-Fensters: bei Retention 0 endgültig löschen, sonst getrasht lassen. */
+    private suspend fun finalizeTrashOrPurge(candidates: List<Note>) {
+        val stillPending = candidates.filter { it.id in _pendingDeletions.value }
+        if (stillPending.isEmpty()) return
+        if (prefs.trashRetentionDays() == 0) {
+            withContext(ioDispatcher) { trashManager.purge(stillPending) }
+        }
+        stillPending.forEach { finalizeDeletion(it.id) }
+        triggerOnSaveSync()
     }
 
     // ═══════════════════════════════════════════════════════════════════════

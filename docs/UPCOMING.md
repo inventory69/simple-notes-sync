@@ -244,7 +244,7 @@
 
 ## v2.2.0 - Share Intent, Widgets & Editor Polish
 
-> **Status:** Planned 📋
+> **Status:** Released 🎉 (March 2026)
 
 ### 📤 Share Intent
 
@@ -265,24 +265,31 @@
 
 ---
 
+## v2.3.0 – v2.9.0 ✅
+
+> **Status:** Released 🎉
+
+Shipped since this roadmap was last revised: encrypted credentials, the persistent sync debug logger, **Google Keep import**, **note colors**, **pinned notes**, text ↔ checklist conversion, **folders** (incl. local-only), a **Trash / recycle bin** with configurable retention, live Markdown in the editor and card previews, the scrollable note-list widget, an in-app changelog and contributors screen, and growth to 11 languages. See the [CHANGELOG](../CHANGELOG.md) for the full per-version history.
+
+---
+
 ## 📋 Backlog
 
 > Features for future consideration
 
 ### 🔐 Security Enhancements
 
-- **Password-protected local backups** - Encrypt backup ZIP with password
-- **Biometric unlock option** - Fingerprint/Face unlock for app
+- **Password-protected local backups** - Encrypt backup file with a password
 
 ### 🎨 UI Features
 
-- **Folders / Tags / Notebooks** - Organize notes into directories or with tags for better separation (e.g. personal vs. shared recipes). Subdirectories on WebDAV could also enable per-folder access control. ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) by @happy-turtle)
 - **Hide completed checklists** - Option to hide checklists where all items are checked, with a separate view to recover them later. ([#45](https://github.com/inventory69/simple-notes-sync/discussions/45) by @isawaway)
-- **Search** - Full-text search in notes
 
-### 🌍 Community
+### ✅ Recently delivered
 
-- **Additional languages** - Community translations (FR, ES, IT, ...)
+- **Folders / Notebooks** ✅ _(v2.7.0)_ - incl. local-only folders that never sync ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) by @happy-turtle)
+- **Search** ✅ _(v1.9.0)_ - inline search in the filter row
+- **Additional languages** ✅ - now 11 languages via Weblate
 
 ---
 

@@ -16,6 +16,8 @@
   - 📌 Long-Press für Drag & Drop Sortierung
   - ~~Durchstreichen~~ bei erledigten Einträgen
   - ↩️ Abhaken-Rückgängig stellt Item an Originalposition _(v1.9.0)_
+- ✅ **Typ-Umwandlung** _(NEU in v2.6.0)_ - Textnotiz in eine Checkliste umwandeln und zurück
+- ✅ **Aus geteiltem Text erstellen** _(NEU in v2.2.0)_ - Geteilten Text/URLs aus anderen Apps als neue Notiz oder Checkliste empfangen
 
 ### Basis-Funktionen
 - ✅ **Automatisches Speichern** - Kein manuelles Speichern nötig
@@ -29,6 +31,7 @@
 - ✅ **Dynamic Colors** - Passt sich deinem Android-Theme an
 - ✅ **Multi-Theme** _(NEU in v2.0.0)_ - 7 Farbschemata mit animierten Übergängen und getönten Oberflächen
 - ✅ **Benutzerdefinierter App-Titel** _(NEU in v1.9.0)_ - Konfigurierbarer App-Name
+- ✅ **Einstellbare Schriftgröße** _(NEU in v2.8.0)_ - App-weite Skalierung des Notiztextes
 
 ### Editor
 - ✅ **Minimalistischer Editor** - Kein Schnickschnack
@@ -42,6 +45,14 @@
 - ✅ **Rückgängig/Wiederherstellen** _(NEU in v1.10.0)_ - Vollständige Undo/Redo-Historie (bis 50 Schritte) via Toolbar-Buttons
 - ✅ **Teilen & Exportieren** _(NEU in v1.10.0)_ - Als Text oder PDF teilen, in Kalender exportieren
 - ✅ **Löschen mit Rückgängig** _(NEU in v1.10.0)_ - Löschen aus dem Editor mit zeitgesteuerter Rückgängig-Snackbar
+- ✅ **Live-Markdown-Hervorhebung** _(NEU in v2.8.0)_ - Markdown wird beim Tippen live hervorgehoben
+- ✅ **Checkboxen antippen** _(NEU in v2.8.0)_ - Markdown-Checkbox im Editor antippen, um die Aufgabe umzuschalten
+- ✅ **Standard-Öffnungsmodus** _(NEU in v2.8.0)_ - Wählen, ob Textnotizen im Bearbeiten- oder Vorschaumodus öffnen
+- ✅ **Auswählbare Vorschau** _(NEU in v2.9.0)_ - Text in der Markdown-Vorschau markieren und kopieren
+- ✅ **URLs automatisch verlinken** _(NEU in v2.6.0)_ - Reine URLs werden in der Vorschau zu klickbaren Links
+- ✅ **Kopieren & Duplizieren** _(NEU in v2.6.0)_ - Notiztext kopieren oder Checklisten-Items duplizieren via Überlauf-/Kontextmenü
+- ✅ **Geteilten Text anhängen** _(NEU in v2.6.0)_ - Aus anderen Apps geteilten Text an eine bestehende Notiz anhängen
+- ✅ **Checklisten-Item in Kalender** _(NEU in v2.8.0)_ - „In Kalender eintragen" pro Item im Kontextmenü
 
 ---
 
@@ -54,6 +65,8 @@
 - ✅ **Adaptive Spalten** - 2-3 Spalten basierend auf Bildschirmgröße
 - ✅ **Grid-Spaltensteuerung** _(NEU in v2.0.0)_ - 1–5 Spalten konfigurierbar in Anzeigeeinstellungen
 - ✅ **Grid als Standard** _(v1.8.0)_ - Neue Installationen starten im Grid-Modus
+- ✅ **Angeheftete Notizen** _(NEU in v2.6.0)_ - Angeheftete Notizen erscheinen in einem eigenen Bereich ganz oben
+- ✅ **Markdown-Vorschauen** _(NEU in v2.8.0)_ - Listen-/Grid-Karten rendern Markdown, inkl. Checklisten-☑/☐-Präfixe und Codeblöcke
 
 ### Notiz-Sortierung _(NEU in v1.8.0)_
 - ✅ **Nach Änderungsdatum** - Neueste oder älteste zuerst
@@ -68,6 +81,8 @@
 - ✅ **Inline-Suche** - Schnellsuche in der Filter-Zeile
 - ✅ **Sort-Button** - Kompaktes Sort-Icon in der Filter-Zeile
 - ✅ **Sichtbarkeit umschalten** - Tune-Button blendet die Filter-Zeile ein/aus
+- ✅ **Farb-Filter** _(NEU in v2.5.0)_ - Liste nach Notiz-Farbe filtern
+- ✅ **Farb-Sortierung** _(NEU in v2.5.1)_ - Notizen nach Farbe sortieren
 - ✅ **Konfigurierbarer Sync-Ordner** - Benutzerdefinierter WebDAV-Ordnername
 
 ### Checklisten-Sortierung _(NEU in v1.8.0)_
@@ -82,11 +97,57 @@
 
 ---
 
+## 📁 Ordner _(NEU in v2.7.0)_
+
+- ✅ **In Ordnern organisieren** - Notizen zur klareren Trennung in Ordnern gruppieren
+- ✅ **Ordner-Filter** - Notizen eines einzelnen Ordners anzeigen
+- ✅ **Ordner-Sync** - Ordner werden auf WebDAV-Unterverzeichnisse abgebildet
+- ✅ **Nur-lokale Ordner** _(NEU in v2.8.0)_ - Ordner als „nur lokal" markieren, damit seine Notizen nie zum Server synchronisieren
+- ✅ **Sicheres Umbenennen & Löschen** - Beim Umbenennen/Löschen werden Notizen verschoben, ohne Server-Waisen zu hinterlassen
+- ✅ **Eigener Sync-Ordnername** - Konfigurierbarer WebDAV-Wurzelordner
+
+---
+
+## 🗑️ Papierkorb _(NEU in v2.8.0)_
+
+- ✅ **In den Papierkorb verschieben** - Löschen verschiebt eine Notiz in den Papierkorb, statt sie zu entfernen
+- ✅ **Papierkorb-Screen** - Notizen aus den Einstellungen wiederherstellen oder endgültig löschen
+- ✅ **Konfigurierbare Aufbewahrung** _(NEU in v2.10.0)_ - Auto-Bereinigung nach Sofort / 7 / 14 / 30 / 90 Tagen (Standard 30)
+- ✅ **Rückgängig-Snackbar** - Zeitgesteuertes Rückgängig direkt nach dem Löschen
+- ✅ **Server-Löschungen wiederherstellbar** - Auf einem anderen Gerät gelöschte Notizen landen im lokalen Papierkorb, statt zu verschwinden
+
+---
+
+## 🎨 Notiz-Farben _(NEU in v2.5.0)_
+
+- ✅ **Notizen farblich kennzeichnen** - Jeder Notiz eine Farbe zuweisen
+- ✅ **Mehrfachauswahl-Färbung** - Mehrere Notizen auf einmal einfärben
+- ✅ **Nach Farbe filtern** - Nur Notizen einer bestimmten Farbe anzeigen
+- ✅ **Nach Farbe sortieren** _(v2.5.1)_ - Liste nach Farbe gruppieren
+
+---
+
+## 📥 Import
+
+### Google-Keep-Import _(NEU in v2.5.0)_
+- ✅ **Keep-Export-Unterstützung** - Notizen aus einem Google-Keep-(Takeout-)Export importieren
+- ✅ **Checklisten & Farben** - Keep-Checklisten und Label-Farben werden übernommen
+- ✅ **Konflikt-Strategie** - Wählen, wie Duplikate beim Import behandelt werden
+
+### Notizen-Import-Assistent _(NEU in v1.9.0)_
+- ✅ **Von WebDAV oder lokal** - `.md`-, `.json`- oder `.txt`-Dateien importieren
+- ✅ **Alle aus-/abwählen** - Massenauswahl für WebDAV-Importe
+- ✅ **Konflikt-Strategie** - Überspringen, überschreiben oder beide behalten
+
+---
+
 ## 📌 Homescreen-Widgets _(NEU in v1.8.0)_
 
 ### Widget-Features
 - ✅ **Textnotiz-Widget** - Beliebige Notiz auf dem Homescreen anzeigen
 - ✅ **Checklisten-Widget** - Interaktive Checkboxen mit Sync zum Server
+- ✅ **Schnell-Notiz-Widget** _(NEU in v2.2.0)_ - 1×1-Widget, das den Editor für eine neue Notiz öffnet
+- ✅ **Scrollbares Notizlisten-Widget** _(NEU in v2.8.0)_ - Scrollbare Liste von Notizen mit Inline-Markdown
 - ✅ **5 Größenklassen** - SMALL, NARROW_MED, NARROW_TALL, WIDE_MED, WIDE_TALL
 - ✅ **Material You Farben** - Dynamische Farben passend zum System-Theme
 - ✅ **Einstellbare Transparenz** - Hintergrund-Opazität (0-100%)
@@ -99,14 +160,17 @@
 - ✅ **Nahtlose Options-Leiste** _(v1.9.0)_ - Hintergrund entfernt für saubereren Look
 - ✅ **Checklisten-Durchstreichung** _(v1.9.0)_ - Erledigte Items zeigen Durchstreichung im Widget
 - ✅ **Auto-Refresh beim Verlassen** _(v1.9.0)_ - Widgets aktualisieren beim Verlassen der App
+- ✅ **Schriftgröße pro Widget** _(v2.8.0)_ - Unabhängige Schriftgröße je Widget
+- ✅ **Listen-Widget-Optionen** _(v2.8.0)_ - Header/Angeheftete/Ordner ausblenden, nach Ordner filtern
+- ✅ **Theme-bewusste Icons** _(v2.7.x)_ - Icons der Options-Leiste passen sich Hell-/Dunkelmodus an
 
 ---
 
 ## 🌍 Mehrsprachigkeit _(NEU in v1.5.0)_
 
 ### Unterstützte Sprachen
-- ✅ **Englisch** - Primäre Sprache (Standard)
-- ✅ **Deutsch** - Vollständige Übersetzung
+11 Sprachen, gepflegt von der Community auf [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/):
+- ✅ **Englisch** (Standard) · **Deutsch** · **Spanisch** · **Italienisch** · **Russisch** · **Ukrainisch** · **Türkisch** · **Hindi** · **Indonesisch** · **Norwegisch Bokmål** · **Chinesisch (vereinfacht)**
 
 ### Sprachauswahl
 - ✅ **Automatische Erkennung** - Folgt der System-Sprache
@@ -228,7 +292,7 @@
 ### Daten-Sicherheit
 - ✅ **Lokale Speicherung** - App-Private Storage (Android)
 - ✅ **WebDAV-Verschlüsselung** - HTTPS für externe Server
-- ✅ **Passwort-Speicherung** - Android SharedPreferences (verschlüsselt)
+- ✅ **Verschlüsselte Zugangsdaten** _(NEU in v2.3.0)_ - WebDAV-Zugangsdaten via Android Keystore verschlüsselt
 - ✅ **Keine Drittanbieter-Libs** - Nur Android SDK + Sardine (WebDAV)
 
 ### Entwickler-Features
@@ -260,7 +324,7 @@
 - ✅ **Smooth Scrolling** - LazyColumn mit Compose
 - ✅ **Material Design 3** - Native Android UI
 - ✅ **Kotlin Coroutines** - Asynchrone Operationen
-- ✅ **Minimale APK-Größe** - ~2 MB
+- ✅ **Kleine APK-Größe** - ~5 MB (R8/ProGuard-optimiert)
 
 ---
 
@@ -268,7 +332,7 @@
 
 ### Plattform
 - ✅ **Android 7.0+** (API 24+)
-- ✅ **Target SDK 36** (Android 15)
+- ✅ **Target SDK 36** (Android 16)
 - ✅ **Kotlin** - Moderne Programmiersprache
 - ✅ **Jetpack Compose** - Deklaratives UI-Framework
 - ✅ **Material Design 3** - Neueste Design-Richtlinien
@@ -315,7 +379,15 @@
 - ✅ **Directory Listing** - Für Download
 - ✅ **PUT/GET** - Upload/Download
 - ✅ **MKCOL** - Ordner erstellen
-- ✅ **DELETE** - Notizen löschen (zukünftig)
+- ✅ **DELETE** - Notizen & leere Ordner löschen
+
+---
+
+## ℹ️ Über & In-App-Infos
+
+- ✅ **In-App-Changelog** _(NEU in v2.9.0)_ - Nativer Changelog-Screen, erreichbar aus den Einstellungen
+- ✅ **„Was ist neu"-Sheet** - Lokalisierte Highlights nach jedem Update, mit „Changelog ansehen"-Button
+- ✅ **Mitwirkende-Screen** _(NEU in v2.9.0)_ - Würdigt alle, die zum Projekt beigetragen haben
 
 ---
 
@@ -337,7 +409,7 @@ Geplant für kommende Versionen – siehe [UPCOMING.md](UPCOMING.md) für die vo
 | Lokales Backup | ✅ | ❌ | ⚠️ Server-Backup |
 | Kein Google-Account | ✅ | ❌ | ✅ |
 | Open Source | ✅ AGPL v3 | ❌ | ✅ AGPL |
-| APK-Größe | ~2 MB | ~50 MB | ~8 MB |
+| APK-Größe | ~5 MB | ~50 MB | ~8 MB |
 | Akku-Verbrauch | ~0.4%/Tag | ~1-2%/Tag | ~0.5%/Tag |
 
 ---
@@ -364,4 +436,4 @@ A: Ja! Lade die APK direkt von GitHub oder nutze F-Droid.
 
 ---
 
-**Letzte Aktualisierung:** v2.1.0 (2026-03-26)
+**Letzte Aktualisierung:** v2.9.0 (2026-06-22)

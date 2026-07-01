@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.app.Application
+import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.models.Note
@@ -9,6 +11,8 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.storage.TrashManager
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncScheduler
+import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.trashRetentionDays
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,12 +30,24 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
     private val ioDispatcher = Dispatchers.IO
     private val storage = NotesStorage(application)
     private val folderStore = FolderStore(application)
+    private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    private val syncScheduler by lazy { SyncScheduler(application) }
+
+    private val _retentionDays = MutableStateFlow(prefs.trashRetentionDays())
+    val retentionDays: StateFlow<Int> = _retentionDays.asStateFlow()
+
     private val trashManager = TrashManager(
         storage = storage,
         pendingServerDeletions = PendingServerDeletions(application),
-        folderStore = folderStore
+        folderStore = folderStore,
+        retentionMs = { _retentionDays.value * Constants.DAY_MS }
     )
-    private val syncScheduler by lazy { SyncScheduler(application) }
+
+    fun setRetentionDays(days: Int) {
+        val clamped = days.coerceIn(Constants.MIN_TRASH_RETENTION_DAYS, Constants.MAX_TRASH_RETENTION_DAYS)
+        prefs.edit { putInt(Constants.KEY_TRASH_RETENTION_DAYS, clamped) }
+        _retentionDays.value = clamped
+    }
 
     private val _trashedNotes = MutableStateFlow<List<Note>>(emptyList())
     val trashedNotes: StateFlow<List<Note>> = _trashedNotes.asStateFlow()

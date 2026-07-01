@@ -22,7 +22,8 @@ class TrashManager(
     private val storage: NotesStorage,
     private val pendingServerDeletions: PendingServerDeletions,
     private val folderStore: FolderStore,
-    private val clock: () -> Long = { System.currentTimeMillis() }
+    private val clock: () -> Long = { System.currentTimeMillis() },
+    private val retentionMs: () -> Long = { Constants.TRASH_RETENTION_MS }
 ) {
     companion object {
         private const val TAG = "TrashManager"
@@ -101,8 +102,9 @@ class TrashManager(
      */
     suspend fun purgeExpired(): Int {
         val now = clock()
+        val threshold = retentionMs()
         val expired = storage.loadTrashedNotes(forceReload = true)
-            .filter { it.trashedAt != null && now - it.trashedAt >= Constants.TRASH_RETENTION_MS }
+            .filter { it.trashedAt != null && now - it.trashedAt >= threshold }
         if (expired.isNotEmpty()) {
             purge(expired)
             Logger.d(TAG, "⏰ Auto-purged ${expired.size} expired note(s) from trash")

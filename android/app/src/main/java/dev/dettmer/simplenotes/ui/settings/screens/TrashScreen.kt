@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.RestoreFromTrash
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.ui.settings.components.RadioOption
+import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.Constants
@@ -52,9 +55,11 @@ fun TrashScreen(
 ) {
     val notes by viewModel.trashedNotes.collectAsState()
     val isReady by viewModel.isReady.collectAsState()
+    val retentionDays by viewModel.retentionDays.collectAsState()
 
     var pendingPurge by remember { mutableStateOf<Note?>(null) }
     var showEmptyConfirm by remember { mutableStateOf(false) }
+    var showRetentionDialog by remember { mutableStateOf(false) }
 
     val restoredMessage = stringResource(R.string.snackbar_note_restored)
     val emptiedMessage = stringResource(R.string.snackbar_trash_emptied)
@@ -63,6 +68,12 @@ fun TrashScreen(
         title = stringResource(R.string.trash_title),
         onBack = onBack,
         actions = {
+            IconButton(onClick = { showRetentionDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.trash_retention_settings_cd)
+                )
+            }
             if (notes.isNotEmpty()) {
                 IconButton(onClick = { showEmptyConfirm = true }) {
                     Icon(
@@ -73,35 +84,44 @@ fun TrashScreen(
             }
         }
     ) { padding ->
-        if (isReady && notes.isEmpty()) {
-            EmptyState(padding)
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(vertical = Dimensions.SpacingMedium)
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.trash_retention_hint, Constants.TRASH_RETENTION_DAYS),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(
-                            horizontal = Dimensions.SpacingLarge,
-                            vertical = Dimensions.SpacingMedium
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            if (isReady && notes.isEmpty()) {
+                EmptyState(Modifier.weight(1f))
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(vertical = Dimensions.SpacingMedium)
+                ) {
+                    item {
+                        Text(
+                            text = if (retentionDays == 0) {
+                                stringResource(R.string.trash_retention_hint_immediate)
+                            } else {
+                                stringResource(R.string.trash_retention_hint, retentionDays)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(
+                                horizontal = Dimensions.SpacingLarge,
+                                vertical = Dimensions.SpacingMedium
+                            )
                         )
-                    )
-                }
-                items(notes, key = { it.id }) { note ->
-                    TrashItem(
-                        note = note,
-                        onRestore = {
-                            viewModel.restore(note)
-                            onShowSnackbar(restoredMessage)
-                        },
-                        onDeleteForever = { pendingPurge = note }
-                    )
+                    }
+                    items(notes, key = { it.id }) { note ->
+                        TrashItem(
+                            note = note,
+                            retentionDays = retentionDays,
+                            onRestore = {
+                                viewModel.restore(note)
+                                onShowSnackbar(restoredMessage)
+                            },
+                            onDeleteForever = { pendingPurge = note }
+                        )
+                    }
                 }
             }
         }
@@ -128,6 +148,14 @@ fun TrashScreen(
                     Text(stringResource(R.string.cancel))
                 }
             }
+        )
+    }
+
+    if (showRetentionDialog) {
+        RetentionDialog(
+            selectedDays = retentionDays,
+            onSelect = { viewModel.setRetentionDays(it) },
+            onDismiss = { showRetentionDialog = false }
         )
     }
 
@@ -167,11 +195,9 @@ fun TrashScreen(
 }
 
 @Composable
-private fun EmptyState(padding: PaddingValues) {
+private fun EmptyState(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -191,7 +217,7 @@ private fun EmptyState(padding: PaddingValues) {
 }
 
 @Composable
-private fun TrashItem(note: Note, onRestore: () -> Unit, onDeleteForever: () -> Unit) {
+private fun TrashItem(note: Note, retentionDays: Int, onRestore: () -> Unit, onDeleteForever: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -220,8 +246,9 @@ private fun TrashItem(note: Note, onRestore: () -> Unit, onDeleteForever: () -> 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                val days = remember(note.trashedAt, retentionDays) { daysLeft(note, retentionDays) }
                 Text(
-                    text = pluralStringResource(R.plurals.trash_days_left, daysLeft(note), daysLeft(note)),
+                    text = pluralStringResource(R.plurals.trash_days_left, days, days),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -245,9 +272,43 @@ private fun TrashItem(note: Note, onRestore: () -> Unit, onDeleteForever: () -> 
 }
 
 /** Verbleibende Tage bis zur automatischen Löschung (mind. 0, aufgerundet). */
-private fun daysLeft(note: Note): Int {
-    val trashedAt = note.trashedAt ?: return Constants.TRASH_RETENTION_DAYS
-    val dayMs = 24L * 60L * 60L * 1000L
-    val remaining = (Constants.TRASH_RETENTION_MS - (System.currentTimeMillis() - trashedAt)).coerceAtLeast(0L)
-    return ((remaining + dayMs - 1) / dayMs).toInt()
+private fun daysLeft(note: Note, retentionDays: Int): Int {
+    val trashedAt = note.trashedAt ?: return retentionDays
+    val retentionMs = retentionDays * Constants.DAY_MS
+    val remaining = (retentionMs - (System.currentTimeMillis() - trashedAt)).coerceAtLeast(0L)
+    return ((remaining + Constants.DAY_MS - 1) / Constants.DAY_MS).toInt()
+}
+
+@Composable
+private fun RetentionDialog(selectedDays: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.trash_retention_duration_title)) },
+        text = { RetentionSection(selectedDays = selectedDays, onSelect = onSelect) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        }
+    )
+}
+
+@Composable
+private fun RetentionSection(selectedDays: Int, onSelect: (Int) -> Unit) {
+    val options = listOf(
+        RadioOption(
+            value = 0,
+            title = stringResource(R.string.trash_retention_immediate),
+            subtitle = stringResource(R.string.trash_retention_immediate_hint)
+        ),
+        RadioOption(value = 7, title = pluralStringResource(R.plurals.days, 7, 7)),
+        RadioOption(value = 14, title = pluralStringResource(R.plurals.days, 14, 14)),
+        RadioOption(value = 30, title = pluralStringResource(R.plurals.days, 30, 30)),
+        RadioOption(value = 90, title = pluralStringResource(R.plurals.days, 90, 90))
+    )
+    SettingsRadioGroup(
+        options = options,
+        selectedValue = selectedDays,
+        onValueSelected = onSelect
+    )
 }
