@@ -38,7 +38,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -61,6 +63,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "MainViewModel"
         private const val SNACKBAR_UNDO_DELAY_MS = 3500L
+        private const val SEARCH_DEBOUNCE_MS = 300L
         const val EXTRA_FOLDER = "extra_folder"
     }
 
@@ -274,12 +277,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * `folderKey` (verhindert Flackern, weil die abgehende Pane sonst kurz die Notizen des neuen
      * Ordners zeigt). Ordner-bezogene Auswahl (selectAll) filtert `.value` ad hoc nach `_currentFolder`.
      */
+    @OptIn(kotlinx.coroutines.FlowPreview::class) // debounce(transform) is a preview API
     val sortedNotesUnfoldered: StateFlow<List<Note>> = combine(
         _notes,
         _sortOption,
         _sortDirection,
         filterCriteria, // 🆕 v2.5.0: vorher _noteFilter
-        _searchQuery
+        // 🔧 Perf: debounce search so every keystroke doesn't re-filter the full note list.
+        // Variable delay: 0ms when clearing the query so "clear search" feels instant.
+        _searchQuery.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
     ) { notes, option, direction, filterCriteria, query ->
         val (filter, colorFilter) = filterCriteria
         val filtered = filterNotes(notes, filter, colorFilter)
@@ -301,11 +307,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         previousFirstSortedNoteId = newFirstId
 
         result
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList()
-    )
+    }.flowOn(Dispatchers.Default) // 🔧 Perf: filter/search/sort of the full list off the Main thread
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
 
     // ═══════════════════════════════════════════════════════════════════════
     // Sync State
@@ -358,9 +365,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val scrollToTop: StateFlow<Boolean> = _scrollToTop.asStateFlow()
 
     // Track first note ID in sorted order to detect new notes at top
+    // 🔧 flowOn(Dispatchers.Default) on sortedNotesUnfoldered moves the combine lambda off Main,
+    // so this is now written from a background thread as well as from Main (notifyReturningFromEditor).
+    @Volatile
     private var previousFirstSortedNoteId: String? = null
 
     // Flag: set when returning from editor, cleared after loadNotes comparison
+    @Volatile
     private var expectNewNoteCheck = false
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1048,10 +1059,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             SortOption.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
             SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }
                 .thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Typen
-            SortOption.COLOR -> compareBy<Note> { note ->
-                NoteColorPalette.slots.indexOfFirst { slot -> slot.hex == note.color }
-                    .takeIf { idx -> idx >= 0 } ?: Int.MAX_VALUE
-            }.thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Farbe
+            SortOption.COLOR -> {
+                // 🔧 Perf: Index-Map einmal vorab bauen statt pro Notiz die Palette zu durchsuchen
+                val hexToIndex = NoteColorPalette.slots.withIndex().associate { (i, slot) -> slot.hex to i }
+                compareBy<Note> { note -> hexToIndex[note.color] ?: Int.MAX_VALUE }
+                    .thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Farbe
+            }
         }
 
         return when (direction) {
@@ -1112,18 +1125,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
         }
         byType.groupingBy { it.color }.eachCount()
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyMap()
-    )
+    }.flowOn(Dispatchers.Default) // 🔧 Perf: filter+group of the full list off the Main thread
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyMap()
+        )
 
     // ─── 🆕 v2.7.0 (Folders) ──────────────────────────────────────────────
 
     /** Anzahl Notizen je (bekanntem) Ordner — für die Folder-Karten im Root. */
     val folderNoteCounts: StateFlow<Map<String, Int>> = combine(_notes, _folders) { notes, folders ->
-        folders.associate { f -> f.name to notes.count { it.folderName == f.name } }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        // 🔧 Perf: eine Gruppierung statt einem .count{}-Scan der vollen Liste pro Ordner
+        val counts = notes.groupingBy { it.folderName }.eachCount()
+        folders.associate { f -> f.name to (counts[f.name] ?: 0) }
+    }.flowOn(Dispatchers.Default) // 🔧 Perf: Gruppierung der vollen Liste off Main thread
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** 🆕 v2.8.0 (Local-Only Folders): [localOnly] markiert den Ordner VOR dem Anlegen als
      *  „nur lokal", damit kein zwischenzeitlicher Sync-Lauf ihn auf den Server hochlädt. */
