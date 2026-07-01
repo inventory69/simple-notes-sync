@@ -677,19 +677,42 @@ fun String.escapeJson(): String {
 // ── Streaming-JSON-Helfer für Note.fromJson() (Perf: Cold-Start bei tausenden Notizen) ──
 
 private fun JsonReader.nextStringOrNull(): String? =
-    if (peek() == JsonToken.NULL) { nextNull(); null } else nextString()
+    if (peek() == JsonToken.NULL) {
+        nextNull()
+        null
+    } else {
+        nextString()
+    }
 
 private fun JsonReader.nextLongOrNull(): Long? =
-    if (peek() == JsonToken.NULL) { nextNull(); null } else nextLong()
+    if (peek() == JsonToken.NULL) {
+        nextNull()
+        null
+    } else {
+        nextLong()
+    }
 
 private fun JsonReader.nextBooleanOrNull(): Boolean? =
-    if (peek() == JsonToken.NULL) { nextNull(); null } else nextBoolean()
+    if (peek() == JsonToken.NULL) {
+        nextNull()
+        null
+    } else {
+        nextBoolean()
+    }
 
 private fun JsonReader.nextIntOrNull(): Int? =
-    if (peek() == JsonToken.NULL) { nextNull(); null } else nextInt()
+    if (peek() == JsonToken.NULL) {
+        nextNull()
+        null
+    } else {
+        nextInt()
+    }
 
 private fun JsonReader.nextStringListOrNull(): List<String>? {
-    if (peek() == JsonToken.NULL) { nextNull(); return null }
+    if (peek() == JsonToken.NULL) {
+        nextNull()
+        return null
+    }
     val list = mutableListOf<String>()
     beginArray()
     while (hasNext()) list.add(nextString())
@@ -698,7 +721,10 @@ private fun JsonReader.nextStringListOrNull(): List<String>? {
 }
 
 private fun JsonReader.nextChecklistItemsOrNull(): MutableList<ChecklistItem>? {
-    if (peek() == JsonToken.NULL) { nextNull(); return null }
+    if (peek() == JsonToken.NULL) {
+        nextNull()
+        return null
+    }
     val items = mutableListOf<ChecklistItem>()
     beginArray()
     while (hasNext()) items.add(nextChecklistItem())
