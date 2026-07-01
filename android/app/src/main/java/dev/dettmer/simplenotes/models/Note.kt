@@ -60,10 +60,6 @@ data class Note(
      *         App-Versionen (v1.3.x) die Notiz als Text anzeigen können.
      */
     fun toJson(): String {
-        val gson = com.google.gson.GsonBuilder()
-            .setPrettyPrinting()
-            .create()
-
         // v1.4.1: Für Checklisten den Fallback-Content generieren
         val noteToSerialize = if (noteType == NoteType.CHECKLIST && checklistItems != null) {
             this.copy(content = generateChecklistFallbackContent())
@@ -71,7 +67,7 @@ data class Note(
             this
         }
 
-        return gson.toJson(noteToSerialize)
+        return prettyGson.toJson(noteToSerialize)
     }
 
     /**
@@ -172,12 +168,18 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
     companion object {
         private const val TAG = "Note"
 
+        // 🔧 Perf: Gson-Instanzen sind zustandslos/thread-safe und cachen ihre reflektionsbasierten
+        // Type-Adapter intern — eine neue Instanz pro fromJson()/toJson()-Aufruf verwirft diesen
+        // Cache und baut ihn bei jeder einzelnen Notiz neu auf. Bei tausenden Notizen (Cold-Start-Load)
+        // summiert sich das spürbar; geteilte Instanzen wiederverwenden behebt das.
+        private val gson = com.google.gson.Gson()
+        private val prettyGson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+
         /**
          * Parst JSON zu Note-Objekt mit Backward Compatibility für alte Notizen ohne noteType
          */
         fun fromJson(json: String): Note? {
             return try {
-                val gson = com.google.gson.Gson()
                 val jsonObject = com.google.gson.JsonParser.parseString(json).asJsonObject
 
                 // Backward Compatibility: Alte Notizen ohne noteType bekommen TEXT
@@ -202,13 +204,19 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 }
 
                 // Parsen der Basis-Note
-                val rawNote = gson.fromJson(json, NoteRaw::class.java)
+                // 🔧 Perf: aus dem bereits geparsten JsonObject binden statt den String ein
+                // zweites Mal komplett zu parsen (jsonObject wurde oben schon aus json gebaut)
+                val rawNote = gson.fromJson(jsonObject, NoteRaw::class.java)
 
                 // Checklist-Items parsen (kann null sein)
-                val checklistItemsType = object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
+                // 🔧 Perf: TypeToken (reflection-basierte Typauflösung) nur bauen, wenn
+                // tatsächlich Checklist-Items vorhanden sind — sonst für jede reine
+                // Text-Notiz unnötiger Overhead beim Massen-Laden.
                 var checklistItems: List<ChecklistItem>? = if (jsonObject.has("checklistItems") &&
                     !jsonObject.get("checklistItems").isJsonNull
                 ) {
+                    val checklistItemsType =
+                        object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
                     gson.fromJson<List<ChecklistItem>>(
                         jsonObject.get("checklistItems"),
                         checklistItemsType
