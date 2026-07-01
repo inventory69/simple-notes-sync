@@ -869,7 +869,7 @@
     <!-- ============================= -->
     <string name="settings_security">Sicherheit</string>
     <string name="settings_security_subtitle_on">App-Sperre aktiv</string>
-    <string name="settings_security_subtitle_off">Aus</string>
+    <string name="settings_security_subtitle_off">Biometrische Entsperrung aus</string>
     <string name="app_lock_section">App-Sperre</string>
     <string name="app_lock_toggle">Biometrische Entsperrung</string>
     <string name="app_lock_toggle_subtitle">App mit Fingerabdruck, Gesicht oder Geräte-PIN entsperren</string>

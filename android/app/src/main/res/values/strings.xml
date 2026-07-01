@@ -941,7 +941,7 @@
     <!-- ============================= -->
     <string name="settings_security">Security</string>
     <string name="settings_security_subtitle_on">App lock active</string>
-    <string name="settings_security_subtitle_off">Off</string>
+    <string name="settings_security_subtitle_off">Biometric unlock off</string>
     <string name="app_lock_section">App lock</string>
     <string name="app_lock_toggle">Biometric unlock</string>
     <string name="app_lock_toggle_subtitle">Unlock the app with fingerprint, face, or device PIN</string>
