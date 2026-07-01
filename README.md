@@ -74,13 +74,15 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 - 🗑️ **Trash** - Deleted notes move to a recycle bin with configurable retention (0–90 days)
 - ✅ **Checklists** - Tap-to-check, drag & drop, convert text ↔ checklist
 - ✍️ **Live Markdown** - Live highlighting in the editor and rendered list/grid previews
+- 📋 **Rich clipboard paste** - HTML paste from Telegram, Word, Google Docs & browsers converts to Markdown
 - 🎨 **Note colors** - Color-code notes, then filter and sort by color
 - 📥 **Google Keep import** - Bring your notes over from a Keep export
-- 📊 **Flexible views** - List or grid layout, 1–5 column scaling, adjustable font size
+- 📊 **Flexible views** - List or grid layout, 1–5 column scaling, adjustable font size, collapsible & reorderable sections
 - 🧩 **Widgets** - Single-note, scrollable note-list, and quick-new-note home screen widgets
 - 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
 - ⚡ **Parallel sync** - Uploads/downloads up to 5 notes simultaneously
 - 🔒 **Self-hosted** - Your data stays with you (WebDAV, encrypted credentials)
+- 🔐 **App lock** - Optional biometric/PIN unlock with screenshot protection
 - 💾 **Local backup** - Export/Import as JSON file
 - 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
 - 💻 **Desktop editor** _(beta)_ - Edit your notes on Windows & Linux with [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop), the WebDAV-synced companion app

@@ -53,6 +53,7 @@
 - ✅ **Copy & duplicate** _(NEW in v2.6.0)_ - Copy note text or duplicate checklist items via the overflow/context menu
 - ✅ **Append shared text** _(NEW in v2.6.0)_ - Append text shared from other apps to an existing note
 - ✅ **Checklist item to calendar** _(NEW in v2.8.0)_ - Per-item "Add to calendar" entry in the context menu
+- ✅ **Rich clipboard paste** _(NEW in v2.10.0)_ - HTML paste (Telegram, Word, Google Docs, browsers) converts to Markdown - bold/italic/links/lists/headings/code/blockquotes, with a plain-text fallback
 
 ---
 
@@ -67,6 +68,7 @@
 - ✅ **Grid as default** _(v1.8.0)_ - New installations default to grid view
 - ✅ **Pinned notes** _(NEW in v2.6.0)_ - Pinned notes appear in a dedicated section at the top
 - ✅ **Markdown previews** _(NEW in v2.8.0)_ - List/grid cards render Markdown, incl. checklist ☑/☐ prefixes and code blocks
+- ✅ **Collapsible sections** _(NEW in v2.10.0)_ - Collapse the Pinned/Folders/Notes headers, and long-press the header arrow to reorder them; both persist across restarts
 
 ### Note Sorting _(NEW in v1.8.0)_
 - ✅ **Sort by Updated** - Newest or oldest first
@@ -294,6 +296,11 @@
 - ✅ **WebDAV encryption** - HTTPS for external servers
 - ✅ **Encrypted credentials** _(NEW in v2.3.0)_ - WebDAV credentials encrypted via the Android Keystore
 - ✅ **No third-party libs** - Only Android SDK + Sardine (WebDAV)
+
+### App Lock _(NEW in v2.10.0)_
+- ✅ **Biometric / device-credential unlock** - Opt-in lock backed by fingerprint, face, or device PIN
+- ✅ **Configurable grace period** - Choose how long the app stays unlocked in the background before re-locking
+- ✅ **Screenshot protection** - `FLAG_SECURE` blocks screenshots/screen recording and hides content in the Recents thumbnail while locked
 
 ### Developer Features
 - ✅ **File logging** - Optional, only when enabled _(NEW in v1.3.2)_

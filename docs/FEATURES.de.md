@@ -53,6 +53,7 @@
 - ✅ **Kopieren & Duplizieren** _(NEU in v2.6.0)_ - Notiztext kopieren oder Checklisten-Items duplizieren via Überlauf-/Kontextmenü
 - ✅ **Geteilten Text anhängen** _(NEU in v2.6.0)_ - Aus anderen Apps geteilten Text an eine bestehende Notiz anhängen
 - ✅ **Checklisten-Item in Kalender** _(NEU in v2.8.0)_ - „In Kalender eintragen" pro Item im Kontextmenü
+- ✅ **Formatiertes Einfügen** _(NEU in v2.10.0)_ - HTML-Einfügen (Telegram, Word, Google Docs, Browser) wird zu Markdown konvertiert - Fett/Kursiv/Links/Listen/Überschriften/Code/Zitate, mit Klartext-Fallback
 
 ---
 
@@ -67,6 +68,7 @@
 - ✅ **Grid als Standard** _(v1.8.0)_ - Neue Installationen starten im Grid-Modus
 - ✅ **Angeheftete Notizen** _(NEU in v2.6.0)_ - Angeheftete Notizen erscheinen in einem eigenen Bereich ganz oben
 - ✅ **Markdown-Vorschauen** _(NEU in v2.8.0)_ - Listen-/Grid-Karten rendern Markdown, inkl. Checklisten-☑/☐-Präfixe und Codeblöcke
+- ✅ **Einklappbare Abschnitte** _(NEU in v2.10.0)_ - Angeheftet/Ordner/Notizen-Bereiche einklappen, und per Long-Press auf den Pfeil im Header neu anordnen; beides bleibt über Neustarts erhalten
 
 ### Notiz-Sortierung _(NEU in v1.8.0)_
 - ✅ **Nach Änderungsdatum** - Neueste oder älteste zuerst
@@ -294,6 +296,11 @@
 - ✅ **WebDAV-Verschlüsselung** - HTTPS für externe Server
 - ✅ **Verschlüsselte Zugangsdaten** _(NEU in v2.3.0)_ - WebDAV-Zugangsdaten via Android Keystore verschlüsselt
 - ✅ **Keine Drittanbieter-Libs** - Nur Android SDK + Sardine (WebDAV)
+
+### App-Sperre _(NEU in v2.10.0)_
+- ✅ **Biometrische/Geräte-Entsperrung** - Optionale Sperre via Fingerabdruck, Gesichtserkennung oder Geräte-PIN
+- ✅ **Konfigurierbare Karenzzeit** - Einstellen, wie lange die App im Hintergrund entsperrt bleibt, bevor sie erneut sperrt
+- ✅ **Screenshot-Schutz** - `FLAG_SECURE` blockiert Screenshots/Bildschirmaufnahmen und verbirgt Inhalte im Recents-Thumbnail während die App gesperrt ist
 
 ### Entwickler-Features
 - ✅ **Datei-Logging** - Optional, nur bei Aktivierung _(NEU in v1.3.2)_

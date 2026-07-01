@@ -74,13 +74,15 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 - 🗑️ **Papierkorb** – Gelöschte Notizen wandern in den Papierkorb mit konfigurierbarer Aufbewahrung (0–90 Tage)
 - ✅ **Checklisten** – Tap-to-Check, Drag & Drop, Umwandlung Text ↔ Checkliste
 - ✍️ **Live-Markdown** – Live-Hervorhebung im Editor und gerenderte Listen-/Grid-Vorschauen
+- 📋 **Formatiertes Einfügen** – HTML-Einfügen aus Telegram, Word, Google Docs & Browsern wird zu Markdown konvertiert
 - 🎨 **Notiz-Farben** – Notizen farblich kennzeichnen, danach filtern und sortieren
 - 📥 **Google-Keep-Import** – Notizen aus einem Keep-Export übernehmen
-- 📊 **Flexible Ansichten** – Listen- oder Grid-Layout, 1–5 Spalten, einstellbare Schriftgröße
+- 📊 **Flexible Ansichten** – Listen- oder Grid-Layout, 1–5 Spalten, einstellbare Schriftgröße, einklapp- und neu anordenbare Bereiche
 - 🧩 **Widgets** – Einzelnotiz-, scrollbares Notizlisten- und Schnell-Notiz-Widget
 - 🔄 **Konfigurierbare Sync-Trigger** – onSave, onResume, WiFi, periodisch (15/30/60 Min), Boot
 - ⚡ **Paralleler Sync** – Lädt bis zu 5 Notizen gleichzeitig hoch/herunter
 - 🔒 **Self-hosted** – Deine Daten bleiben bei dir (WebDAV, verschlüsselte Zugangsdaten)
+- 🔐 **App-Sperre** – Optionale biometrische/PIN-Entsperrung mit Screenshot-Schutz
 - 💾 **Lokales Backup** – Export/Import als JSON-Datei
 - 🖥️ **Desktop-Integration** – Markdown-Export für Obsidian, VS Code, Typora
 - 💻 **Desktop-Editor** _(Beta)_ – Notizen unter Windows & Linux bearbeiten mit [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop), der WebDAV-synchronisierten Begleit-App
