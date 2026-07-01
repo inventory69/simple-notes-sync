@@ -17,6 +17,11 @@
     <string name="selection_count">%d ausgewählt</string>
     <string name="section_pinned">Angeheftet</string>
     <string name="section_notes">Notizen</string>
+    <string name="action_collapse_section">Abschnitt „%1$s" einklappen</string>
+    <string name="action_expand_section">Abschnitt „%1$s" ausklappen</string>
+    <string name="action_move_section_up">Nach oben verschieben</string>
+    <string name="action_move_section_down">Nach unten verschieben</string>
+    <string name="section_reorder_hint">Tipp: Halte den Pfeil-Button gedrückt, um Abschnitte zu verschieben.</string>
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->

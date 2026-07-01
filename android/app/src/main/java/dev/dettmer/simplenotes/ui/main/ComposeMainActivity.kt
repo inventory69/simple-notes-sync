@@ -238,7 +238,10 @@ class ComposeMainActivity : FragmentActivity() {
                     )
 
                     // v1.8.0: Post-Update Changelog (shows once after update)
-                    UpdateChangelogSheet(onViewChangelog = { openSettingsChangelog() })
+                    UpdateChangelogSheet(
+                        onViewChangelog = { openSettingsChangelog() },
+                        onDismissed = { viewModel.onChangelogDismissed() } // 🆕 unlocks the section-reorder hint gate
+                    )
                 } // AppLockGate
             }
         }

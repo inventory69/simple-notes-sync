@@ -18,6 +18,11 @@
     <string name="selection_count">%d selected</string>
     <string name="section_pinned">Pinned</string>
     <string name="section_notes">Notes</string>
+    <string name="action_collapse_section">Collapse %1$s</string>
+    <string name="action_expand_section">Expand %1$s</string>
+    <string name="action_move_section_up">Move up</string>
+    <string name="action_move_section_down">Move down</string>
+    <string name="section_reorder_hint">Tip: Long-press the arrow button to reorder sections.</string>
 
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
