@@ -1,0 +1,10 @@
+🚪 v2.10.0 - Lock & Tidy
+
+• App lock: biometric/PIN unlock, blocks screenshots while active
+• Trash: configurable auto-delete (Immediately-90 days)
+• Paste rich text (Word/Docs/Telegram) as Markdown
+• Collapsible & reorderable list sections
+• Fix: app freeze scrolling notes with long previews
+• Updated translations: ES, IT, ID, NB, ZH-Hans
+
+Thanks to @xdpirate for the retention request!
