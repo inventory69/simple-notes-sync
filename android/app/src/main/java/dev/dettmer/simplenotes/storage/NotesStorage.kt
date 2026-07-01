@@ -9,8 +9,13 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
 class NotesStorage(private val context: Context) {
@@ -19,7 +24,13 @@ class NotesStorage(private val context: Context) {
 
         // 🔒 v1.7.2 (IMPL_001): Mutex für thread-sichere Deletion Tracker Operationen
         private val deletionTrackerMutex = Mutex()
+
+        // 🔧 Perf: begrenzte Parallelität beim Einlesen vieler Notiz-Dateien
+        // (verhindert tausende gleichzeitig offene File-Handles bei sehr vielen Notizen)
+        private const val PARALLEL_READ_LIMIT = 64
     }
+
+    private val readSemaphore = Semaphore(PARALLEL_READ_LIMIT)
 
     // ─── In-memory cache for loadAllNotes (REF-023) ───────────────────────
     private val cacheMutex = Mutex()
@@ -110,17 +121,23 @@ class NotesStorage(private val context: Context) {
                 return@withLock cached
             }
             val versionBefore = cacheVersion.get()
-            val notes = notesDir.listFiles()
-                ?.filter { it.extension == "json" }
-                ?.mapNotNull { file ->
-                    try {
-                        Note.fromJson(file.readText())
-                    } catch (_: java.io.FileNotFoundException) {
-                        // File was deleted between listFiles() and readText() — skip it
-                        null
+            val files = notesDir.listFiles()?.filter { it.extension == "json" }.orEmpty()
+            // 🔧 Perf: parallele Reads (statt sequenziell) — mit vielen tausend Notiz-Dateien
+            // ist ein Read pro Datei nacheinander der dominante Cold-Start-Kostenfaktor.
+            val notes = coroutineScope {
+                files.map { file ->
+                    async {
+                        readSemaphore.withPermit {
+                            try {
+                                Note.fromJson(file.readText())
+                            } catch (_: java.io.FileNotFoundException) {
+                                // File was deleted between listFiles() and readText() — skip it
+                                null
+                            }
+                        }
                     }
-                }
-                .orEmpty()
+                }.awaitAll().filterNotNull()
+            }
             // Only populate cache if no invalidation happened during disk read
             if (cacheVersion.get() == versionBefore) {
                 cachedNotes = notes

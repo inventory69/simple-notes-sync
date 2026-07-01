@@ -69,6 +69,16 @@ class NotesStorageTest {
         assertTrue(all.map { it.id }.containsAll(listOf("a", "b", "c")))
     }
 
+    @Test fun `loadAllNotes reads a large number of notes without dropping or duplicating`() = runBlocking {
+        val ids = (1..500).map { "note-$it" }
+        ids.forEach { storage.saveNote(note(it)) }
+
+        val all = storage.loadAllNotes(forceReload = true)
+
+        assertEquals(ids.size, all.size)
+        assertEquals(ids.toSet(), all.map { it.id }.toSet())
+    }
+
     // ─── cache ────────────────────────────────────────────────────────────────
 
     @Test fun `second loadAllNotes within TTL returns cached result`() = runBlocking {
