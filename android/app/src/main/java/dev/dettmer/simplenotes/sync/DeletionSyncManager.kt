@@ -45,12 +45,8 @@ internal class DeletionSyncManager(private val urlBuilder: SyncUrlBuilder) {
         try {
             val tracker = downloadRemote(sardine, url)
             val now = System.currentTimeMillis()
-            val existing = tracker.deletedNotes.find { it.id == noteId }
-            if (existing == null || now > existing.deletedAt) {
-                tracker.deletedNotes.removeIf { it.id == noteId }
-                tracker.deletedNotes.add(DeletionRecord(noteId, now, deviceId))
-            }
-            tracker.deletedNotes.removeIf { now - it.deletedAt > Constants.TRASH_RETENTION_MS }
+            tracker.upsertIfNewer(DeletionRecord(noteId, now, deviceId))
+            tracker.pruneOlderThan(Constants.TRASH_RETENTION_MS, now)
             sardine.put(url, tracker.toJson().toByteArray(Charsets.UTF_8), "application/json")
             Logger.d(TAG, "📝 deletions.json updated: added $noteId, ${tracker.deletedNotes.size} entries")
         } catch (e: Exception) {

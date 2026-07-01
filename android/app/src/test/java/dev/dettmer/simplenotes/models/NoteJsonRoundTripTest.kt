@@ -245,6 +245,87 @@ class NoteJsonRoundTripTest {
         assertTrue("Markdown must not contain trashed metadata", !md.contains("trashed"))
     }
 
+    // ───── Streaming-Parser (v2.10): unbekanntes Feld wird sauber übersprungen ─────
+    @Test fun `json_unknownField_isSkippedCleanly`() {
+        val json = """
+            {
+              "id": "n-unknown",
+              "title": "T",
+              "content": "Body",
+              "createdAt": 1700000000000,
+              "updatedAt": 1700000000000,
+              "deviceId": "dev-1",
+              "syncStatus": "LOCAL_ONLY",
+              "noteType": "TEXT",
+              "futureFieldFromNewerClient": {"nested": [1, 2, 3], "x": "y"}
+            }
+        """.trimIndent()
+
+        val note = Note.fromJson(json)
+        assertNotNull(note)
+        assertEquals("T", note!!.title)
+        assertEquals("Body", note.content)
+    }
+
+    // ───── Streaming-Parser (v2.10): Checklist-Item mit allen Feldern überlebt Round-Trip ─────
+    @Test fun `json_roundTrip_checklistWithAllItemFields`() {
+        val items = listOf(
+            ChecklistItem(
+                id = "item-1",
+                text = "Buy milk",
+                isChecked = true,
+                order = 0,
+                originalOrder = 3,
+                createdAt = 1_701_000_000_000L,
+                indentationLevel = 2
+            )
+        )
+        val note = baseNote().copy(
+            title = "Shopping",
+            content = "",
+            noteType = NoteType.CHECKLIST,
+            checklistItems = items
+        )
+        val round = Note.fromJson(note.toJson())
+
+        assertNotNull(round)
+        assertEquals(1, round!!.checklistItems?.size)
+        val item = round.checklistItems!![0]
+        assertEquals("item-1", item.id)
+        assertEquals("Buy milk", item.text)
+        assertEquals(true, item.isChecked)
+        assertEquals(0, item.order)
+        assertEquals(3, item.originalOrder)
+        assertEquals(1_701_000_000_000L, item.createdAt)
+        assertEquals(2, item.indentationLevel)
+    }
+
+    // ───── Streaming-Parser (v2.10): Korruptions-Fix (Checklist-Pattern im Titel, JSON-Pfad) ─────
+    @Test fun `json_corruptedTitleWithChecklistPattern_isRescued`() {
+        val json = """
+            {
+              "id": "corrupt-1",
+              "title": "Shopping- [ ] Milk- [x] Bread",
+              "content": "",
+              "createdAt": 1700000000000,
+              "updatedAt": 1700000000000,
+              "deviceId": "dev-1",
+              "syncStatus": "LOCAL_ONLY",
+              "noteType": "CHECKLIST"
+            }
+        """.trimIndent()
+
+        val note = Note.fromJson(json)
+        assertNotNull(note)
+        assertEquals("Shopping", note!!.title)
+        val items = note.checklistItems
+        assertEquals(2, items?.size)
+        assertEquals("Milk", items!![0].text)
+        assertEquals(false, items[0].isChecked)
+        assertEquals("Bread", items[1].text)
+        assertEquals(true, items[1].isChecked)
+    }
+
     // ───── Markdown: invalides 'pinned' → null + Logger.w ─────
     @Test
     fun `markdown_invalidPinnedValue_returnsNull`() {

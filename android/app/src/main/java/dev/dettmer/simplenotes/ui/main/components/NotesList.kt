@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -24,11 +25,11 @@ import dev.dettmer.simplenotes.ui.theme.Dimensions
  * Notes list - v1.5.0 with Multi-Select Support
  *
  * ULTRA SIMPLE + SELECTION:
- * - NO remember() anywhere
- * - NO caching tricks
  * - Selection state passed through as parameters
  * - Tap behavior changes based on selection mode
  * - ⏱️ timestampTicker triggers recomposition for relative time updates
+ * - 🔧 Perf: pinned/unpinned split is remember(notes)-cached (matches NotesStaggeredGrid) so the
+ *   30s timestampTicker recomposition doesn't re-filter the full note list every tick
  */
 @Suppress("LongParameterList") // Composable with many UI state parameters
 @Composable
@@ -51,8 +52,8 @@ fun NotesList(
     onNoteLongPress: (Note) -> Unit,
     onNoteSelectionToggle: (Note) -> Unit = {}
 ) {
-    val pinnedNotes = notes.filter { it.isPinned == true }
-    val unpinnedNotes = notes.filter { it.isPinned != true }
+    val pinnedNotes = remember(notes) { notes.filter { it.isPinned == true } }
+    val unpinnedNotes = remember(notes) { notes.filter { it.isPinned != true } }
     // 🆕 v2.7.0 (Folders): Reihenfolge Pinned → Folders → Notes
     val showNotesHeader = unpinnedNotes.isNotEmpty() && (pinnedNotes.isNotEmpty() || folders.isNotEmpty())
 
