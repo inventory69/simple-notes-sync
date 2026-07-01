@@ -280,7 +280,6 @@ Shipped since this roadmap was last revised: encrypted credentials, the persiste
 ### 🔐 Security Enhancements
 
 - **Password-protected local backups** - Encrypt backup file with a password
-- **Biometric unlock option** - Fingerprint/Face unlock for the app
 
 ### 🎨 UI Features
 

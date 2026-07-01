@@ -280,7 +280,6 @@ Seit der letzten Überarbeitung dieser Roadmap erschienen: verschlüsselte Zugan
 ### 🔐 Sicherheits-Verbesserungen
 
 - **Passwortgeschützte lokale Backups** - Backup-Datei mit Passwort verschlüsseln
-- **Biometrische Entsperrung** - Fingerabdruck/Gesichtserkennung für die App
 
 ### 🎨 UI Features
 
