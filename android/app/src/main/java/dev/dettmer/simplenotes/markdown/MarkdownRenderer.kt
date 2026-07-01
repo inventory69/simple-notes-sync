@@ -37,6 +37,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.utils.truncate
 
 private const val COMPACT_HEADING_LEVEL = 3
 
@@ -370,13 +371,20 @@ internal fun buildMarkdownCardPreview(
     }
 }
 
+// 🔧 Perf: Karten zeigen ohnehin nur maxLines = 3-4. Android's StaticLayout muss aber den
+// KOMPLETTEN String zeilenumbrechen, bevor er auf maxLines kürzt — bei sehr langem Content
+// (z.B. importierter Text ohne Zeilenumbrüche) blockiert das den Main-Thread für Sekunden
+// und löst eine ANR beim Scrollen aus. Daher vor jeder Messung hart kürzen.
+internal const val NOTE_PREVIEW_CHAR_LIMIT = 500
+
 @Composable
 internal fun noteCardMarkdownPreview(content: String): AnnotatedString {
     val linkColor = MaterialTheme.colorScheme.primary
     val codeBackground = MaterialTheme.colorScheme.surfaceVariant
     val codeColor = MaterialTheme.colorScheme.onSurfaceVariant
-    return remember(content, linkColor, codeBackground, codeColor) {
-        val blocks = MarkdownEngine.parse(content)
+    val truncated = content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
+    return remember(truncated, linkColor, codeBackground, codeColor) {
+        val blocks = MarkdownEngine.parse(truncated)
         buildMarkdownCardPreview(blocks, linkColor, codeBackground, codeColor)
     }
 }

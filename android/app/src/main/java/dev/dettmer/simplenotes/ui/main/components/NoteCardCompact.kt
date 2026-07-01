@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,11 +45,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.NOTE_PREVIEW_CHAR_LIMIT
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.toReadableTime
+import dev.dettmer.simplenotes.utils.truncate
 
 /**
  * 🎨 v1.7.0: Compact Note Card for Grid Layout
@@ -158,11 +161,15 @@ fun NoteCardCompact(
                 // Preview - MAX 3 ZEILEN
                 Text(
                     text = when (note.noteType) {
-                        NoteType.TEXT -> note.content
+                        // 🔧 Perf: kürzen vor der Text-Messung, siehe NOTE_PREVIEW_CHAR_LIMIT
+                        // in MarkdownRenderer.kt (verhindert ANR bei sehr langem Content beim Scrollen)
+                        NoteType.TEXT -> note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
                             note.checklistItems?.let { items ->
-                                generateChecklistPreview(items, note.checklistSortOption)
+                                remember(items, note.checklistSortOption) {
+                                    generateChecklistPreview(items, note.checklistSortOption)
+                                }
                             }.orEmpty()
                         }
                     },
