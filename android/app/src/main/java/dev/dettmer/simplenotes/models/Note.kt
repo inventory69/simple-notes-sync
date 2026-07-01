@@ -1,7 +1,10 @@
 package dev.dettmer.simplenotes.models
 
 import androidx.compose.runtime.Immutable
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.StringReader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -168,127 +171,70 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
     companion object {
         private const val TAG = "Note"
 
-        // 🔧 Perf: Gson-Instanzen sind zustandslos/thread-safe und cachen ihre reflektionsbasierten
-        // Type-Adapter intern — eine neue Instanz pro fromJson()/toJson()-Aufruf verwirft diesen
+        // 🔧 Perf: Gson-Instanz ist zustandslos/thread-safe und cacht ihre reflektionsbasierten
+        // Type-Adapter intern — eine neue Instanz pro toJson()-Aufruf verwirft diesen
         // Cache und baut ihn bei jeder einzelnen Notiz neu auf. Bei tausenden Notizen (Cold-Start-Load)
-        // summiert sich das spürbar; geteilte Instanzen wiederverwenden behebt das.
-        private val gson = com.google.gson.Gson()
+        // summiert sich das spürbar; geteilte Instanz wiederverwenden behebt das.
+        // Der Lesepfad (fromJson) nutzt seit v2.10 einen handgeschriebenen Streaming-Parser
+        // (siehe unten) und braucht diese Instanz nicht mehr.
         private val prettyGson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
 
         /**
          * Parst JSON zu Note-Objekt mit Backward Compatibility für alte Notizen ohne noteType
+         *
+         * 🔧 Perf: handgeschriebener Streaming-Parser (`JsonReader`) statt Baum-Aufbau
+         * (`JsonParser.parseString`) + Reflection-Bind (`Gson.fromJson`). Vermeidet
+         * `JsonObject`-Allokation und Feld-Reflection pro Notiz — bei tausenden Notizen
+         * (Cold-Start-Load) linear relevant. Unbekannte Felder werden übersprungen
+         * (Vorwärtskompatibilität mit neueren Clients bleibt erhalten).
+         * ponytail: handgeschrieben statt generischem TypeAdapter/Reflection-Framework —
+         * Ceiling: neue Note-Felder müssen hier manuell im `when`-Block ergänzt werden.
          */
         fun fromJson(json: String): Note? {
             return try {
-                val jsonObject = com.google.gson.JsonParser.parseString(json).asJsonObject
+                val fields = readNoteFields(json)
 
                 // Backward Compatibility: Alte Notizen ohne noteType bekommen TEXT
-                val noteType = if (jsonObject.has("noteType") && !jsonObject.get("noteType").isJsonNull) {
-                    try {
-                        NoteType.valueOf(jsonObject.get("noteType").asString)
-                    } catch (e: Exception) {
-                        Logger.w(TAG, "Unknown noteType, defaulting to TEXT: ${e.message}")
-                        NoteType.TEXT
-                    }
-                } else {
-                    NoteType.TEXT
-                }
-
-                // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
-                val checklistSortOption = if (jsonObject.has("checklistSortOption") &&
-                    !jsonObject.get("checklistSortOption").isJsonNull
-                ) {
-                    jsonObject.get("checklistSortOption").asString
-                } else {
-                    null
-                }
-
-                // Parsen der Basis-Note
-                // 🔧 Perf: aus dem bereits geparsten JsonObject binden statt den String ein
-                // zweites Mal komplett zu parsen (jsonObject wurde oben schon aus json gebaut)
-                val rawNote = gson.fromJson(jsonObject, NoteRaw::class.java)
-
-                // Checklist-Items parsen (kann null sein)
-                // 🔧 Perf: TypeToken (reflection-basierte Typauflösung) nur bauen, wenn
-                // tatsächlich Checklist-Items vorhanden sind — sonst für jede reine
-                // Text-Notiz unnötiger Overhead beim Massen-Laden.
-                var checklistItems: List<ChecklistItem>? = if (jsonObject.has("checklistItems") &&
-                    !jsonObject.get("checklistItems").isJsonNull
-                ) {
-                    val checklistItemsType =
-                        object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
-                    gson.fromJson<List<ChecklistItem>>(
-                        jsonObject.get("checklistItems"),
-                        checklistItemsType
-                    )
-                } else {
-                    null
-                }
+                val noteType = resolveNoteType(fields.noteTypeRaw)
 
                 // v1.4.1: Recovery-Mode - Falls Checkliste aber keine Items,
                 // versuche Content als Fallback zu parsen
-                if (noteType == NoteType.CHECKLIST &&
-                    checklistItems.isNullOrEmpty() &&
-                    rawNote.content.isNotBlank()
-                ) {
-                    val recoveredItems = parseChecklistFromContent(rawNote.content)
+                var checklistItems = fields.checklistItems
+                if (noteType == NoteType.CHECKLIST && checklistItems.isNullOrEmpty() && fields.content.isNotBlank()) {
+                    val recoveredItems = parseChecklistFromContent(fields.content)
                     if (recoveredItems.isNotEmpty()) {
                         Logger.d(TAG, "🔄 Recovered ${recoveredItems.size} checklist items from content fallback")
-                        checklistItems = recoveredItems
+                        checklistItems = recoveredItems.toMutableList()
                     }
                 }
 
                 // FIX-03 (v2.2.0): Titel-Korrektur für CHECKLIST-Notizen aus korruptem JSON
-                var cleanTitle = rawNote.title
-                if (noteType == NoteType.CHECKLIST) {
-                    val checklistPatternInTitle = Regex("""[-*]\s*\[([ xX])\]\s+""")
-                    checklistPatternInTitle.find(cleanTitle)?.let { splitMatch ->
-                        val rescuedText = cleanTitle.substring(splitMatch.range.first)
-                        cleanTitle = cleanTitle.substring(0, splitMatch.range.first).trim()
-
-                        // Alle verschluckten Items aus dem Titel extrahieren
-                        val rescuedItems = Regex("""[-*]\s*\[([ xX])\]\s+(.+?)(?=\s*[-*]\s*\[|${'$'})""")
-                            .findAll(rescuedText).mapIndexed { idx, m ->
-                                ChecklistItem(
-                                    id = UUID.randomUUID().toString(),
-                                    text = m.groupValues[2].trim(),
-                                    isChecked = m.groupValues[1].lowercase() == "x",
-                                    order = idx
-                                )
-                            }.toList()
-
-                        if (rescuedItems.isNotEmpty()) {
-                            checklistItems = (rescuedItems + (checklistItems ?: emptyList()))
-                                .mapIndexed { i, item -> item.copy(order = i) }
-                            Logger.w(
-                                TAG,
-                                "⚠️ CORRUPTION FIX (JSON): '${rawNote.title}' → '$cleanTitle', " +
-                                    "rescued ${rescuedItems.size} item(s)"
-                            )
-                        }
-                    }
+                val (cleanTitle, repairedItems) = if (noteType == NoteType.CHECKLIST) {
+                    repairCorruptedChecklistTitle(fields.title, checklistItems)
+                } else {
+                    fields.title to checklistItems
                 }
 
                 // Note mit korrekten Werten erstellen
                 Note(
-                    id = rawNote.id,
+                    id = fields.id ?: UUID.randomUUID().toString(),
                     title = cleanTitle,
-                    content = rawNote.content,
-                    createdAt = rawNote.createdAt,
-                    updatedAt = rawNote.updatedAt,
-                    deviceId = rawNote.deviceId,
-                    syncStatus = rawNote.syncStatus ?: SyncStatus.LOCAL_ONLY,
+                    content = fields.content,
+                    createdAt = fields.createdAt,
+                    updatedAt = fields.updatedAt,
+                    deviceId = fields.deviceId,
+                    syncStatus = fields.syncStatus ?: SyncStatus.LOCAL_ONLY,
                     noteType = noteType,
-                    checklistItems = checklistItems,
-                    checklistSortOption = checklistSortOption, // 🆕 v1.8.1 (IMPL_03)
-                    // 🆕 v2.5.0 — direkt aus rawNote (Gson-Reflection füllt sie)
-                    importedAt = rawNote.importedAt,
-                    labels = rawNote.labels,
-                    color = rawNote.color,
-                    isPinned = rawNote.isPinned,
-                    folderName = rawNote.folderName,
-                    // 🆕 v2.9.0 (Trash) — direkt aus rawNote; fehlendes Feld → null (= aktive Notiz)
-                    trashedAt = rawNote.trashedAt
+                    checklistItems = repairedItems,
+                    checklistSortOption = fields.checklistSortOption, // 🆕 v1.8.1 (IMPL_03)
+                    // 🆕 v2.5.0
+                    importedAt = fields.importedAt,
+                    labels = fields.labels,
+                    color = fields.color,
+                    isPinned = fields.isPinned,
+                    folderName = fields.folderName,
+                    // 🆕 v2.9.0 (Trash) — fehlendes Feld → null (= aktive Notiz)
+                    trashedAt = fields.trashedAt
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -296,26 +242,110 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
             }
         }
 
+        private fun resolveNoteType(noteTypeRaw: String?): NoteType {
+            if (noteTypeRaw == null) return NoteType.TEXT
+            return try {
+                NoteType.valueOf(noteTypeRaw)
+            } catch (e: Exception) {
+                Logger.w(TAG, "Unknown noteType, defaulting to TEXT: ${e.message}")
+                NoteType.TEXT
+            }
+        }
+
         /**
-         * Hilfsklasse für Gson-Parsing mit nullable Feldern
+         * FIX-03 (v2.2.0): Korrigiert Titel für CHECKLIST-Notizen aus korruptem JSON —
+         * frühere App-Versionen haben Checklist-Items versehentlich in den Titel geschrieben.
+         * Rettet die verschluckten Items und hängt sie vor die bestehenden Items.
          */
-        private data class NoteRaw(
-            val id: String = UUID.randomUUID().toString(),
-            val title: String = "",
-            val content: String = "",
-            val createdAt: Long = System.currentTimeMillis(),
-            val updatedAt: Long = System.currentTimeMillis(),
-            val deviceId: String = "",
-            val syncStatus: SyncStatus? = null,
-            // 🆕 v2.5.0 — alle nullable: alte JSONs ohne diese Felder lesen weiter sauber
-            val importedAt: Long? = null,
-            val labels: List<String>? = null,
-            val color: String? = null,
-            val isPinned: Boolean? = null,
-            val folderName: String? = null,
-            // 🆕 v2.9.0 (Trash) — nullable: alte JSONs ohne dieses Feld lesen weiter sauber
-            val trashedAt: Long? = null
-        )
+        private fun repairCorruptedChecklistTitle(
+            title: String,
+            checklistItems: MutableList<ChecklistItem>?
+        ): Pair<String, MutableList<ChecklistItem>?> {
+            val checklistPatternInTitle = Regex("""[-*]\s*\[([ xX])\]\s+""")
+            val splitMatch = checklistPatternInTitle.find(title) ?: return title to checklistItems
+
+            val rescuedText = title.substring(splitMatch.range.first)
+            val cleanTitle = title.substring(0, splitMatch.range.first).trim()
+
+            // Alle verschluckten Items aus dem Titel extrahieren
+            val rescuedItems = Regex("""[-*]\s*\[([ xX])\]\s+(.+?)(?=\s*[-*]\s*\[|${'$'})""")
+                .findAll(rescuedText).mapIndexed { idx, m ->
+                    ChecklistItem(
+                        id = UUID.randomUUID().toString(),
+                        text = m.groupValues[2].trim(),
+                        isChecked = m.groupValues[1].lowercase() == "x",
+                        order = idx
+                    )
+                }.toList()
+
+            if (rescuedItems.isEmpty()) return cleanTitle to checklistItems
+
+            val mergedItems = (rescuedItems + (checklistItems ?: emptyList()))
+                .mapIndexed { i, item -> item.copy(order = i) }
+                .toMutableList()
+            Logger.w(
+                TAG,
+                "⚠️ CORRUPTION FIX (JSON): '$title' → '$cleanTitle', " +
+                    "rescued ${rescuedItems.size} item(s)"
+            )
+            return cleanTitle to mergedItems
+        }
+
+        private class ParsedNoteFields {
+            var id: String? = null
+            var title: String = ""
+            var content: String = ""
+            var createdAt: Long = System.currentTimeMillis()
+            var updatedAt: Long = System.currentTimeMillis()
+            var deviceId: String = ""
+            var syncStatus: SyncStatus? = null
+            var noteTypeRaw: String? = null
+            var checklistSortOption: String? = null
+            var importedAt: Long? = null
+            var labels: List<String>? = null
+            var color: String? = null
+            var isPinned: Boolean? = null
+            var folderName: String? = null
+            var trashedAt: Long? = null
+            var checklistItems: MutableList<ChecklistItem>? = null
+        }
+
+        private fun readNoteFields(json: String): ParsedNoteFields {
+            val fields = ParsedNoteFields()
+            JsonReader(StringReader(json)).use { reader ->
+                // Parität mit dem alten JsonParser.parseString()-Verhalten (immer lenient).
+                reader.strictness = com.google.gson.Strictness.LENIENT
+                reader.beginObject()
+                while (reader.hasNext()) {
+                    reader.readNoteField(fields)
+                }
+                reader.endObject()
+            }
+            return fields
+        }
+
+        private fun JsonReader.readNoteField(fields: ParsedNoteFields) {
+            when (nextName()) {
+                "id" -> fields.id = nextStringOrNull()
+                "title" -> fields.title = nextStringOrNull() ?: ""
+                "content" -> fields.content = nextStringOrNull() ?: ""
+                "createdAt" -> fields.createdAt = nextLongOrNull() ?: fields.createdAt
+                "updatedAt" -> fields.updatedAt = nextLongOrNull() ?: fields.updatedAt
+                "deviceId" -> fields.deviceId = nextStringOrNull() ?: ""
+                "syncStatus" -> fields.syncStatus = nextStringOrNull()
+                    ?.let { raw -> runCatching { SyncStatus.valueOf(raw) }.getOrNull() }
+                "noteType" -> fields.noteTypeRaw = nextStringOrNull()
+                "checklistSortOption" -> fields.checklistSortOption = nextStringOrNull()
+                "importedAt" -> fields.importedAt = nextLongOrNull()
+                "labels" -> fields.labels = nextStringListOrNull()
+                "color" -> fields.color = nextStringOrNull()
+                "isPinned" -> fields.isPinned = nextBooleanOrNull()
+                "folderName" -> fields.folderName = nextStringOrNull()
+                "trashedAt" -> fields.trashedAt = nextLongOrNull()
+                "checklistItems" -> fields.checklistItems = nextChecklistItemsOrNull()
+                else -> skipValue()
+            }
+        }
 
         /**
          * v1.4.1: Parst GitHub-Style Checklisten aus Text (Recovery-Mode).
@@ -642,4 +672,76 @@ fun String.escapeJson(): String {
         .replace("\n", "\\n")
         .replace("\r", "\\r")
         .replace("\t", "\\t")
+}
+
+// ── Streaming-JSON-Helfer für Note.fromJson() (Perf: Cold-Start bei tausenden Notizen) ──
+
+private fun JsonReader.nextStringOrNull(): String? =
+    if (peek() == JsonToken.NULL) { nextNull(); null } else nextString()
+
+private fun JsonReader.nextLongOrNull(): Long? =
+    if (peek() == JsonToken.NULL) { nextNull(); null } else nextLong()
+
+private fun JsonReader.nextBooleanOrNull(): Boolean? =
+    if (peek() == JsonToken.NULL) { nextNull(); null } else nextBoolean()
+
+private fun JsonReader.nextIntOrNull(): Int? =
+    if (peek() == JsonToken.NULL) { nextNull(); null } else nextInt()
+
+private fun JsonReader.nextStringListOrNull(): List<String>? {
+    if (peek() == JsonToken.NULL) { nextNull(); return null }
+    val list = mutableListOf<String>()
+    beginArray()
+    while (hasNext()) list.add(nextString())
+    endArray()
+    return list
+}
+
+private fun JsonReader.nextChecklistItemsOrNull(): MutableList<ChecklistItem>? {
+    if (peek() == JsonToken.NULL) { nextNull(); return null }
+    val items = mutableListOf<ChecklistItem>()
+    beginArray()
+    while (hasNext()) items.add(nextChecklistItem())
+    endArray()
+    return items
+}
+
+private fun JsonReader.nextChecklistItem(): ChecklistItem {
+    var id: String? = null
+    var text = ""
+    var isChecked = false
+    var order = 0
+    // 🔧 Gson-Parität: Der bisherige reflektionsbasierte Parser hat den Default
+    // `originalOrder = order` (Referenz auf ein anderes Konstruktor-Argument) NIE
+    // ausgewertet — bei fehlendem Feld kam immer 0 heraus (verifiziert per Testsonde).
+    // Absichtlich repliziert statt "korrigiert", um Verhalten für ungeänderte
+    // Alt-Notizen (< v1.9.0) exakt beizubehalten.
+    var originalOrder = 0
+    var createdAt = System.currentTimeMillis()
+    var indentationLevel = 0
+
+    beginObject()
+    while (hasNext()) {
+        when (nextName()) {
+            "id" -> id = nextStringOrNull()
+            "text" -> text = nextStringOrNull() ?: ""
+            "isChecked" -> isChecked = nextBooleanOrNull() ?: false
+            "order" -> order = nextIntOrNull() ?: 0
+            "originalOrder" -> originalOrder = nextIntOrNull() ?: 0
+            "createdAt" -> createdAt = nextLongOrNull() ?: createdAt
+            "indentationLevel" -> indentationLevel = nextIntOrNull() ?: 0
+            else -> skipValue()
+        }
+    }
+    endObject()
+
+    return ChecklistItem(
+        id = id ?: UUID.randomUUID().toString(),
+        text = text,
+        isChecked = isChecked,
+        order = order,
+        originalOrder = originalOrder,
+        createdAt = createdAt,
+        indentationLevel = indentationLevel
+    )
 }
