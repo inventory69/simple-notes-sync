@@ -174,6 +174,10 @@ fun MainScreen(
     // 🆕 v2.1.0 (F46): Grid column control
     val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
     val gridManualColumns by viewModel.gridManualColumns.collectAsState()
+    // 🆕 collapsible sections (Pinned / Folders / Notes)
+    val collapsedSections by viewModel.collapsedSections.collectAsState()
+    // 🆕 section reordering
+    val sectionOrder by viewModel.sectionOrder.collectAsState()
     // 🆕 v1.9.0 (F05): Custom App Title
     val customAppTitle by viewModel.customAppTitle.collectAsState()
 
@@ -231,7 +235,11 @@ fun MainScreen(
                 val result = snackbarHostState.showSnackbar(
                     message = data.message,
                     actionLabel = data.actionLabel,
-                    duration = if (data.actionLabel != null) SnackbarDuration.Long else SnackbarDuration.Short
+                    duration = if (data.actionLabel != null || data.longDuration) {
+                        SnackbarDuration.Long
+                    } else {
+                        SnackbarDuration.Short
+                    }
                 )
                 if (result == SnackbarResult.ActionPerformed) {
                     data.onAction?.invoke()
@@ -393,6 +401,8 @@ fun MainScreen(
                                 timestampTicker = timestampTicker,
                                 gridAdaptiveScaling = gridAdaptiveScaling,
                                 gridManualColumns = gridManualColumns,
+                                collapsedSections = collapsedSections,
+                                sectionOrder = sectionOrder,
                                 scrollToTop = scrollToTop,
                                 syncScrollToTop = syncScrollToTop,
                                 noteFilter = noteFilter,
@@ -402,6 +412,8 @@ fun MainScreen(
                                 onEnterFolder = { viewModel.enterFolder(it) },
                                 onFolderLongPress = { viewModel.startSelectionWithFolder(it) },
                                 onFolderSelectionToggle = { viewModel.toggleFolderSelection(it) },
+                                onToggleSection = { viewModel.toggleSectionCollapsed(it) },
+                                onMoveSection = { from, to -> viewModel.swapSections(from, to) },
                                 onOpenNote = { onOpenNote(it) },
                                 onStartSelection = { viewModel.startSelectionMode(it) },
                                 onToggleSelection = { viewModel.toggleNoteSelection(it) },
@@ -780,6 +792,8 @@ private fun NotesPane(
     timestampTicker: Long,
     gridAdaptiveScaling: Boolean,
     gridManualColumns: Int,
+    collapsedSections: Set<String>, // 🆕 collapsible sections
+    sectionOrder: List<String>, // 🆕 section reordering
     scrollToTop: Boolean,
     syncScrollToTop: Boolean,
     noteFilter: NoteFilter,
@@ -789,6 +803,8 @@ private fun NotesPane(
     onEnterFolder: (String) -> Unit,
     onFolderLongPress: (String) -> Unit,
     onFolderSelectionToggle: (String) -> Unit, // 🆕 v2.7.0 (Folders)
+    onToggleSection: (String) -> Unit, // 🆕 collapsible sections
+    onMoveSection: (String, String?) -> Unit, // 🆕 section reordering
     onOpenNote: (String) -> Unit,
     onStartSelection: (String) -> Unit,
     onToggleSelection: (String) -> Unit,
@@ -871,7 +887,11 @@ private fun NotesPane(
             localOnlyFolderNames = localOnlyFolderNames,
             onFolderClick = { if (isSelectionMode) onFolderSelectionToggle(it) else onEnterFolder(it) },
             onFolderLongPress = onFolderLongPress,
-            onFolderSelectionToggle = onFolderSelectionToggle
+            onFolderSelectionToggle = onFolderSelectionToggle,
+            collapsedSections = collapsedSections,
+            onToggleSection = onToggleSection,
+            sectionOrder = sectionOrder,
+            onMoveSection = onMoveSection
         )
     } else {
         NotesList(
@@ -897,7 +917,11 @@ private fun NotesPane(
                 focusManager.clearFocus()
                 onStartSelection(note.id)
             },
-            onNoteSelectionToggle = { note -> onToggleSelection(note.id) }
+            onNoteSelectionToggle = { note -> onToggleSelection(note.id) },
+            collapsedSections = collapsedSections,
+            onToggleSection = onToggleSection,
+            sectionOrder = sectionOrder,
+            onMoveSection = onMoveSection
         )
     }
 }

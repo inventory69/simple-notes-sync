@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +53,10 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UpdateChangelogSheet(onViewChangelog: () -> Unit = {}) {
+fun UpdateChangelogSheet(
+    onViewChangelog: () -> Unit = {},
+    onDismissed: () -> Unit = {} // 🆕 fires once nothing is showing (nothing-to-show OR user dismissed it)
+) {
     val context = LocalContext.current
     val prefs = remember {
         context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -63,6 +67,10 @@ fun UpdateChangelogSheet(onViewChangelog: () -> Unit = {}) {
 
     // Only show if this is a new version
     var showSheet by remember { mutableStateOf(currentVersionCode > lastShownVersion) }
+
+    LaunchedEffect(showSheet) {
+        if (!showSheet) onDismissed()
+    }
 
     if (!showSheet) return
 

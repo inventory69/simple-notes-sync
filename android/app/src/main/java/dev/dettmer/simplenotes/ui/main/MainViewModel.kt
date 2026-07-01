@@ -22,6 +22,9 @@ import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.sync.buildSyncResultBanner
+import dev.dettmer.simplenotes.ui.main.components.SECTION_FOLDERS
+import dev.dettmer.simplenotes.ui.main.components.SECTION_NOTES
+import dev.dettmer.simplenotes.ui.main.components.SECTION_PINNED
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -40,10 +43,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -182,6 +187,59 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.getInt(Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS)
     )
     val gridManualColumns: StateFlow<Int> = _gridManualColumns.asStateFlow()
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 Collapsible Sections State (Pinned / Folders / Notes)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val _collapsedSections = MutableStateFlow(
+        prefs.getStringSet(Constants.KEY_COLLAPSED_SECTIONS, emptySet()) ?: emptySet()
+    )
+    val collapsedSections: StateFlow<Set<String>> = _collapsedSections.asStateFlow()
+
+    fun toggleSectionCollapsed(section: String) {
+        val updated = _collapsedSections.value.let { if (section in it) it - section else it + section }
+        _collapsedSections.value = updated
+        prefs.edit { putStringSet(Constants.KEY_COLLAPSED_SECTIONS, updated) }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 Section Order State (Pinned / Folders / Notes reordering)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private val defaultSectionOrder = listOf(SECTION_PINNED, SECTION_FOLDERS, SECTION_NOTES)
+
+    private val _sectionOrder = MutableStateFlow(loadSectionOrder())
+    val sectionOrder: StateFlow<List<String>> = _sectionOrder.asStateFlow()
+
+    private fun loadSectionOrder(): List<String> {
+        val raw = prefs.getString(Constants.KEY_SECTION_ORDER, null) ?: return defaultSectionOrder
+        val parsed = raw.split(",").filter { it in defaultSectionOrder }.distinct()
+        // Corrupted/incomplete prefs value → fall back to the safe default instead of patching it up.
+        return if (parsed.size == defaultSectionOrder.size) parsed else defaultSectionOrder
+    }
+
+    /** Swaps two sections' positions in the persisted order. No-op if either key is unknown/null. */
+    fun swapSections(sectionA: String, sectionB: String?) {
+        if (sectionB == null || sectionA == sectionB) return
+        val current = _sectionOrder.value
+        val idxA = current.indexOf(sectionA)
+        val idxB = current.indexOf(sectionB)
+        if (idxA == -1 || idxB == -1) return
+        val updated = current.toMutableList().also {
+            it[idxA] = sectionB
+            it[idxB] = sectionA
+        }
+        _sectionOrder.value = updated
+        prefs.edit { putString(Constants.KEY_SECTION_ORDER, updated.joinToString(",")) }
+    }
+
+    private val changelogGateCleared = MutableStateFlow(false)
+
+    /** Called from ComposeMainActivity once UpdateChangelogSheet has nothing left to show. */
+    fun onChangelogDismissed() {
+        changelogGateCleared.value = true
+    }
 
     /**
      * Refresh grid settings from SharedPreferences.
@@ -383,12 +441,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     data class SnackbarData(
         val message: String,
         val actionLabel: String? = null,
-        val onAction: (() -> Unit)? = null
+        val onAction: (() -> Unit)? = null,
+        val longDuration: Boolean = false // 🆕 e.g. onboarding hints that need more time to read
     )
 
-    fun emitSnackbar(message: String) {
+    fun emitSnackbar(message: String, longDuration: Boolean = false) {
         viewModelScope.launch {
-            _showSnackbar.emit(SnackbarData(message = message))
+            _showSnackbar.emit(SnackbarData(message = message, longDuration = longDuration))
         }
     }
 
@@ -404,6 +463,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _isOfflineMode.collect { offline ->
                 _isServerConfigured.value = !offline && hasServerConfig()
             }
+        }
+        // 🆕 One-time section-reorder onboarding hint: fires once the changelog sheet has
+        // nothing left to show AND at least one section header is visible (see swapSections).
+        viewModelScope.launch {
+            combine(changelogGateCleared, sortedNotesUnfoldered, _folders) { gateCleared, notes, folders ->
+                gateCleared && (notes.any { it.isPinned == true } || folders.isNotEmpty())
+            }
+                .filter { it && !prefs.getBoolean(Constants.KEY_SECTION_REORDER_HINT_SHOWN, false) }
+                .take(1)
+                .collect {
+                    prefs.edit { putBoolean(Constants.KEY_SECTION_REORDER_HINT_SHOWN, true) }
+                    emitSnackbar(getString(R.string.section_reorder_hint), longDuration = true)
+                }
         }
         // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
         _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()

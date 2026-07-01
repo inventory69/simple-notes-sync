@@ -176,6 +176,15 @@ object Constants {
     const val GRID_MIN_COLUMNS = 1
     const val GRID_MAX_COLUMNS = 5
 
+    // 🆕 collapsible sections: Set<String> von "pinned"/"folders"/"notes"
+    const val KEY_COLLAPSED_SECTIONS = "collapsed_sections"
+
+    // 🆕 section reordering: comma-joined ordered list of "pinned"/"folders"/"notes"
+    const val KEY_SECTION_ORDER = "section_order"
+
+    // 🆕 one-time onboarding hint: "long-press the arrow to reorder sections"
+    const val KEY_SECTION_REORDER_HINT_SHOWN = "section_reorder_hint_shown"
+
     // 🆕 v2.2.0: Persistent sync debug logging
     const val KEY_SYNC_DEBUG_LOGGING = "sync_debug_logging"
 
