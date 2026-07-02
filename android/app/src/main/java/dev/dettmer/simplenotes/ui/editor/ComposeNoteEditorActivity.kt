@@ -140,8 +140,6 @@ class ComposeNoteEditorActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        AppLock.applySecureFlag(this)
-
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)
@@ -151,6 +149,10 @@ class ComposeNoteEditorActivity : FragmentActivity() {
         DynamicColors.applyToActivityIfAvailable(this)
 
         enableEdgeToEdge()
+
+        // Must run after enableEdgeToEdge(): it sets window bar colors last so the
+        // Recents secure-placeholder color isn't clobbered by edge-to-edge's own colors.
+        AppLock.applySecureFlag(this)
 
         // v2.0.0: Register both OPEN and CLOSE transitions for consistent
         // Shared Axis X animation on all back paths (arrow button + swipe gesture).
@@ -258,6 +260,8 @@ class ComposeNoteEditorActivity : FragmentActivity() {
      */
     override fun onResume() {
         super.onResume()
+        // Re-sync FLAG_SECURE + Recents placeholder color (see ComposeMainActivity.onResume).
+        AppLock.applySecureFlag(this)
         // v2.0.0: Refresh theme in case user returned from Settings
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)

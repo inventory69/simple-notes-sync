@@ -47,13 +47,15 @@ class ComposeSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        AppLock.applySecureFlag(this)
-
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
 
         // Enable edge-to-edge display
         enableEdgeToEdge()
+
+        // Must run after enableEdgeToEdge(): it sets window bar colors last so the
+        // Recents secure-placeholder color isn't clobbered by edge-to-edge's own colors.
+        AppLock.applySecureFlag(this)
 
         // v2.0.0: Register both OPEN and CLOSE transitions for consistent
         // Shared Axis X animation on all back paths (arrow button + swipe gesture).
@@ -141,6 +143,12 @@ class ComposeSettingsActivity : AppCompatActivity() {
                 } // AppLockGate
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-sync FLAG_SECURE + Recents placeholder color (see ComposeMainActivity.onResume).
+        AppLock.applySecureFlag(this)
     }
 
     override fun onStop() {
