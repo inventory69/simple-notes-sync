@@ -797,4 +797,40 @@
     <string name="contributors_role_translation">翻译</string>
     <string name="contributors_role_testing">测试</string>
     <string name="update_changelog_view_all">查看更新日志</string>
+    <string name="action_collapse_section">折叠 %1$s</string>
+    <string name="action_expand_section">展开 %1$s</string>
+    <string name="action_move_section_up">上移</string>
+    <string name="action_move_section_down">下移</string>
+    <string name="section_reorder_hint">提示：长按箭头按钮来重新排列部分。</string>
+    <string name="trash_retention_duration_title">在这之后删除垃圾桶中的笔记</string>
+    <string name="trash_retention_settings_cd">垃圾桶滞留设置</string>
+    <string name="trash_retention_immediate">立刻</string>
+    <string name="trash_retention_immediate_hint">垃圾桶中已存在的项目会立刻移除。</string>
+    <string name="trash_retention_hint_immediate">已删除的笔记在撤销窗口之后永久移除。</string>
+    <plurals name="days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <string name="snackbar_note_deleted_permanently">\"%1$s\" 已永久删除</string>
+    <plurals name="snackbar_notes_deleted_permanently">
+        <item quantity="other">%d 个笔记已永久删除</item>
+    </plurals>
+    <string name="settings_security">安全</string>
+    <string name="settings_security_subtitle_on">应用锁已激活</string>
+    <string name="settings_security_subtitle_off">生物识别解锁关闭</string>
+    <string name="app_lock_section">应用锁</string>
+    <string name="app_lock_toggle">生物识别解锁</string>
+    <string name="app_lock_toggle_subtitle">用指纹、脸、设备 PIN 解锁应用</string>
+    <string name="app_lock_timeout_title">在这之后锁定</string>
+    <string name="app_lock_timeout_immediately">立刻</string>
+    <string name="app_lock_timeout_30s">30 秒</string>
+    <string name="app_lock_timeout_1min">1 分钟</string>
+    <string name="app_lock_timeout_5min">5 分钟</string>
+    <string name="app_lock_info">启用时，应用在显示内容之前需要生物识别认证（指纹、脸），或你的设备 PIN/图案作为备用方案。</string>
+    <string name="app_lock_locked_title">应用已锁</string>
+    <string name="app_lock_unlock">解锁</string>
+    <string name="app_lock_prompt_title">解锁简单笔记</string>
+    <string name="app_lock_prompt_subtitle">确认是你</string>
+    <string name="app_lock_no_biometric_title">未设置锁屏</string>
+    <string name="app_lock_no_biometric_message">在你的设备设置里设置一个指纹、脸或锁屏来使用应用锁。</string>
+    <string name="app_lock_open_settings">打开设置</string>
 </resources>
