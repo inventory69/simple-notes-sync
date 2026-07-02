@@ -860,6 +860,19 @@ private fun NotesPane(
         }
     }
 
+    // 🆕 section reordering: ein Reorder ist eine strukturelle Aktion. Ohne Eingriff verankert
+    // das Lazy-Layout den Scroll am Key des ersten sichtbaren Items und "scrollt mit" dem
+    // verschobenen Header — sichtbarer Zwei-Frame-Sprung (Anchoring, dann Korrektur). requestScrollToItem
+    // registriert Index 0 als Ziel für die NÄCHSTE Messung (die der sectionOrder-Wechsel auslöst),
+    // überstimmt das Key-Anchoring im selben Pass → kein Zwischenframe, kein Sprung. Synchron VOR
+    // dem State-Wechsel gesetzt, deshalb hier gewrappt statt in einem nachgelagerten LaunchedEffect.
+    val onMoveSectionScrolled: (String, String?) -> Unit = { from, to ->
+        if (to != null && isActive) {
+            if (displayMode == "grid") gridState.requestScrollToItem(0) else listState.requestScrollToItem(0)
+        }
+        onMoveSection(from, to)
+    }
+
     if (paneNotes.isEmpty() && foldersForPane.isEmpty()) {
         EmptyState(modifier = Modifier.fillMaxSize())
     } else if (displayMode == "grid") {
@@ -891,7 +904,7 @@ private fun NotesPane(
             collapsedSections = collapsedSections,
             onToggleSection = onToggleSection,
             sectionOrder = sectionOrder,
-            onMoveSection = onMoveSection
+            onMoveSection = onMoveSectionScrolled
         )
     } else {
         NotesList(
@@ -921,7 +934,7 @@ private fun NotesPane(
             collapsedSections = collapsedSections,
             onToggleSection = onToggleSection,
             sectionOrder = sectionOrder,
-            onMoveSection = onMoveSection
+            onMoveSection = onMoveSectionScrolled
         )
     }
 }
