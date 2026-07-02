@@ -692,4 +692,40 @@
     <string name="notes_list_widget_preview_content_2">Bahas roadmap dan milestone mendatang</string>
     <string name="notes_list_widget_preview_title_3">Ide</string>
     <string name="notes_list_widget_preview_content_3">Konsep fitur baru untuk sprint berikutnya</string>
+    <string name="action_collapse_section">Ciutkan %1$s</string>
+    <string name="action_expand_section">Bentangkan %1$s</string>
+    <string name="action_move_section_up">Pindahkan ke atas</string>
+    <string name="action_move_section_down">Pindahkan ke bawah</string>
+    <string name="section_reorder_hint">Tip: Tekan dan tahan tombol panah untuk mengurutkan ulang bagian.</string>
+    <string name="trash_retention_duration_title">Hapus catatan di sampah setelah</string>
+    <string name="trash_retention_settings_cd">Pengaturan retensi sampah</string>
+    <string name="trash_retention_immediate">Segera</string>
+    <string name="trash_retention_immediate_hint">Item yang sudah ada di sampah akan langsung dihapus.</string>
+    <string name="trash_retention_hint_immediate">Catatan yang dihapus akan dihapus permanen segera setelah jendela urung berakhir.</string>
+    <plurals name="days">
+        <item quantity="other">%d hari</item>
+    </plurals>
+    <string name="snackbar_note_deleted_permanently">\"%1$s\" dihapus permanen</string>
+    <plurals name="snackbar_notes_deleted_permanently">
+        <item quantity="other">%d catatan dihapus permanen</item>
+    </plurals>
+    <string name="settings_security">Keamanan</string>
+    <string name="settings_security_subtitle_on">Kunci aplikasi aktif</string>
+    <string name="settings_security_subtitle_off">Buka kunci biometrik nonaktif</string>
+    <string name="app_lock_section">Kunci aplikasi</string>
+    <string name="app_lock_toggle">Buka kunci biometrik</string>
+    <string name="app_lock_toggle_subtitle">Buka kunci aplikasi dengan sidik jari, wajah, atau PIN perangkat</string>
+    <string name="app_lock_timeout_title">Kunci setelah</string>
+    <string name="app_lock_timeout_immediately">Segera</string>
+    <string name="app_lock_timeout_30s">30 detik</string>
+    <string name="app_lock_timeout_1min">1 menit</string>
+    <string name="app_lock_timeout_5min">5 menit</string>
+    <string name="app_lock_info">Jika diaktifkan, aplikasi akan meminta autentikasi biometrik (sidik jari, wajah) atau PIN / pola perangkat Anda sebagai cadangan sebelum konten ditampilkan.</string>
+    <string name="app_lock_locked_title">Aplikasi terkunci</string>
+    <string name="app_lock_unlock">Buka kunci</string>
+    <string name="app_lock_prompt_title">Buka kunci Simple Notes</string>
+    <string name="app_lock_prompt_subtitle">Konfirmasikan bahwa ini benar Anda</string>
+    <string name="app_lock_no_biometric_title">Belum ada kunci layar yang disetel</string>
+    <string name="app_lock_no_biometric_message">Siapkan sidik jari, wajah, atau kunci layar di pengaturan perangkat Anda untuk menggunakan kunci aplikasi.</string>
+    <string name="app_lock_open_settings">Buka Pengaturan</string>
 </resources>
