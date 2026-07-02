@@ -36,8 +36,12 @@
     <style name="Theme.SimpleNotes" parent="Base.Theme.SimpleNotes" />
 
     <!-- Splash Screen Theme (Android 12+) -->
+    <!-- windowSplashScreenBackground is neutral (colorBackground), not colorPrimary: this is a
+         static, PackageManager-cached resource that Android also uses as the Recents/task-switcher
+         fallback for ComposeMainActivity when no snapshot is available (e.g. behind FLAG_SECURE) —
+         runtime TaskDescription/statusBarColor calls in AppLock.applySecureFlag() cannot override it. -->
     <style name="Theme.SimpleNotes.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">?attr/colorPrimary</item>
+        <item name="windowSplashScreenBackground">@color/md_theme_light_background</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
         <item name="windowSplashScreenAnimationDuration">500</item>
         <item name="postSplashScreenTheme">@style/Theme.SimpleNotes</item>

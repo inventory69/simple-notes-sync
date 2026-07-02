@@ -85,11 +85,18 @@ object AppLock {
             val ta = a.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground))
             val bg = ta.getColor(0, android.graphics.Color.WHITE)
             ta.recycle()
-            // Real lever for the Recents strip: window bar colors feed into the secure placeholder.
+            // Best-effort for pre-edge-to-edge devices; on modern Android (targetSdk 35+) these
+            // are no-ops since enableEdgeToEdge() disables decorFitsSystemWindows.
             a.window.statusBarColor = bg
             a.window.navigationBarColor = bg
             val td = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                android.app.ActivityManager.TaskDescription.Builder().setBackgroundColor(bg).build()
+                // TaskDescription has its OWN statusBarColor/navigationBarColor, separate from
+                // Window.statusBarColor — this is what actually paints the Recents header strip.
+                android.app.ActivityManager.TaskDescription.Builder()
+                    .setBackgroundColor(bg)
+                    .setStatusBarColor(bg)
+                    .setNavigationBarColor(bg)
+                    .build()
             } else {
                 android.app.ActivityManager.TaskDescription(null, null, bg)
             }

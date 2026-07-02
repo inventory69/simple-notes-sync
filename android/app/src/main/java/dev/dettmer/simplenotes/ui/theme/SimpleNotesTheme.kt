@@ -13,10 +13,13 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import dev.dettmer.simplenotes.security.AppLock
 
 /**
  * Shared Material 3 theme.
@@ -80,8 +83,12 @@ fun SimpleNotesTheme(
     // v2.1.0: Keep status bar and navigation bar icon appearance in sync with the
     // runtime theme. enableEdgeToEdge() runs only once in onCreate, so it cannot
     // react to theme changes made by the user at runtime.
+    // Skip while app-locked: a recomposition landing after AppLock.applySecureFlag()
+    // has set the neutral Recents-placeholder color would otherwise stomp it back to
+    // the isDark-derived color before the window is fully backgrounded.
+    val locked by AppLock.locked.collectAsState()
     val view = LocalView.current
-    if (!view.isInEditMode) {
+    if (!view.isInEditMode && !locked) {
         SideEffect {
             val window = (view.context as Activity).window
             WindowCompat.getInsetsController(window, view).apply {

@@ -147,13 +147,15 @@ class ComposeMainActivity : FragmentActivity() {
         colorTheme = ThemePreferences.getColorTheme(prefs)
         fontSizeScale = ThemePreferences.getFontSizeScale(prefs)
 
-        AppLock.applySecureFlag(this)
-
         // Apply Dynamic Colors for Material You (Android 12+)
         DynamicColors.applyToActivityIfAvailable(this)
 
         // Enable edge-to-edge display
         enableEdgeToEdge()
+
+        // Must run after enableEdgeToEdge(): it sets window bar colors last so the
+        // Recents secure-placeholder color isn't clobbered by edge-to-edge's own colors.
+        AppLock.applySecureFlag(this)
 
         // Initialize Logger and enable file logging if configured
         Logger.init(this)
@@ -257,6 +259,12 @@ class ComposeMainActivity : FragmentActivity() {
         super.onResume()
 
         Logger.d(TAG, "📱 ComposeMainActivity.onResume()")
+
+        // Re-sync FLAG_SECURE + Recents placeholder color: covers the case where the
+        // lock setting was toggled on a sibling activity (Settings) while this one was
+        // paused in the back stack — onCreate/onStop alone would miss that until the
+        // NEXT backgrounding, leaking real content in Recents in the meantime.
+        AppLock.applySecureFlag(this)
 
         // v2.0.0: Refresh theme state when returning from Settings
         themeMode = ThemePreferences.getThemeMode(prefs)
