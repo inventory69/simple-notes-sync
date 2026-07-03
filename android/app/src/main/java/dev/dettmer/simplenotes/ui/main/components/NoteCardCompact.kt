@@ -116,68 +116,32 @@ fun NoteCardCompact(
                     .fillMaxWidth()
                     .padding(12.dp)
             ) {
-                // Header row - COMPACT
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Type icon - SMALLER
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
+                // Title - COMPACT Typography — 🆕 v2.11.0: bei leerem Titel weglassen;
+                // die erste Preview-Zeile rückt dann in den Titel-Slot nach, der Rest
+                // erscheint darunter über die volle Kartenbreite (wie beim Titel-Fall)
+                if (note.title.isNotBlank()) {
+                    // Header row - COMPACT
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = if (note.noteType == NoteType.TEXT) {
-                                Icons.Outlined.Description
-                            } else {
-                                Icons.AutoMirrored.Outlined.List
-                            },
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(12.dp)
+                        NoteCardCompactTypeIcon(note = note)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = note.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Title - COMPACT Typography
-                    Text(
-                        text = note.title.ifEmpty { stringResource(R.string.untitled) },
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    NoteCardCompactPreviewContent(note = note)
+                } else {
+                    NoteCardCompactIconLeadingPreview(note = note)
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Preview - MAX 3 ZEILEN
-                Text(
-                    text = when (note.noteType) {
-                        // 🔧 Perf: kürzen vor der Text-Messung, siehe NOTE_PREVIEW_CHAR_LIMIT
-                        // in MarkdownRenderer.kt (verhindert ANR bei sehr langem Content beim Scrollen)
-                        NoteType.TEXT -> note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
-                        NoteType.CHECKLIST -> {
-                            // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
-                            note.checklistItems?.let { items ->
-                                remember(items, note.checklistSortOption) {
-                                    generateChecklistPreview(items, note.checklistSortOption)
-                                }
-                            }.orEmpty()
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -261,5 +225,104 @@ fun NoteCardCompact(
                 }
             }
         }
+    }
+}
+
+/** Typ-Icon, gemeinsam genutzt vom Titel- und vom Icon-Leading-Preview-Fall. */
+@Composable
+private fun NoteCardCompactTypeIcon(note: Note) {
+    Box(
+        modifier = Modifier
+            .size(24.dp)
+            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (note.noteType == NoteType.TEXT) {
+                Icons.Outlined.Description
+            } else {
+                Icons.AutoMirrored.Outlined.List
+            },
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(12.dp)
+        )
+    }
+}
+
+@Composable
+private fun NoteCardCompactPreviewContent(note: Note, modifier: Modifier = Modifier) {
+    Text(
+        text = when (note.noteType) {
+            // 🔧 Perf: kürzen vor der Text-Messung, siehe NOTE_PREVIEW_CHAR_LIMIT
+            // in MarkdownRenderer.kt (verhindert ANR bei sehr langem Content beim Scrollen)
+            NoteType.TEXT -> note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
+            NoteType.CHECKLIST -> {
+                // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
+                note.checklistItems?.let { items ->
+                    remember(items, note.checklistSortOption) {
+                        generateChecklistPreview(items, note.checklistSortOption)
+                    }
+                }.orEmpty()
+            }
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun notePreviewFullText(note: Note): String {
+    return when (note.noteType) {
+        NoteType.TEXT -> note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
+        NoteType.CHECKLIST -> {
+            note.checklistItems?.let { items ->
+                remember(items, note.checklistSortOption) {
+                    generateChecklistPreview(items, note.checklistSortOption)
+                }
+            }.orEmpty()
+        }
+    }
+}
+
+/**
+ * Bei leerem Titel: erste Preview-Zeile im Titel-Slot neben dem Icon (einzeilig, wie zuvor
+ * der Titel), der Rest der Preview folgt unverändert als eigener Block über die volle
+ * Kartenbreite — dieselbe Row/Spacer-Mechanik wie im Titel-Fall, keine Sonderlogik nötig.
+ */
+@Composable
+private fun NoteCardCompactIconLeadingPreview(note: Note) {
+    val fullPreviewText = notePreviewFullText(note)
+    val firstLine = fullPreviewText.substringBefore('\n')
+    val remainingLines = fullPreviewText.substringAfter('\n', "")
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        NoteCardCompactTypeIcon(note = note)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = firstLine,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+
+    if (remainingLines.isNotBlank()) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = remainingLines,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

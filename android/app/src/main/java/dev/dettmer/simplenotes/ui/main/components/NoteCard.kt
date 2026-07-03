@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -121,75 +123,31 @@ fun NoteCard(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                // Header row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Type icon
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
+                // Title — 🆕 v2.11.0: bei leerem Titel komplett weglassen (kein "Untitled"-Platzhalter);
+                // die erste Preview-Zeile rückt dann in den Titel-Slot nach, der Rest
+                // erscheint darunter über die volle Kartenbreite (wie beim Titel-Fall)
+                if (note.title.isNotBlank()) {
+                    // Header row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = if (note.noteType == NoteType.TEXT) {
-                                Icons.Outlined.Description
-                            } else {
-                                Icons.AutoMirrored.Outlined.List
-                            },
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(16.dp)
+                        NoteCardTypeIcon(note = note, isPinned = note.isPinned == true)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = note.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
-                    if (note.isPinned == true) {
-                        Icon(
-                            imageVector = Icons.Filled.PushPin,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .padding(start = 6.dp)
-                                .size(14.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    // Title
-                    Text(
-                        text = note.title.ifEmpty { stringResource(R.string.untitled) },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Preview
-                if (note.noteType == NoteType.TEXT) {
-                    Text(
-                        text = noteCardMarkdownPreview(note.content),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NoteCardPreviewContent(note = note)
                 } else {
-                    ChecklistItemsPreview(
-                        items = note.checklistItems.orEmpty(),
-                        sortOptionName = note.checklistSortOption,
-                        maxItems = 3,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    NoteCardIconLeadingPreview(note = note, isPinned = note.isPinned == true)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -276,5 +234,125 @@ fun NoteCard(
                 }
             }
         }
+    }
+}
+
+/** Typ-Icon (+ optionaler Pin), gemeinsam genutzt vom Titel- und vom Icon-Leading-Preview-Fall. */
+@Composable
+private fun NoteCardTypeIcon(note: Note, isPinned: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (note.noteType == NoteType.TEXT) {
+                Icons.Outlined.Description
+            } else {
+                Icons.AutoMirrored.Outlined.List
+            },
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+
+    if (isPinned) {
+        Icon(
+            imageVector = Icons.Filled.PushPin,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .padding(start = 6.dp)
+                .size(14.dp)
+        )
+    }
+}
+
+@Composable
+private fun NoteCardPreviewContent(note: Note, modifier: Modifier = Modifier) {
+    if (note.noteType == NoteType.TEXT) {
+        Text(
+            text = noteCardMarkdownPreview(note.content),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = modifier
+        )
+    } else {
+        ChecklistItemsPreview(
+            items = note.checklistItems.orEmpty(),
+            sortOptionName = note.checklistSortOption,
+            maxItems = 3,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = modifier
+        )
+    }
+}
+
+/**
+ * Preview-Text als AnnotatedString, unabhängig vom NoteType — Grundlage, um die erste Zeile
+ * in den Titel-Slot zu heben und den Rest separat darunter anzuzeigen. AnnotatedString statt
+ * String, damit die Markdown-Formatierung aus noteCardMarkdownPreview beim Splitten erhalten
+ * bleibt (subSequence bewahrt Spans, ein reiner String-Split würde sie verlieren).
+ */
+@Composable
+private fun notePreviewFullText(note: Note): AnnotatedString {
+    return if (note.noteType == NoteType.TEXT) {
+        noteCardMarkdownPreview(note.content)
+    } else {
+        val items = note.checklistItems.orEmpty()
+        remember(items, note.checklistSortOption) {
+            AnnotatedString(generateChecklistPreview(items, note.checklistSortOption))
+        }
+    }
+}
+
+/** Trennt an der ersten Zeile, Formatierung bleibt dank subSequence erhalten. */
+private fun AnnotatedString.splitFirstLine(): Pair<AnnotatedString, AnnotatedString> {
+    val newlineIndex = text.indexOf('\n')
+    return if (newlineIndex == -1) {
+        this to AnnotatedString("")
+    } else {
+        subSequence(0, newlineIndex) to subSequence(newlineIndex + 1, length)
+    }
+}
+
+/**
+ * Bei leerem Titel: erste Preview-Zeile im Titel-Slot neben dem Icon (einzeilig, wie zuvor
+ * der Titel), der Rest der Preview folgt unverändert als eigener Block über die volle
+ * Kartenbreite — dieselbe Row/Spacer-Mechanik wie im Titel-Fall, keine Sonderlogik nötig.
+ */
+@Composable
+private fun NoteCardIconLeadingPreview(note: Note, isPinned: Boolean) {
+    val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        NoteCardTypeIcon(note = note, isPinned = isPinned)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = firstLine,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+
+    if (remainingLines.isNotBlank()) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = remainingLines,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
