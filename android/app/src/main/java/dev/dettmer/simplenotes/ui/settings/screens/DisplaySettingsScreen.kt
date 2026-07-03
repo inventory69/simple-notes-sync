@@ -367,14 +367,8 @@ private fun DisplayModeChip(label: String, icon: androidx.compose.ui.graphics.ve
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            ),
         shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -443,14 +437,9 @@ private fun GridColumnChip(columns: Int, selected: Boolean, onClick: () -> Unit)
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .widthIn(min = 56.dp)
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            ),
+        modifier = Modifier.widthIn(min = 56.dp),
         shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -530,14 +519,8 @@ private fun ThemeModeChip(mode: ThemeMode, selected: Boolean, onClick: () -> Uni
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            ),
         shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -627,15 +610,9 @@ private fun ColorThemeChip(theme: ColorTheme, selected: Boolean, enabled: Boolea
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .alpha(chipAlpha)
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            ),
+        modifier = Modifier.alpha(chipAlpha),
         shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -738,14 +715,8 @@ private fun FontSizeChip(scale: FontSizeScale, selected: Boolean, onClick: () ->
 
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            ),
         shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
     ) {
         Column(
