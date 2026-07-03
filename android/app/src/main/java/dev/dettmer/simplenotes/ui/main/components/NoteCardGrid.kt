@@ -55,6 +55,7 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.models.getSize
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
@@ -74,6 +75,7 @@ fun NoteCardGrid(
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
+    previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -87,7 +89,7 @@ fun NoteCardGrid(
     val ticker = timestampTicker
 
     // Dynamische maxLines basierend auf Größe
-    val previewMaxLines = if (noteSize == NoteSize.LARGE) 6 else 3
+    val previewMaxLines = if (noteSize == NoteSize.LARGE) previewLength.gridLargeLines else previewLength.gridSmallLines
 
     // v2.5.0: Resolve note colour, fall back to theme default
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -154,7 +156,11 @@ fun NoteCardGrid(
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
-                    NoteCardGridPreviewContent(note = note, maxLines = previewMaxLines)
+                    NoteCardGridPreviewContent(
+                        note = note,
+                        maxLines = previewMaxLines,
+                        itemMaxLines = previewLength.itemMaxLines
+                    )
                 } else {
                     NoteCardGridIconLeadingPreview(
                         note = note,
@@ -290,7 +296,7 @@ private fun NoteCardGridTypeIcon(note: Note, isPinned: Boolean) {
 }
 
 @Composable
-private fun NoteCardGridPreviewContent(note: Note, maxLines: Int, modifier: Modifier = Modifier) {
+private fun NoteCardGridPreviewContent(note: Note, maxLines: Int, itemMaxLines: Int, modifier: Modifier = Modifier) {
     if (note.noteType == NoteType.TEXT) {
         Text(
             text = noteCardMarkdownPreview(note.content),
@@ -306,6 +312,7 @@ private fun NoteCardGridPreviewContent(note: Note, maxLines: Int, modifier: Modi
             sortOptionName = note.checklistSortOption,
             maxItems = maxLines - 1,
             style = MaterialTheme.typography.bodySmall,
+            itemMaxLines = itemMaxLines,
             modifier = modifier
         )
     }

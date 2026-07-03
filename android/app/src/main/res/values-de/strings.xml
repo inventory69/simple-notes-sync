@@ -479,6 +479,13 @@
     <string name="grid_adaptive_scaling_subtitle">Spalten passen sich an Displaygröße und Textskalierung an</string>
     <string name="grid_manual_columns_title">Spaltenanzahl</string>
     <string name="grid_scaling_info">Bei automatischer Skalierung passt sich die Spaltenanzahl an die Displaygröße und Textskalierung des Geräts an. Bei deaktivierter Skalierung wird eine feste Spaltenanzahl verwendet.</string>
+    <!-- 🆕 v2.11.0: Vorschaulänge der Notizen -->
+    <string name="note_preview_length_title">Vorschaulänge</string>
+    <string name="note_preview_length_info">Legt fest, wie viele Zeilen (bzw. Checklisten-Einträge) in der Notizvorschau angezeigt werden — in List- und Grid-Ansicht.</string>
+    <string name="note_preview_length_compact">Kurz</string>
+    <string name="note_preview_length_standard">Standard</string>
+    <string name="note_preview_length_long">Lang</string>
+    <string name="note_preview_length_extra_long">Sehr lang</string>
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App-Titel</string>
     <string name="custom_app_title_label">Eigener Titel</string>

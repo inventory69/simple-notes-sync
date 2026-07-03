@@ -520,6 +520,14 @@
     <string name="grid_manual_columns_title">Column count</string>
     <string name="grid_scaling_info">With automatic scaling, the number of columns adapts to your device\'s display size and text scale. When disabled, a fixed column count is used regardless of display settings.</string>
 
+    <!-- 🆕 v2.11.0: Note preview length -->
+    <string name="note_preview_length_title">Note preview length</string>
+    <string name="note_preview_length_info">Controls how many lines (or checklist items) are shown in the note preview, in both List and Grid view.</string>
+    <string name="note_preview_length_compact">Compact</string>
+    <string name="note_preview_length_standard">Standard</string>
+    <string name="note_preview_length_long">Long</string>
+    <string name="note_preview_length_extra_long">Extra long</string>
+
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App Title</string>
     <string name="custom_app_title_label">Custom title</string>

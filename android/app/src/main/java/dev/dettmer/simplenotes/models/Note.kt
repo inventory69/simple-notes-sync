@@ -10,6 +10,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
+import kotlin.math.ceil
 
 /**
  * Note data class with Compose stability annotation.
@@ -652,16 +653,31 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
     }
 }
 
+// 🆕 v2.11.0: Rough average characters per rendered line at default font size/card width —
+// used to estimate wrapped line count from raw text length (see estimateDisplayLines below).
+private const val ESTIMATED_CHARS_PER_LINE = 32
+
+/**
+ * Schätzt, wie viele Anzeige-Zeilen ein Text (z. B. eine Notiz-Zeile oder ein Checklist-Item)
+ * voraussichtlich belegt: explizite Zeilenumbrüche zählen einzeln, lange Zeilen werden anhand
+ * [ESTIMATED_CHARS_PER_LINE] auf ihre Umbruchzeilen hochgerechnet.
+ */
+private fun estimateDisplayLines(text: String): Int =
+    text.split("\n").sumOf { line ->
+        if (line.isEmpty()) 1 else ceil(line.length / ESTIMATED_CHARS_PER_LINE.toDouble()).toInt()
+    }
+
 /**
  * 🎨 v1.7.0: Note size classification for Staggered Grid Layout
  */
 enum class NoteSize {
-    SMALL, // Compact display (< 80 chars or ≤ 4 checklist items)
+    SMALL, // Compact display (≤ SMALL_LINE_THRESHOLD estimated display lines)
     LARGE; // Full-width display
 
     companion object {
-        const val SMALL_TEXT_THRESHOLD = 80 // Max characters for compact text note
-        const val SMALL_CHECKLIST_THRESHOLD = 4 // Max items for compact checklist
+        // 🆕 v2.11.0: Zeilen-basiert statt reine Zeichen-/Item-Zählung — erkennt jetzt auch
+        // viele kurze Zeilen und wenige, aber lange Checklist-Items korrekt als LARGE.
+        const val SMALL_LINE_THRESHOLD = 3
     }
 }
 
@@ -669,15 +685,11 @@ enum class NoteSize {
  * 🎨 v1.7.0: Determine note size for grid layout optimization
  */
 fun Note.getSize(): NoteSize {
-    return when (noteType) {
-        NoteType.TEXT -> {
-            if (content.length < NoteSize.SMALL_TEXT_THRESHOLD) NoteSize.SMALL else NoteSize.LARGE
-        }
-        NoteType.CHECKLIST -> {
-            val itemCount = checklistItems?.size ?: 0
-            if (itemCount <= NoteSize.SMALL_CHECKLIST_THRESHOLD) NoteSize.SMALL else NoteSize.LARGE
-        }
+    val estimatedLines = when (noteType) {
+        NoteType.TEXT -> estimateDisplayLines(content)
+        NoteType.CHECKLIST -> checklistItems.orEmpty().sumOf { estimateDisplayLines(it.text) }
     }
+    return if (estimatedLines <= NoteSize.SMALL_LINE_THRESHOLD) NoteSize.SMALL else NoteSize.LARGE
 }
 
 // Extension für JSON-Escaping

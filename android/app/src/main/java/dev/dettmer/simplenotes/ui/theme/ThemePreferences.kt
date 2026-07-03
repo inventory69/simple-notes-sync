@@ -56,6 +56,25 @@ enum class ColorTheme(val displayNameResId: Int, val previewColor: Color) {
 }
 
 /**
+ * NotePreviewLength — v2.11.0: presets controlling how many preview lines/items a note card
+ * shows in List and Grid view. [gridSmallLines]/[gridLargeLines] map to the SMALL/LARGE tiers
+ * of [dev.dettmer.simplenotes.models.NoteSize]. STANDARD matches the previous hardcoded
+ * behaviour (List = 3, Grid SMALL = 3 / LARGE = 6) so existing users see no change by default.
+ */
+enum class NotePreviewLength(
+    val displayNameResId: Int,
+    val listLines: Int,
+    val gridSmallLines: Int,
+    val gridLargeLines: Int,
+    val itemMaxLines: Int
+) {
+    COMPACT(R.string.note_preview_length_compact, 2, 2, 4, 1),
+    STANDARD(R.string.note_preview_length_standard, 3, 3, 6, 1),
+    LONG(R.string.note_preview_length_long, 5, 4, 8, 2),
+    EXTRA_LONG(R.string.note_preview_length_extra_long, 8, 6, 10, 2)
+}
+
+/**
  * ThemePreferences — reads and writes theme settings to SharedPreferences.
  * Matches the same [Constants.PREFS_NAME] prefs file used by all other settings.
  * v2.0.0: Multi-theme system
@@ -64,6 +83,7 @@ object ThemePreferences {
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_COLOR_THEME = "color_theme"
     private const val KEY_FONT_SIZE_SCALE = "font_size_scale"
+    private const val KEY_NOTE_PREVIEW_LENGTH = "note_preview_length"
 
     fun getThemeMode(prefs: SharedPreferences): ThemeMode {
         val stored = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
@@ -90,5 +110,14 @@ object ThemePreferences {
 
     fun setFontSizeScale(prefs: SharedPreferences, scale: FontSizeScale) {
         prefs.edit { putString(KEY_FONT_SIZE_SCALE, scale.name) }
+    }
+
+    fun getNotePreviewLength(prefs: SharedPreferences): NotePreviewLength {
+        val stored = prefs.getString(KEY_NOTE_PREVIEW_LENGTH, NotePreviewLength.STANDARD.name)
+        return stored.toEnumOrDefault(NotePreviewLength.STANDARD)
+    }
+
+    fun setNotePreviewLength(prefs: SharedPreferences, length: NotePreviewLength) {
+        prefs.edit { putString(KEY_NOTE_PREVIEW_LENGTH, length.name) }
     }
 }

@@ -26,6 +26,8 @@ import dev.dettmer.simplenotes.ui.main.components.SECTION_FOLDERS
 import dev.dettmer.simplenotes.ui.main.components.SECTION_NOTES
 import dev.dettmer.simplenotes.ui.main.components.SECTION_PINNED
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
+import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.trashRetentionDays
@@ -187,6 +189,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.getInt(Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS)
     )
     val gridManualColumns: StateFlow<Int> = _gridManualColumns.asStateFlow()
+
+    // 🆕 v2.11.0: Note preview length preset (List + Grid)
+    private val _notePreviewLength = MutableStateFlow(ThemePreferences.getNotePreviewLength(prefs))
+    val notePreviewLength: StateFlow<NotePreviewLength> = _notePreviewLength.asStateFlow()
+
+    /** Refresh note preview length from SharedPreferences. Called when returning from Settings screen. */
+    fun refreshNotePreviewLength() {
+        _notePreviewLength.value = ThemePreferences.getNotePreviewLength(prefs)
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 Collapsible Sections State (Pinned / Folders / Notes)

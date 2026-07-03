@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import kotlin.math.max
 
 /**
@@ -45,6 +46,7 @@ fun NotesStaggeredGrid(
     isSelectionMode: Boolean,
     modifier: Modifier = Modifier,
     timestampTicker: Long = 0L,
+    previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit,
     folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
@@ -128,6 +130,7 @@ fun NotesStaggeredGrid(
                                     selectedNoteIds = selectedNoteIds,
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
+                                    previewLength = previewLength,
                                     onNoteClick = onNoteClick,
                                     onNoteLongClick = onNoteLongClick
                                 )
@@ -211,6 +214,7 @@ fun NotesStaggeredGrid(
                                 isSelected = selectedNoteIds.contains(note.id),
                                 isSelectionMode = isSelectionMode,
                                 timestampTicker = timestampTicker,
+                                previewLength = previewLength,
                                 onClick = { onNoteClick(note) },
                                 onLongClick = { onNoteLongClick(note) }
                             )
@@ -232,6 +236,7 @@ private fun PinnedNotesGrid(
     selectedNoteIds: Set<String>,
     isSelectionMode: Boolean,
     timestampTicker: Long,
+    previewLength: NotePreviewLength,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {
@@ -253,6 +258,7 @@ private fun PinnedNotesGrid(
                             isSelected = selectedNoteIds.contains(note.id),
                             isSelectionMode = isSelectionMode,
                             timestampTicker = timestampTicker,
+                            previewLength = previewLength,
                             onClick = { onNoteClick(note) },
                             onLongClick = { onNoteLongClick(note) }
                         )

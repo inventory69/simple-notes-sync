@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,6 +54,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.utils.Constants
 
@@ -69,6 +71,7 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val displayMode by viewModel.displayMode.collectAsState()
     val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
     val gridManualColumns by viewModel.gridManualColumns.collectAsState()
+    val notePreviewLength by viewModel.notePreviewLength.collectAsState()
     val customAppTitle by viewModel.customAppTitle.collectAsState()
     val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
@@ -167,6 +170,22 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     text = stringResource(R.string.grid_scaling_info)
                 )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── 🆕 v2.11.0: Note Preview Length Section ──
+            SettingsSectionHeader(text = stringResource(R.string.note_preview_length_title))
+
+            NotePreviewLengthSelector(
+                currentLength = notePreviewLength,
+                onLengthSelected = { viewModel.setNotePreviewLength(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsInfoCard(
+                text = stringResource(R.string.note_preview_length_info)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -645,6 +664,48 @@ private fun ColorThemeChip(theme: ColorTheme, selected: Boolean, enabled: Boolea
                 }
             )
         }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NotePreviewLengthSelector + NotePreviewLengthChip — chip row for the note preview
+// length preset (List + Grid). 4 static options: Compact / Standard / Long / Extra long.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun NotePreviewLengthSelector(currentLength: NotePreviewLength, onLengthSelected: (NotePreviewLength) -> Unit) {
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        NotePreviewLength.entries.forEach { length ->
+            NotePreviewLengthChip(
+                length = length,
+                selected = currentLength == length,
+                onClick = { onLengthSelected(length) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotePreviewLengthChip(length: NotePreviewLength, selected: Boolean, onClick: () -> Unit) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Text(
+            text = stringResource(length.displayNameResId),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        )
     }
 }
 

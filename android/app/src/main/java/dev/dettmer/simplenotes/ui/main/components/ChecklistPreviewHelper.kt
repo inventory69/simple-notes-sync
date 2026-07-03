@@ -83,7 +83,8 @@ fun ChecklistItemsPreview(
     sortOptionName: String?,
     maxItems: Int,
     style: TextStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    itemMaxLines: Int = 1 // 🆕 v2.11.0: erlaubt mehrzeiliges Wrapping langer Items (Preset-gesteuert)
 ) {
     val sorted = remember(items, sortOptionName) { sortChecklistItemsForPreview(items, sortOptionName) }
     val remaining = (sorted.size - maxItems).coerceAtLeast(0)
@@ -99,7 +100,7 @@ fun ChecklistItemsPreview(
                 text = "$prefix ${item.text}",
                 style = style,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = itemMaxLines,
                 overflow = TextOverflow.Ellipsis
             )
         }

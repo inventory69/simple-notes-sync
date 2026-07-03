@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
@@ -288,6 +289,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _fontSizeScale = MutableStateFlow(ThemePreferences.getFontSizeScale(prefs))
     val fontSizeScale: StateFlow<FontSizeScale> = _fontSizeScale.asStateFlow()
 
+    // 🆕 v2.11.0: Preset for note preview length in List/Grid view
+    private val _notePreviewLength = MutableStateFlow(ThemePreferences.getNotePreviewLength(prefs))
+    val notePreviewLength: StateFlow<NotePreviewLength> = _notePreviewLength.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
         ThemePreferences.setThemeMode(prefs, mode)
@@ -301,6 +306,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setFontSizeScale(scale: FontSizeScale) {
         _fontSizeScale.value = scale
         ThemePreferences.setFontSizeScale(prefs, scale)
+    }
+
+    fun setNotePreviewLength(length: NotePreviewLength) {
+        _notePreviewLength.value = length
+        ThemePreferences.setNotePreviewLength(prefs, length)
     }
 
     // 🎨 v1.7.0: Display Settings State

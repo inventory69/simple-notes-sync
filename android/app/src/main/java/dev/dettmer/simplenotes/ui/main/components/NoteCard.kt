@@ -52,6 +52,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
 
 /**
@@ -72,6 +73,7 @@ fun NoteCard(
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
+    previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -145,9 +147,17 @@ fun NoteCard(
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
-                    NoteCardPreviewContent(note = note)
+                    NoteCardPreviewContent(
+                        note = note,
+                        maxLines = previewLength.listLines,
+                        itemMaxLines = previewLength.itemMaxLines
+                    )
                 } else {
-                    NoteCardIconLeadingPreview(note = note, isPinned = note.isPinned == true)
+                    NoteCardIconLeadingPreview(
+                        note = note,
+                        isPinned = note.isPinned == true,
+                        maxLines = previewLength.listLines
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -271,13 +281,13 @@ private fun NoteCardTypeIcon(note: Note, isPinned: Boolean) {
 }
 
 @Composable
-private fun NoteCardPreviewContent(note: Note, modifier: Modifier = Modifier) {
+private fun NoteCardPreviewContent(note: Note, maxLines: Int, itemMaxLines: Int, modifier: Modifier = Modifier) {
     if (note.noteType == NoteType.TEXT) {
         Text(
             text = noteCardMarkdownPreview(note.content),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 3,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
             modifier = modifier
         )
@@ -285,8 +295,9 @@ private fun NoteCardPreviewContent(note: Note, modifier: Modifier = Modifier) {
         ChecklistItemsPreview(
             items = note.checklistItems.orEmpty(),
             sortOptionName = note.checklistSortOption,
-            maxItems = 3,
+            maxItems = maxLines,
             style = MaterialTheme.typography.bodyMedium,
+            itemMaxLines = itemMaxLines,
             modifier = modifier
         )
     }
@@ -326,7 +337,7 @@ private fun AnnotatedString.splitFirstLine(): Pair<AnnotatedString, AnnotatedStr
  * Kartenbreite — dieselbe Row/Spacer-Mechanik wie im Titel-Fall, keine Sonderlogik nötig.
  */
 @Composable
-private fun NoteCardIconLeadingPreview(note: Note, isPinned: Boolean) {
+private fun NoteCardIconLeadingPreview(note: Note, isPinned: Boolean, maxLines: Int) {
     val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
 
     Row(
@@ -351,7 +362,7 @@ private fun NoteCardIconLeadingPreview(note: Note, isPinned: Boolean) {
             text = remainingLines,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = maxLines - 1,
             overflow = TextOverflow.Ellipsis
         )
     }

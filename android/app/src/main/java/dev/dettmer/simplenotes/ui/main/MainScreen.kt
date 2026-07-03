@@ -98,6 +98,7 @@ import dev.dettmer.simplenotes.ui.main.components.RenameFolderDialog
 import dev.dettmer.simplenotes.ui.main.components.SortDialog
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import kotlinx.coroutines.launch
 
 private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
@@ -176,6 +177,8 @@ fun MainScreen(
     // 🆕 v2.1.0 (F46): Grid column control
     val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
     val gridManualColumns by viewModel.gridManualColumns.collectAsState()
+    // 🆕 v2.11.0: Note preview length preset (List + Grid)
+    val notePreviewLength by viewModel.notePreviewLength.collectAsState()
     // 🆕 collapsible sections (Pinned / Folders / Notes)
     val collapsedSections by viewModel.collapsedSections.collectAsState()
     // 🆕 section reordering
@@ -408,6 +411,7 @@ fun MainScreen(
                                 timestampTicker = timestampTicker,
                                 gridAdaptiveScaling = gridAdaptiveScaling,
                                 gridManualColumns = gridManualColumns,
+                                notePreviewLength = notePreviewLength,
                                 collapsedSections = collapsedSections,
                                 sectionOrder = sectionOrder,
                                 scrollToTop = scrollToTop,
@@ -805,6 +809,7 @@ private fun NotesPane(
     timestampTicker: Long,
     gridAdaptiveScaling: Boolean,
     gridManualColumns: Int,
+    notePreviewLength: NotePreviewLength,
     collapsedSections: Set<String>, // 🆕 collapsible sections
     sectionOrder: List<String>, // 🆕 section reordering
     scrollToTop: Boolean,
@@ -910,6 +915,7 @@ private fun NotesPane(
             selectedNoteIds = selectedNotes,
             isSelectionMode = isSelectionMode,
             timestampTicker = timestampTicker,
+            previewLength = notePreviewLength,
             modifier = Modifier.fillMaxSize(),
             onNoteClick = { note ->
                 focusManager.clearFocus()
@@ -938,6 +944,7 @@ private fun NotesPane(
             selectedNotes = selectedNotes,
             isSelectionMode = isSelectionMode,
             timestampTicker = timestampTicker,
+            previewLength = notePreviewLength,
             listState = listState,
             modifier = Modifier.fillMaxSize(),
             folders = foldersForPane,

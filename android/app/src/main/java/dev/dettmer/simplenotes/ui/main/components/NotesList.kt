@@ -36,6 +36,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 
 /**
  * Notes list - v1.5.0 with Multi-Select Support
@@ -56,6 +57,7 @@ fun NotesList(
     selectedNotes: Set<String> = emptySet(),
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
+    previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     listState: LazyListState = rememberLazyListState(),
     folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
     folderNoteCounts: Map<String, Int> = emptyMap(),
@@ -124,6 +126,7 @@ fun NotesList(
                                     isSelected = note.id in selectedNotes,
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
+                                    previewLength = previewLength,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                     onClick = {
                                         if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note)
@@ -194,6 +197,7 @@ fun NotesList(
                                 isSelected = note.id in selectedNotes,
                                 isSelectionMode = isSelectionMode,
                                 timestampTicker = timestampTicker,
+                                previewLength = previewLength,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 onClick = { if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note) },
                                 onLongClick = { onNoteLongPress(note) }
