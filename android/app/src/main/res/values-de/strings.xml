@@ -178,6 +178,24 @@
     <string name="snackbar_trash_emptied">Papierkorb geleert</string>
 
     <!-- ============================= -->
+    <!-- ARCHIVE (v2.11.0)             -->
+    <!-- ============================= -->
+    <string name="action_archive">Archivieren</string>
+    <string name="action_unarchive">Archivierung aufheben</string>
+    <string name="archive_empty_state_title">Archiv ist leer</string>
+    <string name="archive_empty_state_message">Archivierte Notizen erscheinen hier</string>
+    <string name="snackbar_note_archived">\"%s\" archiviert</string>
+    <string name="snackbar_note_unarchived">Archivierung von \"%s\" aufgehoben</string>
+    <plurals name="snackbar_notes_archived">
+        <item quantity="one">%d Notiz archiviert</item>
+        <item quantity="other">%d Notizen archiviert</item>
+    </plurals>
+    <plurals name="snackbar_notes_unarchived">
+        <item quantity="one">Archivierung von %d Notiz aufgehoben</item>
+        <item quantity="other">Archivierung von %d Notizen aufgehoben</item>
+    </plurals>
+
+    <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
     <string name="sync_error_ssl">SSL-Fehler</string>
@@ -508,6 +526,8 @@
     <!-- 🆕 v2.5.0: Farbfilter -->
      <string name="filter_color">Nach Farbe filtern</string>
     <string name="filter_color_all">Alle Farben</string>
+    <!-- 🆕 v2.11.0: Archiv-Eintrag im Overflow-Menü -->
+    <string name="filter_archive">Archiv</string>
     <!-- v1.9.0 (F10): Suche -->
     <string name="search_notes_placeholder">Suchen…</string>
     <string name="search_clear">Suche leeren</string>

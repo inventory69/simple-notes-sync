@@ -89,6 +89,12 @@ class ComposeMainActivity : FragmentActivity() {
                     ?: return@registerForActivityResult
             // 🆕 v2.9.0 (Trash): Editor-Löschung → in den Papierkorb (mit Undo-Snackbar).
             viewModel.moveToTrashFromEditor(noteId)
+        } else if (result.resultCode == ComposeNoteEditorActivity.RESULT_NOTE_ARCHIVE_TOGGLED) {
+            val noteId =
+                result.data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID)
+                    ?: return@registerForActivityResult
+            // 🆕 v2.11.0 (Archive): Editor-Archivierung → Toggle + Undo-Snackbar im MainViewModel.
+            viewModel.toggleArchiveFromEditor(noteId)
         }
     }
 

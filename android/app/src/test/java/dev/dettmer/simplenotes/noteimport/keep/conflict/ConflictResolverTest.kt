@@ -57,7 +57,7 @@ class ConflictResolverTest {
     @Test
     fun `resolve_alwaysCreate_returnsCreate`() = runBlocking {
         val storage = mockk<NotesStorage>()
-        // ALWAYS_CREATE darf storage.loadActiveNotes() gar nicht erst aufrufen → kein coEvery nötig.
+        // ALWAYS_CREATE darf storage.loadNonTrashedNotes() gar nicht erst aufrufen → kein coEvery nötig.
         val resolver = ConflictResolver(storage)
         val r = resolver.resolve(textNote(), ConflictStrategy.ALWAYS_CREATE)
         assertEquals(ConflictResolver.Resolution.Create, r)
@@ -68,7 +68,7 @@ class ConflictResolverTest {
     fun `resolve_skip_existingHashMatch_returnsSkip`() = runBlocking {
         val candidate = textNote(id = "new", title = "T", content = "Hello")
         val existing = textNote(id = "old", title = "T", content = "Hello")
-        val storage = mockk<NotesStorage> { coEvery { loadActiveNotes() } returns listOf(existing) }
+        val storage = mockk<NotesStorage> { coEvery { loadNonTrashedNotes() } returns listOf(existing) }
         val resolver = ConflictResolver(storage)
         val r = resolver.resolve(candidate, ConflictStrategy.SKIP)
         assertTrue(r is ConflictResolver.Resolution.Skip)
@@ -79,7 +79,7 @@ class ConflictResolverTest {
     fun `resolve_skip_noMatch_returnsCreate`() = runBlocking {
         val candidate = textNote(title = "T", content = "Hello")
         val existing = textNote(id = "old", title = "T", content = "Different")
-        val storage = mockk<NotesStorage> { coEvery { loadActiveNotes() } returns listOf(existing) }
+        val storage = mockk<NotesStorage> { coEvery { loadNonTrashedNotes() } returns listOf(existing) }
         val resolver = ConflictResolver(storage)
         val r = resolver.resolve(candidate, ConflictStrategy.SKIP)
         assertEquals(ConflictResolver.Resolution.Create, r)
@@ -90,7 +90,7 @@ class ConflictResolverTest {
     fun `resolve_replace_existingMatch_returnsReplaceWithExistingId`() = runBlocking {
         val candidate = textNote(id = "new", title = "T", content = "Hello")
         val existing = textNote(id = "OLD-ID", title = "T", content = "Hello")
-        val storage = mockk<NotesStorage> { coEvery { loadActiveNotes() } returns listOf(existing) }
+        val storage = mockk<NotesStorage> { coEvery { loadNonTrashedNotes() } returns listOf(existing) }
         val resolver = ConflictResolver(storage)
         val r = resolver.resolve(candidate, ConflictStrategy.REPLACE)
         assertEquals(ConflictResolver.Resolution.Replace(existingId = "OLD-ID"), r)
@@ -130,7 +130,7 @@ class ConflictResolverTest {
     @Test
     fun `resolve_storageThrows_returnsCreate`() = runBlocking {
         val storage = mockk<NotesStorage> {
-            coEvery { loadActiveNotes() } throws RuntimeException("disk full")
+            coEvery { loadNonTrashedNotes() } throws RuntimeException("disk full")
         }
         val resolver = ConflictResolver(storage)
         val r = resolver.resolve(textNote(), ConflictStrategy.SKIP)

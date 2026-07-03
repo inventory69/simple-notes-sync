@@ -223,6 +223,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     isNewNote = false,
                     isLoading = false,
                     color = note.color, // 🆕 v2.5.0
+                    isArchived = note.isArchived, // 🆕 v2.11.0 (Archive)
                     toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                         ToolbarTitle.EDIT_CHECKLIST
                     } else {
@@ -259,6 +260,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 isNewNote = false,
                 isLoading = false,
                 color = note.color,
+                isArchived = note.isArchived, // 🆕 v2.11.0 (Archive)
                 toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                     ToolbarTitle.EDIT_CHECKLIST
                 } else {
@@ -1469,6 +1471,20 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
+    /**
+     * 🆕 v2.11.0 (Archive): Archiviert/dearchiviert die aktuelle Notiz.
+     * Speichert offene Änderungen (silent) und emittiert das Event an die Activity —
+     * die Umschaltung + Undo-Snackbar übernimmt der MainViewModel (wie beim Löschen).
+     */
+    fun toggleArchive() {
+        viewModelScope.launch {
+            if (isDirty) performSave(silent = true)
+            existingNote?.let { note ->
+                _events.emit(NoteEditorEvent.NoteArchiveToggleRequested(note.id))
+            }
+        }
+    }
+
     fun canDelete(): Boolean = existingNote != null
 
     /**
@@ -1551,7 +1567,8 @@ data class NoteEditorUiState(
     val isLoading: Boolean = false,
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
-    val defaultStartInPreviewMode: Boolean = false
+    val defaultStartInPreviewMode: Boolean = false,
+    val isArchived: Boolean = false // 🆕 v2.11.0 (Archive)
 )
 
 data class ChecklistItemState(
@@ -1606,6 +1623,9 @@ sealed interface NoteEditorEvent {
 
     /** 🆕 v1.10.0-P2: Signals Activity to set result and finish so MainViewModel shows undo snackbar. */
     data class NoteDeleteRequested(val noteId: String) : NoteEditorEvent
+
+    /** 🆕 v2.11.0 (Archive): Activity setzt Result und schließt; MainViewModel toggelt archivedAt. */
+    data class NoteArchiveToggleRequested(val noteId: String) : NoteEditorEvent
 
     // 🆕 v1.10.0-Papa: Calendar & Share events
     data class OpenCalendar(val title: String, val description: String) : NoteEditorEvent

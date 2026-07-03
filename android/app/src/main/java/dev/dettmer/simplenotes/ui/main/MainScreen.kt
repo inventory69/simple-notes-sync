@@ -35,11 +35,13 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.SyncDisabled
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -208,6 +210,7 @@ fun MainScreen(
     // 🆕 v2.5.0: Farbfilter-State
     val colorFilter by viewModel.colorFilter.collectAsState()
     val availableColors by viewModel.availableColors.collectAsState()
+    val showArchived by viewModel.showArchived.collectAsState() // 🆕 v2.11.0 (Archive)
     val focusManager = LocalFocusManager.current
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -265,12 +268,14 @@ fun MainScreen(
                     SelectionTopBar(
                         selectedNoteCount = selectedNotes.size,
                         selectedFolderCount = selectedFolders.size,
-                        totalCount = notes.size + (if (currentFolder == null) folders.size else 0),
+                        totalCount = notes.size + (if (currentFolder == null && !showArchived) folders.size else 0),
                         allSelectedPinned = notes.filter { it.id in selectedNotes }.all { it.isPinned == true },
                         isSelectedFolderLocalOnly = selectedAllLocalOnly,
+                        isArchiveView = showArchived, // 🆕 v2.11.0 (Archive)
                         onCloseSelection = { viewModel.clearSelection() },
                         onSelectAll = { viewModel.selectAll() },
                         onTogglePinSelected = { viewModel.togglePinForSelected() },
+                        onToggleArchiveSelected = { viewModel.toggleArchiveForSelected() }, // 🆕 v2.11.0 (Archive)
                         onColorClick = { showBatchColorPicker = true },
                         onMoveClick = { showMoveSheet = true },
                         onRename = { showRenameDialog = true },
@@ -372,6 +377,8 @@ fun MainScreen(
                                 currentColorFilter = colorFilter, // 🆕 v2.5.0
                                 onColorFilterSelected = { viewModel.setColorFilter(it) }, // 🆕 v2.5.0
                                 availableColors = availableColors, // 🆕 v2.5.0
+                                archiveActive = showArchived, // 🆕 v2.11.0 (Archive)
+                                onArchiveToggle = { viewModel.setShowArchived(!showArchived) }, // 🆕 v2.11.0 (Archive)
                                 searchQuery = searchQuery,
                                 onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                                 onSortClick = { showSortDialog = true },
@@ -407,6 +414,7 @@ fun MainScreen(
                                 syncScrollToTop = syncScrollToTop,
                                 noteFilter = noteFilter,
                                 colorFilter = colorFilter,
+                                showArchived = showArchived, // 🆕 v2.11.0 (Archive)
                                 onResetScrollToTop = { viewModel.resetScrollToTop() },
                                 onResetSyncScrollToTop = { viewModel.resetSyncCompletedScrollToTop() },
                                 onEnterFolder = { viewModel.enterFolder(it) },
@@ -546,8 +554,9 @@ fun MainScreen(
         }
 
         // 🆕 v1.11.0: FAB als Fullscreen-Overlay ÜBER dem Scaffold — Scrim deckt Statusbar ab
+        // 🆕 v2.11.0 (Archive): FAB im Archiv ausgeblendet (Archiv legt keine neuen Notizen an).
         AnimatedVisibility(
-            visible = !isSelectionMode,
+            visible = !isSelectionMode && !showArchived,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
@@ -649,9 +658,11 @@ private fun SelectionTopBar(
     totalCount: Int,
     allSelectedPinned: Boolean,
     isSelectedFolderLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
+    isArchiveView: Boolean = false, // 🆕 v2.11.0 (Archive)
     onCloseSelection: () -> Unit,
     onSelectAll: () -> Unit,
     onTogglePinSelected: () -> Unit,
+    onToggleArchiveSelected: () -> Unit = {}, // 🆕 v2.11.0 (Archive)
     onColorClick: () -> Unit,
     onMoveClick: () -> Unit = {},
     onRename: () -> Unit = {}, // 🆕 v2.7.0 (Folders)
@@ -682,8 +693,10 @@ private fun SelectionTopBar(
                 totalCount = totalCount,
                 allSelectedPinned = allSelectedPinned,
                 isSelectedFolderLocalOnly = isSelectedFolderLocalOnly,
+                isArchiveView = isArchiveView, // 🆕 v2.11.0 (Archive)
                 onSelectAll = onSelectAll,
                 onTogglePin = onTogglePinSelected,
+                onToggleArchive = onToggleArchiveSelected, // 🆕 v2.11.0 (Archive)
                 onColorClick = onColorClick,
                 onMoveClick = onMoveClick,
                 onRename = onRename,
@@ -798,6 +811,7 @@ private fun NotesPane(
     syncScrollToTop: Boolean,
     noteFilter: NoteFilter,
     colorFilter: String?,
+    showArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
     onResetScrollToTop: () -> Unit,
     onResetSyncScrollToTop: () -> Unit,
     onEnterFolder: (String) -> Unit,
@@ -817,9 +831,12 @@ private fun NotesPane(
     // Kaltstart (Prozess-Tod) immer ganz oben mit sichtbarem "Angeheftet"-Header.
     val listState = remember(folderKey) { LazyListState() }
     val gridState = remember(folderKey) { LazyStaggeredGridState() }
-    val foldersForPane = if (folderKey == null) folders else emptyList() // Ordner nur in der Root-Ansicht
+    val foldersForPane = if (folderKey == null && !showArchived) folders else emptyList() // Ordner nur in der Root-Ansicht
     // 🆕 v2.7.0 (Folders): Notizen dieses Slots — eigener folderKey, nicht der gerade aktive Ordner.
-    val paneNotes = remember(notes, folderKey) { notes.filter { it.folderName == folderKey } }
+    // 🆕 v2.11.0 (Archive): Archiv-Ansicht ist eine flache Liste über alle Ordner.
+    val paneNotes = remember(notes, folderKey, showArchived) {
+        if (showArchived) notes else notes.filter { it.folderName == folderKey }
+    }
 
     // Grid-Top-Settle-Guard: das Staggered-Grid scrollt beim ersten Laden spontan ein Item
     // nach unten (Foundation-Quirk mit FullLine-Items) → Pinned-Header verschwindet. Direkt
@@ -851,7 +868,7 @@ private fun NotesPane(
         }
     }
     var filterSettled by remember { mutableStateOf(false) }
-    LaunchedEffect(noteFilter, colorFilter) {
+    LaunchedEffect(noteFilter, colorFilter, showArchived) {
         if (!filterSettled) {
             filterSettled = true
         } else {
@@ -874,7 +891,15 @@ private fun NotesPane(
     }
 
     if (paneNotes.isEmpty() && foldersForPane.isEmpty()) {
-        EmptyState(modifier = Modifier.fillMaxSize())
+        if (showArchived) {
+            EmptyState(
+                modifier = Modifier.fillMaxSize(),
+                title = stringResource(R.string.archive_empty_state_title),
+                message = stringResource(R.string.archive_empty_state_message)
+            )
+        } else {
+            EmptyState(modifier = Modifier.fillMaxSize())
+        }
     } else if (displayMode == "grid") {
         NotesStaggeredGrid(
             notes = paneNotes,
@@ -958,8 +983,10 @@ private fun SelectionActions(
     totalCount: Int,
     allSelectedPinned: Boolean,
     isSelectedFolderLocalOnly: Boolean = false, // 🆕 v2.8.0 (Local-Only Folders)
+    isArchiveView: Boolean = false, // 🆕 v2.11.0 (Archive)
     onSelectAll: () -> Unit,
     onTogglePin: () -> Unit,
+    onToggleArchive: () -> Unit = {}, // 🆕 v2.11.0 (Archive)
     onColorClick: () -> Unit,
     onMoveClick: () -> Unit,
     onRename: () -> Unit, // 🆕 v2.7.0 (Folders)
@@ -970,6 +997,9 @@ private fun SelectionActions(
     val anySelected = selectedCount > 0
     val selectAllLabel = stringResource(R.string.action_select_all)
     val pinLabel = stringResource(R.string.action_toggle_pin)
+    val archiveLabel = stringResource(
+        if (isArchiveView) R.string.action_unarchive else R.string.action_archive
+    )
     val colorLabel = stringResource(R.string.action_set_note_color)
     val moveLabel = stringResource(R.string.action_move_to_folder)
     val renameLabel = stringResource(R.string.action_rename_folder)
@@ -986,6 +1016,12 @@ private fun SelectionActions(
         if (selectedNoteCount > 0) {
             val pinIcon = if (allSelectedPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin
             add(SelectionAction(pinIcon, pinLabel, keepPriority = 4, enabled = true, onClick = onTogglePin))
+        }
+        // 🆕 v2.11.0 (Archive): nur wenn Notizen ausgewählt sind. LOW keepPriority (0) →
+        // wandert auf schmalen Screens als Erstes ins ⋮-Overflow (Leiste nicht überfüllen).
+        if (selectedNoteCount > 0) {
+            val archiveIcon = if (isArchiveView) Icons.Outlined.Unarchive else Icons.Outlined.Archive
+            add(SelectionAction(archiveIcon, archiveLabel, keepPriority = 0, enabled = true, onClick = onToggleArchive))
         }
         // Color: für Notizen und Ordner
         add(SelectionAction(Icons.Outlined.Palette, colorLabel, keepPriority = 2, enabled = anySelected, onClick = onColorClick))

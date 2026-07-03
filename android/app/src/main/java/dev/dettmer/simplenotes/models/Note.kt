@@ -51,10 +51,18 @@ data class Note(
     // null = aktive Notiz. Synct als normale Notiz-Änderung (LWW). Alte Clients ignorieren das Feld;
     // Gson lässt null beim Serialisieren weg → ein Edit auf einem alten Client un-trasht automatisch.
     // NICHT in toMarkdown()/fromMarkdown() — der MD-Spiegel wird beim Trashen serverseitig gelöscht.
-    val trashedAt: Long? = null
+    val trashedAt: Long? = null,
+    // 🆕 v2.11.0 (Archive): Zeitpunkt (ms epoch), zu dem die Notiz archiviert wurde.
+    // null = nicht archiviert. Synct als normale Notiz-Änderung (LWW). Anders als trashedAt
+    // WIRD das Feld in toMarkdown()/fromMarkdown() gespiegelt (`archived:`), weil der
+    // MD-Spiegel archivierter Notizen auf dem Server bestehen bleibt (archiviert ≠ gelöscht).
+    val archivedAt: Long? = null
 ) {
     /** v2.9.0 (Trash): true, wenn die Notiz im Papierkorb liegt. */
     val isTrashed: Boolean get() = trashedAt != null
+
+    /** 🆕 v2.11.0 (Archive): true, wenn die Notiz archiviert ist. */
+    val isArchived: Boolean get() = archivedAt != null
 
     /**
      * Serialisiert Note zu JSON
@@ -131,6 +139,8 @@ data class Note(
         val colorLine = color?.let { "\ncolor: \"$it\"" }.orEmpty()
         val pinnedLine = isPinned?.let { "\npinned: $it" }.orEmpty()
         val folderLine = folderName?.let { "\nfolder: \"$it\"" }.orEmpty()
+        // 🆕 v2.11.0 (Archive): wie `imported` als ms-epoch, nur wenn != null.
+        val archivedLine = archivedAt?.let { "\narchived: $it" }.orEmpty()
 
         val header = """
 ---
@@ -138,7 +148,7 @@ id: $id
 created: ${formatISO8601(createdAt)}
 updated: ${formatISO8601(updatedAt)}
 device: $deviceId
-type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pinnedLine$folderLine
+type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pinnedLine$folderLine$archivedLine
 ---
 
 # $title
@@ -234,7 +244,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     isPinned = fields.isPinned,
                     folderName = fields.folderName,
                     // 🆕 v2.9.0 (Trash) — fehlendes Feld → null (= aktive Notiz)
-                    trashedAt = fields.trashedAt
+                    trashedAt = fields.trashedAt,
+                    archivedAt = fields.archivedAt // 🆕 v2.11.0 (Archive) — fehlendes Feld → null
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -307,6 +318,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
             var isPinned: Boolean? = null
             var folderName: String? = null
             var trashedAt: Long? = null
+            var archivedAt: Long? = null
             var checklistItems: MutableList<ChecklistItem>? = null
         }
 
@@ -342,6 +354,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 "isPinned" -> fields.isPinned = nextBooleanOrNull()
                 "folderName" -> fields.folderName = nextStringOrNull()
                 "trashedAt" -> fields.trashedAt = nextLongOrNull()
+                "archivedAt" -> fields.archivedAt = nextLongOrNull()
                 "checklistItems" -> fields.checklistItems = nextChecklistItemsOrNull()
                 else -> skipValue()
             }
@@ -460,6 +473,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 // 🆕 v2.7.0 (Folders): optionaler Ordnername aus YAML.
                 val folderName: String? = metadata["folder"]?.trim()?.removeSurrounding("\"")
                     ?.takeIf { it.isNotEmpty() }
+                // 🆕 v2.11.0 (Archive): optionaler ms-epoch-Timestamp aus YAML (wie `imported`).
+                val archivedAt: Long? = metadata["archived"]?.trim()?.toLongOrNull()
 
                 // v1.4.0: Parse Content basierend auf Typ
                 // FIX: Robusteres Parsing - suche nach dem Titel-Header und extrahiere den Rest
@@ -546,7 +561,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     labels = labels,
                     color = color,
                     isPinned = isPinned,
-                    folderName = folderName
+                    folderName = folderName,
+                    archivedAt = archivedAt // 🆕 v2.11.0 (Archive)
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse Markdown: ${e.message}")

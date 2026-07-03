@@ -192,6 +192,24 @@
     <string name="snackbar_trash_emptied">Trash emptied</string>
 
     <!-- ============================= -->
+    <!-- ARCHIVE (v2.11.0)             -->
+    <!-- ============================= -->
+    <string name="action_archive">Archive</string>
+    <string name="action_unarchive">Unarchive</string>
+    <string name="archive_empty_state_title">Archive is empty</string>
+    <string name="archive_empty_state_message">Archived notes appear here</string>
+    <string name="snackbar_note_archived">\"%s\" archived</string>
+    <string name="snackbar_note_unarchived">\"%s\" unarchived</string>
+    <plurals name="snackbar_notes_archived">
+        <item quantity="one">%d note archived</item>
+        <item quantity="other">%d notes archived</item>
+    </plurals>
+    <plurals name="snackbar_notes_unarchived">
+        <item quantity="one">%d note unarchived</item>
+        <item quantity="other">%d notes unarchived</item>
+    </plurals>
+
+    <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
     <string name="sync_error_ssl">SSL error</string>
@@ -549,6 +567,8 @@
      <!-- 🆕 v2.5.0: Farbfilter -->
      <string name="filter_color">Filter by color</string>
      <string name="filter_color_all">All colors</string>
+     <!-- 🆕 v2.11.0: Archive overflow menu entry -->
+     <string name="filter_archive">Archive</string>
 
     <!-- v1.9.0 (F10): Search -->
     <string name="search_notes_placeholder">Search…</string>

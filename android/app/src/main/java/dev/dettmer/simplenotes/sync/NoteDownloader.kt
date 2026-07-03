@@ -973,6 +973,9 @@ internal class NoteDownloader(
         // 🆕 v2.9.0 (Trash): Trash/Restore ist ein echter Unterschied — sonst schluckt der
         // E-Tag-Refresh-Branch ein Trash/Restore und die Notiz erscheint nicht im Papierkorb.
         if (a.trashedAt != b.trashedAt) return true
+        // 🆕 v2.11.0 (Archive): Archivieren/Dearchivieren ist ein echter Unterschied —
+        // gleiche Begründung wie trashedAt (ETag-Refresh darf den Zustandswechsel nicht schlucken).
+        if (a.archivedAt != b.archivedAt) return true
 
         return when (a.noteType) {
             NoteType.CHECKLIST -> {

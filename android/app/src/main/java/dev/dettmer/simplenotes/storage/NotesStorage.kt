@@ -148,11 +148,19 @@ class NotesStorage(private val context: Context) {
     }
 
     /**
-     * 🆕 v2.9.0 (Trash): Lädt nur aktive (nicht getrashte) Notizen.
-     * Choke-Point für Liste/Suche/Filter/Widgets/Picker. `loadAllNotes()` bleibt
-     * für Sync/Backup/Repair unverändert (die brauchen auch getrashte Notizen).
+     * 🆕 v2.9.0 (Trash) / 🆕 v2.11.0 (Archive): Lädt nur aktive Notizen —
+     * weder im Papierkorb noch archiviert. Choke-Point für Widgets, Widget-Config-Picker,
+     * Share-Picker und Checklisten-Ziel-Picker. `loadAllNotes()` bleibt für
+     * Sync/Backup/Repair unverändert (die brauchen auch getrashte/archivierte Notizen).
      */
     suspend fun loadActiveNotes(forceReload: Boolean = false): List<Note> =
+        loadAllNotes(forceReload).filter { it.trashedAt == null && it.archivedAt == null }
+
+    /**
+     * 🆕 v2.11.0 (Archive): Aktive + archivierte Notizen (nur Papierkorb ausgeschlossen).
+     * Für die Hauptliste (Archiv-Chip filtert im ViewModel).
+     */
+    suspend fun loadNonTrashedNotes(forceReload: Boolean = false): List<Note> =
         loadAllNotes(forceReload).filter { it.trashedAt == null }
 
     /**

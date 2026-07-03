@@ -17,18 +17,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -65,6 +69,7 @@ import dev.dettmer.simplenotes.ui.theme.NoteColorSlot
  * v2.0.0: Sort-Button als gleichwertiger FilterChip, zentrierte Labels, responsive Layout.
  * v2.5.0: Text/Listen-Chips auf Icon-only umgestellt; Farbfilter-Chip mit Dropdown ergänzt.
  */
+@Suppress("LongParameterList") // Compose-Filterleiste — viele UI-State-Parameter
 @Composable
 fun FilterChipRow(
     currentFilter: NoteFilter,
@@ -72,6 +77,8 @@ fun FilterChipRow(
     currentColorFilter: String?,
     onColorFilterSelected: (String?) -> Unit,
     availableColors: Map<String?, Int>,
+    archiveActive: Boolean, // 🆕 v2.11.0 (Archive)
+    onArchiveToggle: () -> Unit, // 🆕 v2.11.0 (Archive)
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     onSortClick: () -> Unit,
@@ -79,6 +86,7 @@ fun FilterChipRow(
 ) {
     val focusManager = LocalFocusManager.current
     var showColorDropdown by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) } // 🆕 v2.11.0 (Archive)
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
@@ -202,69 +210,150 @@ fun FilterChipRow(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Suchfeld — volle Breite (unverändert gegenüber v2.0.0)
+        // Suchfeld + „Mehr"-Chip — 🔧 v2.11.0 (Archive): Suchfeld teilt sich die Zeile mit dem Overflow-Menü
         val interactionSource = remember { MutableInteractionSource() }
         val isFocused = interactionSource.collectIsFocusedAsState().value
         val chipShape = MaterialTheme.shapes.small
         val borderColor =
             if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
 
-        BasicTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChanged,
-            singleLine = true,
-            textStyle = MaterialTheme.typography.labelLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-            interactionSource = interactionSource,
-            decorationBox = { innerTextField ->
-                Surface(
-                    shape = chipShape,
-                    border = BorderStroke(width = 1.dp, color = borderColor),
-                    color = Color.Transparent
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BasicTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChanged,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.labelLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                interactionSource = interactionSource,
+                decorationBox = { innerTextField ->
+                    Surface(
+                        shape = chipShape,
+                        border = BorderStroke(width = 1.dp, color = borderColor),
+                        color = Color.Transparent
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Box(modifier = Modifier.weight(1f)) {
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = stringResource(R.string.search_notes_placeholder),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Box(modifier = Modifier.weight(1f)) {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.search_notes_placeholder),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                innerTextField()
+                            }
+                            if (searchQuery.isNotEmpty()) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = stringResource(R.string.search_clear),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clickable { onSearchQueryChanged("") }
                                 )
                             }
-                            innerTextField()
                         }
-                        if (searchQuery.isNotEmpty()) {
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp)
+            )
+
+            // 🆕 v2.11.0 (Archive): „Mehr"-Chip — Overflow-Menü für Archiv-Toggle + Papierkorb
+            Box {
+                FilterChip(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(36.dp),
+                    selected = archiveActive,
+                    onClick = {
+                        focusManager.clearFocus()
+                        showMoreMenu = true
+                    },
+                    label = {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Outlined.Close,
-                                contentDescription = stringResource(R.string.search_clear),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clickable { onSearchQueryChanged("") }
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.cd_more_options),
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(36.dp)
-        )
+                )
+                MoreOptionsDropdown(
+                    expanded = showMoreMenu,
+                    onDismiss = { showMoreMenu = false },
+                    archiveActive = archiveActive,
+                    onArchiveToggle = {
+                        showMoreMenu = false
+                        onArchiveToggle()
+                    }
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(4.dp))
+    }
+}
+
+/**
+ * 🆕 v2.11.0 (Archive): Overflow-Menü neben dem Suchfeld — aktuell nur der Archiv-Toggle.
+ * Bewusst geschaffener Platz für künftige weitere Einträge.
+ */
+@Composable
+private fun MoreOptionsDropdown(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    archiveActive: Boolean,
+    onArchiveToggle: () -> Unit
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 6.dp,
+        tonalElevation = 2.dp
+    ) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.filter_archive)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = if (archiveActive) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                    contentDescription = null
+                )
+            },
+            trailingIcon = if (archiveActive) {
+                {
+                    Icon(
+                        imageVector = Icons.Outlined.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                null
+            },
+            onClick = onArchiveToggle
+        )
     }
 }
 

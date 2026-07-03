@@ -86,6 +86,9 @@ class ComposeNoteEditorActivity : FragmentActivity() {
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
         const val RESULT_EXTRA_NOTE_ID = "result_note_id"
+
+        // 🆕 v2.11.0 (Archive): Result code for archive-toggle forwarding to MainViewModel
+        const val RESULT_NOTE_ARCHIVE_TOGGLED = 11
     }
 
     // 🆕 v2.2.0: Share Intent — Typ-Auswahl-State
@@ -307,6 +310,13 @@ class ComposeNoteEditorActivity : FragmentActivity() {
                             putExtra(RESULT_EXTRA_NOTE_ID, event.noteId)
                         }
                         setResult(RESULT_NOTE_DELETED, resultIntent)
+                        finishWithTransition()
+                    }
+                    is NoteEditorEvent.NoteArchiveToggleRequested -> {
+                        val resultIntent = Intent().apply {
+                            putExtra(RESULT_EXTRA_NOTE_ID, event.noteId)
+                        }
+                        setResult(RESULT_NOTE_ARCHIVE_TOGGLED, resultIntent)
                         finishWithTransition()
                     }
                     else -> { /* handled by Composable */ }

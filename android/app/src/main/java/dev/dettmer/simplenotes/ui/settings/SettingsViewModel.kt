@@ -943,8 +943,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                     // Check if there are notes to export
                     // 🆕 v2.9.0 (Trash): getrashte Notizen werden nicht exportiert (siehe exportAll).
+                    // 🆕 v2.11.0 (Archive): Zähl-Parität mit MarkdownSyncManager.exportAll, das
+                    // loadAllNotes().filter { it.trashedAt == null } exportiert (archivierte inklusive).
                     val noteStorage = dev.dettmer.simplenotes.storage.NotesStorage(getApplication())
-                    val noteCount = withContext(ioDispatcher) { noteStorage.loadActiveNotes().size }
+                    val noteCount = withContext(ioDispatcher) { noteStorage.loadNonTrashedNotes().size }
 
                     if (noteCount > 0) {
                         val syncService = WebDavSyncService(getApplication())

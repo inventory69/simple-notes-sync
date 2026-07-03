@@ -32,7 +32,11 @@ import dev.dettmer.simplenotes.R
  * v1.5.0: Jetpack Compose MainActivity Redesign
  */
 @Composable
-fun EmptyState(modifier: Modifier = Modifier) {
+fun EmptyState(
+    modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.empty_state_title),
+    message: String = stringResource(R.string.empty_state_message)
+) {
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,7 +79,7 @@ fun EmptyState(modifier: Modifier = Modifier) {
 
                 // Title
                 Text(
-                    text = stringResource(R.string.empty_state_title),
+                    text = title,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
@@ -85,7 +89,7 @@ fun EmptyState(modifier: Modifier = Modifier) {
 
                 // Message
                 Text(
-                    text = stringResource(R.string.empty_state_message),
+                    text = message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

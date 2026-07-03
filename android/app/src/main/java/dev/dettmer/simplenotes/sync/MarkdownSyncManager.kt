@@ -575,7 +575,8 @@ internal class MarkdownSyncManager(
                                 syncStatus = SyncStatus.PENDING,
                                 updatedAt = mergedUpdatedAt,
                                 isPinned = mdNote.isPinned ?: localNote.isPinned,
-                                color = mdNote.color ?: localNote.color
+                                color = mdNote.color ?: localNote.color,
+                                archivedAt = mdNote.archivedAt ?: localNote.archivedAt // 🆕 v2.11.0 (Archive)
                             )
                             storage.saveNote(merged)
                             importedCount++

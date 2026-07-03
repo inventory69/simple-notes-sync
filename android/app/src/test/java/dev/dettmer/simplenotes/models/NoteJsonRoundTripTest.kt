@@ -245,6 +245,34 @@ class NoteJsonRoundTripTest {
         assertTrue("Markdown must not contain trashed metadata", !md.contains("trashed"))
     }
 
+    // ───── v2.11.0 (Archive): archivedAt überlebt JSON- und Markdown-Round-Trip ─────
+    @Test fun `json_roundTrip_preservesArchivedAt`() {
+        val note = baseNote().copy(archivedAt = 1_720_000_000_000L)
+        val json = note.toJson()
+        assertTrue("JSON must contain archivedAt", json.contains("\"archivedAt\""))
+        val round = Note.fromJson(json)
+        assertNotNull(round)
+        assertEquals(1_720_000_000_000L, round!!.archivedAt)
+        assertTrue(round.isArchived)
+    }
+
+    @Test fun `json_legacyWithoutArchivedAt_isNullActive`() {
+        val json = baseNote().toJson()
+        val note = Note.fromJson(json)
+        assertNotNull(note)
+        assertNull("archivedAt defaults to null", note!!.archivedAt)
+    }
+
+    // Anders als trashedAt IST archivedAt im Markdown-Frontmatter (MD-Spiegel bleibt bestehen).
+    @Test fun `markdown_roundTrip_preservesArchivedAt`() {
+        val note = baseNote().copy(archivedAt = 1_720_000_000_000L)
+        val md = note.toMarkdown()
+        assertTrue("Markdown must contain archived key", md.contains("archived: 1720000000000"))
+        val round = Note.fromMarkdown(md)
+        assertNotNull(round)
+        assertEquals(1_720_000_000_000L, round!!.archivedAt)
+    }
+
     // ───── Streaming-Parser (v2.10): unbekanntes Feld wird sauber übersprungen ─────
     @Test fun `json_unknownField_isSkippedCleanly`() {
         val json = """

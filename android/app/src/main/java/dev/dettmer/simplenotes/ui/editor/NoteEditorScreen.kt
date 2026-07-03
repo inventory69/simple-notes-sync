@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -54,6 +55,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -330,6 +332,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 }
                 // 🆕 v1.10.0-P2: handled by Activity (deletion forwarded to MainViewModel)
                 is NoteEditorEvent.NoteDeleteRequested -> Unit
+                is NoteEditorEvent.NoteArchiveToggleRequested -> Unit // 🆕 v2.11.0: handled by Activity
                 // 🆕 v1.10.0-Papa: handled by Activity
                 is NoteEditorEvent.OpenCalendar -> Unit
                 is NoteEditorEvent.ShareAsText -> Unit
@@ -595,6 +598,27 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 4.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            stringResource(
+                                                if (uiState.isArchived) R.string.action_unarchive else R.string.action_archive
+                                            )
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            if (uiState.isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        // 🆕 v2.11.0 (Archive): speichert + schließt den Editor (via Event/Activity)
+                                        viewModel.toggleArchive()
+                                    }
                                 )
                                 DropdownMenuItem(
                                     text = {

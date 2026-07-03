@@ -316,13 +316,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val colorFilter: StateFlow<String?> = _colorFilter.asStateFlow()
 
+    // 🆕 v2.11.0 (Archive): Archiv-Ansicht — Session-only Toggle (nicht persistiert),
+    // gesteuert über den Archiv-Chip in der FilterChipRow.
+    private val _showArchived = MutableStateFlow(false)
+    val showArchived: StateFlow<Boolean> = _showArchived.asStateFlow()
+
+    fun setShowArchived(show: Boolean) {
+        _showArchived.value = show
+        // Archiv ist eine flache Liste — immer aus der Root-Ansicht heraus.
+        if (show) _currentFolder.value = null
+        clearSelection()
+        Logger.d(TAG, "🗃️ Archive view: $show")
+    }
+
     // 🆕 v2.5.0: Kombinierter Filter-State für sortedNotesUnfoldered.
     // Nötig, da combine() nativ max. 5 Flows unterstützt; NoteFilter + Farbfilter werden
     // zu einem Paar zusammengefasst, damit der Flow weiterhin 5 Flows nutzt.
     // 🆕 v2.7.0 (Folders): Ordner-Filter ist NICHT mehr Teil dieser Pipeline — er wird erst
     // pro AnimatedContent-Pane angewandt (sonst Flackern beim Ordnerwechsel, siehe MainScreen).
+    // 🆕 v2.11.0 (Archive): + showArchived → Triple statt Pair.
     private val filterCriteria =
-        combine(_noteFilter, _colorFilter) { f, c -> f to c }
+        combine(_noteFilter, _colorFilter, _showArchived) { f, c, a -> Triple(f, c, a) }
 
     // 🆕 v1.9.0 (F10): Search Query State
     private val _searchQuery = MutableStateFlow("")
@@ -347,8 +361,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Variable delay: 0ms when clearing the query so "clear search" feels instant.
         _searchQuery.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
     ) { notes, option, direction, filterCriteria, query ->
-        val (filter, colorFilter) = filterCriteria
-        val filtered = filterNotes(notes, filter, colorFilter)
+        val (filter, colorFilter, showArchived) = filterCriteria
+        val filtered = filterNotes(notes, filter, colorFilter, showArchived)
         val searched = searchNotes(filtered, query)
         val sorted = sortNotes(searched, option, direction)
         val result = sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
@@ -498,8 +512,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * This prevents UI blocking during app startup
      */
     private suspend fun loadNotesAsync(forceReload: Boolean = false) {
-        // 🆕 v2.9.0 (Trash): nur aktive Notizen — getrashte erscheinen ausschließlich im Papierkorb.
-        val allNotes = storage.loadActiveNotes(forceReload)
+        // 🆕 v2.9.0 (Trash) / 🆕 v2.11.0 (Archive): nur nicht-getrashte Notizen — getrashte
+        // erscheinen ausschließlich im Papierkorb. Archivierte bleiben enthalten (Archiv-Filter
+        // arbeitet im ViewModel auf dieser Liste weiter, siehe filterNotes()).
+        val allNotes = storage.loadNonTrashedNotes(forceReload)
         val pendingIds = _pendingDeletions.value
         val filteredNotes = allNotes.filter { it.id !in pendingIds }
 
@@ -580,12 +596,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 🆕 v2.7.0 (Folders): Notizen der aktuell sichtbaren Ordner-Ansicht (sortiert/gefiltert). */
     private fun notesInCurrentFolder(): List<Note> =
-        sortedNotesUnfoldered.value.filter { it.folderName == _currentFolder.value }
+        if (_showArchived.value) {
+            sortedNotesUnfoldered.value // 🆕 v2.11.0 (Archive): flache Liste
+        } else {
+            sortedNotesUnfoldered.value.filter { it.folderName == _currentFolder.value }
+        }
 
     /** 🆕 v2.7.0 (Folders): Alles auswählen — Notizen + (im Root) Ordner. */
     fun selectAll() {
         _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
-        _selectedFolders.value = if (_currentFolder.value == null) {
+        _selectedFolders.value = if (_currentFolder.value == null && !_showArchived.value) {
             _folders.value.map { it.name }.toSet()
         } else {
             emptySet()
@@ -711,6 +731,105 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             loadNotes()
             _scrollToTop.value = true
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
+        }
+    }
+
+    /**
+     * 🆕 v2.11.0 (Archive): Archiviert/dearchiviert alle selektierten Notizen (Toggle).
+     * Wie togglePinForSelected(): sind bereits alle archiviert → aufheben, sonst archivieren.
+     * Snackbar mit Undo; Undo speichert die Originale mit frischem updatedAt zurück
+     * (LWW-sicher, falls zwischenzeitlich gesynct wurde).
+     */
+    fun toggleArchiveForSelected() {
+        val ids = _selectedNotes.value.toList()
+        if (ids.isEmpty()) return
+        val targets = _notes.value.filter { it.id in ids }
+        if (targets.isEmpty()) return
+        val allArchived = targets.all { it.isArchived }
+        val newValue: Long? = if (allArchived) null else System.currentTimeMillis()
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                targets.forEach { note ->
+                    storage.saveNote(
+                        note.copy(
+                            archivedAt = newValue,
+                            updatedAt = System.currentTimeMillis(),
+                            syncStatus = SyncStatus.PENDING
+                        )
+                    )
+                }
+            }
+            clearSelection()
+            loadNotes()
+            val count = targets.size
+            val message = if (allArchived) {
+                getQuantityString(R.plurals.snackbar_notes_unarchived, count, count)
+            } else {
+                getQuantityString(R.plurals.snackbar_notes_archived, count, count)
+            }
+            _showSnackbar.emit(
+                SnackbarData(
+                    message = message,
+                    actionLabel = getString(R.string.snackbar_undo),
+                    onAction = { undoArchiveToggle(targets) }
+                )
+            )
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
+            triggerOnSaveSync()
+        }
+    }
+
+    /** 🆕 v2.11.0 (Archive): Undo — stellt den vorherigen archivedAt-Zustand mit frischem Timestamp wieder her. */
+    private fun undoArchiveToggle(originals: List<Note>) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                originals.forEach { note ->
+                    storage.saveNote(
+                        note.copy(
+                            updatedAt = System.currentTimeMillis(),
+                            syncStatus = SyncStatus.PENDING
+                        )
+                    )
+                }
+            }
+            loadNotes()
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
+            triggerOnSaveSync()
+        }
+    }
+
+    /**
+     * 🆕 v2.11.0 (Archive): Editor-Archivierung — Notiz laden und archivedAt toggeln;
+     * Snackbar mit Undo (die Activity hat den Editor bereits geschlossen).
+     */
+    fun toggleArchiveFromEditor(noteId: String) {
+        viewModelScope.launch {
+            val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
+            val newValue: Long? = if (note.isArchived) null else System.currentTimeMillis()
+            withContext(ioDispatcher) {
+                storage.saveNote(
+                    note.copy(
+                        archivedAt = newValue,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING
+                    )
+                )
+            }
+            loadNotes(forceReload = true)
+            val message = if (newValue == null) {
+                getString(R.string.snackbar_note_unarchived, note.title)
+            } else {
+                getString(R.string.snackbar_note_archived, note.title)
+            }
+            _showSnackbar.emit(
+                SnackbarData(
+                    message = message,
+                    actionLabel = getString(R.string.snackbar_undo),
+                    onAction = { undoArchiveToggle(listOf(note)) }
+                )
+            )
+            WidgetUpdateHelper.refreshAllWidgets(getApplication())
+            triggerOnSaveSync()
         }
     }
 
@@ -1108,13 +1227,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun filterNotes(
         notes: List<Note>,
         filter: NoteFilter,
-        colorFilter: String? = null // 🆕 v2.5.0
+        colorFilter: String? = null, // 🆕 v2.5.0
+        showArchived: Boolean = false // 🆕 v2.11.0 (Archive)
     ): List<Note> {
         // 🆕 v2.7.0 (Folders): Kein Ordner-Filter hier — das übernimmt jede Pane selbst (s. sortedNotesUnfoldered).
+        // 🆕 v2.11.0 (Archive): Chip aus → nur aktive, Chip an → nur archivierte Notizen.
+        val byArchive = notes.filter { it.isArchived == showArchived }
         val byType = when (filter) {
-            NoteFilter.ALL -> notes
-            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
-            NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
+            NoteFilter.ALL -> byArchive
+            NoteFilter.TEXT_ONLY -> byArchive.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.CHECKLIST_ONLY -> byArchive.filter { it.noteType == NoteType.CHECKLIST }
         }
         return if (colorFilter != null) byType.filter { it.color == colorFilter } else byType
     }
@@ -1204,12 +1326,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     val availableColors: StateFlow<Map<String?, Int>> = combine(
         _notes,
-        _noteFilter
-    ) { notes, filter ->
+        _noteFilter,
+        _showArchived // 🆕 v2.11.0 (Archive)
+    ) { notes, filter, showArchived ->
+        val visible = notes.filter { it.isArchived == showArchived }
         val byType = when (filter) {
-            NoteFilter.ALL -> notes
-            NoteFilter.TEXT_ONLY -> notes.filter { it.noteType == NoteType.TEXT }
-            NoteFilter.CHECKLIST_ONLY -> notes.filter { it.noteType == NoteType.CHECKLIST }
+            NoteFilter.ALL -> visible
+            NoteFilter.TEXT_ONLY -> visible.filter { it.noteType == NoteType.TEXT }
+            NoteFilter.CHECKLIST_ONLY -> visible.filter { it.noteType == NoteType.CHECKLIST }
         }
         byType.groupingBy { it.color }.eachCount()
     }.flowOn(Dispatchers.Default) // 🔧 Perf: filter+group of the full list off the Main thread
@@ -1224,7 +1348,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Anzahl Notizen je (bekanntem) Ordner — für die Folder-Karten im Root. */
     val folderNoteCounts: StateFlow<Map<String, Int>> = combine(_notes, _folders) { notes, folders ->
         // 🔧 Perf: eine Gruppierung statt einem .count{}-Scan der vollen Liste pro Ordner
-        val counts = notes.groupingBy { it.folderName }.eachCount()
+        // 🆕 v2.11.0 (Archive): archivierte Notizen zählen nicht (Ordner zeigen aktive Inhalte).
+        val counts = notes.filter { !it.isArchived }.groupingBy { it.folderName }.eachCount()
         folders.associate { f -> f.name to (counts[f.name] ?: 0) }
     }.flowOn(Dispatchers.Default) // 🔧 Perf: Gruppierung der vollen Liste off Main thread
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())

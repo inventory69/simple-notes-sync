@@ -189,4 +189,17 @@ class NotesStorageTest {
         assertNotNull(loaded)
         assertEquals(NoteType.CHECKLIST, loaded!!.noteType)
     }
+
+    // ─── 🆕 v2.11.0 (Archive) ─────────────────────────────────────────────────
+    @Test fun `loadActiveNotes excludes trashed and archived, loadNonTrashedNotes keeps archived`() = runBlocking {
+        storage.saveNote(note(id = "active"))
+        storage.saveNote(note(id = "archived").copy(archivedAt = 1L))
+        storage.saveNote(note(id = "trashed").copy(trashedAt = 1L))
+
+        val active = storage.loadActiveNotes(forceReload = true)
+        assertEquals(listOf("active"), active.map { it.id })
+
+        val nonTrashed = storage.loadNonTrashedNotes(forceReload = true)
+        assertEquals(setOf("active", "archived"), nonTrashed.map { it.id }.toSet())
+    }
 }
