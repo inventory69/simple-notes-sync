@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +33,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
@@ -46,6 +52,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
+import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.utils.Constants
 
@@ -65,6 +72,9 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val customAppTitle by viewModel.customAppTitle.collectAsState()
     val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
+    val defaultNoteColor by viewModel.defaultNoteColor.collectAsState()
+    val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
+    var showDefaultColorPicker by remember { mutableStateOf(false) }
     val themeMode by viewModel.themeMode.collectAsState()
     val colorTheme by viewModel.colorTheme.collectAsState()
     val fontSizeScale by viewModel.fontSizeScale.collectAsState()
@@ -226,8 +236,77 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🆕 v2.11.0: Cursor-Start für neue Notizen
+            SettingsSwitch(
+                title = stringResource(R.string.editor_new_note_focus_content_toggle),
+                subtitle = stringResource(R.string.editor_new_note_focus_content_description),
+                checked = newNoteFocusContent,
+                onCheckedChange = { viewModel.setNewNoteFocusContent(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🆕 v2.11.0: Standard-Notizfarbe für neue Notizen
+            DefaultNoteColorRow(
+                currentColor = defaultNoteColor,
+                onClick = { showDefaultColorPicker = true }
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (showDefaultColorPicker) {
+        NoteColorPickerSheet(
+            currentColor = defaultNoteColor,
+            onColorSelected = { hex -> viewModel.setDefaultNoteColor(hex) },
+            onDismiss = { showDefaultColorPicker = false }
+        )
+    }
+}
+
+// 🆕 v2.11.0: DefaultNoteColorRow — Zeile mit aktueller Standard-Notizfarbe,
+// öffnet den NoteColorPickerSheet (wiederverwendet aus ui/main/components).
+@Composable
+private fun DefaultNoteColorRow(currentColor: String?, onClick: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val swatchColor = if (currentColor != null) {
+        NoteColorPalette.resolveContainer(currentColor, isDark)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.settings_default_note_color_title),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = if (currentColor != null) {
+                    stringResource(R.string.settings_default_note_color_subtitle)
+                } else {
+                    stringResource(R.string.note_color_none)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(swatchColor)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+        )
     }
 }
 

@@ -535,6 +535,12 @@
     <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
     <string name="editor_default_preview_mode_toggle">Open in preview mode</string>
     <string name="editor_default_preview_mode_description">Text notes open in read mode by default. Disable to start in edit mode.</string>
+    <!-- 🆕 v2.11.0: Default note color -->
+    <string name="settings_default_note_color_title">Default note color</string>
+    <string name="settings_default_note_color_subtitle">Applied to new notes</string>
+    <!-- 🆕 v2.11.0: New-note cursor focus -->
+    <string name="editor_new_note_focus_content_toggle">Start cursor in content</string>
+    <string name="editor_new_note_focus_content_description">New notes focus the content field instead of the title. Checklists focus the first item.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
     <string name="theme_mode_system">System (follow device)</string>

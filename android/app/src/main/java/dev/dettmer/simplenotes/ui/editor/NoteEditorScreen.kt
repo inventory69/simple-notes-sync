@@ -293,12 +293,24 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // v1.5.0: Auto-focus and show keyboard
     // v2.0.1: Skip auto-focus for existing TEXT notes (they start in preview mode)
     // v2.8.0: Show keyboard when existing TEXT note loads directly in edit mode (user preference)
+    // 🆕 v2.11.0: New-note focus target configurable (title vs. content / first checklist item)
     LaunchedEffect(uiState.isNewNote) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
-            uiState.isNewNote -> {
-                // New note: focus title
+            uiState.isNewNote && !uiState.newNoteFocusContent -> {
+                // New note (default): focus title
                 titleFocusRequester.requestFocus()
+                keyboardController?.show()
+            }
+            uiState.isNewNote && uiState.noteType == NoteType.TEXT -> {
+                // 🆕 v2.11.0: user preference — start in content field
+                contentFocusRequester.requestFocus()
+                keyboardController?.show()
+            }
+            uiState.isNewNote -> {
+                // 🆕 v2.11.0: CHECKLIST — focus the first (empty) item via the existing
+                // focusNewItemId mechanism (same path as the title onNext handler below)
+                focusNewItemId = checklistItems.firstOrNull()?.id
                 keyboardController?.show()
             }
             !isPreviewMode && uiState.noteType == NoteType.TEXT -> {

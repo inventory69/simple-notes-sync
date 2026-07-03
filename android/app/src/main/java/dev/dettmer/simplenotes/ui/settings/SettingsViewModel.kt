@@ -365,6 +365,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val defaultStartInPreviewMode: StateFlow<Boolean> = _defaultStartInPreviewMode.asStateFlow()
 
+    // 🆕 v2.11.0: Standard-Notizfarbe für neue Notizen (null = keine)
+    private val _defaultNoteColor = MutableStateFlow(
+        prefs.getString(Constants.KEY_DEFAULT_NOTE_COLOR, Constants.DEFAULT_NOTE_COLOR)
+            ?.takeIf { it.isNotEmpty() }
+    )
+    val defaultNoteColor: StateFlow<String?> = _defaultNoteColor.asStateFlow()
+
+    // 🆕 v2.11.0: Neue Notiz startet mit Cursor im Inhalt (statt Titel)
+    private val _newNoteFocusContent = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_NEW_NOTE_FOCUS_CONTENT, Constants.DEFAULT_NEW_NOTE_FOCUS_CONTENT)
+    )
+    val newNoteFocusContent: StateFlow<Boolean> = _newNoteFocusContent.asStateFlow()
+
     // 🆕 v1.10.0: Configurable connection timeout
     private val _connectionTimeoutSeconds = MutableStateFlow(
         prefs.getInt(
@@ -509,6 +522,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setDefaultStartInPreviewMode(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE, enabled) }
         _defaultStartInPreviewMode.value = enabled
+    }
+
+    /**
+     * 🆕 v2.11.0: Standard-Notizfarbe setzen (null = keine).
+     * NoteEditorViewModel liest die Preference bei initNewNote().
+     */
+    fun setDefaultNoteColor(hex: String?) {
+        prefs.edit { putString(Constants.KEY_DEFAULT_NOTE_COLOR, hex ?: "") }
+        _defaultNoteColor.value = hex
+    }
+
+    /**
+     * 🆕 v2.11.0: Toggle — neue Notizen fokussieren das Inhaltsfeld statt des Titels.
+     * NoteEditorViewModel liest die Preference bei Init.
+     */
+    fun setNewNoteFocusContent(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_NEW_NOTE_FOCUS_CONTENT, enabled) }
+        _newNoteFocusContent.value = enabled
     }
 
     /**

@@ -226,6 +226,15 @@ object Constants {
     const val DEFAULT_APP_LOCK_ENABLED = false
     const val KEY_APP_LOCK_GRACE_MS = "app_lock_grace_ms"
     const val DEFAULT_APP_LOCK_GRACE_MS = 30_000L
+
+    // 🆕 v2.11.0: Standard-Farbe für neue Notizen (kanonisches #RRGGBB aus NoteColorPalette).
+    // "" = keine Standardfarbe (Pattern wie KEY_COLOR_FILTER).
+    const val KEY_DEFAULT_NOTE_COLOR = "default_note_color"
+    const val DEFAULT_NOTE_COLOR = ""
+
+    // 🆕 v2.11.0: Neue Notiz — Cursor direkt im Inhalt statt im Titel starten.
+    const val KEY_NEW_NOTE_FOCUS_CONTENT = "new_note_focus_content"
+    const val DEFAULT_NEW_NOTE_FOCUS_CONTENT = false
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed
