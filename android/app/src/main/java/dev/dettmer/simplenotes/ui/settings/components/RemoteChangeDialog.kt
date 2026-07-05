@@ -41,6 +41,8 @@ import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 
 /**
  * 🆕 v2.11.0: Bestätigungsdialog beim Wechsel des WebDAV-Sync-Ordners.
+ * 🆕 v2.12.0: Deckt zusätzlich den Server-Wechsel ab (Remote-Ziel = Ordner + Server),
+ * Titel/Message sind `kind`-abhängig.
  * Ausgelöst per Zurück-Intercept auf ServerSettingsScreen (kein Save-Button).
  * M3 ModalBottomSheet, Aufbau analog zu ExcludeFolderSyncSheet.kt / DeleteSelectionDialog
  * (3 gleichwertige gestapelte Aktionen statt Standard-AlertDialog-Buttons).
@@ -48,7 +50,7 @@ import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FolderChangeDialog(
+fun RemoteChangeDialog(
     prompt: SettingsViewModel.FolderChangePrompt,
     inProgress: Boolean,
     onMigrate: () -> Unit,
@@ -61,6 +63,25 @@ fun FolderChangeDialog(
     // 🔧 v2.11.0: Verhindert Wegwischen/Predictive-Back, solange der Restore noch läuft
     // (Race Condition: onBack() darf erst nach dem Completion-Signal aus dem ViewModel feuern).
     LaunchedEffect(inProgress) { if (inProgress) sheetState.show() }
+
+    val title = when (prompt.kind) {
+        SettingsViewModel.RemoteChangeKind.FOLDER -> stringResource(R.string.folder_change_dialog_title)
+        SettingsViewModel.RemoteChangeKind.SERVER -> stringResource(R.string.server_change_dialog_title)
+        SettingsViewModel.RemoteChangeKind.BOTH -> stringResource(R.string.remote_change_dialog_title)
+    }
+    val message = when (prompt.kind) {
+        SettingsViewModel.RemoteChangeKind.FOLDER -> stringResource(
+            R.string.folder_change_dialog_message,
+            prompt.oldLabel,
+            prompt.newLabel
+        )
+        SettingsViewModel.RemoteChangeKind.SERVER -> stringResource(
+            R.string.server_change_dialog_message,
+            prompt.oldLabel,
+            prompt.newLabel
+        )
+        SettingsViewModel.RemoteChangeKind.BOTH -> stringResource(R.string.remote_change_dialog_message)
+    }
 
     ModalBottomSheet(
         onDismissRequest = { if (!inProgress) onCancel() },
@@ -86,7 +107,7 @@ fun FolderChangeDialog(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = stringResource(R.string.folder_change_dialog_title),
+                    text = title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -95,11 +116,7 @@ fun FolderChangeDialog(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = stringResource(
-                    R.string.folder_change_dialog_message,
-                    prompt.oldFolder,
-                    prompt.newFolder
-                ),
+                text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

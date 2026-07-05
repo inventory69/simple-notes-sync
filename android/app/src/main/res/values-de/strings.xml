@@ -312,6 +312,11 @@
     <string name="folder_change_local_only_confirm_message">%1$d Notiz(en) existieren nur auf diesem Gerät und wurden nie hochgeladen. Der Ordnerwechsel löscht sie unwiederbringlich. Wichtige Notizen? Vorher über \"Backup &amp; Wiederherstellung\" sichern.</string>
     <string name="folder_change_local_only_confirm_button">Löschen und wechseln</string>
     <string name="folder_change_in_progress">Ordnerwechsel wird angewendet…</string>
+    <!-- 🆕 v2.12.0: Gleicher Dialog, Server-Wechsel / beides gleichzeitig geändert -->
+    <string name="server_change_dialog_title">Server wechseln?</string>
+    <string name="server_change_dialog_message">Du wechselst den Server von \"%1$s\" zu \"%2$s\". Was soll mit deinen aktuellen Notizen passieren?</string>
+    <string name="remote_change_dialog_title">Server und Ordner wechseln?</string>
+    <string name="remote_change_dialog_message">Du wechselst zu einem anderen Server und Sync-Ordner. Was soll mit deinen aktuellen Notizen passieren?</string>
     <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Verbindungs-Timeout: %d Sekunden</string>
     <string name="server_timeout_description">Wartezeit bevor ein Verbindungsversuch als fehlgeschlagen gilt. Niedrigere Werte geben schnellere Rückmeldung wenn der Server nicht erreichbar ist.</string>
@@ -647,6 +652,8 @@
     <string name="toast_folder_migrated">🔄 Ordner geändert. %1$d Notizen werden beim nächsten Sync in den neuen Ordner hochgeladen.</string>
     <string name="toast_folder_switched">📂 Ordner gewechselt. %1$d Notizen aus dem neuen Ordner geladen.</string>
     <string name="toast_folder_switch_offline">Ordnerwechsel im Offline-Modus nicht möglich — deine Notizen wurden behalten.</string>
+    <!-- 🆕 v2.12.0: Bestätigungsdialog beim Server-Wechsel, Nicht-mitnehmen-Aktion -->
+    <string name="toast_server_switched">🌐 Server gewechselt. %1$d Notizen vom neuen Server geladen.</string>
     <string name="toast_file_logging_enabled">📝 Datei-Logging aktiviert</string>
     <string name="toast_file_logging_disabled">📝 Datei-Logging deaktiviert</string>
     <string name="battery_optimization_dialog_title">Hintergrund-Synchronisation</string>

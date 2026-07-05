@@ -331,6 +331,11 @@
     <string name="folder_change_local_only_confirm_message">%1$d note(s) exist only on this device and were never uploaded. Switching folders deletes them permanently. Important notes? Back them up first via \"Backup &amp; Restore\".</string>
     <string name="folder_change_local_only_confirm_button">Delete and switch</string>
     <string name="folder_change_in_progress">Applying folder change…</string>
+    <!-- 🆕 v2.12.0: Same dialog, server change / both changed at once -->
+    <string name="server_change_dialog_title">Change server?</string>
+    <string name="server_change_dialog_message">You are switching the server from \"%1$s\" to \"%2$s\". What should happen to your current notes?</string>
+    <string name="remote_change_dialog_title">Change server and folder?</string>
+    <string name="remote_change_dialog_message">You are switching to a different server and sync folder. What should happen to your current notes?</string>
     <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Connection Timeout: %d seconds</string>
     <string name="server_timeout_description">Time to wait before a connection attempt is considered failed. Lower values give faster feedback when the server is unreachable.</string>
@@ -701,6 +706,8 @@
     <string name="toast_folder_migrated">🔄 Folder changed. %1$d notes will be uploaded to the new folder on next sync.</string>
     <string name="toast_folder_switched">📂 Switched folder. %1$d notes loaded from the new folder.</string>
     <string name="toast_folder_switch_offline">Can\'t switch folders in offline mode — your notes were kept.</string>
+    <!-- 🆕 v2.12.0: Server change confirmation dialog, switch action -->
+    <string name="toast_server_switched">🌐 Switched server. %1$d notes loaded from the new server.</string>
     <string name="toast_file_logging_enabled">📝 File logging enabled</string>
     <string name="toast_file_logging_disabled">📝 File logging disabled</string>
     <string name="battery_optimization_dialog_title">Background Synchronization</string>

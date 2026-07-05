@@ -77,36 +77,36 @@ class SettingsViewModelFolderChangeTest {
         }
     }
 
-    // ───── folderChangePending flow: false → true → false after revert ─────
+    // ───── remoteTargetChangePending flow: false → true → false after revert ─────
     @Test
-    fun `folderChangePending flips on change and back on revert`() {
-        assertFalse(vm.folderChangePending.value)
+    fun `remoteTargetChangePending flips on change and back on revert`() {
+        assertFalse(vm.remoteTargetChangePending.value)
 
         vm.updateSyncFolderName("archive")
-        awaitCondition { vm.folderChangePending.value }
-        assertTrue(vm.folderChangePending.value)
+        awaitCondition { vm.remoteTargetChangePending.value }
+        assertTrue(vm.remoteTargetChangePending.value)
 
         vm.onFolderChangeCancelled()
-        awaitCondition { !vm.folderChangePending.value }
+        awaitCondition { !vm.remoteTargetChangePending.value }
         assertEquals(Constants.DEFAULT_SYNC_FOLDER_NAME, vm.syncFolderName.value)
     }
 
-    // ───── requestFolderChangeDecision(): unsyncedCount counts only PENDING + LOCAL_ONLY ─────
+    // ───── requestRemoteChangeDecision(): unsyncedCount counts only PENDING + LOCAL_ONLY ─────
     @Test
-    fun `requestFolderChangeDecision counts only PENDING and LOCAL_ONLY notes`() {
+    fun `requestRemoteChangeDecision counts only PENDING and LOCAL_ONLY notes`() {
         seedNote("synced", SyncStatus.SYNCED)
         seedNote("pending", SyncStatus.PENDING)
         seedNote("local-only", SyncStatus.LOCAL_ONLY)
 
         vm.updateSyncFolderName("archive")
-        vm.requestFolderChangeDecision()
+        vm.requestRemoteChangeDecision()
         awaitCondition { vm.folderChangePrompt.value != null }
 
         val prompt = vm.folderChangePrompt.value
         assertEquals(2, prompt?.unsyncedCount)
         assertEquals(1, prompt?.localOnlyCount)
-        assertEquals(Constants.DEFAULT_SYNC_FOLDER_NAME, prompt?.oldFolder)
-        assertEquals("archive", prompt?.newFolder)
+        assertEquals(Constants.DEFAULT_SYNC_FOLDER_NAME, prompt?.oldLabel)
+        assertEquals("archive", prompt?.newLabel)
     }
 
     // ───── Cancel: syncFolderName reverted in state AND in prefs ─────
@@ -119,7 +119,7 @@ class SettingsViewModelFolderChangeTest {
 
         assertEquals(confirmed, vm.syncFolderName.value)
         assertEquals(confirmed, fakePrefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null))
-        assertFalse(vm.folderChangePending.value)
+        assertFalse(vm.remoteTargetChangePending.value)
     }
 
     // ───── Migrate: resetAllSyncStatusToPending() ran, confirmedSyncFolderName advanced ─────
@@ -129,7 +129,7 @@ class SettingsViewModelFolderChangeTest {
         vm.updateSyncFolderName("archive")
 
         vm.onFolderChangeConfirmedMigrate()
-        awaitCondition { !vm.folderChangePending.value }
+        awaitCondition { !vm.remoteTargetChangePending.value }
 
         val reloaded = runBlocking { NotesStorage(app).loadAllNotes(forceReload = true) }
         assertTrue(reloaded.all { it.syncStatus == SyncStatus.PENDING })
@@ -146,7 +146,7 @@ class SettingsViewModelFolderChangeTest {
 
         assertEquals(confirmed, vm.syncFolderName.value)
         assertEquals(confirmed, fakePrefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null))
-        assertFalse(vm.folderChangePending.value)
+        assertFalse(vm.remoteTargetChangePending.value)
     }
 
     // ───── Completion event: Race-Fix (warm-plotting-thompson) — Navigation darf erst nach
@@ -169,6 +169,7 @@ class SettingsViewModelFolderChangeTest {
         assertEquals(confirmed, vm.syncFolderName.value)
         assertFalse(vm.folderChangeInProgress.value)
     }
+
 }
 
 /**

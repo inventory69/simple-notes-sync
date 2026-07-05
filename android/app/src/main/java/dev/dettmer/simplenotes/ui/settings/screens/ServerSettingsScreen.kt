@@ -39,7 +39,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,7 +55,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
-import dev.dettmer.simplenotes.ui.settings.components.FolderChangeDialog
+import dev.dettmer.simplenotes.ui.settings.components.RemoteChangeDialog
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.utils.Constants
 
@@ -64,7 +63,8 @@ import dev.dettmer.simplenotes.utils.Constants
  * Server configuration settings screen
  * v1.5.0: Jetpack Compose Settings Redesign
  * v1.6.0: Offline Mode Toggle
- * v1.7.0 Hotfix: Save settings on screen exit (not on every keystroke)
+ * v2.12.0: Settings save immediately on input; folder/server switches gate via
+ *   remoteTargetChangePending + RemoteChangeDialog (no save-on-exit anymore)
  */
 @Suppress("LongMethod", "MagicNumber") // Compose UI + Color hex values
 @Composable
@@ -82,20 +82,12 @@ fun ServerSettingsScreen(
     val isSyncing by viewModel.isSyncing.collectAsState()
     val syncFolderName by viewModel.syncFolderName.collectAsState() // 🆕 v1.9.0
     val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState() // 🆕 v1.10.0
-    val folderChangePending by viewModel.folderChangePending.collectAsState() // 🆕 v2.11.0
+    val remoteTargetChangePending by viewModel.remoteTargetChangePending.collectAsState() // 🆕 v2.12.0
     val folderChangePrompt by viewModel.folderChangePrompt.collectAsState() // 🆕 v2.11.0
     val folderChangeInProgress by viewModel.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
-
-    // 🔧 v1.7.0 Hotfix: Save server settings when leaving this screen
-    // This prevents false "server changed" detection during text input
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.saveServerSettingsManually()
-        }
-    }
 
     // Check server status on load (only if not in offline mode)
     LaunchedEffect(offlineMode) {
@@ -104,9 +96,9 @@ fun ServerSettingsScreen(
         }
     }
 
-    // 🆕 v2.11.0: System-/Predictive-Back abfangen solange ein Ordnerwechsel unbestätigt ist
-    BackHandler(enabled = folderChangePending) {
-        viewModel.requestFolderChangeDecision()
+    // 🆕 v2.12.0: System-/Predictive-Back abfangen solange Ordner- oder Server-Wechsel unbestätigt ist
+    BackHandler(enabled = remoteTargetChangePending) {
+        viewModel.requestRemoteChangeDecision()
     }
 
     // 🔧 v2.11.0: onBack() feuert erst über dieses Completion-Signal aus dem ViewModel —
@@ -117,7 +109,7 @@ fun ServerSettingsScreen(
     }
 
     folderChangePrompt?.let { prompt ->
-        FolderChangeDialog(
+        RemoteChangeDialog(
             prompt = prompt,
             inProgress = folderChangeInProgress,
             onMigrate = { viewModel.onFolderChangeConfirmedMigrate() },
@@ -128,7 +120,7 @@ fun ServerSettingsScreen(
 
     SettingsScaffold(
         title = stringResource(R.string.server_settings_title),
-        onBack = { if (folderChangePending) viewModel.requestFolderChangeDecision() else onBack() }
+        onBack = { if (remoteTargetChangePending) viewModel.requestRemoteChangeDecision() else onBack() }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -448,9 +440,7 @@ fun ServerSettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
-                    onClick = {
-                        if (folderChangePending) viewModel.requestFolderChangeDecision() else viewModel.testConnection()
-                    },
+                    onClick = { viewModel.testConnection() },
                     enabled = fieldsEnabled,
                     modifier = Modifier.weight(1f)
                 ) {
@@ -459,7 +449,7 @@ fun ServerSettingsScreen(
 
                 Button(
                     onClick = {
-                        if (folderChangePending) viewModel.requestFolderChangeDecision() else viewModel.syncNow()
+                        if (remoteTargetChangePending) viewModel.requestRemoteChangeDecision() else viewModel.syncNow()
                     },
                     enabled = fieldsEnabled && !isSyncing,
                     modifier = Modifier.weight(1f)

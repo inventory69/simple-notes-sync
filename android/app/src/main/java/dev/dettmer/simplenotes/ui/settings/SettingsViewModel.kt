@@ -74,10 +74,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
     // This prevents false-positive "server changed" toasts during text input
-    private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
+    // 🆕 v2.12.0: MutableStateFlow backing so remoteTargetChangePending can observe it
+    private val _confirmedServerUrl = MutableStateFlow(prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty())
+    private var confirmedServerUrl: String
+        get() = _confirmedServerUrl.value
+        set(value) {
+            _confirmedServerUrl.value = value
+        }
 
     // 🆕 v1.9.0: Track last confirmed sync folder name for change detection
-    // 🆕 v2.11.0: MutableStateFlow backing so folderChangePending can observe it
+    // 🆕 v2.11.0: MutableStateFlow backing so remoteTargetChangePending can observe it
     private val _confirmedSyncFolderName = MutableStateFlow(
         prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
             ?: Constants.DEFAULT_SYNC_FOLDER_NAME
@@ -112,6 +118,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // 🌟 v1.6.0: Only the host part is editable (without protocol prefix)
     private val _serverHost = MutableStateFlow(extractHostFromUrl(storedUrl))
     val serverHost: StateFlow<String> = _serverHost.asStateFlow()
+
+    // 🆕 v2.12.0: Full URL from current (unconfirmed) prefix + host state
+    private fun currentFullServerUrl(): String {
+        val prefix = if (_isHttps.value) "https://" else "http://"
+        return if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
+    }
 
     // 🌟 v1.6.0: Full URL for display purposes (computed from prefix + host)
     val serverUrl: StateFlow<String> = combine(_isHttps, _serverHost) { https, host ->
@@ -354,17 +366,29 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
 
-    // 🆕 v2.11.0: Ordnerwechsel-Bestätigungsdialog (Zurück-Intercept statt Save-Button)
-    val folderChangePending: StateFlow<Boolean> = combine(
+    // 🆕 v2.12.0: Remote-Ziel (Ordner + Server) geändert? Bestätigungsdialog (Zurück-Intercept
+    // statt Save-Button), einheitlich für beide. serverChanged nur „echt" bei bestehender
+    // Verbindung (isServerReallyChanged liefert false bei Erstsetup/Protokoll-only/Entfernen).
+    val remoteTargetChangePending: StateFlow<Boolean> = combine(
         _syncFolderName,
-        _confirmedSyncFolderName
-    ) { current, confirmed ->
-        current.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME } != confirmed
+        _confirmedSyncFolderName,
+        _serverHost,
+        _isHttps,
+        _confirmedServerUrl
+    ) { folder, confirmedFolder, host, https, confirmedServer ->
+        val folderChanged = folder.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME } != confirmedFolder
+        val prefix = if (https) "https://" else "http://"
+        val currentServer = if (host.isEmpty()) "" else prefix + host
+        val serverChanged = isServerReallyChanged(confirmedServer, currentServer)
+        folderChanged || serverChanged
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    enum class RemoteChangeKind { FOLDER, SERVER, BOTH }
+
     data class FolderChangePrompt(
-        val oldFolder: String,
-        val newFolder: String,
+        val kind: RemoteChangeKind,
+        val oldLabel: String,
+        val newLabel: String,
         val unsyncedCount: Int,
         val localOnlyCount: Int
     )
@@ -507,9 +531,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _serverHost.value = host
 
         // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
-        val prefix = if (_isHttps.value) "https://" else "http://"
-        val fullUrl = if (host.isEmpty()) "" else prefix + host
-        prefs.edit { putString(Constants.KEY_SERVER_URL, fullUrl) }
+        prefs.edit { putString(Constants.KEY_SERVER_URL, currentFullServerUrl()) }
     }
 
     fun updateProtocol(useHttps: Boolean) {
@@ -519,9 +541,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
 
         // ✅ Save immediately for WebDavSyncService, but WITHOUT server-change detection
-        val prefix = if (useHttps) "https://" else "http://"
-        val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
-        prefs.edit { putString(Constants.KEY_SERVER_URL, fullUrl) }
+        prefs.edit { putString(Constants.KEY_SERVER_URL, currentFullServerUrl()) }
     }
 
     fun updateUsername(value: String) {
@@ -600,77 +620,65 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         Logger.d(TAG, "Connection timeout set to: ${validSeconds}s")
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v2.12.0: Remote Target Change Confirmation (Zurück-Intercept auf ServerSettingsScreen)
+    // Deckt Ordner- UND Server-Wechsel ab — "Remote-Ziel" = (serverUrl, syncFolderName).
+    // Server-Change-Erkennung lief bis v2.11.0 in saveServerSettingsManually() (stiller
+    // Save-on-Exit); die ist jetzt hier im selben Gate wie der Ordnerwechsel.
+    // ═══════════════════════════════════════════════════════════════════════
+
     /**
-     * 🔧 v1.7.0 Hotfix: Manual save function - only called when leaving settings screen
-     * This prevents false "server changed" detection during text input
-     * 🔧 v1.7.0 Regression Fix: Settings are now saved IMMEDIATELY in update functions.
-     *    This function now ONLY handles server-change detection and sync reset.
+     * Zurück-Intercept auf `ServerSettingsScreen`: ermittelt was sich geändert hat
+     * (Ordner, Server oder beides), zählt unwiederbringliche Notizen (PENDING/LOCAL_ONLY —
+     * die einzigen, die bei "Nicht mitnehmen" verloren gehen könnten) und öffnet den
+     * Bestätigungsdialog.
      */
-    fun saveServerSettingsManually() {
-        // 🌟 v1.6.0: Construct full URL from prefix + host
-        val prefix = if (_isHttps.value) "https://" else "http://"
-        val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
+    fun requestRemoteChangeDecision() {
+        val folderChanged = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME } !=
+            confirmedSyncFolderName
+        val serverChanged = isServerReallyChanged(confirmedServerUrl, currentFullServerUrl())
 
-        // 🔄 v1.7.0: Detect server change ONLY against last confirmed URL
-        // 🆕 v2.11.0: Folder changes are handled exclusively by the folder-change dialog gate
-        // (requestFolderChangeDecision()) — no longer detected here.
-        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl)
-
-        // ✅ Settings are already saved in updateServerHost/Protocol/Username/Password
-        // This function now ONLY handles server-change detection
-
-        // Reset sync status if server actually changed
-        if (serverChanged) {
-            viewModelScope.launch {
-                // 🔧 v1.9.0: E-Tag/Content-Hash-Caches und Sync-Timestamp löschen
-                // Verhindert Upload-Skip durch veraltete Cache-Einträge des alten Servers
-                clearServerCaches()
-                val count = notesStorage.resetAllSyncStatusToPending()
-                Logger.d(
-                    TAG,
-                    "🔄 Server changed from '$confirmedServerUrl' to '$fullUrl': Reset $count notes to PENDING"
-                )
-                emitToast(getString(R.string.toast_server_changed_sync_reset, count))
-            }
-            // Update confirmed state after reset
-            confirmedServerUrl = fullUrl
-        } else {
-            Logger.d(TAG, "💾 Server settings check complete (no server change detected)")
+        val kind = when {
+            folderChanged && serverChanged -> RemoteChangeKind.BOTH
+            serverChanged -> RemoteChangeKind.SERVER
+            else -> RemoteChangeKind.FOLDER
         }
-    }
+        val (oldLabel, newLabel) = when (kind) {
+            RemoteChangeKind.FOLDER ->
+                confirmedSyncFolderName to
+                    _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+            RemoteChangeKind.SERVER -> extractHostFromUrl(confirmedServerUrl) to _serverHost.value
+            RemoteChangeKind.BOTH -> "" to ""
+        }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 v2.11.0: Folder Change Confirmation (Zurück-Intercept auf ServerSettingsScreen)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Zurück-Intercept auf `ServerSettingsScreen`: zählt unwiederbringliche Notizen
-     * (PENDING/LOCAL_ONLY — die einzigen, die bei "Nicht mitnehmen" verloren gehen
-     * könnten) und öffnet den Bestätigungsdialog.
-     */
-    fun requestFolderChangeDecision() {
-        val oldFolder = confirmedSyncFolderName
-        val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
         viewModelScope.launch {
             val notes = withContext(ioDispatcher) { notesStorage.loadAllNotes(forceReload = true) }
             val unsyncedCount = notes.count {
                 it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.LOCAL_ONLY
             }
             val localOnlyCount = notes.count { it.syncStatus == SyncStatus.LOCAL_ONLY }
-            _folderChangePrompt.value = FolderChangePrompt(oldFolder, newFolder, unsyncedCount, localOnlyCount)
+            _folderChangePrompt.value = FolderChangePrompt(kind, oldLabel, newLabel, unsyncedCount, localOnlyCount)
         }
     }
 
     /** "Notizen mitnehmen": heutiges Verhalten — Merge über resetAllSyncStatusToPending(). */
     fun onFolderChangeConfirmedMigrate() {
         val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        val newServerUrl = currentFullServerUrl()
+        val kind = _folderChangePrompt.value?.kind ?: RemoteChangeKind.FOLDER
         _folderChangeInProgress.value = true
         viewModelScope.launch {
             try {
                 clearServerCaches()
                 val count = notesStorage.resetAllSyncStatusToPending()
                 confirmedSyncFolderName = newFolder
-                emitToast(getString(R.string.toast_folder_migrated, count))
+                confirmedServerUrl = newServerUrl
+                val message = if (kind == RemoteChangeKind.FOLDER) {
+                    getString(R.string.toast_folder_migrated, count)
+                } else {
+                    getString(R.string.toast_server_changed_sync_reset, count)
+                }
+                emitToast(message)
             } finally {
                 _folderChangeInProgress.value = false
                 _folderChangePrompt.value = null
@@ -680,7 +688,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * "Nicht mitnehmen": lokale Ansicht wird durch den neuen Ordner ersetzt.
+     * "Nicht mitnehmen": lokale Ansicht wird durch den neuen Ordner/Server ersetzt.
      * Datensicherheits-Guards VOR dem destruktiven `restoreFromServer(REPLACE)`
      * (das `deleteAllNotes()` vor dem Download ruft): Offline-Modus und
      * Server-Erreichbarkeit müssen zuerst geprüft werden.
@@ -692,10 +700,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun onFolderChangeConfirmedSwitch() {
         val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        val newServerUrl = currentFullServerUrl()
+        val kind = _folderChangePrompt.value?.kind ?: RemoteChangeKind.FOLDER
 
         if (_offlineMode.value) {
             _folderChangePrompt.value = null
-            revertFolderToConfirmed()
+            revertRemoteTargetToConfirmed()
             showSnackbar(getString(R.string.toast_folder_switch_offline))
             _folderChangeCompleted.tryEmit(Unit)
             return
@@ -707,7 +717,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val syncService = WebDavSyncService(getApplication())
                 val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
                 if (!reachable) {
-                    revertFolderToConfirmed()
+                    revertRemoteTargetToConfirmed()
                     emitToast(getString(R.string.snackbar_server_unreachable))
                     return@launch
                 }
@@ -717,9 +727,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
                 if (result.isSuccess) {
                     confirmedSyncFolderName = newFolder
-                    emitToast(getString(R.string.toast_folder_switched, result.restoredCount))
+                    confirmedServerUrl = newServerUrl
+                    val message = if (kind == RemoteChangeKind.FOLDER) {
+                        getString(R.string.toast_folder_switched, result.restoredCount)
+                    } else {
+                        getString(R.string.toast_server_switched, result.restoredCount)
+                    }
+                    emitToast(message)
                 } else {
-                    revertFolderToConfirmed()
+                    revertRemoteTargetToConfirmed()
                     emitToast(getString(R.string.toast_error, result.errorMessage.orEmpty()))
                 }
             } finally {
@@ -730,18 +746,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /** Abbrechen: Ordnername auf bestätigten Wert zurücksetzen, auf dem Screen bleiben. */
+    /** Abbrechen: Ordner + Server auf bestätigte Werte zurücksetzen, auf dem Screen bleiben. */
     fun onFolderChangeCancelled() {
         _folderChangePrompt.value = null
-        revertFolderToConfirmed()
+        revertRemoteTargetToConfirmed()
     }
 
-    private fun revertFolderToConfirmed() {
-        val confirmed = confirmedSyncFolderName
-        _syncFolderName.value = confirmed
+    private fun revertRemoteTargetToConfirmed() {
+        val confirmedFolder = confirmedSyncFolderName
+        _syncFolderName.value = confirmedFolder
         // updateSyncFolderName persistiert bei jedem Tastendruck — revert muss die
         // gleiche SharedPreferences-Stelle zurücksetzen.
-        prefs.edit { putString(Constants.KEY_SYNC_FOLDER_NAME, confirmed) }
+        prefs.edit { putString(Constants.KEY_SYNC_FOLDER_NAME, confirmedFolder) }
+
+        val confirmedUrl = confirmedServerUrl
+        _isHttps.value = confirmedUrl.startsWith("https://")
+        _serverHost.value = extractHostFromUrl(confirmedUrl)
+        prefs.edit { putString(Constants.KEY_SERVER_URL, confirmedUrl) }
     }
 
     /**
