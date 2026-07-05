@@ -668,6 +668,7 @@
     <!-- ============================= -->
     <!-- Issue #21: Connection test info with sync folder status -->
     <string name="test_connection_success_with_notes">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
+    <string name="test_connection_success_md_exists">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ already exists and will be used).</string>
     <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>

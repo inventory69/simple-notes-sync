@@ -614,6 +614,7 @@
     <!-- ============================= -->
     <!-- Issue #21: Verbindungstest-Info mit Sync-Ordner-Status -->
     <string name="test_connection_success_with_notes">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ wird automatisch erstellt).</string>
+    <string name="test_connection_success_md_exists">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ existiert bereits und wird verwendet).</string>
     <string name="test_connection_success_first_sync">✅ Server erreichbar. Ordner /%1$s/ und /%1$s-md/ werden beim ersten Sync erstellt.</string>
     <string name="toast_connection_success">✅ Verbindung erfolgreich!</string>
     <string name="toast_connection_failed">❌ %s</string>
