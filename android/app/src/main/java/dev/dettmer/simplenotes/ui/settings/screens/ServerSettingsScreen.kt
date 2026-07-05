@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
+import dev.dettmer.simplenotes.ui.settings.components.FolderChangeDialog
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.utils.Constants
 
@@ -80,6 +82,8 @@ fun ServerSettingsScreen(
     val isSyncing by viewModel.isSyncing.collectAsState()
     val syncFolderName by viewModel.syncFolderName.collectAsState() // 🆕 v1.9.0
     val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState() // 🆕 v1.10.0
+    val folderChangePending by viewModel.folderChangePending.collectAsState() // 🆕 v2.11.0
+    val folderChangePrompt by viewModel.folderChangePrompt.collectAsState() // 🆕 v2.11.0
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
@@ -99,9 +103,29 @@ fun ServerSettingsScreen(
         }
     }
 
+    // 🆕 v2.11.0: System-/Predictive-Back abfangen solange ein Ordnerwechsel unbestätigt ist
+    BackHandler(enabled = folderChangePending) {
+        viewModel.requestFolderChangeDecision()
+    }
+
+    folderChangePrompt?.let { prompt ->
+        FolderChangeDialog(
+            prompt = prompt,
+            onMigrate = {
+                viewModel.onFolderChangeConfirmedMigrate()
+                onBack()
+            },
+            onSwitch = {
+                viewModel.onFolderChangeConfirmedSwitch()
+                onBack()
+            },
+            onCancel = { viewModel.onFolderChangeCancelled() }
+        )
+    }
+
     SettingsScaffold(
         title = stringResource(R.string.server_settings_title),
-        onBack = onBack
+        onBack = { if (folderChangePending) viewModel.requestFolderChangeDecision() else onBack() }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -421,7 +445,9 @@ fun ServerSettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
-                    onClick = { viewModel.testConnection() },
+                    onClick = {
+                        if (folderChangePending) viewModel.requestFolderChangeDecision() else viewModel.testConnection()
+                    },
                     enabled = fieldsEnabled,
                     modifier = Modifier.weight(1f)
                 ) {
@@ -429,7 +455,9 @@ fun ServerSettingsScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.syncNow() },
+                    onClick = {
+                        if (folderChangePending) viewModel.requestFolderChangeDecision() else viewModel.syncNow()
+                    },
                     enabled = fieldsEnabled && !isSyncing,
                     modifier = Modifier.weight(1f)
                 ) {

@@ -321,6 +321,15 @@
     <string name="server_advanced_settings">Advanced</string>
     <string name="sync_folder_name">Sync folder</string>
     <string name="sync_folder_name_hint">Folder name on the WebDAV server (default: notes). This also affects the Markdown folder (e.g. notes → notes-md). Only change this if you know what you\'re doing.</string>
+    <!-- 🆕 v2.11.0: Folder change confirmation dialog -->
+    <string name="folder_change_dialog_title">Change sync folder?</string>
+    <string name="folder_change_dialog_message">You are switching the sync folder from \"%1$s\" to \"%2$s\". What should happen to your current notes?</string>
+    <string name="folder_change_dialog_data_loss_warning">Warning: %1$d note(s) have not been uploaded yet. If you don\'t take them along, they will be lost.</string>
+    <string name="folder_change_action_migrate">Take notes along</string>
+    <string name="folder_change_action_switch">Don\'t take along</string>
+    <string name="folder_change_local_only_confirm_title">Delete local-only notes?</string>
+    <string name="folder_change_local_only_confirm_message">%1$d note(s) exist only on this device and were never uploaded. Switching folders deletes them permanently. Important notes? Back them up first via \"Backup &amp; Restore\".</string>
+    <string name="folder_change_local_only_confirm_button">Delete and switch</string>
     <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Connection Timeout: %d seconds</string>
     <string name="server_timeout_description">Time to wait before a connection attempt is considered failed. Lower values give faster feedback when the server is unreachable.</string>
@@ -686,6 +695,10 @@
     <string name="toast_logs_deleted">🗑️ Logs deleted</string>
     <!-- 🔄 v1.7.0: Server change notification -->
     <string name="toast_server_changed_sync_reset">🔄 Server changed. %d notes will be uploaded on next sync.</string>
+    <!-- 🆕 v2.11.0: Folder change confirmation dialog -->
+    <string name="toast_folder_migrated">🔄 Folder changed. %1$d notes will be uploaded to the new folder on next sync.</string>
+    <string name="toast_folder_switched">📂 Switched folder. %1$d notes loaded from the new folder.</string>
+    <string name="toast_folder_switch_offline">Can\'t switch folders in offline mode — your notes were kept.</string>
     <string name="toast_file_logging_enabled">📝 File logging enabled</string>
     <string name="toast_file_logging_disabled">📝 File logging disabled</string>
     <string name="battery_optimization_dialog_title">Background Synchronization</string>

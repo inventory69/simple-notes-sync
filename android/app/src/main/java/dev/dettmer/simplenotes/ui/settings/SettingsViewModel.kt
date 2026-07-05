@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
+import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -76,9 +77,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var confirmedServerUrl: String = prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty()
 
     // 🆕 v1.9.0: Track last confirmed sync folder name for change detection
-    private var confirmedSyncFolderName: String =
+    // 🆕 v2.11.0: MutableStateFlow backing so folderChangePending can observe it
+    private val _confirmedSyncFolderName = MutableStateFlow(
         prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
             ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+    )
+    private var confirmedSyncFolderName: String
+        get() = _confirmedSyncFolderName.value
+        set(value) {
+            _confirmedSyncFolderName.value = value
+        }
 
     // ═══════════════════════════════════════════════════════════════════════
     // Server Settings State
@@ -346,6 +354,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
 
+    // 🆕 v2.11.0: Ordnerwechsel-Bestätigungsdialog (Zurück-Intercept statt Save-Button)
+    val folderChangePending: StateFlow<Boolean> = combine(
+        _syncFolderName,
+        _confirmedSyncFolderName
+    ) { current, confirmed ->
+        current.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME } != confirmed
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    data class FolderChangePrompt(
+        val oldFolder: String,
+        val newFolder: String,
+        val unsyncedCount: Int,
+        val localOnlyCount: Int
+    )
+
+    private val _folderChangePrompt = MutableStateFlow<FolderChangePrompt?>(null)
+    val folderChangePrompt: StateFlow<FolderChangePrompt?> = _folderChangePrompt.asStateFlow()
+
     // v2.10.0: App lock
     private val _appLockEnabled = MutableStateFlow(AppLock.isEnabled(application))
     val appLockEnabled: StateFlow<Boolean> = _appLockEnabled.asStateFlow()
@@ -578,12 +604,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val prefix = if (_isHttps.value) "https://" else "http://"
         val fullUrl = if (_serverHost.value.isEmpty()) "" else prefix + _serverHost.value
 
-        // 🆕 v1.9.0: Folder change counts as server change (different data location)
-        val currentFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
-        val folderChanged = currentFolder != confirmedSyncFolderName
-
         // 🔄 v1.7.0: Detect server change ONLY against last confirmed URL
-        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl) || folderChanged
+        // 🆕 v2.11.0: Folder changes are handled exclusively by the folder-change dialog gate
+        // (requestFolderChangeDecision()) — no longer detected here.
+        val serverChanged = isServerReallyChanged(confirmedServerUrl, fullUrl)
 
         // ✅ Settings are already saved in updateServerHost/Protocol/Username/Password
         // This function now ONLY handles server-change detection
@@ -603,10 +627,95 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             // Update confirmed state after reset
             confirmedServerUrl = fullUrl
-            confirmedSyncFolderName = currentFolder
         } else {
             Logger.d(TAG, "💾 Server settings check complete (no server change detected)")
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v2.11.0: Folder Change Confirmation (Zurück-Intercept auf ServerSettingsScreen)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Zurück-Intercept auf `ServerSettingsScreen`: zählt unwiederbringliche Notizen
+     * (PENDING/LOCAL_ONLY — die einzigen, die bei "Nicht mitnehmen" verloren gehen
+     * könnten) und öffnet den Bestätigungsdialog.
+     */
+    fun requestFolderChangeDecision() {
+        val oldFolder = confirmedSyncFolderName
+        val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        viewModelScope.launch {
+            val notes = withContext(ioDispatcher) { notesStorage.loadAllNotes(forceReload = true) }
+            val unsyncedCount = notes.count {
+                it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.LOCAL_ONLY
+            }
+            val localOnlyCount = notes.count { it.syncStatus == SyncStatus.LOCAL_ONLY }
+            _folderChangePrompt.value = FolderChangePrompt(oldFolder, newFolder, unsyncedCount, localOnlyCount)
+        }
+    }
+
+    /** "Notizen mitnehmen": heutiges Verhalten — Merge über resetAllSyncStatusToPending(). */
+    fun onFolderChangeConfirmedMigrate() {
+        val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        _folderChangePrompt.value = null
+        viewModelScope.launch {
+            clearServerCaches()
+            val count = notesStorage.resetAllSyncStatusToPending()
+            confirmedSyncFolderName = newFolder
+            emitToast(getString(R.string.toast_folder_migrated, count))
+        }
+    }
+
+    /**
+     * "Nicht mitnehmen": lokale Ansicht wird durch den neuen Ordner ersetzt.
+     * Datensicherheits-Guards VOR dem destruktiven `restoreFromServer(REPLACE)`
+     * (das `deleteAllNotes()` vor dem Download ruft): Offline-Modus und
+     * Server-Erreichbarkeit müssen zuerst geprüft werden.
+     */
+    fun onFolderChangeConfirmedSwitch() {
+        val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
+        _folderChangePrompt.value = null
+
+        if (_offlineMode.value) {
+            revertFolderToConfirmed()
+            showSnackbar(getString(R.string.toast_folder_switch_offline))
+            return
+        }
+
+        viewModelScope.launch {
+            val syncService = WebDavSyncService(getApplication())
+            val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
+            if (!reachable) {
+                revertFolderToConfirmed()
+                emitToast(getString(R.string.snackbar_server_unreachable))
+                return@launch
+            }
+
+            val result = withContext(ioDispatcher) {
+                syncService.restoreFromServer(RestoreMode.REPLACE, emptyIsSuccess = true)
+            }
+            if (result.isSuccess) {
+                confirmedSyncFolderName = newFolder
+                emitToast(getString(R.string.toast_folder_switched, result.restoredCount))
+            } else {
+                revertFolderToConfirmed()
+                emitToast(getString(R.string.toast_error, result.errorMessage.orEmpty()))
+            }
+        }
+    }
+
+    /** Abbrechen: Ordnername auf bestätigten Wert zurücksetzen, auf dem Screen bleiben. */
+    fun onFolderChangeCancelled() {
+        _folderChangePrompt.value = null
+        revertFolderToConfirmed()
+    }
+
+    private fun revertFolderToConfirmed() {
+        val confirmed = confirmedSyncFolderName
+        _syncFolderName.value = confirmed
+        // updateSyncFolderName persistiert bei jedem Tastendruck — revert muss die
+        // gleiche SharedPreferences-Stelle zurücksetzen.
+        prefs.edit { putString(Constants.KEY_SYNC_FOLDER_NAME, confirmed) }
     }
 
     /**
