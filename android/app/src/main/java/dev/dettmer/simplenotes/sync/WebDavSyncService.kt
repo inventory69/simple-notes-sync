@@ -1016,7 +1016,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * @return RestoreResult with count of restored notes
      */
     suspend fun restoreFromServer(
-        mode: dev.dettmer.simplenotes.backup.RestoreMode = dev.dettmer.simplenotes.backup.RestoreMode.REPLACE
+        mode: dev.dettmer.simplenotes.backup.RestoreMode = dev.dettmer.simplenotes.backup.RestoreMode.REPLACE,
+        // 🆕 v2.11.0: Ordnerwechsel-Dialog ("Nicht mitnehmen") — ein legitim leerer
+        // neuer Ordner ist kein Fehler. Default false lässt den Backup-Restore-Aufrufer
+        // (echte "keine Notizen auf Server" Situation) unverändert.
+        emptyIsSuccess: Boolean = false
     ): RestoreResult = withContext(ioDispatcher) {
         return@withContext try {
             val sardine = getOrCreateSardine() ?: return@withContext RestoreResult(
@@ -1069,6 +1073,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     Logger.d(TAG, "🗑️ REPLACE mode: Clearing local storage...")
                     storage.deleteAllNotes()
                     // Tracker already cleared above
+                    // 🐛 Fix: lokale Ordner-Metadaten wurden bei REPLACE nie zurückgesetzt — NoteDownloader
+                    // fügt beim Re-Download nur neue Namen hinzu (folderStore.addFolders), entfernt nie alte.
+                    // REPLACE = Server ist die Quelle der Wahrheit → Ordnerliste komplett zurücksetzen,
+                    // bevor der Download sie aus den Server-Daten neu aufbaut.
+                    Logger.d(TAG, "🗑️ REPLACE mode: Clearing local folder store...")
+                    folderStore.clear()
                 }
                 dev.dettmer.simplenotes.backup.RestoreMode.MERGE -> {
                     // Keep local notes, just add from server
@@ -1101,6 +1111,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             Logger.d(TAG, "📊 Download result: downloaded=${result.downloadedCount}, conflicts=${result.conflictCount}")
 
             if (result.downloadedCount == 0 && mode == dev.dettmer.simplenotes.backup.RestoreMode.REPLACE) {
+                if (emptyIsSuccess) {
+                    Logger.d(TAG, "📭 No notes found on server — treated as success (emptyIsSuccess)")
+                    return@withContext RestoreResult(isSuccess = true, errorMessage = null, restoredCount = 0)
+                }
                 Logger.w(TAG, "⚠️ No notes found on server!")
                 return@withContext RestoreResult(
                     isSuccess = false,
@@ -1129,6 +1143,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     Logger.d(TAG, "💾 Updated deletion tracker after restore")
                 }
             }
+
+            // 🐛 Fix: Ordner-Metadaten (Farben, Tombstones, leere Ordner) aus folders.json anwenden.
+            // downloadRemoteNotes() legt nur nackte Ordnernamen an — Farben/leere Ordner kommen nur hierüber.
+            syncFolderMetadataSafe(sardine, serverUrl)
 
             saveLastSyncTimestamp()
 

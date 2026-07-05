@@ -153,6 +153,17 @@ class FolderStoreTest {
         assertNull(folder.color)
     }
 
+    @Test fun `clear removes folders and local-only markers`() = runBlocking {
+        store.addFolders(listOf("A", "B"))
+        store.setLocalOnly("A", true)
+        assertTrue(store.load().isNotEmpty())
+
+        store.clear()
+
+        assertTrue(store.load().isEmpty())
+        assertFalse(store.isLocalOnly("A"))
+    }
+
     @Test fun `FolderMeta uses stable JSON wire keys`() {
         val json = com.google.gson.Gson().toJson(
             FolderMeta(name = "Arbeit", color = "#FF0000", updatedAt = 42L, deleted = true)

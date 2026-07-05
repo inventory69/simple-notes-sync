@@ -231,7 +231,11 @@ class FolderStore(private val context: Context) {
         setLocalOnly(name, false)
     }
 
-    /** Nur für Tests / „Alle Daten löschen". Entfernt auch local-only-Markierungen. */
+    /**
+     * Entfernt alle Ordner-Metadaten inkl. local-only-Markierungen.
+     * Für Tests / „Alle Daten löschen" sowie für `RestoreMode.REPLACE`
+     * (Server ist Quelle der Wahrheit → vor Re-Download zurücksetzen).
+     */
     suspend fun clear() = mutex.withLock {
         try {
             if (file.exists()) file.delete()
