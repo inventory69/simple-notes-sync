@@ -1,20 +1,21 @@
 package dev.dettmer.simplenotes.models
 
-import dev.dettmer.simplenotes.models.NoteSize.Companion.SMALL_CHECKLIST_THRESHOLD
-import dev.dettmer.simplenotes.models.NoteSize.Companion.SMALL_TEXT_THRESHOLD
+import dev.dettmer.simplenotes.models.NoteSize.Companion.SMALL_LINE_THRESHOLD
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
  * 🎨 v1.7.0: Tests for Note Size Classification (Staggered Grid Layout)
+ * 🔧 v2.11.0: Updated for the line-based estimator (estimateDisplayLines, 32 chars/line,
+ * SMALL_LINE_THRESHOLD=3) that replaced the old char-count/item-count thresholds.
  */
 class NoteSizeTest {
     @Test
-    fun `text note with less than 80 chars is SMALL`() {
+    fun `text note with short single line is SMALL`() {
         val note = Note(
             id = "test1",
             title = "Test",
-            content = "Short content", // 13 chars
+            content = "Short content", // 13 chars -> 1 estimated line
             deviceId = "test-device",
             noteType = NoteType.TEXT
         )
@@ -23,8 +24,8 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `text note with exactly 79 chars is SMALL`() {
-        val content = "x".repeat(79) // Exactly threshold - 1
+    fun `text note at exactly the line threshold is SMALL`() {
+        val content = "x".repeat(79) // ceil(79/32) = 3 estimated lines = threshold
         val note = Note(
             id = "test2",
             title = "Test",
@@ -37,8 +38,8 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `text note with exactly 80 chars is LARGE`() {
-        val content = "x".repeat(SMALL_TEXT_THRESHOLD) // Exactly at threshold
+    fun `text note just above the line threshold is LARGE`() {
+        val content = "x".repeat(97) // ceil(97/32) = 4 estimated lines > threshold
         val note = Note(
             id = "test3",
             title = "Test",
@@ -51,7 +52,7 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `text note with more than 80 chars is LARGE`() {
+    fun `text note with many long lines is LARGE`() {
         val content = "This is a long note with more than 80 characters. " +
             "It should be classified as LARGE for grid layout display."
         val note = Note(
@@ -66,7 +67,7 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `checklist with 1 item is SMALL`() {
+    fun `checklist with 1 short item is SMALL`() {
         val note = Note(
             id = "test5",
             title = "Shopping",
@@ -82,7 +83,7 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `checklist with 4 items is SMALL`() {
+    fun `checklist with 3 short items is SMALL`() {
         val note = Note(
             id = "test6",
             title = "Shopping",
@@ -92,8 +93,7 @@ class NoteSizeTest {
             checklistItems = listOf(
                 ChecklistItem("id1", "Milk", false),
                 ChecklistItem("id2", "Bread", false),
-                ChecklistItem("id3", "Eggs", false),
-                ChecklistItem("id4", "Butter", false)
+                ChecklistItem("id3", "Eggs", false)
             )
         )
 
@@ -101,7 +101,7 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `checklist with 5 items is LARGE`() {
+    fun `checklist with 4 short items is LARGE`() {
         val note = Note(
             id = "test7",
             title = "Shopping",
@@ -112,8 +112,7 @@ class NoteSizeTest {
                 ChecklistItem("id1", "Milk", false),
                 ChecklistItem("id2", "Bread", false),
                 ChecklistItem("id3", "Eggs", false),
-                ChecklistItem("id4", "Butter", false),
-                ChecklistItem("id5", "Cheese", false) // 5th item -> LARGE
+                ChecklistItem("id4", "Butter", false) // 4th line -> LARGE
             )
         )
 
@@ -121,15 +120,15 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `checklist with many items is LARGE`() {
-        val items = (1..10).map { ChecklistItem("id$it", "Item $it", false) }
+    fun `checklist with one long item is LARGE`() {
+        // A single item can push past the threshold on its own via line-wrapping.
         val note = Note(
             id = "test8",
             title = "Long List",
             content = "",
             deviceId = "test-device",
             noteType = NoteType.CHECKLIST,
-            checklistItems = items
+            checklistItems = listOf(ChecklistItem("id1", "x".repeat(97), false))
         )
 
         assertEquals(NoteSize.LARGE, note.getSize())
@@ -164,8 +163,7 @@ class NoteSizeTest {
     }
 
     @Test
-    fun `constants have expected values`() {
-        assertEquals(80, SMALL_TEXT_THRESHOLD)
-        assertEquals(4, SMALL_CHECKLIST_THRESHOLD)
+    fun `line threshold constant is 3`() {
+        assertEquals(3, SMALL_LINE_THRESHOLD)
     }
 }
