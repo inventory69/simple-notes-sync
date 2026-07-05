@@ -53,6 +53,7 @@ fun SettingsMainScreen(
     val context = LocalContext.current
     val appLockEnabled by viewModel.appLockEnabled.collectAsState()
     val serverUrl by viewModel.serverUrl.collectAsState()
+    val syncFolderName by viewModel.syncFolderName.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
     val autoSyncEnabled by viewModel.autoSyncEnabled.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
@@ -170,7 +171,7 @@ fun SettingsMainScreen(
                 SettingsCard(
                     icon = Icons.Default.Cloud,
                     title = stringResource(R.string.settings_server),
-                    subtitle = if (!offlineMode && isConfigured) serverUrl else null,
+                    subtitle = if (!offlineMode && isConfigured) "$serverUrl/$syncFolderName" else null,
                     statusText = when {
                         offlineMode ->
                             stringResource(R.string.settings_server_status_offline_mode)
