@@ -376,7 +376,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isHttps,
         _confirmedServerUrl
     ) { folder, confirmedFolder, host, https, confirmedServer ->
-        val folderChanged = folder.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME } != confirmedFolder
+        // Kein Gate bei Erstkonfiguration: ohne je bestätigte Verbindung gibt es kein
+        // Remote-Notizset, von dem man migrieren/wechseln könnte. Symmetrisch zu
+        // isServerReallyChanged(), das leer→gefüllt bereits als Erstsetup (false) behandelt.
+        val hasConfirmedConnection = confirmedServer.isNotEmpty()
+        val folderChanged = hasConfirmedConnection &&
+            folder.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME } != confirmedFolder
         val prefix = if (https) "https://" else "http://"
         val currentServer = if (host.isEmpty()) "" else prefix + host
         val serverChanged = isServerReallyChanged(confirmedServer, currentServer)

@@ -48,6 +48,9 @@ class SettingsViewModelFolderChangeTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         tmpDir = Files.createTempDirectory("settings-vm-folder-test").toFile()
         fakePrefs = FakeSharedPreferences()
+        // Baseline: bestehende Verbindung, sonst gated remoteTargetChangePending den
+        // Ordnerwechsel nicht mehr (Erstsetup-Guard, siehe SettingsViewModel).
+        fakePrefs.edit().putString(Constants.KEY_SERVER_URL, "https://example.com").apply()
         app = mockk(relaxed = true) {
             every { filesDir } returns tmpDir
             every { getSharedPreferences(any(), any()) } returns fakePrefs
@@ -170,6 +173,21 @@ class SettingsViewModelFolderChangeTest {
         assertFalse(vm.folderChangeInProgress.value)
     }
 
+    // ───── Erstkonfiguration: ohne je bestätigte Verbindung kein Gate auf Ordnerwechsel ─────
+    @Test
+    fun `folder change does not gate during first-time setup (no confirmed server)`() {
+        val freshPrefs = FakeSharedPreferences()
+        val freshApp = mockk<Application>(relaxed = true) {
+            every { filesDir } returns tmpDir
+            every { getSharedPreferences(any(), any()) } returns freshPrefs
+            every { applicationContext } returns this
+            every { getString(any()) } returns "msg"
+            every { getString(any(), *anyVararg()) } returns "msg"
+        }
+        val freshVm = SettingsViewModel(freshApp)
+        freshVm.updateSyncFolderName("archive")
+        assertFalse(freshVm.remoteTargetChangePending.value)
+    }
 }
 
 /**
