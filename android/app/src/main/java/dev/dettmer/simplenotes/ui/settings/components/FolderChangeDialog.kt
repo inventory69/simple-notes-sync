@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -25,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +50,7 @@ import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 @Composable
 fun FolderChangeDialog(
     prompt: SettingsViewModel.FolderChangePrompt,
+    inProgress: Boolean,
     onMigrate: () -> Unit,
     onSwitch: () -> Unit,
     onCancel: () -> Unit
@@ -55,8 +58,12 @@ fun FolderChangeDialog(
     var showLocalOnlyConfirm by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // 🔧 v2.11.0: Verhindert Wegwischen/Predictive-Back, solange der Restore noch läuft
+    // (Race Condition: onBack() darf erst nach dem Completion-Signal aus dem ViewModel feuern).
+    LaunchedEffect(inProgress) { if (inProgress) sheetState.show() }
+
     ModalBottomSheet(
-        onDismissRequest = onCancel,
+        onDismissRequest = { if (!inProgress) onCancel() },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
@@ -97,7 +104,7 @@ fun FolderChangeDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (prompt.unsyncedCount > 0) {
+            if (prompt.unsyncedCount > 0 && !inProgress) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(
@@ -111,40 +118,59 @@ fun FolderChangeDialog(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // "Nicht mitnehmen" (switch/REPLACE): lokal destruktiv → starker, fehlerfarbener
-            // Button oben, Position/Styling analog ExcludeFolderSyncSheet.
-            Button(
-                onClick = { if (prompt.localOnlyCount > 0) showLocalOnlyConfirm = true else onSwitch() },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.folder_change_action_switch))
-            }
+            if (inProgress) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.folder_change_in_progress),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                // "Nicht mitnehmen" (switch/REPLACE): lokal destruktiv → starker, fehlerfarbener
+                // Button oben, Position/Styling analog ExcludeFolderSyncSheet.
+                Button(
+                    onClick = { if (prompt.localOnlyCount > 0) showLocalOnlyConfirm = true else onSwitch() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SwapHoriz,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.folder_change_action_switch))
+                }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // "Notizen mitnehmen" (migrate): sichere Standard-Aktion, kein Datenverlust.
-            OutlinedButton(onClick = onMigrate, modifier = Modifier.fillMaxWidth()) {
-                Icon(imageVector = Icons.Outlined.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.folder_change_action_migrate))
-            }
+                // "Notizen mitnehmen" (migrate): sichere Standard-Aktion, kein Datenverlust.
+                OutlinedButton(onClick = onMigrate, modifier = Modifier.fillMaxWidth()) {
+                    Icon(
+                        imageVector = Icons.Outlined.CloudSync,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.folder_change_action_migrate))
+                }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.cancel))
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         }
     }
 
-    if (showLocalOnlyConfirm) {
+    if (showLocalOnlyConfirm && !inProgress) {
         AlertDialog(
             onDismissRequest = { showLocalOnlyConfirm = false },
             title = { Text(stringResource(R.string.folder_change_local_only_confirm_title)) },

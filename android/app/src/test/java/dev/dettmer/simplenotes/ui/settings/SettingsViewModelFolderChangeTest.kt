@@ -13,6 +13,7 @@ import java.nio.file.Files
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -146,6 +147,27 @@ class SettingsViewModelFolderChangeTest {
         assertEquals(confirmed, vm.syncFolderName.value)
         assertEquals(confirmed, fakePrefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null))
         assertFalse(vm.folderChangePending.value)
+    }
+
+    // ───── Completion event: Race-Fix (warm-plotting-thompson) — Navigation darf erst nach
+    // diesem Signal erfolgen, auch im synchronen Offline-Zweig ─────
+    @Test
+    fun `onFolderChangeConfirmedSwitch emits completion event when offline`() = runBlocking {
+        val confirmed = vm.syncFolderName.value
+        vm.setOfflineMode(true)
+        vm.updateSyncFolderName("archive")
+
+        // Dispatchers.Main (UnconfinedTestDispatcher) statt runBlocking's Default-Dispatcher:
+        // sonst startet der Collector erst beim nächsten Suspend-Point des Testkörpers, also
+        // NACH dem synchronen tryEmit() unten — das Signal ginge am Subscriber vorbei.
+        var completed = false
+        val job = launch(Dispatchers.Main) { vm.folderChangeCompleted.collect { completed = true } }
+        vm.onFolderChangeConfirmedSwitch()
+        awaitCondition { completed }
+        job.cancel()
+
+        assertEquals(confirmed, vm.syncFolderName.value)
+        assertFalse(vm.folderChangeInProgress.value)
     }
 }
 

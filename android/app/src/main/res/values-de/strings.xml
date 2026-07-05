@@ -311,6 +311,7 @@
     <string name="folder_change_local_only_confirm_title">Nur lokale Notizen löschen?</string>
     <string name="folder_change_local_only_confirm_message">%1$d Notiz(en) existieren nur auf diesem Gerät und wurden nie hochgeladen. Der Ordnerwechsel löscht sie unwiederbringlich. Wichtige Notizen? Vorher über \"Backup &amp; Wiederherstellung\" sichern.</string>
     <string name="folder_change_local_only_confirm_button">Löschen und wechseln</string>
+    <string name="folder_change_in_progress">Ordnerwechsel wird angewendet…</string>
     <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Verbindungs-Timeout: %d Sekunden</string>
     <string name="server_timeout_description">Wartezeit bevor ein Verbindungsversuch als fehlgeschlagen gilt. Niedrigere Werte geben schnellere Rückmeldung wenn der Server nicht erreichbar ist.</string>

@@ -330,6 +330,7 @@
     <string name="folder_change_local_only_confirm_title">Delete local-only notes?</string>
     <string name="folder_change_local_only_confirm_message">%1$d note(s) exist only on this device and were never uploaded. Switching folders deletes them permanently. Important notes? Back them up first via \"Backup &amp; Restore\".</string>
     <string name="folder_change_local_only_confirm_button">Delete and switch</string>
+    <string name="folder_change_in_progress">Applying folder change…</string>
     <!-- v1.10.0: Connection Timeout Settings -->
     <string name="server_timeout_label">Connection Timeout: %d seconds</string>
     <string name="server_timeout_description">Time to wait before a connection attempt is considered failed. Lower values give faster feedback when the server is unreachable.</string>

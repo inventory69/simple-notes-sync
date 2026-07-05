@@ -372,6 +372,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _folderChangePrompt = MutableStateFlow<FolderChangePrompt?>(null)
     val folderChangePrompt: StateFlow<FolderChangePrompt?> = _folderChangePrompt.asStateFlow()
 
+    // 🆕 v2.11.0: Ordnerwechsel läuft noch — Dialog bleibt offen, Navigation wartet auf Completion
+    private val _folderChangeInProgress = MutableStateFlow(false)
+    val folderChangeInProgress: StateFlow<Boolean> = _folderChangeInProgress.asStateFlow()
+
+    private val _folderChangeCompleted = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val folderChangeCompleted: SharedFlow<Unit> = _folderChangeCompleted.asSharedFlow()
+
     // v2.10.0: App lock
     private val _appLockEnabled = MutableStateFlow(AppLock.isEnabled(application))
     val appLockEnabled: StateFlow<Boolean> = _appLockEnabled.asStateFlow()
@@ -657,12 +664,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** "Notizen mitnehmen": heutiges Verhalten — Merge über resetAllSyncStatusToPending(). */
     fun onFolderChangeConfirmedMigrate() {
         val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
-        _folderChangePrompt.value = null
+        _folderChangeInProgress.value = true
         viewModelScope.launch {
-            clearServerCaches()
-            val count = notesStorage.resetAllSyncStatusToPending()
-            confirmedSyncFolderName = newFolder
-            emitToast(getString(R.string.toast_folder_migrated, count))
+            try {
+                clearServerCaches()
+                val count = notesStorage.resetAllSyncStatusToPending()
+                confirmedSyncFolderName = newFolder
+                emitToast(getString(R.string.toast_folder_migrated, count))
+            } finally {
+                _folderChangeInProgress.value = false
+                _folderChangePrompt.value = null
+                _folderChangeCompleted.tryEmit(Unit)
+            }
         }
     }
 
@@ -671,35 +684,48 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Datensicherheits-Guards VOR dem destruktiven `restoreFromServer(REPLACE)`
      * (das `deleteAllNotes()` vor dem Download ruft): Offline-Modus und
      * Server-Erreichbarkeit müssen zuerst geprüft werden.
+     *
+     * 🔧 v2.11.0: `_folderChangePrompt` wird erst in `finally` genullt und das
+     * Completion-Signal erst danach gefeuert — der Aufrufer navigiert ausschließlich
+     * über `folderChangeCompleted` zurück, nie synchron direkt nach dem Klick (Race
+     * Condition: Restore lief zu diesem Zeitpunkt noch, Notizenliste war leer).
      */
     fun onFolderChangeConfirmedSwitch() {
         val newFolder = _syncFolderName.value.ifEmpty { Constants.DEFAULT_SYNC_FOLDER_NAME }
-        _folderChangePrompt.value = null
 
         if (_offlineMode.value) {
+            _folderChangePrompt.value = null
             revertFolderToConfirmed()
             showSnackbar(getString(R.string.toast_folder_switch_offline))
+            _folderChangeCompleted.tryEmit(Unit)
             return
         }
 
+        _folderChangeInProgress.value = true
         viewModelScope.launch {
-            val syncService = WebDavSyncService(getApplication())
-            val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
-            if (!reachable) {
-                revertFolderToConfirmed()
-                emitToast(getString(R.string.snackbar_server_unreachable))
-                return@launch
-            }
+            try {
+                val syncService = WebDavSyncService(getApplication())
+                val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
+                if (!reachable) {
+                    revertFolderToConfirmed()
+                    emitToast(getString(R.string.snackbar_server_unreachable))
+                    return@launch
+                }
 
-            val result = withContext(ioDispatcher) {
-                syncService.restoreFromServer(RestoreMode.REPLACE, emptyIsSuccess = true)
-            }
-            if (result.isSuccess) {
-                confirmedSyncFolderName = newFolder
-                emitToast(getString(R.string.toast_folder_switched, result.restoredCount))
-            } else {
-                revertFolderToConfirmed()
-                emitToast(getString(R.string.toast_error, result.errorMessage.orEmpty()))
+                val result = withContext(ioDispatcher) {
+                    syncService.restoreFromServer(RestoreMode.REPLACE, emptyIsSuccess = true)
+                }
+                if (result.isSuccess) {
+                    confirmedSyncFolderName = newFolder
+                    emitToast(getString(R.string.toast_folder_switched, result.restoredCount))
+                } else {
+                    revertFolderToConfirmed()
+                    emitToast(getString(R.string.toast_error, result.errorMessage.orEmpty()))
+                }
+            } finally {
+                _folderChangeInProgress.value = false
+                _folderChangePrompt.value = null
+                _folderChangeCompleted.tryEmit(Unit)
             }
         }
     }

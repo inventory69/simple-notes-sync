@@ -84,6 +84,7 @@ fun ServerSettingsScreen(
     val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState() // 🆕 v1.10.0
     val folderChangePending by viewModel.folderChangePending.collectAsState() // 🆕 v2.11.0
     val folderChangePrompt by viewModel.folderChangePrompt.collectAsState() // 🆕 v2.11.0
+    val folderChangeInProgress by viewModel.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
@@ -108,17 +109,19 @@ fun ServerSettingsScreen(
         viewModel.requestFolderChangeDecision()
     }
 
+    // 🔧 v2.11.0: onBack() feuert erst über dieses Completion-Signal aus dem ViewModel —
+    // nie mehr synchron direkt nach dem Button-Klick (Race Condition: Restore lief noch,
+    // Notizenliste beim Zurücknavigieren leer).
+    LaunchedEffect(Unit) {
+        viewModel.folderChangeCompleted.collect { onBack() }
+    }
+
     folderChangePrompt?.let { prompt ->
         FolderChangeDialog(
             prompt = prompt,
-            onMigrate = {
-                viewModel.onFolderChangeConfirmedMigrate()
-                onBack()
-            },
-            onSwitch = {
-                viewModel.onFolderChangeConfirmedSwitch()
-                onBack()
-            },
+            inProgress = folderChangeInProgress,
+            onMigrate = { viewModel.onFolderChangeConfirmedMigrate() },
+            onSwitch = { viewModel.onFolderChangeConfirmedSwitch() },
             onCancel = { viewModel.onFolderChangeCancelled() }
         )
     }
