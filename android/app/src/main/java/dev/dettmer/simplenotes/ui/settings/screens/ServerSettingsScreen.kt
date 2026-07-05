@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -58,6 +59,7 @@ import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RemoteChangeDialog
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 
 /**
  * Server configuration settings screen
@@ -88,6 +90,12 @@ fun ServerSettingsScreen(
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
+
+    // 🆕 Reveal-Button nur bei Erst-Eingabe aktiv; bereits gespeichertes Passwort bleibt maskiert
+    val context = LocalContext.current
+    val hadSavedPasswordAtOpen = remember { CredentialStore.hasCredentials(context) }
+    var passwordFullyCleared by remember { mutableStateOf(false) }
+    val canRevealPassword = !hadSavedPasswordAtOpen || (passwordFullyCleared && password.isNotEmpty())
 
     // Check server status on load (only if not in offline mode)
     LaunchedEffect(offlineMode) {
@@ -261,11 +269,14 @@ fun ServerSettingsScreen(
                 // Passwort
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { viewModel.updatePassword(it) },
+                    onValueChange = {
+                        viewModel.updatePassword(it)
+                        if (it.isEmpty()) passwordFullyCleared = true
+                    },
                     label = { Text(stringResource(R.string.password)) },
                     leadingIcon = { Icon(Icons.Default.Lock, null) },
                     trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = canRevealPassword) {
                             Icon(
                                 imageVector = if (passwordVisible) {
                                     Icons.Default.VisibilityOff
