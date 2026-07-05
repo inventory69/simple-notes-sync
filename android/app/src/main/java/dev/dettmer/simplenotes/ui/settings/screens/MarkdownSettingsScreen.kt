@@ -1,25 +1,39 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import android.content.ClipData
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -29,6 +43,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
+import kotlinx.coroutines.launch
 
 /**
  * Markdown Desktop integration settings screen
@@ -40,6 +55,8 @@ fun MarkdownSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val exportProgress by viewModel.markdownExportProgress.collectAsState()
 
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val serverUrl by viewModel.serverUrl.collectAsState()
+    val syncFolderName by viewModel.syncFolderName.collectAsState()
 
     // v1.5.0 Fix: Progress Dialog for initial export
     exportProgress?.let { progress ->
@@ -100,6 +117,56 @@ fun MarkdownSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Used MD folder (only meaningful once a server is connected)
+            if (isServerConfigured) {
+                val folderPath = "$serverUrl/$syncFolderName-md"
+                val clipboard = LocalClipboard.current
+                val scope = rememberCoroutineScope()
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FolderOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.markdown_folder_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = folderPath,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(onClick = {
+                            scope.launch {
+                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", folderPath)))
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(R.string.markdown_folder_copy_cd)
+                            )
+                        }
+                    }
+                }
+            }
 
             // Markdown Auto-Sync Toggle
             // 🌟 v1.6.0: Disabled when offline mode active

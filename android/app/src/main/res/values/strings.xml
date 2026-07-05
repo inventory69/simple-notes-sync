@@ -419,11 +419,13 @@
     <string name="markdown_export_complete">✅ Export complete</string>
     <string name="markdown_export_progress">Exporting %1$d/%2$d notes…</string>
     <string name="markdown_checking_server">Checking server connection…</string>
-    <string name="markdown_info">📝 Exports notes additionally as .md files. Mount WebDAV as network drive to edit with VS Code, Typora, or any Markdown editor. JSON sync remains primary format.</string>
+    <string name="markdown_info">📝 Exports notes additionally as .md files. Mount WebDAV as a network drive to edit them with your favorite Markdown editor. JSON sync remains the primary format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Automatically syncs notes as .md files (upload + download on each sync)</string>
     <string name="markdown_manual_sync_info">Manual sync exports all notes as .md files and imports .md files from the server. Useful for one-time sync.</string>
     <string name="markdown_manual_sync_button">📝 Manual Markdown Sync</string>
+    <string name="markdown_folder_label">MD folder (WebDAV network drive)</string>
+    <string name="markdown_folder_copy_cd">Copy path</string>
 
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->

@@ -387,11 +387,13 @@
     <string name="markdown_export_complete">✅ Export abgeschlossen</string>
     <string name="markdown_export_progress">Exportiere %1$d/%2$d Notizen…</string>
     <string name="markdown_checking_server">Verbindung wird geprüft…</string>
-    <string name="markdown_info">📝 Exportiert Notizen zusätzlich als .md-Dateien. Mounte WebDAV als Netzlaufwerk um mit VS Code, Typora oder jedem Markdown-Editor zu bearbeiten. JSON-Sync bleibt primäres Format.</string>
+    <string name="markdown_info">📝 Exportiert Notizen zusätzlich als .md-Dateien. Mounte WebDAV als Netzlaufwerk, um sie mit deinem bevorzugten Markdown-Editor zu bearbeiten. JSON-Sync bleibt das primäre Format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Synchronisiert Notizen automatisch als .md-Dateien (Upload + Download bei jedem Sync)</string>
     <string name="markdown_manual_sync_info">Manueller Sync exportiert alle Notizen als .md-Dateien und importiert .md-Dateien vom Server. Nützlich für einmalige Synchronisation.</string>
     <string name="markdown_manual_sync_button">📝 Manueller Markdown-Sync</string>
+    <string name="markdown_folder_label">MD-Ordner (WebDAV-Netzlaufwerk)</string>
+    <string name="markdown_folder_copy_cd">Pfad kopieren</string>
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
