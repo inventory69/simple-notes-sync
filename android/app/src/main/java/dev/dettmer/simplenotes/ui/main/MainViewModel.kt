@@ -319,14 +319,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun sortDirectionKey(folder: String?): String =
         if (folder == null) Constants.KEY_SORT_DIRECTION else "${Constants.KEY_SORT_DIRECTION}::$folder"
 
-    private fun loadSortFor(folder: String?) {
-        _sortOption.value = SortOption.fromPrefsValue(
+    // Synchronous prefs read used by MainScreen to sort the *outgoing* pane during a folder
+    // switch by its own folder's setting, independent of the (reactive, active-folder) sortOption/
+    // sortDirection StateFlows — see loadSortFor below and NotesPane.paneNotes in MainScreen.kt.
+    fun sortSettingsFor(folder: String?): Pair<SortOption, SortDirection> =
+        SortOption.fromPrefsValue(
             prefs.getString(sortOptionKey(folder), Constants.DEFAULT_SORT_OPTION) ?: Constants.DEFAULT_SORT_OPTION
-        )
-        _sortDirection.value = SortDirection.fromPrefsValue(
+        ) to SortDirection.fromPrefsValue(
             prefs.getString(sortDirectionKey(folder), Constants.DEFAULT_SORT_DIRECTION)
                 ?: Constants.DEFAULT_SORT_DIRECTION
         )
+
+    private fun loadSortFor(folder: String?) {
+        val (option, direction) = sortSettingsFor(folder)
+        _sortOption.value = option
+        _sortDirection.value = direction
     }
 
     // 🆕 v1.9.0 (F06): Note Filter State
@@ -1293,7 +1300,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 🔀 v1.8.0: Sortiert Notizen nach gewählter Option und Richtung.
      */
-    private fun sortNotes(notes: List<Note>, option: SortOption, direction: SortDirection): List<Note> {
+    fun sortNotes(notes: List<Note>, option: SortOption, direction: SortDirection): List<Note> {
         val comparator: Comparator<Note> = when (option) {
             SortOption.UPDATED_AT -> compareBy { it.updatedAt }
             SortOption.CREATED_AT -> compareBy { it.createdAt }

@@ -83,6 +83,8 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.models.SortDirection
+import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.ui.main.components.CreateFolderDialog
 import dev.dettmer.simplenotes.ui.main.components.DeleteSelectionDialog
@@ -390,6 +392,21 @@ fun MainScreen(
                         }
 
                         // 🆕 v2.7.0 (Folders): Ordner-Navigation mit Shared-Axis-Animation (wie Notiz öffnen).
+                        // 🔧 Fix Flash beim Ordnerwechsel: jede Pane sortiert sich anhand IHRES EIGENEN
+                        // folderKey selbst (statt der einen globalen, aktiven Sortierung zu vertrauen) —
+                        // sonst übernimmt die gerade verschwindende Pane während der Animation kurz die
+                        // Sortierung des neuen Ordners. Aktiver Ordner nutzt die reaktiven StateFlows
+                        // (live-Update bei Sortierdialog); jeder andere Ordner liest seine eigene
+                        // gespeicherte Einstellung.
+                        val sortAndPinForFolder: (List<Note>, String?) -> List<Note> = { list, folderKey ->
+                            val (option, direction) = if (folderKey == currentFolder) {
+                                sortOption to sortDirection
+                            } else {
+                                viewModel.sortSettingsFor(folderKey)
+                            }
+                            val sorted = viewModel.sortNotes(list, option, direction)
+                            sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
+                        }
                         AnimatedContent(
                             targetState = currentFolder,
                             transitionSpec = { folderNavTransition(forward = targetState != null) },
@@ -400,6 +417,9 @@ fun MainScreen(
                                 folderKey = folderKey,
                                 isActive = folderKey == currentFolder,
                                 notes = notes,
+                                sortOption = sortOption,
+                                sortDirection = sortDirection,
+                                sortAndPin = sortAndPinForFolder,
                                 displayMode = displayMode,
                                 folders = folders,
                                 folderNoteCounts = folderNoteCounts,
@@ -789,8 +809,9 @@ private fun folderNavTransition(forward: Boolean): ContentTransform {
  * AnimatedContent-Slot → Ordnerwechsel startet oben; Zurück-zur-Root zeigt wieder die Ordner.
  * Nur die aktive Pane (isActive) konsumiert die One-Shot-Scroll-Flags.
  *
- * `notes` ist die ordner-unabhängige Liste; jede Pane filtert selbst nach ihrem `folderKey`, damit
- * die abgehende Pane während der Animation ihren eigenen (korrekten) Inhalt behält — kein Flackern.
+ * `notes` ist die ordner-unabhängige Liste; jede Pane filtert UND sortiert sich selbst anhand
+ * ihres eigenen `folderKey` (via `sortAndPin`), damit die abgehende Pane während der Animation
+ * ihren eigenen (korrekten) Inhalt in ihrer eigenen Reihenfolge behält — kein Flackern.
  */
 @Suppress("LongParameterList") // viele UI-State-Parameter
 @Composable
@@ -798,6 +819,9 @@ private fun NotesPane(
     folderKey: String?,
     isActive: Boolean,
     notes: List<Note>,
+    sortOption: SortOption, // 🔧 aktive Sortierung — nur Remember-Key, damit die aktive Pane sofort reagiert
+    sortDirection: SortDirection, // 🔧 s.o.
+    sortAndPin: (List<Note>, String?) -> List<Note>, // 🔧 sortiert+pinnt anhand des EIGENEN folderKey
     displayMode: String,
     folders: List<dev.dettmer.simplenotes.models.Folder>,
     folderNoteCounts: Map<String, Int>,
@@ -839,8 +863,11 @@ private fun NotesPane(
     val foldersForPane = if (folderKey == null && !showArchived) folders else emptyList() // Ordner nur in der Root-Ansicht
     // 🆕 v2.7.0 (Folders): Notizen dieses Slots — eigener folderKey, nicht der gerade aktive Ordner.
     // 🆕 v2.11.0 (Archive): Archiv-Ansicht ist eine flache Liste über alle Ordner.
-    val paneNotes = remember(notes, folderKey, showArchived) {
-        if (showArchived) notes else notes.filter { it.folderName == folderKey }
+    // ponytail: sortiert den (kleinen) Ordner-Ausschnitt synchron auf dem Main-Thread — Wechsel auf
+    // Dispatchers.Default nur nötig, falls ein einzelner Ordner je Tausende Notizen enthält.
+    val paneNotes = remember(notes, folderKey, showArchived, sortOption, sortDirection) {
+        val filtered = if (showArchived) notes else notes.filter { it.folderName == folderKey }
+        sortAndPin(filtered, folderKey)
     }
 
     // Grid-Top-Settle-Guard: das Staggered-Grid scrollt beim ersten Laden spontan ein Item
