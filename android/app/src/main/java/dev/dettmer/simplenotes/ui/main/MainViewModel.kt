@@ -311,6 +311,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val sortDirection: StateFlow<SortDirection> = _sortDirection.asStateFlow()
 
+    // 🆕 Per-Ordner-Sortierung: Root behält die alten globalen Keys (Rückwärtskompatibilität),
+    // andere Ordner bekommen einen eigenen Key-Namespace.
+    private fun sortOptionKey(folder: String?): String =
+        if (folder == null) Constants.KEY_SORT_OPTION else "${Constants.KEY_SORT_OPTION}::$folder"
+
+    private fun sortDirectionKey(folder: String?): String =
+        if (folder == null) Constants.KEY_SORT_DIRECTION else "${Constants.KEY_SORT_DIRECTION}::$folder"
+
+    private fun loadSortFor(folder: String?) {
+        _sortOption.value = SortOption.fromPrefsValue(
+            prefs.getString(sortOptionKey(folder), Constants.DEFAULT_SORT_OPTION) ?: Constants.DEFAULT_SORT_OPTION
+        )
+        _sortDirection.value = SortDirection.fromPrefsValue(
+            prefs.getString(sortDirectionKey(folder), Constants.DEFAULT_SORT_DIRECTION)
+                ?: Constants.DEFAULT_SORT_DIRECTION
+        )
+    }
+
     // 🆕 v1.9.0 (F06): Note Filter State
     private val _noteFilter = MutableStateFlow(
         NoteFilter.fromPrefsValue(
@@ -335,7 +353,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setShowArchived(show: Boolean) {
         _showArchived.value = show
         // Archiv ist eine flache Liste — immer aus der Root-Ansicht heraus.
-        if (show) _currentFolder.value = null
+        if (show) {
+            _currentFolder.value = null
+            loadSortFor(null)
+        }
         clearSelection()
         Logger.d(TAG, "🗃️ Archive view: $show")
     }
@@ -1298,8 +1319,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setSortOption(option: SortOption) {
         _sortOption.value = option
-        prefs.edit { putString(Constants.KEY_SORT_OPTION, option.prefsValue) }
-        Logger.d(TAG, "🔀 Sort option changed to: ${option.prefsValue}")
+        prefs.edit { putString(sortOptionKey(_currentFolder.value), option.prefsValue) }
+        Logger.d(TAG, "🔀 Sort option changed to: ${option.prefsValue} (folder=${_currentFolder.value})")
     }
 
     /**
@@ -1307,8 +1328,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setSortDirection(direction: SortDirection) {
         _sortDirection.value = direction
-        prefs.edit { putString(Constants.KEY_SORT_DIRECTION, direction.prefsValue) }
-        Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue}")
+        prefs.edit { putString(sortDirectionKey(_currentFolder.value), direction.prefsValue) }
+        Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue} (folder=${_currentFolder.value})")
     }
 
     /**
@@ -1516,7 +1537,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
             _folders.value = folderStore.loadFolders()
-            if (_currentFolder.value == oldName) _currentFolder.value = trimmed
+            if (_currentFolder.value == oldName) {
+                _currentFolder.value = trimmed
+                loadSortFor(trimmed)
+            }
             clearSelection()
             loadNotes(forceReload = true)
             triggerOnSaveSync()
@@ -1584,7 +1608,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
             _folders.value = folderStore.loadFolders()
-            if (_currentFolder.value in folderNames) _currentFolder.value = null
+            if (_currentFolder.value in folderNames) {
+                _currentFolder.value = null
+                loadSortFor(null)
+            }
             loadNotes()
 
             _showSnackbar.emit(
@@ -1662,10 +1689,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun enterFolder(name: String) {
         _currentFolder.value = name
+        loadSortFor(name)
     }
 
     fun goToRoot() {
         _currentFolder.value = null
+        loadSortFor(null)
     }
 
     fun moveSelectedNotesTo(targetFolder: String?) {
@@ -1720,7 +1749,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             _folders.value = folderStore.loadFolders()
-            if (_currentFolder.value == name) _currentFolder.value = null
+            if (_currentFolder.value == name) {
+                _currentFolder.value = null
+                loadSortFor(null)
+            }
             loadNotes(forceReload = true)
         }
     }
