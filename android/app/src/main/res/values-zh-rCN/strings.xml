@@ -250,7 +250,7 @@
     <string name="markdown_export_complete">✅ 导出完成</string>
     <string name="markdown_export_progress">正在导出 %1$d/%2$d 个笔记……</string>
     <string name="markdown_checking_server">正在检查服务器连接……</string>
-    <string name="markdown_info">📝 额外地导出笔记为 .md 文件。挂载 WebDAV 为网盘以便使用 VS Code、Typora 或任何 Markdown 编辑器编辑。JSON 同步仍然是主要格式。</string>
+    <string name="markdown_info">📝 额外地导出笔记为 .md 文件。挂载 WebDAV 为网盘以便使用你喜爱的编辑器编辑它们。JSON 同步仍然是主要格式。</string>
     <string name="markdown_auto_sync_title">Markdown 自动同步</string>
     <string name="markdown_auto_sync_subtitle">自动同步笔记作为 .md 文件（每次同步时上传加下载）</string>
     <string name="markdown_manual_sync_info">手动同步导出所有笔记为 .md 文件，并且从服务器导入 .md 文件。对一次性同步很有用。</string>
@@ -833,4 +833,44 @@
     <string name="app_lock_no_biometric_title">未设置锁屏</string>
     <string name="app_lock_no_biometric_message">在你的设备设置里设置一个指纹、脸或锁屏来使用应用锁。</string>
     <string name="app_lock_open_settings">打开设置</string>
+    <string name="folder_change_dialog_message">你正在切换同步文件夹从 \"%1$s\" 到 \"%2$s\"。要对你当前的笔记进行什么？</string>
+    <string name="toast_server_switched">🌐 已切换服务器。已从新服务器载入 %1$d 个笔记。</string>
+    <string name="toast_folder_switch_offline">不能在离线模式中切换文件夹 — 你的笔记已保存。</string>
+    <string name="toast_folder_switched">📂 已切换文件夹。已从新文件夹载入 %1$d 个笔记。</string>
+    <string name="toast_folder_migrated">🔄 文件夹已更改。%1$d 个笔记会在下一次同步时上传到新文件夹。</string>
+    <string name="test_connection_success_md_exists">✅ 服务器可连上。找到了文件夹 /%1$s/（/%1$s-md/ 已存在并且会被使用）。</string>
+    <string name="editor_new_note_focus_content_description">新笔记聚焦内容区域而不是标题。清单聚焦第一个项目。</string>
+    <string name="editor_new_note_focus_content_toggle">内容中的开始光标</string>
+    <string name="settings_default_note_color_subtitle">已应用到新笔记</string>
+    <string name="settings_default_note_color_title">默认笔记颜色</string>
+    <string name="note_preview_length_extra_long">很长</string>
+    <string name="note_preview_length_standard">标准</string>
+    <string name="note_preview_length_compact">紧凑</string>
+    <string name="note_preview_length_info">控制在笔记预览中显示多少行（或清单项目），在列表和格子视图二者中。</string>
+    <string name="note_preview_length_title">笔记预览长度</string>
+    <string name="markdown_folder_copy_cd">复制路径</string>
+    <string name="markdown_folder_label">MD 文件夹（WebDAV 网盘）</string>
+    <string name="remote_change_dialog_message">你正在切换到一个不同的服务器和同步文件夹。要对你当前的笔记做什么？</string>
+    <string name="remote_change_dialog_title">更改服务器和文件夹？</string>
+    <string name="server_change_dialog_message">你正在切换服务器从 \"%1$s\" 到 \"%2$s\"。要对你当前的笔记做什么？</string>
+    <string name="server_change_dialog_title">更改服务器？</string>
+    <string name="folder_change_in_progress">正在应用文件夹更改…</string>
+    <string name="folder_change_local_only_confirm_button">删除并切换</string>
+    <string name="folder_change_local_only_confirm_message">%1$d 个笔记仅存在于这个设备，并且从未上传。切换文件夹会永久删除它们。重要的笔记？先用“备份和恢复”备份它们。</string>
+    <string name="folder_change_local_only_confirm_title">删除仅本地的笔记？</string>
+    <string name="folder_change_action_switch">不带上笔记</string>
+    <string name="folder_change_action_migrate">带上笔记</string>
+    <string name="folder_change_dialog_data_loss_warning">警告：%1$d 个笔记还未上传。如果你不带上它们，它们会丢失。</string>
+    <string name="folder_change_dialog_title">更改同步文件夹？</string>
+    <plurals name="snackbar_notes_unarchived">
+        <item quantity="other">%d 个笔记已取消存档</item>
+    </plurals>
+    <plurals name="snackbar_notes_archived">
+        <item quantity="other">%d 个笔记已存档</item>
+    </plurals>
+    <string name="snackbar_note_unarchived">\"%s\" 已取消存档</string>
+    <string name="snackbar_note_archived">\"%s\" 已存档</string>
+    <string name="archive_empty_state_message">在这里显示已存档的笔记</string>
+    <string name="archive_empty_state_title">存档是空的</string>
+    <string name="action_unarchive">取消存档</string>
 </resources>
