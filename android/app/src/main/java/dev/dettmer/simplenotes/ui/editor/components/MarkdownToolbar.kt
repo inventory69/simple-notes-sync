@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatStrikethrough
@@ -85,6 +86,11 @@ fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifie
                 icon = Icons.Filled.Code,
                 contentDescription = stringResource(R.string.md_toolbar_code),
                 onClick = { wrapSelection(textFieldState, "`", "`") }
+            )
+            ToolbarButton(
+                icon = Icons.Filled.DataObject,
+                contentDescription = stringResource(R.string.md_toolbar_code_block),
+                onClick = { insertCodeBlock(textFieldState) }
             )
             ToolbarButton(
                 icon = Icons.Filled.InsertLink,
@@ -230,6 +236,32 @@ private fun insertHorizontalRule(state: TextFieldState) {
         val rule = "$prefix---\n"
         insert(cursorPos, rule)
         selection = TextRange(cursorPos + rule.length)
+    }
+}
+
+/**
+ * Inserts a fenced code block. With a selection, wraps it as ```` ```\n<selection>\n``` ````.
+ * Without one, inserts a skeleton fence with the cursor on the empty middle line.
+ */
+private fun insertCodeBlock(state: TextFieldState) {
+    state.edit {
+        val sel = selection
+        if (sel.collapsed) {
+            val text = toString()
+            val cursorPos = sel.start
+            val prefix = if (cursorPos > 0 && text[cursorPos - 1] != '\n') "\n" else ""
+            val block = "$prefix```\n\n```\n"
+            insert(cursorPos, block)
+            selection = TextRange(cursorPos + prefix.length + "```\n".length)
+        } else {
+            val start = sel.min
+            val end = sel.max
+            val selectedText = toString().substring(start, end)
+            delete(start, end)
+            val wrapped = "```\n$selectedText\n```"
+            insert(start, wrapped)
+            selection = TextRange(start + wrapped.length)
+        }
     }
 }
 

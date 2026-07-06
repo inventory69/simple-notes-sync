@@ -571,6 +571,7 @@
     <string name="md_toolbar_strikethrough">Durchgestrichen</string>
     <string name="md_toolbar_heading">Überschrift</string>
     <string name="md_toolbar_code">Code</string>
+    <string name="md_toolbar_code_block">Codeblock</string>
     <string name="md_toolbar_link">Link</string>
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>

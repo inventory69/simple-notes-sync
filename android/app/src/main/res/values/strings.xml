@@ -617,6 +617,7 @@
     <string name="md_toolbar_strikethrough">Strikethrough</string>
     <string name="md_toolbar_heading">Heading</string>
     <string name="md_toolbar_code">Code</string>
+    <string name="md_toolbar_code_block">Code block</string>
     <string name="md_toolbar_link">Link</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
