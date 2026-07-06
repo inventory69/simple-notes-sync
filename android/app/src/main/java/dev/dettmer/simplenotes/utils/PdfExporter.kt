@@ -5,6 +5,13 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import android.text.Html
+import android.text.Spanned
+import android.text.StaticLayout
+import android.text.TextPaint
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
+import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
 import java.io.File
@@ -14,10 +21,13 @@ import java.io.FileOutputStream
  * 🆕 v1.10.0-Papa: Generates PDF documents from notes using Android's native PdfDocument API.
  *
  * Supports both TEXT and CHECKLIST note types.
- * - TEXT: Renders title + body text with word wrapping and automatic page breaks.
- * - CHECKLIST: Renders title + each item with checkbox symbol (☐ / ☑) and proper formatting.
+ * - TEXT: Parses content via [MarkdownEngine] and renders headings, paragraphs, lists,
+ *   task lists, code blocks and horizontal rules with real formatting (bold/italic/
+ *   strikethrough/inline code), not raw Markdown syntax.
+ * - CHECKLIST: Renders title + each item with checkbox symbol (☐ / ☑) and inline formatting.
  *
- * No external dependencies — uses only android.graphics.pdf.PdfDocument and Canvas.
+ * No external dependencies — uses only android.graphics.pdf.PdfDocument, Canvas,
+ * and android.text.{Html,StaticLayout} (all native platform APIs).
  */
 object PdfExporter {
     // ═══════════════════════════════════════════════════════════════════════
@@ -52,6 +62,11 @@ object PdfExporter {
     /** Body text font size in points. */
     private const val BODY_FONT_SIZE = 12f
 
+    /** In-body heading font sizes (H1–H3), in points. */
+    private const val HEADING_H1_FONT_SIZE = 18f
+    private const val HEADING_H2_FONT_SIZE = 16f
+    private const val HEADING_H3_FONT_SIZE = 14f
+
     /** Checklist item font size in points. */
     private const val CHECKLIST_FONT_SIZE = 12f
 
@@ -64,30 +79,70 @@ object PdfExporter {
     /** Vertical gap between title and body content. */
     private const val TITLE_BODY_GAP = 20f
 
-    /** Indent for checklist items (space for checkbox + gap). */
+    /** Vertical gap after an in-body heading. */
+    private const val HEADING_GAP = 10f
+
+    /** Indent for checklist/list items (space for checkbox/bullet + gap). */
     private const val CHECKLIST_INDENT = 25f
 
     /** Max characters for sanitized filename. */
     private const val FILENAME_MAX_LENGTH = 50
 
-    /** Half line-height multiplier for paragraph spacing. */
+    /** Half line-height multiplier for paragraph/block spacing. */
     private const val PARAGRAPH_BREAK_MULTIPLIER = 0.5f
+
+    /** Vertical space reserved for a horizontal rule. */
+    private const val HORIZONTAL_RULE_HEIGHT = 12f
+
+    /** Horizontal padding between a code block's background panel and its text. */
+    private const val CODE_BLOCK_PADDING = 6f
+
+    /** Fraction of line height above the baseline used by a line's background panel. */
+    private const val BACKGROUND_TOP_FRACTION = 0.75f
 
     // ═══════════════════════════════════════════════════════════════════════
     // Paint Objects (reused across pages)
     // ═══════════════════════════════════════════════════════════════════════
 
-    private val titlePaint = Paint().apply {
+    private val titlePaint = TextPaint().apply {
         isAntiAlias = true
         textSize = TITLE_FONT_SIZE
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         color = android.graphics.Color.BLACK
     }
 
-    private val bodyPaint = Paint().apply {
+    private val bodyPaint = TextPaint().apply {
         isAntiAlias = true
         textSize = BODY_FONT_SIZE
         typeface = Typeface.DEFAULT
+        color = android.graphics.Color.BLACK
+    }
+
+    private val heading1Paint = TextPaint().apply {
+        isAntiAlias = true
+        textSize = HEADING_H1_FONT_SIZE
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        color = android.graphics.Color.BLACK
+    }
+
+    private val heading2Paint = TextPaint().apply {
+        isAntiAlias = true
+        textSize = HEADING_H2_FONT_SIZE
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        color = android.graphics.Color.BLACK
+    }
+
+    private val heading3Paint = TextPaint().apply {
+        isAntiAlias = true
+        textSize = HEADING_H3_FONT_SIZE
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        color = android.graphics.Color.BLACK
+    }
+
+    private val codePaint = TextPaint().apply {
+        isAntiAlias = true
+        textSize = BODY_FONT_SIZE
+        typeface = Typeface.MONOSPACE
         color = android.graphics.Color.BLACK
     }
 
@@ -98,19 +153,29 @@ object PdfExporter {
         color = android.graphics.Color.DKGRAY
     }
 
-    private val checkedTextPaint = Paint().apply {
+    private val checkedItemPaint = TextPaint().apply {
         isAntiAlias = true
         textSize = CHECKLIST_FONT_SIZE
         typeface = Typeface.DEFAULT
         color = android.graphics.Color.GRAY
-        isStrikeThruText = true // Visual distinction for completed items
     }
 
-    private val uncheckedTextPaint = Paint().apply {
+    private val uncheckedItemPaint = TextPaint().apply {
         isAntiAlias = true
         textSize = CHECKLIST_FONT_SIZE
         typeface = Typeface.DEFAULT
         color = android.graphics.Color.BLACK
+    }
+
+    private val horizontalRulePaint = Paint().apply {
+        color = android.graphics.Color.LTGRAY
+        strokeWidth = 1f
+    }
+
+    /** Background panel behind code blocks — matches MarkdownRenderer.CodeBlockSurface's intent. */
+    private val codeBackgroundPaint = Paint().apply {
+        color = android.graphics.Color.rgb(230, 230, 230)
+        style = Paint.Style.FILL
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -147,7 +212,10 @@ object PdfExporter {
             // Render body based on note type
             when (noteType) {
                 NoteType.TEXT -> renderTextNote(renderer, textContent)
-                NoteType.CHECKLIST -> renderChecklist(renderer, checklistItems)
+                NoteType.CHECKLIST -> renderChecklistItems(
+                    renderer,
+                    NoteShareHelper.formatChecklistForPdf(checklistItems)
+                )
             }
 
             // Finalize
@@ -181,26 +249,53 @@ object PdfExporter {
     // Private Rendering Methods
     // ═══════════════════════════════════════════════════════════════════════
 
+    /** Converts inline Markdown in [text] to a [Spanned] with real bold/italic/strike/code spans. */
+    private fun toSpanned(text: String, strikethrough: Boolean = false): Spanned {
+        var html = markdownInlineToHtml(text)
+        if (strikethrough) html = "<s>$html</s>"
+        html = html.replace("\n", "<br>")
+        return Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY)
+    }
+
     private fun renderTextNote(renderer: PageRenderer, content: String) {
         if (content.isBlank()) return
 
-        val lines = content.split("\n")
-        for (line in lines) {
-            if (line.isBlank()) {
-                // Empty line = paragraph break (half line-height)
-                renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
-            } else {
-                renderer.drawWrappedText(line, bodyPaint, TEXT_WIDTH)
+        for (block in MarkdownEngine.parse(content)) {
+            when (block) {
+                is MarkdownBlock.Heading -> {
+                    val paint = headingPaint(block.level)
+                    renderer.drawWrappedText(toSpanned(block.text), paint, TEXT_WIDTH)
+                    renderer.advanceY(HEADING_GAP)
+                }
+
+                is MarkdownBlock.Paragraph -> {
+                    renderer.drawWrappedText(toSpanned(block.text), bodyPaint, TEXT_WIDTH)
+                    renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+                }
+
+                is MarkdownBlock.TaskList -> {
+                    renderChecklistItems(renderer, block.items.map { it.text to it.isChecked })
+                }
+
+                is MarkdownBlock.UnorderedList -> renderBulletList(renderer, block.items)
+
+                is MarkdownBlock.CodeBlock -> renderCodeBlock(renderer, block.code)
+
+                MarkdownBlock.HorizontalRule -> renderHorizontalRule(renderer)
             }
         }
     }
 
-    private fun renderChecklist(renderer: PageRenderer, items: List<ChecklistItemState>) {
-        val formattedItems = NoteShareHelper.formatChecklistForPdf(items)
+    private fun headingPaint(level: Int): TextPaint = when (level) {
+        1 -> heading1Paint
+        2 -> heading2Paint
+        else -> heading3Paint
+    }
 
-        for ((text, isChecked) in formattedItems) {
+    private fun renderChecklistItems(renderer: PageRenderer, items: List<Pair<String, Boolean>>) {
+        for ((text, isChecked) in items) {
             val symbol = if (isChecked) "☑ " else "☐ "
-            val textPaint = if (isChecked) checkedTextPaint else uncheckedTextPaint
+            val textPaint = if (isChecked) checkedItemPaint else uncheckedItemPaint
 
             // Ensure one full line of space before drawing
             renderer.ensureSpace(CHECKLIST_FONT_SIZE * LINE_HEIGHT_MULTIPLIER)
@@ -208,10 +303,42 @@ object PdfExporter {
             // Draw checkbox symbol at left margin
             renderer.drawTextDirect(symbol, MARGIN_HORIZONTAL, checkboxPaint)
 
-            // Draw item text with wrapping (indented past checkbox)
+            // Draw item text with wrapping and inline formatting (indented past checkbox)
             val textWidth = TEXT_WIDTH - CHECKLIST_INDENT
-            renderer.drawWrappedTextIndented(text, textPaint, CHECKLIST_INDENT, textWidth)
+            renderer.drawWrappedTextIndented(
+                toSpanned(text, strikethrough = isChecked),
+                textPaint,
+                CHECKLIST_INDENT,
+                textWidth
+            )
         }
+    }
+
+    private fun renderBulletList(renderer: PageRenderer, items: List<String>) {
+        for (itemText in items) {
+            renderer.ensureSpace(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER)
+            renderer.drawTextDirect("•", MARGIN_HORIZONTAL, bodyPaint)
+            val textWidth = TEXT_WIDTH - CHECKLIST_INDENT
+            renderer.drawWrappedTextIndented(toSpanned(itemText), bodyPaint, CHECKLIST_INDENT, textWidth)
+        }
+        renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+    }
+
+    private fun renderCodeBlock(renderer: PageRenderer, code: String) {
+        // Code is drawn literally — inline Markdown is intentionally not parsed inside code,
+        // matching MarkdownRenderer.CodeBlockSurface's behavior in the editor preview.
+        // A shaded background panel is painted behind it, same as in the editor preview.
+        val textWidth = TEXT_WIDTH - 2 * CODE_BLOCK_PADDING
+        for (line in code.split("\n")) {
+            renderer.drawWrappedTextIndented(line, codePaint, CODE_BLOCK_PADDING, textWidth, codeBackgroundPaint)
+        }
+        renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+    }
+
+    private fun renderHorizontalRule(renderer: PageRenderer) {
+        renderer.ensureSpace(HORIZONTAL_RULE_HEIGHT)
+        renderer.drawHorizontalLine(horizontalRulePaint)
+        renderer.advanceY(HORIZONTAL_RULE_HEIGHT)
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -274,48 +401,68 @@ object PdfExporter {
             canvas?.drawText(text, x, currentY, paint)
         }
 
+        /** Draws a horizontal line across the text width at the current Y position. */
+        fun drawHorizontalLine(paint: Paint) {
+            canvas?.drawLine(MARGIN_HORIZONTAL, currentY, MARGIN_HORIZONTAL + TEXT_WIDTH, currentY, paint)
+        }
+
         /**
-         * Draws text with word wrapping starting at [MARGIN_HORIZONTAL].
+         * Draws [text] with word wrapping starting at [MARGIN_HORIZONTAL].
          * Advances the Y cursor for each rendered line.
          */
-        fun drawWrappedText(text: String, paint: Paint, maxWidth: Float) {
+        fun drawWrappedText(text: CharSequence, paint: TextPaint, maxWidth: Float) {
             drawWrappedTextIndented(text, paint, 0f, maxWidth)
         }
 
         /**
-         * Draws text with word wrapping, indented by [indent] from the left margin.
-         * Advances the Y cursor after each line.
-         * Automatically creates new pages when space runs out.
+         * Draws [text] with word wrapping, indented by [indent] from the left margin.
+         * Uses [StaticLayout] to compute line breaks and preserve any style spans
+         * (bold/italic/strikethrough/monospace) [text] may carry (e.g. from
+         * [android.text.Html.fromHtml]). Advances the Y cursor after each line and
+         * automatically creates new pages when space runs out.
+         *
+         * If [backgroundPaint] is set, a full-width panel is painted behind each line first
+         * (e.g. code blocks) — the per-line boxes are sized to abut exactly, so consecutive
+         * lines of the same block read as one contiguous panel with no visible seams.
          */
-        fun drawWrappedTextIndented(text: String, paint: Paint, indent: Float, maxWidth: Float) {
-            val lineHeight = paint.textSize * LINE_HEIGHT_MULTIPLIER
+        fun drawWrappedTextIndented(
+            text: CharSequence,
+            paint: TextPaint,
+            indent: Float,
+            maxWidth: Float,
+            backgroundPaint: Paint? = null
+        ) {
+            if (text.isEmpty()) return
+
             val x = MARGIN_HORIZONTAL + indent
+            val width = maxWidth.toInt().coerceAtLeast(1)
+            val lineHeight = paint.textSize * LINE_HEIGHT_MULTIPLIER
+            val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width).build()
 
-            // Split into words and wrap greedily
-            val words = text.split(" ")
-            var currentLine = StringBuilder()
+            for (i in 0 until layout.lineCount) {
+                val lineStart = layout.getLineStart(i)
+                val lineEnd = layout.getLineEnd(i)
+                val lineText = text.subSequence(lineStart, lineEnd)
 
-            for (word in words) {
-                val candidate = if (currentLine.isEmpty()) word else "$currentLine $word"
-                if (paint.measureText(candidate) <= maxWidth) {
-                    currentLine = StringBuilder(candidate)
-                } else {
-                    // Flush current line
-                    if (currentLine.isNotEmpty()) {
-                        ensureSpace(lineHeight)
-                        canvas?.drawText(currentLine.toString(), x, currentY, paint)
-                        currentY += lineHeight
-                    }
-                    // Start new line with the current word
-                    // If a single word is wider than maxWidth, draw it anyway (no infinite loop)
-                    currentLine = StringBuilder(word)
-                }
-            }
-
-            // Flush remaining text
-            if (currentLine.isNotEmpty()) {
                 ensureSpace(lineHeight)
-                canvas?.drawText(currentLine.toString(), x, currentY, paint)
+
+                canvas?.let { c ->
+                    if (backgroundPaint != null) {
+                        c.drawRect(
+                            MARGIN_HORIZONTAL,
+                            currentY - lineHeight * BACKGROUND_TOP_FRACTION,
+                            MARGIN_HORIZONTAL + TEXT_WIDTH,
+                            currentY + lineHeight * (1f - BACKGROUND_TOP_FRACTION),
+                            backgroundPaint
+                        )
+                    }
+
+                    val lineLayout = StaticLayout.Builder.obtain(lineText, 0, lineText.length, paint, width).build()
+                    c.save()
+                    c.translate(x, currentY - lineLayout.getLineBaseline(0))
+                    lineLayout.draw(c)
+                    c.restore()
+                }
                 currentY += lineHeight
             }
         }
