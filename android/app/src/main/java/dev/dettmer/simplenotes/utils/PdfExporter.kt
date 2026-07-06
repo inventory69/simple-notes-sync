@@ -6,9 +6,13 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.Html
+import android.text.SpannableString
 import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.TypefaceSpan
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
@@ -249,12 +253,25 @@ object PdfExporter {
     // Private Rendering Methods
     // ═══════════════════════════════════════════════════════════════════════
 
-    /** Converts inline Markdown in [text] to a [Spanned] with real bold/italic/strike/code spans. */
+    /**
+     * Converts inline Markdown in [text] to a [Spanned] with real bold/italic/strike/code spans.
+     * Inline code (rendered by [markdownInlineToHtml] as `<tt>`) gets a gray background overlay,
+     * since [Html.fromHtml] renders `<tt>` as monospace text only, with no background — matching
+     * the preview's gray inline-code box requires adding it here explicitly.
+     */
     private fun toSpanned(text: String, strikethrough: Boolean = false): Spanned {
         var html = markdownInlineToHtml(text)
         if (strikethrough) html = "<s>$html</s>"
         html = html.replace("\n", "<br>")
-        return Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY)
+        val spanned = SpannableString(Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY))
+        for (span in spanned.getSpans(0, spanned.length, TypefaceSpan::class.java)) {
+            if (span.family != "monospace") continue
+            val start = spanned.getSpanStart(span)
+            val end = spanned.getSpanEnd(span)
+            spanned.setSpan(BackgroundColorSpan(codeBackgroundPaint.color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spanned.setSpan(ForegroundColorSpan(android.graphics.Color.BLACK), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        return spanned
     }
 
     private fun renderTextNote(renderer: PageRenderer, content: String) {
@@ -432,7 +449,22 @@ object PdfExporter {
             maxWidth: Float,
             backgroundPaint: Paint? = null
         ) {
-            if (text.isEmpty()) return
+            if (text.isEmpty()) {
+                // A blank code-block line still needs its background panel drawn and the
+                // cursor advanced, otherwise a multi-line block shows a gap at this line.
+                if (backgroundPaint == null) return
+                val lineHeight = paint.textSize * LINE_HEIGHT_MULTIPLIER
+                ensureSpace(lineHeight)
+                canvas?.drawRect(
+                    MARGIN_HORIZONTAL,
+                    currentY - lineHeight * BACKGROUND_TOP_FRACTION,
+                    MARGIN_HORIZONTAL + TEXT_WIDTH,
+                    currentY + lineHeight * (1f - BACKGROUND_TOP_FRACTION),
+                    backgroundPaint
+                )
+                currentY += lineHeight
+                return
+            }
 
             val x = MARGIN_HORIZONTAL + indent
             val width = maxWidth.toInt().coerceAtLeast(1)
