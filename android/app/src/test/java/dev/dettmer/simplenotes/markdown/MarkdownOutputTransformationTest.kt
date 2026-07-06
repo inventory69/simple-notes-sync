@@ -39,6 +39,38 @@ class MarkdownOutputTransformationTest {
         assertEquals(markerColor, close!!.style.color)
     }
 
+    // ── regression: intraword underscores must not be parsed as italics ─────
+
+    @Test
+    fun `snake_case identifier - no italic span`() {
+        val text = "call sync_engine.rs and try_lock now"
+        val spans = t.computeMarkdownSpans(text)
+        val italic = spans.firstOrNull { it.style.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic }
+        assertNull("snake_case must not produce an italic span", italic)
+    }
+
+    @Test
+    fun `inline code spans stay paired around snake_case identifiers`() {
+        val text = "in `webdav.rs`/`sync_engine.rs` überhaupt"
+        val spans = t.computeMarkdownSpans(text)
+        val codeSpans = spans.filter { it.style.fontFamily == FontFamily.Monospace && it.style.background == codeBg }
+        assertEquals(2, codeSpans.size)
+    }
+
+    @Test
+    fun `leading and parenthesized underscore italics still work`() {
+        val leading = t.computeMarkdownSpans("_lead_ text")
+        assertNotNull(
+            "leading _italic_ must still render",
+            leading.firstOrNull { it.style.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic }
+        )
+        val parenthesized = t.computeMarkdownSpans("(_note_)")
+        assertNotNull(
+            "(_italic_) must still render",
+            parenthesized.firstOrNull { it.style.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic }
+        )
+    }
+
     // ── regression: inline spans after a fenced block must not be shifted ───
 
     @Test

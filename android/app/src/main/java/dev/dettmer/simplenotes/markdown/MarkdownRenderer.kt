@@ -409,7 +409,8 @@ internal fun noteCardMarkdownPreview(content: String): AnnotatedString {
  *  8 = link URL
  */
 internal val INLINE_COMBINED_REGEX = Regex(
-    """\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_|`([^`]+)`|https?://[^\s<>"')\]!]+|\[([^\]]+)\]\(([^)]+)\)"""
+    """\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|(?<![A-Za-z0-9])_(.+?)_(?![A-Za-z0-9])|""" +
+        """`([^`]+)`|https?://[^\s<>"')\]!]+|\[([^\]]+)\]\(([^)]+)\)"""
 )
 
 internal const val INLINE_GROUP_STRIKETHROUGH = 3
