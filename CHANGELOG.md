@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.11.0] - 2026-07-06
+
+### ✨ New Features
+
+**Note Archiving** ([4a306b5](https://github.com/inventory69/simple-notes-sync/commit/4a306b5))
+- Archive notes to move them out of the main list without deleting them, with a dedicated archive view to restore or manage them later
+
+**Default Note Color & Cursor Focus** ([cfdf542](https://github.com/inventory69/simple-notes-sync/commit/cfdf542))
+- Choose a default color applied to every new note, and optionally place the cursor in the body right away when creating a note
+
+**Per-Folder Sort Persistence** ([4437419](https://github.com/inventory69/simple-notes-sync/commit/4437419))
+- Each folder remembers its own sort option and direction across restarts
+
+**Configurable Preview Length** ([43f6eb0](https://github.com/inventory69/simple-notes-sync/commit/43f6eb0))
+- Pick how many lines of preview text notes show in the list
+
+**Markdown Toolbar Code Block** ([99af39d](https://github.com/inventory69/simple-notes-sync/commit/99af39d))
+- New toolbar button inserts a fenced code block while editing
+
+**Unified Sync-Target Change Flow** ([c0ede47](https://github.com/inventory69/simple-notes-sync/commit/c0ede47), [47844b0](https://github.com/inventory69/simple-notes-sync/commit/47844b0), [13be3fa](https://github.com/inventory69/simple-notes-sync/commit/13be3fa), [3ecf658](https://github.com/inventory69/simple-notes-sync/commit/3ecf658))
+- Server and sync-folder changes now go through a single gate that confirms data handling before switching; the server subtitle shows the active folder, and the Markdown export folder is surfaced as a card with a copy action
+
+### 🐛 Bug Fixes
+
+**Markdown Formatting in PDF Export** ([495646f](https://github.com/inventory69/simple-notes-sync/commit/495646f), [41ceb09](https://github.com/inventory69/simple-notes-sync/commit/41ceb09), [0fb65dc](https://github.com/inventory69/simple-notes-sync/commit/0fb65dc))
+- PDF export now renders real Markdown formatting instead of raw text, fills blank code lines, adds an inline-code background, and stops `snake_case` identifiers from rendering as italic
+- Thanks to [@hoseinhzk](https://github.com/hoseinhzk) for the report!
+
+**Password Reveal Re-arm** ([f32ee55](https://github.com/inventory69/simple-notes-sync/commit/f32ee55))
+- Revealing the saved password again now requires a full clear first, so it can't be peeked after a partial edit
+
+**Sort Flash & First-Time Gate** ([c58001a](https://github.com/inventory69/simple-notes-sync/commit/c58001a), [3ebe7d2](https://github.com/inventory69/simple-notes-sync/commit/3ebe7d2))
+- Each folder pane sorts by its own setting to stop a visual flash, and the remote-target gate is suppressed during first-time setup
+
+**Sync Folder Handling** ([d5f606a](https://github.com/inventory69/simple-notes-sync/commit/d5f606a), [ed472a1](https://github.com/inventory69/simple-notes-sync/commit/ed472a1), [0c6e0e9](https://github.com/inventory69/simple-notes-sync/commit/0c6e0e9))
+- Connection test detects an existing Markdown folder, the folder-change dialog stays open until the restore finishes, and folder metadata is reset before a REPLACE restore
+
+**List & Editor Polish** ([9dbfd98](https://github.com/inventory69/simple-notes-sync/commit/9dbfd98), [d0a4f9e](https://github.com/inventory69/simple-notes-sync/commit/d0a4f9e), [24a2a5b](https://github.com/inventory69/simple-notes-sync/commit/24a2a5b))
+- The empty state scrolls so pull-to-refresh works, untitled notes fill the title slot with a content preview, and calendar export keeps the full checklist item text in the title
+
+### 🌍 Translations
+
+- **Italian** (48%): GVE
+- **Chinese (Simplified)** (99%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.10.0] - 2026-07-01
 
 ### ✨ New Features

@@ -120,6 +120,15 @@
 
 ---
 
+## 🗄️ Archive _(NEW in v2.11.0)_
+
+- ✅ **Archive notes** - Move a note out of the main list without deleting it, from the editor or via multi-select
+- ✅ **Archive view** - Toggle the note list to show archived notes instead of active ones
+- ✅ **Bulk archive/unarchive** - Archive or restore several selected notes at once
+- ✅ **Undo snackbar** - Timed undo right after archiving or unarchiving
+
+---
+
 ## 🎨 Note Colors _(NEW in v2.5.0)_
 
 - ✅ **Color-code notes** - Assign a color to any note

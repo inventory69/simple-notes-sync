@@ -1,0 +1,12 @@
+🗄️ v2.11.0 - Archive & Organize
+
+• Archive notes to keep them out of the way without deleting
+• Sort each folder independently; the choice sticks
+• Pick a default color for new notes
+• Adjustable note preview length
+• Fenced code-block button in the Markdown toolbar
+• Fix: PDF export now renders real Markdown formatting
+• Safer sync-folder switching with a data-handling prompt
+• Updated translations: IT, ZH-Hans
+
+Thanks to @hoseinhzk (report), GVE (Italian) and @heretic43 (Chinese)!

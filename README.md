@@ -72,6 +72,7 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 - 📁 **Folders** - Organize notes into folders, with optional local-only folders that never sync
 - 📌 **Pinned notes** - Keep important notes at the top
 - 🗑️ **Trash** - Deleted notes move to a recycle bin with configurable retention (0–90 days)
+- 🗄️ **Archive** - Move notes out of the way without deleting them, restore anytime
 - ✅ **Checklists** - Tap-to-check, drag & drop, convert text ↔ checklist
 - ✍️ **Live Markdown** - Live highlighting in the editor and rendered list/grid previews
 - 📋 **Rich clipboard paste** - HTML paste from Telegram, Word, Google Docs & browsers converts to Markdown
@@ -184,6 +185,6 @@ GNU Affero General Public License v3.0 - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v2.10.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.11.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

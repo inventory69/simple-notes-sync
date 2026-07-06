@@ -1,0 +1,12 @@
+🗄️ v2.11.0 - Archivieren & Ordnen
+
+• Notizen archivieren statt löschen
+• Sortierung je Ordner, bleibt erhalten
+• Standardfarbe für neue Notizen
+• Vorschaulänge einstellbar
+• Code-Block-Button in der Markdown-Leiste
+• Fix: PDF-Export rendert jetzt echte Markdown-Formatierung
+• Sicherer Ordnerwechsel mit Datenhinweis
+• Übersetzungsupdate: IT, ZH-Hans
+
+Danke an @hoseinhzk (Bug-Report), GVE (Italienisch) und @heretic43 (Chinesisch)!

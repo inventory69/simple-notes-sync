@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 43  // 🆕 v2.10.0 - app lock, collapsible sections, rich clipboard paste
-        versionName = "2.10.0"  // 🆕 v2.10.0 - app lock, collapsible sections, rich clipboard paste
+        versionCode = 44  // 🆕 v2.11.0 - note archiving, per-folder sort, default note color, PDF Markdown export
+        versionName = "2.11.0"  // 🆕 v2.11.0 - note archiving, per-folder sort, default note color, PDF Markdown export
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

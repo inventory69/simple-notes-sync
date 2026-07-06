@@ -120,6 +120,15 @@
 
 ---
 
+## 🗄️ Archiv _(NEU in v2.11.0)_
+
+- ✅ **Notizen archivieren** - Eine Notiz aus der Hauptliste entfernen, ohne sie zu löschen — aus dem Editor oder per Mehrfachauswahl
+- ✅ **Archiv-Ansicht** - Notizliste umschalten, um archivierte statt aktiver Notizen anzuzeigen
+- ✅ **Mehrfach archivieren/dearchivieren** - Mehrere ausgewählte Notizen auf einmal archivieren oder wiederherstellen
+- ✅ **Rückgängig-Snackbar** - Zeitgesteuertes Rückgängig direkt nach dem Archivieren/Dearchivieren
+
+---
+
 ## 🎨 Notiz-Farben _(NEU in v2.5.0)_
 
 - ✅ **Notizen farblich kennzeichnen** - Jeder Notiz eine Farbe zuweisen

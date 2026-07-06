@@ -8,6 +8,53 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.11.0] - 2026-07-06
+
+### ✨ Neue Funktionen
+
+**Notizen archivieren** ([4a306b5](https://github.com/inventory69/simple-notes-sync/commit/4a306b5))
+- Notizen aus der Hauptliste ins Archiv verschieben, ohne sie zu löschen; eine eigene Archivansicht erlaubt späteres Wiederherstellen und Verwalten
+
+**Standardfarbe & Cursor-Fokus** ([cfdf542](https://github.com/inventory69/simple-notes-sync/commit/cfdf542))
+- Standardfarbe für jede neue Notiz wählen und den Cursor beim Erstellen optional direkt in den Textkörper setzen
+
+**Sortierung je Ordner** ([4437419](https://github.com/inventory69/simple-notes-sync/commit/4437419))
+- Jeder Ordner merkt sich seine eigene Sortieroption und -richtung über Neustarts hinweg
+
+**Einstellbare Vorschaulänge** ([43f6eb0](https://github.com/inventory69/simple-notes-sync/commit/43f6eb0))
+- Festlegen, wie viele Zeilen Vorschautext Notizen in der Liste anzeigen
+
+**Code-Block in der Markdown-Leiste** ([99af39d](https://github.com/inventory69/simple-notes-sync/commit/99af39d))
+- Neuer Leisten-Button fügt beim Bearbeiten einen umschlossenen Code-Block ein
+
+**Vereinheitlichter Wechsel des Sync-Ziels** ([c0ede47](https://github.com/inventory69/simple-notes-sync/commit/c0ede47), [47844b0](https://github.com/inventory69/simple-notes-sync/commit/47844b0), [13be3fa](https://github.com/inventory69/simple-notes-sync/commit/13be3fa), [3ecf658](https://github.com/inventory69/simple-notes-sync/commit/3ecf658))
+- Server- und Ordnerwechsel laufen jetzt über ein einziges Gate, das vor dem Wechsel den Umgang mit den Daten bestätigt; der Server-Untertitel zeigt den aktiven Ordner, und der Markdown-Exportordner erscheint als Karte mit Kopier-Aktion
+
+### 🐛 Bug-Fixes
+
+**Markdown-Formatierung im PDF-Export** ([495646f](https://github.com/inventory69/simple-notes-sync/commit/495646f), [41ceb09](https://github.com/inventory69/simple-notes-sync/commit/41ceb09), [0fb65dc](https://github.com/inventory69/simple-notes-sync/commit/0fb65dc))
+- Der PDF-Export rendert jetzt echte Markdown-Formatierung statt Rohtext, füllt leere Code-Zeilen, hinterlegt Inline-Code und stellt `snake_case`-Bezeichner nicht mehr kursiv dar
+- Danke an [@hoseinhzk](https://github.com/hoseinhzk) für den Bug-Report!
+
+**Passwort-Anzeige neu absichern** ([f32ee55](https://github.com/inventory69/simple-notes-sync/commit/f32ee55))
+- Das erneute Anzeigen des gespeicherten Passworts erfordert jetzt erst ein vollständiges Löschen, damit es nach einer Teilbearbeitung nicht ausgespäht werden kann
+
+**Sortier-Flackern & Ersteinrichtungs-Gate** ([c58001a](https://github.com/inventory69/simple-notes-sync/commit/c58001a), [3ebe7d2](https://github.com/inventory69/simple-notes-sync/commit/3ebe7d2))
+- Jeder Ordnerbereich sortiert nach seiner eigenen Einstellung, um ein visuelles Flackern zu verhindern, und das Remote-Ziel-Gate wird während der Ersteinrichtung unterdrückt
+
+**Umgang mit Sync-Ordnern** ([d5f606a](https://github.com/inventory69/simple-notes-sync/commit/d5f606a), [ed472a1](https://github.com/inventory69/simple-notes-sync/commit/ed472a1), [0c6e0e9](https://github.com/inventory69/simple-notes-sync/commit/0c6e0e9))
+- Der Verbindungstest erkennt einen vorhandenen Markdown-Ordner, der Ordnerwechsel-Dialog bleibt bis zum Abschluss der Wiederherstellung offen, und Ordner-Metadaten werden vor einer REPLACE-Wiederherstellung zurückgesetzt
+
+**Liste & Editor-Feinschliff** ([9dbfd98](https://github.com/inventory69/simple-notes-sync/commit/9dbfd98), [d0a4f9e](https://github.com/inventory69/simple-notes-sync/commit/d0a4f9e), [24a2a5b](https://github.com/inventory69/simple-notes-sync/commit/24a2a5b))
+- Der Leerzustand ist scrollbar, damit Pull-to-Refresh funktioniert, unbenannte Notizen füllen den Titel mit einer Inhaltsvorschau, und der Kalenderexport behält den vollständigen Checklisten-Text im Titel
+
+### 🌍 Übersetzungen
+
+- **Italienisch** (48%): GVE
+- **Chinesisch (Vereinfacht)** (99%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.10.0] - 2026-07-01
 
 ### ✨ Neue Funktionen

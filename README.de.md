@@ -72,6 +72,7 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 - 📁 **Ordner** – Notizen in Ordnern organisieren, optional als „nur lokal" (kein Sync)
 - 📌 **Angeheftete Notizen** – Wichtige Notizen bleiben oben
 - 🗑️ **Papierkorb** – Gelöschte Notizen wandern in den Papierkorb mit konfigurierbarer Aufbewahrung (0–90 Tage)
+- 🗄️ **Archiv** – Notizen aus dem Weg räumen, ohne sie zu löschen — jederzeit wiederherstellbar
 - ✅ **Checklisten** – Tap-to-Check, Drag & Drop, Umwandlung Text ↔ Checkliste
 - ✍️ **Live-Markdown** – Live-Hervorhebung im Editor und gerenderte Listen-/Grid-Vorschauen
 - 📋 **Formatiertes Einfügen** – HTML-Einfügen aus Telegram, Word, Google Docs & Browsern wird zu Markdown konvertiert
