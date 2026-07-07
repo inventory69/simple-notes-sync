@@ -1,3 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="action_settings">Seadistused</string>
+    <string name="action_close_selection">Sulge valik</string>
+    <string name="action_select_all">Vali kõik</string>
+    <string name="action_delete_selected">Kustuta valitud</string>
+    <string name="selection_count">%d on valitud</string>
+    <string name="section_pinned">Esiletõstetud</string>
+    <string name="section_notes">Märkmed</string>
+    <string name="action_sync">Sünkrooni</string>
+    <string name="action_collapse_section">Ahenda %1$s</string>
+    <string name="action_expand_section">Laienda %1$s</string>
+    <string name="action_move_section_up">Liiguta ülespoole</string>
+    <string name="action_move_section_down">Liiguta allapoole</string>
+    <string name="empty_state_title">Märkmeid veel pole</string>
+    <string name="empty_state_message">Klõpsa + ikooni ja saad märkme lisada</string>
+    <string name="fab_new_note">Uus märge</string>
+    <string name="fab_close">Sulge menüü</string>
+    <string name="fab_text_note">Tekstimärge</string>
+    <string name="delete">Kustuta</string>
+    <string name="cancel">Katkesta</string>
+    <string name="ok">Sobib</string>
+    <string name="snackbar_undo">VÕTA TAGASI</string>
+    <string name="snackbar_deleted_from_server">Serverist kustutatud</string>
+    <plurals name="snackbar_notes_deleted_from_server">
+        <item quantity="one">%d märge on serverist kustutatud</item>
+        <item quantity="other">%d märget on serverist kustutatud</item>
+    </plurals>
 </resources>
