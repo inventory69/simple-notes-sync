@@ -502,6 +502,28 @@
     <string name="debug_clear_etag_cache_dialog_message">Removes E-Tags and content hashes for all notes. The next sync will re-compare all notes with the server. Note contents are not changed.</string>
     <string name="debug_clear_etag_cache_confirm">Clear</string>
     <string name="debug_etag_cache_cleared">E-Tag cache cleared.</string>
+    <string name="debug_calendar_experiment_section">Calendar Parsing (Experiment)</string>
+    <string name="calendar_experiment_open">Test parsing strategies</string>
+    <string name="calendar_experiment_title">Test calendar parsing</string>
+    <string name="calendar_experiment_input_label">Example text</string>
+    <string name="calendar_experiment_input_placeholder">Max Mustermann 0176 12345678 max.mustermann@example.com / Musterstr. 5 / Fenster reparieren / Auftraggeber Meier GmbH</string>
+    <string name="calendar_experiment_strategy_section">Strategy</string>
+    <string name="calendar_experiment_strategy_raw">Raw text (baseline)</string>
+    <string name="calendar_experiment_strategy_raw_subtitle">Whole text becomes the title, nothing is parsed.</string>
+    <string name="calendar_experiment_strategy_positional">Fixed order</string>
+    <string name="calendar_experiment_strategy_positional_subtitle">1st segment → title, 2nd → location, rest → description. Example: \"Max Mustermann / Musterstr. 5 / Fenster reparieren\"</string>
+    <string name="calendar_experiment_strategy_phone_regex">Phone regex + order</string>
+    <string name="calendar_experiment_strategy_phone_regex_subtitle">Like above, plus a phone number anywhere in the text is detected and moved to the description.</string>
+    <string name="calendar_experiment_strategy_label_prefix">Label prefixes</string>
+    <string name="calendar_experiment_strategy_label_prefix_subtitle">Each segment needs a prefix before \':\', e.g. \"N: Max Mustermann / T: 0176 12345678 / A: Musterstr. 5 / E: max@example.com\". Known prefixes: n/name/titel, t/tel/telefon, a/adresse/str, e/email/gast → guests. Unknown or missing prefix → description.</string>
+    <string name="calendar_experiment_strategy_phone_email_regex">Phone + email regex</string>
+    <string name="calendar_experiment_strategy_phone_email_regex_subtitle">Like phone regex, plus an email address anywhere in the text is detected and moved to the guests field (for calendar guests / EXTRA_EMAIL).</string>
+    <string name="calendar_experiment_preview_section">Preview</string>
+    <string name="calendar_experiment_preview_title">Title</string>
+    <string name="calendar_experiment_preview_location">Location</string>
+    <string name="calendar_experiment_preview_description">Description</string>
+    <string name="calendar_experiment_preview_attendees">Guests (email)</string>
+    <string name="calendar_experiment_hint">For experimentation only — will be replaced by the final solution once a strategy is chosen.</string>
 
     <!-- 🔧 v1.10.1: Easter-Egg Developer Options -->
     <string name="developer_options_countdown">%d taps to unlock developer options</string>
