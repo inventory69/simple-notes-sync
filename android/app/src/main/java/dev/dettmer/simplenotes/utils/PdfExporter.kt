@@ -16,9 +16,11 @@ import android.text.TextPaint
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.TypefaceSpan
+import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
+import dev.dettmer.simplenotes.markdown.parseImageAlt
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
@@ -289,10 +291,7 @@ object PdfExporter {
                     renderer.advanceY(HEADING_GAP)
                 }
 
-                is MarkdownBlock.Paragraph -> {
-                    renderer.drawWrappedText(toSpanned(block.text), bodyPaint, TEXT_WIDTH)
-                    renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
-                }
+                is MarkdownBlock.Paragraph -> renderParagraph(renderer, context, block.text)
 
                 is MarkdownBlock.TaskList -> {
                     renderChecklistItems(renderer, block.items.map { it.text to it.isChecked })
@@ -310,22 +309,66 @@ object PdfExporter {
     }
 
     /**
-     * Zeichnet ein Bild skaliert auf Seitenbreite (nie größer als die Original-Auflösung).
-     * Passt ein zu hohes Bild zusätzlich auf eine volle Seitenhöhe — keine Bild-Aufteilung
-     * über Seitengrenzen hinweg (v1-Vereinfachung, bei ≤1920px-Assets unkritisch).
-     * Fehlt die Asset-Datei, wird der Alt-Text als Platzhalterzeile gedruckt (analog Editor-Preview).
+     * Zeichnet ein Bild skaliert auf [sizePercent] der Seitenbreite (nie größer als die
+     * Original-Auflösung), ausgerichtet per [align]. Passt ein zu hohes Bild zusätzlich auf
+     * eine volle Seitenhöhe — keine Bild-Aufteilung über Seitengrenzen hinweg (v1-Vereinfachung,
+     * bei ≤1920px-Assets unkritisch). Fehlt die Asset-Datei, wird der Alt-Text als
+     * Platzhalterzeile gedruckt (analog Editor-Preview).
      */
-    private fun renderImageBlock(renderer: PageRenderer, context: Context, image: MarkdownBlock.Image) {
-        val file = AssetStore(context).getAssetFile(image.assetName)
+    private fun renderImage(
+        renderer: PageRenderer,
+        context: Context,
+        assetName: String,
+        altText: String,
+        align: ImageAlign,
+        sizePercent: Int
+    ) {
+        val file = AssetStore(context).getAssetFile(assetName)
         val bitmap = file.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) }
         if (bitmap == null) {
-            val placeholder = image.altText.ifBlank { "[image]" }
+            val placeholder = altText.ifBlank { "[image]" }
             renderer.drawWrappedText(toSpanned(placeholder), bodyPaint, TEXT_WIDTH)
         } else {
-            renderer.drawBitmapFit(bitmap, TEXT_WIDTH, PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM)
+            val maxWidth = TEXT_WIDTH * sizePercent / 100f
+            renderer.drawBitmapFit(bitmap, maxWidth, PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM, align)
             bitmap.recycle()
         }
         renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+    }
+
+    private fun renderImageBlock(renderer: PageRenderer, context: Context, image: MarkdownBlock.Image) {
+        renderImage(renderer, context, image.assetName, image.altText, image.align, image.sizePercent)
+    }
+
+    /**
+     * Enthält [text] keinen Bild-Link, identisch zu vorher. Sonst werden Inline-Bilder als
+     * eigene, zentrierte Block-Bilder zwischen den umgebrochenen Textsegmenten gedruckt — kein
+     * echtes Inline-Fließen im PDF (vorab genehmigte Vereinfachung), aber es gehen keine
+     * Bildinhalte verloren. Größen-Token werden bei Inline-Bildern überall ignoriert (Format-Spec).
+     */
+    private fun renderParagraph(renderer: PageRenderer, context: Context, text: String) {
+        if (!MarkdownEngine.IMAGE_REGEX.containsMatchIn(text)) {
+            renderer.drawWrappedText(toSpanned(text), bodyPaint, TEXT_WIDTH)
+            renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+            return
+        }
+
+        var pos = 0
+        for (match in MarkdownEngine.IMAGE_REGEX.findAll(text)) {
+            val segment = text.substring(pos, match.range.first)
+            if (segment.isNotBlank()) {
+                renderer.drawWrappedText(toSpanned(segment), bodyPaint, TEXT_WIDTH)
+                renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+            }
+            val cleanAlt = parseImageAlt(match.groupValues[1]).cleanAlt
+            renderImage(renderer, context, match.groupValues[2], cleanAlt, ImageAlign.CENTER, sizePercent = 100)
+            pos = match.range.last + 1
+        }
+        val tail = text.substring(pos)
+        if (tail.isNotBlank()) {
+            renderer.drawWrappedText(toSpanned(tail), bodyPaint, TEXT_WIDTH)
+            renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+        }
     }
 
     private fun headingPaint(level: Int): TextPaint = when (level) {
@@ -450,17 +493,23 @@ object PdfExporter {
 
         /**
          * Draws [bitmap] scaled down (never up) to fit within [maxWidth] and [maxHeight],
-         * preserving aspect ratio. Advances the Y cursor by the drawn height.
+         * preserving aspect ratio, horizontally positioned per [align] within the full text
+         * width. Advances the Y cursor by the drawn height.
          */
-        fun drawBitmapFit(bitmap: Bitmap, maxWidth: Float, maxHeight: Float) {
+        fun drawBitmapFit(bitmap: Bitmap, maxWidth: Float, maxHeight: Float, align: ImageAlign = ImageAlign.CENTER) {
             val scale = minOf(maxWidth / bitmap.width, maxHeight / bitmap.height, 1f)
             val destWidth = bitmap.width * scale
             val destHeight = bitmap.height * scale
             ensureSpace(destHeight)
+            val x = when (align) {
+                ImageAlign.LEFT, ImageAlign.INLINE -> MARGIN_HORIZONTAL
+                ImageAlign.CENTER -> MARGIN_HORIZONTAL + (TEXT_WIDTH - destWidth) / 2f
+                ImageAlign.RIGHT -> MARGIN_HORIZONTAL + TEXT_WIDTH - destWidth
+            }
             canvas?.drawBitmap(
                 bitmap,
                 null,
-                RectF(MARGIN_HORIZONTAL, currentY, MARGIN_HORIZONTAL + destWidth, currentY + destHeight),
+                RectF(x, currentY, x + destWidth, currentY + destHeight),
                 null
             )
             currentY += destHeight
