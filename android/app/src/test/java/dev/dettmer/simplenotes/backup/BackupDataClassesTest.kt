@@ -128,6 +128,34 @@ class BackupDataClassesTest {
     }
 
     @Test
+    fun `BackupData Gson roundtrip includes assets`() {
+        val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+        val original = BackupData(
+            backupVersion = 1,
+            createdAt = 1700000000000L,
+            notesCount = 0,
+            appVersion = "1.8.2",
+            notes = emptyList(),
+            assets = listOf(BackupAsset(name = "abc123.webp", dataBase64 = "aGVsbG8="))
+        )
+        val json = gson.toJson(original)
+        val restored = gson.fromJson(json, BackupData::class.java)
+
+        assertTrue("Should use snake_case key", json.contains("data_base64"))
+        assertEquals(1, restored.assets?.size)
+        assertEquals("abc123.webp", restored.assets?.get(0)?.name)
+        assertEquals("aGVsbG8=", restored.assets?.get(0)?.dataBase64)
+    }
+
+    @Test
+    fun `BackupData without assets deserializes to null (old backups)`() {
+        val gson = com.google.gson.Gson()
+        val jsonWithoutAssets = """{"backup_version":1,"created_at":1,"notes_count":0,"app_version":"1.0","notes":[]}"""
+        val restored = gson.fromJson(jsonWithoutAssets, BackupData::class.java)
+        assertNull(restored.assets)
+    }
+
+    @Test
     fun `BackupData uses SerializedName annotations`() {
         val gson = com.google.gson.Gson()
         val data = BackupData(
