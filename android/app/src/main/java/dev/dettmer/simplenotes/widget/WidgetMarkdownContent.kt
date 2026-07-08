@@ -90,6 +90,10 @@ private fun flattenToRenderItems(
             MarkdownBlock.HorizontalRule -> {
                 result.add(WidgetRenderItem.Divider)
             }
+            // 🆕 Bild-Attachments v1: Widget rendert kein Bild, nur den Alt-Text (siehe Plan §Widget v2)
+            is MarkdownBlock.Image -> {
+                result.add(WidgetRenderItem.Paragraph("🖼 ${block.altText}".trim()))
+            }
         }
     }
     return result
