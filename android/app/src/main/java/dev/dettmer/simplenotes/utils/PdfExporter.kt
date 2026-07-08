@@ -4,10 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.ColorSpace
 import android.graphics.Paint
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import android.os.Build
 import android.text.Html
 import android.text.SpannableString
 import android.text.Spanned
@@ -16,6 +17,10 @@ import android.text.TextPaint
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.TypefaceSpan
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
+import dev.dettmer.simplenotes.images.applyExifOrientation
+import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
@@ -109,6 +114,9 @@ object PdfExporter {
 
     /** Fraction of line height above the baseline used by a line's background panel. */
     private const val BACKGROUND_TOP_FRACTION = 0.75f
+
+    /** Upper bound on an embedded image's longest edge in pixels — ample for A4, caps file size. */
+    private const val IMAGE_MAX_LONG_EDGE_PX = 2000f
 
     // ═══════════════════════════════════════════════════════════════════════
     // Paint Objects (reused across pages)
@@ -324,20 +332,65 @@ object PdfExporter {
         sizePercent: Int
     ) {
         val file = AssetStore(context).getAssetFile(assetName)
-        val bitmap = file.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) }
+        val bitmap = file.takeIf { it.exists() }?.let { decodeOrientedSrgbBitmap(it) }
         if (bitmap == null) {
             val placeholder = altText.ifBlank { "[image]" }
             renderer.drawWrappedText(toSpanned(placeholder), bodyPaint, TEXT_WIDTH)
         } else {
             val maxWidth = TEXT_WIDTH * sizePercent / 100f
+            Logger.d("PdfExporter", "renderImage: asset=$assetName src=${bitmap.width}x${bitmap.height} maxWidth=$maxWidth")
             renderer.drawBitmapFit(bitmap, maxWidth, PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM, align)
-            bitmap.recycle()
+            // Kein recycle() hier: PdfDocument.Page zeichnet in eine deferred Picture-Recording-
+            // Canvas, die Pixel werden erst bei finishPage()/document.writeTo() tatsächlich
+            // konsumiert (weit nach diesem Aufruf) — frühes recycle() gibt den Pixel-Buffer frei,
+            // bevor die PDF-Seite ihn liest, und das äußert sich als Pixelierung.
         }
         renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
     }
 
     private fun renderImageBlock(renderer: PageRenderer, context: Context, image: MarkdownBlock.Image) {
         renderImage(renderer, context, image.assetName, image.altText, image.align, image.sizePercent)
+    }
+
+    /**
+     * `inPreferredColorSpace = SRGB` erzwingt einen 8-bit `ARGB_8888`-Decode auch für Fotos mit
+     * vollem ICC-Profil — ohne das decodiert Android manche JPEGs als Wide-Gamut `RGBA_F16`,
+     * was Skias PDF-Backend nicht als Image-XObject einbetten kann und stattdessen die ganze
+     * Seite auf 72dpi rastert (Pixelierung). EXIF-Rotation wird zusätzlich in die Pixel gebacken,
+     * da der rohe Decode sie ignoriert. Ultra-HDR-Fotos (Gain-Map) lösen denselben Skia-Fallback
+     * aus, obwohl ihre Basis-Pixel bereits sRGB sind — [flattenGainmap] entfernt die Gain-Map vor
+     * dem PDF-Export.
+     */
+    private fun decodeOrientedSrgbBitmap(file: File): Bitmap? {
+        val options = BitmapFactory.Options().apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
+            }
+        }
+        val decoded = BitmapFactory.decodeFile(file.path, options) ?: return null
+        val oriented = applyExifOrientation(decoded, readExifOrientation(file))
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && oriented.hasGainmap()) {
+            flattenGainmap(oriented)
+        } else {
+            oriented
+        }
+    }
+
+    /**
+     * Redraws [src] into a plain (gain-map-free) `ARGB_8888` bitmap. A software `Canvas` only
+     * ever paints the SDR base layer of a gain-map bitmap — the gain map only boosts brightness
+     * on HDR-capable surfaces — so this yields the correct SDR flatten at full source resolution,
+     * not Skia's 72dpi whole-page fallback.
+     *
+     * ponytail: costs one transient extra full-res ARGB buffer during export (one-shot, fine at
+     * note-photo sizes). Lighter alternative if that ever matters: `src.setGainmap(null)`.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun flattenGainmap(src: Bitmap): Bitmap {
+        val out = createBitmap(src.width, src.height)
+        Canvas(out).drawBitmap(src, 0f, 0f, null)
+        src.recycle()
+        return out
     }
 
     /**
@@ -506,12 +559,34 @@ object PdfExporter {
                 ImageAlign.CENTER -> MARGIN_HORIZONTAL + (TEXT_WIDTH - destWidth) / 2f
                 ImageAlign.RIGHT -> MARGIN_HORIZONTAL + TEXT_WIDTH - destWidth
             }
-            canvas?.drawBitmap(
-                bitmap,
-                null,
-                RectF(x, currentY, x + destWidth, currentY + destHeight),
-                null
-            )
+            // canvas.drawBitmap(bitmap, srcRect, dstRectF, paint) treibt SkPDFDevice auf einen
+            // Fallback, der die ganze Seite zu einem 595x842-Rasterbild flattet, statt das Bild
+            // als natives XObject einzubetten — bestätigt per pdfimages -list (Width/Height blieb
+            // 595x842 selbst mit paint=null). Das einfache drawBitmap(bitmap, left, top, paint)
+            // ohne Rect/Matrix-Argument umgeht den Fallback; die Zielgröße kommt stattdessen aus
+            // der Canvas-eigenen CTM (translate+scale), die an anderer Stelle in dieser Klasse
+            // (Text, Linien) bereits verlustfrei funktioniert. Quelle wird zusätzlich auf
+            // IMAGE_MAX_LONG_EDGE_PX gecappt (nie über die Quellauflösung hinaus) — genug für
+            // scharfen 300-DPI-Druck, ohne die PDF-Datei unnötig aufzublähen.
+            val longEdgePx = maxOf(bitmap.width, bitmap.height).toFloat()
+            val precapScale = minOf(1f, IMAGE_MAX_LONG_EDGE_PX / longEdgePx)
+            val printBitmap = if (precapScale >= 1f) {
+                bitmap
+            } else {
+                bitmap.scale(
+                    (bitmap.width * precapScale).toInt().coerceAtLeast(1),
+                    (bitmap.height * precapScale).toInt().coerceAtLeast(1)
+                )
+            }
+            // printBitmap wird bewusst nicht recycled: gleiche Deferred-Rendering-Falle wie beim
+            // Quell-Bitmap (s. renderImage) — Pixel werden erst bei writeTo() konsumiert.
+            canvas?.let { c ->
+                c.save()
+                c.translate(x, currentY)
+                c.scale(destWidth / printBitmap.width, destHeight / printBitmap.height)
+                c.drawBitmap(printBitmap, 0f, 0f, null)
+                c.restore()
+            }
             currentY += destHeight
         }
 
