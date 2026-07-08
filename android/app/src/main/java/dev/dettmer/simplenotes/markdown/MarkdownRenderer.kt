@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import coil3.compose.AsyncImage
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.images.orientationSwapsAxes
+import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.theme.Dimensions
@@ -497,7 +499,15 @@ private fun decodeAspectRatio(file: File): Float? {
     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(file.path, options)
     if (options.outWidth <= 0 || options.outHeight <= 0) return null
-    return options.outWidth.toFloat() / options.outHeight.toFloat()
+    // EXIF-Orientation wird beim Anzeigen (Coil) angewendet, die rohen Bounds hier nicht —
+    // bei 90°/270°-Rotation muss die Aspect-Ratio seitenvertauscht berechnet werden, sonst
+    // bekommt die Box das falsche Seitenverhältnis und das Bild wird letterboxed.
+    val (w, h) = if (orientationSwapsAxes(readExifOrientation(file))) {
+        options.outHeight to options.outWidth
+    } else {
+        options.outWidth to options.outHeight
+    }
+    return w.toFloat() / h.toFloat()
 }
 
 /**
