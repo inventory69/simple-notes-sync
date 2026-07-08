@@ -1,27 +1,38 @@
 package dev.dettmer.simplenotes.markdown
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -35,7 +46,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.truncate
 
@@ -100,6 +114,11 @@ fun MarkdownPreview(
                             thickness = 1.dp,
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
+                    }
+
+                    is MarkdownBlock.Image -> {
+                        ImageBlock(block)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
                 }
             }
@@ -210,6 +229,58 @@ private fun CodeBlockSurface(codeBlock: MarkdownBlock.CodeBlock) {
             modifier = Modifier
                 .padding(Dimensions.SpacingMediumLarge)
                 .horizontalScroll(rememberScrollState())
+        )
+    }
+}
+
+private const val IMAGE_MAX_HEIGHT_DP = 320
+
+/**
+ * 🆕 Bild-Attachments: Rendert einen Block-Bild-Link. Fehlt die Asset-Datei (Notiz vor
+ * Asset da, manuell getippter Link, noch nicht gesyncte Desktop-Assets) oder schlägt das
+ * Decoding fehl, wird ein Platzhalter mit Alt-Text gezeigt statt eines leeren Bereichs.
+ */
+@Composable
+private fun ImageBlock(image: MarkdownBlock.Image) {
+    val context = LocalContext.current
+    val assetFile = remember(context, image.assetName) { AssetStore(context).getAssetFile(image.assetName) }
+    var loadFailed by remember(image.assetName) { mutableStateOf(false) }
+
+    if (!assetFile.exists() || loadFailed) {
+        ImagePlaceholder(image.altText)
+        return
+    }
+
+    AsyncImage(
+        model = assetFile,
+        contentDescription = image.altText.ifBlank { null },
+        contentScale = ContentScale.Fit,
+        onError = { loadFailed = true },
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = IMAGE_MAX_HEIGHT_DP.dp)
+    )
+}
+
+@Composable
+private fun ImagePlaceholder(altText: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small)
+            .padding(Dimensions.SpacingMediumLarge)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.BrokenImage,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
+        Text(
+            text = altText.ifBlank { stringResource(R.string.markdown_image_missing) },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -367,6 +438,8 @@ internal fun buildMarkdownCardPreview(
             }
 
             MarkdownBlock.HorizontalRule -> Unit
+
+            is MarkdownBlock.Image -> append("🖼 ${block.altText}".trim())
         }
     }
 }

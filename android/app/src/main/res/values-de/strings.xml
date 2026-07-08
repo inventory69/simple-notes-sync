@@ -582,6 +582,9 @@
     <string name="md_toolbar_code">Code</string>
     <string name="md_toolbar_code_block">Codeblock</string>
     <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_image">Bild einfügen</string>
+    <string name="image_attach_failed">Bild konnte nicht hinzugefügt werden (nicht genug Speicher oder Datei nicht lesbar)</string>
+    <string name="markdown_image_missing">Bild nicht verfügbar</string>
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->

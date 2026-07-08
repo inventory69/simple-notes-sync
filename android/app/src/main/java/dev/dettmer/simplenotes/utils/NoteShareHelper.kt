@@ -1,6 +1,10 @@
 package dev.dettmer.simplenotes.utils
 
+import android.content.Context
+import android.net.Uri
+import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
 
 /**
@@ -52,5 +56,19 @@ object NoteShareHelper {
             .filter { it.text.isNotBlank() }
             .sortedBy { it.order }
             .map { it.text to it.isChecked }
+    }
+
+    /**
+     * 🆕 Bild-Attachments: Löst `.assets/<name>`-Bildlinks in [textContent] zu teilbaren
+     * `content://`-URIs via FileProvider auf (für `ACTION_SEND_MULTIPLE`). Fehlende Assets
+     * werden übersprungen statt den Share-Vorgang abzubrechen.
+     */
+    fun resolveShareableImageUris(context: Context, textContent: String): List<Uri> {
+        val assetStore = AssetStore(context)
+        return AssetReferences.extractAssetNames(textContent).mapNotNull { name ->
+            val file = assetStore.getAssetFile(name)
+            if (!file.exists()) return@mapNotNull null
+            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        }
     }
 }

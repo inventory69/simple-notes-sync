@@ -628,6 +628,9 @@
     <string name="md_toolbar_code">Code</string>
     <string name="md_toolbar_code_block">Code block</string>
     <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_image">Insert image</string>
+    <string name="image_attach_failed">Could not add image (not enough storage or unreadable file)</string>
+    <string name="markdown_image_missing">Image not available</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->

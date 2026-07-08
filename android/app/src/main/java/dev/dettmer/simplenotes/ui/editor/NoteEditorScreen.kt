@@ -2,6 +2,9 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ClipData
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -125,11 +128,13 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
+import dev.dettmer.simplenotes.ui.editor.components.insertImageMarkdown
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
@@ -254,6 +259,10 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
+
+    // 🆕 Bild-Attachments: Photo-Picker → ViewModel verarbeitet + speichert → Markdown einfügen
+    val isAttachingImage by viewModel.isAttachingImage.collectAsState()
+    val imagePickerLauncher = rememberImagePickerLauncher(viewModel, textFieldState, scope)
 
     // v2.0.0: Register content provider so saveOnBack() can read the latest
     // TextFieldState content directly — avoids snapshotFlow race condition
@@ -757,7 +766,13 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
                             if (isContentFocused) {
                                 MarkdownToolbar(
-                                    textFieldState = textFieldState
+                                    textFieldState = textFieldState,
+                                    onImageClick = {
+                                        imagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    isAttachingImage = isAttachingImage
                                 )
                             }
                         }
@@ -898,6 +913,26 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 copyToChecklistItemId = null
             }
         )
+    }
+}
+
+/**
+ * 🆕 Bild-Attachments: Photo-Picker-Launcher — ausgelagert, damit die Verzweigung
+ * (uri null-check, attachImage-Ergebnis) nicht in NoteEditorScreens Cyclomatic Complexity zählt.
+ */
+@Composable
+private fun rememberImagePickerLauncher(
+    viewModel: NoteEditorViewModel,
+    textFieldState: TextFieldState,
+    scope: CoroutineScope
+) = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.PickVisualMedia()
+) { uri ->
+    if (uri == null) return@rememberLauncherForActivityResult
+    scope.launch {
+        viewModel.attachImage(uri)?.let { assetName ->
+            insertImageMarkdown(textFieldState, assetName)
+        }
     }
 }
 

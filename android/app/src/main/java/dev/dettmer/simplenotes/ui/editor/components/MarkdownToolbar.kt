@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DataObject
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.InsertLink
 import androidx.compose.material.icons.filled.Title
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -48,7 +50,12 @@ private const val LINK_BRACKET_OFFSET = 3 // "](".length + accounts for indexing
  * Wraps selected text or inserts placeholder at cursor position.
  */
 @Composable
-fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifier) {
+fun MarkdownToolbar(
+    textFieldState: TextFieldState,
+    modifier: Modifier = Modifier,
+    onImageClick: () -> Unit = {},
+    isAttachingImage: Boolean = false
+) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
@@ -97,6 +104,18 @@ fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifie
                 contentDescription = stringResource(R.string.md_toolbar_link),
                 onClick = { insertLink(textFieldState) }
             )
+            if (isAttachingImage) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(TOOLBAR_ICON_SIZE.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                ToolbarButton(
+                    icon = Icons.Filled.AddPhotoAlternate,
+                    contentDescription = stringResource(R.string.md_toolbar_image),
+                    onClick = onImageClick
+                )
+            }
             ToolbarButton(
                 icon = Icons.AutoMirrored.Filled.FormatListBulleted,
                 contentDescription = stringResource(R.string.md_toolbar_list),
@@ -204,6 +223,20 @@ private fun insertLink(state: TextFieldState) {
             val urlStart = start + selectedText.length + LINK_BRACKET_OFFSET
             selection = TextRange(urlStart, urlStart + LINK_URL_PLACEHOLDER.length)
         }
+    }
+}
+
+/**
+ * Inserts a Markdown image link `![](.assets/<assetName>)` at the cursor, once the
+ * image has been processed and stored (called from the Screen after async attachImage()
+ * completes — Toolbar itself has no I/O access). Cursor lands between `![` and `]`,
+ * same spot as [insertLink], so the user can type alt text immediately.
+ */
+fun insertImageMarkdown(state: TextFieldState, assetName: String) {
+    state.edit {
+        val sel = selection
+        insert(sel.start, "![](.assets/$assetName)")
+        selection = TextRange(sel.start + 2)
     }
 }
 

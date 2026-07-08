@@ -58,6 +58,7 @@ import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.NoteShareHelper
 import dev.dettmer.simplenotes.utils.PdfExporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -366,12 +367,25 @@ class ComposeNoteEditorActivity : FragmentActivity() {
 
     /**
      * Opens the Android share sheet with the note as plain text.
+     * 🆕 Bild-Attachments: referenzierte Bilder werden als zusätzliche Streams mitgeteilt
+     * (ACTION_SEND_MULTIPLE) — ein `.assets/`-Link ist außerhalb der App nicht auflösbar.
      */
     private fun handleShareAsText(event: NoteEditorEvent.ShareAsText) {
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, event.title)
-            putExtra(Intent.EXTRA_TEXT, event.text)
+        val imageUris = NoteShareHelper.resolveShareableImageUris(this, event.text)
+        val shareIntent = if (imageUris.isEmpty()) {
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, event.title)
+                putExtra(Intent.EXTRA_TEXT, event.text)
+            }
+        } else {
+            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "image/*"
+                putExtra(Intent.EXTRA_SUBJECT, event.title)
+                putExtra(Intent.EXTRA_TEXT, event.text)
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(imageUris))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
         }
         try {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.share_chooser_title)))
