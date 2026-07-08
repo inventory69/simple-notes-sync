@@ -235,6 +235,10 @@ object Constants {
     // 🆕 v2.11.0: Neue Notiz — Cursor direkt im Inhalt statt im Titel starten.
     const val KEY_NEW_NOTE_FOCUS_CONTENT = "new_note_focus_content"
     const val DEFAULT_NEW_NOTE_FOCUS_CONTENT = false
+
+    // 🆕 Bild-Attachments: Kompressionsmodus für neu eingefügte Bilder (ImageCompressionMode.name).
+    const val KEY_IMAGE_COMPRESSION_MODE = "image_compression_mode"
+    const val DEFAULT_IMAGE_COMPRESSION_MODE = "COMPRESSED"
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed
