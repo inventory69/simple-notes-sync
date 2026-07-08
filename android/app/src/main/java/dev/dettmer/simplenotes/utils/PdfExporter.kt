@@ -1,8 +1,11 @@
 package dev.dettmer.simplenotes.utils
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.Html
@@ -17,6 +20,7 @@ import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
 import java.io.File
 import java.io.FileOutputStream
@@ -215,7 +219,7 @@ object PdfExporter {
 
             // Render body based on note type
             when (noteType) {
-                NoteType.TEXT -> renderTextNote(renderer, textContent)
+                NoteType.TEXT -> renderTextNote(renderer, textContent, context)
                 NoteType.CHECKLIST -> renderChecklistItems(
                     renderer,
                     NoteShareHelper.formatChecklistForPdf(checklistItems)
@@ -274,7 +278,7 @@ object PdfExporter {
         return spanned
     }
 
-    private fun renderTextNote(renderer: PageRenderer, content: String) {
+    private fun renderTextNote(renderer: PageRenderer, content: String, context: Context) {
         if (content.isBlank()) return
 
         for (block in MarkdownEngine.parse(content)) {
@@ -299,8 +303,29 @@ object PdfExporter {
                 is MarkdownBlock.CodeBlock -> renderCodeBlock(renderer, block.code)
 
                 MarkdownBlock.HorizontalRule -> renderHorizontalRule(renderer)
+
+                is MarkdownBlock.Image -> renderImageBlock(renderer, context, block)
             }
         }
+    }
+
+    /**
+     * Zeichnet ein Bild skaliert auf Seitenbreite (nie größer als die Original-Auflösung).
+     * Passt ein zu hohes Bild zusätzlich auf eine volle Seitenhöhe — keine Bild-Aufteilung
+     * über Seitengrenzen hinweg (v1-Vereinfachung, bei ≤1920px-Assets unkritisch).
+     * Fehlt die Asset-Datei, wird der Alt-Text als Platzhalterzeile gedruckt (analog Editor-Preview).
+     */
+    private fun renderImageBlock(renderer: PageRenderer, context: Context, image: MarkdownBlock.Image) {
+        val file = AssetStore(context).getAssetFile(image.assetName)
+        val bitmap = file.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) }
+        if (bitmap == null) {
+            val placeholder = image.altText.ifBlank { "[image]" }
+            renderer.drawWrappedText(toSpanned(placeholder), bodyPaint, TEXT_WIDTH)
+        } else {
+            renderer.drawBitmapFit(bitmap, TEXT_WIDTH, PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM)
+            bitmap.recycle()
+        }
+        renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
     }
 
     private fun headingPaint(level: Int): TextPaint = when (level) {
@@ -421,6 +446,24 @@ object PdfExporter {
         /** Draws a horizontal line across the text width at the current Y position. */
         fun drawHorizontalLine(paint: Paint) {
             canvas?.drawLine(MARGIN_HORIZONTAL, currentY, MARGIN_HORIZONTAL + TEXT_WIDTH, currentY, paint)
+        }
+
+        /**
+         * Draws [bitmap] scaled down (never up) to fit within [maxWidth] and [maxHeight],
+         * preserving aspect ratio. Advances the Y cursor by the drawn height.
+         */
+        fun drawBitmapFit(bitmap: Bitmap, maxWidth: Float, maxHeight: Float) {
+            val scale = minOf(maxWidth / bitmap.width, maxHeight / bitmap.height, 1f)
+            val destWidth = bitmap.width * scale
+            val destHeight = bitmap.height * scale
+            ensureSpace(destHeight)
+            canvas?.drawBitmap(
+                bitmap,
+                null,
+                RectF(MARGIN_HORIZONTAL, currentY, MARGIN_HORIZONTAL + destWidth, currentY + destHeight),
+                null
+            )
+            currentY += destHeight
         }
 
         /**
