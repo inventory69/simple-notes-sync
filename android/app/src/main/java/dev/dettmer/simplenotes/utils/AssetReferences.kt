@@ -15,4 +15,12 @@ object AssetReferences {
     /** Über alle Notizen inkl. Trash + Archiv — GC darf referenzierte Assets nie fälschlich löschen. */
     fun extractAllReferenced(notes: List<Note>): Set<String> =
         notes.flatMapTo(mutableSetOf()) { extractAssetNames(it.content) }
+
+    /**
+     * Entfernt Bild-Markdown-Tags aus [content] — für Share-Flows, die das Bild bereits als
+     * separaten Stream anhängen (`EXTRA_STREAM`); der rohe `![alt](.assets/name.jpg)`-Tag im
+     * Text wäre dort nur Duplikat/Rauschen.
+     */
+    fun stripImageTags(content: String): String =
+        content.replace(ASSET_LINK_REGEX, "").replace(Regex("""\n{3,}"""), "\n\n").trim()
 }

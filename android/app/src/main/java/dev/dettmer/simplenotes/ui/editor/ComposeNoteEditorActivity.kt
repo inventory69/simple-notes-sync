@@ -56,6 +56,7 @@ import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
@@ -372,17 +373,34 @@ class ComposeNoteEditorActivity : FragmentActivity() {
      */
     private fun handleShareAsText(event: NoteEditorEvent.ShareAsText) {
         val imageUris = NoteShareHelper.resolveShareableImageUris(this, event.text)
-        val shareIntent = if (imageUris.isEmpty()) {
-            Intent(Intent.ACTION_SEND).apply {
+        Logger.d(TAG, "handleShareAsText: textLength=${event.text.length}, imageUris=${imageUris.size}")
+        // Bilder gehen als eigener Stream raus — der rohe ![alt](.assets/...)-Tag im Text wäre
+        // sonst Duplikat (Bild + Tag-Text landen beide beim Empfänger).
+        val shareText = if (imageUris.isEmpty()) event.text else AssetReferences.stripImageTags(event.text)
+        val shareIntent = when (imageUris.size) {
+            0 -> Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_SUBJECT, event.title)
-                putExtra(Intent.EXTRA_TEXT, event.text)
+                putExtra(Intent.EXTRA_TEXT, shareText)
             }
-        } else {
-            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            // Singuläres ACTION_SEND mit einem EXTRA_STREAM + plain-String EXTRA_TEXT ist der
+            // Intent-Flow, den WhatsApp/Gmail/Signal für "Foto mit Bildunterschrift" tatsächlich
+            // lesen. ACTION_SEND_MULTIPLE ist für mehrere Streams gedacht; die meisten Empfänger
+            // ignorieren dort EXTRA_TEXT komplett.
+            1 -> Intent(Intent.ACTION_SEND).apply {
                 type = "image/*"
                 putExtra(Intent.EXTRA_SUBJECT, event.title)
-                putExtra(Intent.EXTRA_TEXT, event.text)
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                putExtra(Intent.EXTRA_STREAM, imageUris.first())
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            else -> Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "*/*"
+                putExtra(Intent.EXTRA_SUBJECT, event.title)
+                // ACTION_SEND_MULTIPLE erwartet EXTRA_TEXT als ArrayList<CharSequence> (parallel zu
+                // EXTRA_STREAM). Als plain String liest das Sharesheet es per
+                // getCharSequenceArrayListExtra() falsch, Cast schlägt fehl, Preview zeigt "Nur Bild".
+                putCharSequenceArrayListExtra(Intent.EXTRA_TEXT, arrayListOf<CharSequence>(shareText))
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(imageUris))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
