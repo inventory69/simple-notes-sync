@@ -1,14 +1,20 @@
 package dev.dettmer.simplenotes.widget
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -22,9 +28,19 @@ import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.stripInlineFormatting
+import dev.dettmer.simplenotes.storage.AssetStore
+import dev.dettmer.simplenotes.utils.Logger
+import java.io.File
 
+private const val TAG = "WidgetMarkdownContent"
 private const val WIDGET_MAX_MD_ITEMS = 50
 private const val CODE_BLOCK_MAX_LINES = 10
+
+/** Max. Anzahl Bilder pro Widget-Render — Bitmap-Speicher im Binder-Transaktions-Limit halten. */
+private const val WIDGET_MAX_IMAGES = 3
+
+/** Decode-Ziel für Widget-Bilder (Mini-Canvas): längste Seite max. 256px, RGB_565. */
+private const val WIDGET_IMAGE_MAX_DIM = 256
 
 private sealed interface WidgetRenderItem {
     data class Heading(val level: Int, val text: String) : WidgetRenderItem
@@ -37,16 +53,52 @@ private sealed interface WidgetRenderItem {
 
     data class CodeLine(val text: String) : WidgetRenderItem
 
+    data class Image(val bitmap: Bitmap, val altText: String) : WidgetRenderItem
+
     data object Divider : WidgetRenderItem
 
     data object BlockSpacer : WidgetRenderItem
 }
 
+/**
+ * Bounds-only Decode + `inSampleSize`-Loop auf max. [WIDGET_IMAGE_MAX_DIM]px, dann `RGB_565`
+ * (halber Speicher ggü. ARGB_8888 — Mini-Canvas braucht keinen Alphakanal). `null` bei
+ * fehlendem/kaputtem Asset — Aufrufer fällt auf den Alt-Text-Platzhalter zurück.
+ */
+private fun decodeWidgetBitmap(file: File): Bitmap? {
+    if (!file.exists()) return null
+    return try {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+        var sampleSize = 1
+        while (bounds.outWidth / (sampleSize * 2) >= WIDGET_IMAGE_MAX_DIM &&
+            bounds.outHeight / (sampleSize * 2) >= WIDGET_IMAGE_MAX_DIM
+        ) {
+            sampleSize *= 2
+        }
+
+        BitmapFactory.decodeFile(
+            file.path,
+            BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.RGB_565
+            }
+        )
+    } catch (e: OutOfMemoryError) {
+        Logger.w(TAG, "Widget image decode failed: ${e.message}")
+        null
+    }
+}
+
 private fun flattenToRenderItems(
     blocks: List<MarkdownBlock>,
-    maxItems: Int
+    maxItems: Int,
+    loadImage: (String) -> Bitmap? = { null }
 ): List<WidgetRenderItem> {
     val result = mutableListOf<WidgetRenderItem>()
+    var imagesUsed = 0
     blocks.forEachIndexed { blockIdx, block ->
         if (result.size >= maxItems) return result
         if (blockIdx > 0) result.add(WidgetRenderItem.BlockSpacer)
@@ -90,9 +142,16 @@ private fun flattenToRenderItems(
             MarkdownBlock.HorizontalRule -> {
                 result.add(WidgetRenderItem.Divider)
             }
-            // 🆕 Bild-Attachments v1: Widget rendert kein Bild, nur den Alt-Text (siehe Plan §Widget v2)
+            // 🆕 Bild-Attachments v2: bis zu WIDGET_MAX_IMAGES echte Bilder, Rest/Decode-Fail → Alt-Text.
+            // Ausrichtung/Größe werden im Widget ignoriert (Mini-Canvas).
             is MarkdownBlock.Image -> {
-                result.add(WidgetRenderItem.Paragraph("🖼 ${block.altText}".trim()))
+                val bitmap = if (imagesUsed < WIDGET_MAX_IMAGES) loadImage(block.assetName) else null
+                if (bitmap != null) {
+                    imagesUsed++
+                    result.add(WidgetRenderItem.Image(bitmap, block.altText))
+                } else {
+                    result.add(WidgetRenderItem.Paragraph("🖼 ${block.altText}".trim()))
+                }
             }
         }
     }
@@ -101,9 +160,13 @@ private fun flattenToRenderItems(
 
 @Composable
 internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
+    val context = LocalContext.current
     val renderItems = flattenToRenderItems(
         blocks = MarkdownEngine.parse(content),
-        maxItems = WIDGET_MAX_MD_ITEMS
+        maxItems = WIDGET_MAX_MD_ITEMS,
+        // provideContent läuft auf einem Glance-SessionWorker-Thread, nicht dem Main-Thread —
+        // synchrones Datei-IO hier ist sicher (Precedent: NoteWidget.kt).
+        loadImage = { AssetStore(context).getAssetFile(it).let(::decodeWidgetBitmap) }
     )
 
     LazyColumn(
@@ -206,6 +269,18 @@ internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
                         ),
                         maxLines = 1,
                         modifier = GlanceModifier.padding(start = 8.dp, bottom = 1.dp)
+                    )
+                }
+
+                is WidgetRenderItem.Image -> {
+                    Image(
+                        provider = ImageProvider(item.bitmap),
+                        contentDescription = item.altText,
+                        contentScale = ContentScale.Fit,
+                        modifier = GlanceModifier
+                            .fillMaxWidth()
+                            .height(110.dp)
+                            .padding(bottom = 4.dp)
                     )
                 }
 
