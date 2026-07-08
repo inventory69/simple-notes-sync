@@ -631,6 +631,27 @@
     <string name="md_toolbar_image">Insert image</string>
     <string name="image_attach_failed">Could not add image (not enough storage or unreadable file)</string>
     <string name="markdown_image_missing">Image not available</string>
+    <!-- 🆕 Image Attachments v2: long-press menu on block images -->
+    <string name="image_menu_align_left">Align left</string>
+    <string name="image_menu_align_center">Align center</string>
+    <string name="image_menu_align_right">Align right</string>
+    <string name="image_menu_align_inline">Inline with text</string>
+    <string name="image_menu_size_small">S</string>
+    <string name="image_menu_size_medium">M</string>
+    <string name="image_menu_size_large">L</string>
+    <string name="image_menu_size_full">XL</string>
+    <string name="image_menu_info">Image information</string>
+    <string name="image_menu_alt_text">Alt text</string>
+    <string name="image_info_title">Image information</string>
+    <string name="image_info_dimensions">Dimensions</string>
+    <string name="image_info_file_size">File size</string>
+    <string name="image_info_date_taken">Date taken</string>
+    <string name="image_info_camera">Camera</string>
+    <string name="image_info_iso">ISO</string>
+    <string name="image_info_exposure">Exposure time</string>
+    <string name="image_info_focal_length">Focal length</string>
+    <string name="image_info_location">Location</string>
+    <string name="image_info_close">Close</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->

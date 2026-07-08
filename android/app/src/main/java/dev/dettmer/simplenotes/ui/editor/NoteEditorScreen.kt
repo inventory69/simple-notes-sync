@@ -118,9 +118,11 @@ import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
+import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import dev.dettmer.simplenotes.markdown.computeImageRewrite
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
@@ -749,7 +751,14 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 blocks = blocks,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
+                                    .weight(1f),
+                                // 🆕 Bild-Attachments v2: Long-Press-Menü schreibt Größe/Ausrichtung
+                                // zurück in die Markdown-Source. Explizites updateContent ist
+                                // zwingend: die snapshotFlow-Bridge lebt in TextNoteContent (im
+                                // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
+                                onImageTokensChange = { image, size, align, altText ->
+                                    applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
+                                }
                             )
                         } else {
                             // Content Input for TEXT notes
@@ -934,6 +943,32 @@ private fun rememberImagePickerLauncher(
             insertImageMarkdown(textFieldState, assetName)
         }
     }
+}
+
+/**
+ * 🆕 Bild-Attachments v2: Schreibt eine Größe/Ausrichtung-Auswahl aus dem Long-Press-Menü
+ * zurück in die Markdown-Source. [computeImageRewrite] liefert `null` bei Asset-Mismatch/
+ * Out-of-range-Ordinal (Text hat sich geändert) — dann ist es ein stiller No-op.
+ */
+private fun applyImageTokenRewrite(
+    textFieldState: TextFieldState,
+    viewModel: NoteEditorViewModel,
+    image: MarkdownEngine.MarkdownBlock.Image,
+    sizePercent: Int,
+    align: ImageAlign,
+    altText: String
+) {
+    val rewrite = computeImageRewrite(
+        textFieldState.text.toString(),
+        image.ordinal,
+        image.assetName,
+        sizePercent,
+        align,
+        cleanAlt = altText
+    ) ?: return
+    val (range, replacement) = rewrite
+    textFieldState.edit { replace(range.first, range.last + 1, replacement) }
+    viewModel.updateContent(textFieldState.text.toString())
 }
 
 @OptIn(ExperimentalFoundationApi::class)
