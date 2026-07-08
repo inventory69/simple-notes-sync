@@ -33,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -324,22 +325,27 @@ private fun ImageBlock(image: MarkdownBlock.Image, onTap: () -> Unit, onLongPres
 
     // DisableSelection zwingend: Preview liegt in SelectionContainer, Long-Press würde sonst
     // Textselektion starten statt das Menü zu öffnen.
+    // key() erzwingt eine frische AsyncImage-Instanz (und damit einen neuen Coil-Request) bei
+    // Size-Änderung — Coil3s Input.equals() vergleicht sonst die SizeResolver-Instanz statt der
+    // aufgelösten Größe und redecoded nicht, das Bild wird nur pixelig hochskaliert.
     DisableSelection {
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = image.align.toBoxAlignment()) {
-            AsyncImage(
-                model = assetFile,
-                contentDescription = image.altText.ifBlank { null },
-                contentScale = ContentScale.Fit,
-                onError = { loadFailed = true },
-                // ponytail: Höhe wird deterministisch aus der Bounds-only-decodierten Aspect-Ratio
-                // abgeleitet statt aus coil3s (asynchron gelieferter, unter unbounded-height-
-                // verticalScroll gecachter) Intrinsic-Size — die wächst sonst bei Fraction-Änderung
-                // nicht mit. Falls extreme Panoramen mal stören, harte Obergrenze nachrüsten.
-                modifier = Modifier
-                    .fillMaxWidth(fraction)
-                    .aspectRatio(aspect)
-                    .combinedClickable(onClick = onTap, onLongClick = onLongPress)
-            )
+        key(image.assetName, image.sizePercent) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = image.align.toBoxAlignment()) {
+                AsyncImage(
+                    model = assetFile,
+                    contentDescription = image.altText.ifBlank { null },
+                    contentScale = ContentScale.Fit,
+                    onError = { loadFailed = true },
+                    // ponytail: Höhe wird deterministisch aus der Bounds-only-decodierten Aspect-Ratio
+                    // abgeleitet statt aus coil3s (asynchron gelieferter, unter unbounded-height-
+                    // verticalScroll gecachter) Intrinsic-Size — die wächst sonst bei Fraction-Änderung
+                    // nicht mit. Falls extreme Panoramen mal stören, harte Obergrenze nachrüsten.
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .aspectRatio(aspect)
+                        .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+                )
+            }
         }
     }
 }
@@ -613,29 +619,32 @@ private fun buildParagraphInlineContent(
                             placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
                         )
                     ) {
-                        AsyncImage(
-                            model = assetFile,
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .combinedClickable(
-                                    onClick = { onImageTap(assetName) },
-                                    onLongClick = onImageLongPress?.let {
-                                        {
-                                            it(
-                                                MarkdownBlock.Image(
-                                                    altText = cleanAlt,
-                                                    assetName = assetName,
-                                                    sizePercent = altInfo.sizePercent,
-                                                    align = ImageAlign.INLINE,
-                                                    ordinal = ordinal
+                        // key() erzwingt einen frischen Coil-Request bei Size-Änderung, s. ImageBlock.
+                        key(assetName, altInfo.sizePercent) {
+                            AsyncImage(
+                                model = assetFile,
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .combinedClickable(
+                                        onClick = { onImageTap(assetName) },
+                                        onLongClick = onImageLongPress?.let {
+                                            {
+                                                it(
+                                                    MarkdownBlock.Image(
+                                                        altText = cleanAlt,
+                                                        assetName = assetName,
+                                                        sizePercent = altInfo.sizePercent,
+                                                        align = ImageAlign.INLINE,
+                                                        ordinal = ordinal
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
-                                    }
-                                )
-                        )
+                                    )
+                            )
+                        }
                     }
                     // appendInlineContent wirft bei leerem Alt-Text — neu eingefügte Bilder haben
                     // leeren Alt (![](.assets/x)), daher Fallback-Platzhalter statt Crash.
