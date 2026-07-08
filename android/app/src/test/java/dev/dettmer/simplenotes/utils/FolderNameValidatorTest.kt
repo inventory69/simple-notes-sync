@@ -40,4 +40,9 @@ class FolderNameValidatorTest {
         assertNull(FolderNameValidator.sanitize("/"))
         assertNull(FolderNameValidator.sanitize(".."))
     }
+
+    @Test fun `sanitize rejects leading dot`() {
+        assertNull(FolderNameValidator.sanitize(".assets"))
+        assertNull(FolderNameValidator.sanitize(".hidden"))
+    }
 }

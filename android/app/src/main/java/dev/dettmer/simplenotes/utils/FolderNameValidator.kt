@@ -32,6 +32,9 @@ object FolderNameValidator {
             .filterNot { it in FORBIDDEN || it.code < MIN_PRINTABLE_CODE }
             .take(MAX_LENGTH)
             .trim()
-        return cleaned.takeIf { it.isNotEmpty() && it != "." && it != ".." }
+        // Bild-Attachments: lehnt führende Punkte ab — schützt vor Fremd-Clients, die
+        // (fälschlich) in-tree Dot-Ordner wie ".assets" anlegen; die würden sonst als
+        // normaler Notiz-Ordner registriert werden.
+        return cleaned.takeIf { it.isNotEmpty() && it != "." && it != ".." && !it.startsWith(".") }
     }
 }
