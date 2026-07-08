@@ -3,7 +3,6 @@ package dev.dettmer.simplenotes.images
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.webkit.MimeTypeMap
@@ -31,9 +30,6 @@ class ImageProcessor(private val context: Context) {
         private const val QUALITY_COMPRESSED = 80
         private const val QUALITY_LOSSLESS = 100
         private const val FALLBACK_EXT = "jpg"
-        private const val ROTATE_90 = 90f
-        private const val ROTATE_180 = 180f
-        private const val ROTATE_270 = 270f
     }
 
     suspend fun process(uri: Uri, mode: ImageCompressionMode): ProcessedImage = withContext(Dispatchers.IO) {
@@ -88,26 +84,7 @@ class ImageProcessor(private val context: Context) {
         val orientation = openStream(uri).use {
             ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
         }
-        val matrix = Matrix()
-        when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(ROTATE_90)
-            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(ROTATE_180)
-            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(ROTATE_270)
-            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
-            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
-            ExifInterface.ORIENTATION_TRANSPOSE -> {
-                matrix.postRotate(ROTATE_90)
-                matrix.postScale(-1f, 1f)
-            }
-            ExifInterface.ORIENTATION_TRANSVERSE -> {
-                matrix.postRotate(ROTATE_270)
-                matrix.postScale(-1f, 1f)
-            }
-            else -> return bitmap
-        }
-        val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-        if (rotated !== bitmap) bitmap.recycle()
-        return rotated
+        return applyExifOrientation(bitmap, orientation)
     }
 
     /** inSampleSize rastert nur in Zweierpotenzen — ein Rest-Downscale bringt exakt auf [maxDimension]. */
