@@ -566,6 +566,15 @@
     <!-- 🆕 v2.11.0: New-note cursor focus -->
     <string name="editor_new_note_focus_content_toggle">Start cursor in content</string>
     <string name="editor_new_note_focus_content_description">New notes focus the content field instead of the title. Checklists focus the first item.</string>
+    <!-- 🆕 Bild-Attachments: Image compression mode -->
+    <string name="settings_image_compression_title">Image compression</string>
+    <string name="settings_image_compression_info">Applies when you insert a new image into a note. Already-inserted images are not reprocessed.</string>
+    <string name="image_compression_mode_compressed">Compressed (recommended)</string>
+    <string name="image_compression_mode_compressed_subtitle">WebP, resized to max. 1920px. Smaller files; strips EXIF/GPS location data.</string>
+    <string name="image_compression_mode_lossless">Lossless</string>
+    <string name="image_compression_mode_lossless_subtitle">WebP without quality loss, resized to max. 1920px. Larger files; strips EXIF/GPS data.</string>
+    <string name="image_compression_mode_original">Original</string>
+    <string name="image_compression_mode_original_subtitle">Keeps the file as-is, unresized. Largest files; keeps EXIF/GPS location data.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
     <string name="theme_mode_system">System (follow device)</string>

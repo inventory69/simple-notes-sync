@@ -524,6 +524,15 @@
     <!-- 🆕 v2.11.0: Cursor-Start für neue Notizen -->
     <string name="editor_new_note_focus_content_toggle">Cursor im Inhalt starten</string>
     <string name="editor_new_note_focus_content_description">Neue Notizen fokussieren das Inhaltsfeld statt des Titels. Checklisten fokussieren den ersten Eintrag.</string>
+    <!-- 🆕 Bild-Attachments: Kompressionsmodus -->
+    <string name="settings_image_compression_title">Bildkompression</string>
+    <string name="settings_image_compression_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Bereits eingefügte Bilder werden nicht neu verarbeitet.</string>
+    <string name="image_compression_mode_compressed">Komprimiert (empfohlen)</string>
+    <string name="image_compression_mode_compressed_subtitle">WebP, auf max. 1920px verkleinert. Kleinere Dateien; entfernt EXIF-/GPS-Standortdaten.</string>
+    <string name="image_compression_mode_lossless">Verlustfrei</string>
+    <string name="image_compression_mode_lossless_subtitle">WebP ohne Qualitätsverlust, auf max. 1920px verkleinert. Größere Dateien; entfernt EXIF-/GPS-Daten.</string>
+    <string name="image_compression_mode_original">Original</string>
+    <string name="image_compression_mode_original_subtitle">Behält die Datei unverändert, ohne Verkleinerung. Größte Dateien; behält EXIF-/GPS-Standortdaten.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
     <string name="theme_mode_system">System (wie Gerät)</string>
