@@ -40,6 +40,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.readImageMetadata
+import dev.dettmer.simplenotes.images.shouldShowImageInfo
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,9 +54,9 @@ private val SIZE_PRESETS = listOf(
 
 /**
  * Modernes M3-Overlay bei Long-Press auf ein Block-Bild: Ausrichtung, Größen-Presets, bei
- * vorhandenem EXIF (praktisch nur ORIGINAL-Kompressionsmodus — Re-Encode strippt EXIF) ein
- * „i"-Button. Popup gibt Outside-Tap/Back-Dismiss gratis — kein Scrim, kein ModalBottomSheet
- * (existiert nirgends in der App).
+ * lesbarem Original-Qualität-Bild (nicht re-encodetes WebP) ein „i"-Button — unabhängig davon,
+ * ob EXIF-Tags vorhanden sind. Popup gibt Outside-Tap/Back-Dismiss gratis — kein Scrim, kein
+ * ModalBottomSheet (existiert nirgends in der App).
  */
 @Composable
 fun ImageActionsMenu(
@@ -67,10 +68,10 @@ fun ImageActionsMenu(
     onInfoClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // EXIF-Gate: I/O erst beim Öffnen des Menüs. Re-encodete WebP → kein "i"; ORIGINAL-jpg/png
-    // mit EXIF → "i" sichtbar.
-    val hasExif by produceState(false, assetFile) {
-        value = withContext(Dispatchers.IO) { readImageMetadata(assetFile)?.hasExif == true }
+    // I/O erst beim Öffnen des Menüs. Re-encodete WebP → kein "i"; jedes andere lesbare
+    // (Original-Qualität-)Bild → "i" sichtbar, auch ohne EXIF.
+    val showInfo by produceState(false, assetFile) {
+        value = withContext(Dispatchers.IO) { shouldShowImageInfo(readImageMetadata(assetFile), assetFile.extension) }
     }
     var altText by remember(currentAlt) { mutableStateOf(currentAlt) }
     // Größe/Ausrichtung committen sich selbst (Button ruft onSelect direkt auf). Alt-Text hat
@@ -118,7 +119,7 @@ fun ImageActionsMenu(
                     ) {
                         onSelect(currentSize, ImageAlign.INLINE, altText)
                     }
-                    if (hasExif) {
+                    if (showInfo) {
                         VerticalDivider(modifier = Modifier.padding(horizontal = 4.dp))
                         IconButton(onClick = {
                             onInfoClick()

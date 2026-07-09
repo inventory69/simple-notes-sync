@@ -20,17 +20,16 @@ data class ImageMetadata(
     val exposureTime: String? = null,
     val focalLengthMm: Double? = null,
     val gps: Pair<Double, Double>? = null
-) {
-    /** Re-encodete WebPs strippen EXIF beim Kompressions-Re-Encode → alle Felder `null`. */
-    val hasExif: Boolean
-        get() = dateTaken != null ||
-            cameraMake != null ||
-            cameraModel != null ||
-            iso != null ||
-            exposureTime != null ||
-            focalLengthMm != null ||
-            gps != null
-}
+)
+
+/**
+ * Info-Button nur für lesbare, nicht re-encodete (Original-Qualität) Bilder — EXIF-Felder sind
+ * dabei egal, [ImageInfoDialog][dev.dettmer.simplenotes.markdown.ImageInfoDialog] blendet fehlende
+ * Felder ohnehin einzeln aus. Re-encodete WebPs (Compressed/Lossless) strippen EXIF beim
+ * Re-Encode und bleiben deshalb über die Dateiendung ausgeschlossen.
+ */
+fun shouldShowImageInfo(metadata: ImageMetadata?, fileExtension: String): Boolean =
+    metadata != null && !fileExtension.equals("webp", ignoreCase = true)
 
 private const val FAST_SHUTTER_THRESHOLD_S = 1.0
 
