@@ -487,7 +487,7 @@
     <string name="calendar_experiment_preview_location">Ort</string>
     <string name="calendar_experiment_preview_description">Beschreibung</string>
     <string name="calendar_experiment_preview_attendees">Gäste (E-Mail)</string>
-    <string name="calendar_experiment_hint">Nur zum Ausprobieren, wird später durch die finale Lösung ersetzt.</string>
+    <string name="calendar_experiment_hint">Deine Auswahl wird gespeichert und sofort für den Kalender-Export verwendet.</string>
     <!-- 🔧 v1.10.1: Easter-Egg Entwickleroptionen -->
     <string name="developer_options_countdown">Noch %d Taps bis zu den Entwickleroptionen</string>
     <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>

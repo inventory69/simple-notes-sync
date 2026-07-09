@@ -523,7 +523,7 @@
     <string name="calendar_experiment_preview_location">Location</string>
     <string name="calendar_experiment_preview_description">Description</string>
     <string name="calendar_experiment_preview_attendees">Guests (email)</string>
-    <string name="calendar_experiment_hint">For experimentation only — will be replaced by the final solution once a strategy is chosen.</string>
+    <string name="calendar_experiment_hint">Your choice is saved and used for calendar export right away.</string>
 
     <!-- 🔧 v1.10.1: Easter-Egg Developer Options -->
     <string name="developer_options_countdown">%d taps to unlock developer options</string>

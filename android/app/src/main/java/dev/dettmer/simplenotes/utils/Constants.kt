@@ -235,6 +235,9 @@ object Constants {
     // 🆕 v2.11.0: Neue Notiz — Cursor direkt im Inhalt statt im Titel starten.
     const val KEY_NEW_NOTE_FOCUS_CONTENT = "new_note_focus_content"
     const val DEFAULT_NEW_NOTE_FOCUS_CONTENT = false
+
+    // 🆕 v2.12.0: Persistierte Kalender-Parsing-Strategie (Debug-Settings-Experiment).
+    const val KEY_CALENDAR_PARSING_STRATEGY = "calendar_parsing_strategy"
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed

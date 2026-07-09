@@ -1,11 +1,12 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import dev.dettmer.simplenotes.ui.editor.Strategy
+import dev.dettmer.simplenotes.ui.editor.computePreview
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
  * Tests the pure parsing strategies behind the calendar-parsing experiment screen.
- * `Strategy`/`Preview`/`computePreview` are internal (not private) exactly so this test can call them directly.
  */
 class CalendarParsingExperimentScreenTest {
     private val example = "Max Mustermann 0176 12345678 max.mustermann@example.com / Musterstr. 5 / " +

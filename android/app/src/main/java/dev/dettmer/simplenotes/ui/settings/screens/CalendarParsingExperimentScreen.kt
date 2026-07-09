@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
+import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,96 +20,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.ui.editor.Preview
+import dev.dettmer.simplenotes.ui.editor.Strategy
+import dev.dettmer.simplenotes.ui.editor.calendarParsingStrategy
+import dev.dettmer.simplenotes.ui.editor.computePreview
+import dev.dettmer.simplenotes.ui.editor.setCalendarParsingStrategy
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.utils.Constants
 
-// internal (not private): unit-tested directly from CalendarParsingExperimentScreenTest
-internal enum class Strategy { RAW, POSITIONAL, PHONE_REGEX, LABEL_PREFIX, PHONE_EMAIL_REGEX }
-
-internal data class Preview(val title: String, val location: String, val description: String, val attendees: String = "")
-
-private val PHONE_REGEX = Regex("""\b\d[\d\s/-]{5,}\d\b""")
-private val EMAIL_REGEX = Regex("""[\w.+-]+@[\w-]+\.[A-Za-z]{2,}""")
-
-private fun segments(text: String) = text.split("/").map { it.trim() }.filter { it.isNotBlank() }
-
-internal fun computePreview(text: String, strategy: Strategy): Preview = when (strategy) {
-    Strategy.RAW -> Preview(title = text, location = "", description = "")
-
-    Strategy.POSITIONAL -> {
-        val parts = segments(text)
-        Preview(
-            title = parts.getOrElse(0) { "" },
-            location = parts.getOrElse(1) { "" },
-            description = parts.drop(2).joinToString("\n")
-        )
-    }
-
-    Strategy.PHONE_REGEX -> {
-        val phone = PHONE_REGEX.find(text)?.value?.trim()
-        val cleaned = phone?.let { text.replace(it, "") } ?: text
-        val parts = segments(cleaned)
-        val descLines = parts.drop(2).let { if (phone != null) listOf("Tel: $phone") + it else it }
-        Preview(
-            title = parts.getOrElse(0) { "" },
-            location = parts.getOrElse(1) { "" },
-            description = descLines.joinToString("\n")
-        )
-    }
-
-    Strategy.LABEL_PREFIX -> {
-        var title = ""
-        var location = ""
-        var attendees = ""
-        val description = mutableListOf<String>()
-        segments(text).forEach { segment ->
-            val prefix = segment.substringBefore(':', missingDelimiterValue = "").lowercase()
-            val value = if (prefix.isNotEmpty()) segment.substringAfter(':').trim() else segment
-            when (prefix) {
-                "t", "tel", "telefon" -> description.add("Tel: $value")
-                "a", "adresse", "str" -> location = value
-                "n", "name", "titel" -> title = value
-                "e", "email", "gast" -> attendees = value
-                else -> description.add(segment)
-            }
-        }
-        Preview(title = title, location = location, description = description.joinToString("\n"), attendees = attendees)
-    }
-
-    Strategy.PHONE_EMAIL_REGEX -> {
-        val phone = PHONE_REGEX.find(text)?.value?.trim()
-        val email = EMAIL_REGEX.find(text)?.value?.trim()
-        var cleaned = text
-        phone?.let { cleaned = cleaned.replace(it, "") }
-        email?.let { cleaned = cleaned.replace(it, "") }
-        val parts = segments(cleaned)
-        val descLines = parts.drop(2).let { if (phone != null) listOf("Tel: $phone") + it else it }
-        Preview(
-            title = parts.getOrElse(0) { "" },
-            location = parts.getOrElse(1) { "" },
-            description = descLines.joinToString("\n"),
-            attendees = email ?: ""
-        )
-    }
-}
-
-/**
- * Wegwerf-Experiment für Kalender-Parsing-Strategien, siehe DEVELOPMENT_CONSTRAINTS.
- * Wird durch die finale Lösung ersetzt, sobald eine Strategie ausgewählt ist.
- */
 @Composable
 fun CalendarParsingExperimentScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE) }
     val exampleText = stringResource(R.string.calendar_experiment_input_placeholder)
     var inputText by remember { mutableStateOf(exampleText) }
-    var selectedStrategy by remember { mutableStateOf(Strategy.RAW) }
+    var selectedStrategy by remember { mutableStateOf(prefs.calendarParsingStrategy()) }
     val preview = remember(inputText, selectedStrategy) { computePreview(inputText, selectedStrategy) }
 
     SettingsScaffold(
@@ -166,7 +102,10 @@ fun CalendarParsingExperimentScreen(onBack: () -> Unit) {
                     )
                 ),
                 selectedValue = selectedStrategy,
-                onValueSelected = { selectedStrategy = it }
+                onValueSelected = {
+                    selectedStrategy = it
+                    prefs.setCalendarParsingStrategy(it)
+                }
             )
 
             SettingsDivider()
