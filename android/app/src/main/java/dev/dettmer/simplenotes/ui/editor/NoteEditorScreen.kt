@@ -2,6 +2,9 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ClipData
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -115,9 +118,11 @@ import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
+import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import dev.dettmer.simplenotes.markdown.computeImageRewrite
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
@@ -125,11 +130,13 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
+import dev.dettmer.simplenotes.ui.editor.components.insertImageMarkdown
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
@@ -254,6 +261,10 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
+
+    // 🆕 Bild-Attachments: Photo-Picker → ViewModel verarbeitet + speichert → Markdown einfügen
+    val isAttachingImage by viewModel.isAttachingImage.collectAsState()
+    val imagePickerLauncher = rememberImagePickerLauncher(viewModel, textFieldState, scope)
 
     // v2.0.0: Register content provider so saveOnBack() can read the latest
     // TextFieldState content directly — avoids snapshotFlow race condition
@@ -740,7 +751,14 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 blocks = blocks,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
+                                    .weight(1f),
+                                // 🆕 Bild-Attachments v2: Long-Press-Menü schreibt Größe/Ausrichtung
+                                // zurück in die Markdown-Source. Explizites updateContent ist
+                                // zwingend: die snapshotFlow-Bridge lebt in TextNoteContent (im
+                                // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
+                                onImageTokensChange = { image, size, align, altText ->
+                                    applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
+                                }
                             )
                         } else {
                             // Content Input for TEXT notes
@@ -757,7 +775,13 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
                             if (isContentFocused) {
                                 MarkdownToolbar(
-                                    textFieldState = textFieldState
+                                    textFieldState = textFieldState,
+                                    onImageClick = {
+                                        imagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    isAttachingImage = isAttachingImage
                                 )
                             }
                         }
@@ -899,6 +923,52 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
             }
         )
     }
+}
+
+/**
+ * 🆕 Bild-Attachments: Photo-Picker-Launcher — ausgelagert, damit die Verzweigung
+ * (uri null-check, attachImage-Ergebnis) nicht in NoteEditorScreens Cyclomatic Complexity zählt.
+ */
+@Composable
+private fun rememberImagePickerLauncher(
+    viewModel: NoteEditorViewModel,
+    textFieldState: TextFieldState,
+    scope: CoroutineScope
+) = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.PickVisualMedia()
+) { uri ->
+    if (uri == null) return@rememberLauncherForActivityResult
+    scope.launch {
+        viewModel.attachImage(uri)?.let { assetName ->
+            insertImageMarkdown(textFieldState, assetName)
+        }
+    }
+}
+
+/**
+ * 🆕 Bild-Attachments v2: Schreibt eine Größe/Ausrichtung-Auswahl aus dem Long-Press-Menü
+ * zurück in die Markdown-Source. [computeImageRewrite] liefert `null` bei Asset-Mismatch/
+ * Out-of-range-Ordinal (Text hat sich geändert) — dann ist es ein stiller No-op.
+ */
+private fun applyImageTokenRewrite(
+    textFieldState: TextFieldState,
+    viewModel: NoteEditorViewModel,
+    image: MarkdownEngine.MarkdownBlock.Image,
+    sizePercent: Int,
+    align: ImageAlign,
+    altText: String
+) {
+    val rewrite = computeImageRewrite(
+        textFieldState.text.toString(),
+        image.ordinal,
+        image.assetName,
+        sizePercent,
+        align,
+        cleanAlt = altText
+    ) ?: return
+    val (range, replacement) = rewrite
+    textFieldState.edit { replace(range.first, range.last + 1, replacement) }
+    viewModel.updateContent(textFieldState.text.toString())
 }
 
 @OptIn(ExperimentalFoundationApi::class)

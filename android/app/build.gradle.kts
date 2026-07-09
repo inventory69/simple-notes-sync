@@ -207,6 +207,10 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.lifecycle.process)
 
+    // 🆕 Bild-Attachments: EXIF-Orientation lesen, Coil für Markdown-Preview-Rendering
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.coil.compose)
+
     // Testing (bleiben so)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

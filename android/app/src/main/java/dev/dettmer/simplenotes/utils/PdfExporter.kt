@@ -1,10 +1,14 @@
 package dev.dettmer.simplenotes.utils
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.ColorSpace
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import android.os.Build
 import android.text.Html
 import android.text.SpannableString
 import android.text.Spanned
@@ -13,10 +17,17 @@ import android.text.TextPaint
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.TypefaceSpan
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
+import dev.dettmer.simplenotes.images.applyExifOrientation
+import dev.dettmer.simplenotes.images.readExifOrientation
+import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
+import dev.dettmer.simplenotes.markdown.parseImageAlt
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
 import java.io.File
 import java.io.FileOutputStream
@@ -103,6 +114,9 @@ object PdfExporter {
 
     /** Fraction of line height above the baseline used by a line's background panel. */
     private const val BACKGROUND_TOP_FRACTION = 0.75f
+
+    /** Upper bound on an embedded image's longest edge in pixels — ample for A4, caps file size. */
+    private const val IMAGE_MAX_LONG_EDGE_PX = 2000f
 
     // ═══════════════════════════════════════════════════════════════════════
     // Paint Objects (reused across pages)
@@ -215,7 +229,7 @@ object PdfExporter {
 
             // Render body based on note type
             when (noteType) {
-                NoteType.TEXT -> renderTextNote(renderer, textContent)
+                NoteType.TEXT -> renderTextNote(renderer, textContent, context)
                 NoteType.CHECKLIST -> renderChecklistItems(
                     renderer,
                     NoteShareHelper.formatChecklistForPdf(checklistItems)
@@ -274,7 +288,7 @@ object PdfExporter {
         return spanned
     }
 
-    private fun renderTextNote(renderer: PageRenderer, content: String) {
+    private fun renderTextNote(renderer: PageRenderer, content: String, context: Context) {
         if (content.isBlank()) return
 
         for (block in MarkdownEngine.parse(content)) {
@@ -285,10 +299,7 @@ object PdfExporter {
                     renderer.advanceY(HEADING_GAP)
                 }
 
-                is MarkdownBlock.Paragraph -> {
-                    renderer.drawWrappedText(toSpanned(block.text), bodyPaint, TEXT_WIDTH)
-                    renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
-                }
+                is MarkdownBlock.Paragraph -> renderParagraph(renderer, context, block.text)
 
                 is MarkdownBlock.TaskList -> {
                     renderChecklistItems(renderer, block.items.map { it.text to it.isChecked })
@@ -299,7 +310,117 @@ object PdfExporter {
                 is MarkdownBlock.CodeBlock -> renderCodeBlock(renderer, block.code)
 
                 MarkdownBlock.HorizontalRule -> renderHorizontalRule(renderer)
+
+                is MarkdownBlock.Image -> renderImageBlock(renderer, context, block)
             }
+        }
+    }
+
+    /**
+     * Zeichnet ein Bild skaliert auf [sizePercent] der Seitenbreite (nie größer als die
+     * Original-Auflösung), ausgerichtet per [align]. Passt ein zu hohes Bild zusätzlich auf
+     * eine volle Seitenhöhe — keine Bild-Aufteilung über Seitengrenzen hinweg (v1-Vereinfachung,
+     * bei ≤1920px-Assets unkritisch). Fehlt die Asset-Datei, wird der Alt-Text als
+     * Platzhalterzeile gedruckt (analog Editor-Preview).
+     */
+    private fun renderImage(
+        renderer: PageRenderer,
+        context: Context,
+        assetName: String,
+        altText: String,
+        align: ImageAlign,
+        sizePercent: Int
+    ) {
+        val file = AssetStore(context).getAssetFile(assetName)
+        val bitmap = file.takeIf { it.exists() }?.let { decodeOrientedSrgbBitmap(it) }
+        if (bitmap == null) {
+            val placeholder = altText.ifBlank { "[image]" }
+            renderer.drawWrappedText(toSpanned(placeholder), bodyPaint, TEXT_WIDTH)
+        } else {
+            val maxWidth = TEXT_WIDTH * sizePercent / 100f
+            Logger.d("PdfExporter", "renderImage: asset=$assetName src=${bitmap.width}x${bitmap.height} maxWidth=$maxWidth")
+            renderer.drawBitmapFit(bitmap, maxWidth, PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM, align)
+            // Kein recycle() hier: PdfDocument.Page zeichnet in eine deferred Picture-Recording-
+            // Canvas, die Pixel werden erst bei finishPage()/document.writeTo() tatsächlich
+            // konsumiert (weit nach diesem Aufruf) — frühes recycle() gibt den Pixel-Buffer frei,
+            // bevor die PDF-Seite ihn liest, und das äußert sich als Pixelierung.
+        }
+        renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+    }
+
+    private fun renderImageBlock(renderer: PageRenderer, context: Context, image: MarkdownBlock.Image) {
+        renderImage(renderer, context, image.assetName, image.altText, image.align, image.sizePercent)
+    }
+
+    /**
+     * `inPreferredColorSpace = SRGB` erzwingt einen 8-bit `ARGB_8888`-Decode auch für Fotos mit
+     * vollem ICC-Profil — ohne das decodiert Android manche JPEGs als Wide-Gamut `RGBA_F16`,
+     * was Skias PDF-Backend nicht als Image-XObject einbetten kann und stattdessen die ganze
+     * Seite auf 72dpi rastert (Pixelierung). EXIF-Rotation wird zusätzlich in die Pixel gebacken,
+     * da der rohe Decode sie ignoriert. Ultra-HDR-Fotos (Gain-Map) lösen denselben Skia-Fallback
+     * aus, obwohl ihre Basis-Pixel bereits sRGB sind — [flattenGainmap] entfernt die Gain-Map vor
+     * dem PDF-Export.
+     */
+    private fun decodeOrientedSrgbBitmap(file: File): Bitmap? {
+        val options = BitmapFactory.Options().apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
+            }
+        }
+        val decoded = BitmapFactory.decodeFile(file.path, options) ?: return null
+        val oriented = applyExifOrientation(decoded, readExifOrientation(file))
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && oriented.hasGainmap()) {
+            flattenGainmap(oriented)
+        } else {
+            oriented
+        }
+    }
+
+    /**
+     * Redraws [src] into a plain (gain-map-free) `ARGB_8888` bitmap. A software `Canvas` only
+     * ever paints the SDR base layer of a gain-map bitmap — the gain map only boosts brightness
+     * on HDR-capable surfaces — so this yields the correct SDR flatten at full source resolution,
+     * not Skia's 72dpi whole-page fallback.
+     *
+     * ponytail: costs one transient extra full-res ARGB buffer during export (one-shot, fine at
+     * note-photo sizes). Lighter alternative if that ever matters: `src.setGainmap(null)`.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun flattenGainmap(src: Bitmap): Bitmap {
+        val out = createBitmap(src.width, src.height)
+        Canvas(out).drawBitmap(src, 0f, 0f, null)
+        src.recycle()
+        return out
+    }
+
+    /**
+     * Enthält [text] keinen Bild-Link, identisch zu vorher. Sonst werden Inline-Bilder als
+     * eigene, zentrierte Block-Bilder zwischen den umgebrochenen Textsegmenten gedruckt — kein
+     * echtes Inline-Fließen im PDF (vorab genehmigte Vereinfachung), aber es gehen keine
+     * Bildinhalte verloren. Größen-Token werden bei Inline-Bildern überall ignoriert (Format-Spec).
+     */
+    private fun renderParagraph(renderer: PageRenderer, context: Context, text: String) {
+        if (!MarkdownEngine.IMAGE_REGEX.containsMatchIn(text)) {
+            renderer.drawWrappedText(toSpanned(text), bodyPaint, TEXT_WIDTH)
+            renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+            return
+        }
+
+        var pos = 0
+        for (match in MarkdownEngine.IMAGE_REGEX.findAll(text)) {
+            val segment = text.substring(pos, match.range.first)
+            if (segment.isNotBlank()) {
+                renderer.drawWrappedText(toSpanned(segment), bodyPaint, TEXT_WIDTH)
+                renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+            }
+            val cleanAlt = parseImageAlt(match.groupValues[1]).cleanAlt
+            renderImage(renderer, context, match.groupValues[2], cleanAlt, ImageAlign.CENTER, sizePercent = 100)
+            pos = match.range.last + 1
+        }
+        val tail = text.substring(pos)
+        if (tail.isNotBlank()) {
+            renderer.drawWrappedText(toSpanned(tail), bodyPaint, TEXT_WIDTH)
+            renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
         }
     }
 
@@ -421,6 +542,52 @@ object PdfExporter {
         /** Draws a horizontal line across the text width at the current Y position. */
         fun drawHorizontalLine(paint: Paint) {
             canvas?.drawLine(MARGIN_HORIZONTAL, currentY, MARGIN_HORIZONTAL + TEXT_WIDTH, currentY, paint)
+        }
+
+        /**
+         * Draws [bitmap] scaled down (never up) to fit within [maxWidth] and [maxHeight],
+         * preserving aspect ratio, horizontally positioned per [align] within the full text
+         * width. Advances the Y cursor by the drawn height.
+         */
+        fun drawBitmapFit(bitmap: Bitmap, maxWidth: Float, maxHeight: Float, align: ImageAlign = ImageAlign.CENTER) {
+            val scale = minOf(maxWidth / bitmap.width, maxHeight / bitmap.height, 1f)
+            val destWidth = bitmap.width * scale
+            val destHeight = bitmap.height * scale
+            ensureSpace(destHeight)
+            val x = when (align) {
+                ImageAlign.LEFT, ImageAlign.INLINE -> MARGIN_HORIZONTAL
+                ImageAlign.CENTER -> MARGIN_HORIZONTAL + (TEXT_WIDTH - destWidth) / 2f
+                ImageAlign.RIGHT -> MARGIN_HORIZONTAL + TEXT_WIDTH - destWidth
+            }
+            // canvas.drawBitmap(bitmap, srcRect, dstRectF, paint) treibt SkPDFDevice auf einen
+            // Fallback, der die ganze Seite zu einem 595x842-Rasterbild flattet, statt das Bild
+            // als natives XObject einzubetten — bestätigt per pdfimages -list (Width/Height blieb
+            // 595x842 selbst mit paint=null). Das einfache drawBitmap(bitmap, left, top, paint)
+            // ohne Rect/Matrix-Argument umgeht den Fallback; die Zielgröße kommt stattdessen aus
+            // der Canvas-eigenen CTM (translate+scale), die an anderer Stelle in dieser Klasse
+            // (Text, Linien) bereits verlustfrei funktioniert. Quelle wird zusätzlich auf
+            // IMAGE_MAX_LONG_EDGE_PX gecappt (nie über die Quellauflösung hinaus) — genug für
+            // scharfen 300-DPI-Druck, ohne die PDF-Datei unnötig aufzublähen.
+            val longEdgePx = maxOf(bitmap.width, bitmap.height).toFloat()
+            val precapScale = minOf(1f, IMAGE_MAX_LONG_EDGE_PX / longEdgePx)
+            val printBitmap = if (precapScale >= 1f) {
+                bitmap
+            } else {
+                bitmap.scale(
+                    (bitmap.width * precapScale).toInt().coerceAtLeast(1),
+                    (bitmap.height * precapScale).toInt().coerceAtLeast(1)
+                )
+            }
+            // printBitmap wird bewusst nicht recycled: gleiche Deferred-Rendering-Falle wie beim
+            // Quell-Bitmap (s. renderImage) — Pixel werden erst bei writeTo() konsumiert.
+            canvas?.let { c ->
+                c.save()
+                c.translate(x, currentY)
+                c.scale(destWidth / printBitmap.width, destHeight / printBitmap.height)
+                c.drawBitmap(printBitmap, 0f, 0f, null)
+                c.restore()
+            }
+            currentY += destHeight
         }
 
         /**

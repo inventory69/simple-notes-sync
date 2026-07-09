@@ -53,6 +53,9 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
     /** Tracks whether the notes-md/ directory has been verified this session. */
     var markdownDirEnsured: Boolean = false
 
+    /** 🆕 Bild-Attachments: Tracks whether the notes-assets/ directory has been verified this session. */
+    var assetsDirEnsured: Boolean = false
+
     /**
      * Returns the cached Sardine client or creates a new one.
      * Saves ~100ms per call by reusing the existing client.
@@ -109,6 +112,7 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
         sessionSardine = null
         notesDirEnsured = false
         markdownDirEnsured = false
+        assetsDirEnsured = false
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "🧹 Session caches cleared")
         }

@@ -5,6 +5,10 @@ import android.content.Context
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.core.content.edit
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.size.Precision
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.NetworkMonitor
@@ -20,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class SimpleNotesApplication : Application() {
+class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
     companion object {
         private const val TAG = "SimpleNotesApp"
     }
@@ -29,6 +33,11 @@ class SimpleNotesApplication : Application() {
 
     // Application-scoped coroutine scope for non-UI background work
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    // Precision.EXACT verhindert, dass ein klein gecachtes Bitmap (z.B. Inline-Vorschau) bei
+    // einem größeren Request (z.B. Block-Bild) hochskaliert statt neu dekodiert wird.
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context).precision(Precision.EXACT).build()
 
     /**
      * 🌍 v1.7.1: Apply app locale to Application Context

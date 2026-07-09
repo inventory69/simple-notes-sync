@@ -190,6 +190,11 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
         // (siehe unten) und braucht diese Instanz nicht mehr.
         private val prettyGson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
 
+        // Inverse von MarkdownSyncManager.rewriteAssetLinksForMdMirror: der MD-Mirror
+        // referenziert Bilder relativ (`../<sf>-assets/…`), die JSON-Konvention ist `.assets/…`.
+        // Ohne Rückwandlung matcht IMAGE_REGEX nicht und das Bild wird nicht gerendert.
+        private val MD_MIRROR_ASSET_REGEX = Regex("""\]\((?:\.\./)+[^)]*?-assets/""")
+
         /**
          * Parst JSON zu Note-Objekt mit Backward Compatibility für alte Notizen ohne noteType
          *
@@ -520,7 +525,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     }.toList().ifEmpty { null }
                     content = "" // Checklisten haben keinen "content"
                 } else {
-                    content = effectiveContent
+                    content = MD_MIRROR_ASSET_REGEX.replace(effectiveContent, "](.assets/")
                     checklistItems = null
                 }
 

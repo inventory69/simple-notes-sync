@@ -2,15 +2,20 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.images.ImageCompressionMode
+import dev.dettmer.simplenotes.images.ImageProcessor
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncScheduler
@@ -56,6 +61,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private val storage = NotesStorage(application)
     private val folderStore = FolderStore(application)
+    private val assetStore = AssetStore(application)
+    private val imageProcessor = ImageProcessor(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val initialFolderName: String? = savedStateHandle.get<String>(ARG_FOLDER)
 
@@ -91,6 +98,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private val _lastChecklistSortOption = MutableStateFlow(ChecklistSortOption.MANUAL)
     val lastChecklistSortOption: StateFlow<ChecklistSortOption> = _lastChecklistSortOption.asStateFlow()
 
+    // 🆕 Bild-Attachments: Verarbeitung läuft auf IO — Toolbar zeigt währenddessen einen Spinner
+    private val _isAttachingImage = MutableStateFlow(false)
+    val isAttachingImage: StateFlow<Boolean> = _isAttachingImage.asStateFlow()
+
     // ═══════════════════════════════════════════════════════════════════════
     // Events
     // ═══════════════════════════════════════════════════════════════════════
@@ -104,6 +115,28 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     fun emitSnackbar(message: String) {
         viewModelScope.launch {
             _showSnackbar.emit(message)
+        }
+    }
+
+    /**
+     * 🆕 Bild-Attachments: Verarbeitet ein per Photo-Picker gewähltes Bild (Kompression je
+     * nach Setting, EXIF-Rotation) und speichert es content-adressiert im AssetStore.
+     * Gibt den Asset-Dateinamen zurück, oder null bei Fehler (Snackbar wird intern emittiert).
+     * Läuft auf IO; [isAttachingImage] steuert den Toolbar-Spinner in der Zwischenzeit.
+     */
+    suspend fun attachImage(uri: Uri): String? {
+        _isAttachingImage.value = true
+        return try {
+            val mode = prefs.getString(Constants.KEY_IMAGE_COMPRESSION_MODE, Constants.DEFAULT_IMAGE_COMPRESSION_MODE)
+                .toEnumOrDefault(ImageCompressionMode.valueOf(Constants.DEFAULT_IMAGE_COMPRESSION_MODE))
+            val processed = imageProcessor.process(uri, mode)
+            assetStore.saveAsset(processed.bytes, processed.ext)
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to attach image", e)
+            emitSnackbar(getApplication<Application>().getString(R.string.image_attach_failed))
+            null
+        } finally {
+            _isAttachingImage.value = false
         }
     }
 

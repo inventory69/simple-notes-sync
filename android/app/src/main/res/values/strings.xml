@@ -588,6 +588,15 @@
     <!-- 🆕 v2.11.0: New-note cursor focus -->
     <string name="editor_new_note_focus_content_toggle">Start cursor in content</string>
     <string name="editor_new_note_focus_content_description">New notes focus the content field instead of the title. Checklists focus the first item.</string>
+    <!-- 🆕 Bild-Attachments: Image compression mode -->
+    <string name="settings_image_compression_title">Image compression</string>
+    <string name="settings_image_compression_info">Applies when you insert a new image into a note. Already-inserted images are not reprocessed.</string>
+    <string name="image_compression_mode_compressed">Compressed (recommended)</string>
+    <string name="image_compression_mode_compressed_subtitle">WebP, resized to max. 1920px. Smaller files; strips EXIF/GPS location data.</string>
+    <string name="image_compression_mode_lossless">Lossless</string>
+    <string name="image_compression_mode_lossless_subtitle">WebP without quality loss, resized to max. 1920px. Larger files; strips EXIF/GPS data.</string>
+    <string name="image_compression_mode_original">Original</string>
+    <string name="image_compression_mode_original_subtitle">Keeps the file as-is, unresized. Largest files; keeps EXIF/GPS location data.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
     <string name="theme_mode_system">System (follow device)</string>
@@ -641,6 +650,30 @@
     <string name="md_toolbar_code">Code</string>
     <string name="md_toolbar_code_block">Code block</string>
     <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_image">Insert image</string>
+    <string name="image_attach_failed">Could not add image (not enough storage or unreadable file)</string>
+    <string name="markdown_image_missing">Image not available</string>
+    <!-- 🆕 Image Attachments v2: long-press menu on block images -->
+    <string name="image_menu_align_left">Align left</string>
+    <string name="image_menu_align_center">Align center</string>
+    <string name="image_menu_align_right">Align right</string>
+    <string name="image_menu_align_inline">Inline with text</string>
+    <string name="image_menu_size_small">S</string>
+    <string name="image_menu_size_medium">M</string>
+    <string name="image_menu_size_large">L</string>
+    <string name="image_menu_size_full">XL</string>
+    <string name="image_menu_info">Image information</string>
+    <string name="image_menu_alt_text">Alt text</string>
+    <string name="image_info_title">Image information</string>
+    <string name="image_info_dimensions">Dimensions</string>
+    <string name="image_info_file_size">File size</string>
+    <string name="image_info_date_taken">Date taken</string>
+    <string name="image_info_camera">Camera</string>
+    <string name="image_info_iso">ISO</string>
+    <string name="image_info_exposure">Exposure time</string>
+    <string name="image_info_focal_length">Focal length</string>
+    <string name="image_info_location">Location</string>
+    <string name="image_info_close">Close</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
