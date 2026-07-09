@@ -1391,8 +1391,18 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
                 return@launch
             }
-            val calTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
-            _events.emit(NoteEditorEvent.OpenCalendar(title = calTitle, description = content))
+            val strategy = prefs.calendarParsingStrategy()
+            val preview = computePreview(content, strategy)
+            val calTitle = title.ifBlank { preview.title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) } }
+            val calDescription = if (strategy == Strategy.RAW) content else preview.description
+            _events.emit(
+                NoteEditorEvent.OpenCalendar(
+                    title = calTitle,
+                    description = calDescription,
+                    location = preview.location,
+                    attendees = preview.attendees
+                )
+            )
         }
     }
 
@@ -1401,9 +1411,22 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             val item = _checklistItems.value.find { it.id == itemId } ?: return@launch
             if (item.text.isBlank()) return@launch
             val noteTitle = _uiState.value.title.trim()
-            val calTitle = item.text.trim()
-            val description = if (noteTitle.isNotBlank()) "($noteTitle)" else ""
-            _events.emit(NoteEditorEvent.OpenCalendar(title = calTitle, description = description))
+            val strategy = prefs.calendarParsingStrategy()
+            val preview = computePreview(item.text.trim(), strategy)
+            val calTitle = preview.title.ifBlank { item.text.trim() }
+            val calDescription = if (strategy == Strategy.RAW) {
+                if (noteTitle.isNotBlank()) "($noteTitle)" else ""
+            } else {
+                preview.description
+            }
+            _events.emit(
+                NoteEditorEvent.OpenCalendar(
+                    title = calTitle,
+                    description = calDescription,
+                    location = preview.location,
+                    attendees = preview.attendees
+                )
+            )
         }
     }
 
@@ -1639,7 +1662,13 @@ sealed interface NoteEditorEvent {
     data class NoteArchiveToggleRequested(val noteId: String) : NoteEditorEvent
 
     // 🆕 v1.10.0-Papa: Calendar & Share events
-    data class OpenCalendar(val title: String, val description: String) : NoteEditorEvent
+    // 🆕 v2.12.0: location/attendees populated by the persisted calendar-parsing strategy.
+    data class OpenCalendar(
+        val title: String,
+        val description: String,
+        val location: String = "",
+        val attendees: String = ""
+    ) : NoteEditorEvent
 
     data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
 

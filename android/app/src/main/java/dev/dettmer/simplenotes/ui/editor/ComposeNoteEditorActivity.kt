@@ -355,6 +355,11 @@ class ComposeNoteEditorActivity : FragmentActivity() {
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginTime)
             putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime)
             putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+            if (event.location.isNotBlank()) putExtra(CalendarContract.Events.EVENT_LOCATION, event.location)
+            if (event.attendees.isNotBlank()) {
+                val emails = event.attendees.split(",", ";").map { it.trim() }.filter { it.isNotBlank() }
+                if (emails.isNotEmpty()) putExtra(Intent.EXTRA_EMAIL, ArrayList(emails))
+            }
         }
         try {
             startActivity(intent)
