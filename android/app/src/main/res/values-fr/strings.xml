@@ -1,3 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="action_settings">Paramètres</string>
+    <string name="action_close_selection">Fermer la sélection</string>
+    <string name="action_select_all">Tout sélectionner</string>
+    <string name="action_delete_selected">Supprimer la sélection</string>
+    <string name="action_toggle_pin">Basculer l\'épingle</string>
+    <string name="selection_count">%d sélectionné(s)</string>
+    <string name="section_pinned">Épinglé</string>
+    <string name="section_notes">Notes</string>
+    <string name="action_collapse_section">Réduire %1$s</string>
+    <string name="action_expand_section">Étendre %1$s</string>
+    <string name="action_move_section_up">Déplacer vers le haut</string>
+    <string name="action_move_section_down">Déplacer vers le bas</string>
+    <string name="section_reorder_hint">Astuce: Presser longuement le bouton flèche pour réarranger les sections</string>
+    <string name="empty_state_title">Pas encore de notes</string>
+    <string name="empty_state_message">Appuyez sur + pour créer une nouvelle note</string>
+    <string name="fab_new_note">Nouvelle Note</string>
+    <string name="fab_close">Fermer le menu</string>
+    <string name="fab_text_note">Note texte</string>
+    <string name="fab_checklist">Checklist</string>
+    <string name="untitled">Sans titre</string>
+    <string name="checklist_items_more">+%d de plus</string>
+    <string name="sync_status_completed">Sync terminée</string>
+    <string name="sync_status_error">Sync échouée</string>
+    <string name="sync_already_running">Sync déjà en cours</string>
+    <string name="sync_status_synced">Sync avec le serveur</string>
+    <string name="sync_status_pending">En attente de sync</string>
+    <string name="sync_status_conflict">Conflit de Sync détecté</string>
+    <string name="sync_status_local_only">Pas encore Sync</string>
+    <string name="sync_status_deleted_on_server">Effacée sur le serveur</string>
+    <string name="sync_legend_button">Aide sur le statut de Sync</string>
+    <string name="sync_legend_title">Icones de status de la Sync</string>
+    <string name="sync_legend_description">Chaque note affiche un petit icone qui indique son status de Sync :</string>
+    <string name="sync_legend_synced_label">Sync</string>
+    <string name="sync_legend_synced_desc">Cette note est à jour sur tout les appareils.</string>
+    <string name="sync_legend_pending_label">En attente</string>
+    <string name="sync_legend_pending_desc">Cette note dispose de changements en local et attend d\'être Sync.</string>
+    <string name="sync_legend_conflict_label">Conflit</string>
+    <string name="sync_legend_conflict_desc">Cette note a été modifiée sur plusieurs appareils simultanément. La dernière version a été conservée.</string>
+    <string name="sync_legend_local_only_label">Local seulement</string>
+    <string name="sync_legend_local_only_desc">Cette note reste uniquement sur cet appareil - soit elle n\'a pas encore été synchronisée, soit elle se trouve dans un dossier exclu de la synchronisation.</string>
+    <string name="sync_legend_trash_hint">Les notes supprimées - ainsi que celles retirées sur un autre appareil - sont déplacées vers la corbeille, où vous pouvez les restaurer pendant %1$d jours.</string>
+    <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Supprimée sur le serveur</string>
+    <string name="sync_legend_deleted_desc" tools:ignore="UnusedResources">Cette note a été supprimée sur un autre appareil ou directement sur le serveur. Elle existe toujours localement.</string>
+    <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d supprimée(s) sur le serveur</string>
+    <string name="sync_moved_to_trash_count">%d déplacée(s) vers la corbeille</string>
+    <string name="sync_deleted_from_server_count">%1$d supprimée(s) du serveur</string>
+    <string name="sync_trashed_from_server_count">%1$d dans la corbeille</string>
+    <string name="sync_phase_preparing">Synchronisation…</string>
+    <string name="sync_phase_uploading">Téléchargement…</string>
+    <string name="sync_phase_uploading_exporting_markdown">Téléchargement et exportation du Markdown…</string>
+    <string name="sync_phase_downloading">Téléchargement…</string>
+    <string name="sync_phase_deleting">Suppression du serveur…</string>
+    <string name="sync_quota_warning">⚠️ La synchronisation a été retardée par la gestion de l\'alimentation d\'Android. Ouvrez l\'application régulièrement ou désactivez l\'optimisation de la batterie pour une synchronisation en arrière-plan fiable.</string>
 </resources>
