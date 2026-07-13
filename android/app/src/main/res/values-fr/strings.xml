@@ -12,7 +12,7 @@
     <string name="action_expand_section">Développer %1$s</string>
     <string name="action_move_section_up">Déplacer vers le haut</string>
     <string name="action_move_section_down">Déplacer vers le bas</string>
-    <string name="section_reorder_hint">Astuce: Maintenez enfoncé le bouton fléché pour réorganiser les sections.</string>
+    <string name="section_reorder_hint">Astuce : Maintenez enfoncé l\'une des flèches à droite pour réorganiser les sections.</string>
     <string name="empty_state_title">Aucune note pour le moment</string>
     <string name="empty_state_message">Appuyez sur + pour créer une note</string>
     <string name="fab_new_note">Nouvelle note</string>
@@ -31,7 +31,7 @@
     <string name="sync_status_deleted_on_server">Supprimé sur le serveur</string>
     <string name="sync_legend_button">Aide statut synchro</string>
     <string name="sync_legend_title">Icônes de synchronisation</string>
-    <string name="sync_legend_description">Chaque note affiche une petite icône indiquant son statut de synchronisation:</string>
+    <string name="sync_legend_description">Chaque note affiche une petite icône indiquant son statut de synchronisation :</string>
     <string name="sync_legend_synced_label">Synchronisé</string>
     <string name="sync_legend_synced_desc">Cette note est à jour sur tous les appareils.</string>
     <string name="sync_legend_pending_label">En attente</string>
@@ -87,6 +87,7 @@
     <string name="snackbar_deleted_from_server">Supprimé du serveur</string>
     <plurals name="snackbar_notes_deleted_from_server">
         <item quantity="one">%d note supprimée du serveur</item>
+        <item quantity="many">%d notes supprimées du serveur</item>
         <item quantity="other">%d notes supprimées du serveur</item>
     </plurals>
     <string name="snackbar_notes_deleted_from_server_partial">%1$d note(s) sur %2$d supprimée(s) du serveur</string>
@@ -109,10 +110,12 @@
     <string name="trash_retention_hint_immediate">Les notes supprimées sont retirées définitivement juste après le délai d\'annulation.</string>
     <plurals name="days">
         <item quantity="one">%d jour</item>
+        <item quantity="many">%d jours</item>
         <item quantity="other">%d jours</item>
     </plurals>
     <plurals name="trash_days_left">
         <item quantity="one">Il reste %d jour</item>
+        <item quantity="many">Il reste %d jours</item>
         <item quantity="other">Il reste %d jours</item>
     </plurals>
     <string name="trash_restore_cd">Restaurer la note</string>
@@ -124,6 +127,7 @@
     <string name="trash_empty_confirm_title">Vider la corbeille ?</string>
     <plurals name="trash_empty_confirm_message">
         <item quantity="one">%d note sera définitivement supprimée. Cette action est irréversible.</item>
+        <item quantity="many">%d notes seront définitivement supprimées. Cette action est irréversible.</item>
         <item quantity="other">%d notes seront définitivement supprimées. Cette action est irréversible.</item>
     </plurals>
     <string name="trash_empty_confirm_server_hint">Les notes synchronisées seront également supprimées du serveur.</string>
@@ -131,10 +135,12 @@
     <string name="snackbar_note_deleted_permanently">\"%1$s\" supprimé définitivement</string>
     <plurals name="snackbar_notes_deleted_permanently">
         <item quantity="one">%d note supprimée définitivement</item>
+        <item quantity="many">%d notes supprimées définitivement</item>
         <item quantity="other">%d notes supprimées définitivement</item>
     </plurals>
     <plurals name="snackbar_notes_trashed">
         <item quantity="one">%d note déplacée vers la corbeille</item>
+        <item quantity="many">%d notes déplacées vers la corbeille</item>
         <item quantity="other">%d notes déplacées vers la corbeille</item>
     </plurals>
     <string name="snackbar_note_restored">Note restaurée</string>
@@ -147,10 +153,12 @@
     <string name="snackbar_note_unarchived">\"%s\" désarchivé</string>
     <plurals name="snackbar_notes_archived">
         <item quantity="one">%d note archivée</item>
+        <item quantity="many">%d notes archivées</item>
         <item quantity="other">%d notes archivées</item>
     </plurals>
     <plurals name="snackbar_notes_unarchived">
         <item quantity="one">%d note désarchivée</item>
+        <item quantity="many">%d notes désarchivées</item>
         <item quantity="other">%d notes désarchivées</item>
     </plurals>
     <string name="sync_error_ssl">Erreur SSL</string>
@@ -160,9 +168,9 @@
     <string name="sync_error_server">Erreur serveur</string>
     <string name="sync_error_http">Erreur HTTP : %d</string>
     <string name="sync_error_unknown">Erreur inconnue</string>
-    <string name="sync_error_mkcol_failed">Impossible de créer le dossier de synchronisation. Veuillez vérifier que votre URL WebDAV inclut le chemin complet (ex: /remote.php/dav/files/NOM_UTILISATEUR/).</string>
-    <string name="sync_error_not_webdav">L\'URL n\'est pas un point de terminaison WebDAV. Veuillez vérifier le chemin WebDAV complet (ex: /remote.php/dav/files/NOM_UTILISATEUR/).</string>
-    <string name="error_http_local_only">Le protocole HTTP est uniquement autorisé pour les serveurs locaux (ex: 192.168.x.x, 10.x.x.x, nas.local). Pour les serveurs publics, veuillez utiliser HTTPS.</string>
+    <string name="sync_error_mkcol_failed">Impossible de créer le dossier de synchronisation. Veuillez vérifier que votre URL WebDAV inclut le chemin complet (ex : /remote.php/dav/files/NOM_UTILISATEUR/).</string>
+    <string name="sync_error_not_webdav">L\'URL n\'est pas un point de terminaison WebDAV. Veuillez vérifier le chemin WebDAV complet (ex : /remote.php/dav/files/NOM_UTILISATEUR/).</string>
+    <string name="error_http_local_only">Le protocole HTTP est uniquement autorisé pour les serveurs locaux (ex : 192.168.x.x, 10.x.x.x, nas.local). Pour les serveurs publics, veuillez utiliser HTTPS.</string>
     <string name="error_invalid_protocol">Protocole invalide : %s. Veuillez utiliser HTTP ou HTTPS.</string>
     <string name="error_invalid_url">URL invalide : %s</string>
     <string name="error_server_not_configured">Serveur WebDAV non configuré</string>
@@ -236,13 +244,13 @@
     <string name="server_connection_type">Type de connexion</string>
     <string name="server_connection_http">🏠 Interne (HTTP)</string>
     <string name="server_connection_https">🌐 Externe (HTTPS)</string>
-    <string name="server_connection_http_hint">HTTP uniquement pour les réseaux locaux (ex: 192.168.x.x, 10.x.x.x)</string>
+    <string name="server_connection_http_hint">HTTP uniquement pour les réseaux locaux (ex : 192.168.x.x, 10.x.x.x)</string>
     <string name="server_connection_https_hint">HTTPS pour les connexions sécurisées sur Internet</string>
     <string name="server_address">Adresse du serveur</string>
-    <string name="server_address_hint">ex: http://192.168.0.188:8080/notes</string>
+    <string name="server_address_hint">ex : htt ://192.168.0.188 8080/notes</string>
     <string name="server_advanced_settings">Avancé</string>
     <string name="sync_folder_name">Dossier de synchro</string>
-    <string name="sync_folder_name_hint">Nom du dossier sur le serveur WebDAV (par défaut : notes). Cela affecte également le dossier Markdown (ex: notes → notes-md). Ne modifiez cela que si vous savez ce que vous faites.</string>
+    <string name="sync_folder_name_hint">Nom du dossier sur le serveur WebDAV (par défaut : notes). Cela affecte également le dossier Markdown (ex : notes → notes-md). Ne modifiez cela que si vous savez ce que vous faites.</string>
     <string name="folder_change_dialog_title">Changer de dossier de synchro ?</string>
     <string name="folder_change_dialog_message">Vous passez du dossier de synchronisation \"%1$s\" à \"%2$s\". Qu\'adviendra-t-il de vos notes actuelles ?</string>
     <string name="folder_change_dialog_data_loss_warning">Attention : %1$d note(s) n\'ont pas encore été envoyées. Si vous ne les emportez pas, elles seront perdues.</string>
@@ -389,10 +397,10 @@
     <string name="developer_options_already_unlocked">Les options de développement sont déjà déverrouillées</string>
     <string name="language_settings_title">Langue</string>
     <string name="language_system_default">Langue du système</string>
-    <string name="language_english">English</string>
-    <string name="language_german">Deutsch</string>
-    <string name="language_turkish">Türkçe</string>
-    <string name="language_ukrainian">Українська</string>
+    <string name="language_english">Anglais</string>
+    <string name="language_german">Allemand</string>
+    <string name="language_turkish">Turc</string>
+    <string name="language_ukrainian">Ukrainien</string>
     <string name="language_chinese_simplified">Chinois (Simplifié)</string>
     <string name="language_info">ℹ️ Choisissez votre langue préférée. L\'affichage s\'actualisera brièvement pour appliquer le changement.</string>
     <string name="display_settings_title">Affichage</string>
@@ -456,7 +464,7 @@
     <string name="filter_checklist_only">Listes</string>
     <string name="filter_color">Filtrer par couleur</string>
     <string name="filter_color_all">Toutes les couleurs</string>
-    <string name="filter_archive">Archive</string>
+    <string name="filter_archive">Archivé</string>
     <string name="search_notes_placeholder">Rechercher…</string>
     <string name="search_clear">Effacer la recherche</string>
     <string name="toggle_filter_row">Afficher/Masquer la barre de filtre</string>
@@ -554,15 +562,18 @@
     <string name="restore_replace_result">Toutes les notes ont été remplacées : %d importées</string>
     <string name="time_just_now">À l\'instant</string>
     <plurals name="time_minutes_ago">
-        <item quantity="one">Il y a %d min</item>
-        <item quantity="other">Il y a %d min</item>
+        <item quantity="one">Il y a %d minute</item>
+        <item quantity="many">Il y a %d minutes</item>
+        <item quantity="other">Il y a %d minutes</item>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">Il y a %d heure</item>
+        <item quantity="many">Il y a %d heures</item>
         <item quantity="other">Il y a %d heures</item>
     </plurals>
     <plurals name="time_days_ago">
         <item quantity="one">Il y a %d jour</item>
+        <item quantity="many">Il y a %d jours</item>
         <item quantity="other">Il y a %d jours</item>
     </plurals>
     <string name="notification_channel_name">Synchronisation des notes</string>
@@ -572,6 +583,7 @@
     <string name="notification_sync_success_title">Synchronisation réussie</string>
     <plurals name="notification_sync_success_message">
         <item quantity="one">%d note synchronisée</item>
+        <item quantity="many">%d notes synchronisées</item>
         <item quantity="other">%d notes synchronisées</item>
     </plurals>
     <string name="notification_sync_failed_title">Échec de la synchronisation</string>
@@ -580,6 +592,7 @@
     <string name="notification_sync_conflict_title">Conflit de synchronisation détecté</string>
     <plurals name="notification_sync_conflict_message">
         <item quantity="one">%d note présente des conflits</item>
+        <item quantity="many">%d notes présentent des conflits</item>
         <item quantity="other">%d notes présentent des conflits</item>
     </plurals>
     <string name="notification_sync_warning_title">⚠️ Avertissement de synchronisation</string>
@@ -638,6 +651,7 @@
     <string name="keep_import_result_button_close">Fermer</string>
     <plurals name="checked_items_count">
         <item quantity="one">%d terminée</item>
+        <item quantity="many">%d terminées</item>
         <item quantity="other">%d terminées</item>
     </plurals>
     <string name="sync_parallel_connections_title">Connexions parallèles</string>
@@ -720,6 +734,7 @@
     <string name="folder_delete_selected_title">Supprimer la sélection</string>
     <plurals name="snackbar_folders_deleted">
         <item quantity="one">%1$d dossier supprimé</item>
+        <item quantity="many">%1$d dossiers supprimés</item>
         <item quantity="other">%1$d dossiers supprimés</item>
     </plurals>
     <string name="folder_section_header">Dossiers</string>
