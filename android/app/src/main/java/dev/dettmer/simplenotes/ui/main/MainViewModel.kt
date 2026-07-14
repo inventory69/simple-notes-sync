@@ -208,10 +208,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val collapsedSections: StateFlow<Set<String>> = _collapsedSections.asStateFlow()
 
+    // 🆕 Per-Ordner-Einklappzustand: Root behält den alten globalen Key (Rückwärtskompatibilität),
+    // andere Ordner bekommen einen eigenen Key-Namespace — analog zu sortOptionKey.
+    private fun collapsedSectionsKey(folder: String?): String =
+        if (folder == null) Constants.KEY_COLLAPSED_SECTIONS else "${Constants.KEY_COLLAPSED_SECTIONS}::$folder"
+
+    // Synchroner Read der pro-Ordner gespeicherten Einklapp-Sections — analog sortSettingsFor,
+    // von MainScreen genutzt, um die verschwindende Pane nach IHREM eigenen Ordner zu rendern.
+    fun collapsedSectionsFor(folder: String?): Set<String> =
+        prefs.getStringSet(collapsedSectionsKey(folder), emptySet()) ?: emptySet()
+
+    private fun loadCollapsedFor(folder: String?) {
+        _collapsedSections.value = collapsedSectionsFor(folder)
+    }
+
     fun toggleSectionCollapsed(section: String) {
         val updated = _collapsedSections.value.let { if (section in it) it - section else it + section }
         _collapsedSections.value = updated
-        prefs.edit { putStringSet(Constants.KEY_COLLAPSED_SECTIONS, updated) }
+        prefs.edit { putStringSet(collapsedSectionsKey(_currentFolder.value), updated) }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -363,6 +377,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (show) {
             _currentFolder.value = null
             loadSortFor(null)
+            loadCollapsedFor(null)
         }
         clearSelection()
         Logger.d(TAG, "🗃️ Archive view: $show")
@@ -1547,6 +1562,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_currentFolder.value == oldName) {
                 _currentFolder.value = trimmed
                 loadSortFor(trimmed)
+                loadCollapsedFor(trimmed)
             }
             clearSelection()
             loadNotes(forceReload = true)
@@ -1618,6 +1634,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_currentFolder.value in folderNames) {
                 _currentFolder.value = null
                 loadSortFor(null)
+                loadCollapsedFor(null)
             }
             loadNotes()
 
@@ -1697,11 +1714,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun enterFolder(name: String) {
         _currentFolder.value = name
         loadSortFor(name)
+        loadCollapsedFor(name)
     }
 
     fun goToRoot() {
         _currentFolder.value = null
         loadSortFor(null)
+        loadCollapsedFor(null)
     }
 
     fun moveSelectedNotesTo(targetFolder: String?) {
@@ -1759,6 +1778,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_currentFolder.value == name) {
                 _currentFolder.value = null
                 loadSortFor(null)
+                loadCollapsedFor(null)
             }
             loadNotes(forceReload = true)
         }

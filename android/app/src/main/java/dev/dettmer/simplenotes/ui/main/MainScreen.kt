@@ -407,6 +407,13 @@ fun MainScreen(
                             val sorted = viewModel.sortNotes(list, option, direction)
                             sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
                         }
+                        // 🔧 Fix Flash aufgeklappter Sections: analog sortAndPinForFolder — aktiver Ordner
+                        // nutzt die reaktive StateFlow (Live-Toggle), jeder andere seinen eigenen
+                        // gespeicherten Zustand, damit die verschwindende Pane während der Animation
+                        // stabil bleibt.
+                        val collapsedSectionsForFolder: (String?) -> Set<String> = { folderKey ->
+                            if (folderKey == currentFolder) collapsedSections else viewModel.collapsedSectionsFor(folderKey)
+                        }
                         AnimatedContent(
                             targetState = currentFolder,
                             transitionSpec = { folderNavTransition(forward = targetState != null) },
@@ -432,7 +439,7 @@ fun MainScreen(
                                 gridAdaptiveScaling = gridAdaptiveScaling,
                                 gridManualColumns = gridManualColumns,
                                 notePreviewLength = notePreviewLength,
-                                collapsedSections = collapsedSections,
+                                collapsedSectionsForFolder = collapsedSectionsForFolder,
                                 sectionOrder = sectionOrder,
                                 scrollToTop = scrollToTop,
                                 syncScrollToTop = syncScrollToTop,
@@ -834,7 +841,7 @@ private fun NotesPane(
     gridAdaptiveScaling: Boolean,
     gridManualColumns: Int,
     notePreviewLength: NotePreviewLength,
-    collapsedSections: Set<String>, // 🆕 collapsible sections
+    collapsedSectionsForFolder: (String?) -> Set<String>, // 🔧 aktiver Ordner: reaktiv, sonst gespeicherter Satz
     sectionOrder: List<String>, // 🆕 section reordering
     scrollToTop: Boolean,
     syncScrollToTop: Boolean,
@@ -869,6 +876,11 @@ private fun NotesPane(
         val filtered = if (showArchived) notes else notes.filter { it.folderName == folderKey }
         sortAndPin(filtered, folderKey)
     }
+    // 🔧 Fix Flash aufgeklappter Sections: aktive Pane liest reaktiv (Live-Toggle), die
+    // verschwindende Pane hält ihren eigenen gespeicherten Zustand fest, unabhängig vom Ordner,
+    // der die reaktive StateFlow während der Animation bereits überschrieben hat.
+    val savedCollapsedSections = remember(folderKey) { collapsedSectionsForFolder(folderKey) }
+    val paneCollapsedSections = if (isActive) collapsedSectionsForFolder(folderKey) else savedCollapsedSections
 
     // Grid-Top-Settle-Guard: das Staggered-Grid scrollt beim ersten Laden spontan ein Item
     // nach unten (Foundation-Quirk mit FullLine-Items) → Pinned-Header verschwindet. Direkt
@@ -959,7 +971,7 @@ private fun NotesPane(
             onFolderClick = { if (isSelectionMode) onFolderSelectionToggle(it) else onEnterFolder(it) },
             onFolderLongPress = onFolderLongPress,
             onFolderSelectionToggle = onFolderSelectionToggle,
-            collapsedSections = collapsedSections,
+            collapsedSections = paneCollapsedSections,
             onToggleSection = onToggleSection,
             sectionOrder = sectionOrder,
             onMoveSection = onMoveSectionScrolled
@@ -990,7 +1002,7 @@ private fun NotesPane(
                 onStartSelection(note.id)
             },
             onNoteSelectionToggle = { note -> onToggleSelection(note.id) },
-            collapsedSections = collapsedSections,
+            collapsedSections = paneCollapsedSections,
             onToggleSection = onToggleSection,
             sectionOrder = sectionOrder,
             onMoveSection = onMoveSectionScrolled
