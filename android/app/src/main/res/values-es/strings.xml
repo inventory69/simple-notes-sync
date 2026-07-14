@@ -210,8 +210,8 @@
     <string name="server_timeout_label">Tiempo de espera de conexión agotado: %d segundos</string>
     <string name="server_status_offline_mode">📴 Modo sin conexión activado</string>
     <string name="server_offline_mode_title">📴 Modo sin conexión</string>
-    <string name="sync_section_triggers">Mecanicas de sincronización</string>
-    <string name="sync_wifi_only_hint">💡 La mecanica WiFi-Connect no es afectada por esta configuración – Siempre se sincroniza cuando el WiFi esta conectado.</string>
+    <string name="sync_section_triggers">Mecánicas de sincronización</string>
+    <string name="sync_wifi_only_hint">💡 La mecánica WiFi-Connect no es afectada por esta configuración – Siempre se sincroniza cuando el WiFi esta conectado.</string>
     <string name="sync_wifi_only_error">La sincronización solo se realiza cuando el WiFi esta conectado</string>
     <string name="sync_manual_hint">Sincronización manual también disponible (toolbar/pull-to-refresh).</string>
     <string name="markdown_settings_title">Integración con Markdown Desktop</string>
@@ -536,7 +536,7 @@
         <item quantity="other">%d notas movidas a la papelera</item>
     </plurals>
     <string name="snackbar_trash_emptied">Se vació la papelera</string>
-    <string name="backup_restore_info">ℹ️ Una copia de seguridad sera creada automáticamente antes de hacer una restauración.</string>
+    <string name="backup_restore_info">ℹ️ Una copia de seguridad será creada automáticamente antes de hacer una restauración.</string>
     <string name="debug_sync_debug_logging_subtitle">Registrar las mecanicas de sincronización y sus resultados para el diagnostico de problemas de sincronización en segundo plano.</string>
     <string name="debug_delete_logs_message">Todos los registros de sincronización guardados serán permanentemente eliminados.</string>
     <string name="debug_export_preparing">Preparando para exportar…</string>
