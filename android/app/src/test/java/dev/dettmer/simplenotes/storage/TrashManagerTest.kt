@@ -221,4 +221,25 @@ class TrashManagerTest {
         assertNull(storage.loadNote("t2"))
         assertTrue(storage.loadNote("active") != null)
     }
+
+    /**
+     * Regressions-Check für den Batch-Delete-Pfad ([NotesStorage.deleteNotes]): ein großer Batch
+     * muss **alle** getrashten Notizen in einem Durchgang löschen, keine übrig lassen. Bricht,
+     * sobald die Batch-Logik nur einen Teil verarbeitet (das ursprüngliche 6000→4000→2000-Symptom).
+     *
+     * Hinweis: der Tombstone-Inhalt (`deleted_notes.json`) wird hier bewusst NICHT geprüft —
+     * [DeletionTracker.toJson] nutzt `org.json`, das im reinen JVM-Unit-Test nicht verfügbar ist.
+     * Die O(n)-Batch-Tombstone-Semantik wird manuell auf dem Gerät verifiziert.
+     */
+    @Test fun `emptyTrash on large batch deletes every trashed note in one pass`() = runBlocking {
+        val ids = (1..500).map { "big-$it" }
+        ids.forEach { storage.saveNote(note(id = it, status = SyncStatus.SYNCED, trashedAt = 100L)) }
+        storage.saveNote(note(id = "active", trashedAt = null))
+
+        val count = manager().emptyTrash()
+
+        assertEquals(500, count)
+        assertTrue("all trashed notes gone", storage.loadTrashedNotes(forceReload = true).isEmpty())
+        assertTrue("active note untouched", storage.loadNote("active") != null)
+    }
 }

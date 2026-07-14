@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -89,7 +90,19 @@ fun TrashScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (isReady && notes.isEmpty()) {
+            if (!isReady) {
+                // 🔧 Noch am Laden: Spinner statt des Hint-only-Zwischenzustands. Verhindert den
+                // Flash beim Öffnen (leere Liste mit Hinweis → dann Items springen rein) und
+                // überbrückt bei vielen tausend Notizen sichtbar den Kaltscan.
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (notes.isEmpty()) {
                 EmptyState(Modifier.weight(1f))
             } else {
                 LazyColumn(

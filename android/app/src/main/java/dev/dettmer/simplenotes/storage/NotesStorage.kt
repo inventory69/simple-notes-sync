@@ -9,6 +9,7 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -185,23 +186,36 @@ class NotesStorage(private val context: Context) {
         deleted
     }
 
+    /**
+     * 🔧 Perf/Batch: Löscht mehrere Notizen in einem Durchgang. Statt pro Notiz die komplette
+     * Tombstone-Datei neu zu lesen+schreiben (O(n²) beim Leeren tausender Notizen), werden alle
+     * Dateien gelöscht und die Deletion-Tracker-Datei genau **einmal** aktualisiert.
+     *
+     * Läuft in [NonCancellable]: Datei-Löschung + Tombstone-Schreiben durchlaufen atomar, damit
+     * ein Abbruch (z.B. Zurück-Navigieren während des Löschens) keine gelöschten Dateien ohne
+     * Tombstone hinterlässt (→ Zombie-Notizen beim nächsten Sync).
+     *
+     * @return Anzahl der tatsächlich gelöschten Dateien.
+     */
+    suspend fun deleteNotes(ids: List<String>): Int = withContext(Dispatchers.IO + NonCancellable) {
+        if (ids.isEmpty()) return@withContext 0
+        val deletedIds = ids.filter { File(notesDir, "$it.json").delete() }
+        if (deletedIds.isNotEmpty()) {
+            invalidateCache()
+            trackDeletionsSafe(deletedIds, DeviceIdGenerator.getDeviceId(context))
+        }
+        Logger.d(TAG, "🗑️ Deleted ${deletedIds.size}/${ids.size} notes (batch)")
+        deletedIds.size
+    }
+
     suspend fun deleteAllNotes(): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val notes = notesDir.listFiles()
+            val ids = notesDir.listFiles()
                 ?.filter { it.extension == "json" }
-                ?.mapNotNull { Note.fromJson(it.readText()) }
+                ?.map { it.nameWithoutExtension }
                 .orEmpty()
-            val deviceId = DeviceIdGenerator.getDeviceId(context)
-
-            for (note in notes) {
-                val file = File(notesDir, "${note.id}.json")
-                if (file.delete()) {
-                    trackDeletionSafe(note.id, deviceId)
-                }
-            }
-
-            invalidateCache()
-            Logger.d(TAG, "🗑️ Deleted all notes (${notes.size} notes)")
+            val deleted = deleteNotes(ids)
+            Logger.d(TAG, "🗑️ Deleted all notes ($deleted notes)")
             true
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to delete all notes", e)
@@ -260,6 +274,20 @@ class NotesStorage(private val context: Context) {
             tracker.addDeletion(noteId, deviceId)
             saveDeletionTracker(tracker)
             Logger.d(TAG, "📝 Tracked deletion (mutex-protected): $noteId")
+        }
+    }
+
+    /**
+     * 🔧 Batch-Variante von [trackDeletionSafe]: trackt mehrere IDs unter **einem** Mutex-Lock mit
+     * genau **einem** Load/Save der Tombstone-Datei (statt N Read/Write-Zyklen).
+     */
+    suspend fun trackDeletionsSafe(ids: List<String>, deviceId: String) {
+        if (ids.isEmpty()) return
+        deletionTrackerMutex.withLock {
+            val tracker = loadDeletionTracker()
+            ids.forEach { tracker.addDeletion(it, deviceId) }
+            saveDeletionTracker(tracker)
+            Logger.d(TAG, "📝 Tracked ${ids.size} deletions (mutex-protected, batch)")
         }
     }
 

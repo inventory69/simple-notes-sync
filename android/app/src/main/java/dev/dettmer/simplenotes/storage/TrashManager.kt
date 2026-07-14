@@ -87,10 +87,8 @@ class TrashManager(
         if (deletions.isNotEmpty()) {
             pendingServerDeletions.add(deletions)
         }
-        notes.forEach { note ->
-            storage.deleteNote(note.id)
-            Logger.d(TAG, "🔥 Purged from trash: ${note.id} ('${note.title}')")
-        }
+        storage.deleteNotes(notes.map { it.id })
+        Logger.d(TAG, "🔥 Purged ${notes.size} note(s) from trash")
     }
 
     /**
