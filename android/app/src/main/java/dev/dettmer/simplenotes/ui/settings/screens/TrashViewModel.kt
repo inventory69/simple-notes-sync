@@ -60,13 +60,17 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
             // Auto-Purge abgelaufener Einträge beim Öffnen des Papierkorbs.
             val purged = trashManager.purgeExpired()
             if (purged > 0) syncScheduler.triggerOnSaveSync(reason = "trashAutoPurge")
-            reload()
+            // 🔧 Perf: purgeExpired() hat gerade alle Notizen frisch geladen (Cache gefüllt).
+            // Bei vielen tausend Notizen ist ein zweiter Kaltscan der dominante Öffnungs-Cost —
+            // deshalb hier den 2s-Cache nutzen (forceReload=false). Wurde etwas gepurged, hat
+            // deleteNotes() den Cache invalidiert → loadAllNotes liest ohnehin frisch von Platte.
+            reload(forceReload = false)
             withContext(Dispatchers.Main) { _isReady.value = true }
         }
     }
 
-    private suspend fun reload() {
-        val notes = storage.loadTrashedNotes(forceReload = true)
+    private suspend fun reload(forceReload: Boolean = true) {
+        val notes = storage.loadTrashedNotes(forceReload = forceReload)
             .sortedByDescending { it.trashedAt ?: 0L }
         withContext(Dispatchers.Main) { _trashedNotes.value = notes }
     }

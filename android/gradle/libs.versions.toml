@@ -10,7 +10,7 @@ material = "1.14.0"
 activity = "1.13.0"
 ktlint = "14.2.0"
 detekt = "1.23.8"
-composeBom = "2026.05.01"
+composeBom = "2026.06.01"
 navigationCompose = "2.9.7"
 lifecycleRuntimeCompose = "2.10.0"
 activityCompose = "1.13.0"
@@ -26,6 +26,8 @@ securityCrypto = "1.1.0"
 sardine = "0.8"
 glance = "1.1.1"
 biometric = "1.1.0"
+exifinterface = "1.4.2"
+coil = "3.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -65,6 +67,8 @@ androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidge
 androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleRuntimeCompose" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

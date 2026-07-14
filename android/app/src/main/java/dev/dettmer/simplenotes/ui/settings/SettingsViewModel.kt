@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.BackupManager
 import dev.dettmer.simplenotes.backup.RestoreMode
+import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -24,6 +25,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
+import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
@@ -450,6 +452,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val newNoteFocusContent: StateFlow<Boolean> = _newNoteFocusContent.asStateFlow()
 
+    // 🆕 Bild-Attachments: Kompressionsmodus für neu eingefügte Bilder
+    private val _imageCompressionMode = MutableStateFlow(readImageCompressionMode())
+    val imageCompressionMode: StateFlow<ImageCompressionMode> = _imageCompressionMode.asStateFlow()
+
+    // toEnumOrDefault() fängt einen hier noch unbekannten Enum-Wert ab (z. B. Backup
+    // von einer neueren App-Version) und fällt auf Default zurück statt zu crashen.
+    private fun readImageCompressionMode(): ImageCompressionMode =
+        prefs.getString(Constants.KEY_IMAGE_COMPRESSION_MODE, Constants.DEFAULT_IMAGE_COMPRESSION_MODE)
+            .toEnumOrDefault(ImageCompressionMode.valueOf(Constants.DEFAULT_IMAGE_COMPRESSION_MODE))
+
     // 🆕 v1.10.0: Configurable connection timeout
     private val _connectionTimeoutSeconds = MutableStateFlow(
         prefs.getInt(
@@ -608,6 +620,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setNewNoteFocusContent(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_NEW_NOTE_FOCUS_CONTENT, enabled) }
         _newNoteFocusContent.value = enabled
+    }
+
+    /** 🆕 Bild-Attachments: Kompressionsmodus für künftig eingefügte Bilder. */
+    fun setImageCompressionMode(mode: ImageCompressionMode) {
+        prefs.edit { putString(Constants.KEY_IMAGE_COMPRESSION_MODE, mode.name) }
+        _imageCompressionMode.value = mode
     }
 
     /**
@@ -1391,6 +1409,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ERRORS_ONLY, Constants.DEFAULT_NOTIFICATIONS_ERRORS_ONLY)
         _notificationsServerWarning.value =
             prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING)
+        _imageCompressionMode.value = readImageCompressionMode()
         Logger.d(TAG, "🔄 App settings reloaded from prefs after backup restore")
     }
 

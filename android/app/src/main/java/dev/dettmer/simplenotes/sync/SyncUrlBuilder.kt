@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.utils.Constants
 class SyncUrlBuilder(private val prefs: SharedPreferences) {
     companion object {
         internal const val MARKDOWN_SUFFIX = "-md"
+        internal const val ASSETS_SUFFIX = "-assets"
     }
 
     /**
@@ -84,6 +85,23 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
         if (folderName.isNullOrEmpty()) return base
         return base.trimEnd('/') + "/" + encodeSegment(folderName) + "/"
     }
+
+    /**
+     * 🆕 Bild-Attachments: Geschwister-Ordner `<syncFolder>-assets/` (flach), analog zu
+     * [getMarkdownUrl]. Bewusst NICHT `.assets/` im Notiz-Baum — jedes Unterverzeichnis
+     * dort würde von bereits ausgelieferten Clients (Subdir-Scan) als Notiz-Ordner gelesen.
+     */
+    fun getAssetsUrl(baseUrl: String): String {
+        val folderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+        val notesUrl = getNotesUrl(baseUrl)
+        val normalized = notesUrl.trimEnd('/')
+        return normalized.replace("/$folderName", "/$folderName$ASSETS_SUFFIX") + "/"
+    }
+
+    /** URL einer einzelnen Asset-Datei im Geschwister-Ordner (flach, keine Unterordner). */
+    fun getAssetUrl(baseUrl: String, assetName: String): String =
+        getAssetsUrl(baseUrl) + encodeSegment(assetName)
 
     private fun encodeSegment(segment: String): String =
         java.net.URLEncoder.encode(segment, "UTF-8").replace("+", "%20")

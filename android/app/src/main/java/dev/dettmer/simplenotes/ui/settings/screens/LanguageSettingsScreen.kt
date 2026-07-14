@@ -41,7 +41,9 @@ fun LanguageSettingsScreen(onBack: () -> Unit) {
 
     var selectedLanguage by remember(currentLanguageCode) { mutableStateOf(currentLanguageCode) }
 
-    // Language options
+    // Language options. Fallback-Picker fuer Android 12 und aelter - ab Android 13
+    // oeffnet SettingsMainScreen stattdessen den System-Picker aus locales_config.xml.
+    // Diese Liste muss synchron zu locales_config.xml gehalten werden.
     val languageOptions = listOf(
         RadioOption(
             value = "",
@@ -57,6 +59,36 @@ fun LanguageSettingsScreen(onBack: () -> Unit) {
             value = "de",
             title = stringResource(R.string.language_german),
             subtitle = "German"
+        ),
+        RadioOption(
+            value = "es",
+            title = stringResource(R.string.language_spanish),
+            subtitle = "Spanish"
+        ),
+        RadioOption(
+            value = "fr",
+            title = stringResource(R.string.language_french),
+            subtitle = "French"
+        ),
+        RadioOption(
+            value = "in",
+            title = stringResource(R.string.language_indonesian),
+            subtitle = "Indonesian"
+        ),
+        RadioOption(
+            value = "it",
+            title = stringResource(R.string.language_italian),
+            subtitle = "Italian"
+        ),
+        RadioOption(
+            value = "nb",
+            title = stringResource(R.string.language_norwegian),
+            subtitle = "Norwegian Bokmål"
+        ),
+        RadioOption(
+            value = "ru",
+            title = stringResource(R.string.language_russian),
+            subtitle = "Russian"
         ),
         RadioOption(
             value = "tr",

@@ -16,8 +16,14 @@ object MarkdownEngine {
         /** Heading (H1–H3). [level] is 1, 2, or 3. */
         data class Heading(val level: Int, val text: String) : MarkdownBlock()
 
-        /** Normal paragraph text (may contain inline formatting). */
-        data class Paragraph(val text: String) : MarkdownBlock()
+        /**
+         * Normal paragraph text (may contain inline formatting).
+         * [startOrdinal] ist der `IMAGE_REGEX.findAll(gesamter Text)`-Index des ERSTEN
+         * `|inline`-Bildes in [text] (falls vorhanden) — nachfolgende Inline-Bilder im selben
+         * Paragraph zählen von dort hoch. Ermöglicht [computeImageRewrite] für Inline-Bilder
+         * genau wie für Block-[Image]s.
+         */
+        data class Paragraph(val text: String, val startOrdinal: Int = 0) : MarkdownBlock()
 
         /** Unordered list. Each entry is one list item's raw text. */
         data class UnorderedList(val items: List<String>) : MarkdownBlock()
@@ -30,6 +36,21 @@ object MarkdownEngine {
 
         /** 🆕 v1.9.0: Task list (GitHub-style checkboxes: - [ ] / - [x]). */
         data class TaskList(val items: List<TaskItem>) : MarkdownBlock()
+
+        /**
+         * 🆕 Bild-Attachments. Text vor/nach dem Bild-Link auf derselben Zeile wird als
+         * eigener Paragraph abgetrennt, das Bild selbst immer als eigener Block gerendert.
+         * [altText] ist bereits CLEAN (Größe/Ausrichtung-Tokens gestrippt, siehe [parseImageAlt]).
+         * [ordinal] ist der Index dieses Links in `IMAGE_REGEX.findAll(gesamter Text)` — identifiziert
+         * den Link eindeutig für Rewrites via [computeImageRewrite], auch bei mehreren identischen Links.
+         */
+        data class Image(
+            val altText: String,
+            val assetName: String,
+            val sizePercent: Int = 50,
+            val align: ImageAlign = ImageAlign.CENTER,
+            val ordinal: Int = 0
+        ) : MarkdownBlock()
     }
 
     /** Einzelnes Task-List-Item mit Checked-Status und Text. */
@@ -40,16 +61,24 @@ object MarkdownEngine {
      */
     fun parse(text: String): List<MarkdownBlock> {
         val blocks = mutableListOf<MarkdownBlock>()
-        val lines = text.lines()
+        val lines = text.lines().toMutableList()
         var i = 0
+        // Index dieses Links in IMAGE_REGEX.findAll(gesamter Text) — jeder Branch, der Zeilen
+        // konsumiert, zählt seine eigenen Bild-Matches dazu, damit Image.ordinal exakt dem
+        // findAll-Index entspricht (auch für Links in Headings/Codeblöcken/Inline-Text).
+        var nextOrdinal = 0
 
         while (i < lines.size) {
             val line = lines[i]
             val headingMatch = HEADING_REGEX.matchEntire(line)
+            // Nur der erste NICHT-inline Bild-Link auf der Zeile wird block-level gerendert;
+            // Zeilen, deren Bilder alle |inline sind, fallen zu Paragraph/List durch.
+            val imageMatch = IMAGE_REGEX.findAll(line).firstOrNull { parseImageAlt(it.groupValues[1]).align != ImageAlign.INLINE }
 
             when {
                 // ── Fenced code block ──
                 line.trimStart().startsWith("```") -> {
+                    val startIdx = i
                     val language = line.trimStart().removePrefix("```").trim()
                     val codeLines = mutableListOf<String>()
                     i++
@@ -59,6 +88,7 @@ object MarkdownEngine {
                     }
                     blocks.add(MarkdownBlock.CodeBlock(codeLines.joinToString("\n"), language))
                     i++ // skip closing ```
+                    nextOrdinal += IMAGE_REGEX.findAll(lines.subList(startIdx, i.coerceAtMost(lines.size)).joinToString("\n")).count()
                 }
 
                 // ── Horizontal rule ──
@@ -72,7 +102,36 @@ object MarkdownEngine {
                     val level = headingMatch.groupValues[1].length.coerceAtMost(3)
                     val headingText = headingMatch.groupValues[2].trim()
                     blocks.add(MarkdownBlock.Heading(level, headingText))
+                    nextOrdinal += IMAGE_REGEX.findAll(line).count()
                     i++
+                }
+
+                // ── Bild (muss VOR UnorderedList geprüft werden) ──
+                // Text vor/nach dem Bild auf derselben Zeile (z.B. Autokorrektur-Tippfehler
+                // ohne eigene Zeile) wird abgetrennt statt das Bild zu verschlucken.
+                imageMatch != null -> {
+                    val prefix = line.substring(0, imageMatch.range.first).trimEnd()
+                    val suffix = line.substring(imageMatch.range.last + 1).trimStart()
+                    if (prefix.isNotBlank()) {
+                        blocks.add(MarkdownBlock.Paragraph(prefix, startOrdinal = nextOrdinal))
+                    }
+                    nextOrdinal += IMAGE_REGEX.findAll(line.substring(0, imageMatch.range.first)).count()
+                    val altInfo = parseImageAlt(imageMatch.groupValues[1])
+                    blocks.add(
+                        MarkdownBlock.Image(
+                            altText = altInfo.cleanAlt,
+                            assetName = imageMatch.groupValues[2],
+                            sizePercent = altInfo.sizePercent,
+                            align = altInfo.align,
+                            ordinal = nextOrdinal
+                        )
+                    )
+                    nextOrdinal++
+                    if (suffix.isNotBlank()) {
+                        lines[i] = suffix
+                    } else {
+                        i++
+                    }
                 }
 
                 // ── Task list (muss VOR UnorderedList geprüft werden) ──
@@ -86,6 +145,7 @@ object MarkdownEngine {
                                 isChecked = m.groupValues[1].lowercase() == "x"
                             )
                         )
+                        nextOrdinal += IMAGE_REGEX.findAll(lines[i]).count()
                         i++
                     }
                     blocks.add(MarkdownBlock.TaskList(taskItems))
@@ -97,6 +157,7 @@ object MarkdownEngine {
                     while (i < lines.size && LIST_ITEM_REGEX.matches(lines[i])) {
                         val itemText = LIST_ITEM_REGEX.find(lines[i])?.groupValues?.get(1)?.trim().orEmpty()
                         items.add(itemText)
+                        nextOrdinal += IMAGE_REGEX.findAll(lines[i]).count()
                         i++
                     }
                     blocks.add(MarkdownBlock.UnorderedList(items))
@@ -113,7 +174,9 @@ object MarkdownEngine {
                         i++
                     }
                     if (paraLines.isNotEmpty()) {
-                        blocks.add(MarkdownBlock.Paragraph(paraLines.joinToString("\n")))
+                        val paraText = paraLines.joinToString("\n")
+                        blocks.add(MarkdownBlock.Paragraph(paraText, startOrdinal = nextOrdinal))
+                        nextOrdinal += IMAGE_REGEX.findAll(paraText).count()
                     }
                 }
             }
@@ -130,12 +193,14 @@ object MarkdownEngine {
         if (HEADING_REGEX.matchEntire(line) != null) return false
         if (TASK_LIST_REGEX.matches(line)) return false
         if (LIST_ITEM_REGEX.matches(line)) return false
+        if (IMAGE_REGEX.findAll(line).any { parseImageAlt(it.groupValues[1]).align != ImageAlign.INLINE }) return false
         return true
     }
 
     private val HEADING_REGEX = Regex("""^(#{1,3})\s+(.+)$""")
     private val LIST_ITEM_REGEX = Regex("""^\s*[-*+]\s+(.+)$""")
     private val TASK_LIST_REGEX = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
+    internal val IMAGE_REGEX = Regex("""!\[([^\]]*)]\(\.assets/([A-Za-z0-9][A-Za-z0-9._-]*)\)""")
     private const val HORIZONTAL_RULE_MIN_CHARS = 3
 
     private fun isHorizontalRule(line: String): Boolean {

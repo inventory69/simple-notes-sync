@@ -8,6 +8,66 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.12.0] - 2026-07-14
+
+### ✨ Neue Funktionen
+
+**Bildanhänge in Notizen** ([1f88777](https://github.com/inventory69/simple-notes-sync/commit/1f88777), [c67725a](https://github.com/inventory69/simple-notes-sync/commit/c67725a), [c7ce100](https://github.com/inventory69/simple-notes-sync/commit/c7ce100))
+- Bilder über die Auswahl einfügen oder direkt aus der Zwischenablage einsetzen; sie werden inline im Editor und in der Vorschau dargestellt, gestützt auf einen inhaltsadressierten Asset-Store mit Komprimierungs-Pipeline
+
+**Bildgröße, Ausrichtung & Viewer** ([b91b522](https://github.com/inventory69/simple-notes-sync/commit/b91b522), [9a02592](https://github.com/inventory69/simple-notes-sync/commit/9a02592))
+- Bilder per Menü skalieren und ausrichten, im Vollbild öffnen und EXIF-Metadaten in einem Info-Dialog einsehen; Größe und Ausrichtung werden als Markdown-Tokens gespeichert
+
+**Bild-Synchronisation über WebDAV** ([7461ddb](https://github.com/inventory69/simple-notes-sync/commit/7461ddb), [927d06b](https://github.com/inventory69/simple-notes-sync/commit/927d06b))
+- Bild-Assets werden zusammen mit den Notizen synchronisiert, verwaiste Dateien per Garbage Collection entfernt, und Asset-Links zwischen JSON- und Markdown-Mirror-Format übersetzt
+
+**Bilder überall sonst** ([3672f53](https://github.com/inventory69/simple-notes-sync/commit/3672f53), [a839e2a](https://github.com/inventory69/simple-notes-sync/commit/a839e2a), [f8186d9](https://github.com/inventory69/simple-notes-sync/commit/f8186d9), [d528001](https://github.com/inventory69/simple-notes-sync/commit/d528001))
+- Der PDF-Export rendert Anhänge unter Beachtung von Größen- und Ausrichtungs-Tokens, Widgets zeigen echte Bitmaps, und Backups enthalten die Anhänge
+
+**Einstellung zur Bildkomprimierung** ([f36877d](https://github.com/inventory69/simple-notes-sync/commit/f36877d))
+- Wählbar, wie stark eingefügte Bilder komprimiert werden
+
+**Vorschaumodus als Standard** ([af1e1c3](https://github.com/inventory69/simple-notes-sync/commit/af1e1c3))
+- Textnotizen können direkt in der Vorschau statt im Editor geöffnet werden
+
+**Strategien für Kalender-Parsing** ([c27db7f](https://github.com/inventory69/simple-notes-sync/commit/c27db7f), [c3fb84d](https://github.com/inventory69/simple-notes-sync/commit/c3fb84d), [5348771](https://github.com/inventory69/simple-notes-sync/commit/5348771))
+- Der Kalender-Export nutzt den geparsten Titel, Ort und die Teilnehmer, und die im Experiment-Screen gewählte Parsing-Strategie bleibt erhalten
+
+**Bilder nativ teilen** ([9f0b1cd](https://github.com/inventory69/simple-notes-sync/commit/9f0b1cd))
+- Beim Teilen einer Notiz werden Bilder als native Anhänge mitgegeben statt als Rohtext
+
+### ⚡ Performance
+
+**Schnellerer Papierkorb** ([4afa86a](https://github.com/inventory69/simple-notes-sync/commit/4afa86a))
+- Das Löschen im Papierkorb läuft gebündelt, und der Papierkorb öffnet spürbar schneller
+
+### 🐛 Bug-Fixes
+
+**EXIF-Rotation & Seitenverhältnis** ([41a9149](https://github.com/inventory69/simple-notes-sync/commit/41a9149), [d126a6f](https://github.com/inventory69/simple-notes-sync/commit/d126a6f), [9aa8927](https://github.com/inventory69/simple-notes-sync/commit/9aa8927))
+- PDF-Export und Vorschau beachten die EXIF-Ausrichtung, behalten bei gedrehten Bildern das korrekte Seitenverhältnis und laden Bilder nach einer Größenänderung neu
+
+**Editor-Feinschliff** ([1a5b0ca](https://github.com/inventory69/simple-notes-sync/commit/1a5b0ca), [30c2ebd](https://github.com/inventory69/simple-notes-sync/commit/30c2ebd), [4a0c561](https://github.com/inventory69/simple-notes-sync/commit/4a0c561))
+- Der Cursor landet hinter eingefügtem Link- und Bild-Markdown, der Bild-Info-Button erscheint auch ohne EXIF-Daten, und eingeklappte Bereiche werden pro Ordner gemerkt
+
+**Spanische Akzente** ([eeb847e](https://github.com/inventory69/simple-notes-sync/commit/eeb847e))
+- Akzente in den spanischen Sync- und Backup-Strings korrigiert
+
+**Sprachauswahl** ([d3fc8dd](https://github.com/inventory69/simple-notes-sync/commit/d3fc8dd))
+- Französisch war vollständig übersetzt, aber nie registriert und tauchte deshalb nie als Auswahl auf; im In-App-Picker für Android 12 und älter fehlten zudem Spanisch, Italienisch, Indonesisch, Norwegisch und Russisch
+
+### 🌍 Übersetzungen
+
+- **Französisch** (93%): Fred, [@carotte31](https://github.com/carotte31)
+- **Italienisch** (93%): GVE
+- **Chinesisch (vereinfacht)** (93%): [@heretic43](https://github.com/heretic43)
+- **Estnisch** (2%): Priit Jõerüüt
+
+**Französisch ist jetzt auswählbar** - es war übersetzt, aber nie in der Sprachauswahl registriert.
+
+**Hindi (5%) und Estnisch (2%) werden noch nicht ausgeliefert.** Eine Sprache wird erst ab 40% Übersetzungsgrad mitgeliefert und in der Auswahl angeboten; darunter wäre die Oberfläche ohnehin fast komplett englisch. Beide bleiben in Weblate und kommen mit, sobald sie die Schwelle reißen - Mithilfe willkommen.
+
+---
+
 ## [2.11.0] - 2026-07-06
 
 ### ✨ Neue Funktionen

@@ -4,4 +4,6 @@
     <files-path name="logs" path="." />
     <!-- 🆕 v1.10.0-Papa: Cache directory for shared PDF files -->
     <cache-path name="shared_pdfs" path="shared_pdfs/" />
+    <!-- 🆕 Bild-Attachments: dedicated entry for sharing note images (ACTION_SEND_MULTIPLE) -->
+    <files-path name="assets" path="assets/" />
 </paths>

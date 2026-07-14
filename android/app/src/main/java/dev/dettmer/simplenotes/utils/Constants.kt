@@ -103,8 +103,9 @@ object Constants {
     const val DEFAULT_AUTOSAVE_ENABLED = true
 
     // 🆕 v2.8.0: Default open mode for existing text notes
+    // 🔄 v2.12.0: Default auf true (Vorschau) — Beta-Feedback: Lesen ist der häufigere Einstieg
     const val KEY_DEFAULT_START_IN_PREVIEW_MODE = "default_start_in_preview_mode"
-    const val DEFAULT_START_IN_PREVIEW_MODE = false
+    const val DEFAULT_START_IN_PREVIEW_MODE = true
     const val AUTOSAVE_DEBOUNCE_MS = 3_000L // 3 seconds after last edit
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400 // fade animation duration (ms)
@@ -235,6 +236,13 @@ object Constants {
     // 🆕 v2.11.0: Neue Notiz — Cursor direkt im Inhalt statt im Titel starten.
     const val KEY_NEW_NOTE_FOCUS_CONTENT = "new_note_focus_content"
     const val DEFAULT_NEW_NOTE_FOCUS_CONTENT = false
+
+    // 🆕 v2.12.0: Persistierte Kalender-Parsing-Strategie (Debug-Settings-Experiment).
+    const val KEY_CALENDAR_PARSING_STRATEGY = "calendar_parsing_strategy"
+
+    // 🆕 Bild-Attachments: Kompressionsmodus für neu eingefügte Bilder (ImageCompressionMode.name).
+    const val KEY_IMAGE_COMPRESSION_MODE = "image_compression_mode"
+    const val DEFAULT_IMAGE_COMPRESSION_MODE = "COMPRESSED"
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed

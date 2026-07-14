@@ -472,6 +472,30 @@ Second line.
     }
 
     @Test
+    fun `fromMarkdown normalizes mirror asset paths back to dot-assets`() {
+        val md = """
+---
+id: md-note-assets
+created: 2024-01-15T10:00:00Z
+updated: 2024-06-20T14:00:00Z
+device: android-xyz
+type: text
+---
+
+# Note with images
+
+![alt](../notes-assets/foo.png)
+![alt2](../../notes-assets/bar.png)
+        """.trimIndent()
+
+        val note = Note.fromMarkdown(md)
+        assertNotNull(note)
+        assertTrue(note!!.content.contains("![alt](.assets/foo.png)"))
+        assertTrue(note.content.contains("![alt2](.assets/bar.png)"))
+        assertFalse(note.content.contains("notes-assets"))
+    }
+
+    @Test
     fun `fromMarkdown parses checklist note correctly`() {
         val md = """
 ---

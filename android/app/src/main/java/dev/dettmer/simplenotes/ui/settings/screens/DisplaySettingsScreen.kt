@@ -45,9 +45,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
+import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
@@ -77,6 +80,7 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
     val defaultNoteColor by viewModel.defaultNoteColor.collectAsState()
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
+    val imageCompressionMode by viewModel.imageCompressionMode.collectAsState()
     var showDefaultColorPicker by remember { mutableStateOf(false) }
     val themeMode by viewModel.themeMode.collectAsState()
     val colorTheme by viewModel.colorTheme.collectAsState()
@@ -271,6 +275,39 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             DefaultNoteColorRow(
                 currentColor = defaultNoteColor,
                 onClick = { showDefaultColorPicker = true }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── 🆕 Bild-Attachments: Kompressionsmodus Section ──
+            SettingsSectionHeader(text = stringResource(R.string.settings_image_compression_title))
+
+            SettingsRadioGroup(
+                options = listOf(
+                    RadioOption(
+                        ImageCompressionMode.COMPRESSED,
+                        stringResource(R.string.image_compression_mode_compressed),
+                        stringResource(R.string.image_compression_mode_compressed_subtitle)
+                    ),
+                    RadioOption(
+                        ImageCompressionMode.LOSSLESS,
+                        stringResource(R.string.image_compression_mode_lossless),
+                        stringResource(R.string.image_compression_mode_lossless_subtitle)
+                    ),
+                    RadioOption(
+                        ImageCompressionMode.ORIGINAL,
+                        stringResource(R.string.image_compression_mode_original),
+                        stringResource(R.string.image_compression_mode_original_subtitle)
+                    )
+                ),
+                selectedValue = imageCompressionMode,
+                onValueSelected = { viewModel.setImageCompressionMode(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsInfoCard(
+                text = stringResource(R.string.settings_image_compression_info)
             )
 
             Spacer(modifier = Modifier.height(16.dp))

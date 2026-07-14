@@ -32,6 +32,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDangerButton
@@ -50,7 +51,7 @@ private const val TAG = "DebugSettingsScreen"
  * v1.5.0: Jetpack Compose Settings Redesign
  */
 @Composable
-fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
+fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigate: (SettingsRoute) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
@@ -219,6 +220,20 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             SettingsButton(
                 text = stringResource(R.string.debug_clear_etag_cache_title),
                 onClick = { showClearETagCacheDialog = true },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsDivider()
+
+            SettingsSectionHeader(text = stringResource(R.string.debug_calendar_experiment_section))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsButton(
+                text = stringResource(R.string.calendar_experiment_open),
+                onClick = { onNavigate(SettingsRoute.CalendarParsingExperiment) },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 

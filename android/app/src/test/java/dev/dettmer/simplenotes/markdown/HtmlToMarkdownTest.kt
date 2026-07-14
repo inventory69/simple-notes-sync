@@ -181,4 +181,18 @@ class HtmlToMarkdownTest {
             "- first\n- second",
             HtmlToMarkdown.convert("<ol><li>first</li><li>second</li></ol>", "first second")
         )
+
+    @Test fun `style-bloated chrome clip strips small and still converts headings`() {
+        // Chrome inlines computed styles on every element → clip balloons.
+        val bloat = """ style="${"color:#000;font-weight:400;".repeat(200)}""""
+        val body = "<h2$bloat>Heading</h2>" + "<p$bloat>text</p>".repeat(400)
+        assertTrue("fixture must exceed old 2MB cap", body.length > 2_000_000)
+
+        val stripped = HtmlToMarkdown.stripStyleAttributes(body)
+        assertTrue("stripping styles must shrink the clip a lot", stripped.length < body.length / 2)
+
+        val md = HtmlToMarkdown.convert(body, "fallback")
+        assertTrue("heading survives", md.contains("## Heading"))
+        assertTrue("must not fall back to plaintext", md != "fallback")
+    }
 }

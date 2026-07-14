@@ -25,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import dev.dettmer.simplenotes.ui.settings.screens.AboutScreen
 import dev.dettmer.simplenotes.ui.settings.screens.BackupSettingsScreen
+import dev.dettmer.simplenotes.ui.settings.screens.CalendarParsingExperimentScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ChangelogScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ContributorsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DebugSettingsScreen
@@ -173,8 +174,14 @@ fun SettingsNavHost(
             composable(SettingsRoute.Debug.route) {
                 DebugSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavigate = { route -> navController.navigate(route.route) }
                 )
+            }
+
+            // Kalender-Parsing-Experiment (Wegwerf-Screen, siehe DebugSettingsScreen)
+            composable(SettingsRoute.CalendarParsingExperiment.route) {
+                CalendarParsingExperimentScreen(onBack = { navController.popBackStack() })
             }
 
             // 🎨 v1.7.0: Display Settings

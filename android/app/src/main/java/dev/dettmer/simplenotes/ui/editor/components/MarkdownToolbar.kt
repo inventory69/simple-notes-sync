@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DataObject
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.InsertLink
 import androidx.compose.material.icons.filled.Title
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -37,7 +39,6 @@ import dev.dettmer.simplenotes.R
 
 private const val TOOLBAR_ICON_SIZE = 22
 private const val LINK_URL_PLACEHOLDER = "url"
-private const val LINK_BRACKET_OFFSET = 3 // "](".length + accounts for indexing
 
 /**
  * 🆕 v1.9.0 (F07): Markdown formatting toolbar for TEXT notes.
@@ -48,7 +49,12 @@ private const val LINK_BRACKET_OFFSET = 3 // "](".length + accounts for indexing
  * Wraps selected text or inserts placeholder at cursor position.
  */
 @Composable
-fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifier) {
+fun MarkdownToolbar(
+    textFieldState: TextFieldState,
+    modifier: Modifier = Modifier,
+    onImageClick: () -> Unit = {},
+    isAttachingImage: Boolean = false
+) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
@@ -97,6 +103,18 @@ fun MarkdownToolbar(textFieldState: TextFieldState, modifier: Modifier = Modifie
                 contentDescription = stringResource(R.string.md_toolbar_link),
                 onClick = { insertLink(textFieldState) }
             )
+            if (isAttachingImage) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(TOOLBAR_ICON_SIZE.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                ToolbarButton(
+                    icon = Icons.Filled.AddPhotoAlternate,
+                    contentDescription = stringResource(R.string.md_toolbar_image),
+                    onClick = onImageClick
+                )
+            }
             ToolbarButton(
                 icon = Icons.AutoMirrored.Filled.FormatListBulleted,
                 contentDescription = stringResource(R.string.md_toolbar_list),
@@ -187,13 +205,17 @@ private fun insertHeading(state: TextFieldState) {
 /**
  * Inserts a Markdown link `[text](url)` using selected text as link text,
  * or a placeholder if nothing is selected.
+ *
+ * Cursor lands AFTER the link, same reasoning as [insertImageMarkdown]: leaving it inside
+ * the brackets/parens means the next toolbar button tears the link syntax apart.
  */
 private fun insertLink(state: TextFieldState) {
     state.edit {
         val sel = selection
         if (sel.collapsed) {
-            insert(sel.start, "[](${LINK_URL_PLACEHOLDER})")
-            selection = TextRange(sel.start + 1)
+            val link = "[](${LINK_URL_PLACEHOLDER})"
+            insert(sel.start, link)
+            selection = TextRange(sel.start + link.length)
         } else {
             val start = sel.min
             val end = sel.max
@@ -201,9 +223,27 @@ private fun insertLink(state: TextFieldState) {
             delete(start, end)
             val link = "[$selectedText](${LINK_URL_PLACEHOLDER})"
             insert(start, link)
-            val urlStart = start + selectedText.length + LINK_BRACKET_OFFSET
-            selection = TextRange(urlStart, urlStart + LINK_URL_PLACEHOLDER.length)
+            selection = TextRange(start + link.length)
         }
+    }
+}
+
+/**
+ * Inserts a Markdown image link `![](.assets/<assetName>)` at the cursor, once the
+ * image has been processed and stored (called from the Screen after async attachImage()
+ * completes — Toolbar itself has no I/O access).
+ *
+ * Cursor lands AFTER the link, not between `![` and `]`: a toolbar button pressed next
+ * inserts at the cursor, and a rule/code block dropped inside the brackets tears the image
+ * syntax apart (`![\n---\n](.assets/x)` parses as two broken paragraphs, and stays broken
+ * after the rule line is deleted again). Alt text is set via the image menu in preview mode.
+ */
+fun insertImageMarkdown(state: TextFieldState, assetName: String) {
+    state.edit {
+        val sel = selection
+        val link = "![](.assets/$assetName)"
+        insert(sel.start, link)
+        selection = TextRange(sel.start + link.length)
     }
 }
 

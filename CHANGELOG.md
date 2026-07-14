@@ -8,6 +8,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.12.0] - 2026-07-14
+
+### ✨ New Features
+
+**Image Attachments in Notes** ([1f88777](https://github.com/inventory69/simple-notes-sync/commit/1f88777), [c67725a](https://github.com/inventory69/simple-notes-sync/commit/c67725a), [c7ce100](https://github.com/inventory69/simple-notes-sync/commit/c7ce100))
+- Insert images from the picker or paste them straight from the clipboard; they render inline in the editor and preview, backed by a content-addressed asset store with a compression pipeline
+
+**Image Sizing, Alignment & Viewer** ([b91b522](https://github.com/inventory69/simple-notes-sync/commit/b91b522), [9a02592](https://github.com/inventory69/simple-notes-sync/commit/9a02592))
+- Resize and align images from a menu, open them full-screen, and inspect EXIF metadata in an info dialog; size and alignment are stored as Markdown tokens
+
+**Image Sync over WebDAV** ([7461ddb](https://github.com/inventory69/simple-notes-sync/commit/7461ddb), [927d06b](https://github.com/inventory69/simple-notes-sync/commit/927d06b))
+- Image assets sync alongside notes with garbage collection for orphans, and asset links are translated between the JSON and Markdown-mirror formats
+
+**Images Everywhere Else** ([3672f53](https://github.com/inventory69/simple-notes-sync/commit/3672f53), [a839e2a](https://github.com/inventory69/simple-notes-sync/commit/a839e2a), [f8186d9](https://github.com/inventory69/simple-notes-sync/commit/f8186d9), [d528001](https://github.com/inventory69/simple-notes-sync/commit/d528001))
+- PDF export renders attachments honoring size and alignment tokens, widgets show real image bitmaps, and backups include the attachments
+
+**Image Compression Setting** ([f36877d](https://github.com/inventory69/simple-notes-sync/commit/f36877d))
+- Choose how aggressively inserted images are compressed
+
+**Preview Mode by Default** ([af1e1c3](https://github.com/inventory69/simple-notes-sync/commit/af1e1c3))
+- Text notes can open directly in preview mode instead of the editor
+
+**Calendar-Parsing Strategies** ([c27db7f](https://github.com/inventory69/simple-notes-sync/commit/c27db7f), [c3fb84d](https://github.com/inventory69/simple-notes-sync/commit/c3fb84d), [5348771](https://github.com/inventory69/simple-notes-sync/commit/5348771))
+- Calendar export uses the parsed title, location and attendees, and the parsing strategy chosen in the experiment screen is persisted
+
+**Native Image Sharing** ([9f0b1cd](https://github.com/inventory69/simple-notes-sync/commit/9f0b1cd))
+- Sharing a note with images attaches them natively instead of sharing raw text
+
+### ⚡ Performance
+
+**Faster Trash** ([4afa86a](https://github.com/inventory69/simple-notes-sync/commit/4afa86a))
+- Trash deletion is batched and opening the trash is noticeably quicker
+
+### 🐛 Bug Fixes
+
+**EXIF Rotation & Aspect Ratio** ([41a9149](https://github.com/inventory69/simple-notes-sync/commit/41a9149), [d126a6f](https://github.com/inventory69/simple-notes-sync/commit/d126a6f), [9aa8927](https://github.com/inventory69/simple-notes-sync/commit/9aa8927))
+- PDF export and preview honor EXIF orientation, keep the correct aspect ratio for rotated images, and reload images when a resize changes
+
+**Editor Polish** ([1a5b0ca](https://github.com/inventory69/simple-notes-sync/commit/1a5b0ca), [30c2ebd](https://github.com/inventory69/simple-notes-sync/commit/30c2ebd), [4a0c561](https://github.com/inventory69/simple-notes-sync/commit/4a0c561))
+- The cursor lands after inserted link and image Markdown, the image info button shows even without EXIF data, and collapsed sections are remembered per folder
+
+**Spanish Accents** ([eeb847e](https://github.com/inventory69/simple-notes-sync/commit/eeb847e))
+- Corrected accents in the Spanish sync and backup strings
+
+**Language Picker** ([d3fc8dd](https://github.com/inventory69/simple-notes-sync/commit/d3fc8dd))
+- French was fully translated but never registered, so it never appeared as a choice; the in-app picker used on Android 12 and older was also missing Spanish, Italian, Indonesian, Norwegian and Russian
+
+### 🌍 Translations
+
+- **French** (93%): Fred, [@carotte31](https://github.com/carotte31)
+- **Italian** (93%): GVE
+- **Chinese (Simplified)** (93%): [@heretic43](https://github.com/heretic43)
+- **Estonian** (2%): Priit Jõerüüt
+
+**French is now selectable** — it was translated but never registered in the language picker.
+
+**Hindi (5%) and Estonian (2%) are not shipped yet.** A language is only bundled and offered in the picker once it reaches 40% coverage; below that the UI would be almost entirely English anyway. Both stay in Weblate and ship as soon as they pass the bar - contributions welcome.
+
+---
+
 ## [2.11.0] - 2026-07-06
 
 ### ✨ New Features

@@ -14,6 +14,15 @@
     <issue id="MissingTranslation" severity="ignore" />
 
     <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- UnusedTranslation: Locales unter der 40%-Schwelle           -->
+    <!-- Sprachen mit zu wenig Übersetzungsgrad (v2.12.0: hi, et)    -->
+    <!-- bleiben in values-*/ und in Weblate, werden aber bewusst    -->
+    <!-- nicht in locales_config.xml / localeFilters registriert.    -->
+    <!-- Sonst sieht der Nutzer eine fast komplett englische UI.     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <issue id="UnusedTranslation" severity="ignore" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- AppBundleLocaleChanges: F-Droid nutzt kein Play Core       -->
     <!-- Dynamic Locale via AppCompatDelegate funktioniert ohne es  -->
     <!-- ═══════════════════════════════════════════════════════════ -->

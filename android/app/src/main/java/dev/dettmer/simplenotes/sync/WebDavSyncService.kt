@@ -2,13 +2,16 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import androidx.core.content.edit
+import com.thegrizzlylabs.sardineandroid.DavResource
 import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.PendingServerDeletions.PendingDeletion
+import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
@@ -134,6 +137,16 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     )
 
     private val deletionSyncManager = DeletionSyncManager(urlBuilder) // 🆕 shared ledger
+
+    // 🆕 Bild-Attachments
+    private val assetStore = AssetStore(context)
+    private val assetSyncManager = AssetSyncManager(
+        prefs = prefs,
+        assetStore = assetStore,
+        urlBuilder = urlBuilder,
+        connectionManager = connectionManager,
+        ioDispatcher = ioDispatcher
+    )
 
     /**
      * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
@@ -309,7 +322,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
                 // 🔧 v2.0.0 (Issue #44): Use listOrNull() to avoid 403 false-negative on Jianguoyun
-                val mdResources: List<com.thegrizzlylabs.sardineandroid.DavResource>? = when (sardine) {
+                val mdResources: List<DavResource>? = when (sardine) {
                     is SafeSardineWrapper -> sardine.listOrNull(mdUrl)
                     else -> try {
                         sardine.list(mdUrl)
@@ -642,6 +655,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 // Ensure notes-md/ directory exists (for Markdown export)
                 ensureMarkdownDirectoryExists(sardine, serverUrl)
 
+                // 🆕 Bild-Attachments: -assets/ sicherstellen + einziges PROPFIND für alle drei Diffs
+                assetSyncManager.ensureAssetsDirectoryExists(sardine, serverUrl)
+                val serverAssets = assetSyncManager.listServerAssets(sardine, serverUrl)
+
+                uploadReferencedAssets(sardine, serverUrl, serverAssets)
+
                 Logger.d(TAG, "📍 Step 4: Uploading local notes")
                 // Upload local notes
                 // 🆕 v1.11.0: UploadBatchResult enthält zusätzlich MD-Export-IDs für Import-Exclusion
@@ -731,6 +750,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     e.printStackTrace()
                     throw e
                 }
+
+                downloadAndGcAssets(sardine, serverUrl, serverAssets)
 
                 // 🆕 v2.7.0 (Folders): Step 5.6 — Ordner-Metadaten syncen (Namen + Farben + Tombstones).
                 val foldersChanged = syncFolderMetadataSafe(sardine, serverUrl)
@@ -962,6 +983,56 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             Logger.w(TAG, "folder metadata sync failed (non-fatal): ${e.message}")
             false
         }
+
+    /**
+     * 🆕 Bild-Attachments: Assets-first (E1) — kein Gerät sieht eine Notiz ohne deren Bilder.
+     * Best-effort: ein einzelner fehlgeschlagener Upload blockiert den Notiz-Upload nicht,
+     * der Markdown-Renderer zeigt bis zum nächsten Sync einen Platzhalter.
+     */
+    private suspend fun uploadReferencedAssets(
+        sardine: Sardine,
+        serverUrl: String,
+        serverAssets: Map<String, DavResource>
+    ) {
+        try {
+            val referenced = AssetReferences.extractAllReferenced(storage.loadAllNotes())
+            val uploadedCount = assetSyncManager.uploadMissing(sardine, serverUrl, referenced, serverAssets)
+            Logger.d(TAG, "✅ Assets uploaded: $uploadedCount")
+        } catch (e: Exception) {
+            Logger.e(TAG, "⚠️ Asset upload failed (non-fatal)", e)
+        }
+    }
+
+    /**
+     * 🆕 Bild-Attachments: Download referenzierter, lokal fehlender Assets — Referenzen aus dem
+     * frisch aktualisierten Korpus (inkl. der soeben heruntergeladenen Notizen). Danach
+     * Mark-and-Sweep-GC. Best-effort, wie [uploadReferencedAssets].
+     */
+    private suspend fun downloadAndGcAssets(
+        sardine: Sardine,
+        serverUrl: String,
+        serverAssets: Map<String, DavResource>
+    ) {
+        try {
+            val freshNotes = storage.loadAllNotes(forceReload = true)
+            val referenced = AssetReferences.extractAllReferenced(freshNotes)
+            val downloadedCount = assetSyncManager.downloadMissing(sardine, serverUrl, referenced, serverAssets)
+            Logger.d(TAG, "✅ Assets downloaded: $downloadedCount")
+
+            // Guard analog ALL_DELETED_GUARD_THRESHOLD: eine leere Notizliste deutet auf einen
+            // fehlgeschlagenen Load hin, nicht auf "alle Assets sind Waisen" — Remote-GC würde
+            // sonst serverseitige Assets aller Geräte fälschlich löschen.
+            assetSyncManager.garbageCollect(
+                sardine,
+                serverUrl,
+                freshNotes,
+                serverAssets,
+                allowRemoteSweep = freshNotes.isNotEmpty()
+            )
+        } catch (e: Exception) {
+            Logger.e(TAG, "⚠️ Asset download/GC failed (non-fatal)", e)
+        }
+    }
 
     /**
      * 🔧 v1.9.0: Parallele Uploads mit bounded concurrency

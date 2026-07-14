@@ -160,6 +160,18 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
+
+                    if (BuildConfig.DEBUG) {
+                        Text(
+                            text = stringResource(
+                                R.string.about_build_info,
+                                BuildConfig.BUILD_TIME,
+                                BuildConfig.GIT_HASH
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
 

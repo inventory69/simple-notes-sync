@@ -21,6 +21,8 @@ sealed class SettingsRoute(val route: String) {
 
     data object Debug : SettingsRoute("settings_debug")
 
+    data object CalendarParsingExperiment : SettingsRoute("settings_calendar_parsing_experiment")
+
     data object Display : SettingsRoute("settings_display") // 🎨 v1.7.0
 
     data object Import : SettingsRoute("settings_import") // 🆕 Issue #21

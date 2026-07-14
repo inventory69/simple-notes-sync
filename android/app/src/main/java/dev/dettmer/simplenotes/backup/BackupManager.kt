@@ -3,15 +3,18 @@ package dev.dettmer.simplenotes.backup
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
@@ -42,6 +45,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
 
     private val storage = NotesStorage(context)
     private val folderStore = FolderStore(context)
+    private val assetStore = AssetStore(context) // 🆕 Bild-Attachments
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val encryptionManager = EncryptionManager() // 🔐 v1.7.0
     private val prefs: SharedPreferences =
@@ -55,7 +59,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * @param includeServerSettings v1.9.0: If true, server credentials are included in the backup
      * @return BackupResult mit Erfolg/Fehler Info
      */
-    @Suppress("MaxLineLength")
+    // Recycle: false positive — `?.use { }` closes the stream, lint can't track through the safe call.
+    @Suppress("MaxLineLength", "Recycle")
     suspend fun createBackup(uri: Uri, password: String? = null, includeServerSettings: Boolean = false): BackupResult =
         withContext(ioDispatcher) {
             return@withContext try {
@@ -176,6 +181,12 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 val folderMeta = folderStore.loadMeta()
                 Logger.d(TAG, "   Found ${folderMeta.size} folder entries to backup")
 
+                // 🆕 Bild-Attachments (E9): Ohne das würde ein Restore die Notizen zurückbringen,
+                // aber alle Bilder als Platzhalter zeigen. Base64 im Backup-JSON ist hier ok —
+                // das "kein Base64 im Content"-Verbot gilt nur für den Notiz-Text selbst.
+                val backupAssets = collectBackupAssets(allNotes)
+                Logger.d(TAG, "   Found ${backupAssets.size} referenced asset(s) to backup")
+
                 val backupData = BackupData(
                     backupVersion = BACKUP_VERSION,
                     createdAt = System.currentTimeMillis(),
@@ -185,7 +196,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     appSettings = appSettings,
                     folders = folderMeta,
                     localOnlyFolders = folderStore.getLocalOnlyFolderNames().toList(),
-                    localOnlyServerRemoval = folderStore.getServerRemovalQueue().toList()
+                    localOnlyServerRemoval = folderStore.getServerRemovalQueue().toList(),
+                    assets = backupAssets
                 )
 
                 val jsonString = gson.toJson(backupData)
@@ -382,6 +394,10 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
 
             // 🆕 Ordner wiederherstellen (oder aus Notizen ableiten bei Alt-Backups).
             restoreFolders(backupData, mode)
+
+            // 🆕 Bild-Attachments (E9): Assets wiederherstellen — unabhängig vom Restore-Modus,
+            // da Assets content-adressiert/immutable sind (kein Konflikt möglich).
+            restoreAssets(backupData.assets)
 
             Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
             result
@@ -607,6 +623,43 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
     }
 
     /**
+     * 🆕 Bild-Attachments: Sammelt alle im Notiz-Korpus referenzierten Assets, die lokal
+     * vorhanden sind, Base64-kodiert fürs Backup-JSON.
+     */
+    private fun collectBackupAssets(notes: List<Note>): List<BackupAsset> {
+        val referenced = AssetReferences.extractAllReferenced(notes)
+        return referenced.mapNotNull { name ->
+            val file = assetStore.getAssetFile(name)
+            if (!file.exists()) return@mapNotNull null
+            try {
+                BackupAsset(name, Base64.encodeToString(file.readBytes(), Base64.NO_WRAP))
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ Failed to read asset for backup: $name (${e.message})")
+                null
+            }
+        }
+    }
+
+    /**
+     * 🆕 Bild-Attachments (E9): Schreibt Backup-Assets zurück in den AssetStore. Unabhängig vom
+     * Restore-Modus — Assets sind content-adressiert/immutable, `saveAssetAs` ist ein No-op
+     * wenn die Datei bereits existiert.
+     */
+    private suspend fun restoreAssets(assets: List<BackupAsset>?) {
+        if (assets.isNullOrEmpty()) return
+        var restoredCount = 0
+        for (asset in assets) {
+            try {
+                assetStore.saveAssetAs(Base64.decode(asset.dataBase64, Base64.NO_WRAP), asset.name)
+                restoredCount++
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ Failed to restore asset: ${asset.name} (${e.message})")
+            }
+        }
+        Logger.d(TAG, "🖼️ Restored $restoredCount/${assets.size} asset(s) from backup")
+    }
+
+    /**
      * Löscht Auto-Backups älter als RETENTION_DAYS
      */
     private fun cleanupOldAutoBackups(autoBackupDir: File) {
@@ -652,7 +705,18 @@ data class BackupData(
     @com.google.gson.annotations.SerializedName("local_only_folders")
     val localOnlyFolders: List<String>? = null,
     @com.google.gson.annotations.SerializedName("local_only_server_removal")
-    val localOnlyServerRemoval: List<String>? = null
+    val localOnlyServerRemoval: List<String>? = null,
+    // 🆕 Bild-Attachments (E9): referenzierte Asset-Dateien, Base64-kodiert. null für Backups
+    // von vor dieser Version — ein Restore zeigt dann Bild-Platzhalter statt stillem Datenverlust.
+    @com.google.gson.annotations.SerializedName("assets")
+    val assets: List<BackupAsset>? = null
+)
+
+/** 🆕 Bild-Attachments: ein Asset-Dateiname + Base64-Inhalt im Backup-JSON. */
+data class BackupAsset(
+    val name: String,
+    @com.google.gson.annotations.SerializedName("data_base64")
+    val dataBase64: String
 )
 
 /**

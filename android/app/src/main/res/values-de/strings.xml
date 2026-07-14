@@ -466,6 +466,28 @@
     <string name="debug_clear_etag_cache_dialog_message">Entfernt E-Tags und Content-Hashes für alle Notizen. Beim nächsten Sync werden alle Notizen neu mit dem Server verglichen. Notiz-Inhalte bleiben unverändert.</string>
     <string name="debug_clear_etag_cache_confirm">Löschen</string>
     <string name="debug_etag_cache_cleared">E-Tag-Cache gelöscht.</string>
+    <string name="debug_calendar_experiment_section">Kalender-Parsing (Experiment)</string>
+    <string name="calendar_experiment_open">Parsing-Strategien testen</string>
+    <string name="calendar_experiment_title">Kalender-Parsing testen</string>
+    <string name="calendar_experiment_input_label">Beispieltext</string>
+    <string name="calendar_experiment_input_placeholder">Max Mustermann 0176 12345678 max.mustermann@example.com / Musterstr. 5 / Fenster reparieren / Auftraggeber Meier GmbH</string>
+    <string name="calendar_experiment_strategy_section">Strategie</string>
+    <string name="calendar_experiment_strategy_raw">Rohtext (Baseline)</string>
+    <string name="calendar_experiment_strategy_raw_subtitle">Ganzer Text wird zum Titel, nichts wird geparst.</string>
+    <string name="calendar_experiment_strategy_positional">Feste Reihenfolge</string>
+    <string name="calendar_experiment_strategy_positional_subtitle">1. Segment → Titel, 2. Segment → Ort, Rest → Beschreibung. Beispiel: „Max Mustermann / Musterstr. 5 / Fenster reparieren“</string>
+    <string name="calendar_experiment_strategy_phone_regex">Telefon-Regex + Reihenfolge</string>
+    <string name="calendar_experiment_strategy_phone_regex_subtitle">Wie oben, zusätzlich wird überall im Text eine Telefonnummer erkannt und in die Beschreibung verschoben.</string>
+    <string name="calendar_experiment_strategy_label_prefix">Kürzel-Präfixe</string>
+    <string name="calendar_experiment_strategy_label_prefix_subtitle">Jedes Segment braucht ein Präfix vor \':\', z. B. „N: Max Mustermann / T: 0176 12345678 / A: Musterstr. 5 / E: max@example.com“. Bekannte Präfixe: n/name/titel, t/tel/telefon, a/adresse/str, e/email/gast → Gäste. Unbekanntes oder fehlendes Präfix → Beschreibung.</string>
+    <string name="calendar_experiment_strategy_phone_email_regex">Telefon- + E-Mail-Regex</string>
+    <string name="calendar_experiment_strategy_phone_email_regex_subtitle">Wie Telefon-Regex, zusätzlich wird überall im Text eine E-Mail-Adresse erkannt und ins Gäste-Feld verschoben (für Kalender-Gäste / EXTRA_EMAIL).</string>
+    <string name="calendar_experiment_preview_section">Vorschau</string>
+    <string name="calendar_experiment_preview_title">Titel</string>
+    <string name="calendar_experiment_preview_location">Ort</string>
+    <string name="calendar_experiment_preview_description">Beschreibung</string>
+    <string name="calendar_experiment_preview_attendees">Gäste (E-Mail)</string>
+    <string name="calendar_experiment_hint">Deine Auswahl wird gespeichert und sofort für den Kalender-Export verwendet.</string>
     <!-- 🔧 v1.10.1: Easter-Egg Entwickleroptionen -->
     <string name="developer_options_countdown">Noch %d Taps bis zu den Entwickleroptionen</string>
     <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>
@@ -478,6 +500,12 @@
     <string name="language_system_default">Systemstandard</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
+    <string name="language_spanish">Spanisch</string>
+    <string name="language_french">Französisch</string>
+    <string name="language_indonesian">Indonesisch</string>
+    <string name="language_italian">Italienisch</string>
+    <string name="language_norwegian">Norwegisch (Bokmål)</string>
+    <string name="language_russian">Russisch</string>
     <string name="language_turkish">Türkisch</string>
     <string name="language_ukrainian">Ukrainisch</string>
     <string name="language_chinese_simplified">Chinesisch (vereinfacht)</string>
@@ -524,6 +552,15 @@
     <!-- 🆕 v2.11.0: Cursor-Start für neue Notizen -->
     <string name="editor_new_note_focus_content_toggle">Cursor im Inhalt starten</string>
     <string name="editor_new_note_focus_content_description">Neue Notizen fokussieren das Inhaltsfeld statt des Titels. Checklisten fokussieren den ersten Eintrag.</string>
+    <!-- 🆕 Bild-Attachments: Kompressionsmodus -->
+    <string name="settings_image_compression_title">Bildkompression</string>
+    <string name="settings_image_compression_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Bereits eingefügte Bilder werden nicht neu verarbeitet.</string>
+    <string name="image_compression_mode_compressed">Komprimiert (empfohlen)</string>
+    <string name="image_compression_mode_compressed_subtitle">WebP, auf max. 1920px verkleinert. Kleinere Dateien; entfernt EXIF-/GPS-Standortdaten.</string>
+    <string name="image_compression_mode_lossless">Verlustfrei</string>
+    <string name="image_compression_mode_lossless_subtitle">WebP ohne Qualitätsverlust, auf max. 1920px verkleinert. Größere Dateien; entfernt EXIF-/GPS-Daten.</string>
+    <string name="image_compression_mode_original">Original</string>
+    <string name="image_compression_mode_original_subtitle">Behält die Datei unverändert, ohne Verkleinerung. Größte Dateien; behält EXIF-/GPS-Standortdaten.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
     <string name="theme_mode_system">System (wie Gerät)</string>
@@ -573,6 +610,30 @@
     <string name="md_toolbar_code">Code</string>
     <string name="md_toolbar_code_block">Codeblock</string>
     <string name="md_toolbar_link">Link</string>
+    <string name="md_toolbar_image">Bild einfügen</string>
+    <string name="image_attach_failed">Bild konnte nicht hinzugefügt werden (nicht genug Speicher oder Datei nicht lesbar)</string>
+    <string name="markdown_image_missing">Bild nicht verfügbar</string>
+    <!-- 🆕 Bild-Attachments v2: Long-Press-Menü auf Block-Bildern -->
+    <string name="image_menu_align_left">Linksbündig</string>
+    <string name="image_menu_align_center">Zentriert</string>
+    <string name="image_menu_align_right">Rechtsbündig</string>
+    <string name="image_menu_align_inline">Im Textfluss</string>
+    <string name="image_menu_size_small">S</string>
+    <string name="image_menu_size_medium">M</string>
+    <string name="image_menu_size_large">L</string>
+    <string name="image_menu_size_full">XL</string>
+    <string name="image_menu_info">Bildinformationen</string>
+    <string name="image_menu_alt_text">Alt-Text</string>
+    <string name="image_info_title">Bildinformationen</string>
+    <string name="image_info_dimensions">Abmessungen</string>
+    <string name="image_info_file_size">Dateigröße</string>
+    <string name="image_info_date_taken">Aufnahmedatum</string>
+    <string name="image_info_camera">Kamera</string>
+    <string name="image_info_iso">ISO</string>
+    <string name="image_info_exposure">Belichtungszeit</string>
+    <string name="image_info_focal_length">Brennweite</string>
+    <string name="image_info_location">Standort</string>
+    <string name="image_info_close">Schließen</string>
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
@@ -583,6 +644,7 @@
     <string name="about_settings_title">Über diese App</string>
     <string name="about_app_name">Simple Notes Sync</string>
     <string name="about_version">Version %1$s (%2$d)</string>
+    <string name="about_build_info">Build: %1$s · %2$s</string>
     <string name="about_links_section">Links</string>
     <string name="about_app_section">App</string>
     <string name="about_github_title">GitHub Repository</string>

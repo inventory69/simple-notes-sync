@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
 import java.util.Date
@@ -70,7 +71,7 @@ internal class MarkdownSyncManager(
         var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
 
         // 🆕 v1.9.0 (Opt 6): MD-Content-Hash berechnen und mit Cache vergleichen
-        val mdContentStr = note.toMarkdown()
+        val mdContentStr = rewriteAssetLinksForMdMirror(note.toMarkdown(), note.folderName)
         val mdContentBytes = mdContentStr.toByteArray()
         val mdHash = MessageDigest.getInstance("SHA-256")
             .digest(mdContentBytes)
@@ -218,7 +219,7 @@ internal class MarkdownSyncManager(
                     val noteUrl = "${folderUrl.trimEnd('/')}/$filename"
 
                     // Konvertiere zu Markdown
-                    val mdContent = note.toMarkdown().toByteArray()
+                    val mdContent = rewriteAssetLinksForMdMirror(note.toMarkdown(), note.folderName).toByteArray()
 
                     // Upload (überschreibt falls vorhanden)
                     sardine.put(noteUrl, mdContent, "text/markdown")
@@ -622,6 +623,20 @@ internal class MarkdownSyncManager(
     // ─────────────────────────────────────────────────────────────
     // Utilities
     // ─────────────────────────────────────────────────────────────
+
+    /**
+     * 🆕 Bild-Attachments: Der MD-Mirror liegt in `<syncFolder>-md/[<folder>/]<note>.md`, der
+     * Asset-Ordner als Geschwister von `<syncFolder>/` — also `../<syncFolder>-assets/<name>`
+     * von einer Root-Notiz aus, `../../<syncFolder>-assets/<name>` aus einem Notiz-Ordner heraus.
+     * Reines String-Replace: Content-Referenzen bleiben im JSON `.assets/<name>`, nur der
+     * exportierte MD-Spiegel bekommt den relativen Pfad, den externe Viewer auflösen können.
+     */
+    private fun rewriteAssetLinksForMdMirror(content: String, folderName: String?): String {
+        val syncFolderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+        val depthPrefix = if (folderName != null) "../../" else "../"
+        return content.replace("](.assets/", "]($depthPrefix$syncFolderName${SyncUrlBuilder.ASSETS_SUFFIX}/")
+    }
 
     /**
      * Sanitize Filename für sichere Dateinamen.
