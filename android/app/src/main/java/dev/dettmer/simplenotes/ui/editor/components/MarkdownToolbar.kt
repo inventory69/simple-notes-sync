@@ -39,7 +39,6 @@ import dev.dettmer.simplenotes.R
 
 private const val TOOLBAR_ICON_SIZE = 22
 private const val LINK_URL_PLACEHOLDER = "url"
-private const val LINK_BRACKET_OFFSET = 3 // "](".length + accounts for indexing
 
 /**
  * 🆕 v1.9.0 (F07): Markdown formatting toolbar for TEXT notes.
@@ -206,13 +205,17 @@ private fun insertHeading(state: TextFieldState) {
 /**
  * Inserts a Markdown link `[text](url)` using selected text as link text,
  * or a placeholder if nothing is selected.
+ *
+ * Cursor lands AFTER the link, same reasoning as [insertImageMarkdown]: leaving it inside
+ * the brackets/parens means the next toolbar button tears the link syntax apart.
  */
 private fun insertLink(state: TextFieldState) {
     state.edit {
         val sel = selection
         if (sel.collapsed) {
-            insert(sel.start, "[](${LINK_URL_PLACEHOLDER})")
-            selection = TextRange(sel.start + 1)
+            val link = "[](${LINK_URL_PLACEHOLDER})"
+            insert(sel.start, link)
+            selection = TextRange(sel.start + link.length)
         } else {
             val start = sel.min
             val end = sel.max
@@ -220,8 +223,7 @@ private fun insertLink(state: TextFieldState) {
             delete(start, end)
             val link = "[$selectedText](${LINK_URL_PLACEHOLDER})"
             insert(start, link)
-            val urlStart = start + selectedText.length + LINK_BRACKET_OFFSET
-            selection = TextRange(urlStart, urlStart + LINK_URL_PLACEHOLDER.length)
+            selection = TextRange(start + link.length)
         }
     }
 }
@@ -229,14 +231,19 @@ private fun insertLink(state: TextFieldState) {
 /**
  * Inserts a Markdown image link `![](.assets/<assetName>)` at the cursor, once the
  * image has been processed and stored (called from the Screen after async attachImage()
- * completes — Toolbar itself has no I/O access). Cursor lands between `![` and `]`,
- * same spot as [insertLink], so the user can type alt text immediately.
+ * completes — Toolbar itself has no I/O access).
+ *
+ * Cursor lands AFTER the link, not between `![` and `]`: a toolbar button pressed next
+ * inserts at the cursor, and a rule/code block dropped inside the brackets tears the image
+ * syntax apart (`![\n---\n](.assets/x)` parses as two broken paragraphs, and stays broken
+ * after the rule line is deleted again). Alt text is set via the image menu in preview mode.
  */
 fun insertImageMarkdown(state: TextFieldState, assetName: String) {
     state.edit {
         val sel = selection
-        insert(sel.start, "![](.assets/$assetName)")
-        selection = TextRange(sel.start + 2)
+        val link = "![](.assets/$assetName)"
+        insert(sel.start, link)
+        selection = TextRange(sel.start + link.length)
     }
 }
 
