@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ClipData
+import android.content.Context
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -12,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -130,17 +133,21 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
-import dev.dettmer.simplenotes.ui.editor.components.insertImageMarkdown
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+// 🆕 v2.12.0: Obergrenze Multi-Bild-Picker (Beta-Feedback: mehrere Bilder auf einmal)
+private const val MAX_PICKER_IMAGES = 10
 
 private const val LAYOUT_DELAY_MS = 100L
 private const val AUTO_SCROLL_DELAY_MS = 50L
@@ -767,6 +774,10 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 onContentChange = { viewModel.updateContent(it) },
                                 focusRequester = contentFocusRequester,
                                 outputTransformation = markdownTransformation,
+                                // 🆕 v2.12.0: Bilder aus der Zwischenablage
+                                onPasteImages = { uris ->
+                                    scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
+                                },
                                 onFocusChanged = { isContentFocused = it },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -935,13 +946,43 @@ private fun rememberImagePickerLauncher(
     textFieldState: TextFieldState,
     scope: CoroutineScope
 ) = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.PickVisualMedia()
-) { uri ->
-    if (uri == null) return@rememberLauncherForActivityResult
-    scope.launch {
+    contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = MAX_PICKER_IMAGES)
+) { uris ->
+    if (uris.isNotEmpty()) {
+        scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
+    }
+}
+
+/**
+ * 🆕 v2.12.0: Hängt [uris] sequenziell als Assets an (Kompression + Store via
+ * attachImage) und fügt je ein `![](.assets/…)` auf eigener Zeile ein.
+ * Gemeinsamer Pfad für Multi-Picker und Clipboard-Bild-Paste.
+ */
+private suspend fun attachAndInsertImages(
+    viewModel: NoteEditorViewModel,
+    textFieldState: TextFieldState,
+    uris: List<Uri>
+) {
+    uris.forEach { uri ->
         viewModel.attachImage(uri)?.let { assetName ->
-            insertImageMarkdown(textFieldState, assetName)
+            insertImageMarkdownOnOwnLine(textFieldState, assetName)
         }
+    }
+}
+
+/**
+ * Wie insertImageMarkdown (MarkdownToolbar.kt), aber mit führendem Umbruch,
+ * wenn der Cursor nicht am Zeilenanfang steht — bei mehreren Bildern landet
+ * so jedes `![](.assets/…)` auf einer eigenen Zeile (Renderer erwartet
+ * Bild-Links als eigene Zeile).
+ */
+private fun insertImageMarkdownOnOwnLine(state: TextFieldState, assetName: String) {
+    state.edit {
+        val start = selection.min
+        val atLineStart = start == 0 || asCharSequence()[start - 1] == '\n'
+        val link = (if (atLineStart) "" else "\n") + "![](.assets/$assetName)"
+        insert(start, link)
+        selection = TextRange(start + link.length)
     }
 }
 
@@ -978,12 +1019,14 @@ private fun TextNoteContent(
     onContentChange: (String) -> Unit,
     focusRequester: FocusRequester,
     outputTransformation: MarkdownOutputTransformation,
-    onFocusChanged: (Boolean) -> Unit = {},
-    modifier: Modifier = Modifier
+    onPasteImages: (List<Uri>) -> Unit, // 🆕 v2.12.0
+    modifier: Modifier = Modifier,
+    onFocusChanged: (Boolean) -> Unit = {}
 ) {
     // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
     // v1.9.0 (F07): TextFieldState now provided from parent for toolbar access
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope() // 🆕 v2.12.0: async HTML-Konvertierung
 
     // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
     var isFocused by remember { mutableStateOf(false) }
@@ -1041,36 +1084,7 @@ private fun TextNoteContent(
                 onFocusChanged(focusState.isFocused)
             }
             .contentReceiver { transferable ->
-                val html = transferable.clipEntry.firstHtmlText()
-                if (html == null ||
-                    html.length > HtmlToMarkdown.MAX_HTML_LENGTH ||
-                    !HtmlToMarkdown.hasRichContent(html)
-                ) {
-                    transferable // nicht zuständig → normaler Paste
-                } else {
-                    val item = transferable.clipEntry.clipData.getItemAt(0)
-                    val plain = item.coerceToText(context).toString()
-                    val markdown = HtmlToMarkdown.convert(html, plain)
-                    if (markdown == plain) {
-                        transferable // nichts gewonnen → normaler Paste
-                    } else {
-                        val sel = textFieldState.selection
-                        val start = sel.min
-                        // Stufe 1: Rohtext einfügen (eigener Undo-Eintrag)
-                        textFieldState.edit {
-                            if (!sel.collapsed) delete(sel.min, sel.max)
-                            insert(start, plain)
-                            selection = TextRange(start + plain.length)
-                        }
-                        // Stufe 2: zu Markdown ersetzen (zweiter Undo-Eintrag →
-                        // direktes Undo stellt den Rohtext wieder her)
-                        textFieldState.edit {
-                            replace(start, start + plain.length, markdown)
-                            selection = TextRange(start + markdown.length)
-                        }
-                        null // konsumiert
-                    }
-                }
+                handlePastedContent(transferable, context, textFieldState, scope, onPasteImages)
             }
             .pointerInput(textFieldState) {
                 awaitPointerEventScope {
@@ -1603,6 +1617,75 @@ private fun NoteEditorToolbarTitle(toolbarTitle: ToolbarTitle, autosaveIndicator
             )
         }
     }
+}
+
+/**
+ * 🆕 v2.12.0: Paste-Handler für das Content-Feld. Bilder zuerst („Bild kopieren"
+ * in Chrome legt Uri **und** ein <img>-HTML-Fragment in die ClipData — das Bild ist
+ * das, was der Nutzer will), dann HTML→Markdown. Rückgabe `null` = konsumiert,
+ * sonst geht [transferable] den normalen Paste-Weg.
+ *
+ * HTML-Konvertierung läuft zweistufig: Rohtext synchron (eigener Undo-Eintrag),
+ * Markdown-Ersetzung async off-main (zweiter Undo-Eintrag → direktes Undo stellt
+ * den Rohtext wieder her).
+ */
+@OptIn(ExperimentalFoundationApi::class)
+private fun handlePastedContent(
+    transferable: TransferableContent,
+    context: Context,
+    textFieldState: TextFieldState,
+    scope: CoroutineScope,
+    onPasteImages: (List<Uri>) -> Unit
+): TransferableContent? {
+    val clipData = transferable.clipEntry.clipData
+    val imageUris = (0 until clipData.itemCount)
+        .mapNotNull { clipData.getItemAt(it).uri }
+        .filter { context.contentResolver.getType(it)?.startsWith("image/") == true }
+    if (imageUris.isNotEmpty()) {
+        onPasteImages(imageUris)
+        return null
+    }
+
+    val html = transferable.clipEntry.firstHtmlText()
+    if (html == null || !HtmlToMarkdown.hasRichContent(html)) {
+        return transferable // nicht zuständig → normaler Paste
+    }
+    // ponytail: gegen die style-gestrippte Länge messen — Chrome inlined computed
+    // styles, die den Clip weit über den Cap blähen; convert() bekommt trotzdem das
+    // Original-HTML (off-main, Größe egal dort), damit style-Attribut-Fett/Kursiv bleibt.
+    val measured = HtmlToMarkdown.stripStyleAttributes(html).length
+    if (measured > HtmlToMarkdown.MAX_HTML_LENGTH) {
+        Logger.d("HtmlPaste", "over cap: raw=${html.length} stripped=$measured → plaintext fallback")
+        return transferable // nicht zuständig → normaler Paste
+    }
+
+    val plain = clipData.getItemAt(0).coerceToText(context).toString()
+    val sel = textFieldState.selection
+    val start = sel.min
+    // Stufe 1 (synchron): Rohtext einfügen
+    textFieldState.edit {
+        if (!sel.collapsed) delete(sel.min, sel.max)
+        insert(start, plain)
+        selection = TextRange(start + plain.length)
+    }
+    // Stufe 2 (async, off-main): zu Markdown ersetzen
+    scope.launch {
+        val markdown = withContext(Dispatchers.Default) { HtmlToMarkdown.convert(html, plain) }
+        if (markdown == plain) Logger.d("HtmlPaste", "convert() returned fallback: raw=${html.length}")
+        val end = start + plain.length
+        // Guard: nur ersetzen, wenn der Rohtext dort noch unverändert steht
+        // (Nutzer könnte während der Konvertierung getippt haben)
+        if (markdown != plain &&
+            textFieldState.text.length >= end &&
+            textFieldState.text.subSequence(start, end).toString() == plain
+        ) {
+            textFieldState.edit {
+                replace(start, end, markdown)
+                selection = TextRange(start + markdown.length)
+            }
+        }
+    }
+    return null // konsumiert
 }
 
 /** First non-blank `text/html` payload across all clip items, or null. */

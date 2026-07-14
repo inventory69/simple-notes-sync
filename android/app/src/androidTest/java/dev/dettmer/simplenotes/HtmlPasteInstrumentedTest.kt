@@ -16,7 +16,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.dettmer.simplenotes.R
-import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import org.junit.Before
 import org.junit.Rule
@@ -62,6 +61,20 @@ class HtmlPasteInstrumentedTest {
     private fun contentField() = composeTestRule.onAllNodes(hasSetTextAction())[1]
 
     /**
+     * Pastes and waits until [expected] shows up in the tree. 🔄 v2.12.0: the
+     * HTML→Markdown replacement runs on Dispatchers.Default (outside the Compose
+     * clock), so waitForIdle() alone can observe the raw-text stage.
+     */
+    private fun pasteAndAwait(expected: String) {
+        contentField().performSemanticsAction(SemanticsActions.PasteText)
+        composeTestRule.waitUntil(timeoutMillis = PASTE_TIMEOUT_MS) {
+            composeTestRule.onAllNodes(hasText(expected, substring = true))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+    }
+
+    /**
      * Clicks Undo — locale-safe (reads the actual string resource) and handles
      * both toolbar (wide) and overflow-menu (narrow/compact) layouts.
      */
@@ -92,16 +105,14 @@ class HtmlPasteInstrumentedTest {
     @Test fun bold_html_pastes_as_markdown() {
         setHtmlClip(html = "<b>bold</b> text", plain = "bold text")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("**bold** text")
         contentField().assertTextContains("**bold** text", substring = true)
     }
 
     @Test fun italic_html_pastes_as_markdown() {
         setHtmlClip(html = "<em>italic</em> text", plain = "italic text")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("*italic* text")
         contentField().assertTextContains("*italic* text", substring = true)
     }
 
@@ -111,16 +122,14 @@ class HtmlPasteInstrumentedTest {
             plain = "Visit F-Droid now"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("[F-Droid](https://f-droid.org)")
         contentField().assertTextContains("[F-Droid](https://f-droid.org)", substring = true)
     }
 
     @Test fun plain_text_clipboard_pastes_unchanged() {
         setPlainClip("just plain text")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("just plain text")
         contentField().assertTextContains("just plain text", substring = true)
     }
 
@@ -130,8 +139,7 @@ class HtmlPasteInstrumentedTest {
             plain = "fett und Link"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("[Link](https://example.com)")
         contentField().assertTextContains("**fett**", substring = true)
         contentField().assertTextContains("[Link](https://example.com)", substring = true)
     }
@@ -139,8 +147,7 @@ class HtmlPasteInstrumentedTest {
     @Test fun html_without_rich_tags_pastes_as_plain() {
         setHtmlClip(html = "<span>no formatting</span>", plain = "no formatting")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("no formatting")
         contentField().assertTextContains("no formatting", substring = true)
         assertNoText("**")
     }
@@ -156,9 +163,7 @@ class HtmlPasteInstrumentedTest {
     @Test fun undo_after_html_paste_removes_all_pasted_content() {
         setHtmlClip(html = "<b>bold</b>", plain = "bold")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("**bold**", substring = true)
+        pasteAndAwait("**bold**")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -173,9 +178,7 @@ class HtmlPasteInstrumentedTest {
             plain = "Example"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("[Example](https://example.com)", substring = true)
+        pasteAndAwait("[Example](https://example.com)")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -196,12 +199,10 @@ class HtmlPasteInstrumentedTest {
         composeTestRule.waitForIdle()
         // ponytail: sleep > UNDO_SNAPSHOT_DEBOUNCE_MS (500 ms) so the paste
         // gets its own snapshot rather than merging with the typing burst.
-        Thread.sleep(700)
+        Thread.sleep(DEBOUNCE_SETTLE_MS)
 
         setHtmlClip(html = "<b>appended</b>", plain = "appended")
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("**appended**", substring = true)
+        pasteAndAwait("**appended**")
         contentField().assertTextContains("existing", substring = true)
 
         clickUndo()
@@ -218,9 +219,7 @@ class HtmlPasteInstrumentedTest {
     @Test fun undo_after_plain_paste_removes_pasted_content() {
         setPlainClip("plain paste")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("plain paste", substring = true)
+        pasteAndAwait("plain paste")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -246,16 +245,13 @@ class HtmlPasteInstrumentedTest {
         // First paste
         setHtmlClip(html = "<b>first</b>", plain = "first")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        Thread.sleep(700) // let debounce expire so second paste gets its own entry
+        pasteAndAwait("**first**")
+        Thread.sleep(DEBOUNCE_SETTLE_MS) // let debounce expire so second paste gets its own entry
 
         // Second paste
         setHtmlClip(html = "<em>second</em>", plain = "second")
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("*second*")
         contentField().assertTextContains("**first**", substring = true)
-        contentField().assertTextContains("*second*", substring = true)
 
         // First undo → second paste gone, first paste still there
         clickUndo()
@@ -274,19 +270,15 @@ class HtmlPasteInstrumentedTest {
     @Test fun horizontal_rule_pastes_as_markdown_divider() {
         setHtmlClip(html = "before<hr>after", plain = "beforeafter")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("---")
         contentField().assertTextContains("before", substring = true)
-        contentField().assertTextContains("---", substring = true)
         contentField().assertTextContains("after", substring = true)
     }
 
     @Test fun undo_after_horizontal_rule_paste_removes_all_pasted_content() {
         setHtmlClip(html = "before<hr>after", plain = "beforeafter")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("---", substring = true)
+        pasteAndAwait("---")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -301,8 +293,7 @@ class HtmlPasteInstrumentedTest {
             plain = "one two three"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("- three")
         contentField().assertTextContains("- one", substring = true)
         contentField().assertTextContains("- two", substring = true)
         contentField().assertTextContains("- three", substring = true)
@@ -311,9 +302,7 @@ class HtmlPasteInstrumentedTest {
     @Test fun undo_after_nested_list_paste_removes_all_pasted_content() {
         setHtmlClip(html = "<ul><li>one<ul><li>two</li></ul></li></ul>", plain = "one two")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("- two", substring = true)
+        pasteAndAwait("- two")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -329,8 +318,7 @@ class HtmlPasteInstrumentedTest {
             plain = "Buy milk Call dentist"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("- [x] Call dentist")
         contentField().assertTextContains("- [ ] Buy milk", substring = true)
         contentField().assertTextContains("- [x] Call dentist", substring = true)
     }
@@ -338,9 +326,7 @@ class HtmlPasteInstrumentedTest {
     @Test fun undo_after_checkbox_list_paste_removes_all_pasted_content() {
         setHtmlClip(html = """<li><input type="checkbox" checked>Done task</li>""", plain = "Done task")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("- [x] Done task", substring = true)
+        pasteAndAwait("- [x] Done task")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -355,8 +341,7 @@ class HtmlPasteInstrumentedTest {
             plain = "bold and italic"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("**bold**")
         contentField().assertTextContains("**bold**", substring = true)
         contentField().assertTextContains("*italic*", substring = true)
     }
@@ -364,9 +349,7 @@ class HtmlPasteInstrumentedTest {
     @Test fun undo_after_google_docs_style_span_paste_removes_all_pasted_content() {
         setHtmlClip(html = """<span style="font-weight:700">bold</span>""", plain = "bold")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("**bold**", substring = true)
+        pasteAndAwait("**bold**")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -382,9 +365,7 @@ class HtmlPasteInstrumentedTest {
             plain = "Bold Word normal word"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("**Bold Word**", substring = true)
+        pasteAndAwait("**Bold Word**")
         contentField().assertTextContains("normal word", substring = true)
         assertNoText("normal word**")
     }
@@ -395,18 +376,14 @@ class HtmlPasteInstrumentedTest {
             plain = "fun main() {     println(1) }"
         )
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("```", substring = true)
+        pasteAndAwait("```")
         contentField().assertTextContains("println(1)", substring = true)
     }
 
     @Test fun undo_after_code_block_paste_removes_all_pasted_content() {
         setHtmlClip(html = "<pre>code line</pre>", plain = "code line")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("```", substring = true)
+        pasteAndAwait("```")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -418,17 +395,14 @@ class HtmlPasteInstrumentedTest {
     @Test fun blockquote_html_pastes_with_quote_prefix() {
         setHtmlClip(html = "<blockquote>Quoted text</blockquote>", plain = "Quoted text")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("> Quoted text")
         contentField().assertTextContains("> Quoted text", substring = true)
     }
 
     @Test fun undo_after_blockquote_paste_removes_all_pasted_content() {
         setHtmlClip(html = "<blockquote>Quoted text</blockquote>", plain = "Quoted text")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains("> Quoted text", substring = true)
+        pasteAndAwait("> Quoted text")
 
         clickUndo()
         composeTestRule.waitForIdle()
@@ -441,28 +415,39 @@ class HtmlPasteInstrumentedTest {
     @Test fun underline_html_pastes_as_plain_text_without_markers() {
         setHtmlClip(html = "<u>underlined</u> text", plain = "underlined text")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("underlined text")
         contentField().assertTextContains("underlined text", substring = true)
     }
 
     @Test fun ordered_list_html_pastes_as_dash_list_without_numbers() {
         setHtmlClip(html = "<ol><li>first</li><li>second</li></ol>", plain = "first second")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
+        pasteAndAwait("- second")
         contentField().assertTextContains("- first", substring = true)
         contentField().assertTextContains("- second", substring = true)
         assertNoText("1.")
     }
 
-    @Test fun oversized_html_pastes_as_plain_text() {
-        val big = "x".repeat(HtmlToMarkdown.MAX_HTML_LENGTH + 1)
-        setHtmlClip(html = "<b>$big</b>", plain = big)
+    /**
+     * 🔄 v2.12.0: MAX_HTML_LENGTH ist auf 2 Mio. Zeichen angehoben — ein Clip dieser
+     * Größe sprengt das Binder-Transaction-Limit der Zwischenablage, der alte
+     * Oversize-Paste-Test lässt sich so nicht mehr stellen. Stattdessen ein großer
+     * (aber unterhalb des Limits liegender) Clip: muss weiterhin konvertiert werden,
+     * jetzt off-main statt stumm auf Plaintext zurückzufallen.
+     */
+    @Test fun large_html_below_limit_still_pastes_as_markdown() {
+        val filler = "x".repeat(LARGE_HTML_FILLER)
+        setHtmlClip(html = "<b>bold</b> $filler", plain = "bold $filler")
         contentField().performClick()
-        contentField().performSemanticsAction(SemanticsActions.PasteText)
-        composeTestRule.waitForIdle()
-        contentField().assertTextContains(big.take(20), substring = true)
-        assertNoText("**")
+        pasteAndAwait("**bold**")
+        contentField().assertTextContains("**bold**", substring = true)
+    }
+
+    private companion object {
+        const val PASTE_TIMEOUT_MS = 5_000L
+        const val DEBOUNCE_SETTLE_MS = 700L
+
+        /** Deutlich über dem alten 200k-Limit, weit unter dem neuen 2M-Cap. */
+        const val LARGE_HTML_FILLER = 250_000
     }
 }

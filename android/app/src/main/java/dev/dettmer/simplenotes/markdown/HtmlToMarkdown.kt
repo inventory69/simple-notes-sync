@@ -15,8 +15,25 @@ package dev.dettmer.simplenotes.markdown
  * real HTML parser only if these measurably break.
  */
 object HtmlToMarkdown {
-    /** Skip conversion above this size to keep onReceive cheap on the main thread. */
-    const val MAX_HTML_LENGTH = 200_000
+    /**
+     * Sanity-Cap gegen absurde Clips. Seit v2.12.0 läuft convert() off-main
+     * (Dispatchers.Default in NoteEditorScreen), das Limit ist kein
+     * Main-Thread-Budget mehr — Chrome-Clips mit Inline-Styles sprengen
+     * 200k schnell und fielen vorher stumm auf Plaintext zurück. Gemessen
+     * wird gegen das style-gestrippte HTML (siehe [stripStyleAttributes]).
+     */
+    const val MAX_HTML_LENGTH = 8_000_000
+
+    private val STYLE_ATTR_REGEX = Regex("""\sstyle\s*=\s*("[^"]*"|'[^']*')""", RegexOption.IGNORE_CASE)
+
+    /**
+     * Strips inline `style="…"` attributes. Chrome/Chromium annotieren beim
+     * Kopieren jedes Element mit computed styles, was den Clip um ein
+     * Vielfaches aufbläht. Nur zum **Messen** gegen [MAX_HTML_LENGTH] gedacht —
+     * [convert] bekommt weiter das Original-HTML, damit Google-Docs/Word-Fett-
+     * und Kursiv-Erkennung über style-Attribute (SPAN_*_REGEX) intakt bleibt.
+     */
+    fun stripStyleAttributes(html: String): String = STYLE_ATTR_REGEX.replace(html, "")
 
     private const val MAX_HEADING_LEVEL = 3
     private const val INLINE_NEST_PASSES = 6
