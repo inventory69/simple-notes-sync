@@ -873,4 +873,8 @@
     <string name="archive_empty_state_message">在这里显示已存档的笔记</string>
     <string name="archive_empty_state_title">存档是空的</string>
     <string name="action_unarchive">取消存档</string>
+    <string name="action_archive">存档</string>
+    <string name="note_preview_length_long">长</string>
+    <string name="filter_archive">存档</string>
+    <string name="md_toolbar_code_block">代码块</string>
 </resources>
