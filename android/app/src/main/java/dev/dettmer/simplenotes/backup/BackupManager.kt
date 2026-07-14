@@ -59,7 +59,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * @param includeServerSettings v1.9.0: If true, server credentials are included in the backup
      * @return BackupResult mit Erfolg/Fehler Info
      */
-    @Suppress("MaxLineLength")
+    // Recycle: false positive — `?.use { }` closes the stream, lint can't track through the safe call.
+    @Suppress("MaxLineLength", "Recycle")
     suspend fun createBackup(uri: Uri, password: String? = null, includeServerSettings: Boolean = false): BackupResult =
         withContext(ioDispatcher) {
             return@withContext try {
