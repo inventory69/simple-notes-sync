@@ -38,6 +38,19 @@ android {
         // Default to OFF so new installs/updates don't write sync_debug.log unless the
         // user explicitly enables it via Debug & Diagnose settings.
         buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "false")
+
+        // Debug-Builds unterscheidbar machen: welcher Build läuft beim Tester?
+        // (Beta-Feedback: alle Builds hießen "2.11.0-debug (44)"). Nur in "Über
+        // diese App" für Debug-Builds angezeigt. Build-Zeit wird bei jeder
+        // Konfiguration frisch ausgewertet — für Debug-Diagnose gewollt.
+        val gitHash = runCatching {
+            ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                .directory(rootDir).start()
+                .inputStream.bufferedReader().readText().trim()
+        }.getOrNull()?.ifEmpty { null } ?: "unknown"
+        val buildTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
+        buildConfigField("String", "GIT_HASH", "\"$gitHash\"")
+        buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
     }
     
     // Disable Google dependency metadata for F-Droid/IzzyOnDroid compatibility
