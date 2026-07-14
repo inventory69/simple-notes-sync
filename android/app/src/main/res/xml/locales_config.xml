@@ -2,10 +2,14 @@
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Default/Fallback language -->
     <locale android:name="en" />
-    <!-- Supported languages -->
+    <!-- Supported languages. Speist den System-Sprachwähler (Android 13+).
+         Aufnahme erst ab >= 40% Übersetzungsgrad, sonst sieht der Nutzer eine
+         fast komplett englische UI. Darunter (Stand v2.12.0): hi 5%, et 2%.
+         Muss synchron zu localeFilters (build.gradle.kts) und der Fallback-Liste
+         in LanguageSettingsScreen.kt gehalten werden. -->
     <locale android:name="de" />
     <locale android:name="es" />
-    <locale android:name="hi" />
+    <locale android:name="fr" />
     <locale android:name="in" />
     <locale android:name="it" />
     <locale android:name="nb" />

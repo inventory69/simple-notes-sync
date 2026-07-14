@@ -538,6 +538,12 @@
     <string name="language_system_default">System Default</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_french">Français</string>
+    <string name="language_indonesian">Bahasa Indonesia</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_norwegian">Norsk bokmål</string>
+    <string name="language_russian">Русский</string>
     <string name="language_turkish">Türkçe</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_chinese_simplified">Chinese (Simplified)</string>

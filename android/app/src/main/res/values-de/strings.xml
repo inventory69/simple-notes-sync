@@ -500,6 +500,12 @@
     <string name="language_system_default">Systemstandard</string>
     <string name="language_english">English</string>
     <string name="language_german">Deutsch</string>
+    <string name="language_spanish">Spanisch</string>
+    <string name="language_french">Französisch</string>
+    <string name="language_indonesian">Indonesisch</string>
+    <string name="language_italian">Italienisch</string>
+    <string name="language_norwegian">Norwegisch (Bokmål)</string>
+    <string name="language_russian">Russisch</string>
     <string name="language_turkish">Türkisch</string>
     <string name="language_ukrainian">Ukrainisch</string>
     <string name="language_chinese_simplified">Chinesisch (vereinfacht)</string>
