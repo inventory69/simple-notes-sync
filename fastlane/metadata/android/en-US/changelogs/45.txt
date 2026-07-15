@@ -1,6 +1,6 @@
 🖼️ v2.12.0 - Images in Notes
 
-• Insert or paste images into a note
+• Insert or paste images in a note
 • Paste web pages, formatting kept
 • Resize, align, view them full-screen
 • Images sync over WebDAV + backups
