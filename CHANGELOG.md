@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 **Image Attachments in Notes** ([1f88777](https://github.com/inventory69/simple-notes-sync/commit/1f88777), [c67725a](https://github.com/inventory69/simple-notes-sync/commit/c67725a), [c7ce100](https://github.com/inventory69/simple-notes-sync/commit/c7ce100))
 - Insert images from the picker or paste them straight from the clipboard; they render inline in the editor and preview, backed by a content-addressed asset store with a compression pipeline
 
+**Rich HTML Paste** ([c7ce100](https://github.com/inventory69/simple-notes-sync/commit/c7ce100))
+- Pasting from a web page now keeps its formatting: headings, lists, links and tables are converted to Markdown instead of dropping to plain text. The size cap was raised from 200 KB to 8 MB and the conversion runs off the main thread, so large pages paste cleanly without freezing the editor
+- Thanks to [@infosundtips](https://github.com/infosundtips) for suggesting the feature and testing it!
+
 **Image Sizing, Alignment & Viewer** ([b91b522](https://github.com/inventory69/simple-notes-sync/commit/b91b522), [9a02592](https://github.com/inventory69/simple-notes-sync/commit/9a02592))
 - Resize and align images from a menu, open them full-screen, and inspect EXIF metadata in an info dialog; size and alignment are stored as Markdown tokens
 

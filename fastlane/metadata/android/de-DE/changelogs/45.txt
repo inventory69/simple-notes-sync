@@ -1,13 +1,14 @@
 🖼️ v2.12.0 - Bilder in Notizen
 
-• Bilder direkt in Notizen einfügen
+• Bilder in Notizen einfügen
+• Webseiten mit Formatierung einfügen
 • Größe ändern, ausrichten, Vollbild
-• Bilder per WebDAV synchronisiert und gesichert
+• Bilder per WebDAV + Backups
 • PDF-Export und Widgets zeigen sie an
 • Bildkomprimierung wählbar
-• Textnotizen öffnen wahlweise in der Vorschau
-• Schnellerer Papierkorb, besserer Kalenderexport
+• Textnotizen öffnen in der Vorschau
+• Schnellerer Papierkorb + Export
 • Französisch jetzt wählbar
 • Übersetzungsupdate: FR, IT, ZH-Hans
 
-Danke an Fred, carotte31 (Französisch), GVE (Italienisch), @heretic43 (Chinesisch), Priit Jõerüüt (Estnisch)!
+Danke an infosundtips, Fred, carotte31 (Französisch), GVE (Italienisch), @heretic43 (Chinesisch), Priit Jõerüüt (Estnisch)!

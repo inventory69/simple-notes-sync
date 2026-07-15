@@ -15,6 +15,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 **Bildanhänge in Notizen** ([1f88777](https://github.com/inventory69/simple-notes-sync/commit/1f88777), [c67725a](https://github.com/inventory69/simple-notes-sync/commit/c67725a), [c7ce100](https://github.com/inventory69/simple-notes-sync/commit/c7ce100))
 - Bilder über die Auswahl einfügen oder direkt aus der Zwischenablage einsetzen; sie werden inline im Editor und in der Vorschau dargestellt, gestützt auf einen inhaltsadressierten Asset-Store mit Komprimierungs-Pipeline
 
+**Formatiertes HTML einfügen** ([c7ce100](https://github.com/inventory69/simple-notes-sync/commit/c7ce100))
+- Beim Einfügen aus einer Webseite bleibt die Formatierung erhalten: Überschriften, Listen, Links und Tabellen werden in Markdown umgewandelt statt auf reinen Text reduziert. Das Größenlimit wurde von 200 KB auf 8 MB angehoben und die Umwandlung läuft außerhalb des Main-Threads, sodass große Seiten sauber und ohne Einfrieren des Editors eingefügt werden
+- Danke an [@infosundtips](https://github.com/infosundtips) für den Vorschlag und das Testen!
+
 **Bildgröße, Ausrichtung & Viewer** ([b91b522](https://github.com/inventory69/simple-notes-sync/commit/b91b522), [9a02592](https://github.com/inventory69/simple-notes-sync/commit/9a02592))
 - Bilder per Menü skalieren und ausrichten, im Vollbild öffnen und EXIF-Metadaten in einem Info-Dialog einsehen; Größe und Ausrichtung werden als Markdown-Tokens gespeichert
 
