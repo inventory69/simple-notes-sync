@@ -99,6 +99,13 @@ style:
       - "FIXME:"
       - "STOPSHIP:"
     allowedPatterns: ""
+  ForbiddenImport:
+    active: true
+    includes: ['**/widget/**']
+    excludes: ['**/widget/*Config*.kt']
+    imports:
+      - value: 'androidx.compose.ui.platform.LocalContext'
+        reason: 'Glance stellt die Compose-UI-CompositionLocals nicht bereit — LocalContext.current wirft dort zur Laufzeit. In Glance-Code androidx.glance.LocalContext verwenden.'
   MagicNumber:
     active: true
     ignoreNumbers:
