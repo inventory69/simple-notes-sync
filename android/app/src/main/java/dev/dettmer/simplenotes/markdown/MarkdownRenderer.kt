@@ -423,12 +423,24 @@ private fun AnnotatedString.Builder.appendFormattedMatch(
     codeColor: Color
 ) {
     when {
-        match.groups[1] != null -> {
-            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[1]) }
+        match.groups[INLINE_GROUP_BOLD_ITALIC_ASTERISK] != null -> {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)) {
+                append(match.groupValues[INLINE_GROUP_BOLD_ITALIC_ASTERISK])
+            }
         }
 
-        match.groups[2] != null -> {
-            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[2]) }
+        match.groups[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE] != null -> {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)) {
+                append(match.groupValues[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE])
+            }
+        }
+
+        match.groups[INLINE_GROUP_BOLD_ASTERISK] != null -> {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[INLINE_GROUP_BOLD_ASTERISK]) }
+        }
+
+        match.groups[INLINE_GROUP_BOLD_UNDERSCORE] != null -> {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[INLINE_GROUP_BOLD_UNDERSCORE]) }
         }
 
         match.groups[INLINE_GROUP_STRIKETHROUGH] != null -> {
@@ -739,24 +751,27 @@ internal fun noteCardMarkdownPreview(content: String): AnnotatedString {
 
 /**
  * Single combined regex for all inline Markdown patterns.
- * Alternation order matters: bold (**) must appear before italic (*), double
- * underscore before single, so that `**` is never mis-parsed as two `*`.
+ * Alternation order matters: bold+italic (***) must appear before bold (**),
+ * bold before italic (*), double underscore before single, so that `**` is
+ * never mis-parsed as two `*`.
  * A single findAll pass over this regex is sufficient — matched characters
  * cannot be re-consumed by a later alternative, which correctly handles
  * adjacent delimiters such as `*italic***bold**`.
  *
  * Capture groups:
- *  1 = bold asterisk content    (**…**)
- *  2 = bold underscore content  (__…__)
- *  3 = strikethrough content    (~~…~~)
- *  4 = italic asterisk content  (*…*)
- *  5 = italic underscore content(_…_)
- *  6 = inline code content      (`…`)
+ *  1 = bold+italic asterisk content   (***…***)
+ *  2 = bold+italic underscore content (___…___)
+ *  3 = bold asterisk content    (**…**)
+ *  4 = bold underscore content  (__…__)
+ *  5 = strikethrough content    (~~…~~)
+ *  6 = italic asterisk content  (*…*)
+ *  7 = italic underscore content(_…_)
+ *  8 = inline code content      (`…`)
  *  — = auto URL                 (no capture group)
- *  7 = link display text        ([…](…))
- *  8 = link URL
- *  9 = image alt (raw, mit Tokens) (![…](.assets/…))
- * 10 = image asset name
+ *  9 = link display text        ([…](…))
+ * 10 = link URL
+ * 11 = image alt (raw, mit Tokens) (![…](.assets/…))
+ * 12 = image asset name
  *
  * Die Bild-Alternative steht bewusst am Ende: an der Position eines `!` scheitern alle
  * vorherigen Alternativen (auch die Link-Alternative — die beginnt mit `[`, nicht `!`), sodass
@@ -764,19 +779,24 @@ internal fun noteCardMarkdownPreview(content: String): AnnotatedString {
  * verhindert, dass ein späterer findAll-Versuch das innere `[alt](url)` fälschlich als Link matcht.
  */
 internal val INLINE_COMBINED_REGEX = Regex(
-    """\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|(?<![A-Za-z0-9])_(.+?)_(?![A-Za-z0-9])|""" +
+    """\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|""" +
+        """\*(.+?)\*|(?<![A-Za-z0-9])_(.+?)_(?![A-Za-z0-9])|""" +
         """`([^`]+)`|https?://[^\s<>"')\]!]+|\[([^\]]+)\]\(([^)]+)\)|""" +
         """!\[([^\]]*)]\(\.assets/([A-Za-z0-9][A-Za-z0-9._-]*)\)"""
 )
 
-internal const val INLINE_GROUP_STRIKETHROUGH = 3
-internal const val INLINE_GROUP_ITALIC_ASTERISK = 4
-internal const val INLINE_GROUP_ITALIC_UNDERSCORE = 5
-internal const val INLINE_GROUP_INLINE_CODE = 6
-internal const val INLINE_GROUP_LINK_TEXT = 7
-internal const val INLINE_GROUP_LINK_URL = 8
-internal const val INLINE_GROUP_IMAGE_ALT = 9
-internal const val INLINE_GROUP_IMAGE_ASSET = 10
+internal const val INLINE_GROUP_BOLD_ITALIC_ASTERISK = 1
+internal const val INLINE_GROUP_BOLD_ITALIC_UNDERSCORE = 2
+internal const val INLINE_GROUP_BOLD_ASTERISK = 3
+internal const val INLINE_GROUP_BOLD_UNDERSCORE = 4
+internal const val INLINE_GROUP_STRIKETHROUGH = 5
+internal const val INLINE_GROUP_ITALIC_ASTERISK = 6
+internal const val INLINE_GROUP_ITALIC_UNDERSCORE = 7
+internal const val INLINE_GROUP_INLINE_CODE = 8
+internal const val INLINE_GROUP_LINK_TEXT = 9
+internal const val INLINE_GROUP_LINK_URL = 10
+internal const val INLINE_GROUP_IMAGE_ALT = 11
+internal const val INLINE_GROUP_IMAGE_ASSET = 12
 
 /**
  * Strips inline Markdown delimiters from [text], returning plain readable text.
@@ -787,8 +807,10 @@ internal const val INLINE_GROUP_IMAGE_ASSET = 10
 internal fun stripInlineFormatting(text: String): String =
     INLINE_COMBINED_REGEX.replace(text) { match ->
         when {
-            match.groups[1] != null -> match.groupValues[1]
-            match.groups[2] != null -> match.groupValues[2]
+            match.groups[INLINE_GROUP_BOLD_ITALIC_ASTERISK] != null -> match.groupValues[INLINE_GROUP_BOLD_ITALIC_ASTERISK]
+            match.groups[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE] != null -> match.groupValues[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE]
+            match.groups[INLINE_GROUP_BOLD_ASTERISK] != null -> match.groupValues[INLINE_GROUP_BOLD_ASTERISK]
+            match.groups[INLINE_GROUP_BOLD_UNDERSCORE] != null -> match.groupValues[INLINE_GROUP_BOLD_UNDERSCORE]
             match.groups[INLINE_GROUP_STRIKETHROUGH] != null -> match.groupValues[INLINE_GROUP_STRIKETHROUGH]
             match.groups[INLINE_GROUP_ITALIC_ASTERISK] != null -> match.groupValues[INLINE_GROUP_ITALIC_ASTERISK]
             match.groups[INLINE_GROUP_ITALIC_UNDERSCORE] != null -> match.groupValues[INLINE_GROUP_ITALIC_UNDERSCORE]
@@ -817,8 +839,18 @@ internal fun markdownInlineToHtml(text: String): String = buildString {
             append(text.substring(pos, match.range.first).escapeHtml())
         }
         when {
-            match.groups[1] != null -> append("<b>${match.groupValues[1].escapeHtml()}</b>")
-            match.groups[2] != null -> append("<b>${match.groupValues[2].escapeHtml()}</b>")
+            match.groups[INLINE_GROUP_BOLD_ITALIC_ASTERISK] != null ->
+                append("<b><i>${match.groupValues[INLINE_GROUP_BOLD_ITALIC_ASTERISK].escapeHtml()}</i></b>")
+
+            match.groups[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE] != null ->
+                append("<b><i>${match.groupValues[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE].escapeHtml()}</i></b>")
+
+            match.groups[INLINE_GROUP_BOLD_ASTERISK] != null ->
+                append("<b>${match.groupValues[INLINE_GROUP_BOLD_ASTERISK].escapeHtml()}</b>")
+
+            match.groups[INLINE_GROUP_BOLD_UNDERSCORE] != null ->
+                append("<b>${match.groupValues[INLINE_GROUP_BOLD_UNDERSCORE].escapeHtml()}</b>")
+
             match.groups[INLINE_GROUP_STRIKETHROUGH] != null ->
                 append("<s>${match.groupValues[INLINE_GROUP_STRIKETHROUGH].escapeHtml()}</s>")
 

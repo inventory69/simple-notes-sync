@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.12.1] - 2026-07-17
+
+### 🐛 Bug Fixes
+
+**Text Widgets Showed an Error** ([503dc2b](https://github.com/inventory69/simple-notes-sync/commit/503dc2b))
+- Every text-note widget rendered Glance's error layout ("Content cannot be displayed") instead of the note, in all sizes. The widget's Markdown view read the Compose-UI `LocalContext`, which a Glance composition never provides. Checklist widgets were unaffected. A detekt rule now blocks the wrong import from returning via autocomplete
+
+**Bold + Italic Markdown** ([052d9eb](https://github.com/inventory69/simple-notes-sync/commit/052d9eb))
+- `***text***` and `___text___` never rendered as bold italic, and a stray `***` shifted marker pairing for every following inline tag on the same line, breaking the whole line. Fixed in the viewer, widget, HTML export and editor live preview
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.12.0] - 2026-07-14
 
 ### ✨ New Features

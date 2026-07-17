@@ -2,6 +2,8 @@ package dev.dettmer.simplenotes.markdown
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -37,6 +39,95 @@ class MarkdownOutputTransformationTest {
         val close = spans.firstOrNull { it.start == 12 && it.end == 13 }
         assertNotNull("closing backtick marker missing", close)
         assertEquals(markerColor, close!!.style.color)
+    }
+
+    // ── bold / italic / bold+italic ─────────────────────────────────────────
+
+    private fun spansOf(text: String) = t.computeMarkdownSpans(text)
+
+    private fun assertSpan(
+        spans: List<StyleSpan>,
+        start: Int,
+        end: Int,
+        message: String,
+        predicate: (StyleSpan) -> Boolean
+    ) = assertNotNull(message, spans.firstOrNull { it.start == start && it.end == end && predicate(it) })
+
+    @Test
+    fun `bold plus italic asterisk - inner text is bold and italic, markers are 3 chars`() {
+        // "***hello***" — markers [0,3) and [8,11), content "hello" at [3, 8)
+        val spans = spansOf("***hello***")
+        assertSpan(spans, 3, 8, "bold span over ***hello*** content missing") { it.style.fontWeight == FontWeight.Bold }
+        assertSpan(spans, 3, 8, "italic span over ***hello*** content missing") { it.style.fontStyle == FontStyle.Italic }
+        assertSpan(spans, 0, 3, "opening *** marker missing") { it.style.color == markerColor }
+        assertSpan(spans, 8, 11, "closing *** marker missing") { it.style.color == markerColor }
+    }
+
+    @Test
+    fun `bold plus italic underscore - inner text is bold and italic, markers are 3 chars`() {
+        val spans = spansOf("___hello___")
+        assertSpan(spans, 3, 8, "bold span over ___hello___ content missing") { it.style.fontWeight == FontWeight.Bold }
+        assertSpan(spans, 3, 8, "italic span over ___hello___ content missing") { it.style.fontStyle == FontStyle.Italic }
+        assertSpan(spans, 0, 3, "opening ___ marker missing") { it.style.color == markerColor }
+        assertSpan(spans, 8, 11, "closing ___ marker missing") { it.style.color == markerColor }
+    }
+
+    @Test
+    fun `plain bold stays bold and not italic`() {
+        // "**bold**" — content at [2, 6)
+        val spans = spansOf("**bold**")
+        assertSpan(spans, 2, 6, "bold content span missing") { it.style.fontWeight == FontWeight.Bold }
+        assertNull(
+            "plain **bold** must not produce an italic span",
+            spans.firstOrNull { it.style.fontStyle == FontStyle.Italic }
+        )
+    }
+
+    @Test
+    fun `plain italic stays italic and not bold`() {
+        // "*italic*" — content at [1, 7)
+        val spans = spansOf("*italic*")
+        assertSpan(spans, 1, 7, "italic content span missing") { it.style.fontStyle == FontStyle.Italic }
+        assertNull(
+            "plain *italic* must not produce a bold span",
+            spans.firstOrNull { it.style.fontWeight == FontWeight.Bold }
+        )
+    }
+
+    @Test
+    fun `adjacent delimiters - italic followed directly by bold stays paired`() {
+        // regression guard for e15ecb0: "*italic***bold**"
+        //  *italic* = [0, 8), content [1, 7) · **bold** = [8, 16), content [10, 14)
+        val spans = spansOf("*italic***bold**")
+        assertSpan(spans, 1, 7, "italic content span missing") { it.style.fontStyle == FontStyle.Italic }
+        assertSpan(spans, 10, 14, "bold content span missing") { it.style.fontWeight == FontWeight.Bold }
+    }
+
+    @Test
+    fun `bold plus italic does not shift marker pairing for the rest of the line`() {
+        // "***bi*** and **b** and *i*"
+        //  0        8     13    18   23
+        //  ***bi*** = [0, 8), content [3, 5)
+        //  **b**    = [13, 18), content [15, 16)
+        //  *i*      = [23, 26), content [24, 25)
+        val spans = spansOf("***bi*** and **b** and *i*")
+        assertSpan(spans, 3, 5, "bold+italic content span missing") {
+            it.style.fontWeight == FontWeight.Bold && it.style.fontStyle == FontStyle.Italic
+        }
+        assertSpan(spans, 15, 16, "bold content span missing or shifted") { it.style.fontWeight == FontWeight.Bold }
+        assertSpan(spans, 24, 25, "italic content span missing or shifted") { it.style.fontStyle == FontStyle.Italic }
+    }
+
+    @Test
+    fun `stripInlineFormatting removes triple markers`() {
+        assertEquals("x", stripInlineFormatting("***x***"))
+        assertEquals("x", stripInlineFormatting("___x___"))
+    }
+
+    @Test
+    fun `markdownInlineToHtml emits nested bold and italic tags`() {
+        assertEquals("<b><i>x</i></b>", markdownInlineToHtml("***x***"))
+        assertEquals("<b><i>x</i></b>", markdownInlineToHtml("___x___"))
     }
 
     // ── regression: intraword underscores must not be parsed as italics ─────
