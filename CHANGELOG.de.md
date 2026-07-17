@@ -8,6 +8,22 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.12.1] - 2026-07-17
+
+### 🐛 Bug-Fixes
+
+**Text-Widgets zeigten einen Fehler** ([503dc2b](https://github.com/inventory69/simple-notes-sync/commit/503dc2b))
+- Jedes Text-Notiz-Widget zeigte in allen Größen Glances Fehler-Layout („Inhalt kann nicht angezeigt werden") statt der Notiz. Die Markdown-Ansicht des Widgets las den Compose-UI-`LocalContext`, den eine Glance-Composition nie bereitstellt. Checklisten-Widgets waren nicht betroffen. Eine detekt-Regel verhindert jetzt, dass der falsche Import per Autovervollständigung zurückkommt
+
+**Fett + kursiv in Markdown** ([052d9eb](https://github.com/inventory69/simple-notes-sync/commit/052d9eb))
+- `***Text***` und `___Text___` wurden nie fett-kursiv dargestellt, und ein einzelnes `***` verschob die Marker-Zuordnung für alle folgenden Inline-Tags derselben Zeile, was die ganze Zeile zerlegte. Behoben in Viewer, Widget, HTML-Export und Editor-Live-Vorschau
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.12.0] - 2026-07-14
 
 ### ✨ Neue Funktionen

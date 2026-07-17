@@ -1,0 +1,8 @@
+👓 v2.12.1 - Text Shows Up Again
+
+• Fix: text widgets showed an error instead of the note
+• Fix: ***text*** renders as bold italic again
+• Fix: a stray *** no longer breaks the rest of the line
+• Updated translations: ZH-Hans
+
+Thanks to @heretic43 (Chinese)!

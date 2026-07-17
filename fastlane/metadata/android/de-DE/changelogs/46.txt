@@ -1,0 +1,8 @@
+👓 v2.12.1 - Text erscheint wieder
+
+• Fix: Text-Widgets zeigten einen Fehler statt der Notiz
+• Fix: ***Text*** wird wieder fett-kursiv dargestellt
+• Fix: ein einzelnes *** zerlegt nicht mehr die ganze Zeile
+• Übersetzungsupdate: ZH-Hans
+
+Danke an @heretic43 (Chinesisch)!
