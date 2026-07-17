@@ -11,6 +11,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
+/** Länge der `***`/`___`-Marker — Bold (`**`) und Italic (`*`) kommen mit 1/2 aus. */
+private const val BOLD_ITALIC_MARKER_LEN = 3
+
 private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
 private val mdTaskRegex = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
 private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
@@ -159,7 +162,16 @@ class MarkdownOutputTransformation(
         val end = match.range.last + 1
         val marker = SpanStyle(color = markerColor)
         when {
-            match.groups[1] != null || match.groups[2] != null -> {
+            match.groups[INLINE_GROUP_BOLD_ITALIC_ASTERISK] != null || match.groups[INLINE_GROUP_BOLD_ITALIC_UNDERSCORE] != null -> {
+                styles += StyleSpan(start, start + BOLD_ITALIC_MARKER_LEN, marker)
+                styles += StyleSpan(
+                    start + BOLD_ITALIC_MARKER_LEN,
+                    end - BOLD_ITALIC_MARKER_LEN,
+                    SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)
+                )
+                styles += StyleSpan(end - BOLD_ITALIC_MARKER_LEN, end, marker)
+            }
+            match.groups[INLINE_GROUP_BOLD_ASTERISK] != null || match.groups[INLINE_GROUP_BOLD_UNDERSCORE] != null -> {
                 styles += StyleSpan(start, start + 2, marker)
                 styles += StyleSpan(start + 2, end - 2, SpanStyle(fontWeight = FontWeight.Bold))
                 styles += StyleSpan(end - 2, end, marker)
