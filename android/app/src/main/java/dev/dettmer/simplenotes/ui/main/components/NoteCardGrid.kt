@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Check
@@ -45,6 +46,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -57,6 +60,9 @@ import dev.dettmer.simplenotes.models.getSize
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
+
+/** Titel darf bis zu diesem Anteil seiner Basisgröße schrumpfen, bevor Ellipsis greift. */
+private const val TITLE_AUTOSIZE_MIN_FRACTION = 0.8f
 
 /**
  * 🎨 v1.7.0: Unified Note Card for Grid Layout
@@ -145,12 +151,23 @@ fun NoteCardGrid(
                     ) {
                         NoteCardGridTypeIcon(note = note, isPinned = note.isPinned == true)
                         Spacer(modifier = Modifier.width(8.dp))
+                        val titleFontSize = MaterialTheme.typography.titleSmall.fontSize
+                        val titleAutoSize = remember(titleFontSize) {
+                            TextAutoSize.StepBased(
+                                minFontSize = titleFontSize * TITLE_AUTOSIZE_MIN_FRACTION,
+                                maxFontSize = titleFontSize
+                            )
+                        }
                         Text(
                             text = note.title,
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                hyphens = Hyphens.Auto,
+                                lineBreak = LineBreak.Paragraph
+                            ),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
+                            autoSize = titleAutoSize,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -297,10 +314,13 @@ private fun NoteCardGridTypeIcon(note: Note, isPinned: Boolean) {
 
 @Composable
 private fun NoteCardGridPreviewContent(note: Note, maxLines: Int, itemMaxLines: Int, modifier: Modifier = Modifier) {
+    // 🔧 Gemeinsamer, hyphenierter Body-Style für TEXT- und Checklist-Preview — vermeidet, dass
+    // eine der beiden Note-Typen die Hyphens.Auto/LineBreak.Paragraph-Behandlung verpasst.
+    val bodyStyle = MaterialTheme.typography.bodySmall.copy(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph)
     if (note.noteType == NoteType.TEXT) {
         Text(
             text = noteCardMarkdownPreview(note.content),
-            style = MaterialTheme.typography.bodySmall,
+            style = bodyStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
@@ -311,7 +331,7 @@ private fun NoteCardGridPreviewContent(note: Note, maxLines: Int, itemMaxLines: 
             items = note.checklistItems.orEmpty(),
             sortOptionName = note.checklistSortOption,
             maxItems = maxLines - 1,
-            style = MaterialTheme.typography.bodySmall,
+            style = bodyStyle,
             itemMaxLines = itemMaxLines,
             modifier = modifier
         )
@@ -354,6 +374,7 @@ private fun AnnotatedString.splitFirstLine(): Pair<AnnotatedString, AnnotatedStr
 @Composable
 private fun NoteCardGridIconLeadingPreview(note: Note, isPinned: Boolean, maxLines: Int) {
     val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
+    val bodyStyle = MaterialTheme.typography.bodySmall.copy(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -363,7 +384,7 @@ private fun NoteCardGridIconLeadingPreview(note: Note, isPinned: Boolean, maxLin
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = firstLine,
-            style = MaterialTheme.typography.bodySmall,
+            style = bodyStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -375,7 +396,7 @@ private fun NoteCardGridIconLeadingPreview(note: Note, isPinned: Boolean, maxLin
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = remainingLines,
-            style = MaterialTheme.typography.bodySmall,
+            style = bodyStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = maxLines - 1,
             overflow = TextOverflow.Ellipsis
