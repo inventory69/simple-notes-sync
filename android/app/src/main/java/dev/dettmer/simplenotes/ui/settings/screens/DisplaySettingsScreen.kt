@@ -80,6 +80,8 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
     val defaultNoteColor by viewModel.defaultNoteColor.collectAsState()
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
+    val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
+    val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
     val imageCompressionMode by viewModel.imageCompressionMode.collectAsState()
     var showDefaultColorPicker by remember { mutableStateOf(false) }
     val themeMode by viewModel.themeMode.collectAsState()
@@ -267,6 +269,25 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 subtitle = stringResource(R.string.editor_new_note_focus_content_description),
                 checked = newNoteFocusContent,
                 onCheckedChange = { viewModel.setNewNoteFocusContent(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
+            SettingsSwitch(
+                title = stringResource(R.string.note_card_show_timestamp_toggle),
+                subtitle = stringResource(R.string.note_card_show_timestamp_description),
+                checked = showNoteTimestamp,
+                onCheckedChange = { viewModel.setShowNoteTimestamp(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsSwitch(
+                title = stringResource(R.string.note_card_show_icon_toggle),
+                subtitle = stringResource(R.string.note_card_show_icon_description),
+                checked = showNoteTypeIcon,
+                onCheckedChange = { viewModel.setShowNoteTypeIcon(it) }
             )
 
             Spacer(modifier = Modifier.height(8.dp))

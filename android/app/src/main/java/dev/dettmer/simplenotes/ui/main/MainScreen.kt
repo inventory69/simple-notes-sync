@@ -181,6 +181,9 @@ fun MainScreen(
     val gridManualColumns by viewModel.gridManualColumns.collectAsState()
     // 🆕 v2.11.0: Note preview length preset (List + Grid)
     val notePreviewLength by viewModel.notePreviewLength.collectAsState()
+    // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
+    val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
+    val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
     // 🆕 collapsible sections (Pinned / Folders / Notes)
     val collapsedSections by viewModel.collapsedSections.collectAsState()
     // 🆕 section reordering
@@ -439,6 +442,8 @@ fun MainScreen(
                                 gridAdaptiveScaling = gridAdaptiveScaling,
                                 gridManualColumns = gridManualColumns,
                                 notePreviewLength = notePreviewLength,
+                                showNoteTimestamp = showNoteTimestamp,
+                                showNoteTypeIcon = showNoteTypeIcon,
                                 collapsedSectionsForFolder = collapsedSectionsForFolder,
                                 sectionOrder = sectionOrder,
                                 scrollToTop = scrollToTop,
@@ -841,6 +846,8 @@ private fun NotesPane(
     gridAdaptiveScaling: Boolean,
     gridManualColumns: Int,
     notePreviewLength: NotePreviewLength,
+    showNoteTimestamp: Boolean,
+    showNoteTypeIcon: Boolean,
     collapsedSectionsForFolder: (String?) -> Set<String>, // 🔧 aktiver Ordner: reaktiv, sonst gespeicherter Satz
     sectionOrder: List<String>, // 🆕 section reordering
     scrollToTop: Boolean,
@@ -955,6 +962,8 @@ private fun NotesPane(
             isSelectionMode = isSelectionMode,
             timestampTicker = timestampTicker,
             previewLength = notePreviewLength,
+            showTimestamp = showNoteTimestamp,
+            showTypeIcon = showNoteTypeIcon,
             modifier = Modifier.fillMaxSize(),
             onNoteClick = { note ->
                 focusManager.clearFocus()
@@ -984,6 +993,8 @@ private fun NotesPane(
             isSelectionMode = isSelectionMode,
             timestampTicker = timestampTicker,
             previewLength = notePreviewLength,
+            showTimestamp = showNoteTimestamp,
+            showTypeIcon = showNoteTypeIcon,
             listState = listState,
             modifier = Modifier.fillMaxSize(),
             folders = foldersForPane,

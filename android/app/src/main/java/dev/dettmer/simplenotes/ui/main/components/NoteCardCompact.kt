@@ -22,10 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.CloudDone
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,16 +38,19 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.NOTE_PREVIEW_CHAR_LIMIT
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
-import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.toReadableTime
 import dev.dettmer.simplenotes.utils.truncate
+
+/** Größe des Sync-Icons, wenn es (ohne Zeitstempel) inline ans Ende des Vorschautexts rutscht. */
+private val CORNER_SYNC_ICON_SIZE = 14.dp
 
 /**
  * 🎨 v1.7.0: Compact Note Card for Grid Layout
@@ -70,10 +69,16 @@ fun NoteCardCompact(
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
+    showTimestamp: Boolean = true,
+    showTypeIcon: Boolean = true,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // 🆕 Issue #100: Ohne Zeitstempel entfällt die Bottom-Row — das Sync-Icon rutscht stattdessen
+    // inline ans Ende des Vorschautexts (siehe NoteCardCompactPreviewContent/-IconLeadingPreview).
+    val showCornerSyncIcon = !showTimestamp && showSyncStatus
 
     // v2.5.0: Resolve note colour, fall back to theme default
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -125,8 +130,10 @@ fun NoteCardCompact(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        NoteCardCompactTypeIcon(note = note)
-                        Spacer(modifier = Modifier.width(8.dp))
+                        if (showTypeIcon) {
+                            NoteCardCompactTypeIcon(note = note)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
                         Text(
                             text = note.title,
                             style = MaterialTheme.typography.titleSmall,
@@ -138,47 +145,38 @@ fun NoteCardCompact(
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
-                    NoteCardCompactPreviewContent(note = note)
+                    NoteCardCompactPreviewContent(note = note, showSyncIcon = showCornerSyncIcon)
                 } else {
-                    NoteCardCompactIconLeadingPreview(note = note)
+                    NoteCardCompactIconLeadingPreview(
+                        note = note,
+                        showTypeIcon = showTypeIcon,
+                        showSyncIcon = showCornerSyncIcon
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                // 🆕 Issue #100: Ohne Zeitstempel entfällt die Bottom-Row komplett — das Sync-Icon
+                // hängt stattdessen inline am Ende der letzten Vorschauzeile (siehe oben).
+                if (showTimestamp) {
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                // Bottom row - KOMPAKT
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Timestamp - SMALLER
-                    Text(
-                        text = note.updatedAt.toReadableTime(context),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Sync Status - KOMPAKT
-                    if (showSyncStatus) {
-                        Spacer(modifier = Modifier.width(4.dp))
-
-                        Icon(
-                            imageVector = when (note.syncStatus) {
-                                SyncStatus.SYNCED -> Icons.Outlined.CloudDone
-                                SyncStatus.PENDING -> Icons.Outlined.CloudSync
-                                SyncStatus.CONFLICT -> Icons.Default.Warning
-                                SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
-                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff // 🆕 v1.8.0
-                            },
-                            contentDescription = null,
-                            tint = when (note.syncStatus) {
-                                SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
-                                SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
-                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) // 🆕 v1.8.0
-                                else -> MaterialTheme.colorScheme.outline
-                            },
-                            modifier = Modifier.size(14.dp)
+                    // Bottom row - KOMPAKT
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Timestamp - SMALLER
+                        Text(
+                            text = note.updatedAt.toReadableTime(context),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.weight(1f)
                         )
+
+                        // Sync Status - KOMPAKT
+                        if (showSyncStatus) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            NoteCardCompactSyncIcon(note = note, modifier = Modifier.size(14.dp))
+                        }
                     }
                 }
             }
@@ -228,6 +226,17 @@ fun NoteCardCompact(
     }
 }
 
+/** Sync-Status-Icon, gemeinsam genutzt von der Bottom-Row und dem TrailingIconText ohne Zeitstempel. */
+@Composable
+private fun NoteCardCompactSyncIcon(note: Note, modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = syncStatusIcon(note.syncStatus),
+        contentDescription = null,
+        tint = syncStatusTint(note.syncStatus),
+        modifier = modifier
+    )
+}
+
 /** Typ-Icon, gemeinsam genutzt vom Titel- und vom Icon-Leading-Preview-Fall. */
 @Composable
 private fun NoteCardCompactTypeIcon(note: Note) {
@@ -251,25 +260,18 @@ private fun NoteCardCompactTypeIcon(note: Note) {
 }
 
 @Composable
-private fun NoteCardCompactPreviewContent(note: Note, modifier: Modifier = Modifier) {
-    Text(
-        text = when (note.noteType) {
-            // 🔧 Perf: kürzen vor der Text-Messung, siehe NOTE_PREVIEW_CHAR_LIMIT
-            // in MarkdownRenderer.kt (verhindert ANR bei sehr langem Content beim Scrollen)
-            NoteType.TEXT -> note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
-            NoteType.CHECKLIST -> {
-                // 🆕 v1.8.1 (IMPL_03 + IMPL_06): Sortierte Preview mit neuen Emojis
-                note.checklistItems?.let { items ->
-                    remember(items, note.checklistSortOption) {
-                        generateChecklistPreview(items, note.checklistSortOption)
-                    }
-                }.orEmpty()
-            }
-        },
+private fun NoteCardCompactPreviewContent(note: Note, showSyncIcon: Boolean, modifier: Modifier = Modifier) {
+    TrailingIconText(
+        text = AnnotatedString(notePreviewFullText(note)),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 3,
-        overflow = TextOverflow.Ellipsis,
+        iconSize = CORNER_SYNC_ICON_SIZE,
+        icon = if (showSyncIcon) {
+            { NoteCardCompactSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE)) }
+        } else {
+            null
+        },
         modifier = modifier
     )
 }
@@ -294,35 +296,50 @@ private fun notePreviewFullText(note: Note): String {
  * Kartenbreite — dieselbe Row/Spacer-Mechanik wie im Titel-Fall, keine Sonderlogik nötig.
  */
 @Composable
-private fun NoteCardCompactIconLeadingPreview(note: Note) {
+private fun NoteCardCompactIconLeadingPreview(
+    note: Note,
+    showTypeIcon: Boolean,
+    showSyncIcon: Boolean
+) {
     val fullPreviewText = notePreviewFullText(note)
     val firstLine = fullPreviewText.substringBefore('\n')
     val remainingLines = fullPreviewText.substringAfter('\n', "")
+    val hasRemainingLines = remainingLines.isNotBlank()
+    val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {
+        { NoteCardCompactSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE)) }
+    } else {
+        null
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NoteCardCompactTypeIcon(note = note)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = firstLine,
+        if (showTypeIcon) {
+            NoteCardCompactTypeIcon(note = note)
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        // Icon hängt an dieser Zeile nur, wenn sie auch die letzte sichtbare ist
+        TrailingIconText(
+            text = AnnotatedString(firstLine),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            iconSize = CORNER_SYNC_ICON_SIZE,
+            icon = if (hasRemainingLines) null else cornerSyncIcon,
             modifier = Modifier.weight(1f)
         )
     }
 
-    if (remainingLines.isNotBlank()) {
+    if (hasRemainingLines) {
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = remainingLines,
+        TrailingIconText(
+            text = AnnotatedString(remainingLines),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            iconSize = CORNER_SYNC_ICON_SIZE,
+            icon = cornerSyncIcon
         )
     }
 }

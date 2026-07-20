@@ -286,6 +286,7 @@ class ComposeMainActivity : FragmentActivity() {
         viewModel.refreshCustomAppTitle() // 🆕 v1.9.0 (F05)
         viewModel.refreshGridSettings() // 🆕 v2.1.0 (F46)
         viewModel.refreshNotePreviewLength() // 🆕 v2.11.0
+        viewModel.refreshNoteCardDisplaySettings() // 🆕 Issue #100
 
         // Reload notes
         viewModel.loadNotes()

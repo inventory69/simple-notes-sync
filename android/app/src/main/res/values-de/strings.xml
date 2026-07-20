@@ -552,6 +552,11 @@
     <!-- 🆕 v2.11.0: Cursor-Start für neue Notizen -->
     <string name="editor_new_note_focus_content_toggle">Cursor im Inhalt starten</string>
     <string name="editor_new_note_focus_content_description">Neue Notizen fokussieren das Inhaltsfeld statt des Titels. Checklisten fokussieren den ersten Eintrag.</string>
+    <!-- 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten -->
+    <string name="note_card_show_timestamp_toggle">Zeitstempel anzeigen</string>
+    <string name="note_card_show_timestamp_description">Zeigt den Zeitstempel der letzten Bearbeitung auf Notizkarten an.</string>
+    <string name="note_card_show_icon_toggle">Notiz-Icon anzeigen</string>
+    <string name="note_card_show_icon_description">Zeigt das Typ-Icon und das Pin-Badge auf Notizkarten an.</string>
     <!-- 🆕 Bild-Attachments: Kompressionsmodus -->
     <string name="settings_image_compression_title">Bildkompression</string>
     <string name="settings_image_compression_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Bereits eingefügte Bilder werden nicht neu verarbeitet.</string>
