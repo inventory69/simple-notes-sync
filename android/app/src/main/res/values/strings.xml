@@ -1062,6 +1062,9 @@
     <string name="notes_list_widget_config_hide_pinned_desc">Pinned notes won\'t appear in the widget</string>
     <string name="notes_list_widget_config_hide_folders">Hide folder cards</string>
     <string name="notes_list_widget_config_hide_folders_desc">Folder cards won\'t appear in the widget</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="notes_list_widget_config_hide_preview">Title only</string>
+    <string name="notes_list_widget_config_hide_preview_desc">Cards show just the note title, no preview text</string>
     <string name="notes_list_widget_config_folder_label">Folder</string>
     <string name="notes_list_widget_config_folder_all">All notes</string>
     <!-- ============================= -->

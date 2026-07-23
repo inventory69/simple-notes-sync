@@ -47,7 +47,8 @@ import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
 import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 
-private const val NOTE_CARD_CHECKLIST_MAX_ITEMS = 4
+/** Vorschauzeilen bzw. Checklisten-Einträge pro Karte — 1 bei aktivem „Nur Titel" (Discussion #110). */
+private const val NOTE_CARD_BODY_MAX_LINES = 4
 
 private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL
@@ -76,6 +77,7 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
     return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
 }
 
+@Suppress("LongParameterList") // 🆕 Discussion #110: hidePreview neben bestehenden Widget-Optionen
 @Composable
 fun NotesListWidgetContent(
     notes: List<Note>,
@@ -86,6 +88,7 @@ fun NotesListWidgetContent(
     fabExpanded: Boolean = false,
     hasPinnedNotes: Boolean = false,
     hideHeader: Boolean = false,
+    hidePreview: Boolean = false,
     fontSizeScale: Float = 1.0f
 ) {
     val context = LocalContext.current
@@ -144,7 +147,14 @@ fun NotesListWidgetContent(
                     if (pinned.isNotEmpty()) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_pinned), fontSizeScale) }
                     }
-                    items(pinned.size) { i -> NoteCard(note = pinned[i], bgOpacity = cardBgOpacity, fontSizeScale = fontSizeScale) }
+                    items(pinned.size) { i ->
+                        NoteCard(
+                            note = pinned[i],
+                            bgOpacity = cardBgOpacity,
+                            fontSizeScale = fontSizeScale,
+                            hidePreview = hidePreview
+                        )
+                    }
 
                     if (folders.isNotEmpty()) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_folders), fontSizeScale) }
@@ -161,7 +171,14 @@ fun NotesListWidgetContent(
                     if (showNotesHeader) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_others), fontSizeScale) }
                     }
-                    items(others.size) { i -> NoteCard(note = others[i], bgOpacity = cardBgOpacity, fontSizeScale = fontSizeScale) }
+                    items(others.size) { i ->
+                        NoteCard(
+                            note = others[i],
+                            bgOpacity = cardBgOpacity,
+                            fontSizeScale = fontSizeScale,
+                            hidePreview = hidePreview
+                        )
+                    }
 
                     item { Spacer(GlanceModifier.height(72.dp)) }
                 }
@@ -217,7 +234,7 @@ private fun SectionHeader(title: String, fontSizeScale: Float = 1.0f) {
 }
 
 @Composable
-private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f) {
+private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f, hidePreview: Boolean = false) {
     val context = LocalContext.current
     val slot = NoteColorPalette.fromHex(note.color)
     val cardBg = if (slot != null) {
@@ -248,8 +265,10 @@ private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f) 
                 )
         ) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(10.dp)) {
-                NoteCardTitle(note, fontSizeScale)
-                NoteCardBody(note, fontSizeScale)
+                NoteCardTitle(note, fontSizeScale, hidePreview)
+                if (!hidePreview) {
+                    NoteCardBody(note = note, fontSizeScale = fontSizeScale)
+                }
             }
         }
     }
@@ -329,7 +348,7 @@ private fun NoteTypeIcon(noteType: NoteType) {
 }
 
 @Composable
-private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f) {
+private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f, hidePreview: Boolean = false) {
     val context = LocalContext.current
     val hasTitle = note.title.isNotBlank()
     val isBlankNote = note.title.isBlank() &&
@@ -377,33 +396,60 @@ private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f) {
                 maxLines = 1
             )
         }
+        // 🆕 Discussion #110: bei „Nur Titel" ohne Titel trägt die erste Inhaltszeile den
+        // Titel-Slot neben dem Icon (wie in der App) statt eine Zeile tiefer zu stehen.
+        hidePreview -> Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically
+        ) {
+            NoteTypeIcon(note.noteType)
+            NoteCardBody(
+                note = note,
+                fontSizeScale = fontSizeScale,
+                maxLines = 1,
+                modifier = GlanceModifier.defaultWeight()
+            )
+        }
         else -> NoteTypeIcon(note.noteType)
     }
 }
 
 @Composable
-private fun NoteCardBody(note: Note, fontSizeScale: Float = 1.0f) {
+private fun NoteCardBody(
+    note: Note,
+    fontSizeScale: Float = 1.0f,
+    maxLines: Int = NOTE_CARD_BODY_MAX_LINES,
+    modifier: GlanceModifier = GlanceModifier.fillMaxWidth()
+) {
     when (note.noteType) {
         NoteType.TEXT -> {
             if (note.content.isNotBlank()) {
                 WidgetInlineText(
                     text = note.content,
                     fontSize = 12f * fontSizeScale,
-                    maxLines = 4
+                    maxLines = maxLines,
+                    modifier = modifier
                 )
             }
         }
-        NoteType.CHECKLIST -> ChecklistCardPreview(note, fontSizeScale)
+        NoteType.CHECKLIST -> ChecklistCardPreview(note, fontSizeScale, maxLines, modifier)
     }
 }
 
 @Composable
-private fun ChecklistCardPreview(note: Note, fontSizeScale: Float = 1.0f) {
+private fun ChecklistCardPreview(
+    note: Note,
+    fontSizeScale: Float = 1.0f,
+    maxItems: Int = NOTE_CARD_BODY_MAX_LINES,
+    modifier: GlanceModifier = GlanceModifier.fillMaxWidth()
+) {
     val sorted = sortChecklistItemsForPreview(note.checklistItems.orEmpty(), note.checklistSortOption)
-    val visibleItems = sorted.take(NOTE_CARD_CHECKLIST_MAX_ITEMS)
-    val remaining = (sorted.size - visibleItems.size).coerceAtLeast(0)
+    val visibleItems = sorted.take(maxItems)
+    // ponytail: bei „Nur Titel" (maxItems == 1) auch das "+N more" weglassen — sonst wäre die
+    // Karte doch wieder zweizeilig
+    val remaining = if (maxItems > 1) (sorted.size - visibleItems.size).coerceAtLeast(0) else 0
 
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
+    Column(modifier = modifier) {
         visibleItems.forEach { item ->
             val prefix = if (item.isChecked) "☑️" else "☐"
             Text(

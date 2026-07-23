@@ -69,6 +69,7 @@ fun NotesListWidgetConfigScreen(
     var hideHeader by remember { mutableStateOf(initialConfig.hideHeader) }
     var hidePinned by remember { mutableStateOf(initialConfig.hidePinned) }
     var hideFolders by remember { mutableStateOf(initialConfig.hideFolders) }
+    var hidePreview by remember { mutableStateOf(initialConfig.hidePreview) }
     var selectedFolder by remember { mutableStateOf(initialConfig.selectedFolder) }
     var fontSizeScale by remember { mutableFloatStateOf(initialConfig.fontSizeScale) }
 
@@ -82,7 +83,7 @@ fun NotesListWidgetConfigScreen(
                     onSave(
                         NotesListWidgetConfig(
                             sortOption, sortDirection, noteFilter, opacity, applyOpacityToCards,
-                            hideHeader, hidePinned, hideFolders, selectedFolder, fontSizeScale
+                            hideHeader, hidePinned, hideFolders, hidePreview, selectedFolder, fontSizeScale
                         )
                     )
                 }
@@ -191,6 +192,13 @@ fun NotesListWidgetConfigScreen(
                 descriptionResId = R.string.notes_list_widget_config_hide_pinned_desc,
                 checked = hidePinned,
                 onCheckedChange = { hidePinned = it }
+            )
+            // 🆕 Discussion #110: Karten nur mit Titel
+            ConfigSwitchRow(
+                labelResId = R.string.notes_list_widget_config_hide_preview,
+                descriptionResId = R.string.notes_list_widget_config_hide_preview_desc,
+                checked = hidePreview,
+                onCheckedChange = { hidePreview = it }
             )
             if (selectedFolder.isEmpty()) {
                 ConfigSwitchRow(

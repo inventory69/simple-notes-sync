@@ -989,6 +989,9 @@
     <string name="notes_list_widget_config_hide_pinned_desc">Angepinnte Notizen werden nicht im Widget angezeigt</string>
     <string name="notes_list_widget_config_hide_folders">Ordner ausblenden</string>
     <string name="notes_list_widget_config_hide_folders_desc">Ordner werden nicht im Widget angezeigt</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="notes_list_widget_config_hide_preview">Nur Titel</string>
+    <string name="notes_list_widget_config_hide_preview_desc">Karten zeigen nur den Notiztitel, keinen Vorschautext</string>
     <string name="notes_list_widget_config_folder_label">Ordner</string>
     <string name="notes_list_widget_config_folder_all">Alle Notizen</string>
     <!-- ============================= -->

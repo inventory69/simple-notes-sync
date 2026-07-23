@@ -52,6 +52,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
             var initialHideHeader = false
             var initialHidePinned = false
             var initialHideFolders = false
+            var initialHidePreview = false
             var initialSelectedFolder = ""
             var initialFontSizeScale = 1.0f
             var folders: List<Folder> = emptyList()
@@ -79,6 +80,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                 initialHideHeader = prefs[NotesListWidgetState.KEY_HIDE_HEADER] ?: false
                 initialHidePinned = prefs[NotesListWidgetState.KEY_HIDE_PINNED] ?: false
                 initialHideFolders = prefs[NotesListWidgetState.KEY_HIDE_FOLDERS] ?: false
+                initialHidePreview = prefs[NotesListWidgetState.KEY_HIDE_PREVIEW] ?: false
                 initialSelectedFolder = prefs[NotesListWidgetState.KEY_SELECTED_FOLDER] ?: ""
                 initialFontSizeScale = prefs[NotesListWidgetState.KEY_FONT_SIZE_SCALE] ?: 1.0f
             } catch (e: Exception) {
@@ -102,6 +104,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                             hideHeader = initialHideHeader,
                             hidePinned = initialHidePinned,
                             hideFolders = initialHideFolders,
+                            hidePreview = initialHidePreview,
                             selectedFolder = initialSelectedFolder,
                             fontSizeScale = initialFontSizeScale
                         ),
@@ -128,6 +131,7 @@ class NotesListWidgetConfigActivity : ComponentActivity() {
                     prefs[NotesListWidgetState.KEY_HIDE_HEADER] = config.hideHeader
                     prefs[NotesListWidgetState.KEY_HIDE_PINNED] = config.hidePinned
                     prefs[NotesListWidgetState.KEY_HIDE_FOLDERS] = config.hideFolders
+                    prefs[NotesListWidgetState.KEY_HIDE_PREVIEW] = config.hidePreview
                     prefs[NotesListWidgetState.KEY_SELECTED_FOLDER] = config.selectedFolder
                     prefs[NotesListWidgetState.KEY_FONT_SIZE_SCALE] = config.fontSizeScale
                     prefs[NotesListWidgetState.KEY_LAST_UPDATED] = System.currentTimeMillis()
