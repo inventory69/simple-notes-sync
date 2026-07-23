@@ -258,6 +258,10 @@
     <!-- SETTINGS - MAIN               -->
     <!-- ============================= -->
     <string name="settings_title">Settings</string>
+    <string name="settings_group_app">App</string>
+    <string name="settings_group_sync">Synchronization</string>
+    <string name="settings_group_data">Data</string>
+    <string name="settings_group_info">Info</string>
     <string name="settings_language">Language</string>
     <string name="settings_server">Server Settings</string>
     <string name="settings_server_status_reachable">✅ Reachable</string>

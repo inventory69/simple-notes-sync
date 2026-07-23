@@ -37,6 +37,7 @@ import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 
 /**
  * Main Settings overview screen with clickable group cards
@@ -98,6 +99,8 @@ fun SettingsMainScreen(
                 .padding(paddingValues),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
+            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_app)) }
+
             // Language Settings
             item {
                 SettingsCard(
@@ -160,6 +163,8 @@ fun SettingsMainScreen(
                     onClick = { onNavigate(SettingsRoute.Security) }
                 )
             }
+
+            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_sync)) }
 
             // Server-Einstellungen
             item {
@@ -249,6 +254,8 @@ fun SettingsMainScreen(
                 )
             }
 
+            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_data)) }
+
             // Backup & Wiederherstellung
             item {
                 SettingsCard(
@@ -278,6 +285,8 @@ fun SettingsMainScreen(
                     onClick = { onNavigate(SettingsRoute.Trash) }
                 )
             }
+
+            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_info)) }
 
             // Über diese App
             item {
