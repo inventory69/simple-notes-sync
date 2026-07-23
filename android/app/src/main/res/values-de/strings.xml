@@ -514,6 +514,7 @@
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
     <string name="display_settings_title">Anzeige</string>
+    <string name="settings_section_note_list">Notizliste</string>
     <string name="display_mode_title">Notizen-Ansicht</string>
     <string name="display_mode_list">Listen-Ansicht</string>
     <string name="display_mode_grid">Raster-Ansicht</string>
@@ -573,6 +574,7 @@
     <string name="image_compression_mode_original_subtitle">Behält die Datei unverändert, ohne Verkleinerung. Größte Dateien; behält EXIF-/GPS-Standortdaten.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
+    <string name="theme_mode_subsection">Modus</string>
     <string name="theme_mode_system">System (wie Gerät)</string>
     <string name="theme_mode_light">Hell</string>
     <string name="theme_mode_dark">Dunkel</string>
