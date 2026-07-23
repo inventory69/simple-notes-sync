@@ -80,6 +80,7 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
     val defaultNoteColor by viewModel.defaultNoteColor.collectAsState()
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
+    val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
     val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
     val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
     val imageCompressionMode by viewModel.imageCompressionMode.collectAsState()
@@ -269,6 +270,16 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 subtitle = stringResource(R.string.editor_new_note_focus_content_description),
                 checked = newNoteFocusContent,
                 onCheckedChange = { viewModel.setNewNoteFocusContent(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🆕 Issue #112: Un-Check scrollt optional nicht mehr an den Listenanfang
+            SettingsSwitch(
+                title = stringResource(R.string.checklist_scroll_top_on_uncheck_toggle),
+                subtitle = stringResource(R.string.checklist_scroll_top_on_uncheck_description),
+                checked = checklistScrollTopOnUncheck,
+                onCheckedChange = { viewModel.setChecklistScrollTopOnUncheck(it) }
             )
 
             Spacer(modifier = Modifier.height(8.dp))

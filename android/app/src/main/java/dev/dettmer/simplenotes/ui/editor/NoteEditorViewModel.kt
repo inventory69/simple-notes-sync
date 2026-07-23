@@ -161,6 +161,13 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private val _checklistScrollAction = MutableSharedFlow<ChecklistScrollAction>(extraBufferCapacity = 1)
     val checklistScrollAction: SharedFlow<ChecklistScrollAction> = _checklistScrollAction.asSharedFlow()
 
+    // 🆕 Issue #112: Wenn aus, bleibt der Viewport beim Un-Check stehen (→ NoScroll).
+    // Wie autosaveEnabled beim VM-Bau gelesen — der Editor-VM wird pro geöffneter Notiz neu erstellt.
+    private val scrollTopOnUncheck = prefs.getBoolean(
+        Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK,
+        Constants.DEFAULT_CHECKLIST_SCROLL_TOP_ON_UNCHECK
+    )
+
     // Internal state
     // v2.3.0 (REF-012): backed by MutableStateFlow for thread-safe access;
     // delegated property syntax preserves all call sites unchanged.
@@ -597,6 +604,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * - Un-check → emits [ChecklistScrollAction.ScrollToTop]: scroll to the top of the list.
      * - Check → emits [ChecklistScrollAction.NoScroll]: keep scroll position exactly as-is.
      *
+     * 🆕 Issue #112: Ist [Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK] aus, emittiert auch
+     * der Un-Check [ChecklistScrollAction.NoScroll] — die Ansicht bleibt stehen.
+     *
      * Scroll stability for the first-visible-item case is handled in the UI layer via
      * LazyListState.requestScrollToItem(0) which overrides LazyColumn’s key-tracking
      * during the layout pass.
@@ -636,7 +646,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             }
         }
         // 🆕 v1.9.0 (F14): Emit scroll action — outside update{} to ensure state is committed first
-        if (!isChecked) {
+        if (!isChecked && scrollTopOnUncheck) {
             _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToTop)
         } else {
             _checklistScrollAction.tryEmit(ChecklistScrollAction.NoScroll)
