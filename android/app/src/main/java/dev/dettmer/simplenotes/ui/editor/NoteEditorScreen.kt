@@ -1045,12 +1045,14 @@ private fun TextNoteContent(
         if (charOff - lineStartOff > CHECKBOX_TAP_PREFIX_COLS) return
         val lineEndOff = rawText.indexOf('\n', lineStartOff).let { if (it < 0) rawText.length else it }
         val rawLine = rawText.substring(lineStartOff, lineEndOff)
-        val isChecked = rawLine.startsWith("- [x] ", ignoreCase = true)
-        val isUnchecked = rawLine.startsWith("- [ ] ")
-        if (!isChecked && !isUnchecked) return
+        val taskMatch = MarkdownEngine.TASK_LIST_REGEX.matchEntire(rawLine) ?: return
+        val isChecked = taskMatch.groupValues[1].equals("x", ignoreCase = true)
+        // Aus dem Match statt fixem Offset: der Marker darf eingerückt sein, "*"/"+" heißen,
+        // und "- []" hat gar kein Zeichen zwischen den Klammern (replace über Länge 0 = Insert).
+        val open = lineStartOff + rawLine.indexOf('[')
+        val close = lineStartOff + rawLine.indexOf(']')
         textFieldState.edit {
-            val idx = lineStartOff + 3
-            replace(idx, idx + 1, if (isChecked) " " else "x")
+            replace(open + 1, close, if (isChecked) " " else "x")
         }
     }
 

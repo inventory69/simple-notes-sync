@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.images.ImageProcessor
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
@@ -450,40 +451,6 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         } else {
             // Text note: first line = title, rest = content
             firstLine to lines.drop(1).joinToString("\n").trimStart('\n').trim()
-        }
-    }
-
-    private fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
-        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
-        val markerRegex = Regex("""^[-*•]\s+(.*)$""")
-        val cbRegex = Regex("""^\[([ xX])\]\s*(.*)$""") // group 1 = mark, group 2 = text
-        val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
-        val t = line.trim()
-        val gfm = gfmRegex.find(t)
-        return if (gfm != null) {
-            ChecklistItemState.createEmpty(index).copy(
-                text = gfm.groupValues[2].trim(),
-                isChecked = gfm.groupValues[1].lowercase() != " "
-            )
-        } else {
-            val checkmark = checkmarkRegex.find(t)
-            if (checkmark != null) {
-                ChecklistItemState.createEmpty(index).copy(
-                    text = checkmark.groupValues[1].trim(),
-                    isChecked = true
-                )
-            } else {
-                val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
-                val cbMatch = cbRegex.find(afterMarker.trim())
-                if (cbMatch != null) {
-                    ChecklistItemState.createEmpty(index).copy(
-                        text = cbMatch.groupValues[2].trim(),
-                        isChecked = cbMatch.groupValues[1].lowercase() != " "
-                    )
-                } else {
-                    ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
-                }
-            }
         }
     }
 
@@ -1663,6 +1630,48 @@ data class ChecklistItemState(
                 originalOrder = order,
                 createdAt = lastCreatedAt
             )
+        }
+    }
+}
+
+/**
+ * Normalisiert eine Textzeile zu einem Checklist-Item (TEXT → CHECKLIST).
+ *
+ * Top-Level, weil zustandslos — so direkt testbar ohne ViewModel-Instanz.
+ *
+ * Für GFM-Zeilen gilt bewusst dieselbe [MarkdownEngine.TASK_LIST_REGEX] wie in der Preview:
+ * was als Checkbox gerendert wird, wird auch als Checklist-Item konvertiert. Der Checked-Test
+ * ist `== "x"` und nicht `!= " "`, sonst würde `- []` (leere Klammern) als abgehakt gelten.
+ */
+internal fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
+    val markerRegex = Regex("""^[-*•]\s+(.*)$""")
+    val cbRegex = Regex("""^\[([ xX]?)\]\s*(.*)$""") // group 1 = mark, group 2 = text
+    val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
+    val t = line.trim()
+    val gfm = MarkdownEngine.TASK_LIST_REGEX.matchEntire(t)
+    return if (gfm != null) {
+        ChecklistItemState.createEmpty(index).copy(
+            text = gfm.groupValues[2].trim(),
+            isChecked = gfm.groupValues[1].equals("x", ignoreCase = true)
+        )
+    } else {
+        val checkmark = checkmarkRegex.find(t)
+        if (checkmark != null) {
+            ChecklistItemState.createEmpty(index).copy(
+                text = checkmark.groupValues[1].trim(),
+                isChecked = true
+            )
+        } else {
+            val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
+            val cbMatch = cbRegex.find(afterMarker.trim())
+            if (cbMatch != null) {
+                ChecklistItemState.createEmpty(index).copy(
+                    text = cbMatch.groupValues[2].trim(),
+                    isChecked = cbMatch.groupValues[1].equals("x", ignoreCase = true)
+                )
+            } else {
+                ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
+            }
         }
     }
 }

@@ -154,7 +154,9 @@ object MarkdownEngine {
                 // ── Unordered list ──
                 LIST_ITEM_REGEX.matches(line) -> {
                     val items = mutableListOf<String>()
-                    while (i < lines.size && LIST_ITEM_REGEX.matches(lines[i])) {
+                    // !TASK_LIST_REGEX ist zwingend: LIST_ITEM_REGEX matcht "- [x] foo" ebenfalls,
+                    // sonst frisst ein Bullet direkt vor Task-Zeilen die ganze Checkliste auf.
+                    while (i < lines.size && LIST_ITEM_REGEX.matches(lines[i]) && !TASK_LIST_REGEX.matches(lines[i])) {
                         val itemText = LIST_ITEM_REGEX.find(lines[i])?.groupValues?.get(1)?.trim().orEmpty()
                         items.add(itemText)
                         nextOrdinal += IMAGE_REGEX.findAll(lines[i]).count()
@@ -199,7 +201,21 @@ object MarkdownEngine {
 
     private val HEADING_REGEX = Regex("""^(#{1,3})\s+(.+)$""")
     private val LIST_ITEM_REGEX = Regex("""^\s*[-*+]\s+(.+)$""")
-    private val TASK_LIST_REGEX = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
+
+    /**
+     * GitHub-Style Task-Item. Single Source of Truth — [MarkdownOutputTransformation] und der
+     * Tap-to-Toggle im Editor matchen dagegen, damit Preview, Live-Styling und Tap dieselben
+     * Zeilen als Checkbox behandeln.
+     *
+     * Toleranzen (decken sich mit `NotesImportWizard`/`Note.parseChecklist`):
+     * - Marker `-`, `*` und `+`.
+     * - Leere Klammern `- []` zählen als unchecked.
+     * - Text ist optional (`- [ ]` frisch per Toolbar eingefügt = leere Checkbox).
+     *
+     * Das `\s+` VOR dem Text bleibt zwingend: sonst würde `- [x](https://…)` — ein Bullet mit
+     * Link-Anzeigetext `x` — als abgehakte Checkbox durchgehen.
+     */
+    internal val TASK_LIST_REGEX = Regex("""^\s*[-*+]\s+\[([ xX]?)\](?:\s+(.*))?$""")
     internal val IMAGE_REGEX = Regex("""!\[([^\]]*)]\(\.assets/([A-Za-z0-9][A-Za-z0-9._-]*)\)""")
     private const val HORIZONTAL_RULE_MIN_CHARS = 3
 
