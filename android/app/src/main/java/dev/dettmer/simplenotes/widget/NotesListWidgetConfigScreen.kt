@@ -180,61 +180,25 @@ fun NotesListWidgetConfigScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                    Text(
-                        text = stringResource(R.string.notes_list_widget_config_hide_header),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = stringResource(R.string.notes_list_widget_config_hide_header_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-                Switch(checked = hideHeader, onCheckedChange = { hideHeader = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                    Text(
-                        text = stringResource(R.string.notes_list_widget_config_hide_pinned),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = stringResource(R.string.notes_list_widget_config_hide_pinned_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-                Switch(checked = hidePinned, onCheckedChange = { hidePinned = it })
-            }
+            ConfigSwitchRow(
+                labelResId = R.string.notes_list_widget_config_hide_header,
+                descriptionResId = R.string.notes_list_widget_config_hide_header_desc,
+                checked = hideHeader,
+                onCheckedChange = { hideHeader = it }
+            )
+            ConfigSwitchRow(
+                labelResId = R.string.notes_list_widget_config_hide_pinned,
+                descriptionResId = R.string.notes_list_widget_config_hide_pinned_desc,
+                checked = hidePinned,
+                onCheckedChange = { hidePinned = it }
+            )
             if (selectedFolder.isEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                        Text(
-                            text = stringResource(R.string.notes_list_widget_config_hide_folders),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = stringResource(R.string.notes_list_widget_config_hide_folders_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    Switch(checked = hideFolders, onCheckedChange = { hideFolders = it })
-                }
+                ConfigSwitchRow(
+                    labelResId = R.string.notes_list_widget_config_hide_folders,
+                    descriptionResId = R.string.notes_list_widget_config_hide_folders_desc,
+                    checked = hideFolders,
+                    onCheckedChange = { hideFolders = it }
+                )
             }
 
             // ── Folder filter ──
@@ -316,6 +280,31 @@ fun NotesListWidgetConfigScreen(
             // Spacer so FAB doesn't cover the last item
             Spacer(Modifier.padding(bottom = 80.dp))
         }
+    }
+}
+
+/** Label + Beschreibung + Switch — Zeilenformat aller Sichtbarkeits-Optionen. */
+@Composable
+private fun ConfigSwitchRow(
+    labelResId: Int,
+    descriptionResId: Int,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+            Text(text = stringResource(labelResId), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(descriptionResId),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
