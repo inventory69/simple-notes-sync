@@ -151,15 +151,24 @@ fun NoteCard(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
+                        // 🆕 Discussion #110: ohne Vorschauzeilen hat das Sync-Icon keinen Text
+                        // mehr zum Anhängen — es rückt neben den Titel statt zu verschwinden.
+                        if (showCornerSyncIcon && previewLength.listLines == 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            NoteCardSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE))
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    NoteCardPreviewContent(
-                        note = note,
-                        maxLines = previewLength.listLines,
-                        itemMaxLines = previewLength.itemMaxLines,
-                        showSyncIcon = showCornerSyncIcon
-                    )
+                    // ponytail: 0 Zeilen = NotePreviewLength.TITLE_ONLY
+                    if (previewLength.listLines > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        NoteCardPreviewContent(
+                            note = note,
+                            maxLines = previewLength.listLines,
+                            itemMaxLines = previewLength.itemMaxLines,
+                            showSyncIcon = showCornerSyncIcon
+                        )
+                    }
                 } else {
                     NoteCardIconLeadingPreview(
                         note = note,
@@ -368,7 +377,8 @@ private fun NoteCardIconLeadingPreview(
     showSyncIcon: Boolean
 ) {
     val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
-    val hasRemainingLines = remainingLines.isNotBlank()
+    // ponytail: maxLines <= 1 = TITLE_ONLY (bzw. kein Platz mehr) — nur die Titel-Slot-Zeile bleibt
+    val hasRemainingLines = remainingLines.isNotBlank() && maxLines > 1
     val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {
         { NoteCardSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE), showDescription = false) }
     } else {

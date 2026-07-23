@@ -527,6 +527,8 @@
     <!-- 🆕 v2.11.0: Vorschaulänge der Notizen -->
     <string name="note_preview_length_title">Vorschaulänge</string>
     <string name="note_preview_length_info">Legt fest, wie viele Zeilen (bzw. Checklisten-Einträge) in der Notizvorschau angezeigt werden — in List- und Grid-Ansicht.</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="note_preview_length_title_only">Nur Titel</string>
     <string name="note_preview_length_compact">Kurz</string>
     <string name="note_preview_length_standard">Standard</string>
     <string name="note_preview_length_long">Lang</string>

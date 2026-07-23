@@ -568,6 +568,8 @@
     <!-- 🆕 v2.11.0: Note preview length -->
     <string name="note_preview_length_title">Note preview length</string>
     <string name="note_preview_length_info">Controls how many lines (or checklist items) are shown in the note preview, in both List and Grid view.</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="note_preview_length_title_only">Title only</string>
     <string name="note_preview_length_compact">Compact</string>
     <string name="note_preview_length_standard">Standard</string>
     <string name="note_preview_length_long">Long</string>

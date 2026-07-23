@@ -177,15 +177,24 @@ fun NoteCardGrid(
                             autoSize = titleAutoSize,
                             modifier = Modifier.weight(1f)
                         )
+                        // 🆕 Discussion #110: ohne Vorschauzeilen hat das Sync-Icon keinen Text
+                        // mehr zum Anhängen — es rückt neben den Titel statt zu verschwinden.
+                        if (showCornerSyncIcon && previewMaxLines == 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            NoteCardGridSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE))
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
-                    NoteCardGridPreviewContent(
-                        note = note,
-                        maxLines = previewMaxLines,
-                        itemMaxLines = previewLength.itemMaxLines,
-                        showSyncIcon = showCornerSyncIcon
-                    )
+                    // ponytail: 0 Zeilen = NotePreviewLength.TITLE_ONLY
+                    if (previewMaxLines > 0) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        NoteCardGridPreviewContent(
+                            note = note,
+                            maxLines = previewMaxLines,
+                            itemMaxLines = previewLength.itemMaxLines,
+                            showSyncIcon = showCornerSyncIcon
+                        )
+                    }
                 } else {
                     NoteCardGridIconLeadingPreview(
                         note = note,
@@ -402,7 +411,8 @@ private fun NoteCardGridIconLeadingPreview(
     showSyncIcon: Boolean
 ) {
     val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
-    val hasRemainingLines = remainingLines.isNotBlank()
+    // ponytail: maxLines <= 1 = TITLE_ONLY (bzw. kein Platz mehr) — nur die Titel-Slot-Zeile bleibt
+    val hasRemainingLines = remainingLines.isNotBlank() && maxLines > 1
     val bodyStyle = MaterialTheme.typography.bodySmall.copy(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph)
     val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {
         { NoteCardGridSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE)) }
