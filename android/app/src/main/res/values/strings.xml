@@ -273,8 +273,6 @@
     <string name="settings_sync_notifications_errors_only">Errors and warnings only</string>
     <string name="settings_sync_notifications_disabled">Notifications disabled</string>
     <string name="settings_markdown">Markdown Desktop Integration</string>
-    <string name="settings_markdown_auto_on">Auto-Sync: On</string>
-    <string name="settings_markdown_auto_off">Auto-Sync: Off</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
 
@@ -414,7 +412,6 @@
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
-    <string name="markdown_settings_title">Markdown Desktop Integration</string>
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export complete</string>
     <string name="markdown_export_progress">Exporting %1$d/%2$d notes…</string>

@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,15 +10,23 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PhonelinkRing
@@ -28,6 +37,10 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,8 +50,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,25 +69,70 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
-import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
+import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
+import kotlinx.coroutines.launch
 
 /**
  * Sync & Notification settings screen — Restructured for v1.11.0
  *
- * Three clear sections, each as a separate Composable for recomposition isolation:
+ * Four section cards, each as a separate Composable for recomposition isolation:
  * 1. Sync Triggers (5 triggers + interval selector)
  * 2. Network (WiFi-only + Parallel Connections)
  * 3. Notifications (global toggle + sub-options + permission linking)
+ * 4. Markdown (folder path + auto-sync toggle + manual sync)
  */
 @Composable
 fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigateToServerSettings: () -> Unit) {
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
     val offlineMode by viewModel.offlineMode.collectAsState()
+    val exportProgress by viewModel.markdownExportProgress.collectAsState()
+
+    // Progress dialog for the initial markdown export (moved here from MarkdownSettingsScreen)
+    exportProgress?.let { progress ->
+        AlertDialog(
+            onDismissRequest = { /* Not dismissable */ },
+            title = { Text(stringResource(R.string.markdown_dialog_title)) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = when {
+                            progress.isChecking -> stringResource(R.string.markdown_checking_server)
+                            progress.isComplete -> stringResource(R.string.markdown_export_complete)
+                            else -> stringResource(R.string.markdown_export_progress, progress.current, progress.total)
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    // 🆕 v1.10.0: Indeterminate während Server-Check, determinate beim Export
+                    if (progress.isChecking) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(
+                            progress = {
+                                if (progress.total > 0) {
+                                    progress.current.toFloat() / progress.total.toFloat()
+                                } else {
+                                    0f
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = { /* No button - auto dismiss */ }
+        )
+    }
 
     SettingsScaffold(
         title = stringResource(R.string.sync_settings_title),
@@ -114,8 +176,6 @@ fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavig
                 isServerConfigured = isServerConfigured
             )
 
-            SettingsDivider()
-
             // ═══════════════════════════════════════════════════════════════
             // SECTION 2: NETWORK
             // ═══════════════════════════════════════════════════════════════
@@ -125,13 +185,20 @@ fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavig
                 isServerConfigured = isServerConfigured
             )
 
-            SettingsDivider()
-
             // ═══════════════════════════════════════════════════════════════
             // SECTION 3: NOTIFICATIONS (v1.11.0)
             // ═══════════════════════════════════════════════════════════════
 
             NotificationSettingsSection(
+                viewModel = viewModel,
+                isServerConfigured = isServerConfigured
+            )
+
+            // ═══════════════════════════════════════════════════════════════
+            // SECTION 4: MARKDOWN — gefaltet aus dem früheren MarkdownSettingsScreen
+            // ═══════════════════════════════════════════════════════════════
+
+            MarkdownSection(
                 viewModel = viewModel,
                 isServerConfigured = isServerConfigured
             )
@@ -159,93 +226,88 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
     val triggerBoot by viewModel.triggerBoot.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
 
-    SettingsSectionHeader(text = stringResource(R.string.sync_section_triggers))
+    SettingsSectionCard(title = stringResource(R.string.sync_section_triggers)) {
+        SettingsSwitch(
+            title = stringResource(R.string.sync_trigger_on_save_title),
+            subtitle = stringResource(R.string.sync_trigger_on_save_subtitle),
+            checked = triggerOnSave,
+            onCheckedChange = { viewModel.setTriggerOnSave(it) },
+            icon = Icons.Default.Save,
+            enabled = isServerConfigured
+        )
 
-    SettingsSwitch(
-        title = stringResource(R.string.sync_trigger_on_save_title),
-        subtitle = stringResource(R.string.sync_trigger_on_save_subtitle),
-        checked = triggerOnSave,
-        onCheckedChange = { viewModel.setTriggerOnSave(it) },
-        icon = Icons.Default.Save,
-        enabled = isServerConfigured
-    )
+        SettingsSwitch(
+            title = stringResource(R.string.sync_trigger_on_resume_title),
+            subtitle = stringResource(R.string.sync_trigger_on_resume_subtitle),
+            checked = triggerOnResume,
+            onCheckedChange = { viewModel.setTriggerOnResume(it) },
+            icon = Icons.Default.PhonelinkRing,
+            enabled = isServerConfigured
+        )
 
-    SettingsSwitch(
-        title = stringResource(R.string.sync_trigger_on_resume_title),
-        subtitle = stringResource(R.string.sync_trigger_on_resume_subtitle),
-        checked = triggerOnResume,
-        onCheckedChange = { viewModel.setTriggerOnResume(it) },
-        icon = Icons.Default.PhonelinkRing,
-        enabled = isServerConfigured
-    )
+        SettingsSwitch(
+            title = stringResource(R.string.sync_trigger_wifi_connect_title),
+            subtitle = stringResource(R.string.sync_trigger_wifi_connect_subtitle),
+            checked = triggerWifiConnect,
+            onCheckedChange = { viewModel.setTriggerWifiConnect(it) },
+            icon = Icons.Default.Wifi,
+            enabled = isServerConfigured
+        )
 
-    SettingsSwitch(
-        title = stringResource(R.string.sync_trigger_wifi_connect_title),
-        subtitle = stringResource(R.string.sync_trigger_wifi_connect_subtitle),
-        checked = triggerWifiConnect,
-        onCheckedChange = { viewModel.setTriggerWifiConnect(it) },
-        icon = Icons.Default.Wifi,
-        enabled = isServerConfigured
-    )
+        SettingsSwitch(
+            title = stringResource(R.string.sync_trigger_periodic_title),
+            subtitle = stringResource(R.string.sync_trigger_periodic_subtitle),
+            checked = triggerPeriodic,
+            onCheckedChange = { viewModel.setTriggerPeriodic(it) },
+            icon = Icons.Default.Schedule,
+            enabled = isServerConfigured
+        )
 
-    SettingsSwitch(
-        title = stringResource(R.string.sync_trigger_periodic_title),
-        subtitle = stringResource(R.string.sync_trigger_periodic_subtitle),
-        checked = triggerPeriodic,
-        onCheckedChange = { viewModel.setTriggerPeriodic(it) },
-        icon = Icons.Default.Schedule,
-        enabled = isServerConfigured
-    )
-
-    // Interval selector (only visible when periodic is active)
-    if (triggerPeriodic && isServerConfigured) {
-        Spacer(modifier = Modifier.height(8.dp))
-
-        val intervalOptions = listOf(
-            RadioOption(
-                value = 15L,
-                title = stringResource(R.string.sync_interval_15min_title),
-                subtitle = null
-            ),
-            RadioOption(
-                value = 30L,
-                title = stringResource(R.string.sync_interval_30min_title),
-                subtitle = null
-            ),
-            RadioOption(
-                value = 60L,
-                title = stringResource(R.string.sync_interval_60min_title),
-                subtitle = null
+        // Interval selector (only visible when periodic is active)
+        if (triggerPeriodic && isServerConfigured) {
+            val intervalOptions = listOf(
+                RadioOption(
+                    value = 15L,
+                    title = stringResource(R.string.sync_interval_15min_title),
+                    subtitle = null
+                ),
+                RadioOption(
+                    value = 30L,
+                    title = stringResource(R.string.sync_interval_30min_title),
+                    subtitle = null
+                ),
+                RadioOption(
+                    value = 60L,
+                    title = stringResource(R.string.sync_interval_60min_title),
+                    subtitle = null
+                )
             )
+
+            SettingsRadioGroup(
+                options = intervalOptions,
+                selectedValue = syncInterval,
+                onValueSelected = { viewModel.setSyncInterval(it) }
+            )
+        }
+
+        SettingsSwitch(
+            title = stringResource(R.string.sync_trigger_boot_title),
+            subtitle = stringResource(R.string.sync_trigger_boot_subtitle),
+            checked = triggerBoot,
+            onCheckedChange = { viewModel.setTriggerBoot(it) },
+            icon = Icons.Default.SettingsInputAntenna,
+            enabled = isServerConfigured
         )
 
-        SettingsRadioGroup(
-            options = intervalOptions,
-            selectedValue = syncInterval,
-            onValueSelected = { viewModel.setSyncInterval(it) }
+        // Manual sync hint
+        SettingsHint(
+            text = if (isServerConfigured) {
+                stringResource(R.string.sync_manual_hint)
+            } else {
+                stringResource(R.string.sync_manual_hint_disabled)
+            }
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
     }
-
-    SettingsSwitch(
-        title = stringResource(R.string.sync_trigger_boot_title),
-        subtitle = stringResource(R.string.sync_trigger_boot_subtitle),
-        checked = triggerBoot,
-        onCheckedChange = { viewModel.setTriggerBoot(it) },
-        icon = Icons.Default.SettingsInputAntenna,
-        enabled = isServerConfigured
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    // Manual sync hint
-    val manualHintText = if (isServerConfigured) {
-        stringResource(R.string.sync_manual_hint)
-    } else {
-        stringResource(R.string.sync_manual_hint_disabled)
-    }
-    SettingsInfoCard(text = manualHintText)
 }
 
 /**
@@ -258,52 +320,48 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
     val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
     val maxParallelConnections by viewModel.maxParallelConnections.collectAsState()
 
-    SettingsSectionHeader(text = stringResource(R.string.sync_section_network_performance))
+    SettingsSectionCard(title = stringResource(R.string.sync_section_network_performance)) {
+        // WiFi-Only Toggle
+        SettingsSwitch(
+            title = stringResource(R.string.sync_wifi_only_title),
+            subtitle = stringResource(R.string.sync_wifi_only_subtitle),
+            checked = wifiOnlySync,
+            onCheckedChange = { viewModel.setWifiOnlySync(it) },
+            icon = Icons.Default.Wifi,
+            enabled = isServerConfigured
+        )
 
-    // WiFi-Only Toggle
-    SettingsSwitch(
-        title = stringResource(R.string.sync_wifi_only_title),
-        subtitle = stringResource(R.string.sync_wifi_only_subtitle),
-        checked = wifiOnlySync,
-        onCheckedChange = { viewModel.setWifiOnlySync(it) },
-        icon = Icons.Default.Wifi,
-        enabled = isServerConfigured
-    )
+        if (wifiOnlySync && isServerConfigured) {
+            SettingsHint(text = stringResource(R.string.sync_wifi_only_hint))
+        }
 
-    if (wifiOnlySync && isServerConfigured) {
-        SettingsInfoCard(
-            text = stringResource(R.string.sync_wifi_only_hint)
+        // 🔧 v1.9.0: Unified parallel connections (downloads + uploads)
+        val parallelOptions = listOf(
+            RadioOption(
+                value = 1,
+                title = "1 ${stringResource(R.string.sync_parallel_connections_unit)}",
+                subtitle = stringResource(R.string.sync_parallel_connections_desc_1)
+            ),
+            RadioOption(
+                value = 3,
+                title = "3 ${stringResource(R.string.sync_parallel_connections_unit)}",
+                subtitle = stringResource(R.string.sync_parallel_connections_desc_3)
+            ),
+            RadioOption(
+                value = 5,
+                title = "5 ${stringResource(R.string.sync_parallel_connections_unit)}",
+                subtitle = stringResource(R.string.sync_parallel_connections_desc_5)
+            )
+        )
+
+        SettingsRadioGroup(
+            title = stringResource(R.string.sync_parallel_connections_title),
+            options = parallelOptions,
+            selectedValue = maxParallelConnections,
+            onValueSelected = { viewModel.setMaxParallelConnections(it) },
+            enabled = isServerConfigured
         )
     }
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    // 🔧 v1.9.0: Unified parallel connections (downloads + uploads)
-    val parallelOptions = listOf(
-        RadioOption(
-            value = 1,
-            title = "1 ${stringResource(R.string.sync_parallel_connections_unit)}",
-            subtitle = stringResource(R.string.sync_parallel_connections_desc_1)
-        ),
-        RadioOption(
-            value = 3,
-            title = "3 ${stringResource(R.string.sync_parallel_connections_unit)}",
-            subtitle = stringResource(R.string.sync_parallel_connections_desc_3)
-        ),
-        RadioOption(
-            value = 5,
-            title = "5 ${stringResource(R.string.sync_parallel_connections_unit)}",
-            subtitle = stringResource(R.string.sync_parallel_connections_desc_5)
-        )
-    )
-
-    SettingsRadioGroup(
-        title = stringResource(R.string.sync_parallel_connections_title),
-        options = parallelOptions,
-        selectedValue = maxParallelConnections,
-        onValueSelected = { viewModel.setMaxParallelConnections(it) },
-        enabled = isServerConfigured
-    )
 }
 
 @Composable
@@ -438,76 +496,160 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
         )
     }
 
-    SettingsSectionHeader(text = stringResource(R.string.sync_section_notifications))
-
-    SettingsSwitch(
-        title = stringResource(R.string.notifications_enabled_title),
-        subtitle = stringResource(R.string.notifications_enabled_subtitle),
-        checked = notificationsEnabled,
-        onCheckedChange = { enabled ->
-            if (enabled) {
-                // User wants to enable notifications — check permission first
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (hasNotificationPermission.value) {
-                        // Permission already granted — just enable
-                        viewModel.setNotificationsEnabled(true)
-                    } else if (activity != null &&
-                        ActivityCompat.shouldShowRequestPermissionRationale(
-                            activity,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        )
-                    ) {
-                        // Permission denied once — show rationale, then re-ask
-                        showPermissionRationale = true
-                    } else {
-                        // Either never asked OR permanently denied
-                        val prefs = context.getSharedPreferences(
-                            dev.dettmer.simplenotes.utils.Constants.PREFS_NAME,
-                            Context.MODE_PRIVATE
-                        )
-                        val wasPermissionRequested = prefs.getBoolean(
-                            "notification_permission_requested",
-                            false
-                        )
-                        if (wasPermissionRequested) {
-                            // Permanently denied — redirect to system settings
-                            showPermissionSettingsDialog = true
-                        } else {
-                            // First time asking from settings screen
-                            prefs.edit { putBoolean("notification_permission_requested", true) }
-                            notificationPermissionLauncher.launch(
+    SettingsSectionCard(title = stringResource(R.string.sync_section_notifications)) {
+        SettingsSwitch(
+            title = stringResource(R.string.notifications_enabled_title),
+            subtitle = stringResource(R.string.notifications_enabled_subtitle),
+            checked = notificationsEnabled,
+            onCheckedChange = { enabled ->
+                if (enabled) {
+                    // User wants to enable notifications — check permission first
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (hasNotificationPermission.value) {
+                            // Permission already granted — just enable
+                            viewModel.setNotificationsEnabled(true)
+                        } else if (activity != null &&
+                            ActivityCompat.shouldShowRequestPermissionRationale(
+                                activity,
                                 Manifest.permission.POST_NOTIFICATIONS
                             )
+                        ) {
+                            // Permission denied once — show rationale, then re-ask
+                            showPermissionRationale = true
+                        } else {
+                            // Either never asked OR permanently denied
+                            val prefs = context.getSharedPreferences(
+                                dev.dettmer.simplenotes.utils.Constants.PREFS_NAME,
+                                Context.MODE_PRIVATE
+                            )
+                            val wasPermissionRequested = prefs.getBoolean(
+                                "notification_permission_requested",
+                                false
+                            )
+                            if (wasPermissionRequested) {
+                                // Permanently denied — redirect to system settings
+                                showPermissionSettingsDialog = true
+                            } else {
+                                // First time asking from settings screen
+                                prefs.edit { putBoolean("notification_permission_requested", true) }
+                                notificationPermissionLauncher.launch(
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            }
                         }
+                    } else {
+                        // Pre-Android 13 — no runtime permission needed
+                        viewModel.setNotificationsEnabled(true)
                     }
                 } else {
-                    // Pre-Android 13 — no runtime permission needed
-                    viewModel.setNotificationsEnabled(true)
+                    // User wants to disable — always allowed
+                    viewModel.setNotificationsEnabled(false)
                 }
-            } else {
-                // User wants to disable — always allowed
-                viewModel.setNotificationsEnabled(false)
+            },
+            icon = if (notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+            enabled = isServerConfigured
+        )
+
+        if (notificationsEnabled && isServerConfigured) {
+            SettingsSwitch(
+                title = stringResource(R.string.notifications_errors_only_title),
+                subtitle = stringResource(R.string.notifications_errors_only_subtitle),
+                checked = notificationsErrorsOnly,
+                onCheckedChange = { viewModel.setNotificationsErrorsOnly(it) },
+                icon = Icons.Default.ErrorOutline
+            )
+
+            SettingsSwitch(
+                title = stringResource(R.string.notifications_server_warning_title),
+                subtitle = stringResource(R.string.notifications_server_warning_subtitle),
+                checked = notificationsServerWarning,
+                onCheckedChange = { viewModel.setNotificationsServerWarning(it) },
+                icon = Icons.Default.Warning
+            )
+        }
+    }
+}
+
+/**
+ * Section 4: Markdown desktop integration.
+ * Portiert aus dem früheren MarkdownSettingsScreen — der Export-Progress-Dialog
+ * liegt im Screen-Composable, weil er außerhalb des Scroll-Columns gehört.
+ */
+@Composable
+private fun MarkdownSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
+    val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
+    val serverUrl by viewModel.serverUrl.collectAsState()
+    val syncFolderName by viewModel.syncFolderName.collectAsState()
+
+    SettingsSectionCard(title = stringResource(R.string.settings_markdown)) {
+        SettingsHint(text = stringResource(R.string.markdown_info))
+
+        // Used MD folder (only meaningful once a server is connected)
+        if (isServerConfigured) {
+            val folderPath = "$serverUrl/$syncFolderName-md"
+            val clipboard = LocalClipboard.current
+            val scope = rememberCoroutineScope()
+
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FolderOpen,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.markdown_folder_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = folderPath,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                IconButton(onClick = {
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", folderPath)))
+                    }
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(R.string.markdown_folder_copy_cd)
+                    )
+                }
             }
-        },
-        icon = if (notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
-        enabled = isServerConfigured
-    )
+        }
 
-    if (notificationsEnabled && isServerConfigured) {
+        // 🌟 v1.6.0: Disabled when offline mode active
         SettingsSwitch(
-            title = stringResource(R.string.notifications_errors_only_title),
-            subtitle = stringResource(R.string.notifications_errors_only_subtitle),
-            checked = notificationsErrorsOnly,
-            onCheckedChange = { viewModel.setNotificationsErrorsOnly(it) },
-            icon = Icons.Default.ErrorOutline
+            title = stringResource(R.string.markdown_auto_sync_title),
+            subtitle = if (!isServerConfigured) {
+                stringResource(R.string.settings_sync_offline_mode)
+            } else {
+                stringResource(R.string.markdown_auto_sync_subtitle)
+            },
+            checked = markdownAutoSync,
+            onCheckedChange = { viewModel.setMarkdownAutoSync(it) },
+            icon = Icons.Default.Description,
+            enabled = isServerConfigured
         )
 
-        SettingsSwitch(
-            title = stringResource(R.string.notifications_server_warning_title),
-            subtitle = stringResource(R.string.notifications_server_warning_subtitle),
-            checked = notificationsServerWarning,
-            onCheckedChange = { viewModel.setNotificationsServerWarning(it) },
-            icon = Icons.Default.Warning
-        )
+        // Manual sync button (only visible when auto-sync is off)
+        if (!markdownAutoSync) {
+            SettingsHint(text = stringResource(R.string.markdown_manual_sync_info))
+
+            SettingsButton(
+                text = stringResource(R.string.markdown_manual_sync_button),
+                onClick = { viewModel.performManualMarkdownSync() },
+                enabled = isServerConfigured,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
     }
 }

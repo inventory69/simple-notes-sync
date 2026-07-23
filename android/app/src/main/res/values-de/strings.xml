@@ -256,8 +256,6 @@
     <string name="settings_sync_notifications_errors_only">Nur Fehler und Warnungen</string>
     <string name="settings_sync_notifications_disabled">Benachrichtigungen deaktiviert</string>
     <string name="settings_markdown">Markdown Desktop-Integration</string>
-    <string name="settings_markdown_auto_on">Auto-Sync: An</string>
-    <string name="settings_markdown_auto_off">Auto-Sync: Aus</string>
     <string name="settings_backup">Backup &amp; Wiederherstellung</string>
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
     <!-- Issue #21: Notizen importieren -->
@@ -382,7 +380,6 @@
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
-    <string name="markdown_settings_title">Markdown Desktop-Integration</string>
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export abgeschlossen</string>
     <string name="markdown_export_progress">Exportiere %1$d/%2$d Notizen…</string>

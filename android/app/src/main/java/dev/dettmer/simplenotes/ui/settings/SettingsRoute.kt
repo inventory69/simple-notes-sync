@@ -13,8 +13,6 @@ sealed class SettingsRoute(val route: String) {
 
     data object Sync : SettingsRoute("settings_sync")
 
-    data object Markdown : SettingsRoute("settings_markdown")
-
     data object Backup : SettingsRoute("settings_backup")
 
     data object About : SettingsRoute("settings_about")

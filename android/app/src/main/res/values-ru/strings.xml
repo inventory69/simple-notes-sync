@@ -119,8 +119,6 @@
     <string name="settings_sync_notifications_errors_only">Только ошибки и предупреждения</string>
     <string name="settings_sync_notifications_disabled">Уведомления отключены</string>
     <string name="settings_markdown">Интеграция Markdown с настольным приложением</string>
-    <string name="settings_markdown_auto_on">Авто-синхронизация: Вкл</string>
-    <string name="settings_markdown_auto_off">Авто-синхронизация: Выкл</string>
     <string name="settings_backup">Резервное копирование и восстановление</string>
     <string name="settings_backup_subtitle">Локальное или серверное резервное копирование</string>
     <string name="settings_import_title">Импорт заметок</string>
@@ -206,7 +204,6 @@
     <string name="sync_manual_hint_disabled">Синхронизация недоступна в офлайн‑режиме.</string>
     <string name="sync_offline_mode_message">Вы используете приложение в офлайн‑режиме. Настройте сервер для синхронизации заметок.</string>
     <string name="sync_offline_mode_button">Настроить сервер</string>
-    <string name="markdown_settings_title">Интеграция Markdown с настольным приложением</string>
     <string name="markdown_dialog_title">Авто-синхронизация Markdown</string>
     <string name="markdown_export_complete">✅ Экспорт завершён</string>
     <string name="markdown_export_progress">Экспорт %1$d/%2$d заметок…</string>

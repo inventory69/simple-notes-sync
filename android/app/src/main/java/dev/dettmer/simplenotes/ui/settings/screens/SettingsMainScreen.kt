@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
@@ -57,7 +56,6 @@ fun SettingsMainScreen(
     val serverStatus by viewModel.serverStatus.collectAsState()
     val autoSyncEnabled by viewModel.autoSyncEnabled.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
-    val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState() // 🔧 v1.11.0
 
@@ -248,34 +246,6 @@ fun SettingsMainScreen(
                     },
                     statusColor = if (!isServerConfigured) MaterialTheme.colorScheme.tertiary else Color.Gray,
                     onClick = { onNavigate(SettingsRoute.Sync) }
-                )
-            }
-
-            // Markdown-Integration
-            item {
-                SettingsCard(
-                    icon = Icons.Default.Description,
-                    title = stringResource(R.string.settings_markdown),
-                    subtitle = if (isServerConfigured) {
-                        if (markdownAutoSync) {
-                            stringResource(R.string.settings_markdown_auto_on)
-                        } else {
-                            stringResource(R.string.settings_markdown_auto_off)
-                        }
-                    } else {
-                        null
-                    },
-                    statusText = if (!isServerConfigured) {
-                        if (offlineMode) {
-                            stringResource(R.string.settings_sync_offline_mode)
-                        } else {
-                            stringResource(R.string.settings_server_status_not_configured)
-                        }
-                    } else {
-                        null
-                    },
-                    statusColor = if (!isServerConfigured) MaterialTheme.colorScheme.tertiary else Color.Gray,
-                    onClick = { onNavigate(SettingsRoute.Markdown) }
                 )
             }
 
