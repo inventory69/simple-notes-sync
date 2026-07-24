@@ -8,6 +8,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.13.0] - 2026-07-25
+
+### ✨ New Features
+
+**Grouped Settings** ([0a859f0](https://github.com/inventory69/simple-notes-sync/commit/0a859f0), [114ddf3](https://github.com/inventory69/simple-notes-sync/commit/114ddf3), [a22e683](https://github.com/inventory69/simple-notes-sync/commit/a22e683), [3fcdc21](https://github.com/inventory69/simple-notes-sync/commit/3fcdc21))
+- Display settings had grown to 15 option groups in one flat scroll, with section headers no longer matching their content. They now sit in four cards: Appearance, Note list, Editor and Image compression. Each card collects its own state, so a single toggle no longer recomposes the whole screen
+- The markdown settings screen held one toggle, a folder row and a sync button — too little for its own screen and main-menu card. It becomes the fourth section of the sync screen, whose three existing sections turn into cards as well
+- The settings overview groups its ten cards under App, Synchronization, Data and Info headers
+
+**Title-Only Note Cards** ([726b0ab](https://github.com/inventory69/simple-notes-sync/commit/726b0ab), [7cc17ff](https://github.com/inventory69/simple-notes-sync/commit/7cc17ff))
+- A new preview-length tier shows just the title in List and Grid view, with a matching option in the notes list widget. Untitled notes keep their first content line in the title slot instead of rendering an empty card
+- Thanks to [@iergun71](https://github.com/iergun71) for the request (discussion #110)!
+
+**Hide Timestamp and Note Icon** ([46c88e7](https://github.com/inventory69/simple-notes-sync/commit/46c88e7))
+- Two toggles remove the timestamp footer and the note type icon from list, compact and grid cards. With the footer gone, the sync-status icon relocates inline to the end of the last preview line instead of vanishing behind the ellipsis
+- Thanks to [@iu0v1](https://github.com/iu0v1) for the report! (#100)
+
+**Optional Scroll-to-Top on Un-Check** ([61c9fb6](https://github.com/inventory69/simple-notes-sync/commit/61c9fb6))
+- Un-checking an item scrolled the checklist back to the top, which fights workflows like re-activating items on a grocery list. A switch in Display settings turns it off; the default is unchanged
+- Thanks to [@abacus-tabletop-games](https://github.com/abacus-tabletop-games) for the report! (#112)
+
+**Auto-Shrinking Grid Titles** ([de05dbf](https://github.com/inventory69/simple-notes-sync/commit/de05dbf))
+- Long titles in the grid shrink to 80% before falling back to ellipsis, and titles and preview text hyphenate so long unbroken words wrap instead of jumping to the next line early
+
+### 🐛 Bug Fixes
+
+**Checkboxes Vanished Below a Bullet** ([40d4d7c](https://github.com/inventory69/simple-notes-sync/commit/40d4d7c))
+- A plain bullet directly above task lines swallowed the whole checklist and rendered it as bullets with literal `[ ]` / `[x]` — exactly the list the toolbar's checklist button produces. Dates back to v1.9.0 and was visible in preview, note cards, widgets and PDF export, since all four share the parser. The task regex now also accepts `*`/`+` markers, empty brackets and missing item text, and is shared by preview, live styling and tap-to-toggle
+
+**Checklist Un-Check Animation** ([bfd6868](https://github.com/inventory69/simple-notes-sync/commit/bfd6868))
+- Un-checks that reorder across the separator left a ghost row at the viewport edge and pushed neighbours apart mid-scroll. The row now owns its exit animation and collapses in place before the model commit, and the scroll-to-top is a single pixel-exact glide instead of a visible two-phase jump. Covered by frame-exact instrumented regression tests
+
+**Widget Images Ignored the Size Preset** ([394f40e](https://github.com/inventory69/simple-notes-sync/commit/394f40e))
+- The four size presets had no effect in the note widget; every image rendered at a fixed height. The 50% default still maps to the previous size, so existing notes look unchanged
+
+**Notes List Widget Showed Stale Notes** ([6984c5a](https://github.com/inventory69/simple-notes-sync/commit/6984c5a))
+- The widget loaded its notes outside the recomposed lambda, so the list stayed frozen for the whole Glance session — edits made after opening a note from the widget never showed up
+
+**Missing Image Emoji in Widget Previews** ([f0e42bc](https://github.com/inventory69/simple-notes-sync/commit/f0e42bc))
+- Notes with images showed only their (often empty) alt text in the notes list widget instead of the 🖼 indicator the app's note cards use
+
+---
+
 ## [2.12.1] - 2026-07-17
 
 ### 🐛 Bug Fixes

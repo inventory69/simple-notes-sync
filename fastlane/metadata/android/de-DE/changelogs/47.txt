@@ -1,0 +1,13 @@
+🗂️ v2.13.0 - Aufgeräumte Einstellungen
+
+• Einstellungen in Gruppen statt einer langen Liste
+• Markdown-Einstellungen jetzt im Sync-Bildschirm
+• Neu: nur Titel auf Karten und im Listen-Widget
+• Neu: Zeitstempel oder Notiz-Icon ausblendbar
+• Neu: Scroll nach oben beim Abwählen optional
+• Fix: Checkboxen unter Aufzählungspunkt verloren
+• Fix: Widget-Bilder ignorierten die Größe
+• Fix: Listen-Widget zeigte veraltete Notizen
+• ... und mehr
+
+Danke an @iu0v1, @iergun71 und @abacus-tabletop-games!

@@ -1,0 +1,13 @@
+🗂️ v2.13.0 - Settings, Sorted
+
+• Settings grouped into sections, not one long list
+• Markdown settings moved into the sync screen
+• New: show only titles on cards and in the list widget
+• New: hide the timestamp or note icon on cards
+• New: scroll-to-top on un-check is now optional
+• Fix: checkboxes lost if a bullet sat above them
+• Fix: widget images ignored the size preset
+• Fix: list widget kept showing stale notes
+• ...and more
+
+Thanks to @iu0v1, @iergun71 and @abacus-tabletop-games!

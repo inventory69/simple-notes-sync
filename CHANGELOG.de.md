@@ -8,6 +8,49 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.13.0] - 2026-07-25
+
+### ✨ Neue Funktionen
+
+**Gruppierte Einstellungen** ([0a859f0](https://github.com/inventory69/simple-notes-sync/commit/0a859f0), [114ddf3](https://github.com/inventory69/simple-notes-sync/commit/114ddf3), [a22e683](https://github.com/inventory69/simple-notes-sync/commit/a22e683), [3fcdc21](https://github.com/inventory69/simple-notes-sync/commit/3fcdc21))
+- Die Anzeige-Einstellungen waren auf 15 Optionsgruppen in einer flachen Liste angewachsen, deren Überschriften nicht mehr zum Inhalt passten. Sie stehen jetzt in vier Karten: Erscheinungsbild, Notizliste, Editor und Bildkomprimierung. Jede Karte sammelt ihren eigenen State ein, ein einzelner Schalter komponiert also nicht mehr den ganzen Bildschirm neu
+- Der Markdown-Einstellungsbildschirm bestand aus einem Schalter, einer Ordnerzeile und einem Sync-Button — zu wenig für einen eigenen Bildschirm samt Menükarte. Er wird zum vierten Abschnitt des Sync-Bildschirms, dessen drei bestehende Abschnitte ebenfalls zu Karten werden
+- Die Einstellungsübersicht gruppiert ihre zehn Karten unter den Überschriften App, Synchronisation, Daten und Info
+
+**Notizkarten nur mit Titel** ([726b0ab](https://github.com/inventory69/simple-notes-sync/commit/726b0ab), [7cc17ff](https://github.com/inventory69/simple-notes-sync/commit/7cc17ff))
+- Eine neue Stufe der Vorschaulänge zeigt in Listen- und Rasteransicht nur noch den Titel, mit passender Option im Notizlisten-Widget. Notizen ohne Titel behalten ihre erste Inhaltszeile im Titelbereich, statt eine leere Karte zu rendern
+- Danke an [@iergun71](https://github.com/iergun71) für den Wunsch (Diskussion #110)!
+
+**Zeitstempel und Notiz-Icon ausblenden** ([46c88e7](https://github.com/inventory69/simple-notes-sync/commit/46c88e7))
+- Zwei Schalter entfernen die Zeitstempel-Fußzeile und das Typ-Icon aus Listen-, Kompakt- und Rasterkarten. Ohne Fußzeile wandert das Sync-Status-Icon ans Ende der letzten Vorschauzeile, statt hinter dem Auslassungszeichen zu verschwinden
+- Danke an [@iu0v1](https://github.com/iu0v1) für die Meldung! (#100)
+
+**Scroll nach oben beim Abwählen ist optional** ([61c9fb6](https://github.com/inventory69/simple-notes-sync/commit/61c9fb6))
+- Das Abwählen eines Eintrags scrollte die Checkliste an den Anfang, was Abläufe wie das Reaktivieren von Einträgen auf einer Einkaufsliste stört. Ein Schalter in den Anzeige-Einstellungen schaltet es ab, der Standard bleibt unverändert
+- Danke an [@abacus-tabletop-games](https://github.com/abacus-tabletop-games) für die Meldung! (#112)
+
+**Automatisch schrumpfende Rastertitel** ([de05dbf](https://github.com/inventory69/simple-notes-sync/commit/de05dbf))
+- Lange Titel im Raster schrumpfen auf 80%, bevor abgekürzt wird; Titel und Vorschautext trennen jetzt Wörter, sodass lange Wörter umbrechen, statt früh in die nächste Zeile zu springen
+
+### 🐛 Bug-Fixes
+
+**Checkboxen verschwanden unter einem Aufzählungspunkt** ([40d4d7c](https://github.com/inventory69/simple-notes-sync/commit/40d4d7c))
+- Ein einfacher Aufzählungspunkt direkt über Aufgabenzeilen verschluckte die ganze Checkliste und stellte sie als Aufzählung mit wörtlichem `[ ]` / `[x]` dar — genau die Liste, die der Checklisten-Button der Werkzeugleiste erzeugt. Der Fehler stammt aus v1.9.0 und war in Vorschau, Notizkarten, Widgets und PDF-Export sichtbar, da alle vier denselben Parser nutzen. Die Aufgaben-Regex akzeptiert jetzt auch `*`/`+`-Marker, leere Klammern und fehlenden Text und wird von Vorschau, Live-Formatierung und Tippen geteilt
+
+**Animation beim Abwählen in Checklisten** ([bfd6868](https://github.com/inventory69/simple-notes-sync/commit/bfd6868))
+- Abwählen mit Umsortierung über den Trenner hinweg ließ eine Geisterzeile am Rand des Sichtbereichs zurück und drückte die Nachbarn mitten im Scrollen auseinander. Die Zeile animiert ihren Abgang jetzt selbst und klappt an Ort und Stelle zusammen, bevor das Modell übernimmt; das Scrollen nach oben ist ein einziger pixelgenauer Gleitvorgang statt eines sichtbaren Zwei-Phasen-Sprungs. Abgesichert durch bildgenaue instrumentierte Regressionstests
+
+**Widget-Bilder ignorierten die Größe** ([394f40e](https://github.com/inventory69/simple-notes-sync/commit/394f40e))
+- Die vier Größenvorgaben hatten im Notiz-Widget keine Wirkung, jedes Bild wurde mit fester Höhe gerendert. Der Standard von 50% entspricht weiterhin der bisherigen Größe, bestehende Notizen sehen also unverändert aus
+
+**Notizlisten-Widget zeigte veraltete Notizen** ([6984c5a](https://github.com/inventory69/simple-notes-sync/commit/6984c5a))
+- Das Widget lud seine Notizen außerhalb der neu komponierten Lambda, die Liste blieb also für die gesamte Glance-Sitzung eingefroren — Änderungen nach dem Öffnen einer Notiz aus dem Widget tauchten nie auf
+
+**Fehlendes Bild-Emoji in Widget-Vorschauen** ([f0e42bc](https://github.com/inventory69/simple-notes-sync/commit/f0e42bc))
+- Notizen mit Bildern zeigten im Notizlisten-Widget nur ihren (oft leeren) Alt-Text statt des 🖼-Hinweises, den die Notizkarten der App verwenden
+
+---
+
 ## [2.12.1] - 2026-07-17
 
 ### 🐛 Bug-Fixes
