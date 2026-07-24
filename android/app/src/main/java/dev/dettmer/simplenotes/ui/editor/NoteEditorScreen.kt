@@ -8,6 +8,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -32,6 +34,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -89,6 +93,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -104,6 +109,7 @@ import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -145,6 +151,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 // 🆕 v2.12.0: Obergrenze Multi-Bild-Picker (Beta-Feedback: mehrere Bilder auf einmal)
 private const val MAX_PICKER_IMAGES = 10
@@ -160,6 +167,7 @@ private const val DRAGGING_ITEM_Z_INDEX = 10f
 // Asymmetrie, dass aufwärts wandernde Items (Uncheck) sonst hinter Nachbarn
 // gezeichnet werden, weil ihre neue (niedrigere) Composition-Position sie früher
 // im Draw-Tree platziert. Drag dominiert weiterhin (10f > 5f).
+//
 private const val CHECKING_ITEM_Z_INDEX = 5f
 
 // 🆕 v2.5.0: Gesamt-Dauer der Check-Tap-Animation in Millisekunden. Deckt
@@ -179,6 +187,293 @@ private const val CHECK_ANIMATION_TOTAL_MS = 500L
 private const val INITIAL_LAYOUT_SETTLE_TIMEOUT_MS = 250L
 private val DRAGGING_ELEVATION_DP = 8.dp
 private const val CHECKBOX_TAP_PREFIX_COLS = 5
+
+// 🔧 v2.13.0: Dauer des Eigen-Collapse beim Uncheck mit Ziel außerhalb des Viewports.
+// Kurz genug, dass der Eintrag nicht „nachhängt", lang genug, dass das Nachrücken der
+// Nachbarn als Bewegung lesbar bleibt. Siehe [DraggableChecklistItem].
+private const val UNCHECK_COLLAPSE_MS = 250
+
+// Nachlauf zwischen Collapse-Ende und Commit: so lange braucht die animateItem-Spring der
+// Nachbarn, um die letzten Pixel aufzuholen. Ohne den Nachlauf schneidet der Commit sie ab.
+private const val UNCHECK_COMMIT_SETTLE_MS = 200L
+
+// Frames, die nach dem Snap eines Commit (Scroll-to-Top-Pfad, kein Expand) ohne animateItem
+// durchlaufen müssen: einer für den Commit-Layout-Pass selbst, einer als Puffer.
+private const val PLACEMENT_SUPPRESS_FRAMES = 2
+
+// 🔧 Issue #112: ScrollToTop = Cut + pixelgenauer Glide statt animateScrollToItem(0).
+// animateScrollToItem schätzt lange Distanzen über Durchschnittshöhen und korrigiert
+// mehrphasig nach (Retargeting) — bei mehrzeiligen Einträgen las sich das als
+// „zweistufiges" Hochscrollen. Stattdessen: liegt der Viewport weiter als dieser Index
+// vom Anfang entfernt, instant auf exakt eine Viewport-Höhe vor den Anfang schneiden
+// (der übersprungene Inhalt ist off-screen) und die bekannte Rest-Distanz in einem
+// einzigen animateScrollBy gleiten — nichts zu schätzen, eine Bewegung, konstante Dauer.
+private const val SCROLL_TOP_CUT_THRESHOLD_INDEX = 3
+
+// Dauer des Glide über die letzte Viewport-Höhe. FastOutSlowIn startet schnell und
+// maskiert damit den vorausgehenden Cut.
+private const val SCROLL_TOP_GLIDE_MS = 350
+
+/** Key des Separator-Slots in der LazyColumn — nie ein Item-Key. */
+private const val SEPARATOR_ITEM_KEY = "separator"
+
+// 🔍 v2.13.0 (nur DEBUG): Frame-Trace der Check/Uncheck-Placement-Animation.
+// Zweck: nachvollziehen, warum ein nach oben wandernder Eintrag am Viewport-Rand
+// „hängen bleibt", statt durchzulaufen. Filter: `adb logcat -s ChecklistAnim:D`.
+private const val CHECK_TRACE_TAG = "ChecklistAnim"
+
+// Feste Trace-Länge. Muss über CHECK_ANIMATION_TOTAL_MS (500 ms, zIndex-Reset) hinausgehen,
+// sonst endet der Trace vor dem Moment, in dem das Item „verschwindet".
+private const val CHECK_TRACE_DURATION_MS = 700L
+
+// Item-IDs sind UUIDs — die ersten Zeichen reichen zum Zuordnen im Log.
+private const val CHECK_TRACE_ID_LEN = 8
+private const val NANOS_PER_MS = 1_000_000L
+
+/** 🔍 DEBUG: Trace-Trigger. `tapNanos` macht jeden Tap eindeutig → LaunchedEffect startet neu. */
+private data class CheckTrace(val tapNanos: Long, val itemId: String, val checked: Boolean)
+
+/**
+ * Verankert die LazyColumn **vor** dem Model-Reorder, damit LazyListItemAnimator seine
+ * from/to-Koordinaten gegen einen stabilen Anker misst. `requestScrollToItem` läuft
+ * synchron im nächsten Measure-Pass und löscht `LazyListState.lastKnownFirstItemKey` —
+ * ohne das würde die key-basierte Re-Anchor-Logik dem getoggelten Item an seine neue
+ * Position folgen und den Viewport mitziehen (→ Animation über ~0 sichtbares Delta).
+ *
+ * Zwei Viewport-Regime:
+ *
+ * **A) Viewport ganz oben** (`firstVisibleItemIndex == 0`): Index 0 an seiner exakten
+ * Scroll-Position pinnen. Bewährter Pfad aus 7156c12. `requestScrollToItem(0, 0)` wäre
+ * falsch: der Sprung um `firstVisibleItemScrollOffset` (92–175 px) landet im selben
+ * Measure-Pass wie der Reorder, LazyListItemAnimator deutet das als Scroll statt Reorder
+ * und überspringt die Placement-Animation komplett.
+ *
+ * **B1) Viewport weiter unten, getoggeltes Item ist das erste sichtbare**: Auf den Nachbarn
+ * darunter pinnen, sonst folgt LazyLists Re-Anchoring dem Item.
+ *
+ * **B2) Viewport weiter unten, getoggeltes Item ist NICHT das erste sichtbare**: gar nicht
+ * ankern. LazyList pinnt von sich aus das erste sichtbare Item an seinem Key fest — das ist
+ * exakt das gewünschte Verhalten, und jeder `requestScrollToItem`-Aufruf mit einem Index
+ * abseits von `firstVisibleItemIndex` lässt die Layout-Änderung für LazyListItemAnimator
+ * wie einen Scroll aussehen → Placement-Animation entfällt komplett.
+ *
+ * Messung v2.13.0: Anker auf `first visible` (Index 8) → Animation lief, aber der Pin traf
+ * nach dem Reorder ein anderes Item → Inhalt sprang um eine Item-Höhe. Anker auf ein Item
+ * unterhalb (Index 13, pixelgenau korrekt) → Layout stimmte, dafür verschwand das Item ohne
+ * jede Animation. Ohne Pre-Anchor entfällt beides.
+ *
+ * 🔧 v2.13.0: Nur noch für den **Check**-Pfad (Item wandert nach unten) und den seltenen
+ * Uncheck ohne Separator-Reorder — der Uncheck mit Reorder läuft über den Collapse-Pfad
+ * (siehe [onChecklistCheckedChange]) und braucht keinen Pre-Anchor mehr.
+ */
+private fun preAnchorForToggle(
+    listState: LazyListState,
+    itemKey: String,
+    checked: Boolean
+) {
+    if (listState.firstVisibleItemIndex == 0) {
+        val preservedOffset = listState.firstVisibleItemScrollOffset
+        if (BuildConfig.DEBUG) logCheckTap(listState, itemKey, checked, "A(0,$preservedOffset)")
+        listState.requestScrollToItem(0, preservedOffset)
+        return
+    }
+    val visible = listState.layoutInfo.visibleItemsInfo
+    if (visible.firstOrNull()?.key != itemKey) {
+        if (BuildConfig.DEBUG) logCheckTap(listState, itemKey, checked, "B2(kein Pre-Anchor)")
+        return
+    }
+    val anchor = visible.firstOrNull { info -> info.key != itemKey }
+    if (BuildConfig.DEBUG) {
+        logCheckTap(listState, itemKey, checked, "B1(${anchor?.index},${anchor?.offset})")
+    }
+    if (anchor != null) {
+        listState.requestScrollToItem(anchor.index, -anchor.offset)
+    }
+}
+
+/**
+ * 🔧 v2.13.0: Commit des aufgeschobenen Uncheck, nachdem die Row selbst auf Höhe 0 kollabiert ist.
+ *
+ * Vorher wird der Viewport neu verankert: Das Item verlässt seinen (jetzt 0 px hohen) Slot und
+ * wird an seiner neuen Position in der unchecked-Sektion eingefügt — meist oberhalb des
+ * Viewports. Ohne Anker würde LazyLists key-basiertes Re-Anchoring dem getoggelten Item folgen
+ * und den Inhalt um eine Item-Höhe verschieben.
+ *
+ * Der Index wird **nicht** um die Reorder-Verschiebung korrigiert: `requestScrollToItem` greift
+ * im Measure-Pass gegen den Indexraum von **vor** dem Reorder — gleiche Konvention wie B1 in
+ * [preAnchorForToggle]. Ein `+1` verschob den Inhalt messbar um genau eine Zeile zu weit
+ * (ChecklistUncheckAnimationInstrumentedTest, Teleport-Detektor).
+ *
+ * Dass `requestScrollToItem` Placement-Animationen für diesen Measure-Pass unterdrückt, ist hier
+ * **erwünscht**: die Quelle ist 0 px hoch, und an einem sichtbaren Ziel wächst die Row selbst
+ * wieder auf (Collapse-Gegenstück in [DraggableChecklistItem]) — der Animator hätte sonst wieder
+ * einen Geist am Rand geparkt.
+ *
+ * 🔧 Issue #112: `reanchor = false` auf dem Scroll-to-Top-Pfad. Der Anker dient nur der
+ * Viewport-Stabilität nach dem Commit — die Position wird hier aber im selben Atemzug per
+ * Cut+Glide verlassen. Ein pending `requestScrollToItem` konnte dem bereits laufenden
+ * `animateScrollToItem` dazwischenfunken (Viewport-Ruck zurück nach unten = sichtbare Stufe).
+ */
+private fun commitDeferredUncheck(
+    listState: LazyListState,
+    toggledId: String,
+    commitChecked: (String, Boolean) -> Unit,
+    reanchor: Boolean = true
+) {
+    val visible = listState.layoutInfo.visibleItemsInfo
+    val anchor = if (reanchor && visible.firstOrNull()?.key == toggledId) {
+        visible.firstOrNull { it.key != toggledId && it.key != SEPARATOR_ITEM_KEY }
+    } else {
+        null
+    }
+    if (BuildConfig.DEBUG) {
+        Logger.d(
+            CHECK_TRACE_TAG,
+            "[COMMIT] id=${toggledId.take(CHECK_TRACE_ID_LEN)} anchor=${anchor?.let { "${it.index}@${it.offset}" } ?: "keiner (B2)"}"
+        )
+    }
+    if (anchor != null) {
+        listState.requestScrollToItem(anchor.index, -anchor.offset)
+    }
+    commitChecked(toggledId, false)
+}
+
+/**
+ * 🔧 Issue #112: ScrollToTop als Cut auf exakt eine Viewport-Höhe vor den Anfang + ein
+ * einziger pixelgenauer Glide über genau diese Distanz (siehe
+ * [SCROLL_TOP_CUT_THRESHOLD_INDEX]). Nahe am Anfang (Cut würde sichtbar rückwärts
+ * schneiden) stattdessen direkt animateScrollToItem — über wenige Items bleibt das
+ * einphasig.
+ *
+ * @return true, wenn [itemKey] nach der Ankunft sichtbar ist — nur dann darf der
+ * Highlight-Pop feuern; ein liegengebliebener Trigger feuerte sonst später beim
+ * manuellen Scrollen.
+ */
+private suspend fun cutAndGlideToTop(listState: LazyListState, itemKey: String?): Boolean {
+    if (listState.firstVisibleItemIndex > SCROLL_TOP_CUT_THRESHOLD_INDEX) {
+        val glidePx = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+        listState.scrollToItem(index = 0, scrollOffset = glidePx)
+        listState.animateScrollBy(
+            value = -glidePx.toFloat(),
+            animationSpec = tween(SCROLL_TOP_GLIDE_MS, easing = FastOutSlowInEasing)
+        )
+    } else {
+        listState.animateScrollToItem(index = 0, scrollOffset = 0)
+    }
+    return itemKey != null && listState.layoutInfo.visibleItemsInfo.any { it.key == itemKey }
+}
+
+/**
+ * 🔧 v2.13.0: Pfad-Weiche beim Checkbox-Tap. Drei Fälle:
+ *
+ * 1. **Re-Tap auf das gerade kollabierende Item** → Abbruch. Das Model wurde nie geändert,
+ *    es genügt, den Pending-Slot zu leeren; die Row klappt wieder auf.
+ * 2. **Uncheck mit Separator-Reorder** (`separatorVisualIndex >= 0`) → **immer** aufschieben:
+ *    die Row besitzt die Exit-Animation selbst (Collapse an Ort und Stelle), Commit erst
+ *    danach. Ein Aufwärts-Placement durch LazyLayoutItemAnimator findet nie statt — der ist
+ *    für diese Richtung nachweislich nicht robust: Ziel off-screen parkt einen „Geist" am
+ *    Viewport-Rand, und parallel zum ScrollToTop entstehen Einschiebe-Artefakte bei den
+ *    Nachbarn. Das frühere Kriterium „nur wenn Ziel off-screen" ließ genau diese Fälle durch.
+ *    Ist Scroll-to-Top aktiv, feuert das ViewModel die Aktion erst beim Commit — der Scroll
+ *    läuft also nach dem Collapse und kollidiert mit keiner Placement-Animation mehr.
+ * 3. **Check — und Uncheck ohne Separator** (Sortierungen ohne Auto-Sort: das Item bewegt
+ *    sich gar nicht; sowie die komplett abgehakte Liste) → unveränderter Pfad: Pre-Anchor +
+ *    sofortiger Commit ins ViewModel.
+ *
+ * Der Pending-Slot hält genau ein Item. Ein zweiter Uncheck während eines laufenden Collapse
+ * committet den ersten sofort — kein Tap darf verloren gehen.
+ */
+@Suppress("LongParameterList") // Compose-State + Callbacks; ein Wrapper-Objekt brächte nichts
+private fun onChecklistCheckedChange(
+    listState: LazyListState,
+    itemId: String,
+    checked: Boolean,
+    separatorVisualIndex: Int,
+    pendingUncheckId: String?,
+    setPendingUncheckId: (String?) -> Unit,
+    commitChecked: (String, Boolean) -> Unit
+) {
+    if (checked && itemId == pendingUncheckId) {
+        setPendingUncheckId(null)
+        return
+    }
+    if (pendingUncheckId != null && pendingUncheckId != itemId) {
+        commitDeferredUncheck(listState, pendingUncheckId, commitChecked)
+    }
+    if (!checked && separatorVisualIndex >= 0) {
+        setPendingUncheckId(itemId)
+        return
+    }
+    setPendingUncheckId(null)
+    preAnchorForToggle(listState, itemId, checked)
+    commitChecked(itemId, checked)
+}
+
+/**
+ * 🔍 DEBUG: Zustand **vor** dem Reorder (Layout ist zu diesem Zeitpunkt noch der alte —
+ * `requestScrollToItem` greift erst im nächsten Measure-Pass).
+ */
+private fun logCheckTap(
+    listState: LazyListState,
+    itemId: String,
+    checked: Boolean,
+    anchor: String
+) {
+    val info = listState.layoutInfo
+    val self = info.visibleItemsInfo.firstOrNull { it.key == itemId }
+    Logger.d(
+        CHECK_TRACE_TAG,
+        "[TAP] id=${itemId.take(CHECK_TRACE_ID_LEN)} checked=$checked anchor=$anchor " +
+            (self?.let { "idx=${it.index} top=${it.offset} h=${it.size}" } ?: "item=offscreen") +
+            " vp=[${info.viewportStartOffset},${info.viewportEndOffset}]" +
+            " first=${listState.firstVisibleItemIndex}/${listState.firstVisibleItemScrollOffset}" +
+            " visible=${info.visibleItemsInfo.size} total=${info.totalItemsCount}"
+    )
+    Logger.d(CHECK_TRACE_TAG, "[WIN-BEFORE] ${windowDump(info)}")
+}
+
+/** 🔍 DEBUG: `index:key@offset+höhe` aller platzierten Items — zeigt Index-Verschiebung und Überlappung. */
+private fun windowDump(info: LazyListLayoutInfo): String =
+    info.visibleItemsInfo.joinToString(" ") {
+        "${it.index}:${it.key.toString().take(CHECK_TRACE_ID_LEN)}@${it.offset}+${it.size}"
+    }
+
+/**
+ * 🔍 DEBUG: Loggt [CHECK_TRACE_DURATION_MS] lang pro Frame die Position des getoggelten Items
+ * relativ zum Viewport. Feste Länge statt Abbruch bei stabiler Position: der interessante
+ * Moment (zIndex-Reset nach CHECK_ANIMATION_TOTAL_MS) liegt hinter der Ruhephase.
+ *
+ * `GONE` heißt: Item ist nicht mehr in `visibleItemsInfo` — sichtbar sein kann es trotzdem
+ * noch, wenn der Item-Animator es über den Rand hinaus zeichnet.
+ */
+private suspend fun traceCheckPlacement(listState: LazyListState, trace: CheckTrace) {
+    var lastOffset: Int? = null
+    var frame = 0
+    while (System.nanoTime() - trace.tapNanos < CHECK_TRACE_DURATION_MS * NANOS_PER_MS) {
+        withFrameNanos { it }
+        val info = listState.layoutInfo
+        val self = info.visibleItemsInfo.firstOrNull { it.key == trace.itemId }
+        lastOffset = self?.offset
+        Logger.d(
+            CHECK_TRACE_TAG,
+            "[F$frame] +${(System.nanoTime() - trace.tapNanos) / NANOS_PER_MS}ms " +
+                (self?.let { "idx=${it.index} top=${it.offset} bottom=${it.offset + it.size}" } ?: "GONE") +
+                " vp=[${info.viewportStartOffset},${info.viewportEndOffset}]" +
+                " win=[${info.visibleItemsInfo.firstOrNull()?.index}..${info.visibleItemsInfo.lastOrNull()?.index}]" +
+                " sep=${info.visibleItemsInfo.firstOrNull { it.key == "separator" }?.offset ?: "-"}" +
+                " first=${listState.firstVisibleItemIndex}/${listState.firstVisibleItemScrollOffset}" +
+                " scrolling=${listState.isScrollInProgress}"
+        )
+        // Fenster-Dump nur im ersten Frame — danach reicht die Kompaktzeile.
+        if (frame == 0) Logger.d(CHECK_TRACE_TAG, "[WIN-AFTER] ${windowDump(info)}")
+        frame++
+    }
+    Logger.d(
+        CHECK_TRACE_TAG,
+        "[END] id=${trace.itemId.take(CHECK_TRACE_ID_LEN)} checked=${trace.checked} frames=$frame finalTop=$lastOffset"
+    )
+    Logger.d(CHECK_TRACE_TAG, "[WIN-END] ${windowDump(listState.layoutInfo)}")
+}
 
 /**
  * Main Composable for the Note Editor screen.
@@ -805,6 +1100,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                             scope = scope,
                             focusNewItemId = focusNewItemId,
                             currentSortOption = lastChecklistSortOption, // 🔀 v1.8.0
+                            scrollTopOnUncheck = viewModel.scrollTopOnUncheck, // 🆕 Issue #112
                             checklistScrollAction = viewModel.checklistScrollAction, // 🆕 v1.9.0 (F14)
                             onTextChange = { id, text -> viewModel.updateChecklistItemText(id, text) },
                             onCheckedChange = { id, checked ->
@@ -1128,7 +1424,12 @@ private fun LazyItemScope.DraggableChecklistItem(
     onAddToCalendar: (String) -> Unit,
     onFocusHandled: () -> Unit,
     onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
-    placementAnimationsEnabled: Boolean // 🔧 v2.5.x: Gate gegen Open-Burst
+    placementAnimationsEnabled: Boolean, // 🔧 v2.5.x: Gate gegen Open-Burst
+    isPendingUncheck: Boolean, // 🔧 v2.13.0: Uncheck aufgeschoben — Collapse statt Reorder-Animation
+    scrollTopOnUncheck: Boolean, // 🆕 Issue #112: Commit ohne Settle + ohne Expand (Scroll übernimmt)
+    onUncheckCommit: (String) -> Unit, // 🔧 v2.13.0: Commit nach abgeschlossenem Collapse
+    topHighlightId: String?, // 🔧 Issue #112: Highlight-Pop nach ScrollToTop-Ankunft
+    onTopHighlightShown: () -> Unit // 🔧 Issue #112: konsumiert topHighlightId
 ) {
     // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
     // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
@@ -1165,8 +1466,96 @@ private fun LazyItemScope.DraggableChecklistItem(
     }
     LaunchedEffect(isCheckAnimating, item.id) {
         if (isCheckAnimating) {
+            // 🔍 DEBUG: markiert das zIndex-/Glow-Fenster in derselben Timeline wie der Frame-Trace
+            if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[ZIDX] on id=${item.id.take(CHECK_TRACE_ID_LEN)}")
             delay(CHECK_ANIMATION_TOTAL_MS)
             isCheckAnimating = false
+            if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[ZIDX] off id=${item.id.take(CHECK_TRACE_ID_LEN)}")
+        }
+    }
+
+    // 🔧 Issue #112: Frischer Highlight-Pop, nachdem der ScrollToTop das Item oben ins Bild
+    // gebracht hat. Die eigene Tap-Animation kann das nicht leisten: sie wird beim Collapse
+    // bewusst beendet, und beim Commit wird die Composition disposed (Item landet oberhalb
+    // des Viewports) — nach dem Scroll startet hier alles frisch, inkl. Flip-Detektor.
+    LaunchedEffect(topHighlightId) {
+        if (topHighlightId == item.id) {
+            onTopHighlightShown()
+            isCheckAnimating = true
+        }
+    }
+
+    // 🔧 v2.13.0: Eigene Exit-Animation für jeden Uncheck mit Separator-Reorder.
+    // LazyLayoutItemAnimator ist für die Aufwärts-Richtung nicht robust (Geist am Viewport-Rand
+    // bei Ziel off-screen, Einschiebe-Artefakte parallel zum ScrollToTop). Deshalb besitzt die
+    // Row die Animation selbst: Höhe + Alpha → 0 an Ort und Stelle, Commit des Reorders erst
+    // danach (onUncheckCommit). Der Animator hat dann nichts mehr zu animieren; ist die
+    // Zielposition sichtbar, wächst die Row dort anschließend wieder auf (Gegenstück zum
+    // Collapse). Das Model bleibt bis zum Commit unverändert — die Checkbox zeigt nur
+    // optimistisch ungecheckt (checkedOverride). Damit bleibt die v2.5.0-Invariante
+    // „isChecked-Flip und Sort im selben State-Snapshot" unangetastet.
+    val collapse = remember(item.id) { Animatable(1f) }
+
+    // Solange dieses Item seine Exit-Animation selbst fährt, darf LazyLayoutItemAnimator nicht
+    // mitmischen — weder beim Schrumpfen noch im Commit-Pass danach. Ohne dieses Gate animiert
+    // er den Reorder, sobald die Row wieder auf volle Höhe schnappt, und schiebt sie quer durchs
+    // Bild nach oben: derselbe Geist, nur 250 ms später (gemessen in
+    // ChecklistUncheckAnimationInstrumentedTest). Anders als die verworfene Variante ohne
+    // Collapse kostet das keine Nachbar-Animation: die Nachbarn sind während des Collapse
+    // bereits kontinuierlich nachgerückt.
+    var collapseOwnsPlacement by remember(item.id) { mutableStateOf(false) }
+
+    LaunchedEffect(isPendingUncheck) {
+        if (isPendingUncheck) {
+            // Glow/Scale-Pop sofort beenden: auf einer kollabierenden Row wirkt das Highlight
+            // falsch — und es klebte sonst nach dem ScrollToTop sichtbar am wieder
+            // auftauchenden Item (die 500-ms-Animation lief den Scroll schlicht ab).
+            // Nach Scroll-Ankunft triggert topHighlightId stattdessen einen frischen Pop.
+            isCheckAnimating = false
+            collapseOwnsPlacement = true
+            collapse.animateTo(0f, tween(UNCHECK_COLLAPSE_MS))
+            if (!scrollTopOnUncheck) {
+                // Die Nachbarn folgen der schrumpfenden Row über ihre animateItem-Spring und
+                // hinken dabei hinterher. Der Commit killt via requestScrollToItem alle
+                // Placement-Animationen — käme er sofort, schnappte der Rest sichtbar nach
+                // (gemessen ~1/3 Zeilenhöhe in einem Frame). Deshalb erst die Spring auslaufen
+                // lassen; die Row ist bereits unsichtbar, die Wartezeit kostet optisch nichts.
+                // Mit Scroll-to-Top entfällt das: der direkt folgende Scroll übernimmt die
+                // gesamte Bewegung und maskiert den Spring-Schnitt — dafür startet der Scroll
+                // ~200 ms früher, was den Tap spürbar direkter macht.
+                delay(UNCHECK_COMMIT_SETTLE_MS)
+            }
+            onUncheckCommit(item.id)
+            return@LaunchedEffect
+        }
+        if (!collapseOwnsPlacement) return@LaunchedEffect
+        if (scrollTopOnUncheck && !item.isChecked) {
+            // Commit mit folgendem ScrollToTop: NICHT am Ziel aufwachsen — ein Expand während
+            // animateScrollToItem drückt die Nachbarn mitten in der Scroll-Bewegung auseinander
+            // (sichtbares „Einschieben"). Höhe still zurücksetzen; das Item ist beim Commit
+            // off-screen, der Scroll bringt es fertig aufgebaut ins Bild.
+            collapse.snapTo(1f)
+            repeat(PLACEMENT_SUPPRESS_FRAMES) { withFrameNanos { } }
+        } else {
+            // Beide Wege enden mit voller Höhe:
+            // - Abbruch per Re-Tap: das Model wurde nie geändert → Row klappt an Ort und
+            //   Stelle wieder auf.
+            // - Nach dem Commit ohne Scroll: das Item sitzt an seiner neuen Position in der
+            //   unchecked-Sektion. Ist die sichtbar, wächst die Row dort als Gegenstück zum
+            //   Collapse auf; off-screen läuft die Animation unsichtbar und kostet nichts.
+            // Solange sie läuft, bleibt animateItem über collapseOwnsPlacement aus — danach
+            // startet der Modifier ohne Baseline, also ohne nachgeholte Placement-Animation.
+            collapse.animateTo(1f, tween(UNCHECK_COLLAPSE_MS))
+        }
+        collapseOwnsPlacement = false
+    }
+    // Screen/Item wird disposed, während der Collapse läuft → Commit sofort nachholen.
+    // Ohne das ginge der Tap verloren (das Model wurde ja noch nicht angefasst).
+    val pendingAtDispose = rememberUpdatedState(isPendingUncheck)
+    val commitAtDispose = rememberUpdatedState(onUncheckCommit)
+    DisposableEffect(item.id) {
+        onDispose {
+            if (pendingAtDispose.value) commitAtDispose.value(item.id)
         }
     }
 
@@ -1182,6 +1571,9 @@ private fun LazyItemScope.DraggableChecklistItem(
         onAddToCalendar = { onAddToCalendar(item.id) },
         isCheckAnimating = isCheckAnimating, // 🆕 v2.5.0
         onCheckboxTap = { isCheckAnimating = true }, // 🆕 v2.5.0
+        // 🔧 v2.13.0: Solange der Uncheck aufgeschoben ist, zeigt die Checkbox optimistisch
+        // ungecheckt — das Model folgt erst beim Commit.
+        checkedOverride = if (isPendingUncheck) false else null,
         requestFocus = shouldFocus,
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.isAnyItemDragging,
@@ -1191,6 +1583,28 @@ private fun LazyItemScope.DraggableChecklistItem(
         ),
         onHeightChanged = onHeightChanged, // 🆕 v1.8.1 (IMPL_05)
         modifier = Modifier
+            // 🔧 v2.13.0: Collapse an Ort und Stelle (siehe oben). Als Layout-Modifier, damit
+            // die LazyColumn die schrumpfende Höhe misst und die Nachbarn kontinuierlich
+            // nachrücken — AnimatedVisibility würde die Row-Struktur verändern.
+            .then(
+                if (collapse.value < 1f) {
+                    // graphicsLayer VOR layout: so misst der Clip-Node die bereits reduzierte
+                    // Höhe und schneidet den überstehenden Row-Inhalt ab. Umgekehrt läge der
+                    // Clip innerhalb und die Row würde in den Nachbarn hineinragen.
+                    Modifier
+                        .graphicsLayer {
+                            alpha = collapse.value
+                            clip = true
+                        }
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            val height = (placeable.height * collapse.value).roundToInt()
+                            layout(placeable.width, height) { placeable.place(0, 0) }
+                        }
+                } else {
+                    Modifier
+                }
+            )
             // 🆕 v1.8.2 (IMPL_11): Placement-Animation für nicht-gedraggte Items.
             // Historisch (vor IMPL_11): animateItem() mit fadeInSpec/fadeOutSpec auf ALLEN Items
             // → sichtbares Flickering bei langen Items beim schnellen Scrollen.
@@ -1206,7 +1620,7 @@ private fun LazyItemScope.DraggableChecklistItem(
             // initiale Layout stabil ist, ist das Gate offen — alle Check/Uncheck-Reorder-
             // Animationen aus Commit 7156c12 spielen unverändert.
             .then(
-                if (!isDragging && placementAnimationsEnabled) {
+                if (!isDragging && placementAnimationsEnabled && !collapseOwnsPlacement) {
                     Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
                 } else {
                     Modifier
@@ -1236,14 +1650,17 @@ private fun LazyItemScope.DraggableChecklistItem(
     )
 }
 
+// 🔧 v2.13.0: internal statt private — ChecklistUncheckAnimationInstrumentedTest hostet den
+// Editor direkt, um die Collapse-/Placement-Animationen frameweise zu vermessen.
 @Suppress("LongParameterList") // Compose functions commonly have many callback parameters
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ChecklistEditor(
+internal fun ChecklistEditor(
     items: List<ChecklistItemState>,
     scope: kotlinx.coroutines.CoroutineScope,
     focusNewItemId: String?,
     currentSortOption: ChecklistSortOption, // 🔀 v1.8.0: Aktuelle Sortierung
+    scrollTopOnUncheck: Boolean, // 🆕 Issue #112: Collapse committet dann ohne Settle + ohne Expand
     checklistScrollAction: SharedFlow<NoteEditorViewModel.ChecklistScrollAction>, // 🆕 v1.9.0 (F14): Scroll action on check/un-check
     onTextChange: (String, String) -> Unit,
     onCheckedChange: (String, Boolean) -> Unit,
@@ -1302,6 +1719,29 @@ private fun ChecklistEditor(
         placementAnimationsEnabled = true
     }
 
+    // 🔧 v2.13.0: Item, dessen Uncheck aufgeschoben ist, während seine Row kollabiert.
+    // Genau ein Slot — ein zweiter Uncheck committet den ersten sofort
+    // (siehe [onChecklistCheckedChange]).
+    var pendingUncheckId by remember { mutableStateOf<String?>(null) }
+
+    // 🔧 Issue #112: Handoff Commit → ScrollToTop-Handler. Die Tap-Animation des Items stirbt
+    // auf diesem Pfad doppelt: erst bewusst beim Collapse-Start, dann endgültig, weil das Item
+    // beim Commit oberhalb des Viewports landet und seine Composition (inkl. Flip-Detektor)
+    // disposed wird. Deshalb triggert der Scroll-Handler nach Ankunft einen frischen
+    // Highlight-Pop am Ziel-Item (topHighlightId, konsumiert in DraggableChecklistItem).
+    var scrollTopUncheckId by remember { mutableStateOf<String?>(null) }
+    var topHighlightId by remember { mutableStateOf<String?>(null) }
+
+    // 🔍 v2.13.0 (nur DEBUG): Trace der Check/Uncheck-Placement-Animation. Wird im
+    // onCheckedChange-Callback gesetzt (nach dem Pre-Anchor, vor dem Model-Update),
+    // damit der Frame-Trace ab dem ersten Layout-Pass nach dem Reorder läuft.
+    var checkTrace by remember { mutableStateOf<CheckTrace?>(null) }
+    if (BuildConfig.DEBUG) {
+        LaunchedEffect(checkTrace) {
+            checkTrace?.let { traceCheckPlacement(listState, it) }
+        }
+    }
+
     // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
     var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
 
@@ -1342,10 +1782,15 @@ private fun ChecklistEditor(
         checklistScrollAction.collect { action ->
             when (action) {
                 is NoteEditorViewModel.ChecklistScrollAction.ScrollToTop -> {
-                    // Un-check → scroll smoothly to the very top of the list
-                    listState.animateScrollToItem(index = 0, scrollOffset = 0)
+                    if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[SCROLL] ScrollToTop")
+                    val highlightId = scrollTopUncheckId
+                    scrollTopUncheckId = null
+                    if (cutAndGlideToTop(listState, highlightId)) {
+                        topHighlightId = highlightId
+                    }
                 }
                 is NoteEditorViewModel.ChecklistScrollAction.NoScroll -> {
+                    if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[SCROLL] NoScroll")
                     // Check → intentionally do nothing.
                     // LazyColumn uses stable keys (item.id), so Compose preserves
                     // the scroll position naturally during recomposition.
@@ -1485,62 +1930,18 @@ private fun ChecklistEditor(
                         focusNewItemId = focusNewItemId,
                         onTextChange = onTextChange,
                         onCheckedChange = { id, checked ->
-                            // 🔧 v2.5.x (Dual-Fix Top + Bottom): Pre-anchor the LazyColumn before
-                            // the model reorder so LazyListItemAnimator captures from/to coords
-                            // against a stable anchor. requestScrollToItem runs synchronously in
-                            // the next measure pass and clears LazyListState.lastKnownFirstItemKey,
-                            // disabling key-based re-anchoring that would otherwise follow the
-                            // toggled item to its new position and shift the viewport (→ animation
-                            // would run over ~0 visible delta and be invisible to the user).
-                            //
-                            // Two viewport regimes need different anchoring strategies:
-                            //
-                            // A) Viewport at top (firstVisibleItemIndex == 0): pin index 0 at the
-                            //    viewport top via requestScrollToItem(0, 0). This is the proven
-                            //    7156c12 path and covers the index-0 toggle as well as any toggle
-                            //    while the user is scrolled to the very top. Using the generalized
-                            //    "first non-toggled visible item" anchor here breaks the idx-0 case
-                            //    because it forces a non-zero index with negative scrollOffset,
-                            //    which has edge-case behaviour at the top boundary.
-                            //
-                            // B) Viewport scrolled away from top (firstVisibleItemIndex > 0):
-                            //    snapshot the first visible item that is NOT the toggled item,
-                            //    then requestScrollToItem(anchor.index, -anchor.offset) to keep
-                            //    its current pixel position. The toggled item is excluded so it
-                            //    is free to animate to its new index; all other visible items
-                            //    stay anchored. Covers the bottom-viewport case (toggled item
-                            //    crossing the CheckedItemsSeparator).
-                            if (listState.firstVisibleItemIndex == 0) {
-                                // 🔧 v2.5.x Phase 2: Pre-Anchor preserves the user's exact scroll
-                                // offset within item 0 instead of snapping to (0,0). The original
-                                // requestScrollToItem(0, 0) call snapped the viewport up by the
-                                // current firstVisibleItemScrollOffset (e.g. 92–175 px), which
-                                // landed in the SAME measure pass as the data-driven reorder.
-                                // LazyListItemAnimator then interpreted the combined layout
-                                // change as a scroll (not as a reorder) and skipped
-                                // Modifier.animateItem placement animation entirely — the toggled
-                                // item teleported to its new position, scale-pop & glow fired on
-                                // an already-displaced item, visually "nothing happened".
-                                //
-                                // Diagnose-Logs (Phase 1) compared s2 (offset=0, requestScrollToItem
-                                // is a no-op → ~30 interpolated PLACE frames) with s3–s6 (offset
-                                // 92–175 → 1 PLACE frame, then static). Calling
-                                // requestScrollToItem(0, currentOffset) still sets the anchor
-                                // key to item-0 (preventing re-anchor onto the toggled item) but
-                                // does not move the viewport, so LazyListItemAnimator captures
-                                // valid from/to coords and the placement animation runs.
-                                val preservedOffset = listState.firstVisibleItemScrollOffset
-                                listState.requestScrollToItem(0, preservedOffset)
-                            } else {
-                                val layoutInfo = listState.layoutInfo
-                                val anchor = layoutInfo.visibleItemsInfo.firstOrNull { info ->
-                                    info.key != id
-                                } ?: layoutInfo.visibleItemsInfo.firstOrNull()
-                                if (anchor != null) {
-                                    listState.requestScrollToItem(anchor.index, -anchor.offset)
-                                }
+                            if (BuildConfig.DEBUG) {
+                                checkTrace = CheckTrace(System.nanoTime(), id, checked)
                             }
-                            onCheckedChange(id, checked)
+                            onChecklistCheckedChange(
+                                listState = listState,
+                                itemId = id,
+                                checked = checked,
+                                separatorVisualIndex = separatorVisualIndex,
+                                pendingUncheckId = pendingUncheckId,
+                                setPendingUncheckId = { pendingUncheckId = it },
+                                commitChecked = onCheckedChange
+                            )
                         },
                         onDelete = onDelete,
                         onAddNewItemAfter = onAddNewItemAfter,
@@ -1550,7 +1951,21 @@ private fun ChecklistEditor(
                         onAddToCalendar = onAddToCalendar,
                         onFocusHandled = onFocusHandled,
                         onHeightChanged = { scrollToItemIndex = visualIndex },
-                        placementAnimationsEnabled = placementAnimationsEnabled
+                        placementAnimationsEnabled = placementAnimationsEnabled,
+                        isPendingUncheck = item.id == pendingUncheckId,
+                        scrollTopOnUncheck = scrollTopOnUncheck,
+                        onUncheckCommit = { id ->
+                            if (scrollTopOnUncheck) scrollTopUncheckId = id
+                            commitDeferredUncheck(
+                                listState = listState,
+                                toggledId = id,
+                                commitChecked = onCheckedChange,
+                                reanchor = !scrollTopOnUncheck
+                            )
+                            pendingUncheckId = null
+                        },
+                        topHighlightId = topHighlightId,
+                        onTopHighlightShown = { topHighlightId = null }
                     )
                 }
             }

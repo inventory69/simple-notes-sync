@@ -163,7 +163,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     // 🆕 Issue #112: Wenn aus, bleibt der Viewport beim Un-Check stehen (→ NoScroll).
     // Wie autosaveEnabled beim VM-Bau gelesen — der Editor-VM wird pro geöffneter Notiz neu erstellt.
-    private val scrollTopOnUncheck = prefs.getBoolean(
+    // 🔧 v2.13.0: Auch von der UI gelesen — der Collapse-Pfad committet dann ohne Settle-Delay
+    // und ohne Expand am Ziel, damit der ScrollToTop früh und über ruhigem Layout läuft.
+    val scrollTopOnUncheck = prefs.getBoolean(
         Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK,
         Constants.DEFAULT_CHECKLIST_SCROLL_TOP_ON_UNCHECK
     )
