@@ -100,6 +100,9 @@ fun ChecklistItemRow(
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     isCheckAnimating: Boolean = false, // 🆕 v2.5.0: Hoisted check-tap trigger (owned by DraggableChecklistItem)
     onCheckboxTap: () -> Unit = {}, // 🆕 v2.5.0: Notifies parent to set isCheckAnimating = true
+    // 🔧 v2.13.0: Optimistischer Checkbox-Zustand, während der Parent den Uncheck aufschiebt
+    // und die Row selbst kollabieren lässt. null = Model-Zustand anzeigen.
+    checkedOverride: Boolean? = null,
     requestFocus: Boolean = false,
     isDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Drag state
     isAnyItemDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
@@ -345,7 +348,7 @@ fun ChecklistItemRow(
         // DnD: dragModifier ist der einzige DnD-Entry-Point; onCheckboxTap feuert nie
         // während eines Drags.
         Checkbox(
-            checked = item.isChecked,
+            checked = checkedOverride ?: item.isChecked,
             onCheckedChange = { checked ->
                 onCheckboxTap() // 🆕 v2.5.0: Trigger Z-Index + Animation im Parent
                 onCheckedChange(checked)

@@ -17,6 +17,7 @@ data class NotesListWidgetConfig(
     val hideHeader: Boolean = false,
     val hidePinned: Boolean = false,
     val hideFolders: Boolean = false,
+    val hidePreview: Boolean = false,
     val selectedFolder: String = "",
     val fontSizeScale: Float = 1.0f
 )
@@ -32,6 +33,9 @@ object NotesListWidgetState {
     val KEY_FAB_EXPANDED = booleanPreferencesKey("nl_fab_expanded")
     val KEY_HIDE_PINNED = booleanPreferencesKey("nl_hide_pinned")
     val KEY_HIDE_FOLDERS = booleanPreferencesKey("nl_hide_folders")
+
+    /** 🆕 Discussion #110: Karten zeigen nur den Titel, keinen Vorschautext. */
+    val KEY_HIDE_PREVIEW = booleanPreferencesKey("nl_hide_preview")
     val KEY_SELECTED_FOLDER = stringPreferencesKey("nl_selected_folder")
     val KEY_FONT_SIZE_SCALE = floatPreferencesKey("nl_font_scale")
 }

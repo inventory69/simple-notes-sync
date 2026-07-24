@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.widget
 
 import android.content.Context
+import androidx.compose.runtime.remember
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
@@ -23,10 +24,13 @@ import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FONT_SIZE_SCALE
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_FOLDERS
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_HEADER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_PINNED
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_HIDE_PREVIEW
+import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_LAST_UPDATED
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_NOTE_FILTER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SELECTED_FOLDER
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_DIRECTION
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_OPTION
+import kotlinx.coroutines.runBlocking
 
 private const val NOTES_LIST_WIDGET_MAX_NOTES = 50
 
@@ -35,14 +39,26 @@ class NotesListWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val storage = NotesStorage(context)
-        // 🆕 v2.9.0 (Trash): getrashte Notizen nie im Widget anzeigen.
-        val allNotes = storage.loadActiveNotes()
-        val folders = FolderStore(context).loadFolders()
-        val folderNoteCounts = folders.associate { f -> f.name to allNotes.count { it.folderName == f.name } }
-
         provideContent {
             val prefs = currentState<Preferences>()
+            // 🔧 Daten hier statt in provideGlance laden — update() rekomponiert nur diese Lambda,
+            // außerhalb geladene Notizen blieben für die ganze Session eingefroren (siehe NoteWidget).
+            // remember(lastUpdated): nur neu lesen, wenn WidgetUpdateHelper den Zeitstempel gebumpt
+            // hat — nicht bei jedem FAB-Toggle. NotesStorage bewusst hier instanziiert: der 2s-TTL-
+            // Cache ist instanzgebunden, eine frische Instanz liest garantiert von Platte.
+            val lastUpdated = prefs[KEY_LAST_UPDATED] ?: 0L
+            val (allNotes, folders, folderNoteCounts) = remember(lastUpdated) {
+                runBlocking {
+                    // 🆕 v2.9.0 (Trash): getrashte Notizen nie im Widget anzeigen.
+                    val notes = NotesStorage(context).loadActiveNotes()
+                    val loadedFolders = FolderStore(context).loadFolders()
+                    Triple(
+                        notes,
+                        loadedFolders,
+                        loadedFolders.associate { f -> f.name to notes.count { it.folderName == f.name } }
+                    )
+                }
+            }
             val sortOption = SortOption.fromPrefsValue(prefs[KEY_SORT_OPTION] ?: SortOption.UPDATED_AT.prefsValue)
             val sortDir = SortDirection.fromPrefsValue(prefs[KEY_SORT_DIRECTION] ?: SortDirection.DESCENDING.prefsValue)
             val noteFilter = NoteFilter.fromPrefsValue(prefs[KEY_NOTE_FILTER] ?: NoteFilter.ALL.prefsValue)
@@ -53,6 +69,7 @@ class NotesListWidget : GlanceAppWidget() {
             val hideHeader = prefs[KEY_HIDE_HEADER] ?: false
             val hidePinned = prefs[KEY_HIDE_PINNED] ?: false
             val hideFolders = prefs[KEY_HIDE_FOLDERS] ?: false
+            val hidePreview = prefs[KEY_HIDE_PREVIEW] ?: false
             val selectedFolder = prefs[KEY_SELECTED_FOLDER]?.takeIf { it.isNotEmpty() }
             val fontSizeScale = prefs[KEY_FONT_SIZE_SCALE] ?: 1.0f
 
@@ -76,6 +93,7 @@ class NotesListWidget : GlanceAppWidget() {
                     fabExpanded = fabExpanded,
                     hasPinnedNotes = hasPinnedNotes,
                     hideHeader = hideHeader,
+                    hidePreview = hidePreview,
                     fontSizeScale = fontSizeScale
                 )
             }

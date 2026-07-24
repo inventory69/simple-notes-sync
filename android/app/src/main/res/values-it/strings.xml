@@ -112,8 +112,6 @@
     <string name="settings_sync_notifications_errors_only">Solo errori e avvisi</string>
     <string name="settings_sync_notifications_disabled">Notifiche disattivate</string>
     <string name="settings_markdown">Integrazione Desktop Markdown</string>
-    <string name="settings_markdown_auto_on">Sincronizzazione automatica: Attiva</string>
-    <string name="settings_markdown_auto_off">Sincronizzazione automatica: Disattivata</string>
     <string name="settings_backup">Backup e Ripristino</string>
     <string name="settings_backup_subtitle">Backup locale o sul server</string>
     <string name="settings_import_title">Importa Note</string>
@@ -268,7 +266,6 @@
     <string name="sync_offline_mode_message">L\'app è in mosalità offline. Configura un server per sincronizzare le note.</string>
     <string name="sync_no_server_message">Nessun server configurato. Configura un server per sincronizzare le note.</string>
     <string name="sync_offline_mode_button">Configura server</string>
-    <string name="markdown_settings_title">Integrazione Desktop Markdown</string>
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Esportazione completata</string>
     <string name="markdown_export_progress">Esportando %1$d/%2$d note…</string>

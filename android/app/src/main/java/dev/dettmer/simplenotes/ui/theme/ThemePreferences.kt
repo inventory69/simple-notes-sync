@@ -60,6 +60,10 @@ enum class ColorTheme(val displayNameResId: Int, val previewColor: Color) {
  * shows in List and Grid view. [gridSmallLines]/[gridLargeLines] map to the SMALL/LARGE tiers
  * of [dev.dettmer.simplenotes.models.NoteSize]. STANDARD matches the previous hardcoded
  * behaviour (List = 3, Grid SMALL = 3 / LARGE = 6) so existing users see no change by default.
+ *
+ * 🆕 Discussion #110: TITLE_ONLY = 0 Vorschauzeilen — die Karten zeigen nur noch den Titel.
+ * Bei titellosen Notizen bleibt die erste Inhaltszeile im Titel-Slot stehen (sonst wäre die
+ * Karte leer), siehe NoteCard/NoteCardGrid.
  */
 enum class NotePreviewLength(
     val displayNameResId: Int,
@@ -68,6 +72,7 @@ enum class NotePreviewLength(
     val gridLargeLines: Int,
     val itemMaxLines: Int
 ) {
+    TITLE_ONLY(R.string.note_preview_length_title_only, 0, 0, 0, 1),
     COMPACT(R.string.note_preview_length_compact, 2, 2, 4, 1),
     STANDARD(R.string.note_preview_length_standard, 3, 3, 6, 1),
     LONG(R.string.note_preview_length_long, 5, 4, 8, 2),

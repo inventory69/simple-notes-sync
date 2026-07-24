@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -266,5 +267,47 @@ class MarkdownOutputTransformationTest {
         val ranges = findCodeBlockRanges(text)
         assertEquals(1, ranges.size)
         assertEquals(0, ranges[0].first)
+    }
+
+    // ── task lines ──────────────────────────────────────────────────────────
+    // Teilen sich MarkdownEngine.TASK_LIST_REGEX mit der Preview: was hier dimmed wird,
+    // rendert dort als Checkbox.
+
+    @Test
+    fun `checked task - prefix dimmed and text struck through`() {
+        // "- [x] done": Prefix [0,6), Text "done" [6,10)
+        val spans = spansOf("- [x] done")
+        assertSpan(spans, 0, 6, "task prefix marker missing") { it.style.color == markerColor }
+        assertSpan(spans, 6, 10, "strikethrough over checked task text missing") {
+            it.style.textDecoration == TextDecoration.LineThrough
+        }
+    }
+
+    @Test
+    fun `asterisk marker task is dimmed like a dash task`() {
+        val spans = spansOf("* [ ] open")
+        assertSpan(spans, 0, 6, "task prefix marker for '*' missing") { it.style.color == markerColor }
+        assertNull(
+            "unchecked task must not be struck through",
+            spans.firstOrNull { it.style.textDecoration == TextDecoration.LineThrough }
+        )
+    }
+
+    @Test
+    fun `empty brackets task is dimmed and not struck through`() {
+        // "- [] open": Prefix [0,5), Text "open" [5,9)
+        val spans = spansOf("- [] open")
+        assertSpan(spans, 0, 5, "task prefix marker for empty brackets missing") { it.style.color == markerColor }
+        assertNull(
+            "empty brackets must count as unchecked",
+            spans.firstOrNull { it.style.textDecoration == TextDecoration.LineThrough }
+        )
+    }
+
+    @Test
+    fun `checked task without text produces no zero-length span`() {
+        val spans = spansOf("- [x]")
+        assertSpan(spans, 0, 5, "task prefix marker missing") { it.style.color == markerColor }
+        assertNull("zero-length span emitted", spans.firstOrNull { it.start == it.end })
     }
 }

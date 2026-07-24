@@ -241,6 +241,10 @@
     <!-- SETTINGS - MAIN               -->
     <!-- ============================= -->
     <string name="settings_title">Einstellungen</string>
+    <string name="settings_group_app">App</string>
+    <string name="settings_group_sync">Synchronisation</string>
+    <string name="settings_group_data">Daten</string>
+    <string name="settings_group_info">Info</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_server">Server-Einstellungen</string>
     <string name="settings_server_status_reachable">✅ Erreichbar</string>
@@ -256,8 +260,6 @@
     <string name="settings_sync_notifications_errors_only">Nur Fehler und Warnungen</string>
     <string name="settings_sync_notifications_disabled">Benachrichtigungen deaktiviert</string>
     <string name="settings_markdown">Markdown Desktop-Integration</string>
-    <string name="settings_markdown_auto_on">Auto-Sync: An</string>
-    <string name="settings_markdown_auto_off">Auto-Sync: Aus</string>
     <string name="settings_backup">Backup &amp; Wiederherstellung</string>
     <string name="settings_backup_subtitle">Lokales oder Server-Backup</string>
     <!-- Issue #21: Notizen importieren -->
@@ -382,7 +384,6 @@
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
-    <string name="markdown_settings_title">Markdown Desktop-Integration</string>
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export abgeschlossen</string>
     <string name="markdown_export_progress">Exportiere %1$d/%2$d Notizen…</string>
@@ -514,6 +515,7 @@
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
     <string name="display_settings_title">Anzeige</string>
+    <string name="settings_section_note_list">Notizliste</string>
     <string name="display_mode_title">Notizen-Ansicht</string>
     <string name="display_mode_list">Listen-Ansicht</string>
     <string name="display_mode_grid">Raster-Ansicht</string>
@@ -527,6 +529,8 @@
     <!-- 🆕 v2.11.0: Vorschaulänge der Notizen -->
     <string name="note_preview_length_title">Vorschaulänge</string>
     <string name="note_preview_length_info">Legt fest, wie viele Zeilen (bzw. Checklisten-Einträge) in der Notizvorschau angezeigt werden — in List- und Grid-Ansicht.</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="note_preview_length_title_only">Nur Titel</string>
     <string name="note_preview_length_compact">Kurz</string>
     <string name="note_preview_length_standard">Standard</string>
     <string name="note_preview_length_long">Lang</string>
@@ -552,6 +556,14 @@
     <!-- 🆕 v2.11.0: Cursor-Start für neue Notizen -->
     <string name="editor_new_note_focus_content_toggle">Cursor im Inhalt starten</string>
     <string name="editor_new_note_focus_content_description">Neue Notizen fokussieren das Inhaltsfeld statt des Titels. Checklisten fokussieren den ersten Eintrag.</string>
+    <!-- 🆕 Issue #112: Scroll-Verhalten der Checkliste beim Abwählen -->
+    <string name="checklist_scroll_top_on_uncheck_toggle">Beim Abwählen nach oben scrollen</string>
+    <string name="checklist_scroll_top_on_uncheck_description">Das Abwählen eines Eintrags scrollt die Checkliste an den Anfang. Aus = Position bleibt erhalten.</string>
+    <!-- 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten -->
+    <string name="note_card_show_timestamp_toggle">Zeitstempel anzeigen</string>
+    <string name="note_card_show_timestamp_description">Zeigt den Zeitstempel der letzten Bearbeitung auf Notizkarten an.</string>
+    <string name="note_card_show_icon_toggle">Notiz-Icon anzeigen</string>
+    <string name="note_card_show_icon_description">Zeigt das Typ-Icon und das Pin-Badge auf Notizkarten an.</string>
     <!-- 🆕 Bild-Attachments: Kompressionsmodus -->
     <string name="settings_image_compression_title">Bildkompression</string>
     <string name="settings_image_compression_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Bereits eingefügte Bilder werden nicht neu verarbeitet.</string>
@@ -563,6 +575,7 @@
     <string name="image_compression_mode_original_subtitle">Behält die Datei unverändert, ohne Verkleinerung. Größte Dateien; behält EXIF-/GPS-Standortdaten.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
+    <string name="theme_mode_subsection">Modus</string>
     <string name="theme_mode_system">System (wie Gerät)</string>
     <string name="theme_mode_light">Hell</string>
     <string name="theme_mode_dark">Dunkel</string>
@@ -982,6 +995,9 @@
     <string name="notes_list_widget_config_hide_pinned_desc">Angepinnte Notizen werden nicht im Widget angezeigt</string>
     <string name="notes_list_widget_config_hide_folders">Ordner ausblenden</string>
     <string name="notes_list_widget_config_hide_folders_desc">Ordner werden nicht im Widget angezeigt</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="notes_list_widget_config_hide_preview">Nur Titel</string>
+    <string name="notes_list_widget_config_hide_preview_desc">Karten zeigen nur den Notiztitel, keinen Vorschautext</string>
     <string name="notes_list_widget_config_folder_label">Ordner</string>
     <string name="notes_list_widget_config_folder_all">Alle Notizen</string>
     <!-- ============================= -->

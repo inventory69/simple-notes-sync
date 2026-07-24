@@ -237,6 +237,16 @@ object Constants {
     const val KEY_NEW_NOTE_FOCUS_CONTENT = "new_note_focus_content"
     const val DEFAULT_NEW_NOTE_FOCUS_CONTENT = false
 
+    // 🆕 Issue #112: Un-Check scrollt optional nicht mehr an den Listenanfang.
+    const val KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK = "checklist_scroll_top_on_uncheck"
+    const val DEFAULT_CHECKLIST_SCROLL_TOP_ON_UNCHECK = true
+
+    // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar.
+    const val KEY_SHOW_NOTE_TIMESTAMP = "show_note_timestamp"
+    const val DEFAULT_SHOW_NOTE_TIMESTAMP = true
+    const val KEY_SHOW_NOTE_TYPE_ICON = "show_note_type_icon"
+    const val DEFAULT_SHOW_NOTE_TYPE_ICON = true
+
     // 🆕 v2.12.0: Persistierte Kalender-Parsing-Strategie (Debug-Settings-Experiment).
     const val KEY_CALENDAR_PARSING_STRATEGY = "calendar_parsing_strategy"
 

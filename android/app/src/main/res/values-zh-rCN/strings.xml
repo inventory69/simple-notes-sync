@@ -156,8 +156,6 @@
     <string name="settings_sync_manual_only">仅手动同步</string>
     <string name="settings_sync_triggers_active">%d 触发器已激活</string>
     <string name="settings_markdown">Markdown 桌面集成</string>
-    <string name="settings_markdown_auto_on">自动同步：开</string>
-    <string name="settings_markdown_auto_off">自动同步：关</string>
     <string name="settings_backup">备份和恢复</string>
     <string name="settings_backup_subtitle">本地或服务器备份</string>
     <!-- Issue #21: Notes Import -->
@@ -245,7 +243,6 @@
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
-    <string name="markdown_settings_title">Markdown 桌面集成</string>
     <string name="markdown_dialog_title">Markdown 自动同步</string>
     <string name="markdown_export_complete">✅ 导出完成</string>
     <string name="markdown_export_progress">正在导出 %1$d/%2$d 个笔记……</string>

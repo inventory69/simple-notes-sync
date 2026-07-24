@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.sp
 private const val BOLD_ITALIC_MARKER_LEN = 3
 
 private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
-private val mdTaskRegex = Regex("""^\s*-\s+\[([ xX])\]\s+(.+)$""")
 private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
 private val mdHorizontalRuleRegex = Regex("""^\s*([-*_])\s*(?:\1\s*){2,}$""")
 
@@ -69,7 +68,7 @@ class MarkdownOutputTransformation(
         styles: MutableList<StyleSpan>
     ) {
         val headingMatch = mdHeadingRegex.matchEntire(line)
-        val taskMatch = mdTaskRegex.matchEntire(line)
+        val taskMatch = MarkdownEngine.TASK_LIST_REGEX.matchEntire(line)
         val marker = SpanStyle(color = markerColor)
         when {
             mdHorizontalRuleRegex.matchEntire(line) != null -> {
@@ -103,7 +102,8 @@ class MarkdownOutputTransformation(
                 val taskText = taskMatch.groupValues[2]
                 val prefixLen = line.length - taskText.length
                 styles += StyleSpan(lineStart, lineStart + prefixLen, marker)
-                if (isChecked) {
+                // isNotEmpty(): "- [x]" ohne Text ergäbe sonst eine Span der Länge 0.
+                if (isChecked && taskText.isNotEmpty()) {
                     styles += StyleSpan(
                         lineStart + prefixLen,
                         lineStart + line.length,

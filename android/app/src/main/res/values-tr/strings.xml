@@ -159,8 +159,6 @@
     <string name="settings_sync_manual_only">Yalnızca manuel senkronizasyon</string>
     <string name="settings_sync_triggers_active">%d tetikleyici aktif</string>
     <string name="settings_markdown">Markdown Masaüstü Entegrasyonu</string>
-    <string name="settings_markdown_auto_on">Otomatik Senkronizasyon: Açık</string>
-    <string name="settings_markdown_auto_off">Otomatik Senkronizasyon: Kapalı</string>
     <string name="settings_backup">Yedekleme &amp; Geri Yükleme</string>
     <string name="settings_backup_subtitle">Yerel veya sunucu yedeği</string>
     <!-- Issue #21: Notes Import -->
@@ -249,7 +247,6 @@
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
-    <string name="markdown_settings_title">Markdown Masaüstü Entegrasyonu</string>
     <string name="markdown_dialog_title">Markdown Otomatik Senkronizasyon</string>
     <string name="markdown_export_complete">✅ Dışa aktarma tamamlandı</string>
     <string name="markdown_export_progress">%1$d/%2$d not dışa aktarılıyor…</string>

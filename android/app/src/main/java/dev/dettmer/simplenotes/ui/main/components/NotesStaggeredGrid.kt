@@ -47,6 +47,8 @@ fun NotesStaggeredGrid(
     modifier: Modifier = Modifier,
     timestampTicker: Long = 0L,
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
+    showTimestamp: Boolean = true,
+    showTypeIcon: Boolean = true,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit,
     folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
@@ -131,6 +133,8 @@ fun NotesStaggeredGrid(
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
                                     previewLength = previewLength,
+                                    showTimestamp = showTimestamp,
+                                    showTypeIcon = showTypeIcon,
                                     onNoteClick = onNoteClick,
                                     onNoteLongClick = onNoteLongClick
                                 )
@@ -215,6 +219,8 @@ fun NotesStaggeredGrid(
                                 isSelectionMode = isSelectionMode,
                                 timestampTicker = timestampTicker,
                                 previewLength = previewLength,
+                                showTimestamp = showTimestamp,
+                                showTypeIcon = showTypeIcon,
                                 onClick = { onNoteClick(note) },
                                 onLongClick = { onNoteLongClick(note) }
                             )
@@ -237,6 +243,8 @@ private fun PinnedNotesGrid(
     isSelectionMode: Boolean,
     timestampTicker: Long,
     previewLength: NotePreviewLength,
+    showTimestamp: Boolean,
+    showTypeIcon: Boolean,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {
@@ -259,6 +267,8 @@ private fun PinnedNotesGrid(
                             isSelectionMode = isSelectionMode,
                             timestampTicker = timestampTicker,
                             previewLength = previewLength,
+                            showTimestamp = showTimestamp,
+                            showTypeIcon = showTypeIcon,
                             onClick = { onNoteClick(note) },
                             onLongClick = { onNoteLongClick(note) }
                         )

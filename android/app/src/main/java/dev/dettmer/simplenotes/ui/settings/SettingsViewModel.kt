@@ -452,6 +452,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val newNoteFocusContent: StateFlow<Boolean> = _newNoteFocusContent.asStateFlow()
 
+    // 🆕 Issue #112: Un-Check einer Checklisten-Position scrollt an den Listenanfang
+    private val _checklistScrollTopOnUncheck = MutableStateFlow(
+        prefs.getBoolean(
+            Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK,
+            Constants.DEFAULT_CHECKLIST_SCROLL_TOP_ON_UNCHECK
+        )
+    )
+    val checklistScrollTopOnUncheck: StateFlow<Boolean> = _checklistScrollTopOnUncheck.asStateFlow()
+
+    // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
+    private val _showNoteTimestamp = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, Constants.DEFAULT_SHOW_NOTE_TIMESTAMP)
+    )
+    val showNoteTimestamp: StateFlow<Boolean> = _showNoteTimestamp.asStateFlow()
+
+    private val _showNoteTypeIcon = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
+    )
+    val showNoteTypeIcon: StateFlow<Boolean> = _showNoteTypeIcon.asStateFlow()
+
     // 🆕 Bild-Attachments: Kompressionsmodus für neu eingefügte Bilder
     private val _imageCompressionMode = MutableStateFlow(readImageCompressionMode())
     val imageCompressionMode: StateFlow<ImageCompressionMode> = _imageCompressionMode.asStateFlow()
@@ -620,6 +640,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setNewNoteFocusContent(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_NEW_NOTE_FOCUS_CONTENT, enabled) }
         _newNoteFocusContent.value = enabled
+    }
+
+    /**
+     * 🆕 Issue #112: Toggle — Un-Check scrollt die Checkliste an den Anfang.
+     * NoteEditorViewModel liest die Preference beim Öffnen einer Notiz.
+     */
+    fun setChecklistScrollTopOnUncheck(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK, enabled) }
+        _checklistScrollTopOnUncheck.value = enabled
+    }
+
+    /** 🆕 Issue #100: Toggle — Zeitstempel in Notizkarten-Footern ein-/ausblenden. */
+    fun setShowNoteTimestamp(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, enabled) }
+        _showNoteTimestamp.value = enabled
+    }
+
+    /** 🆕 Issue #100: Toggle — Typ-Icon (+ Pin-Badge) auf Notizkarten ein-/ausblenden. */
+    fun setShowNoteTypeIcon(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, enabled) }
+        _showNoteTypeIcon.value = enabled
     }
 
     /** 🆕 Bild-Attachments: Kompressionsmodus für künftig eingefügte Bilder. */

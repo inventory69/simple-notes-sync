@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.settings.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,8 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -103,6 +107,47 @@ fun SettingsInfoCard(text: String, modifier: Modifier = Modifier, isWarning: Boo
             lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3f
         )
     }
+}
+
+/**
+ * Section card grouping related options under one title.
+ * Same visual language as [SettingsCard] — used by the Display and Sync screens.
+ */
+@Composable
+fun SettingsSectionCard(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+        )
+        content()
+        Spacer(modifier = Modifier.height(12.dp))
+    }
+}
+
+/**
+ * Hint text — same typography as [SettingsInfoCard], but without the card.
+ * For use *inside* a [SettingsSectionCard], where a nested card would be visual noise.
+ */
+@Composable
+fun SettingsHint(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3f
+    )
 }
 
 /**

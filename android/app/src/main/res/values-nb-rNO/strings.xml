@@ -125,8 +125,6 @@
     <string name="settings_sync_notifications_errors_only">Kun feil og advarsler</string>
     <string name="settings_sync_notifications_disabled">Varsler avskrudd</string>
     <string name="settings_markdown">Markdown skrivebordsintegrasjon</string>
-    <string name="settings_markdown_auto_on">Auto-synk: På</string>
-    <string name="settings_markdown_auto_off">Auto-synk: Av</string>
     <string name="settings_backup">Sikkerhetskopi og gjenoppretting</string>
     <string name="settings_backup_subtitle">Lokal- eller tjenersikkerhetskopi</string>
     <string name="settings_import_title">Importer notater</string>
@@ -213,7 +211,6 @@
     <string name="sync_manual_hint_disabled">Synk er ikke tilgjengelig i frakoblet modus.</string>
     <string name="sync_offline_mode_message">Du bruker appen i frakoblet modus. Sett opp en tjener for å synkronisere notater.</string>
     <string name="sync_offline_mode_button">Sett opp tjener</string>
-    <string name="markdown_settings_title">Markdown skrivebordsintegrasjon</string>
     <string name="markdown_dialog_title">Markdown auto-synk</string>
     <string name="markdown_export_complete">✅ Eksport fullført</string>
     <string name="markdown_export_progress">Eksporterer %1$d/%2$d notater…</string>

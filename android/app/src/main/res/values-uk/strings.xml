@@ -117,8 +117,6 @@
     <string name="settings_sync_manual_only">Лише ручна синхронізація</string>
     <string name="settings_sync_triggers_active">%d активно тригерів</string>
     <string name="settings_markdown">Десктопна Інтеграція Markdown</string>
-    <string name="settings_markdown_auto_on">Автоматична синхронізація: Увімкнена</string>
-    <string name="settings_markdown_auto_off">Автоматична синхронізація: Вимкнена</string>
     <string name="settings_backup">Бекап та відновлення</string>
     <string name="settings_backup_subtitle">Локальний або серверний бекап</string>
     <string name="settings_import_title">Імпортувати Нотатки</string>
@@ -191,7 +189,6 @@
     <string name="sync_manual_hint_disabled">Синхронізація недоступна в режимі офлайн.</string>
     <string name="sync_offline_mode_message">Ви використовуєте застосунок у режимі офлайн. Налаштуйте сервер для синхронізації нотаток.</string>
     <string name="sync_offline_mode_button">Налаштувати Сервер</string>
-    <string name="markdown_settings_title">Десктопна Інтеграція Markdown</string>
     <string name="markdown_dialog_title">Автоматична Синхронізація Markdown</string>
     <string name="markdown_export_complete">✅ Експорт завершено</string>
     <string name="markdown_export_progress">Експортування нотаток (%1$d/%2$d)…</string>

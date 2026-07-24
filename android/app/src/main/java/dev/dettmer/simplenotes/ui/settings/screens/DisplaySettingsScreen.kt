@@ -24,7 +24,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,9 +55,10 @@ import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
-import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
@@ -71,20 +78,10 @@ import dev.dettmer.simplenotes.utils.Constants
  */
 @Composable
 fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
-    val displayMode by viewModel.displayMode.collectAsState()
-    val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
-    val gridManualColumns by viewModel.gridManualColumns.collectAsState()
-    val notePreviewLength by viewModel.notePreviewLength.collectAsState()
-    val customAppTitle by viewModel.customAppTitle.collectAsState()
-    val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
-    val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
+    // Nur der Farbwähler-State lebt hier — er wird von Karte 3 *und* vom Sheet gebraucht,
+    // das außerhalb des Scroll-Columns gerendert wird. Alles andere sammelt seine Sektion selbst.
     val defaultNoteColor by viewModel.defaultNoteColor.collectAsState()
-    val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
-    val imageCompressionMode by viewModel.imageCompressionMode.collectAsState()
     var showDefaultColorPicker by remember { mutableStateOf(false) }
-    val themeMode by viewModel.themeMode.collectAsState()
-    val colorTheme by viewModel.colorTheme.collectAsState()
-    val fontSizeScale by viewModel.fontSizeScale.collectAsState()
 
     SettingsScaffold(
         title = stringResource(R.string.display_settings_title),
@@ -98,217 +95,17 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── v2.0.0: Appearance (ThemeMode) Section ──
-            SettingsSectionHeader(text = stringResource(R.string.theme_mode_title))
+            AppearanceSection(viewModel)
 
-            ThemeModeSelector(
-                currentMode = themeMode,
-                onModeSelected = { viewModel.setThemeMode(it) }
+            NoteListSection(viewModel)
+
+            EditorSection(
+                viewModel = viewModel,
+                defaultNoteColor = defaultNoteColor,
+                onDefaultColorClick = { showDefaultColorPicker = true }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── v2.0.0: Color Scheme (ColorTheme) Section ──
-            SettingsSectionHeader(text = stringResource(R.string.theme_color_title))
-
-            ColorThemeSelector(
-                currentTheme = colorTheme,
-                onThemeSelected = { viewModel.setColorTheme(it) }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Text Size Section ──
-            SettingsSectionHeader(text = stringResource(R.string.font_size_title))
-
-            FontSizeSelector(
-                currentScale = fontSizeScale,
-                onScaleSelected = { viewModel.setFontSizeScale(it) }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Display Mode Section ──
-            SettingsSectionHeader(text = stringResource(R.string.display_mode_title))
-
-            DisplayModeSelector(
-                currentMode = displayMode,
-                onModeSelected = { viewModel.setDisplayMode(it) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(
-                text = stringResource(R.string.display_mode_info)
-            )
-
-            // 🆕 v2.1.0 (F46): Grid column control — only visible when grid mode is active
-            if (displayMode == "grid") {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                SettingsSectionHeader(text = stringResource(R.string.grid_scaling_title))
-
-                SettingsSwitch(
-                    title = stringResource(R.string.grid_adaptive_scaling_title),
-                    subtitle = stringResource(R.string.grid_adaptive_scaling_subtitle),
-                    checked = gridAdaptiveScaling,
-                    onCheckedChange = { viewModel.setGridAdaptiveScaling(it) }
-                )
-
-                AnimatedVisibility(visible = !gridAdaptiveScaling) {
-                    Column {
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        SettingsSectionHeader(text = stringResource(R.string.grid_manual_columns_title))
-
-                        GridColumnSelector(
-                            currentColumns = gridManualColumns,
-                            onColumnsSelected = { viewModel.setGridManualColumns(it) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                SettingsInfoCard(
-                    text = stringResource(R.string.grid_scaling_info)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── 🆕 v2.11.0: Note Preview Length Section ──
-            SettingsSectionHeader(text = stringResource(R.string.note_preview_length_title))
-
-            NotePreviewLengthSelector(
-                currentLength = notePreviewLength,
-                onLengthSelected = { viewModel.setNotePreviewLength(it) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(
-                text = stringResource(R.string.note_preview_length_info)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── 🆕 v1.9.0 (F05): Custom App Title Section ──
-            SettingsSectionHeader(text = stringResource(R.string.custom_app_title_section))
-
-            OutlinedTextField(
-                value = customAppTitle,
-                onValueChange = { newValue ->
-                    if (newValue.length <= Constants.MAX_CUSTOM_APP_TITLE_LENGTH) {
-                        viewModel.setCustomAppTitle(newValue)
-                    }
-                },
-                label = { Text(stringResource(R.string.custom_app_title_label)) },
-                placeholder = { Text(stringResource(R.string.custom_app_title_placeholder)) },
-                singleLine = true,
-                supportingText = {
-                    Text(
-                        text = stringResource(
-                            R.string.custom_app_title_char_count,
-                            customAppTitle.length,
-                            Constants.MAX_CUSTOM_APP_TITLE_LENGTH
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (customAppTitle.length >= Constants.MAX_CUSTOM_APP_TITLE_LENGTH) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(
-                text = stringResource(R.string.custom_app_title_info)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── 🆕 v1.9.0: Autosave Section ──
-            SettingsSectionHeader(text = stringResource(R.string.autosave_section))
-
-            SettingsSwitch(
-                title = stringResource(R.string.autosave_toggle),
-                subtitle = stringResource(R.string.autosave_description),
-                checked = autosaveEnabled,
-                onCheckedChange = { viewModel.setAutosaveEnabled(it) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(
-                text = stringResource(R.string.autosave_info)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsSwitch(
-                title = stringResource(R.string.editor_default_preview_mode_toggle),
-                subtitle = stringResource(R.string.editor_default_preview_mode_description),
-                checked = defaultStartInPreviewMode,
-                onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 🆕 v2.11.0: Cursor-Start für neue Notizen
-            SettingsSwitch(
-                title = stringResource(R.string.editor_new_note_focus_content_toggle),
-                subtitle = stringResource(R.string.editor_new_note_focus_content_description),
-                checked = newNoteFocusContent,
-                onCheckedChange = { viewModel.setNewNoteFocusContent(it) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 🆕 v2.11.0: Standard-Notizfarbe für neue Notizen
-            DefaultNoteColorRow(
-                currentColor = defaultNoteColor,
-                onClick = { showDefaultColorPicker = true }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── 🆕 Bild-Attachments: Kompressionsmodus Section ──
-            SettingsSectionHeader(text = stringResource(R.string.settings_image_compression_title))
-
-            SettingsRadioGroup(
-                options = listOf(
-                    RadioOption(
-                        ImageCompressionMode.COMPRESSED,
-                        stringResource(R.string.image_compression_mode_compressed),
-                        stringResource(R.string.image_compression_mode_compressed_subtitle)
-                    ),
-                    RadioOption(
-                        ImageCompressionMode.LOSSLESS,
-                        stringResource(R.string.image_compression_mode_lossless),
-                        stringResource(R.string.image_compression_mode_lossless_subtitle)
-                    ),
-                    RadioOption(
-                        ImageCompressionMode.ORIGINAL,
-                        stringResource(R.string.image_compression_mode_original),
-                        stringResource(R.string.image_compression_mode_original_subtitle)
-                    )
-                ),
-                selectedValue = imageCompressionMode,
-                onValueSelected = { viewModel.setImageCompressionMode(it) }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(
-                text = stringResource(R.string.settings_image_compression_info)
-            )
+            ImageCompressionSection(viewModel)
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -320,6 +117,235 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             onColorSelected = { hex -> viewModel.setDefaultNoteColor(hex) },
             onDismiss = { showDefaultColorPicker = false }
         )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sektionskarten — jede mit eigenem collectAsState()-Scope, damit ein Toggle
+// nicht den kompletten Screen rekomponiert (analog zu SyncSettingsScreen).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Karte 1: Theme, Farbschema, Schriftgröße, App-Titel. */
+@Composable
+private fun AppearanceSection(viewModel: SettingsViewModel) {
+    val themeMode by viewModel.themeMode.collectAsState()
+    val colorTheme by viewModel.colorTheme.collectAsState()
+    val fontSizeScale by viewModel.fontSizeScale.collectAsState()
+    val customAppTitle by viewModel.customAppTitle.collectAsState()
+
+    SettingsSectionCard(title = stringResource(R.string.theme_mode_title)) {
+        SettingsSectionHeader(text = stringResource(R.string.theme_mode_subsection))
+
+        ThemeModeSelector(
+            currentMode = themeMode,
+            onModeSelected = { viewModel.setThemeMode(it) }
+        )
+
+        SettingsSectionHeader(text = stringResource(R.string.theme_color_title))
+
+        ColorThemeSelector(
+            currentTheme = colorTheme,
+            onThemeSelected = { viewModel.setColorTheme(it) }
+        )
+
+        SettingsSectionHeader(text = stringResource(R.string.font_size_title))
+
+        FontSizeSelector(
+            currentScale = fontSizeScale,
+            onScaleSelected = { viewModel.setFontSizeScale(it) }
+        )
+
+        SettingsSectionHeader(text = stringResource(R.string.custom_app_title_section))
+
+        OutlinedTextField(
+            value = customAppTitle,
+            onValueChange = { newValue ->
+                if (newValue.length <= Constants.MAX_CUSTOM_APP_TITLE_LENGTH) {
+                    viewModel.setCustomAppTitle(newValue)
+                }
+            },
+            label = { Text(stringResource(R.string.custom_app_title_label)) },
+            placeholder = { Text(stringResource(R.string.custom_app_title_placeholder)) },
+            singleLine = true,
+            supportingText = {
+                Text(
+                    text = stringResource(
+                        R.string.custom_app_title_char_count,
+                        customAppTitle.length,
+                        Constants.MAX_CUSTOM_APP_TITLE_LENGTH
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (customAppTitle.length >= Constants.MAX_CUSTOM_APP_TITLE_LENGTH) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        )
+
+        SettingsHint(text = stringResource(R.string.custom_app_title_info))
+    }
+}
+
+/** Karte 2: Ansichtsmodus, Raster-Spalten, Vorschaulänge, Kartenelemente. */
+@Composable
+private fun NoteListSection(viewModel: SettingsViewModel) {
+    val displayMode by viewModel.displayMode.collectAsState()
+    val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
+    val gridManualColumns by viewModel.gridManualColumns.collectAsState()
+    val notePreviewLength by viewModel.notePreviewLength.collectAsState()
+    val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
+    val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
+
+    SettingsSectionCard(title = stringResource(R.string.settings_section_note_list)) {
+        SettingsSectionHeader(text = stringResource(R.string.display_mode_title))
+
+        DisplayModeSelector(
+            currentMode = displayMode,
+            onModeSelected = { viewModel.setDisplayMode(it) }
+        )
+
+        SettingsHint(text = stringResource(R.string.display_mode_info))
+
+        // 🆕 v2.1.0 (F46): Grid column control — only visible when grid mode is active
+        if (displayMode == "grid") {
+            SettingsSectionHeader(text = stringResource(R.string.grid_scaling_title))
+
+            SettingsSwitch(
+                title = stringResource(R.string.grid_adaptive_scaling_title),
+                subtitle = stringResource(R.string.grid_adaptive_scaling_subtitle),
+                checked = gridAdaptiveScaling,
+                onCheckedChange = { viewModel.setGridAdaptiveScaling(it) }
+            )
+
+            AnimatedVisibility(visible = !gridAdaptiveScaling) {
+                Column {
+                    SettingsSectionHeader(text = stringResource(R.string.grid_manual_columns_title))
+
+                    GridColumnSelector(
+                        currentColumns = gridManualColumns,
+                        onColumnsSelected = { viewModel.setGridManualColumns(it) }
+                    )
+                }
+            }
+
+            SettingsHint(text = stringResource(R.string.grid_scaling_info))
+        }
+
+        SettingsSectionHeader(text = stringResource(R.string.note_preview_length_title))
+
+        NotePreviewLengthSelector(
+            currentLength = notePreviewLength,
+            onLengthSelected = { viewModel.setNotePreviewLength(it) }
+        )
+
+        SettingsHint(text = stringResource(R.string.note_preview_length_info))
+
+        // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
+        SettingsSwitch(
+            title = stringResource(R.string.note_card_show_timestamp_toggle),
+            subtitle = stringResource(R.string.note_card_show_timestamp_description),
+            checked = showNoteTimestamp,
+            onCheckedChange = { viewModel.setShowNoteTimestamp(it) },
+            icon = Icons.Default.Schedule
+        )
+
+        SettingsSwitch(
+            title = stringResource(R.string.note_card_show_icon_toggle),
+            subtitle = stringResource(R.string.note_card_show_icon_description),
+            checked = showNoteTypeIcon,
+            onCheckedChange = { viewModel.setShowNoteTypeIcon(it) },
+            icon = Icons.AutoMirrored.Filled.Notes
+        )
+    }
+}
+
+/** Karte 3: Editor-Verhalten + Standard-Notizfarbe. */
+@Composable
+private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String?, onDefaultColorClick: () -> Unit) {
+    val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
+    val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
+    val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
+    val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
+
+    SettingsSectionCard(title = stringResource(R.string.autosave_section)) {
+        SettingsSwitch(
+            title = stringResource(R.string.autosave_toggle),
+            subtitle = stringResource(R.string.autosave_description),
+            checked = autosaveEnabled,
+            onCheckedChange = { viewModel.setAutosaveEnabled(it) },
+            icon = Icons.Default.Save
+        )
+
+        SettingsHint(text = stringResource(R.string.autosave_info))
+
+        SettingsSwitch(
+            title = stringResource(R.string.editor_default_preview_mode_toggle),
+            subtitle = stringResource(R.string.editor_default_preview_mode_description),
+            checked = defaultStartInPreviewMode,
+            onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) },
+            icon = Icons.Default.Visibility
+        )
+
+        // 🆕 v2.11.0: Cursor-Start für neue Notizen
+        SettingsSwitch(
+            title = stringResource(R.string.editor_new_note_focus_content_toggle),
+            subtitle = stringResource(R.string.editor_new_note_focus_content_description),
+            checked = newNoteFocusContent,
+            onCheckedChange = { viewModel.setNewNoteFocusContent(it) },
+            icon = Icons.Default.EditNote
+        )
+
+        // 🆕 Issue #112: Un-Check scrollt optional nicht mehr an den Listenanfang
+        SettingsSwitch(
+            title = stringResource(R.string.checklist_scroll_top_on_uncheck_toggle),
+            subtitle = stringResource(R.string.checklist_scroll_top_on_uncheck_description),
+            checked = checklistScrollTopOnUncheck,
+            onCheckedChange = { viewModel.setChecklistScrollTopOnUncheck(it) },
+            icon = Icons.Default.Checklist
+        )
+
+        // 🆕 v2.11.0: Standard-Notizfarbe für neue Notizen
+        DefaultNoteColorRow(
+            currentColor = defaultNoteColor,
+            onClick = onDefaultColorClick
+        )
+    }
+}
+
+/** Karte 4: Kompressionsmodus für Bild-Anhänge. */
+@Composable
+private fun ImageCompressionSection(viewModel: SettingsViewModel) {
+    val imageCompressionMode by viewModel.imageCompressionMode.collectAsState()
+
+    SettingsSectionCard(title = stringResource(R.string.settings_image_compression_title)) {
+        SettingsRadioGroup(
+            options = listOf(
+                RadioOption(
+                    ImageCompressionMode.COMPRESSED,
+                    stringResource(R.string.image_compression_mode_compressed),
+                    stringResource(R.string.image_compression_mode_compressed_subtitle)
+                ),
+                RadioOption(
+                    ImageCompressionMode.LOSSLESS,
+                    stringResource(R.string.image_compression_mode_lossless),
+                    stringResource(R.string.image_compression_mode_lossless_subtitle)
+                ),
+                RadioOption(
+                    ImageCompressionMode.ORIGINAL,
+                    stringResource(R.string.image_compression_mode_original),
+                    stringResource(R.string.image_compression_mode_original_subtitle)
+                )
+            ),
+            selectedValue = imageCompressionMode,
+            onValueSelected = { viewModel.setImageCompressionMode(it) }
+        )
+
+        SettingsHint(text = stringResource(R.string.settings_image_compression_info))
     }
 }
 

@@ -258,6 +258,10 @@
     <!-- SETTINGS - MAIN               -->
     <!-- ============================= -->
     <string name="settings_title">Settings</string>
+    <string name="settings_group_app">App</string>
+    <string name="settings_group_sync">Synchronization</string>
+    <string name="settings_group_data">Data</string>
+    <string name="settings_group_info">Info</string>
     <string name="settings_language">Language</string>
     <string name="settings_server">Server Settings</string>
     <string name="settings_server_status_reachable">✅ Reachable</string>
@@ -273,8 +277,6 @@
     <string name="settings_sync_notifications_errors_only">Errors and warnings only</string>
     <string name="settings_sync_notifications_disabled">Notifications disabled</string>
     <string name="settings_markdown">Markdown Desktop Integration</string>
-    <string name="settings_markdown_auto_on">Auto-Sync: On</string>
-    <string name="settings_markdown_auto_off">Auto-Sync: Off</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
 
@@ -414,7 +416,6 @@
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
-    <string name="markdown_settings_title">Markdown Desktop Integration</string>
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
     <string name="markdown_export_complete">✅ Export complete</string>
     <string name="markdown_export_progress">Exporting %1$d/%2$d notes…</string>
@@ -553,6 +554,7 @@
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
     <string name="display_settings_title">Display</string>
+    <string name="settings_section_note_list">Note list</string>
     <string name="display_mode_title">Note Display Mode</string>
     <string name="display_mode_list">List View</string>
     <string name="display_mode_grid">Grid View</string>
@@ -568,6 +570,8 @@
     <!-- 🆕 v2.11.0: Note preview length -->
     <string name="note_preview_length_title">Note preview length</string>
     <string name="note_preview_length_info">Controls how many lines (or checklist items) are shown in the note preview, in both List and Grid view.</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="note_preview_length_title_only">Title only</string>
     <string name="note_preview_length_compact">Compact</string>
     <string name="note_preview_length_standard">Standard</string>
     <string name="note_preview_length_long">Long</string>
@@ -594,6 +598,14 @@
     <!-- 🆕 v2.11.0: New-note cursor focus -->
     <string name="editor_new_note_focus_content_toggle">Start cursor in content</string>
     <string name="editor_new_note_focus_content_description">New notes focus the content field instead of the title. Checklists focus the first item.</string>
+    <!-- 🆕 Issue #112: Checklist scroll behaviour on un-check -->
+    <string name="checklist_scroll_top_on_uncheck_toggle">Scroll to top when unchecking</string>
+    <string name="checklist_scroll_top_on_uncheck_description">Unchecking an item scrolls the checklist back to the top. Turn off to keep the current position.</string>
+    <!-- 🆕 Issue #100: Note card timestamp/icon visibility -->
+    <string name="note_card_show_timestamp_toggle">Show timestamp</string>
+    <string name="note_card_show_timestamp_description">Show the last-edited timestamp on note cards.</string>
+    <string name="note_card_show_icon_toggle">Show note icon</string>
+    <string name="note_card_show_icon_description">Show the type icon and pin badge on note cards.</string>
     <!-- 🆕 Bild-Attachments: Image compression mode -->
     <string name="settings_image_compression_title">Image compression</string>
     <string name="settings_image_compression_info">Applies when you insert a new image into a note. Already-inserted images are not reprocessed.</string>
@@ -605,6 +617,7 @@
     <string name="image_compression_mode_original_subtitle">Keeps the file as-is, unresized. Largest files; keeps EXIF/GPS location data.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
+    <string name="theme_mode_subsection">Mode</string>
     <string name="theme_mode_system">System (follow device)</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
@@ -1055,6 +1068,9 @@
     <string name="notes_list_widget_config_hide_pinned_desc">Pinned notes won\'t appear in the widget</string>
     <string name="notes_list_widget_config_hide_folders">Hide folder cards</string>
     <string name="notes_list_widget_config_hide_folders_desc">Folder cards won\'t appear in the widget</string>
+    <!-- 🆕 Discussion #110 -->
+    <string name="notes_list_widget_config_hide_preview">Title only</string>
+    <string name="notes_list_widget_config_hide_preview_desc">Cards show just the note title, no preview text</string>
     <string name="notes_list_widget_config_folder_label">Folder</string>
     <string name="notes_list_widget_config_folder_all">All notes</string>
     <!-- ============================= -->

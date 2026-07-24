@@ -58,6 +58,8 @@ fun NotesList(
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
+    showTimestamp: Boolean = true,
+    showTypeIcon: Boolean = true,
     listState: LazyListState = rememberLazyListState(),
     folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
     folderNoteCounts: Map<String, Int> = emptyMap(),
@@ -127,6 +129,8 @@ fun NotesList(
                                     isSelectionMode = isSelectionMode,
                                     timestampTicker = timestampTicker,
                                     previewLength = previewLength,
+                                    showTimestamp = showTimestamp,
+                                    showTypeIcon = showTypeIcon,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                     onClick = {
                                         if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note)
@@ -198,6 +202,8 @@ fun NotesList(
                                 isSelectionMode = isSelectionMode,
                                 timestampTicker = timestampTicker,
                                 previewLength = previewLength,
+                                showTimestamp = showTimestamp,
+                                showTypeIcon = showTypeIcon,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 onClick = { if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note) },
                                 onLongClick = { onNoteLongPress(note) }

@@ -199,6 +199,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _notePreviewLength.value = ThemePreferences.getNotePreviewLength(prefs)
     }
 
+    // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
+    private val _showNoteTimestamp = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, Constants.DEFAULT_SHOW_NOTE_TIMESTAMP)
+    )
+    val showNoteTimestamp: StateFlow<Boolean> = _showNoteTimestamp.asStateFlow()
+
+    private val _showNoteTypeIcon = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
+    )
+    val showNoteTypeIcon: StateFlow<Boolean> = _showNoteTypeIcon.asStateFlow()
+
+    /** Refresh note card display toggles from SharedPreferences. Called when returning from Settings screen. */
+    fun refreshNoteCardDisplaySettings() {
+        _showNoteTimestamp.value =
+            prefs.getBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, Constants.DEFAULT_SHOW_NOTE_TIMESTAMP)
+        _showNoteTypeIcon.value =
+            prefs.getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 Collapsible Sections State (Pinned / Folders / Notes)
     // ═══════════════════════════════════════════════════════════════════════

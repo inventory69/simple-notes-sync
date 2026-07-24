@@ -42,6 +42,21 @@ private const val WIDGET_MAX_IMAGES = 3
 /** Decode-Ziel für Widget-Bilder (Mini-Canvas): längste Seite max. 256px, RGB_565. */
 private const val WIDGET_IMAGE_MAX_DIM = 256
 
+/** Höhe eines Bildes bei Größen-Preset 100 %. Der Default 50 % landet damit auf den bisherigen 110dp. */
+private const val WIDGET_IMAGE_FULL_HEIGHT_DP = 220
+private const val WIDGET_IMAGE_MIN_HEIGHT_DP = 24
+
+/**
+ * Größen-Preset (siehe `ImageActionsMenu`) → Bildhöhe im Widget. Glance kennt kein
+ * `fillMaxWidth(fraction)` wie der Editor, und `LocalSize` liefert bei `SizeMode.Responsive`
+ * nur den Breakpoint statt der echten Widget-Breite — deshalb skaliert die Höhe, die Breite
+ * bleibt `fillMaxWidth` + `ContentScale.Fit`.
+ * `coerceIn` fängt beliebige Token-Werte ab (`parseImageAlt` erlaubt 1–100 %).
+ */
+internal fun widgetImageHeightDp(sizePercent: Int): Int =
+    (WIDGET_IMAGE_FULL_HEIGHT_DP * sizePercent / 100)
+        .coerceIn(WIDGET_IMAGE_MIN_HEIGHT_DP, WIDGET_IMAGE_FULL_HEIGHT_DP)
+
 private sealed interface WidgetRenderItem {
     data class Heading(val level: Int, val text: String) : WidgetRenderItem
 
@@ -53,7 +68,7 @@ private sealed interface WidgetRenderItem {
 
     data class CodeLine(val text: String) : WidgetRenderItem
 
-    data class Image(val bitmap: Bitmap, val altText: String) : WidgetRenderItem
+    data class Image(val bitmap: Bitmap, val altText: String, val sizePercent: Int) : WidgetRenderItem
 
     data object Divider : WidgetRenderItem
 
@@ -143,12 +158,13 @@ private fun flattenToRenderItems(
                 result.add(WidgetRenderItem.Divider)
             }
             // 🆕 Bild-Attachments v2: bis zu WIDGET_MAX_IMAGES echte Bilder, Rest/Decode-Fail → Alt-Text.
-            // Ausrichtung/Größe werden im Widget ignoriert (Mini-Canvas).
+            // Größe steuert die Höhe (siehe [widgetImageHeightDp]), Ausrichtung wird im Widget
+            // ignoriert (Mini-Canvas) — Bild bleibt zentriert.
             is MarkdownBlock.Image -> {
                 val bitmap = if (imagesUsed < WIDGET_MAX_IMAGES) loadImage(block.assetName) else null
                 if (bitmap != null) {
                     imagesUsed++
-                    result.add(WidgetRenderItem.Image(bitmap, block.altText))
+                    result.add(WidgetRenderItem.Image(bitmap, block.altText, block.sizePercent))
                 } else {
                     result.add(WidgetRenderItem.Paragraph("🖼 ${block.altText}".trim()))
                 }
@@ -279,7 +295,7 @@ internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
                         contentScale = ContentScale.Fit,
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(110.dp)
+                            .height(widgetImageHeightDp(item.sizePercent).dp)
                             .padding(bottom = 4.dp)
                     )
                 }

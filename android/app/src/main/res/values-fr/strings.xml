@@ -209,8 +209,6 @@
     <string name="settings_sync_notifications_errors_only">Erreurs et avertissements uniquement</string>
     <string name="settings_sync_notifications_disabled">Notifications désactivées</string>
     <string name="settings_markdown">Intégration Markdown Bureau</string>
-    <string name="settings_markdown_auto_on">Synchro auto : Activée</string>
-    <string name="settings_markdown_auto_off">Synchro auto : Désactivée</string>
     <string name="settings_backup">Sauvegarde et Restauration</string>
     <string name="settings_backup_subtitle">Sauvegarde locale ou sur serveur</string>
     <string name="settings_import_title">Importer des notes</string>
@@ -318,7 +316,6 @@
     <string name="sync_offline_mode_message">Vous utilisez l\'application en mode hors ligne. Configurez un serveur pour synchroniser vos notes.</string>
     <string name="sync_no_server_message">Aucun serveur configuré. Configurez un serveur pour synchroniser vos notes.</string>
     <string name="sync_offline_mode_button">Configurer le serveur</string>
-    <string name="markdown_settings_title">Intégration Markdown Bureau</string>
     <string name="markdown_dialog_title">Synchro auto Markdown</string>
     <string name="markdown_export_complete">✅ Exportation terminée</string>
     <string name="markdown_export_progress">Exportation de %1$d/%2$d notes…</string>

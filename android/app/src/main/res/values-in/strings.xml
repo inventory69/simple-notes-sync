@@ -124,8 +124,6 @@
     <string name="settings_sync_notifications_errors_only">Hanya kesalahan dan peringatan</string>
     <string name="settings_sync_notifications_disabled">Notifikasi dinonaktifkan</string>
     <string name="settings_markdown">Integrasi Desktop Markdown</string>
-    <string name="settings_markdown_auto_on">Sinkronisasi Otomatis: Aktif</string>
-    <string name="settings_markdown_auto_off">Sinkronisasi Otomatis: Nonaktif</string>
     <string name="settings_backup">Cadangan &amp; Pemulihan</string>
     <string name="settings_backup_subtitle">Cadangan lokal atau server</string>
     <string name="settings_import_title">Impor Catatan</string>
@@ -212,7 +210,6 @@
     <string name="sync_manual_hint_disabled">Sinkronisasi tidak tersedia dalam mode offline.</string>
     <string name="sync_offline_mode_message">Anda menggunakan aplikasi dalam mode offline. Siapkan server untuk menyinkronisasi catatan.</string>
     <string name="sync_offline_mode_button">Siapkan Server</string>
-    <string name="markdown_settings_title">Integrasi Desktop Markdown</string>
     <string name="markdown_dialog_title">Sinkronisasi Otomatis Markdown</string>
     <string name="markdown_export_complete">✅ Ekspor selesai</string>
     <string name="markdown_export_progress">Mengekspor %1$d/%2$d catatan…</string>

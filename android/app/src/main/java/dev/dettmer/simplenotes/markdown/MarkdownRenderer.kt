@@ -866,8 +866,10 @@ internal fun markdownInlineToHtml(text: String): String = buildString {
             match.groups[INLINE_GROUP_LINK_TEXT] != null ->
                 append(match.groupValues[INLINE_GROUP_LINK_TEXT].escapeHtml())
 
-            match.groups[INLINE_GROUP_IMAGE_ASSET] != null ->
-                append(parseImageAlt(match.groupValues[INLINE_GROUP_IMAGE_ALT]).cleanAlt.escapeHtml())
+            match.groups[INLINE_GROUP_IMAGE_ASSET] != null -> {
+                val cleanAlt = parseImageAlt(match.groupValues[INLINE_GROUP_IMAGE_ALT]).cleanAlt
+                append("🖼 $cleanAlt".trim().escapeHtml())
+            }
 
             else -> append(match.value.escapeHtml()) // bare URL — keep as plain text
         }

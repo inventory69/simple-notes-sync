@@ -32,7 +32,6 @@ import dev.dettmer.simplenotes.ui.settings.screens.DebugSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.DisplaySettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ImportSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.LanguageSettingsScreen
-import dev.dettmer.simplenotes.ui.settings.screens.MarkdownSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SecuritySettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ServerSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.SettingsMainScreen
@@ -132,14 +131,6 @@ fun SettingsNavHost(
                             launchSingleTop = true
                         }
                     }
-                )
-            }
-
-            // Markdown Settings
-            composable(SettingsRoute.Markdown.route) {
-                MarkdownSettingsScreen(
-                    viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
                 )
             }
 

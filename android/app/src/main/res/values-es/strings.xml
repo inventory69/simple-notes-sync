@@ -129,8 +129,6 @@
     <string name="import_dialog_complete">%1$d importados, %2$d omitidos, %3$d fallados</string>
     <string name="import_zero_notes_hint">No se lograron importar notas. El archivo puede estar corrompido o en un formato sin soporte.</string>
     <string name="settings_markdown">Integración con Markdown Desktop</string>
-    <string name="settings_markdown_auto_on">Sincronización automática: Activada</string>
-    <string name="settings_markdown_auto_off">Sincronización automática: Desactivada</string>
     <string name="settings_backup">Respaldar y restaurar</string>
     <string name="settings_backup_subtitle">Respaldo local o de servidor</string>
     <string name="import_server_info">Escanea el servidor WebDAV para archivos importables de notas en todas las subcarpetas. Archivos JSON con ID de nota iguales serán sincronizados directamente.</string>
@@ -214,7 +212,6 @@
     <string name="sync_wifi_only_hint">💡 La mecánica WiFi-Connect no es afectada por esta configuración – Siempre se sincroniza cuando el WiFi esta conectado.</string>
     <string name="sync_wifi_only_error">La sincronización solo se realiza cuando el WiFi esta conectado</string>
     <string name="sync_manual_hint">Sincronización manual también disponible (toolbar/pull-to-refresh).</string>
-    <string name="markdown_settings_title">Integración con Markdown Desktop</string>
     <string name="markdown_dialog_title">Sincronización automática de Markdown</string>
     <string name="markdown_checking_server">Comprobando conexión con el servidor…</string>
     <string name="markdown_info">📝 Exporta notas de forma adicional como archivos .md. Monta WebDAV como una unidad de red para editar desde VS Code, Typora entre otros editores de Markdown. La sincronización por JSON aun es el formato principal.</string>

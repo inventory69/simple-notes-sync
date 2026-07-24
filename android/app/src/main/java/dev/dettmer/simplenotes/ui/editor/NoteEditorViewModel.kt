@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.images.ImageProcessor
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
@@ -159,6 +160,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private val _checklistScrollAction = MutableSharedFlow<ChecklistScrollAction>(extraBufferCapacity = 1)
     val checklistScrollAction: SharedFlow<ChecklistScrollAction> = _checklistScrollAction.asSharedFlow()
+
+    // 🆕 Issue #112: Wenn aus, bleibt der Viewport beim Un-Check stehen (→ NoScroll).
+    // Wie autosaveEnabled beim VM-Bau gelesen — der Editor-VM wird pro geöffneter Notiz neu erstellt.
+    // 🔧 v2.13.0: Auch von der UI gelesen — der Collapse-Pfad committet dann ohne Settle-Delay
+    // und ohne Expand am Ziel, damit der ScrollToTop früh und über ruhigem Layout läuft.
+    val scrollTopOnUncheck = prefs.getBoolean(
+        Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK,
+        Constants.DEFAULT_CHECKLIST_SCROLL_TOP_ON_UNCHECK
+    )
 
     // Internal state
     // v2.3.0 (REF-012): backed by MutableStateFlow for thread-safe access;
@@ -453,40 +463,6 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
-    private fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
-        val gfmRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""")
-        val markerRegex = Regex("""^[-*•]\s+(.*)$""")
-        val cbRegex = Regex("""^\[([ xX])\]\s*(.*)$""") // group 1 = mark, group 2 = text
-        val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
-        val t = line.trim()
-        val gfm = gfmRegex.find(t)
-        return if (gfm != null) {
-            ChecklistItemState.createEmpty(index).copy(
-                text = gfm.groupValues[2].trim(),
-                isChecked = gfm.groupValues[1].lowercase() != " "
-            )
-        } else {
-            val checkmark = checkmarkRegex.find(t)
-            if (checkmark != null) {
-                ChecklistItemState.createEmpty(index).copy(
-                    text = checkmark.groupValues[1].trim(),
-                    isChecked = true
-                )
-            } else {
-                val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
-                val cbMatch = cbRegex.find(afterMarker.trim())
-                if (cbMatch != null) {
-                    ChecklistItemState.createEmpty(index).copy(
-                        text = cbMatch.groupValues[2].trim(),
-                        isChecked = cbMatch.groupValues[1].lowercase() != " "
-                    )
-                } else {
-                    ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
-                }
-            }
-        }
-    }
-
     private fun parseSharedTextAsChecklist(text: String): List<ChecklistItemState> {
         val lines = text.trim().lines().filter { it.isNotBlank() }
         if (lines.isEmpty()) return _checklistItems.value
@@ -630,6 +606,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * - Un-check → emits [ChecklistScrollAction.ScrollToTop]: scroll to the top of the list.
      * - Check → emits [ChecklistScrollAction.NoScroll]: keep scroll position exactly as-is.
      *
+     * 🆕 Issue #112: Ist [Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK] aus, emittiert auch
+     * der Un-Check [ChecklistScrollAction.NoScroll] — die Ansicht bleibt stehen.
+     *
      * Scroll stability for the first-visible-item case is handled in the UI layer via
      * LazyListState.requestScrollToItem(0) which overrides LazyColumn’s key-tracking
      * during the layout pass.
@@ -669,7 +648,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             }
         }
         // 🆕 v1.9.0 (F14): Emit scroll action — outside update{} to ensure state is committed first
-        if (!isChecked) {
+        if (!isChecked && scrollTopOnUncheck) {
             _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToTop)
         } else {
             _checklistScrollAction.tryEmit(ChecklistScrollAction.NoScroll)
@@ -1663,6 +1642,48 @@ data class ChecklistItemState(
                 originalOrder = order,
                 createdAt = lastCreatedAt
             )
+        }
+    }
+}
+
+/**
+ * Normalisiert eine Textzeile zu einem Checklist-Item (TEXT → CHECKLIST).
+ *
+ * Top-Level, weil zustandslos — so direkt testbar ohne ViewModel-Instanz.
+ *
+ * Für GFM-Zeilen gilt bewusst dieselbe [MarkdownEngine.TASK_LIST_REGEX] wie in der Preview:
+ * was als Checkbox gerendert wird, wird auch als Checklist-Item konvertiert. Der Checked-Test
+ * ist `== "x"` und nicht `!= " "`, sonst würde `- []` (leere Klammern) als abgehakt gelten.
+ */
+internal fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
+    val markerRegex = Regex("""^[-*•]\s+(.*)$""")
+    val cbRegex = Regex("""^\[([ xX]?)\]\s*(.*)$""") // group 1 = mark, group 2 = text
+    val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
+    val t = line.trim()
+    val gfm = MarkdownEngine.TASK_LIST_REGEX.matchEntire(t)
+    return if (gfm != null) {
+        ChecklistItemState.createEmpty(index).copy(
+            text = gfm.groupValues[2].trim(),
+            isChecked = gfm.groupValues[1].equals("x", ignoreCase = true)
+        )
+    } else {
+        val checkmark = checkmarkRegex.find(t)
+        if (checkmark != null) {
+            ChecklistItemState.createEmpty(index).copy(
+                text = checkmark.groupValues[1].trim(),
+                isChecked = true
+            )
+        } else {
+            val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
+            val cbMatch = cbRegex.find(afterMarker.trim())
+            if (cbMatch != null) {
+                ChecklistItemState.createEmpty(index).copy(
+                    text = cbMatch.groupValues[2].trim(),
+                    isChecked = cbMatch.groupValues[1].equals("x", ignoreCase = true)
+                )
+            } else {
+                ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
+            }
         }
     }
 }

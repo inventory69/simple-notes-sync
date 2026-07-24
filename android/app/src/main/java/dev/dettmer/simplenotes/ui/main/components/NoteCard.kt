@@ -23,10 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.CloudDone
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,10 +46,12 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.noteCardMarkdownPreview
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
-import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
+
+/** Größe des Sync-Icons, wenn es (ohne Zeitstempel) inline ans Ende des Vorschautexts rutscht. */
+private val CORNER_SYNC_ICON_SIZE = 16.dp
 
 /**
  * Note card - v1.5.0 with Multi-Select Support
@@ -65,6 +63,7 @@ import dev.dettmer.simplenotes.utils.toReadableTime
  * - Long-press starts selection mode
  * - Tap in selection mode toggles selection
  */
+@Suppress("LongParameterList") // 🆕 Issue #100: zwei weitere Display-Toggles neben bestehendem State
 @Composable
 fun NoteCard(
     note: Note,
@@ -74,6 +73,8 @@ fun NoteCard(
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
+    showTimestamp: Boolean = true,
+    showTypeIcon: Boolean = true,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -82,6 +83,10 @@ fun NoteCard(
     // ⏱️ Reading timestampTicker triggers recomposition only for visible cards
     @Suppress("UNUSED_VARIABLE")
     val ticker = timestampTicker
+
+    // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row — das Sync-Icon rutscht stattdessen
+    // inline ans Ende des Vorschautexts (siehe NoteCardPreviewContent/-IconLeadingPreview).
+    val showCornerSyncIcon = !showTimestamp && showSyncStatus
 
     // v2.5.0: Resolve note colour, fall back to theme default
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -134,8 +139,10 @@ fun NoteCard(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        NoteCardTypeIcon(note = note, isPinned = note.isPinned == true)
-                        Spacer(modifier = Modifier.width(12.dp))
+                        if (showTypeIcon) {
+                            NoteCardTypeIcon(note = note, isPinned = note.isPinned == true)
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
                         Text(
                             text = note.title,
                             style = MaterialTheme.typography.titleMedium,
@@ -144,60 +151,54 @@ fun NoteCard(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
+                        // 🆕 Discussion #110: ohne Vorschauzeilen hat das Sync-Icon keinen Text
+                        // mehr zum Anhängen — es rückt neben den Titel statt zu verschwinden.
+                        if (showCornerSyncIcon && previewLength.listLines == 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            NoteCardSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE))
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    NoteCardPreviewContent(
-                        note = note,
-                        maxLines = previewLength.listLines,
-                        itemMaxLines = previewLength.itemMaxLines
-                    )
+                    // ponytail: 0 Zeilen = NotePreviewLength.TITLE_ONLY
+                    if (previewLength.listLines > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        NoteCardPreviewContent(
+                            note = note,
+                            maxLines = previewLength.listLines,
+                            itemMaxLines = previewLength.itemMaxLines,
+                            showSyncIcon = showCornerSyncIcon
+                        )
+                    }
                 } else {
                     NoteCardIconLeadingPreview(
                         note = note,
                         isPinned = note.isPinned == true,
-                        maxLines = previewLength.listLines
+                        maxLines = previewLength.listLines,
+                        showTypeIcon = showTypeIcon,
+                        showSyncIcon = showCornerSyncIcon
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row komplett — das Sync-Icon
+                // hängt stattdessen inline am Ende der letzten Vorschauzeile (siehe oben).
+                if (showTimestamp) {
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                // Footer
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = note.updatedAt.toReadableTime(context),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (showSyncStatus) {
-                        Icon(
-                            imageVector = when (note.syncStatus) {
-                                SyncStatus.SYNCED -> Icons.Outlined.CloudDone
-                                SyncStatus.PENDING -> Icons.Outlined.CloudSync
-                                SyncStatus.CONFLICT -> Icons.Default.Warning
-                                SyncStatus.LOCAL_ONLY -> Icons.Outlined.CloudOff
-                                SyncStatus.DELETED_ON_SERVER -> Icons.Outlined.CloudOff // 🆕 v1.8.0
-                            },
-                            contentDescription = when (note.syncStatus) {
-                                SyncStatus.SYNCED -> stringResource(R.string.sync_status_synced)
-                                SyncStatus.PENDING -> stringResource(R.string.sync_status_pending)
-                                SyncStatus.CONFLICT -> stringResource(R.string.sync_status_conflict)
-                                SyncStatus.LOCAL_ONLY -> stringResource(R.string.sync_status_local_only)
-                                SyncStatus.DELETED_ON_SERVER -> stringResource(R.string.sync_status_deleted_on_server) // 🆕 v1.8.0
-                            },
-                            tint = when (note.syncStatus) {
-                                SyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
-                                SyncStatus.CONFLICT -> MaterialTheme.colorScheme.error
-                                SyncStatus.DELETED_ON_SERVER -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) // 🆕 v1.8.0
-                                else -> MaterialTheme.colorScheme.outline
-                            },
-                            modifier = Modifier.size(16.dp)
+                    // Footer
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = note.updatedAt.toReadableTime(context),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.weight(1f)
                         )
+
+                        if (showSyncStatus) {
+                            NoteCardSyncIcon(note = note, modifier = Modifier.size(16.dp))
+                        }
                     }
                 }
             }
@@ -247,6 +248,23 @@ fun NoteCard(
     }
 }
 
+/**
+ * Sync-Status-Icon, gemeinsam genutzt von der Footer-Row und dem TrailingIconText ohne Zeitstempel.
+ *
+ * `showDescription = false` beim Inline-Einsatz im TrailingIconText: die echte, lokalisierte
+ * Beschreibung würde dort als eigener Screenreader-Knoten direkt hinter dem Vorschautext gelesen
+ * (kein mergeDescendants) — ohne Einordnung klingt das wie Notizinhalt statt App-Status.
+ */
+@Composable
+private fun NoteCardSyncIcon(note: Note, modifier: Modifier = Modifier, showDescription: Boolean = true) {
+    Icon(
+        imageVector = syncStatusIcon(note.syncStatus),
+        contentDescription = if (showDescription) syncStatusDescription(note.syncStatus) else null,
+        tint = syncStatusTint(note.syncStatus),
+        modifier = modifier
+    )
+}
+
 /** Typ-Icon (+ optionaler Pin), gemeinsam genutzt vom Titel- und vom Icon-Leading-Preview-Fall. */
 @Composable
 private fun NoteCardTypeIcon(note: Note, isPinned: Boolean) {
@@ -281,14 +299,26 @@ private fun NoteCardTypeIcon(note: Note, isPinned: Boolean) {
 }
 
 @Composable
-private fun NoteCardPreviewContent(note: Note, maxLines: Int, itemMaxLines: Int, modifier: Modifier = Modifier) {
+private fun NoteCardPreviewContent(
+    note: Note,
+    maxLines: Int,
+    itemMaxLines: Int,
+    showSyncIcon: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {
+        { NoteCardSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE), showDescription = false) }
+    } else {
+        null
+    }
     if (note.noteType == NoteType.TEXT) {
-        Text(
+        TrailingIconText(
             text = noteCardMarkdownPreview(note.content),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = maxLines,
-            overflow = TextOverflow.Ellipsis,
+            iconSize = CORNER_SYNC_ICON_SIZE,
+            icon = cornerSyncIcon,
             modifier = modifier
         )
     } else {
@@ -298,7 +328,9 @@ private fun NoteCardPreviewContent(note: Note, maxLines: Int, itemMaxLines: Int,
             maxItems = maxLines,
             style = MaterialTheme.typography.bodyMedium,
             itemMaxLines = itemMaxLines,
-            modifier = modifier
+            modifier = modifier,
+            trailingIcon = cornerSyncIcon,
+            trailingIconSize = CORNER_SYNC_ICON_SIZE
         )
     }
 }
@@ -337,33 +369,51 @@ private fun AnnotatedString.splitFirstLine(): Pair<AnnotatedString, AnnotatedStr
  * Kartenbreite — dieselbe Row/Spacer-Mechanik wie im Titel-Fall, keine Sonderlogik nötig.
  */
 @Composable
-private fun NoteCardIconLeadingPreview(note: Note, isPinned: Boolean, maxLines: Int) {
+private fun NoteCardIconLeadingPreview(
+    note: Note,
+    isPinned: Boolean,
+    maxLines: Int,
+    showTypeIcon: Boolean,
+    showSyncIcon: Boolean
+) {
     val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
+    // ponytail: maxLines <= 1 = TITLE_ONLY (bzw. kein Platz mehr) — nur die Titel-Slot-Zeile bleibt
+    val hasRemainingLines = remainingLines.isNotBlank() && maxLines > 1
+    val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {
+        { NoteCardSyncIcon(note = note, modifier = Modifier.size(CORNER_SYNC_ICON_SIZE), showDescription = false) }
+    } else {
+        null
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NoteCardTypeIcon(note = note, isPinned = isPinned)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
+        if (showTypeIcon) {
+            NoteCardTypeIcon(note = note, isPinned = isPinned)
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        // Icon hängt an dieser Zeile nur, wenn sie auch die letzte sichtbare ist
+        TrailingIconText(
             text = firstLine,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            iconSize = CORNER_SYNC_ICON_SIZE,
+            icon = if (hasRemainingLines) null else cornerSyncIcon,
             modifier = Modifier.weight(1f)
         )
     }
 
-    if (remainingLines.isNotBlank()) {
+    if (hasRemainingLines) {
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
+        TrailingIconText(
             text = remainingLines,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = maxLines - 1,
-            overflow = TextOverflow.Ellipsis
+            iconSize = CORNER_SYNC_ICON_SIZE,
+            icon = cornerSyncIcon
         )
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -54,6 +55,13 @@ class MarkdownToolbarInstrumentedTest {
         composeTestRule.waitForIdle()
     }
 
+    /** App-Bar-Buttons sitzen in keinem Scroll-Container — performScrollTo würde fehlschlagen. */
+    private fun clickAppBarButton(labelRes: Int) {
+        val label = composeTestRule.activity.getString(labelRes)
+        composeTestRule.onNodeWithContentDescription(label).performClick()
+        composeTestRule.waitForIdle()
+    }
+
     @Test fun bold_then_italic_wraps_selection_in_triple_asterisks() {
         typeAndSelectAll("hello")
         clickToolbarButton(R.string.md_toolbar_bold)
@@ -78,5 +86,30 @@ class MarkdownToolbarInstrumentedTest {
         typeAndSelectAll("hello")
         clickToolbarButton(R.string.md_toolbar_italic)
         contentField().assertTextContains("*hello*", substring = true)
+    }
+
+    /**
+     * Der gemeldete Bug end-to-end: Checklist-Button auf der zweiten Zeile einer Bullet-Liste,
+     * dann Preview. Vorher schluckte die Bullet-Liste die Task-Zeile und rendert sie als
+     * Bullet mit literalem "[ ]".
+     *
+     * Assert über den Text statt über Semantics: die Preview-Checkbox hat
+     * `onCheckedChange = null` und damit keine Toggleable-Semantics. UnorderedListBlock
+     * rendert "[ ] milk", TaskListBlock nur "milk".
+     */
+    @Test fun checklist_button_on_bullet_list_renders_checkboxes_in_preview() {
+        contentField().performClick()
+        contentField().performTextInput("- eggs\nmilk")
+        composeTestRule.waitForIdle()
+        clickToolbarButton(R.string.md_toolbar_checklist)
+        contentField().assertTextContains("- eggs\n- [ ] milk", substring = true)
+
+        clickAppBarButton(R.string.editor_toggle_preview)
+
+        composeTestRule.onNodeWithText("[ ] milk", substring = true).assertDoesNotExist()
+        // exact: UnorderedListBlock würde "  •  milk" rendern, TaskListBlock nur "milk"
+        composeTestRule.onNodeWithText("milk").assertExists()
+        // substring: der echte Bullet darüber trägt weiterhin sein "  •  "-Präfix
+        composeTestRule.onNodeWithText("eggs", substring = true).assertExists()
     }
 }
