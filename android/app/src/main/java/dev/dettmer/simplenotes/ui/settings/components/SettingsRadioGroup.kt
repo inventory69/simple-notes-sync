@@ -35,14 +35,8 @@ fun <T> SettingsRadioGroup(
     selectedValue: T,
     onValueSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
-    title: String? = null,
     enabled: Boolean = true
 ) {
-    val titleColor = if (enabled) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    }
     val labelColor = if (enabled) {
         MaterialTheme.colorScheme.onSurface
     } else {
@@ -59,15 +53,6 @@ fun <T> SettingsRadioGroup(
             .fillMaxWidth()
             .selectableGroup()
     ) {
-        if (title != null) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                color = titleColor,
-                modifier = Modifier.padding(horizontal = Dimensions.SpacingLarge, vertical = Dimensions.SpacingMedium)
-            )
-        }
-
         options.forEach { option ->
             Row(
                 modifier = Modifier

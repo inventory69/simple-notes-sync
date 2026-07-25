@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,11 +29,10 @@ import dev.dettmer.simplenotes.ui.editor.calendarParsingStrategy
 import dev.dettmer.simplenotes.ui.editor.computePreview
 import dev.dettmer.simplenotes.ui.editor.setCalendarParsingStrategy
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
-import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
-import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.utils.Constants
 
 @Composable
@@ -59,59 +56,59 @@ fun CalendarParsingExperimentScreen(onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            SettingsInfoCard(text = stringResource(R.string.calendar_experiment_hint))
+            SettingsSectionCard(title = stringResource(R.string.calendar_experiment_input_label)) {
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    label = { Text(stringResource(R.string.calendar_experiment_input_label)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
 
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
-                label = { Text(stringResource(R.string.calendar_experiment_input_label)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
+                SettingsHint(text = stringResource(R.string.calendar_experiment_hint))
+            }
 
-            SettingsDivider()
-
-            SettingsRadioGroup(
-                title = stringResource(R.string.calendar_experiment_strategy_section),
-                options = listOf(
-                    RadioOption(
-                        Strategy.RAW,
-                        stringResource(R.string.calendar_experiment_strategy_raw),
-                        stringResource(R.string.calendar_experiment_strategy_raw_subtitle)
+            SettingsSectionCard(title = stringResource(R.string.calendar_experiment_strategy_section)) {
+                SettingsRadioGroup(
+                    options = listOf(
+                        RadioOption(
+                            Strategy.RAW,
+                            stringResource(R.string.calendar_experiment_strategy_raw),
+                            stringResource(R.string.calendar_experiment_strategy_raw_subtitle)
+                        ),
+                        RadioOption(
+                            Strategy.POSITIONAL,
+                            stringResource(R.string.calendar_experiment_strategy_positional),
+                            stringResource(R.string.calendar_experiment_strategy_positional_subtitle)
+                        ),
+                        RadioOption(
+                            Strategy.PHONE_REGEX,
+                            stringResource(R.string.calendar_experiment_strategy_phone_regex),
+                            stringResource(R.string.calendar_experiment_strategy_phone_regex_subtitle)
+                        ),
+                        RadioOption(
+                            Strategy.LABEL_PREFIX,
+                            stringResource(R.string.calendar_experiment_strategy_label_prefix),
+                            stringResource(R.string.calendar_experiment_strategy_label_prefix_subtitle)
+                        ),
+                        RadioOption(
+                            Strategy.PHONE_EMAIL_REGEX,
+                            stringResource(R.string.calendar_experiment_strategy_phone_email_regex),
+                            stringResource(R.string.calendar_experiment_strategy_phone_email_regex_subtitle)
+                        )
                     ),
-                    RadioOption(
-                        Strategy.POSITIONAL,
-                        stringResource(R.string.calendar_experiment_strategy_positional),
-                        stringResource(R.string.calendar_experiment_strategy_positional_subtitle)
-                    ),
-                    RadioOption(
-                        Strategy.PHONE_REGEX,
-                        stringResource(R.string.calendar_experiment_strategy_phone_regex),
-                        stringResource(R.string.calendar_experiment_strategy_phone_regex_subtitle)
-                    ),
-                    RadioOption(
-                        Strategy.LABEL_PREFIX,
-                        stringResource(R.string.calendar_experiment_strategy_label_prefix),
-                        stringResource(R.string.calendar_experiment_strategy_label_prefix_subtitle)
-                    ),
-                    RadioOption(
-                        Strategy.PHONE_EMAIL_REGEX,
-                        stringResource(R.string.calendar_experiment_strategy_phone_email_regex),
-                        stringResource(R.string.calendar_experiment_strategy_phone_email_regex_subtitle)
-                    )
-                ),
-                selectedValue = selectedStrategy,
-                onValueSelected = {
-                    selectedStrategy = it
-                    prefs.setCalendarParsingStrategy(it)
-                }
-            )
+                    selectedValue = selectedStrategy,
+                    onValueSelected = {
+                        selectedStrategy = it
+                        prefs.setCalendarParsingStrategy(it)
+                    }
+                )
+            }
 
-            SettingsDivider()
-
-            SettingsSectionHeader(text = stringResource(R.string.calendar_experiment_preview_section))
-            PreviewCard(preview)
+            SettingsSectionCard(title = stringResource(R.string.calendar_experiment_preview_section)) {
+                PreviewContent(preview)
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -119,30 +116,23 @@ fun CalendarParsingExperimentScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun PreviewCard(preview: Preview) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            PreviewRow(stringResource(R.string.calendar_experiment_preview_title), preview.title, TAG_PREVIEW_TITLE)
-            Spacer(modifier = Modifier.height(8.dp))
-            PreviewRow(stringResource(R.string.calendar_experiment_preview_location), preview.location, TAG_PREVIEW_LOCATION)
-            Spacer(modifier = Modifier.height(8.dp))
-            PreviewRow(
-                stringResource(R.string.calendar_experiment_preview_description),
-                preview.description,
-                TAG_PREVIEW_DESCRIPTION
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            PreviewRow(
-                stringResource(R.string.calendar_experiment_preview_attendees),
-                preview.attendees,
-                TAG_PREVIEW_ATTENDEES
-            )
-        }
+private fun PreviewContent(preview: Preview) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        PreviewRow(stringResource(R.string.calendar_experiment_preview_title), preview.title, TAG_PREVIEW_TITLE)
+        Spacer(modifier = Modifier.height(8.dp))
+        PreviewRow(stringResource(R.string.calendar_experiment_preview_location), preview.location, TAG_PREVIEW_LOCATION)
+        Spacer(modifier = Modifier.height(8.dp))
+        PreviewRow(
+            stringResource(R.string.calendar_experiment_preview_description),
+            preview.description,
+            TAG_PREVIEW_DESCRIPTION
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        PreviewRow(
+            stringResource(R.string.calendar_experiment_preview_attendees),
+            preview.attendees,
+            TAG_PREVIEW_ATTENDEES
+        )
     }
 }
 

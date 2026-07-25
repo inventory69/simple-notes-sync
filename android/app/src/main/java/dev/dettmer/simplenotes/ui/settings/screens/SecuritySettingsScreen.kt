@@ -4,22 +4,17 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import androidx.biometric.BiometricManager
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,8 +32,11 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.security.showAppLockPrompt
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
-import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsChip
+import dev.dettmer.simplenotes.ui.settings.components.SettingsChipRow
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 
@@ -92,51 +90,48 @@ fun SecuritySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            SettingsSectionHeader(text = stringResource(R.string.app_lock_section))
-
-            SettingsSwitch(
-                title = stringResource(R.string.app_lock_toggle),
-                subtitle = stringResource(R.string.app_lock_toggle_subtitle),
-                checked = appLockEnabled,
-                onCheckedChange = { checked ->
-                    if (checked) {
-                        if (activity == null) return@SettingsSwitch
-                        when (AppLock.canAuthenticate(context)) {
-                            BiometricManager.BIOMETRIC_SUCCESS -> showAppLockPrompt(
-                                activity = activity,
-                                onSuccess = {
-                                    viewModel.setAppLockEnabled(true)
-                                    AppLock.applySecureFlag(activity)
-                                },
-                                onCancelled = { /* toggle stays off */ },
-                                onUnrecoverable = { showNoBiometricDialog = true }
-                            )
-                            else -> showNoBiometricDialog = true
+            SettingsSectionCard(title = stringResource(R.string.app_lock_section)) {
+                SettingsSwitch(
+                    title = stringResource(R.string.app_lock_toggle),
+                    subtitle = stringResource(R.string.app_lock_toggle_subtitle),
+                    checked = appLockEnabled,
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            if (activity == null) return@SettingsSwitch
+                            when (AppLock.canAuthenticate(context)) {
+                                BiometricManager.BIOMETRIC_SUCCESS -> showAppLockPrompt(
+                                    activity = activity,
+                                    onSuccess = {
+                                        viewModel.setAppLockEnabled(true)
+                                        AppLock.applySecureFlag(activity)
+                                    },
+                                    onCancelled = { /* toggle stays off */ },
+                                    onUnrecoverable = { showNoBiometricDialog = true }
+                                )
+                                else -> showNoBiometricDialog = true
+                            }
+                        } else {
+                            // Settings is already behind the lock — no re-auth needed
+                            viewModel.setAppLockEnabled(false)
+                            activity?.let { AppLock.applySecureFlag(it) }
                         }
-                    } else {
-                        // Settings is already behind the lock — no re-auth needed
-                        viewModel.setAppLockEnabled(false)
-                        activity?.let { AppLock.applySecureFlag(it) }
-                    }
+                    },
+                    icon = Icons.Filled.Lock
+                )
+
+                if (appLockEnabled) {
+                    SettingsSectionHeader(text = stringResource(R.string.app_lock_timeout_title))
+                    GraceTimeSelector(currentMs = appLockGraceMs, onSelected = { viewModel.setAppLockGraceMs(it) })
                 }
-            )
 
-            if (appLockEnabled) {
-                Spacer(modifier = Modifier.height(24.dp))
-                SettingsSectionHeader(text = stringResource(R.string.app_lock_timeout_title))
-                GraceTimeSelector(currentMs = appLockGraceMs, onSelected = { viewModel.setAppLockGraceMs(it) })
+                SettingsHint(text = stringResource(R.string.app_lock_info))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(text = stringResource(R.string.app_lock_info))
 
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GraceTimeSelector(currentMs: Long, onSelected: (Long) -> Unit) {
     val options = listOf(
@@ -145,52 +140,14 @@ private fun GraceTimeSelector(currentMs: Long, onSelected: (Long) -> Unit) {
         60_000L to R.string.app_lock_timeout_1min,
         300_000L to R.string.app_lock_timeout_5min
     )
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    SettingsChipRow {
         options.forEach { (ms, labelRes) ->
-            GraceChip(
+            SettingsChip(
                 label = stringResource(labelRes),
                 selected = currentMs == ms,
-                onClick = { onSelected(ms) }
+                onClick = { onSelected(ms) },
+                modifier = Modifier.widthIn(min = 72.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun GraceChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
-
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.widthIn(min = 72.dp),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = borderColor
-        ),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-        )
     }
 }

@@ -2,10 +2,6 @@ package dev.dettmer.simplenotes.ui.settings.keepimport
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,8 +9,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
-import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.utils.Logger
 
 private const val TAG = "KeepImportSection"
@@ -36,11 +32,8 @@ fun KeepImportSection(
         if (uri != null) onZipPicked(uri)
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        SettingsSectionHeader(text = stringResource(R.string.keep_import_section_title))
-        Spacer(modifier = Modifier.height(8.dp))
-        SettingsInfoCard(text = stringResource(R.string.keep_import_section_description))
-        Spacer(modifier = Modifier.height(8.dp))
+    SettingsSectionCard(title = stringResource(R.string.keep_import_section_title), modifier = modifier) {
+        SettingsHint(text = stringResource(R.string.keep_import_section_description))
         SettingsButton(
             text = stringResource(R.string.keep_import_section_button_pick_zip),
             onClick = {

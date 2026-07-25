@@ -3,7 +3,6 @@ package dev.dettmer.simplenotes.ui.settings.screens
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +26,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,12 +46,14 @@ import dev.dettmer.simplenotes.noteimport.NotesImportWizard
 import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.BackupProgressCard
+import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
-import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsOutlinedButton
+import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.keepimport.KeepImportHost
 import kotlinx.coroutines.launch
 
@@ -164,8 +164,6 @@ fun ImportSettingsScreen(
                 }
             )
 
-            SettingsDivider()
-
             LocalImportSection(
                 isImporting = isImporting,
                 onPickFiles = {
@@ -181,11 +179,9 @@ fun ImportSettingsScreen(
             )
 
             // 🆕 v2.5.0: Google-Keep-Import-Section
-            SettingsDivider()
             KeepImportHost(onSnackbarEvent = onKeepImportSnackbar)
 
             importSummary?.let { summary ->
-                SettingsDivider()
                 ImportSummarySection(summary = summary)
             }
 
@@ -229,45 +225,37 @@ private fun WebDavImportSection(
     onCancelScan: () -> Unit,
     onImportSelected: () -> Unit
 ) {
-    SettingsSectionHeader(text = stringResource(R.string.import_section_server))
-    Spacer(modifier = Modifier.height(8.dp))
-    SettingsInfoCard(text = stringResource(R.string.import_server_info))
-    Spacer(modifier = Modifier.height(8.dp))
-    SettingsButton(
-        text = stringResource(R.string.settings_import_from_server),
-        onClick = onScanClick,
-        enabled = !isScanning && !isImporting && isServerConfigured,
-        isLoading = isScanning,
-        modifier = Modifier.padding(horizontal = 16.dp)
-    )
-    if (!isServerConfigured) {
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = stringResource(R.string.settings_sync_offline_mode),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.tertiary,
+    SettingsSectionCard(title = stringResource(R.string.import_section_server)) {
+        SettingsHint(text = stringResource(R.string.import_server_info))
+        SettingsButton(
+            text = stringResource(R.string.settings_import_from_server),
+            onClick = onScanClick,
+            enabled = !isScanning && !isImporting && isServerConfigured,
+            isLoading = isScanning,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
-    }
-    if (showScanResults && scanResults.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(8.dp))
-        ScanResultsCard(
-            scanResults = scanResults,
-            selectedCandidates = selectedCandidates,
-            conflictStrategy = conflictStrategy,
-            onStrategyChange = onStrategyChange,
-            onSelectAll = onSelectAll,
-            onDeselectAll = onDeselectAll,
-            onSelectionChange = onSelectionChange,
-            onCancelScan = onCancelScan,
-            onImportSelected = onImportSelected
-        )
+        if (!isServerConfigured) {
+            SettingsHint(text = stringResource(R.string.settings_sync_offline_mode))
+        }
+        if (showScanResults && scanResults.isNotEmpty()) {
+            ScanResultsContent(
+                scanResults = scanResults,
+                selectedCandidates = selectedCandidates,
+                conflictStrategy = conflictStrategy,
+                onStrategyChange = onStrategyChange,
+                onSelectAll = onSelectAll,
+                onDeselectAll = onDeselectAll,
+                onSelectionChange = onSelectionChange,
+                onCancelScan = onCancelScan,
+                onImportSelected = onImportSelected
+            )
+        }
     }
 }
 
 @Suppress("LongParameterList")
 @Composable
-private fun ScanResultsCard(
+private fun ScanResultsContent(
     scanResults: List<NotesImportWizard.ImportCandidate>,
     selectedCandidates: Set<Int>,
     conflictStrategy: ConflictStrategy,
@@ -278,79 +266,84 @@ private fun ScanResultsCard(
     onCancelScan: () -> Unit,
     onImportSelected: () -> Unit
 ) {
-    Card(
+    Spacer(modifier = Modifier.height(8.dp))
+
+    val allSelected = selectedCandidates.size == scanResults.size
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.import_dialog_found, scanResults.size),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        TextButton(onClick = if (allSelected) onDeselectAll else onSelectAll) {
+            Text(
+                text = if (allSelected) {
+                    stringResource(R.string.import_deselect_all)
+                } else {
+                    stringResource(R.string.import_select_all)
+                },
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    val density = LocalDensity.current
+    val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
+    LazyColumn(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .heightIn(max = screenHeight * 0.35f)
+    ) {
+        items(scanResults.indices.toList()) { index ->
+            val candidate = scanResults[index]
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+            ) {
+                Checkbox(
+                    checked = selectedCandidates.contains(index),
+                    onCheckedChange = { checked -> onSelectionChange(index, checked) }
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = candidate.name, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = "${candidate.fileType.name} · ${formatFileSize(candidate.size)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    ImportConflictStrategyPicker(
+        selected = conflictStrategy,
+        onSelectionChange = onStrategyChange
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val allSelected = selectedCandidates.size == scanResults.size
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.import_dialog_found, scanResults.size),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                TextButton(onClick = if (allSelected) onDeselectAll else onSelectAll) {
-                    Text(
-                        text = if (allSelected) {
-                            stringResource(R.string.import_deselect_all)
-                        } else {
-                            stringResource(R.string.import_select_all)
-                        },
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            val density = LocalDensity.current
-            val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
-            LazyColumn(modifier = Modifier.heightIn(max = screenHeight * 0.35f)) {
-                items(scanResults.indices.toList()) { index ->
-                    val candidate = scanResults[index]
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-                    ) {
-                        Checkbox(
-                            checked = selectedCandidates.contains(index),
-                            onCheckedChange = { checked -> onSelectionChange(index, checked) }
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = candidate.name, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = "${candidate.fileType.name} · ${formatFileSize(candidate.size)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            ImportConflictStrategyPicker(
-                selected = conflictStrategy,
-                onSelectionChange = onStrategyChange
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                SettingsOutlinedButton(
-                    text = stringResource(R.string.import_cancel),
-                    onClick = onCancelScan,
-                    modifier = Modifier.weight(1f)
-                )
-                SettingsButton(
-                    text = stringResource(R.string.import_button_import, selectedCandidates.size),
-                    onClick = onImportSelected,
-                    enabled = selectedCandidates.isNotEmpty(),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
+        SettingsOutlinedButton(
+            text = stringResource(R.string.import_cancel),
+            onClick = onCancelScan,
+            modifier = Modifier.weight(1f)
+        )
+        SettingsButton(
+            text = stringResource(R.string.import_button_import, selectedCandidates.size),
+            onClick = onImportSelected,
+            enabled = selectedCandidates.isNotEmpty(),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -359,16 +352,15 @@ private fun LocalImportSection(
     isImporting: Boolean,
     onPickFiles: () -> Unit
 ) {
-    SettingsSectionHeader(text = stringResource(R.string.import_section_local))
-    Spacer(modifier = Modifier.height(8.dp))
-    SettingsInfoCard(text = stringResource(R.string.import_local_info))
-    Spacer(modifier = Modifier.height(8.dp))
-    SettingsButton(
-        text = stringResource(R.string.settings_import_from_file),
-        onClick = onPickFiles,
-        enabled = !isImporting,
-        modifier = Modifier.padding(horizontal = 16.dp)
-    )
+    SettingsSectionCard(title = stringResource(R.string.import_section_local)) {
+        SettingsHint(text = stringResource(R.string.import_local_info))
+        SettingsButton(
+            text = stringResource(R.string.settings_import_from_file),
+            onClick = onPickFiles,
+            enabled = !isImporting,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
 }
 
 @Composable
@@ -410,50 +402,26 @@ private fun ImportConflictStrategyPicker(
             text = stringResource(R.string.import_conflict_label),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
-        ConflictRadioRow(
-            label = stringResource(R.string.import_conflict_skip),
-            selected = selected == ConflictStrategy.SKIP,
-            onClick = { onSelectionChange(ConflictStrategy.SKIP) }
-        )
-        ConflictRadioRow(
-            label = stringResource(R.string.import_conflict_always_create),
-            selected = selected == ConflictStrategy.ALWAYS_CREATE,
-            onClick = { onSelectionChange(ConflictStrategy.ALWAYS_CREATE) }
-        )
-        ConflictRadioRow(
-            label = stringResource(R.string.import_conflict_replace),
-            selected = selected == ConflictStrategy.REPLACE,
-            onClick = { onSelectionChange(ConflictStrategy.REPLACE) }
-        )
-    }
-}
-
-@Composable
-private fun ConflictRadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 2.dp)
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(start = 4.dp)
+        SettingsRadioGroup(
+            options = listOf(
+                RadioOption(ConflictStrategy.SKIP, stringResource(R.string.import_conflict_skip)),
+                RadioOption(ConflictStrategy.ALWAYS_CREATE, stringResource(R.string.import_conflict_always_create)),
+                RadioOption(ConflictStrategy.REPLACE, stringResource(R.string.import_conflict_replace))
+            ),
+            selectedValue = selected,
+            onValueSelected = onSelectionChange
         )
     }
 }
 
 @Composable
 private fun ImportSummarySection(summary: NotesImportWizard.ImportSummary) {
-    SettingsSectionHeader(text = stringResource(R.string.import_summary_title))
-    Spacer(modifier = Modifier.height(8.dp))
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (summary.failed > 0) {
                 MaterialTheme.colorScheme.errorContainer

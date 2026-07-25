@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -35,12 +38,12 @@ import dev.dettmer.simplenotes.ui.settings.components.BackupPasswordDialog
 import dev.dettmer.simplenotes.ui.settings.components.BackupProgressCard
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
-import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsOutlinedButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -152,90 +155,73 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Local Backup Section
-            SettingsSectionHeader(text = stringResource(R.string.backup_local_section))
+            SettingsSectionCard(title = stringResource(R.string.backup_local_section)) {
+                // 🔐 v1.7.0: Encryption toggle
+                SettingsSwitch(
+                    title = stringResource(R.string.backup_encryption_title),
+                    subtitle = stringResource(R.string.backup_encryption_subtitle),
+                    checked = encryptBackup,
+                    onCheckedChange = { encryptBackup = it },
+                    icon = Icons.Filled.Lock
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                // v1.9.0: Include server settings option
+                SettingsSwitch(
+                    title = stringResource(R.string.backup_include_server_settings_title),
+                    subtitle = stringResource(R.string.backup_include_server_settings_subtitle),
+                    checked = includeServerSettings,
+                    onCheckedChange = { includeServerSettings = it },
+                    icon = Icons.Filled.Dns
+                )
 
-            // 🔐 v1.7.0: Encryption toggle
-            SettingsSwitch(
-                title = stringResource(R.string.backup_encryption_title),
-                subtitle = stringResource(R.string.backup_encryption_subtitle),
-                checked = encryptBackup,
-                onCheckedChange = { encryptBackup = it }
-            )
+                if (includeServerSettings && !encryptBackup) {
+                    SettingsHint(text = stringResource(R.string.backup_server_settings_encryption_hint))
+                }
 
-            // v1.9.0: Include server settings option
-            SettingsSwitch(
-                title = stringResource(R.string.backup_include_server_settings_title),
-                subtitle = stringResource(R.string.backup_include_server_settings_subtitle),
-                checked = includeServerSettings,
-                onCheckedChange = { includeServerSettings = it }
-            )
+                SettingsButton(
+                    text = stringResource(R.string.backup_create),
+                    onClick = {
+                        val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
+                            .format(Date())
+                        val filename = "simplenotes_backup_$timestamp.json"
+                        // v1.9.0: Snapshot state before launching file picker
+                        // to prevent Activity lifecycle from causing a stale read
+                        pendingIncludeServerSettings = includeServerSettings
+                        createBackupLauncher.launch(filename)
+                    },
+                    isLoading = isBackupInProgress,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
-            if (includeServerSettings && !encryptBackup) {
-                Spacer(modifier = Modifier.height(4.dp))
-                SettingsInfoCard(
-                    text = stringResource(R.string.backup_server_settings_encryption_hint)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                SettingsOutlinedButton(
+                    text = stringResource(R.string.backup_restore_file),
+                    onClick = {
+                        restoreFileLauncher.launch(arrayOf("application/json"))
+                    },
+                    isLoading = isBackupInProgress,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsButton(
-                text = stringResource(R.string.backup_create),
-                onClick = {
-                    val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
-                        .format(Date())
-                    val filename = "simplenotes_backup_$timestamp.json"
-                    // v1.9.0: Snapshot state before launching file picker
-                    // to prevent Activity lifecycle from causing a stale read
-                    pendingIncludeServerSettings = includeServerSettings
-                    createBackupLauncher.launch(filename)
-                },
-                isLoading = isBackupInProgress,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsOutlinedButton(
-                text = stringResource(R.string.backup_restore_file),
-                onClick = {
-                    restoreFileLauncher.launch(arrayOf("application/json"))
-                },
-                isLoading = isBackupInProgress,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            SettingsDivider()
-
-            // Server Backup Section
-            SettingsSectionHeader(text = stringResource(R.string.backup_server_section))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 🌟 v1.6.0: Disabled when offline mode active
-            SettingsOutlinedButton(
-                text = stringResource(R.string.backup_restore_server),
-                onClick = {
-                    restoreSource = RestoreSource.Server
-                    showRestoreDialog = true
-                },
-                isLoading = isBackupInProgress,
-                enabled = isServerConfigured,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            // 🌟 v1.6.0: Show hint when offline
-            if (!isServerConfigured) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.settings_sync_offline_mode),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary,
+            SettingsSectionCard(title = stringResource(R.string.backup_server_section)) {
+                // 🌟 v1.6.0: Disabled when offline mode active
+                SettingsOutlinedButton(
+                    text = stringResource(R.string.backup_restore_server),
+                    onClick = {
+                        restoreSource = RestoreSource.Server
+                        showRestoreDialog = true
+                    },
+                    isLoading = isBackupInProgress,
+                    enabled = isServerConfigured,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+
+                // 🌟 v1.6.0: Show hint when offline
+                if (!isServerConfigured) {
+                    SettingsHint(text = stringResource(R.string.settings_sync_offline_mode))
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

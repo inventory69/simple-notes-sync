@@ -471,6 +471,7 @@
     <!-- SETTINGS - DEBUG              -->
     <!-- ============================= -->
     <string name="debug_settings_title">Debug &amp; Diagnostics</string>
+    <string name="debug_logging_section">Logging</string>
     <string name="debug_file_logging_title">File Logging</string>
     <string name="debug_file_logging_subtitle">Save sync logs to file</string>
     <!-- 🆕 v2.2.0: Persistent sync debug log -->
