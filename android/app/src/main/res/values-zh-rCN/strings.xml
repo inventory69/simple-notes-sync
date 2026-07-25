@@ -934,4 +934,19 @@
     <string name="image_info_close">关闭</string>
     <string name="about_build_info">构建：%1$s · %2$s</string>
     <string name="image_menu_alt_text">替代文本</string>
+    <string name="settings_group_app">应用</string>
+    <string name="settings_group_sync">同步</string>
+    <string name="settings_group_data">数据</string>
+    <string name="settings_group_info">信息</string>
+    <string name="settings_section_note_list">笔记清单</string>
+    <string name="note_preview_length_title_only">仅标题</string>
+    <string name="checklist_scroll_top_on_uncheck_toggle">取消勾选时滚动到顶部</string>
+    <string name="checklist_scroll_top_on_uncheck_description">取消勾选一个项目，滚动清单回到顶部。关闭以保持当前位置。</string>
+    <string name="note_card_show_timestamp_toggle">显示时间戳</string>
+    <string name="note_card_show_timestamp_description">在笔记卡片上显示最后编辑时间戳。</string>
+    <string name="note_card_show_icon_toggle">显示笔记图标</string>
+    <string name="note_card_show_icon_description">在笔记卡片上显示类型图标和置顶徽章。</string>
+    <string name="theme_mode_subsection">模式</string>
+    <string name="notes_list_widget_config_hide_preview">仅标题</string>
+    <string name="notes_list_widget_config_hide_preview_desc">卡片只显示笔记标题，无预览文本</string>
 </resources>
