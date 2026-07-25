@@ -182,6 +182,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private var currentNoteType: NoteType = NoteType.TEXT
     private var isConverting = false
 
+    // 🆕 Issue #114: Notiz wurde ungespeichert verworfen (deleteNote() ohne existingNote) —
+    // verhindert, dass saveOnBack()/scheduleAutosave() sie danach doch noch auf Platte schreiben.
+    private var isDiscarded = false
+
     // v2.0.0: Callback to read the latest content directly from Compose TextFieldState.
     // Avoids snapshotFlow race condition when the user presses back before the next frame.
     var contentProvider: (() -> String)? = null
@@ -1023,6 +1027,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     @Suppress("ReturnCount")
     fun saveOnBack(): Boolean {
+        if (isDiscarded) return true // 🆕 Issue #114: verworfene Notiz nicht wieder auf Platte schreiben
         if (!autosaveEnabled) {
             Logger.d(TAG, "⏭️ saveOnBack: autosave disabled — skipping")
             return true
@@ -1365,6 +1370,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * Does NOT trigger sync or navigation — only local disk save + widget update.
      */
     private fun scheduleAutosave() {
+        if (isDiscarded) return // 🆕 Issue #114: verworfene Notiz nicht wieder auf Platte schreiben
         if (!autosaveEnabled) return
         if (!isDirty) return // 🆕 v1.9.0: no changes since last save → skip
         autosaveJob?.cancel()
@@ -1510,9 +1516,16 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun deleteNote() {
         viewModelScope.launch {
-            existingNote?.let { note ->
-                _events.emit(NoteEditorEvent.NoteDeleteRequested(note.id))
+            val note = existingNote
+            if (note == null) {
+                // 🆕 Issue #114: nie gespeichert → nichts im Papierkorb zu tun, einfach verwerfen.
+                isDiscarded = true
+                autosaveJob?.cancel()
+                isDirty = false
+                _events.emit(NoteEditorEvent.NavigateBack)
+                return@launch
             }
+            _events.emit(NoteEditorEvent.NoteDeleteRequested(note.id))
         }
     }
 
@@ -1523,14 +1536,13 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun toggleArchive() {
         viewModelScope.launch {
-            if (isDirty) performSave(silent = true)
-            existingNote?.let { note ->
-                _events.emit(NoteEditorEvent.NoteArchiveToggleRequested(note.id))
-            }
+            val isUnsaved = existingNote == null
+            // 🆕 Issue #114: neue Notiz erst anlegen; silent=false → leere Notiz meldet sich per Toast.
+            if (isDirty || isUnsaved) performSave(silent = !isUnsaved)
+            val note = existingNote ?: return@launch // leere neue Notiz → performSave hat getoastet
+            _events.emit(NoteEditorEvent.NoteArchiveToggleRequested(note.id))
         }
     }
-
-    fun canDelete(): Boolean = existingNote != null
 
     /**
      * 🆕 v1.8.0 (IMPL_025): Reload Note aus Storage nach Resume

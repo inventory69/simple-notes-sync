@@ -919,53 +919,51 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                     viewModel.shareAsPdf()
                                 }
                             )
-                            if (viewModel.canDelete()) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            stringResource(
-                                                if (uiState.isArchived) R.string.action_unarchive else R.string.action_archive
-                                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            if (uiState.isArchived) R.string.action_unarchive else R.string.action_archive
                                         )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            if (uiState.isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        // 🆕 v2.11.0 (Archive): speichert + schließt den Editor (via Event/Activity)
-                                        viewModel.toggleArchive()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = stringResource(R.string.delete),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        // 🆕 v2.9.0 (Trash): direkt in den Papierkorb, kein Bestätigungs-Dialog.
-                                        viewModel.deleteNote()
-                                    }
-                                )
-                            }
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        if (uiState.isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    // 🆕 v2.11.0 (Archive): speichert + schließt den Editor (via Event/Activity)
+                                    viewModel.toggleArchive()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.delete),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    // 🆕 v2.9.0 (Trash): direkt in den Papierkorb, kein Bestätigungs-Dialog.
+                                    viewModel.deleteNote()
+                                }
+                            )
                         }
                     } // Box
                 },
