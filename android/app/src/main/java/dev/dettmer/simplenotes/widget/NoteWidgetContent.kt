@@ -15,6 +15,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -215,7 +216,8 @@ fun NoteWidgetContent(
                         actionStartActivity(
                             ComponentName(context, ComposeNoteEditorActivity::class.java),
                             actionParametersOf(
-                                androidx.glance.action.ActionParameters.Key<String>("extra_note_id") to note.id
+                                ActionParameters.Key<String>(ComposeNoteEditorActivity.EXTRA_NOTE_ID) to note.id,
+                                ActionParameters.Key<Boolean>(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET) to true
                             )
                         )
                     } else {
@@ -413,7 +415,8 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
                     onClick = actionStartActivity(
                         ComponentName(context, ComposeNoteEditorActivity::class.java),
                         actionParametersOf(
-                            androidx.glance.action.ActionParameters.Key<String>("extra_note_id") to noteId
+                            ActionParameters.Key<String>(ComposeNoteEditorActivity.EXTRA_NOTE_ID) to noteId,
+                            ActionParameters.Key<Boolean>(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET) to true
                         )
                     )
                 )
