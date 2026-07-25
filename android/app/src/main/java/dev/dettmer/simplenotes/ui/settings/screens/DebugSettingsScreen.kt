@@ -36,10 +36,9 @@ import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsDangerButton
-import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
-import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
@@ -87,155 +86,126 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // File Logging Toggle
-            SettingsSwitch(
-                title = stringResource(R.string.debug_file_logging_title),
-                subtitle = stringResource(R.string.debug_file_logging_subtitle),
-                checked = fileLoggingEnabled,
-                onCheckedChange = { viewModel.setFileLogging(it) },
-                icon = Icons.AutoMirrored.Filled.Notes
-            )
+            SettingsSectionCard(title = stringResource(R.string.debug_logging_section)) {
+                SettingsSwitch(
+                    title = stringResource(R.string.debug_file_logging_title),
+                    subtitle = stringResource(R.string.debug_file_logging_subtitle),
+                    checked = fileLoggingEnabled,
+                    onCheckedChange = { viewModel.setFileLogging(it) },
+                    icon = Icons.AutoMirrored.Filled.Notes
+                )
 
-            // 🆕 v2.2.0: Persistent sync debug log toggle
-            SettingsSwitch(
-                title = stringResource(R.string.debug_sync_debug_logging_title),
-                subtitle = stringResource(R.string.debug_sync_debug_logging_subtitle),
-                checked = syncDebugLoggingEnabled,
-                onCheckedChange = { viewModel.setSyncDebugLogging(it) },
-                icon = Icons.Filled.BugReport
-            )
+                // 🆕 v2.2.0: Persistent sync debug log toggle
+                SettingsSwitch(
+                    title = stringResource(R.string.debug_sync_debug_logging_title),
+                    subtitle = stringResource(R.string.debug_sync_debug_logging_subtitle),
+                    checked = syncDebugLoggingEnabled,
+                    onCheckedChange = { viewModel.setSyncDebugLogging(it) },
+                    icon = Icons.Filled.BugReport
+                )
 
-            // Privacy Info
-            SettingsInfoCard(
-                text = stringResource(R.string.debug_privacy_info)
-            )
+                SettingsHint(text = stringResource(R.string.debug_privacy_info))
+            }
 
-            SettingsDivider()
+            SettingsSectionCard(title = stringResource(R.string.debug_log_actions_section)) {
+                // Export Logs Button
+                val logsSubject = stringResource(R.string.debug_logs_subject)
+                val logsShareVia = stringResource(R.string.debug_logs_share_via)
+                val exportEmptyMsg = stringResource(R.string.debug_export_empty_message)
+                val exportFailedMsg = stringResource(R.string.debug_export_failed_toast)
+                val exportPreparingMsg = stringResource(R.string.debug_export_preparing)
 
-            SettingsSectionHeader(text = stringResource(R.string.debug_log_actions_section))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Export Logs Button
-            val logsSubject = stringResource(R.string.debug_logs_subject)
-            val logsShareVia = stringResource(R.string.debug_logs_share_via)
-            val exportEmptyMsg = stringResource(R.string.debug_export_empty_message)
-            val exportFailedMsg = stringResource(R.string.debug_export_failed_toast)
-            val exportPreparingMsg = stringResource(R.string.debug_export_preparing)
-
-            SettingsButton(
-                text = stringResource(R.string.debug_export_logs),
-                onClick = {
-                    // Collect all non-empty log files (regular log + sync debug log)
-                    val logFiles = listOfNotNull(
-                        viewModel.getLogFile()?.takeIf { it.exists() && it.length() > 0L },
-                        SyncDebugLogger.getLogFile(context)?.takeIf { it.exists() && it.length() > 0L }
-                    )
-                    if (logFiles.isEmpty()) {
-                        viewModel.showSnackbar(exportEmptyMsg)
-                        return@SettingsButton
-                    }
-                    viewModel.showSnackbar(exportPreparingMsg)
-                    val uris = ArrayList(
-                        logFiles.map { file ->
-                            FileProvider.getUriForFile(
-                                context,
-                                "${BuildConfig.APPLICATION_ID}.fileprovider",
-                                file
-                            )
+                SettingsButton(
+                    text = stringResource(R.string.debug_export_logs),
+                    onClick = {
+                        // Collect all non-empty log files (regular log + sync debug log)
+                        val logFiles = listOfNotNull(
+                            viewModel.getLogFile()?.takeIf { it.exists() && it.length() > 0L },
+                            SyncDebugLogger.getLogFile(context)?.takeIf { it.exists() && it.length() > 0L }
+                        )
+                        if (logFiles.isEmpty()) {
+                            viewModel.showSnackbar(exportEmptyMsg)
+                            return@SettingsButton
                         }
-                    )
-                    val shareIntent = if (uris.size == 1) {
-                        Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_STREAM, uris[0])
-                            putExtra(Intent.EXTRA_SUBJECT, logsSubject)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        viewModel.showSnackbar(exportPreparingMsg)
+                        val uris = ArrayList(
+                            logFiles.map { file ->
+                                FileProvider.getUriForFile(
+                                    context,
+                                    "${BuildConfig.APPLICATION_ID}.fileprovider",
+                                    file
+                                )
+                            }
+                        )
+                        val shareIntent = if (uris.size == 1) {
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_STREAM, uris[0])
+                                putExtra(Intent.EXTRA_SUBJECT, logsSubject)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                        } else {
+                            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                type = "text/plain"
+                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                putExtra(Intent.EXTRA_SUBJECT, logsSubject)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
                         }
-                    } else {
-                        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                            type = "text/plain"
-                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                            putExtra(Intent.EXTRA_SUBJECT, logsSubject)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        try {
+                            context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
+                            if (fileLoggingEnabled) pendingDisableDialog = true
+                        } catch (e: ActivityNotFoundException) {
+                            Logger.w(TAG, "No app available to handle share intent for logs: ${e.message}")
+                            viewModel.showSnackbar(exportFailedMsg)
                         }
-                    }
-                    try {
-                        context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
-                        if (fileLoggingEnabled) pendingDisableDialog = true
-                    } catch (e: ActivityNotFoundException) {
-                        Logger.w(TAG, "No app available to handle share intent for logs: ${e.message}")
-                        viewModel.showSnackbar(exportFailedMsg)
-                    }
-                },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // Clear Logs Button
-            SettingsDangerButton(
-                text = stringResource(R.string.debug_delete_logs),
-                onClick = { showClearLogsDialog = true },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsDivider()
+                // Clear Logs Button
+                SettingsDangerButton(
+                    text = stringResource(R.string.debug_delete_logs),
+                    onClick = { showClearLogsDialog = true },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
 
             // v1.8.0: Test Mode Section
-            SettingsSectionHeader(text = stringResource(R.string.debug_test_section))
+            SettingsSectionCard(title = stringResource(R.string.debug_test_section)) {
+                SettingsHint(text = stringResource(R.string.debug_reset_changelog_desc))
 
-            Spacer(modifier = Modifier.height(8.dp))
+                val changelogResetToast = stringResource(R.string.debug_changelog_reset)
 
-            // Info about test mode
-            SettingsInfoCard(
-                text = stringResource(R.string.debug_reset_changelog_desc)
-            )
+                SettingsButton(
+                    text = stringResource(R.string.debug_reset_changelog),
+                    onClick = {
+                        viewModel.resetChangelogVersion()
+                        viewModel.showSnackbar(changelogResetToast)
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
 
-            val changelogResetToast = stringResource(R.string.debug_changelog_reset)
+            SettingsSectionCard(title = stringResource(R.string.debug_sync_section)) {
+                SettingsHint(text = stringResource(R.string.debug_clear_etag_cache_subtitle))
 
-            SettingsButton(
-                text = stringResource(R.string.debug_reset_changelog),
-                onClick = {
-                    viewModel.resetChangelogVersion()
-                    viewModel.showSnackbar(changelogResetToast)
-                },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+                SettingsButton(
+                    text = stringResource(R.string.debug_clear_etag_cache_title),
+                    onClick = { showClearETagCacheDialog = true },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsDivider()
-
-            SettingsSectionHeader(text = stringResource(R.string.debug_sync_section))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsInfoCard(
-                text = stringResource(R.string.debug_clear_etag_cache_subtitle)
-            )
-
-            SettingsButton(
-                text = stringResource(R.string.debug_clear_etag_cache_title),
-                onClick = { showClearETagCacheDialog = true },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsDivider()
-
-            SettingsSectionHeader(text = stringResource(R.string.debug_calendar_experiment_section))
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsButton(
-                text = stringResource(R.string.calendar_experiment_open),
-                onClick = { onNavigate(SettingsRoute.CalendarParsingExperiment) },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+            SettingsSectionCard(title = stringResource(R.string.debug_calendar_experiment_section)) {
+                SettingsButton(
+                    text = stringResource(R.string.calendar_experiment_open),
+                    onClick = { onNavigate(SettingsRoute.CalendarParsingExperiment) },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }

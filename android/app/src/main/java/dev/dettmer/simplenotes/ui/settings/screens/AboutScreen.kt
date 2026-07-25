@@ -47,9 +47,9 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
-import dev.dettmer.simplenotes.ui.settings.components.SettingsDivider
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
-import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 
 /**
  * About app information screen
@@ -177,83 +177,56 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SettingsSectionHeader(text = stringResource(R.string.about_app_section))
-
-            AboutLinkItem(
-                icon = Icons.Default.History,
-                title = stringResource(R.string.about_changelog_title),
-                subtitle = stringResource(R.string.about_changelog_subtitle),
-                onClick = { onNavigate(SettingsRoute.Changelog) }
-            )
-
-            // Contributors
-            AboutLinkItem(
-                icon = Icons.Default.Groups,
-                title = stringResource(R.string.contributors_title),
-                subtitle = stringResource(R.string.contributors_subtitle),
-                onClick = { onNavigate(SettingsRoute.Contributors) }
-            )
-
-            SettingsSectionHeader(text = stringResource(R.string.about_links_section))
-
-            // GitHub Repository
-            AboutLinkItem(
-                icon = Icons.Default.Code,
-                title = stringResource(R.string.about_github_title),
-                subtitle = stringResource(R.string.about_github_subtitle),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, githubRepoUrl.toUri())
-                    context.startActivity(intent)
-                }
-            )
-
-            // Developer
-            AboutLinkItem(
-                icon = Icons.Default.Person,
-                title = stringResource(R.string.about_developer_title),
-                subtitle = stringResource(R.string.about_developer_subtitle),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, githubProfileUrl.toUri())
-                    context.startActivity(intent)
-                }
-            )
-
-            // License
-            AboutLinkItem(
-                icon = Icons.Default.Policy,
-                title = stringResource(R.string.about_license_title),
-                subtitle = stringResource(R.string.about_license_subtitle),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, licenseUrl.toUri())
-                    context.startActivity(intent)
-                }
-            )
-
-            SettingsDivider()
-
-            // Data Privacy Info
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            SettingsSectionCard(title = stringResource(R.string.about_app_section)) {
+                AboutLinkItem(
+                    icon = Icons.Default.History,
+                    title = stringResource(R.string.about_changelog_title),
+                    subtitle = stringResource(R.string.about_changelog_subtitle),
+                    onClick = { onNavigate(SettingsRoute.Changelog) }
                 )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.about_privacy_title),
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.about_privacy_text),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+
+                AboutLinkItem(
+                    icon = Icons.Default.Groups,
+                    title = stringResource(R.string.contributors_title),
+                    subtitle = stringResource(R.string.contributors_subtitle),
+                    onClick = { onNavigate(SettingsRoute.Contributors) }
+                )
+            }
+
+            SettingsSectionCard(title = stringResource(R.string.about_links_section)) {
+                AboutLinkItem(
+                    icon = Icons.Default.Code,
+                    title = stringResource(R.string.about_github_title),
+                    subtitle = stringResource(R.string.about_github_subtitle),
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, githubRepoUrl.toUri())
+                        context.startActivity(intent)
+                    }
+                )
+
+                AboutLinkItem(
+                    icon = Icons.Default.Person,
+                    title = stringResource(R.string.about_developer_title),
+                    subtitle = stringResource(R.string.about_developer_subtitle),
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, githubProfileUrl.toUri())
+                        context.startActivity(intent)
+                    }
+                )
+
+                AboutLinkItem(
+                    icon = Icons.Default.Policy,
+                    title = stringResource(R.string.about_license_title),
+                    subtitle = stringResource(R.string.about_license_subtitle),
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, licenseUrl.toUri())
+                        context.startActivity(intent)
+                    }
+                )
+            }
+
+            SettingsSectionCard(title = stringResource(R.string.about_privacy_title)) {
+                SettingsHint(text = stringResource(R.string.about_privacy_text))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

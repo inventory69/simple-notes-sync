@@ -2,15 +2,12 @@ package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +32,6 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
@@ -55,6 +50,8 @@ import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
+import dev.dettmer.simplenotes.ui.settings.components.SettingsChip
+import dev.dettmer.simplenotes.ui.settings.components.SettingsChipRow
 import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
@@ -397,70 +394,31 @@ private fun DefaultNoteColorRow(currentColor: String?, onClick: () -> Unit) {
 // Two items with preview icons (list lines vs grid squares).
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DisplayModeSelector(currentMode: String, onModeSelected: (String) -> Unit) {
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        DisplayModeChip(
+    SettingsChipRow {
+        SettingsChip(
             label = stringResource(R.string.display_mode_list),
-            icon = Icons.AutoMirrored.Outlined.List,
             selected = currentMode == "list",
             onClick = { onModeSelected("list") }
-        )
-        DisplayModeChip(
-            label = stringResource(R.string.display_mode_grid),
-            icon = Icons.Outlined.GridView,
-            selected = currentMode == "grid",
-            onClick = { onModeSelected("grid") }
-        )
-    }
-}
-
-@Composable
-private fun DisplayModeChip(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, selected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
+        ) { contentColor ->
             Icon(
-                imageVector = icon,
+                imageVector = Icons.AutoMirrored.Outlined.List,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = if (selected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                tint = contentColor
             )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+        }
+        SettingsChip(
+            label = stringResource(R.string.display_mode_grid),
+            selected = currentMode == "grid",
+            onClick = { onModeSelected("grid") }
+        ) { contentColor ->
+            Icon(
+                imageVector = Icons.Outlined.GridView,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = contentColor
             )
         }
     }
@@ -472,74 +430,27 @@ private fun DisplayModeChip(label: String, icon: androidx.compose.ui.graphics.ve
 // is disabled. Visually consistent with DisplayModeChip.
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GridColumnSelector(currentColumns: Int, onColumnsSelected: (Int) -> Unit) {
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    SettingsChipRow {
         for (count in Constants.GRID_MIN_COLUMNS..Constants.GRID_MAX_COLUMNS) {
-            GridColumnChip(
-                columns = count,
+            SettingsChip(
+                label = "$count",
                 selected = currentColumns == count,
-                onClick = { onColumnsSelected(count) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun GridColumnChip(columns: Int, selected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
-
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.widthIn(min = 56.dp),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            // Mini-grid preview: N small squares side by side
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                repeat(columns) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                shape = RoundedCornerShape(2.dp)
-                            )
-                    )
+                onClick = { onColumnsSelected(count) },
+                modifier = Modifier.widthIn(min = 56.dp)
+            ) { contentColor ->
+                // Mini-grid preview: N small squares side by side
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    repeat(count) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(color = contentColor, shape = RoundedCornerShape(2.dp))
+                        )
+                    }
                 }
             }
-            Text(
-                text = "$columns",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
         }
     }
 }
@@ -549,72 +460,27 @@ private fun GridColumnChip(columns: Int, selected: Boolean, onClick: () -> Unit)
 // 4 static items — FlowRow renders all at once without recycling overhead.
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ThemeModeSelector(currentMode: ThemeMode, onModeSelected: (ThemeMode) -> Unit) {
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    SettingsChipRow {
         ThemeMode.entries.forEach { mode ->
-            ThemeModeChip(
-                mode = mode,
+            SettingsChip(
+                label = stringResource(mode.displayNameResId),
                 selected = currentMode == mode,
                 onClick = { onModeSelected(mode) }
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ThemeModeChip — individual selectable theme mode chip
-// Mirrors ColorThemeChip layout: color swatch + label, rounded surface.
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun ThemeModeChip(mode: ThemeMode, selected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(mode.previewColor)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = CircleShape
-                    )
-            )
-            Text(
-                text = stringResource(mode.displayNameResId),
-                style = MaterialTheme.typography.labelSmall,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(mode.previewColor)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            shape = CircleShape
+                        )
+                )
+            }
         }
     }
 }
@@ -625,24 +491,26 @@ private fun ThemeModeChip(mode: ThemeMode, selected: Boolean, onClick: () -> Uni
 // all chips visible at once without horizontal scrolling.
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (ColorTheme) -> Unit) {
     val dynamicUnavailable = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
 
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    SettingsChipRow {
         ColorTheme.entries.forEach { theme ->
             val isDisabled = theme == ColorTheme.DYNAMIC && dynamicUnavailable
-            ColorThemeChip(
-                theme = theme,
+            SettingsChip(
+                label = stringResource(theme.displayNameResId),
                 selected = currentTheme == theme,
                 enabled = !isDisabled,
-                onClick = { if (!isDisabled) onThemeSelected(theme) }
-            )
+                onClick = { onThemeSelected(theme) }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(theme.previewColor)
+                )
+            }
         }
     }
 
@@ -657,95 +525,20 @@ private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (Color
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ColorThemeChip — individual selectable color palette chip
-// Stable parameters (enum + Boolean) → Compose skips recomposition when
-// neither the selection nor the enabled state has changed.
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun ColorThemeChip(theme: ColorTheme, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
-    val chipAlpha = if (enabled) 1f else 0.38f
-
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.alpha(chipAlpha),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
-        enabled = enabled
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(theme.previewColor)
-            )
-            Text(
-                text = stringResource(theme.displayNameResId),
-                style = MaterialTheme.typography.labelSmall,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // NotePreviewLengthSelector + NotePreviewLengthChip — chip row for the note preview
 // length preset (List + Grid). 4 static options: Compact / Standard / Long / Extra long.
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun NotePreviewLengthSelector(currentLength: NotePreviewLength, onLengthSelected: (NotePreviewLength) -> Unit) {
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    SettingsChipRow {
         NotePreviewLength.entries.forEach { length ->
-            NotePreviewLengthChip(
-                length = length,
+            SettingsChip(
+                label = stringResource(length.displayNameResId),
                 selected = currentLength == length,
                 onClick = { onLengthSelected(length) }
             )
         }
-    }
-}
-
-@Composable
-private fun NotePreviewLengthChip(length: NotePreviewLength, selected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Text(
-            text = stringResource(length.displayNameResId),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
     }
 }
 
@@ -754,51 +547,23 @@ private fun NotePreviewLengthChip(length: NotePreviewLength, selected: Boolean, 
 // 5 static options: System / Small / Normal / Large / Extra large.
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FontSizeSelector(currentScale: FontSizeScale, onScaleSelected: (FontSizeScale) -> Unit) {
-    FlowRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    SettingsChipRow {
         FontSizeScale.entries.forEach { scale ->
-            FontSizeChip(
-                scale = scale,
+            SettingsChip(
+                label = stringResource(scale.displayNameResId),
                 selected = currentScale == scale,
                 onClick = { onScaleSelected(scale) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun FontSizeChip(scale: FontSizeScale, selected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(width = if (selected) 2.dp else 1.dp, color = borderColor),
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "Aa",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * (scale.multiplier ?: 1.0f)
-                ),
-                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(scale.displayNameResId),
-                style = MaterialTheme.typography.labelSmall,
-                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            ) { contentColor ->
+                Text(
+                    text = "Aa",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = MaterialTheme.typography.bodyMedium.fontSize * (scale.multiplier ?: 1.0f)
+                    ),
+                    color = contentColor
+                )
+            }
         }
     }
 }

@@ -19,9 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
-import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 
 /**
  * Language selection settings screen
@@ -119,24 +120,22 @@ fun LanguageSettingsScreen(onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Info card
-            SettingsInfoCard(
-                text = stringResource(R.string.language_info)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Language selection radio group
-            SettingsRadioGroup(
-                options = languageOptions,
-                selectedValue = selectedLanguage,
-                onValueSelected = { newLanguage ->
-                    if (newLanguage != selectedLanguage) {
-                        selectedLanguage = newLanguage
-                        setAppLanguage(newLanguage)
+            SettingsSectionCard(title = stringResource(R.string.settings_language)) {
+                SettingsRadioGroup(
+                    options = languageOptions,
+                    selectedValue = selectedLanguage,
+                    onValueSelected = { newLanguage ->
+                        if (newLanguage != selectedLanguage) {
+                            selectedLanguage = newLanguage
+                            setAppLanguage(newLanguage)
+                        }
                     }
-                }
-            )
+                )
+
+                SettingsHint(text = stringResource(R.string.language_info))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

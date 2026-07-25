@@ -155,29 +155,20 @@ fun SettingsHint(text: String, modifier: Modifier = Modifier) {
  * Section header text
  */
 @Composable
-fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
+fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier, enabled: Boolean = true) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        color = if (enabled) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        },
         textAlign = TextAlign.Center,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     )
-}
-
-/**
- * Divider between settings groups
- */
-@Composable
-fun SettingsDivider(modifier: Modifier = Modifier) {
-    Spacer(modifier = modifier.height(8.dp))
-    androidx.compose.material3.HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant
-    )
-    Spacer(modifier = Modifier.height(8.dp))
 }
 
 /**

@@ -75,6 +75,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsInfoCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import kotlinx.coroutines.launch
 
@@ -354,8 +355,9 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
             )
         )
 
+        SettingsSectionHeader(text = stringResource(R.string.sync_parallel_connections_title), enabled = isServerConfigured)
+
         SettingsRadioGroup(
-            title = stringResource(R.string.sync_parallel_connections_title),
             options = parallelOptions,
             selectedValue = maxParallelConnections,
             onValueSelected = { viewModel.setMaxParallelConnections(it) },
