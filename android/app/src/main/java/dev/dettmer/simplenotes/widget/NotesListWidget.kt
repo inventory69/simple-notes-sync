@@ -17,6 +17,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_APPLY_OPACITY_TO_CARDS
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_BACKGROUND_OPACITY
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_FAB_EXPANDED
@@ -72,6 +73,12 @@ class NotesListWidget : GlanceAppWidget() {
             val hidePreview = prefs[KEY_HIDE_PREVIEW] ?: false
             val selectedFolder = prefs[KEY_SELECTED_FOLDER]?.takeIf { it.isNotEmpty() }
             val fontSizeScale = prefs[KEY_FONT_SIZE_SCALE] ?: 1.0f
+            // 🆕 Issue #120: globale Display-Setting (Constants.KEY_SHOW_NOTE_TYPE_ICON) statt
+            // eigenem Widget-Config-Eintrag — kein remember nötig, provideContent läuft bei
+            // jedem update() neu, WidgetUpdateHelper.refreshAllNotesListWidgets triggert das.
+            val showTypeIcon = context
+                .getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
 
             val sourceNotes = if (selectedFolder != null) {
                 allNotes.filter { it.folderName == selectedFolder }
@@ -94,7 +101,8 @@ class NotesListWidget : GlanceAppWidget() {
                     hasPinnedNotes = hasPinnedNotes,
                     hideHeader = hideHeader,
                     hidePreview = hidePreview,
-                    fontSizeScale = fontSizeScale
+                    fontSizeScale = fontSizeScale,
+                    showTypeIcon = showTypeIcon
                 )
             }
         }

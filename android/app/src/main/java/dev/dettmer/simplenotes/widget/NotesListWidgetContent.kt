@@ -77,7 +77,7 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
     return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
 }
 
-@Suppress("LongParameterList") // 🆕 Discussion #110: hidePreview neben bestehenden Widget-Optionen
+@Suppress("LongParameterList") // 🆕 Issue #120: showTypeIcon neben bestehenden Widget-Optionen
 @Composable
 fun NotesListWidgetContent(
     notes: List<Note>,
@@ -89,7 +89,8 @@ fun NotesListWidgetContent(
     hasPinnedNotes: Boolean = false,
     hideHeader: Boolean = false,
     hidePreview: Boolean = false,
-    fontSizeScale: Float = 1.0f
+    fontSizeScale: Float = 1.0f,
+    showTypeIcon: Boolean = true
 ) {
     val context = LocalContext.current
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
@@ -152,7 +153,8 @@ fun NotesListWidgetContent(
                             note = pinned[i],
                             bgOpacity = cardBgOpacity,
                             fontSizeScale = fontSizeScale,
-                            hidePreview = hidePreview
+                            hidePreview = hidePreview,
+                            showTypeIcon = showTypeIcon
                         )
                     }
 
@@ -176,7 +178,8 @@ fun NotesListWidgetContent(
                             note = others[i],
                             bgOpacity = cardBgOpacity,
                             fontSizeScale = fontSizeScale,
-                            hidePreview = hidePreview
+                            hidePreview = hidePreview,
+                            showTypeIcon = showTypeIcon
                         )
                     }
 
@@ -234,7 +237,13 @@ private fun SectionHeader(title: String, fontSizeScale: Float = 1.0f) {
 }
 
 @Composable
-private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f, hidePreview: Boolean = false) {
+private fun NoteCard(
+    note: Note,
+    bgOpacity: Float,
+    fontSizeScale: Float = 1.0f,
+    hidePreview: Boolean = false,
+    showTypeIcon: Boolean = true
+) {
     val context = LocalContext.current
     val slot = NoteColorPalette.fromHex(note.color)
     val cardBg = if (slot != null) {
@@ -266,7 +275,7 @@ private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f, 
                 )
         ) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(10.dp)) {
-                NoteCardTitle(note, fontSizeScale, hidePreview)
+                NoteCardTitle(note, fontSizeScale, hidePreview, showTypeIcon)
                 if (!hidePreview) {
                     NoteCardBody(note = note, fontSizeScale = fontSizeScale)
                 }
@@ -349,7 +358,12 @@ private fun NoteTypeIcon(noteType: NoteType) {
 }
 
 @Composable
-private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f, hidePreview: Boolean = false) {
+private fun NoteCardTitle(
+    note: Note,
+    fontSizeScale: Float = 1.0f,
+    hidePreview: Boolean = false,
+    showTypeIcon: Boolean = true
+) {
     val context = LocalContext.current
     val hasTitle = note.title.isNotBlank()
     val isBlankNote = note.title.isBlank() &&
@@ -363,14 +377,18 @@ private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f, hidePreview: 
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
-            NoteTypeIcon(note.noteType)
-            if (note.isPinned == true) {
-                Image(
-                    provider = ImageProvider(R.drawable.ic_pin),
-                    contentDescription = null,
-                    modifier = GlanceModifier.size(12.dp).padding(end = 4.dp),
-                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface)
-                )
+            // 🆕 Issue #120: Typ-Icon und Pin-Badge folgen der globalen Display-Setting —
+            // spiegelt NoteCardTypeIcon(note, isPinned) in ui/main/components/NoteCard.kt.
+            if (showTypeIcon) {
+                NoteTypeIcon(note.noteType)
+                if (note.isPinned == true) {
+                    Image(
+                        provider = ImageProvider(R.drawable.ic_pin),
+                        contentDescription = null,
+                        modifier = GlanceModifier.size(12.dp).padding(end = 4.dp),
+                        colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface)
+                    )
+                }
             }
             Text(
                 text = note.title,
@@ -387,7 +405,7 @@ private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f, hidePreview: 
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
-            NoteTypeIcon(note.noteType)
+            if (showTypeIcon) NoteTypeIcon(note.noteType)
             Text(
                 text = context.getString(R.string.notes_list_widget_untitled),
                 style = TextStyle(
@@ -403,7 +421,7 @@ private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f, hidePreview: 
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
-            NoteTypeIcon(note.noteType)
+            if (showTypeIcon) NoteTypeIcon(note.noteType)
             NoteCardBody(
                 note = note,
                 fontSizeScale = fontSizeScale,
@@ -411,7 +429,7 @@ private fun NoteCardTitle(note: Note, fontSizeScale: Float = 1.0f, hidePreview: 
                 modifier = GlanceModifier.defaultWeight()
             )
         }
-        else -> NoteTypeIcon(note.noteType)
+        showTypeIcon -> NoteTypeIcon(note.noteType)
     }
 }
 
