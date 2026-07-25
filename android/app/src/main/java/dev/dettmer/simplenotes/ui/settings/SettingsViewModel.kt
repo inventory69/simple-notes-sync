@@ -26,6 +26,7 @@ import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
@@ -661,6 +662,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setShowNoteTypeIcon(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, enabled) }
         _showNoteTypeIcon.value = enabled
+        // 🆕 Issue #120: ComposeSettingsActivity.onStop refresht Widgets nicht (anders als
+        // ComposeMainActivity) — ohne diesen Call bliebe das Notes-List-Widget bis zum
+        // nächsten Sync/App-Besuch beim alten Icon-Zustand.
+        viewModelScope.launch { WidgetUpdateHelper.refreshAllNotesListWidgets(getApplication()) }
     }
 
     /** 🆕 Bild-Attachments: Kompressionsmodus für künftig eingefügte Bilder. */
