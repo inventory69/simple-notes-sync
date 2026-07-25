@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.13.1] - 2026-07-25
+
+### 🐛 Bug Fixes
+
+**Archive and Delete Missing from the Editor Menu** ([b058088](https://github.com/inventory69/simple-notes-sync/commit/b058088))
+- The overflow menu never read its state where Compose could see it, so the archive and delete section was gated on a stale snapshot and stayed hidden until the menu was closed and reopened. On brand-new notes it was missing outright, since the note only exists on disk after the first autosave. Both items are now always shown; deleting a note that was never saved discards it instead of moving it to the trash, and archiving saves it first
+- Thanks to [@lincomax](https://github.com/lincomax) for the report! (#114)
+
+**Leaving a Widget-Opened Note Landed in the Wrong Place** ([6fa7257](https://github.com/inventory69/simple-notes-sync/commit/6fa7257))
+- Both ways out of the editor did the same thing, so where you ended up depended on what was still open in Recents: the arrow in the toolbar could drop you into a different note, and the system back gesture could bring the editor back instead of returning to the home screen. The arrow now always opens the notes list, and back always leaves the app. Notes opened in-app or via share are unaffected
+- Thanks to [@lincomax](https://github.com/lincomax) for the request! (#117)
+
+**"Show Note Icon" Ignored by the Notes List Widget** ([f24909b](https://github.com/inventory69/simple-notes-sync/commit/f24909b))
+- The display setting only reached in-app note cards. The widget read its own Glance state and kept showing the type icon and pin badge even when the setting was off. It now reads the app setting and refreshes the widgets as soon as the toggle flips
+- Thanks to [@lincomax](https://github.com/lincomax) for the request! (#120)
+
+### 🎨 UI Improvements
+
+**One Card Layout Across All Settings Screens** ([2f15ce6](https://github.com/inventory69/simple-notes-sync/commit/2f15ce6), [01382d2](https://github.com/inventory69/simple-notes-sync/commit/01382d2))
+- Import, Backup, Debug, Security, Language and About still used the old flat layout while Display and Sync had moved to section cards. All of them now use the same pattern, dividers are gone, and the seven near-identical chip rows collapse into one shared component. Section headers are centered like the ones in the notes list. The server settings screen is unchanged and follows separately
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43) — all 15 new strings from v2.13.0 translated within days of the release
+
+---
+
 ## [2.13.0] - 2026-07-25
 
 ### ✨ New Features
