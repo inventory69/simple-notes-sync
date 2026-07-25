@@ -1,0 +1,10 @@
+🧭 v2.13.1 - Der Weg zurück
+
+• Fix: Der Pfeil in einer Widget-Notiz öffnet die Notizliste
+• Fix: Zurück verlässt bei Widget-Notizen wieder die App
+• Fix: Archivieren und Löschen fehlten im Editor-Menü
+• Fix: "Notiz-Icon anzeigen" gilt jetzt im Listen-Widget
+• Alle Einstellungen nutzen dasselbe Kartenlayout
+• Übersetzungsupdate: ZH-Hans
+
+Danke an @lincomax für die drei Meldungen und @heretic43 für Chinesisch auf 100%!

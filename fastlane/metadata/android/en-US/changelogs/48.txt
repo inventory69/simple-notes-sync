@@ -1,0 +1,10 @@
+🧭 v2.13.1 - Finding the Way Back
+
+• Fix: the arrow in a widget note opens the notes list
+• Fix: back from a widget note leaves the app again
+• Fix: archive and delete missing from the editor menu
+• Fix: "Show note icon" now applies to the list widget
+• All settings screens share one card layout
+• Updated translations: ZH-Hans
+
+Thanks to @lincomax for the three reports and @heretic43 for keeping Chinese at 100%!

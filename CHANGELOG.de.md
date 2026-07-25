@@ -8,6 +8,33 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.13.1] - 2026-07-25
+
+### 🐛 Bug-Fixes
+
+**Archivieren und Löschen fehlten im Editor-Menü** ([b058088](https://github.com/inventory69/simple-notes-sync/commit/b058088))
+- Das Überlaufmenü las seinen State nicht an einer Stelle, die Compose beobachten konnte. Der Abschnitt mit Archivieren und Löschen hing damit an einem veralteten Snapshot und blieb verborgen, bis das Menü einmal geschlossen und wieder geöffnet wurde. Bei ganz neuen Notizen fehlte er komplett, weil die Notiz erst nach dem ersten Autosave auf der Platte liegt. Beide Einträge werden jetzt immer angezeigt; das Löschen einer noch nie gespeicherten Notiz verwirft sie, statt sie in den Papierkorb zu verschieben, und Archivieren speichert sie vorher
+- Danke an [@lincomax](https://github.com/lincomax) für die Meldung! (#114)
+
+**Verlassen einer Widget-Notiz führte an die falsche Stelle** ([6fa7257](https://github.com/inventory69/simple-notes-sync/commit/6fa7257))
+- Beide Wege aus dem Editor taten dasselbe, wo man landete hing also davon ab, was in „Zuletzt verwendet" noch offen war: Der Pfeil in der Werkzeugleiste konnte in einer anderen Notiz landen, und die System-Zurück-Geste konnte den Editor zurückholen statt zum Startbildschirm zu führen. Der Pfeil öffnet jetzt immer die Notizliste, Zurück verlässt immer die App. In der App oder per Teilen geöffnete Notizen sind unverändert
+- Danke an [@lincomax](https://github.com/lincomax) für den Wunsch! (#117)
+
+**„Notiz-Icon zeigen" wurde vom Notizlisten-Widget ignoriert** ([f24909b](https://github.com/inventory69/simple-notes-sync/commit/f24909b))
+- Die Anzeige-Einstellung erreichte nur die Notizkarten in der App. Das Widget las seinen eigenen Glance-State und zeigte Typ-Icon und Pin-Markierung weiter an, auch wenn die Einstellung aus war. Es liest jetzt die App-Einstellung und aktualisiert die Widgets, sobald der Schalter umgelegt wird
+- Danke an [@lincomax](https://github.com/lincomax) für den Wunsch! (#120)
+
+### 🎨 UI-Verbesserungen
+
+**Ein Kartenlayout für alle Einstellungsbildschirme** ([2f15ce6](https://github.com/inventory69/simple-notes-sync/commit/2f15ce6), [01382d2](https://github.com/inventory69/simple-notes-sync/commit/01382d2))
+- Import, Backup, Debug, Sicherheit, Sprache und Über nutzten noch das alte flache Layout, während Anzeige und Sync längst auf Abschnittskarten umgestellt waren. Alle folgen jetzt demselben Muster, die Trennlinien sind weg, und die sieben fast identischen Chip-Reihen fallen zu einer gemeinsamen Komponente zusammen. Abschnittsüberschriften sind zentriert wie die in der Notizliste. Der Server-Bildschirm bleibt unverändert und folgt separat
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43) — alle 15 neuen Strings aus v2.13.0 innerhalb weniger Tage nach dem Release übersetzt
+
+---
+
 ## [2.13.0] - 2026-07-25
 
 ### ✨ Neue Funktionen
