@@ -259,7 +259,8 @@ private fun NoteCard(note: Note, bgOpacity: Float, fontSizeScale: Float = 1.0f, 
                     actionStartActivity(
                         ComponentName(context, ComposeNoteEditorActivity::class.java),
                         actionParametersOf(
-                            ActionParameters.Key<String>(ComposeNoteEditorActivity.EXTRA_NOTE_ID) to note.id
+                            ActionParameters.Key<String>(ComposeNoteEditorActivity.EXTRA_NOTE_ID) to note.id,
+                            ActionParameters.Key<Boolean>(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET) to true
                         )
                     )
                 )

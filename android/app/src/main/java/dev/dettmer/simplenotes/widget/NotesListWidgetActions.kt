@@ -73,6 +73,7 @@ class CreateNoteAndCollapseAction : ActionCallback {
         NotesListWidget().update(context, glanceId)
         val intent = Intent(context, ComposeNoteEditorActivity::class.java).apply {
             putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteTypeName)
+            putExtra(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET, true)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)

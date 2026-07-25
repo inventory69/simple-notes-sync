@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.createSavedStateHandle
@@ -51,6 +52,7 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.security.AppLockGate
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
@@ -81,6 +83,10 @@ class ComposeNoteEditorActivity : FragmentActivity() {
         const val EXTRA_NOTE_ID = "extra_note_id"
         const val EXTRA_NOTE_TYPE = "extra_note_type"
         const val EXTRA_FOLDER = "extra_folder"
+
+        // Issue #117: Markiert, dass der Editor aus einem Widget-Tap gestartet wurde —
+        // steuert die Back-Pfade (Up zur Notizliste statt in den bestehenden Task).
+        const val EXTRA_FROM_WIDGET = "extra_from_widget"
         private const val TAG = "ComposeNoteEditorActivity" // 🆕 v1.10.0-Papa
         private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen" // 🆕 v2.2.0
         private const val KEY_PICK_TARGET_NOTE = "pick_target_note" // 🆕 v2.6.0
@@ -104,6 +110,9 @@ class ComposeNoteEditorActivity : FragmentActivity() {
     // 🆕 v2.6.0: Append-to-note flow state
     private var isPickingTargetNote by mutableStateOf(false)
     private var chosenAppendNoteId: String? = null
+
+    // Issue #117: Widget-Ursprung — steuert Up- vs. Back-Verhalten
+    private var fromWidget = false
 
     private val viewModel: NoteEditorViewModel by viewModels {
         viewModelFactory {
@@ -145,6 +154,9 @@ class ComposeNoteEditorActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Issue #117: Widget-Ursprung vor setContent auswerten
+        fromWidget = intent.getBooleanExtra(EXTRA_FROM_WIDGET, false)
+
         // v2.0.0: Load theme from prefs (context available after super.onCreate)
         themeMode = ThemePreferences.getThemeMode(editorPrefs)
         colorTheme = ThemePreferences.getColorTheme(editorPrefs)
@@ -181,7 +193,7 @@ class ComposeNoteEditorActivity : FragmentActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    finishWithTransition()
+                    if (fromWidget) exitToLauncher() else finishWithTransition()
                 }
             }
         )
@@ -235,7 +247,9 @@ class ComposeNoteEditorActivity : FragmentActivity() {
                         else -> {
                             NoteEditorScreen(
                                 viewModel = viewModel,
-                                onNavigateBack = { finishWithTransition() }
+                                onNavigateBack = {
+                                    if (fromWidget) navigateUpToNotesList() else finishWithTransition()
+                                }
                             )
                         }
                     }
@@ -337,6 +351,25 @@ class ComposeNoteEditorActivity : FragmentActivity() {
                 R.anim.shared_axis_x_pop_exit
             )
         }
+    }
+
+    // Issue #117: Up-Navigation — Editor aus Widget führt zur Notizliste, nicht "zurück" in den Task.
+    private fun navigateUpToNotesList() {
+        val intent = Intent(this, ComposeMainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val options = ActivityOptionsCompat.makeCustomAnimation(
+            this,
+            R.anim.shared_axis_x_pop_enter,
+            R.anim.shared_axis_x_pop_exit
+        )
+        startActivity(intent, options.toBundle())
+        finish()
+    }
+
+    // Issue #117: Back aus Widget verlässt die App — auch wenn darunter noch ein App-Task liegt.
+    private fun exitToLauncher() {
+        moveTaskToBack(true)
+        finish()
     }
 
     // ═══════════════════════════════════════════════════════════════════════

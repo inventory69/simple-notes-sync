@@ -226,5 +226,6 @@ private fun ButtonContent(
 private fun buildEditorIntent(context: Context, noteType: NoteType): Intent =
     Intent(context, ComposeNoteEditorActivity::class.java).apply {
         putExtra(ComposeNoteEditorActivity.EXTRA_NOTE_TYPE, noteType.name)
+        putExtra(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET, true)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
