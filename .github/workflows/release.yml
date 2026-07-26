@@ -86,22 +86,27 @@ jobs:
       - name: Read F-Droid changelogs
         run: |
           BUILD_NUMBER=${{ steps.version.outputs.BUILD_NUMBER }}
-          if [ -f "fastlane/metadata/android/de-DE/changelogs/$BUILD_NUMBER.txt" ]; then
-            CHANGELOG_CONTENT=$(cat "fastlane/metadata/android/de-DE/changelogs/$BUILD_NUMBER.txt")
-            echo "CHANGELOG_DE<<GHADELIMITER" >> $GITHUB_ENV
-            echo "$CHANGELOG_CONTENT" >> $GITHUB_ENV
-            echo "GHADELIMITER" >> $GITHUB_ENV
-          else
-            echo "CHANGELOG_DE=No German release notes available." >> $GITHUB_ENV
-          fi
-          if [ -f "fastlane/metadata/android/en-US/changelogs/$BUILD_NUMBER.txt" ]; then
-            CHANGELOG_CONTENT_EN=$(cat "fastlane/metadata/android/en-US/changelogs/$BUILD_NUMBER.txt")
-            echo "CHANGELOG_EN<<GHADELIMITER" >> $GITHUB_ENV
-            echo "$CHANGELOG_CONTENT_EN" >> $GITHUB_ENV
-            echo "GHADELIMITER" >> $GITHUB_ENV
-          else
-            echo "CHANGELOG_EN=" >> $GITHUB_ENV
-          fi
+          # Beta-Bumps erhöhen den versionCode, ohne dass eine neue Changelog-Datei
+          # dazukommt (v2.14.0 = 49.txt, Beta-Bump = Code 50). Dann gilt dieselbe
+          # Fallback-Regel wie in deploy-google-play.yml und copyChangelogsToAssets:
+          # neueste vorhandene Datei nehmen, statt die Release-Notes leer zu lassen.
+          read_changelog() {
+            local dir="fastlane/metadata/android/$1/changelogs"
+            local file="$dir/$BUILD_NUMBER.txt"
+            if [ ! -f "$file" ]; then
+              file=$(ls "$dir"/*.txt 2>/dev/null | sort -V | tail -1)
+              echo "No $BUILD_NUMBER.txt in $dir — falling back to ${file:-<none>}" >&2
+            fi
+            [ -n "$file" ] && cat "$file"
+          }
+          {
+            echo "CHANGELOG_DE<<GHADELIMITER"
+            read_changelog de-DE || true
+            echo "GHADELIMITER"
+            echo "CHANGELOG_EN<<GHADELIMITER"
+            read_changelog en-US || true
+            echo "GHADELIMITER"
+          } >> $GITHUB_ENV
 
       - name: Compose downloads section
         run: |
