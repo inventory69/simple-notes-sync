@@ -1,0 +1,7 @@
+📡 v2.14.0 - Weniger Rückfragen
+
+• Sync ist spürbar schneller - die App fragt den Server nicht mehr nach Dingen, die sie schon weiß
+• Keine wiederholte Anmeldung bei jedem einzelnen Sync
+• Neu: Digest-Authentifizierung für Server ohne Basic-Auth
+• WebDAV läuft jetzt über einen eigenen Client statt über eine seit Jahren ungepflegte Bibliothek
+• Gleiche Server, gleiche Workarounds - bitte melden, was anders synct als vorher

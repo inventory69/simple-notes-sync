@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 48  // 🆕 v2.13.1 - widget back navigation, editor menu, settings cards
-        versionName = "2.13.1"  // 🆕 v2.13.1 - widget back navigation, editor menu, settings cards
+        versionCode = 49  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
+        versionName = "2.14.0"  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
