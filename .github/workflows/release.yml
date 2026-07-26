@@ -6,10 +6,10 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       # Pre-Releases → sofort veröffentlichtes Pre-Release (siehe draft/prerelease unten).
       #
-      # ACHTUNG: Solange fdroiddata `UpdateCheckMode: Tags` OHNE Regex stehen hat, greift der
-      # F-Droid-Update-Bot JEDEN Tag ab, liest versionCode/versionName aus build.gradle.kts und
-      # würde eine Beta als reguläres F-Droid-Update ausliefern. Erst nach einem fdroiddata-MR
-      # (`UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$`) darf ein Beta-Tag gepusht werden.
+      # Beta-Tags sind erst seit fdroiddata!43948 gefahrlos: davor griff der F-Droid-Update-Bot
+      # JEDEN Tag ab und hätte eine Beta als reguläres Update ausgeliefert. Seitdem steht dort
+      # `UpdateCheckMode: Tags ^v[\d.]+$`, was am Bindestrich scheitert. Wer diesen Filter hier
+      # erweitert, muss den Regex drüben mitziehen.
       - 'v[0-9]+.[0-9]+.[0-9]+-beta*'
 jobs:
   build-and-release:
