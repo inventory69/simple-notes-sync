@@ -208,8 +208,12 @@ internal class NoteDownloader(
                 Logger.d(TAG, "   📊 Found ${jsonFiles.size} JSON files on server (incl. subfolders)")
 
                 // 🆕 v1.8.0 + v2.6.0: serverNoteIds + folderByNoteId füllen
+                // 🆕 v2.14.0: Nur echte Notiz-IDs. deletions.json und fremde JSONs verfälschten
+                // sonst den serverNotes-Count im Deletion-Log; die Download-Schleife unten filtert
+                // sie ohnehin über dasselbe [UUID_REGEX].
                 deduplicatedItems.forEach { item ->
                     val noteId = item.resource.name.removeSuffix(".json")
+                    if (!UUID_REGEX.matches(noteId)) return@forEach
                     serverNoteIds.add(noteId)
                     folderByNoteId[noteId] = item.folder
                 }
