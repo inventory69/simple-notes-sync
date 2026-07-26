@@ -56,7 +56,9 @@ import kotlinx.coroutines.withTimeout
  * Manages all settings state and actions across the Settings navigation graph.
  */
 // ponytail: file-level flag, process-scoped, resets on process death
-private var devOptionsUnlocked = false
+// 🆕 v2.14.0: In Beta-Builds von Anfang an offen — Tester sollen für einen Sync-Log nicht
+// erst das Easter-Egg finden müssen. Release-Builds bleiben beim 5-Tap-Gate.
+private var devOptionsUnlocked = BuildConfig.BETA_BUILD
 
 @Suppress("TooManyFunctions") // v1.7.0: 35 Funktionen durch viele kleine Setter (setTrigger*, set*)
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -278,7 +280,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ═══════════════════════════════════════════════════════════════════════
 
     private val _fileLoggingEnabled = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)
+        prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, BuildConfig.BETA_BUILD)
     )
     val fileLoggingEnabled: StateFlow<Boolean> = _fileLoggingEnabled.asStateFlow()
 

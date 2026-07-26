@@ -26,6 +26,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -167,7 +168,9 @@ class ComposeMainActivity : FragmentActivity() {
 
         // Initialize Logger and enable file logging if configured
         Logger.init(this)
-        if (prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)) {
+        // 🆕 v2.14.0: In Beta-Builds standardmäßig an (siehe BuildConfig.BETA_BUILD) — der
+        // Tester kann es in den Debug-Einstellungen jederzeit abschalten, die Präferenz gewinnt.
+        if (prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, BuildConfig.BETA_BUILD)) {
             Logger.setFileLoggingEnabled(true)
         }
 

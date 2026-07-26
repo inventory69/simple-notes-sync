@@ -136,15 +136,31 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}"             >> android/key.properties
           echo "storeFile=simple-notes-release.jks"            >> android/key.properties
 
-      - name: Build release AAB (standard flavor)
+      - name: Resolve build variant
+        id: variant
+        run: |
+          # Test tracks get the `beta` build type: identical to release (same applicationId,
+          # same signing key, same R8), but with diagnostics pre-enabled so testers can hand
+          # over a sync log without hunting for the 5-tap easter egg.
+          if [ "${{ steps.target.outputs.track }}" = "production" ]; then
+            echo "task=bundleStandardRelease" >> $GITHUB_OUTPUT
+            echo "dir=standardRelease" >> $GITHUB_OUTPUT
+            echo "mapping=android/app/build/outputs/mapping/standardRelease/mapping.txt" >> $GITHUB_OUTPUT
+          else
+            echo "task=bundleStandardBeta" >> $GITHUB_OUTPUT
+            echo "dir=standardBeta" >> $GITHUB_OUTPUT
+            echo "mapping=android/app/build/outputs/mapping/standardBeta/mapping.txt" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build AAB (standard flavor)
         run: |
           cd android
-          ./gradlew bundleStandardRelease --no-daemon --stacktrace
+          ./gradlew ${{ steps.variant.outputs.task }} --no-daemon --stacktrace
 
       - name: Locate AAB
         id: aab
         run: |
-          AAB_PATH=$(find android/app/build/outputs/bundle/standardRelease -name "*.aab" | head -1)
+          AAB_PATH=$(find android/app/build/outputs/bundle/${{ steps.variant.outputs.dir }} -name "*.aab" | head -1)
           echo "AAB_PATH=$AAB_PATH" >> $GITHUB_OUTPUT
           echo "Found AAB: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
 
@@ -159,7 +175,7 @@ jobs:
           inAppUpdatePriority: 0
           userFraction: ${{ steps.rollout.outputs.USER_FRACTION }}
           whatsNewDirectory: fastlane/metadata/android
-          mappingFile: android/app/build/outputs/mapping/standardRelease/mapping.txt
+          mappingFile: ${{ steps.variant.outputs.mapping }}
 
       - name: Summary
         run: |
@@ -171,6 +187,7 @@ jobs:
             echo "| Package | \`dev.dettmer.simplenotes\` |"
             echo "| Version | ${{ steps.version.outputs.VERSION_NAME }} (Code ${{ steps.version.outputs.VERSION_CODE }}) |"
             echo "| Track | ${{ steps.target.outputs.track }} |"
+            echo "| Variant | ${{ steps.variant.outputs.dir }} |"
             echo "| Status | ${{ steps.target.outputs.status }} |"
             if [ "${{ steps.target.outputs.track }}" = "production" ]; then
               echo "| Rollout | ${{ steps.target.outputs.rollout_percentage }}% |"
