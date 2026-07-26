@@ -54,9 +54,10 @@ object Logger {
             logFile = File(context.filesDir, "simplenotes_debug.log")
             fileLoggingEnabled = true
 
-            // Clear old log
-            logFile?.writeText("")
-
+            // Kein writeText("") mehr: das lief bei jedem Prozessstart und hat damit auch die
+            // Session weggeworfen, in der das gemeldete Problem auftrat — ein Hintergrund-Sync
+            // in der Nacht reichte. Unbegrenzt wächst die Datei trotzdem nicht, dafür sorgt
+            // trimLogFile(). Wer sie loswerden will, nutzt "Clear logs" in den Debug-Settings.
             i("Logger", "📝 File logging enabled: ${logFile?.absolutePath}")
         } catch (e: Exception) {
             Log.e("Logger", "Failed to enable file logging", e)
