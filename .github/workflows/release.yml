@@ -179,3 +179,21 @@ jobs:
             **[📖 Documentation](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)** · **[🐛 Report Bug](https://github.com/inventory69/simple-notes-sync/issues)**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Immer nur die neueste Beta stehen lassen. Ohne das sammeln sich die Pre-Releases,
+      # und Tester laden irgendwann eine alte APK. Filter ist `isPrerelease` — finale
+      # Releases sind das nie, auch nicht als Draft, und bleiben damit unangetastet.
+      # Der Tag bleibt stehen: er dokumentiert, was gebaut wurde, und F-Droid ignoriert
+      # Beta-Tags ohnehin am Regex.
+      - name: Prune older pre-releases
+        if: steps.version.outputs.IS_PRERELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+            --json tagName,isPrerelease \
+            --jq ".[] | select(.isPrerelease) | select(.tagName != \"$GITHUB_REF_NAME\") | .tagName" \
+          | while read -r tag; do
+              echo "Removing superseded pre-release $tag"
+              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
+            done
