@@ -381,7 +381,12 @@ internal class MarkdownSyncManager(
                 return 0
             }
 
-            cleanupStaleRoot(webdav, serverUrl)
+            // 🆕 v2.14.0: Einmal pro Server-Config statt bei jedem Import, spart ein PROPFIND
+            // auf das komplette WebDAV-Root. Siehe [ConnectionManager.staleRootCleaned].
+            if (!connectionManager.staleRootCleaned) {
+                cleanupStaleRoot(webdav, serverUrl)
+                connectionManager.staleRootCleaned = true
+            }
 
             // 🆕 v2.7.0 (Folders): Root-md + alle Subdirs einsammeln.
             data class MdItem(

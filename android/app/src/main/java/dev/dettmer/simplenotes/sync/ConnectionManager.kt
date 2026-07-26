@@ -159,6 +159,16 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
         set(value) = setDirEnsured(Constants.KEY_ASSETS_DIR_ENSURED, value)
 
     /**
+     * 🆕 v2.14.0: Der Scan nach dem stale `/`-Verzeichnis (Artefakt eines behobenen
+     * Double-Slash-Bugs) läuft einmal pro Server-Config statt bei jedem Import.
+     * Trade-off: schreibt ein alter Client das Artefakt erneut, wird es erst beim nächsten
+     * Config-Wechsel geräumt. Vertretbar, weil der verursachende Bug behoben ist.
+     */
+    var staleRootCleaned: Boolean
+        get() = dirEnsured(Constants.KEY_STALE_ROOT_CLEANED)
+        set(value) = setDirEnsured(Constants.KEY_STALE_ROOT_CLEANED, value)
+
+    /**
      * Returns the cached WebDAV client or creates a new one.
      * Saves ~100ms per call by reusing the existing client.
      * internal for NotesImportWizard access (Issue #21).

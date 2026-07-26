@@ -96,12 +96,30 @@ class ConnectionManagerDirFlagsTest {
         assertFalse(cm.notesDirEnsured)
     }
 
-    @Test fun `the three flags are independent`() {
+    @Test fun `the flags are independent`() {
         val cm = manager()
         cm.notesDirEnsured = true
 
         assertTrue(cm.notesDirEnsured)
         assertFalse(cm.markdownDirEnsured)
         assertFalse(cm.assetsDirEnsured)
+        assertFalse(cm.staleRootCleaned)
+    }
+
+    @Test fun `the stale-root flag survives clearSession`() {
+        val cm = manager()
+        cm.staleRootCleaned = true
+
+        cm.clearSession()
+
+        assertTrue(manager().staleRootCleaned)
+    }
+
+    @Test fun `changing the server url invalidates the stale-root flag`() {
+        manager().staleRootCleaned = true
+
+        backing[Constants.KEY_SERVER_URL] = "https://other/"
+
+        assertFalse(manager().staleRootCleaned)
     }
 }

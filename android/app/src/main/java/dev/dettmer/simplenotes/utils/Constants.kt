@@ -105,6 +105,7 @@ object Constants {
     const val KEY_NOTES_DIR_ENSURED = "dirs_ensured_notes"
     const val KEY_MD_DIR_ENSURED = "dirs_ensured_md"
     const val KEY_ASSETS_DIR_ENSURED = "dirs_ensured_assets"
+    const val KEY_STALE_ROOT_CLEANED = "dirs_ensured_stale_root"
 
     // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
