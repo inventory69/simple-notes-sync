@@ -949,4 +949,5 @@
     <string name="theme_mode_subsection">模式</string>
     <string name="notes_list_widget_config_hide_preview">仅标题</string>
     <string name="notes_list_widget_config_hide_preview_desc">卡片只显示笔记标题，无预览文本</string>
+    <string name="debug_logging_section">日志</string>
 </resources>
