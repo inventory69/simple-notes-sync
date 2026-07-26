@@ -519,6 +519,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 // 🆕 v2.14.0: nur wenn ein MD-Feature aktiv ist — alle nachgelagerten MD-Pfade
                 // legen das Verzeichnis bei Bedarf selbst an.
                 if (markdownFeaturesEnabled()) {
+                    markdownSyncManager.beginSyncCycle()
                     ensureMarkdownDirectoryExists(webdav, serverUrl)
                 }
 

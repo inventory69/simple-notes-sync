@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
+import java.util.Collections
 import java.util.Date
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -43,6 +44,18 @@ internal class MarkdownSyncManager(
         /** 404 = Parent fehlt, 409 = Conflict (Parent-Collection existiert nicht). */
         private val MISSING_DIR_STATUS_CODES = setOf(404, 409)
     }
+
+    /**
+     * 🆕 v2.14.0: URLs der in diesem Sync-Zyklus selbst exportierten MD-Dateien. [importAll]
+     * überspringt sie, bevor es sie herunterlädt. Bisher wurde die Datei erst geladen und dann
+     * anhand der ID aus dem YAML-Header verworfen.
+     *
+     * Synchronized, weil [exportSingle] aus parallelen Upload-Coroutinen läuft.
+     */
+    private val exportedThisCycle = Collections.synchronizedSet(mutableSetOf<String>())
+
+    /** Setzt [exportedThisCycle] zurück. Ohne diesen Reset wüchse das Set über Syncs hinweg. */
+    fun beginSyncCycle() = exportedThisCycle.clear()
 
     // ─────────────────────────────────────────────────────────────
     // Export
@@ -94,6 +107,7 @@ internal class MarkdownSyncManager(
 
         // Upload
         val putETag = putMarkdown(webdav, noteUrl, mdContentBytes)
+        exportedThisCycle.add(noteUrl)
 
         // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
         // 🆕 v2.14.0: ETag aus der PUT-Antwort bevorzugen — PROPFIND nur als Fallback.
@@ -460,6 +474,15 @@ internal class MarkdownSyncManager(
                     if (lastSyncTime > 0 && serverModifiedTime <= lastSyncTime) {
                         skippedCount++
                         Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: not modified since last sync")
+                        continue
+                    }
+
+                    // 🆕 v2.14.0: In diesem Zyklus selbst exportiert, gar nicht erst laden.
+                    // Die ID-Prüfung gegen excludeNoteIds weiter unten bleibt als zweite
+                    // Verteidigungslinie (greift, wenn eine Titeländerung den Pfad verschoben hat).
+                    if (mdItem.fileUrl in exportedThisCycle) {
+                        skippedCount++
+                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle")
                         continue
                     }
 
