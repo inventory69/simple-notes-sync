@@ -7,7 +7,11 @@ private const val TAG = "WebDavTree"
 
 /**
  * Statuscodes, mit denen Server ein `Depth: infinity` ablehnen:
- * 403 (sabre/dav `propfind-finite-depth`), 400 (generelle Ablehnung), 507 (Ergebnis zu groß).
+ * 403 (Apache `mod_dav` mit `DavDepthInfinity off`), 400 (generelle Ablehnung), 507 (Ergebnis zu groß).
+ *
+ * **Nicht** vollständig: sabre/dav lehnt bei ausgeschaltetem `enablePropfindDepthInfinity` nicht ab,
+ * sondern klemmt die Tiefe still auf 1 und antwortet 207. Das fängt erst die Leer-Prüfung in
+ * [listTreeOrNull] ab.
  */
 private val DEPTH_INFINITY_REFUSED = setOf(400, 403, 507)
 
@@ -45,14 +49,29 @@ fun WebDavClient.listTreeOrNull(baseUrl: String, onRefused: () -> Unit): Map<Str
         Logger.w(TAG, "deep PROPFIND failed, falling back: ${e.message}")
         return null
     }
-    // Ein PROPFIND auf eine existierende Collection enthält immer mindestens deren Self-Eintrag.
-    // Eine leere Antwort ist also nicht verwertbar — klassisch listen statt „Server ist leer"
-    // anzunehmen (sonst sähe der Sync alle Notizen als serverseitig gelöscht).
-    if (resources.isEmpty()) {
-        Logger.w(TAG, "deep PROPFIND returned no resources for $baseUrl, falling back")
+    val grouped = resources.groupByFolder(baseUrl)
+    val subFolders = grouped.keys.filterNotNull()
+    val unusable = when {
+        // Ein PROPFIND auf eine existierende Collection enthält immer mindestens deren
+        // Self-Eintrag. Eine leere Antwort ist also nicht verwertbar — klassisch listen statt
+        // „Server ist leer" anzunehmen (sonst sähe der Sync alle Notizen als serverseitig gelöscht).
+        resources.isEmpty() -> "no resources at all"
+        // sabre/dav klemmt `Depth: infinity` bei ausgeschaltetem enablePropfindDepthInfinity still
+        // auf Depth: 1 und antwortet 207. Die Antwort sieht dann aus wie ein Depth-1-Listing: alle
+        // Unterordner da, keiner mit Inhalt. Von „alle Unterordner sind wirklich leer" ist das nicht
+        // zu unterscheiden, also in beiden Fällen klassisch listen. Würde man das Ergebnis
+        // übernehmen, fehlten die Notizen aller Unterordner in serverNoteIds und detectDeletions
+        // löschte sie lokal. Bewusst ohne onRefused(): ein gesetztes Flag würde die Optimierung für
+        // einen Baum aus lauter leeren Ordnern dauerhaft abschalten.
+        subFolders.isNotEmpty() && subFolders.all { grouped.getValue(it).isEmpty() } ->
+            "nothing below the first level"
+        else -> null
+    }
+    if (unusable != null) {
+        Logger.w(TAG, "deep PROPFIND unusable ($unusable) for $baseUrl, falling back")
         return null
     }
-    return resources.groupByFolder(baseUrl)
+    return grouped
 }
 
 /**

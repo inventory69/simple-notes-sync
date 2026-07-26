@@ -1,9 +1,12 @@
 package dev.dettmer.simplenotes.sync.webdav
 
+import dev.dettmer.simplenotes.sync.ConnectionManager
 import io.mockk.every
 import io.mockk.mockk
 import java.net.URI
 import java.util.Date
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -109,4 +112,121 @@ class WebDavTreeTest {
         assertNotNull(grouped)
         assertEquals(listOf("b.json"), grouped!!.getValue("Work").map { it.name })
     }
+
+    // ═══════════════════════════════════════════════
+    // Geklemmtes Depth: infinity (sabre/dav)
+    // ═══════════════════════════════════════════════
+
+    /**
+     * sabre/dav klemmt `Depth: infinity` bei ausgeschaltetem `enablePropfindDepthInfinity` still
+     * auf Depth 1 und antwortet 207 — kein Statuscode, an dem der Fallback hängen könnte. Würde
+     * das Ergebnis übernommen, fehlten alle Notizen der Unterordner in `serverNoteIds` und
+     * `detectDeletions` löschte sie lokal (bei bereits getrashten Notizen hart).
+     */
+    @Test fun `a clamped depth-1 answer is not taken at face value`() {
+        var refused = false
+        val clamped = listOf(
+            res("/dav/notes/", isDirectory = true), // Self-Eintrag
+            res("/dav/notes/a.json"),
+            res("/dav/notes/Work/", isDirectory = true),
+            res("/dav/notes/Empty/", isDirectory = true)
+        )
+        val webdav = mockk<WebDavClient> {
+            every { listDeep(baseUrl) } returns clamped
+        }
+
+        assertNull(webdav.listTreeOrNull(baseUrl) { refused = true })
+        // Geklemmt und „wirklich leer" sind nicht unterscheidbar — ein Flag würde die Optimierung
+        // für einen Baum aus lauter leeren Ordnern dauerhaft abschalten.
+        assertFalse("clamping must not disable deep PROPFIND permanently", refused)
+    }
+
+    /** Ohne Unterordner sind Depth 1 und Depth infinity identisch — die Erkennung darf nicht anspringen. */
+    @Test fun `a listing without any subfolder is still accepted`() {
+        val webdav = mockk<WebDavClient> {
+            every { listDeep(baseUrl) } returns listOf(
+                res("/dav/notes/", isDirectory = true),
+                res("/dav/notes/a.json")
+            )
+        }
+
+        val grouped = webdav.listTreeOrNull(baseUrl) { }
+
+        assertNotNull(grouped)
+        assertEquals(listOf("a.json"), grouped!!.getValue(null).map { it.name })
+    }
+
+    /** Ein einziger befüllter Unterordner beweist, dass der Server wirklich rekursiv geantwortet hat. */
+    @Test fun `one non-empty subfolder is enough to trust the answer`() {
+        val webdav = mockk<WebDavClient> {
+            every { listDeep(baseUrl) } returns listOf(
+                res("/dav/notes/", isDirectory = true),
+                res("/dav/notes/Work/", isDirectory = true),
+                res("/dav/notes/Work/b.json"),
+                res("/dav/notes/Empty/", isDirectory = true)
+            )
+        }
+
+        val grouped = webdav.listTreeOrNull(baseUrl) { }
+
+        assertNotNull(grouped)
+        assertEquals(listOf("b.json"), grouped!!.getValue("Work").map { it.name })
+        assertEquals(emptyList<WebDavResource>(), grouped.getValue("Empty"))
+    }
+
+    /**
+     * Ende-zu-Ende gegen einen echten 207 in Depth-1-Form: beweist die Kette
+     * [PropfindParser] → [groupByFolder] → Erkennung, nicht nur die Gruppierungs-Logik.
+     */
+    @Test fun `a clamped 207 from a real server falls back`() {
+        // Der Auth-Cache ist prozessweit — ohne Reset leaken 401-Zählungen zwischen Tests.
+        ConnectionManager.clearSharedAuthCacheForTest()
+        val server = MockWebServer()
+        server.start()
+        val client = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw"))
+        try {
+            server.enqueue(MockResponse().setResponseCode(207).setBody(CLAMPED_MULTISTATUS))
+
+            val grouped = client.listTreeOrNull(server.url("/notes/").toString()) { }
+
+            assertNull(grouped)
+            assertEquals("infinity", server.takeRequest().getHeader("Depth"))
+        } finally {
+            client.close()
+            server.shutdown()
+        }
+    }
 }
+
+/** Antwort eines sabre/dav mit `enablePropfindDepthInfinity = false`: Unterordner ohne Inhalt. */
+private const val CLAMPED_MULTISTATUS = """<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/notes/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/notes/a.json</d:href>
+    <d:propstat>
+      <d:prop><d:getcontentlength>7</d:getcontentlength><d:getetag>"e1"</d:getetag></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/notes/Work/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/notes/Private/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"""

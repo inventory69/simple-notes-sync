@@ -71,9 +71,10 @@ class WebDavClient(private val okHttpClient: OkHttpClient) : Closeable {
      * 🆕 v2.14.0: PROPFIND mit `Depth: infinity` — liefert die komplette Hierarchie in **einem**
      * Request statt 1+N Einzel-Listings.
      *
-     * Nicht jeder Server erlaubt das: sabre/dav (Nextcloud/ownCloud) antwortet mit
-     * `403 propfind-finite-depth`, wenn `enablePropfindDepthInfinity` aus ist. Aufrufer müssen
-     * deshalb auf [list] zurückfallen — siehe [listTreeOrNull].
+     * Nicht jeder Server erlaubt das: Apache `mod_dav` mit `DavDepthInfinity off` antwortet
+     * `403 propfind-finite-depth`, sabre/dav (ownCloud, Baïkal) klemmt bei ausgeschaltetem
+     * `enablePropfindDepthInfinity` **still auf Depth 1** und antwortet 207. Aufrufer müssen
+     * deshalb auf [list] zurückfallen — siehe [listTreeOrNull], das beide Fälle abfängt.
      */
     fun listDeep(url: String): List<WebDavResource> = propfind(url, "infinity")
 
