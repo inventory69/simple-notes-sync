@@ -118,7 +118,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         // 🆕 v2.9.0 (Trash): getrashte Notiz → Server-MD löschen statt exportieren.
         markdownDeleter = { webdav, serverUrl, note ->
             markdownSyncManager.deleteSingle(webdav, serverUrl, note)
-        }
+        },
+        // 🆕 v2.14.0 Self-Heal: PUT-404/409 → das persistierte notes/-Flag ist stale.
+        onMissingServerDir = { connectionManager.notesDirEnsured = false },
+        connectionManager = connectionManager
     )
 
     private val noteDownloader = NoteDownloader(
@@ -182,6 +185,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Wird beim ersten erfolgreichen Sync aufgerufen (unabhängig von MD-Feature).
      * Cached in Memory - nur einmal pro App-Session.
      */
+    /** MD-Export ODER MD-Auto-Import aktiv — Gate für alle Requests gegen `notes-md/`. */
+    private fun markdownFeaturesEnabled(): Boolean =
+        prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) ||
+            prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
+
     private fun ensureMarkdownDirectoryExists(webdav: WebDavClient, serverUrl: String) {
         if (connectionManager.markdownDirEnsured) return
 
@@ -261,140 +269,6 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     }
 
     /**
-     * Checks if server has changes using E-Tag caching
-     *
-     * v1.3.0: Also checks /notes-md/ if Markdown Auto-Import enabled
-     *
-     * Performance: ~100-200ms (E-Tag cache hit)
-     *              ~300-500ms (E-Tag miss, needs PROPFIND)
-     *
-     * Strategy:
-     * 1. Store E-Tag of /notes/ collection after each sync
-     * 2. HEAD request to check if E-Tag changed
-     * 3. If changed → server has updates
-     * 4. If unchanged → skip sync
-     */
-    // Abbau: TECH_DEBT_ROADMAP.md Slice 4
-    @Suppress("ReturnCount", "CyclomaticComplexMethod") // Early returns for conditional checks
-    private fun checkServerForChanges(webdav: WebDavClient, serverUrl: String): Boolean {
-        return try {
-            val startTime = System.currentTimeMillis()
-            val lastSyncTime = getLastSyncTimestamp()
-
-            if (lastSyncTime == 0L) {
-                Logger.d(TAG, "📝 Never synced - assuming server has changes")
-                return true
-            }
-
-            val notesUrl = urlBuilder.getNotesUrl(serverUrl)
-            // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
-            // Wenn webdav.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
-            // 🐛 Fix #21: Wenn /notes/ nicht existiert → true zurückgeben, damit syncNotes()
-            // aufgerufen wird und ensureNotesDirectoryExists() das Verzeichnis anlegen kann.
-            // Vorher: return false → Deadlock (Verzeichnis wird nie erstellt, Sync nie gestartet)
-            // 🔧 v2.0.0 (Issue #44): Catch IOException from exists() to avoid masking real errors
-            val notesExistCheck = try {
-                webdav.exists(notesUrl)
-            } catch (e: IOException) {
-                Logger.w(TAG, "⚠️ Server check failed: ${e.message}")
-                return true // Trigger sync anyway — let syncNotes() handle errors
-            }
-            if (!notesExistCheck) {
-                Logger.d(TAG, "📁 /notes/ doesn't exist yet - will create on sync")
-                return true
-            }
-
-            // ====== JSON FILES CHECK (/notes/) ======
-
-            // ⚡ v1.3.1: File-level E-Tag check in downloadRemoteNotes() is optimal!
-            // Collection E-Tag doesn't work (server-dependent, doesn't track file changes)
-            // → Always proceed to download phase where file-level E-Tags provide fast skips
-
-            // For hasUnsyncedChanges(): Conservative approach - assume changes may exist
-            // Actual file-level E-Tag checks in downloadRemoteNotes() will skip unchanged files (0ms each)
-            val hasJsonChanges = true // Assume yes, let file E-Tags optimize
-
-            // ====== MARKDOWN FILES CHECK (/notes-md/) ======
-            // IMPORTANT: E-Tag for collections does NOT work for content changes!
-            // → Use hybrid approach: If-Modified-Since + Timestamp fallback
-
-            val markdownAutoImportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
-            if (!markdownAutoImportEnabled) {
-                Logger.d(TAG, "⏭️ Markdown check skipped (auto-import disabled)")
-            } else {
-                val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
-
-                // 🔧 v2.0.0 (Issue #44): Use listOrNull() to avoid 403 false-negative on Jianguoyun
-                val mdResources: List<WebDavResource>? = webdav.listOrNull(mdUrl)
-
-                if (mdResources == null) {
-                    Logger.d(TAG, "📁 /notes-md/ doesn't exist - no markdown changes")
-                } else {
-                    Logger.d(TAG, "📝 Checking Markdown files (hybrid approach)...")
-
-                    // Strategy: Timestamp-based check (reliable, always works)
-                    // Note: If-Modified-Since support varies by WebDAV server
-                    // We use timestamp comparison which is universal
-                    val mdHasNewer = mdResources.any { resource ->
-                        !resource.isDirectory &&
-                            resource.name.endsWith(".md") &&
-                            resource.modified?.time?.let {
-                                val hasNewer = it > lastSyncTime
-                                if (hasNewer) {
-                                    Logger.d(
-                                        TAG,
-                                        "   📄 ${resource.name}: modified=${resource.modified}, " +
-                                            "lastSync=$lastSyncTime"
-                                    )
-                                }
-                                hasNewer
-                            } ?: false
-                    }
-
-                    if (mdHasNewer) {
-                        val mdCount = mdResources.count { !it.isDirectory && it.name.endsWith(".md") }
-                        Logger.d(TAG, "📝 Markdown files have changes ($mdCount files checked)")
-                        return true
-                    } else {
-                        Logger.d(TAG, "✅ Markdown files up-to-date (timestamp check)")
-                    }
-                }
-            }
-
-            // ====== FOLDERS.JSON CHECK ======
-            // 🆕 v2.7.0 (Folders): Prüft ob folders.json neuer als lastSyncTime ist.
-            // Greift wenn hasJsonChanges konditionell wird oder KEY_ALWAYS_CHECK_SERVER deaktiviert ist.
-            val foldersUrl = urlBuilder.getNotesUrl(serverUrl).trimEnd('/') + "/" + FolderSyncManager.FOLDERS_FILE_NAME
-            val hasFolderChanges = try {
-                val resources = webdav.listOrNull(foldersUrl)
-                resources?.firstOrNull { !it.isDirectory }?.modified?.time?.let { it > lastSyncTime } ?: false
-            } catch (_: Exception) {
-                false
-            }
-
-            if (hasFolderChanges) {
-                Logger.d(TAG, "📁 folders.json has changes (modified after lastSync)")
-                return true
-            }
-
-            val elapsed = System.currentTimeMillis() - startTime
-
-            // Return TRUE if JSON or Markdown have potential changes
-            // (File-level E-Tags will do the actual skip optimization during sync)
-            if (hasJsonChanges) {
-                Logger.d(TAG, "✅ JSON may have changes - will check file E-Tags (${elapsed}ms)")
-                return true
-            }
-
-            Logger.d(TAG, "✅ No changes detected (Markdown checked, ${elapsed}ms)")
-            return false
-        } catch (e: Exception) {
-            Logger.w(TAG, "Server check failed: ${e.message} - assuming changes exist")
-            true // Safe default: check anyway
-        }
-    }
-
-    /**
      * Prüft ob lokale Änderungen seit letztem Sync vorhanden sind (v1.1.2)
      * Performance-Optimierung: Vermeidet unnötige Sync-Operationen
      *
@@ -462,19 +336,17 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 return@withContext false
             }
 
-            // Perform intelligent server check
-            val webdav = getOrCreateWebDavClient()
-            val serverUrl = getServerUrl()
-
-            if (webdav == null || serverUrl == null) {
+            // 🆕 v2.14.0: Kein Pre-Check-Request mehr. Der frühere checkServerForChanges()
+            // konnte nie false liefern (JSON galt immer als potenziell geändert) — seine
+            // 2–3 Requests waren reine Kosten. Die eigentliche Ersparnis liefern die
+            // Datei-E-Tags während des Downloads.
+            if (getServerUrl() == null || !CredentialStore.hasCredentials(context)) {
                 Logger.w(TAG, "⚠️ Cannot check server - no credentials")
                 return@withContext false
             }
 
-            val hasServerChanges = checkServerForChanges(webdav, serverUrl)
-            Logger.d(TAG, "📊 Final check: local=$hasLocalChanges, server=$hasServerChanges")
-
-            hasServerChanges
+            Logger.d(TAG, "📊 Final check: local=false, server assumed changed (file E-Tags decide)")
+            true
         } catch (e: Exception) {
             // 🔧 v1.7.2 KRITISCH: Bei Server-Fehler (Timeout, etc.) return TRUE!
             // Grund: Besser fälschlich synchen als "Already synced" zeigen obwohl Server nicht erreichbar
@@ -643,14 +515,19 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 val notesUrl = urlBuilder.getNotesUrl(serverUrl)
                 ensureNotesDirectoryExists(webdav, notesUrl)
 
-                // Ensure notes-md/ directory exists (for Markdown export)
-                ensureMarkdownDirectoryExists(webdav, serverUrl)
+                // Ensure notes-md/ directory exists (for Markdown export).
+                // 🆕 v2.14.0: nur wenn ein MD-Feature aktiv ist — alle nachgelagerten MD-Pfade
+                // legen das Verzeichnis bei Bedarf selbst an.
+                if (markdownFeaturesEnabled()) {
+                    ensureMarkdownDirectoryExists(webdav, serverUrl)
+                }
 
                 // 🆕 Bild-Attachments: -assets/ sicherstellen + einziges PROPFIND für alle drei Diffs
-                assetSyncManager.ensureAssetsDirectoryExists(webdav, serverUrl)
-                val serverAssets = assetSyncManager.listServerAssets(webdav, serverUrl)
+                val referencedAssets = AssetReferences.extractAllReferenced(storage.loadAllNotes())
+                val serverAssets =
+                    assetSyncManager.listServerAssetsIfNeeded(webdav, serverUrl, referencedAssets)
 
-                uploadReferencedAssets(webdav, serverUrl, serverAssets)
+                uploadReferencedAssets(webdav, serverUrl, referencedAssets, serverAssets)
 
                 Logger.d(TAG, "📍 Step 4: Uploading local notes")
                 // Upload local notes
@@ -685,9 +562,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
                 // Step 4.5: Process pending server deletions (queued from offline deletes)
                 Logger.d(TAG, "📍 Step 4.5: Processing pending server deletions")
-                purgedFromServerCount = processPendingServerDeletions(webdav, serverUrl)
+                val pendingOutcome = processPendingServerDeletions(webdav, serverUrl)
+                purgedFromServerCount = pendingOutcome.purgedCount
 
-                seedDeletionTrackerFromSharedLedger(webdav, serverUrl)
+                // Re-Seed ist Pflicht: deleteFromServer entfernt die ID lokal, das Seeding fügt
+                // sie aus dem Ledger wieder ein (nötig für detectDeletions.purgedRemotely).
+                seedDeletionTrackerFromSharedLedger(webdav, serverUrl, pendingOutcome.ledger)
 
                 // 🆕 v1.8.0: Phase 3 - Downloading (Phase wird nur bei echten Downloads gesetzt)
                 Logger.d(TAG, "📍 Step 5: Downloading remote notes")
@@ -695,6 +575,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 var deletedOnServerCount = 0 // 🆕 v1.8.0
                 var folderReconciledCount = 0 // 🆕 v2.7.2
                 var trashedFromServerCount = 0
+                // 🆕 v2.14.0: aus dem Root-Listing für den folders.json-Fast-Path.
+                var foldersJsonEtag: String? = null
+                var newFoldersDiscovered = false
                 try {
                     Logger.d(TAG, "⬇️ Downloading remote notes...")
                     val downloadResult = downloadRemoteNotes(
@@ -722,6 +605,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     folderReconciledCount = downloadResult.folderReconciledCount // 🆕 v2.7.2
                     trashedFromServerCount = downloadResult.trashedDownloadedCount
                     adoptedFromDownloadIds = downloadResult.adoptedNoteIds
+                    foldersJsonEtag = downloadResult.foldersJsonEtag
+                    newFoldersDiscovered = downloadResult.newFoldersDiscovered
                     Logger.d(
                         TAG,
                         "✅ Downloaded: ${downloadResult.downloadedCount} notes, " +
@@ -745,7 +630,16 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 downloadAndGcAssets(webdav, serverUrl, serverAssets)
 
                 // 🆕 v2.7.0 (Folders): Step 5.6 — Ordner-Metadaten syncen (Namen + Farben + Tombstones).
-                val foldersChanged = syncFolderMetadataSafe(webdav, serverUrl)
+                // 🆕 v2.14.0: Skip nur, wenn der Download sauber lief UND keine reinen
+                // Discovery-Ordner dazukamen (die setzen kein dirty-Flag, müssten aber hoch).
+                val foldersChanged = syncFolderMetadataSafe(
+                    webdav,
+                    serverUrl,
+                    remoteEtag = foldersJsonEtag,
+                    // Ein fehlgeschlagener Download hat oben bereits geworfen — hier zählt nur noch,
+                    // ob Discovery-Ordner injiziert werden müssen.
+                    allowSkip = !newFoldersDiscovered
+                )
 
                 Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
 
@@ -884,22 +778,29 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    private suspend fun processPendingServerDeletions(webdav: WebDavClient, serverUrl: String): Int {
+    /**
+     * @param ledger der frisch gemergte Lösch-Ledger, wenn dieser Sync welche geschrieben hat —
+     * spart dem nachgelagerten Seeding ein erneutes GET.
+     */
+    private data class PendingDeletionsOutcome(val purgedCount: Int, val ledger: DeletionTracker?)
+
+    private suspend fun processPendingServerDeletions(
+        webdav: WebDavClient,
+        serverUrl: String
+    ): PendingDeletionsOutcome {
         return try {
             val pendingDeletions = PendingServerDeletions(context)
             val pendingIds = pendingDeletions.getAll()
             if (pendingIds.isEmpty()) {
                 Logger.d(TAG, "    ✅ No pending deletions")
-                return 0
+                return PendingDeletionsOutcome(0, null)
             }
             Logger.d(TAG, "🗑️ Processing ${pendingIds.size} pending server deletions")
             val successIds = mutableListOf<String>()
             // Nur echte Löschungen zählen für die UI ("X vom Server gelöscht"). Move-Cleanups
             // (Ordner-Rename / Notiz verschieben) räumen nur den alten Pfad auf und sind keine
             // benutzer­sichtbare Löschung — sonst irreführende Sync-Meldung.
-            var purgedCount = 0
-            val deviceId = DeviceIdGenerator.getDeviceId(context)
-            val deletionsUrl = deletionSyncManager.deletionsFileUrl(serverUrl)
+            val purgedIds = mutableListOf<String>()
             pendingIds.forEach { pd ->
                 try {
                     val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
@@ -908,27 +809,35 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     // 🔒 Moves räumen nur den alten Pfad auf — die Note-ID darf NICHT ins geteilte
                     // Lösch-Ledger, sonst wird die nur verschobene Notiz geräteweit als gelöscht
                     // markiert und beim Download wieder getilgt (Datenverlust bei Ordner-Rename).
-                    if (!pd.isMove) {
-                        deletionSyncManager.appendAndUpload(webdav, deletionsUrl, pd.id, deviceId)
-                        purgedCount++
-                    }
+                    if (!pd.isMove) purgedIds.add(pd.id)
                 } catch (e: Exception) {
                     Logger.w(TAG, "⚠️ Failed to delete pending note ${pd.id} from server: ${e.message}")
                 }
+            }
+            // Ein GET + ein PUT für alle Löschungen statt read-modify-write pro Notiz.
+            val ledger = if (purgedIds.isEmpty()) {
+                null
+            } else {
+                deletionSyncManager.appendAllAndUpload(
+                    webdav,
+                    deletionSyncManager.deletionsFileUrl(serverUrl),
+                    purgedIds,
+                    DeviceIdGenerator.getDeviceId(context)
+                )
             }
             if (successIds.isNotEmpty()) {
                 pendingDeletions.remove(successIds)
                 Logger.d(
                     TAG,
                     "✅ Processed ${successIds.size}/${pendingIds.size} pending " +
-                        "($purgedCount deletions, ${successIds.size - purgedCount} moves)"
+                        "(${purgedIds.size} deletions, ${successIds.size - purgedIds.size} moves)"
                 )
                 cleanupEmptyFolderDirs(pendingIds, successIds)
             }
-            purgedCount
+            PendingDeletionsOutcome(purgedIds.size, ledger)
         } catch (e: Exception) {
             Logger.e(TAG, "⚠️ Pending deletions step failed (non-fatal)", e)
-            0
+            PendingDeletionsOutcome(0, null)
         }
     }
 
@@ -951,10 +860,15 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    private fun seedDeletionTrackerFromSharedLedger(webdav: WebDavClient, serverUrl: String) {
+    /** @param prefetched frisch gemergter Ledger aus [processPendingServerDeletions] — spart das GET. */
+    private fun seedDeletionTrackerFromSharedLedger(
+        webdav: WebDavClient,
+        serverUrl: String,
+        prefetched: DeletionTracker? = null
+    ) {
         try {
             val url = deletionSyncManager.deletionsFileUrl(serverUrl)
-            val remoteLedger = deletionSyncManager.downloadRemote(webdav, url)
+            val remoteLedger = prefetched ?: deletionSyncManager.downloadRemote(webdav, url)
             if (remoteLedger.deletedNotes.isEmpty()) return
             val localTracker = storage.loadDeletionTracker()
             val now = System.currentTimeMillis()
@@ -967,9 +881,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    private suspend fun syncFolderMetadataSafe(webdav: WebDavClient, serverUrl: String): Boolean =
+    private suspend fun syncFolderMetadataSafe(
+        webdav: WebDavClient,
+        serverUrl: String,
+        remoteEtag: String? = null,
+        allowSkip: Boolean = false
+    ): Boolean =
         try {
-            folderSyncManager.sync(webdav, serverUrl)
+            folderSyncManager.sync(webdav, serverUrl, remoteEtag, allowSkip)
         } catch (e: Exception) {
             Logger.w(TAG, "folder metadata sync failed (non-fatal): ${e.message}")
             false
@@ -983,10 +902,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     private suspend fun uploadReferencedAssets(
         webdav: WebDavClient,
         serverUrl: String,
-        serverAssets: Map<String, WebDavResource>
+        referenced: Set<String>,
+        serverAssets: Map<String, WebDavResource>?
     ) {
+        if (serverAssets == null) return
         try {
-            val referenced = AssetReferences.extractAllReferenced(storage.loadAllNotes())
             val uploadedCount = assetSyncManager.uploadMissing(webdav, serverUrl, referenced, serverAssets)
             Logger.d(TAG, "✅ Assets uploaded: $uploadedCount")
         } catch (e: Exception) {
@@ -1002,12 +922,18 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     private suspend fun downloadAndGcAssets(
         webdav: WebDavClient,
         serverUrl: String,
-        serverAssets: Map<String, WebDavResource>
+        serverAssets: Map<String, WebDavResource>?
     ) {
         try {
             val freshNotes = storage.loadAllNotes(forceReload = true)
             val referenced = AssetReferences.extractAllReferenced(freshNotes)
-            val downloadedCount = assetSyncManager.downloadMissing(webdav, serverUrl, referenced, serverAssets)
+            // Late-List-Pflicht: der Skip oben galt für den Stand VOR dem Download. Bringen die
+            // frisch geladenen Notizen Asset-Referenzen mit, muss jetzt gelistet werden — sonst
+            // zeigt der Renderer bis zum nächsten Sync Platzhalter statt Bilder.
+            val assets = serverAssets
+                ?: assetSyncManager.listServerAssetsIfNeeded(webdav, serverUrl, referenced)
+                ?: return
+            val downloadedCount = assetSyncManager.downloadMissing(webdav, serverUrl, referenced, assets)
             Logger.d(TAG, "✅ Assets downloaded: $downloadedCount")
 
             // Guard analog ALL_DELETED_GUARD_THRESHOLD: eine leere Notizliste deutet auf einen
@@ -1017,7 +943,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 webdav,
                 serverUrl,
                 freshNotes,
-                serverAssets,
+                assets,
                 allowRemoteSweep = freshNotes.isNotEmpty()
             )
         } catch (e: Exception) {

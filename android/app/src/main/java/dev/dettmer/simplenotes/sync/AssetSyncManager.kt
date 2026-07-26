@@ -6,6 +6,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -67,6 +68,26 @@ internal class AssetSyncManager(
         }
     }
 
+    /**
+     * 🆕 v2.14.0: [ensureAssetsDirectoryExists] + [listServerAssets] nur, wenn es überhaupt etwas
+     * zu diffen gibt. Ohne lokale UND ohne referenzierte Assets kosten die beiden Requests nichts
+     * als Zeit — `null` heißt „nicht gelistet, Assets-Zweig übersprungen".
+     *
+     * Trade-off (bewusst): der Remote-Orphan-Sweep läuft dann nur noch auf Geräten mit Assets.
+     */
+    fun listServerAssetsIfNeeded(
+        webdav: WebDavClient,
+        serverUrl: String,
+        referenced: Set<String>
+    ): Map<String, WebDavResource>? {
+        if (referenced.isEmpty() && assetStore.listAssets().isEmpty()) {
+            Logger.d(TAG, "⏭️ Assets skipped (no local assets, none referenced)")
+            return null
+        }
+        ensureAssetsDirectoryExists(webdav, serverUrl)
+        return listServerAssets(webdav, serverUrl)
+    }
+
     /** Ein PROPFIND für alle drei Diffs (Upload, Download, GC) — siehe Plan-Vorgabe. */
     fun listServerAssets(webdav: WebDavClient, serverUrl: String): Map<String, WebDavResource> = try {
         webdav.list(urlBuilder.getAssetsUrl(serverUrl))
@@ -74,6 +95,11 @@ internal class AssetSyncManager(
             .associateBy { it.name }
     } catch (e: Exception) {
         Logger.w(TAG, "⚠️ listServerAssets failed: ${e.message}")
+        // 🆕 v2.14.0 Self-Heal: 404 heißt, das persistierte "-assets/ existiert"-Flag ist stale.
+        if (e.isWebDavNotFound()) {
+            connectionManager.assetsDirEnsured = false
+            Logger.d(TAG, "🔄 assetsDirEnsured cleared (directory is gone)")
+        }
         emptyMap()
     }
 

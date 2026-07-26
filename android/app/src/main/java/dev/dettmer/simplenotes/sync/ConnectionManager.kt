@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.sync
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.edit
 import com.burgstaller.okhttp.AuthenticationCacheInterceptor
 import com.burgstaller.okhttp.CachingAuthenticatorDecorator
 import com.burgstaller.okhttp.DispatchingAuthenticator
@@ -118,14 +119,44 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
     // ⚡ v1.3.1 Performance: Session-cached WebDAV client
     private var sessionClient: WebDavClient? = null
 
-    /** Tracks whether the notes/ directory has been verified this session. */
-    var notesDirEnsured: Boolean = false
+    /**
+     * 🆕 v2.14.0: Die drei Dir-Flags liegen in den Prefs statt im Session-Speicher — sonst zahlt
+     * jeder Sync die Verifikationsrequests erneut. Gültig sind sie nur, solange der
+     * [dirsFingerprint] passt; jede Änderung an Server-URL, Sync-Ordner oder Benutzername
+     * invalidiert sie also von selbst.
+     *
+     * Ergänzend heilen sich die Flags bei 404/409 vom Server (siehe Aufrufer).
+     */
+    private val dirsFingerprint: String
+        get() = listOf(
+            prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty(),
+            prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME).orEmpty(),
+            CredentialStore.getUsername(context).orEmpty()
+        ).joinToString("|")
 
-    /** Tracks whether the notes-md/ directory has been verified this session. */
-    var markdownDirEnsured: Boolean = false
+    private fun dirEnsured(key: String): Boolean =
+        prefs.getBoolean(key, false) &&
+            prefs.getString(Constants.KEY_DIRS_ENSURED_FINGERPRINT, null) == dirsFingerprint
 
-    /** 🆕 Bild-Attachments: Tracks whether the notes-assets/ directory has been verified this session. */
-    var assetsDirEnsured: Boolean = false
+    private fun setDirEnsured(key: String, value: Boolean) = prefs.edit {
+        putBoolean(key, value)
+        if (value) putString(Constants.KEY_DIRS_ENSURED_FINGERPRINT, dirsFingerprint)
+    }
+
+    /** Tracks whether the notes/ directory has been verified for the current server config. */
+    var notesDirEnsured: Boolean
+        get() = dirEnsured(Constants.KEY_NOTES_DIR_ENSURED)
+        set(value) = setDirEnsured(Constants.KEY_NOTES_DIR_ENSURED, value)
+
+    /** Tracks whether the notes-md/ directory has been verified for the current server config. */
+    var markdownDirEnsured: Boolean
+        get() = dirEnsured(Constants.KEY_MD_DIR_ENSURED)
+        set(value) = setDirEnsured(Constants.KEY_MD_DIR_ENSURED, value)
+
+    /** 🆕 Bild-Attachments: same, for notes-assets/. */
+    var assetsDirEnsured: Boolean
+        get() = dirEnsured(Constants.KEY_ASSETS_DIR_ENSURED)
+        set(value) = setDirEnsured(Constants.KEY_ASSETS_DIR_ENSURED, value)
 
     /**
      * Returns the cached WebDAV client or creates a new one.
@@ -172,9 +203,7 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
             }
         }
         sessionClient = null
-        notesDirEnsured = false
-        markdownDirEnsured = false
-        assetsDirEnsured = false
+        // Dir-Flags bleiben bewusst stehen — sie hängen am Server-Fingerprint, nicht an der Session.
         if (BuildConfig.DEBUG) {
             Logger.d(TAG, "🧹 Session caches cleared")
         }

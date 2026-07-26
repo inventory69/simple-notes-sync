@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.sync.parallel.DownloadTaskResult
 import dev.dettmer.simplenotes.sync.parallel.ParallelDownloader
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.sync.webdav.etagsMatch
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -36,7 +37,13 @@ internal data class DownloadResult(
     val downloadError: String? = null,
     // 🆕 IDs whose JSON was adopted/confirmed this cycle (server edit at tied timestamp).
     // The MD import phase must not override these so JSON stays authoritative.
-    val adoptedNoteIds: Set<String> = emptySet()
+    val adoptedNoteIds: Set<String> = emptySet(),
+    // 🆕 v2.14.0: ETag der folders.json aus dem Root-Listing — spart dem FolderSyncManager
+    // den GET/PUT-Round-Trip, wenn er sich nicht geändert hat.
+    val foldersJsonEtag: String? = null,
+    // 🆕 v2.14.0: Discovery-only-Ordner setzen kein dirty-Flag; ohne dieses Signal würde ein
+    // reiner Server-Unterordner nie in folders.json injiziert.
+    val newFoldersDiscovered: Boolean = false
 )
 
 /**
@@ -71,6 +78,11 @@ internal class NoteDownloader(
     private val activeSyncFolderName: String
         get() = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
             ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
+    /** MD-Export ODER MD-Auto-Import aktiv — Gate für alle Requests gegen `notes-md/`. */
+    private fun markdownFeaturesEnabled(): Boolean =
+        prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) ||
+            prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
 
     // ─────────────────────────────────────────────────────────────────────────
     // Public API
@@ -116,6 +128,9 @@ internal class NoteDownloader(
         val folderByNoteId = mutableMapOf<String, String?>()
         val discoveredFolders = mutableSetOf<String>()
 
+        // 🆕 v2.14.0: ETag der folders.json, falls das Root-Listing sie enthält.
+        var foldersJsonEtag: String? = null
+
         try {
             // 🆕 PHASE 1: Download from /{syncFolder}/ (configurable since v1.9.0)
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
@@ -129,6 +144,10 @@ internal class NoteDownloader(
             // false-negative exists() on servers that return 403 for HEAD on collections (Jianguoyun).
             // PROPFIND (list) works universally on all WebDAV servers.
             val notesResources: List<WebDavResource>? = webdav.listOrNull(notesUrl)
+            // 🆕 v2.14.0: folders.json steckt schon in diesem Listing — ETag mitnehmen.
+            foldersJsonEtag = notesResources
+                ?.firstOrNull { !it.isDirectory && it.name == FOLDERS_FILE_NAME }
+                ?.etag
 
             if (notesResources != null) {
                 Logger.d(TAG, "   ✅ /$activeSyncFolderName/ exists, scanning...")
@@ -244,7 +263,7 @@ internal class NoteDownloader(
                     // serverModified < lastSyncTime (Uhren-Drift, Granularität).
 
                     // PRIMARY: E-Tag check — erkennt Inhaltsänderungen zuverlässig
-                    if (!forceOverwrite && fileExistsLocally && serverETag != null && serverETag == cachedETag) {
+                    if (!forceOverwrite && fileExistsLocally && etagsMatch(serverETag, cachedETag)) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged) [localStatus=${localNote.syncStatus}]")
                         if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
@@ -434,7 +453,7 @@ internal class NoteDownloader(
                                                 if (localNote.updatedAt == remoteNote.updatedAt &&
                                                     localNote.syncStatus == SyncStatus.SYNCED &&
                                                     serverETag != null &&
-                                                    serverETag != cachedETag
+                                                    !etagsMatch(serverETag, cachedETag)
                                                 ) {
                                                     // Adopt the server content, but mark PENDING (not SYNCED) so the
                                                     // next upload re-pushes the JSON and re-exports the MD mirror —
@@ -512,6 +531,10 @@ internal class NoteDownloader(
                 )
             } else {
                 Logger.w(TAG, "   ⚠️ /$activeSyncFolderName/ does not exist (404), skipping Phase 1")
+                // 🆕 v2.14.0 Self-Heal: das persistierte "verifiziert"-Flag ist offensichtlich stale
+                // (Ordner serverseitig gelöscht) — nächster Sync legt ihn wieder an.
+                connectionManager.notesDirEnsured = false
+                Logger.d(TAG, "   🔄 notesDirEnsured cleared (directory is gone)")
             }
 
             // 🆕 PHASE 2: BACKWARD-COMPATIBILITY - Download from Root (old structure v1.2.0)
@@ -648,9 +671,7 @@ internal class NoteDownloader(
         }
 
         // 🆕 v2.7.0 (Folders): entdeckte Server-Ordner lokal registrieren (auch leere).
-        if (discoveredFolders.isNotEmpty()) {
-            folderStore.addFolders(discoveredFolders)
-        }
+        val newFoldersDiscovered = discoveredFolders.isNotEmpty() && folderStore.addFolders(discoveredFolders)
 
         // 🆕 v1.8.0: Server-Deletions erkennen (nach Downloads)
         val allLocalNotes = storage.loadAllNotes()
@@ -669,7 +690,9 @@ internal class NoteDownloader(
             trashedDownloadedCount = trashedDownloadedCount,
             downloadFailed = downloadException != null,
             downloadError = downloadException?.message,
-            adoptedNoteIds = adoptedNoteIds
+            adoptedNoteIds = adoptedNoteIds,
+            foldersJsonEtag = foldersJsonEtag,
+            newFoldersDiscovered = newFoldersDiscovered
         )
     }
 
@@ -835,37 +858,43 @@ internal class NoteDownloader(
                 }
             }
 
-            // Delete Markdown (v1.3.0: YAML-scan based approach)
-            val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
-            val note = storage.loadNote(noteId)
-            var mdFilenameToDelete: String? = null
+            // 🆕 v2.14.0: MD-Spiegel nur anfassen, wenn ein MD-Feature aktiv ist — sonst kostet
+            // jede Löschung einen findByNoteId-PROPFIND + DELETE für Dateien, die es nie gab.
+            // Trade-off (bewusst): in Mixed-Setups (anderes Gerät exportiert MD) bleiben hier
+            // stale Mirrors liegen; das exportierende Gerät räumt sie bei seiner Löschung auf.
+            if (markdownFeaturesEnabled()) {
+                // Delete Markdown (v1.3.0: YAML-scan based approach)
+                val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
+                val note = storage.loadNote(noteId)
+                var mdFilenameToDelete: String? = null
 
-            if (note != null) {
-                // Fast path: Note still exists locally, use title
-                mdFilenameToDelete = markdownSyncManager.sanitizeFilename(note.title) + ".md"
-                Logger.d(TAG, "🔍 MD deletion: Using title from local note: $mdFilenameToDelete")
-            } else {
-                // Fallback: Note deleted locally, scan YAML frontmatter
-                Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
-                mdFilenameToDelete = markdownSyncManager.findByNoteId(webdav, mdBaseUrl, noteId)
-            }
-
-            if (mdFilenameToDelete != null) {
-                val mdUrl = mdBaseUrl.trimEnd('/') + "/" + mdFilenameToDelete
-                // 🔧 v2.0.0 (Issue #44): try/delete instead of exists()+delete()
-                try {
-                    webdav.delete(mdUrl)
-                    deletedMd = true
-                    Logger.d(TAG, "🗑️ Deleted from server: $mdFilenameToDelete")
-                } catch (e: java.io.IOException) {
-                    if (e.isWebDavNotFound()) {
-                        Logger.w(TAG, "⚠️ MD file not found on server: $mdFilenameToDelete")
-                    } else {
-                        throw e
-                    }
+                if (note != null) {
+                    // Fast path: Note still exists locally, use title
+                    mdFilenameToDelete = markdownSyncManager.sanitizeFilename(note.title) + ".md"
+                    Logger.d(TAG, "🔍 MD deletion: Using title from local note: $mdFilenameToDelete")
+                } else {
+                    // Fallback: Note deleted locally, scan YAML frontmatter
+                    Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
+                    mdFilenameToDelete = markdownSyncManager.findByNoteId(webdav, mdBaseUrl, noteId)
                 }
-            } else {
-                Logger.w(TAG, "⚠️ Could not determine MD filename for note $noteId")
+
+                if (mdFilenameToDelete != null) {
+                    val mdUrl = mdBaseUrl.trimEnd('/') + "/" + mdFilenameToDelete
+                    // 🔧 v2.0.0 (Issue #44): try/delete instead of exists()+delete()
+                    try {
+                        webdav.delete(mdUrl)
+                        deletedMd = true
+                        Logger.d(TAG, "🗑️ Deleted from server: $mdFilenameToDelete")
+                    } catch (e: java.io.IOException) {
+                        if (e.isWebDavNotFound()) {
+                            Logger.w(TAG, "⚠️ MD file not found on server: $mdFilenameToDelete")
+                        } else {
+                            throw e
+                        }
+                    }
+                } else {
+                    Logger.w(TAG, "⚠️ Could not determine MD filename for note $noteId")
+                }
             }
 
             if (!deletedJson && !deletedMd) {

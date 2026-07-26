@@ -18,6 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -156,5 +158,38 @@ class AssetSyncManagerTest {
         )
 
         verify(exactly = 0) { webdav.delete(any()) }
+    }
+
+    // ── listServerAssetsIfNeeded: Request-Gate ────────────────────────────────
+
+    @Test fun `listServerAssetsIfNeeded skips every request without local or referenced assets`() {
+        val webdav = mockk<WebDavClient>(relaxed = true)
+
+        assertNull(manager.listServerAssetsIfNeeded(webdav, "http://server/notes", emptySet()))
+
+        verify(exactly = 0) { webdav.exists(any()) }
+        verify(exactly = 0) { webdav.list(any(), any()) }
+    }
+
+    @Test fun `listServerAssetsIfNeeded lists when a note references an asset`() {
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.exists(any()) } returns true
+        every { webdav.list(any(), any()) } returns listOf(davResource("a.webp"))
+
+        val result = manager.listServerAssetsIfNeeded(webdav, "http://server/notes", setOf("a.webp"))
+
+        assertEquals(setOf("a.webp"), result?.keys)
+    }
+
+    /** Late-List: nach dem Download referenzieren frische Notizen Assets — jetzt muss gelistet werden. */
+    @Test fun `listServerAssetsIfNeeded lists when only local assets exist`() = runBlocking {
+        assetStore.saveAssetAs("bytes".toByteArray(), "local.webp")
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.exists(any()) } returns true
+        every { webdav.list(any(), any()) } returns emptyList()
+
+        assertNotNull(manager.listServerAssetsIfNeeded(webdav, "http://server/notes", emptySet()))
+
+        verify(exactly = 1) { webdav.list(any(), any()) }
     }
 }

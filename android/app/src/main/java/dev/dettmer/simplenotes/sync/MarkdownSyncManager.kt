@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
@@ -38,6 +39,9 @@ internal class MarkdownSyncManager(
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
         private const val SHORT_ID_LENGTH = 8
+
+        /** 404 = Parent fehlt, 409 = Conflict (Parent-Collection existiert nicht). */
+        private val MISSING_DIR_STATUS_CODES = setOf(404, 409)
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -89,11 +93,12 @@ internal class MarkdownSyncManager(
         val noteUrl = resolveExportUrl(webdav, note, mdUrl, baseFilename, noteUrlByTitle)
 
         // Upload
-        putMarkdown(webdav, noteUrl, mdContentBytes)
+        val putETag = putMarkdown(webdav, noteUrl, mdContentBytes)
 
         // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
+        // 🆕 v2.14.0: ETag aus der PUT-Antwort bevorzugen — PROPFIND nur als Fallback.
         try {
-            val mdETag = webdav.list(noteUrl, 0).firstOrNull()?.etag
+            val mdETag = putETag ?: webdav.list(noteUrl, 0).firstOrNull()?.etag
             prefs.edit {
                 putString("content_hash_md_${note.id}", mdHash)
                 if (mdETag != null) {
@@ -138,9 +143,21 @@ internal class MarkdownSyncManager(
         return "${mdUrl.trimEnd('/')}/$filename"
     }
 
-    /** PUT der MD-Datei. */
-    private fun putMarkdown(webdav: WebDavClient, noteUrl: String, bytes: ByteArray) {
+    /**
+     * PUT der MD-Datei.
+     *
+     * 🆕 v2.14.0 Self-Heal: 404/409 heißt, das persistierte "notes-md/ existiert"-Flag ist stale.
+     *
+     * @return den ETag der PUT-Antwort, oder `null` wenn der Server keinen schickt.
+     */
+    private fun putMarkdown(webdav: WebDavClient, noteUrl: String, bytes: ByteArray): String? = try {
         webdav.put(noteUrl, bytes, "text/markdown")
+    } catch (e: WebDavException) {
+        if (e.statusCode in MISSING_DIR_STATUS_CODES) {
+            connectionManager.markdownDirEnsured = false
+            Logger.d(TAG, "🔄 markdownDirEnsured cleared (PUT → ${e.statusCode})")
+        }
+        throw e
     }
 
     /**
@@ -356,7 +373,10 @@ internal class MarkdownSyncManager(
 
             val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
-            if (!webdav.exists(mdUrl)) {
+            // 🆕 v2.14.0: Ist das Verzeichnis für die aktuelle Server-Config schon verifiziert,
+            // spart der Short-Circuit den HEAD. Ein zwischenzeitlich gelöschtes notes-md/ fällt
+            // beim folgenden list() auf und heilt das Flag dort.
+            if (!connectionManager.markdownDirEnsured && !webdav.exists(mdUrl)) {
                 Logger.d(TAG, "   ⚠️ notes-md/ directory not found - skipping")
                 return 0
             }

@@ -89,10 +89,16 @@ class FolderStore(private val context: Context) {
         }
     }
 
-    /** Discovery-Mirror: Registriert nur unbekannte Namen mit updatedAt=0. Kein dirty-Flag. */
-    suspend fun addFolders(names: Collection<String>) {
-        if (names.isEmpty()) return
-        mutex.withLock {
+    /**
+     * Discovery-Mirror: Registriert nur unbekannte Namen mit updatedAt=0. Kein dirty-Flag.
+     *
+     * @return `true`, wenn mindestens ein neuer Name hinzukam. Der Aufrufer braucht das, weil
+     * Discovery bewusst kein dirty-Flag setzt — ohne dieses Signal würde ein reiner
+     * Server-Unterordner nie in folders.json landen (siehe FolderSyncManager-Fast-Path).
+     */
+    suspend fun addFolders(names: Collection<String>): Boolean {
+        if (names.isEmpty()) return false
+        return mutex.withLock {
             val current = loadMetaUnsafe().toMutableList()
             var changed = false
             for (raw in names) {
@@ -103,6 +109,7 @@ class FolderStore(private val context: Context) {
                 }
             }
             if (changed) writeMetaUnsafe(current.sortedBy { it.name.lowercase() })
+            changed
         }
     }
 

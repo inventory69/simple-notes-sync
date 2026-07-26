@@ -14,19 +14,13 @@ internal class DeletionSyncManager(private val urlBuilder: SyncUrlBuilder) {
     fun deletionsFileUrl(serverUrl: String): String =
         urlBuilder.getNotesUrl(serverUrl).trimEnd('/') + "/" + DELETIONS_FILE_NAME
 
-    /** GET deletions.json; 404 or parse error → empty tracker. */
+    /**
+     * GET deletions.json; 404 or parse error → empty tracker.
+     * Kein vorheriges `exists()` — der catch-all deckt den 404-Fall mit ab und spart einen Request.
+     */
     fun downloadRemote(webdav: WebDavClient, url: String): DeletionTracker = try {
-        val exists = try {
-            webdav.exists(url)
-        } catch (_: Exception) {
-            false
-        }
-        if (!exists) {
-            DeletionTracker()
-        } else {
-            webdav.get(url).use { input ->
-                DeletionTracker.fromJson(input.reader().readText()) ?: DeletionTracker()
-            }
+        webdav.get(url).use { input ->
+            DeletionTracker.fromJson(input.reader().readText()) ?: DeletionTracker()
         }
     } catch (e: Exception) {
         Logger.w(TAG, "download deletions.json failed (non-fatal): ${e.message}")
@@ -34,21 +28,30 @@ internal class DeletionSyncManager(private val urlBuilder: SyncUrlBuilder) {
     }
 
     /**
-     * Read-modify-write: adds the deletion record for [noteId], dedupes by id
-     * (keeps newest deletedAt), prunes entries older than [Constants.TRASH_RETENTION_MS],
-     * then PUTs the result back. Best-effort — logs on failure, never throws.
+     * Read-modify-write für alle [noteIds] auf einmal: ein GET, alle upserten (dedupe by id,
+     * neuestes deletedAt gewinnt), Einträge älter als [Constants.TRASH_RETENTION_MS] prunen,
+     * ein PUT. Best-effort — loggt bei Fehlern, wirft nie.
+     *
+     * Gibt den gemergten Tracker zurück — auch wenn der PUT scheitert (dann ist er nur lokal
+     * korrekt, was für das nachgelagerte Seeding reicht).
      */
-    fun appendAndUpload(webdav: WebDavClient, url: String, noteId: String, deviceId: String) {
+    fun appendAllAndUpload(
+        webdav: WebDavClient,
+        url: String,
+        noteIds: Collection<String>,
+        deviceId: String
+    ): DeletionTracker {
+        val tracker = downloadRemote(webdav, url)
+        val now = System.currentTimeMillis()
+        noteIds.forEach { tracker.upsertIfNewer(DeletionRecord(it, now, deviceId)) }
+        tracker.pruneOlderThan(Constants.TRASH_RETENTION_MS, now)
         try {
-            val tracker = downloadRemote(webdav, url)
-            val now = System.currentTimeMillis()
-            tracker.upsertIfNewer(DeletionRecord(noteId, now, deviceId))
-            tracker.pruneOlderThan(Constants.TRASH_RETENTION_MS, now)
             webdav.put(url, tracker.toJson().toByteArray(Charsets.UTF_8), "application/json")
-            Logger.d(TAG, "📝 deletions.json updated: added $noteId, ${tracker.deletedNotes.size} entries")
+            Logger.d(TAG, "📝 deletions.json updated: added ${noteIds.size}, ${tracker.deletedNotes.size} entries")
         } catch (e: Exception) {
-            Logger.w(TAG, "appendAndUpload deletions.json for $noteId failed (non-fatal): ${e.message}")
+            Logger.w(TAG, "appendAllAndUpload deletions.json failed (non-fatal): ${e.message}")
         }
+        return tracker
     }
 
     companion object {
