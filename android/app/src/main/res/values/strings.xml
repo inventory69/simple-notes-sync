@@ -477,7 +477,7 @@
     <!-- 🆕 v2.2.0: Persistent sync debug log -->
     <string name="debug_sync_debug_logging_title">Persistent sync debug log</string>
     <string name="debug_sync_debug_logging_subtitle">Records sync triggers and outcomes for diagnosing background sync issues.</string>
-    <string name="debug_privacy_info">🔒 Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
+    <string name="debug_privacy_info">🔒 Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time. Exporting replaces your server address, user name and note titles with placeholders; folder names remain, since they are what sync problems are diagnosed from.</string>
     <string name="debug_log_actions_section">Log Actions</string>
     <string name="debug_export_logs">📤 Export &amp; Share Logs</string>
     <string name="debug_logs_subject">SimpleNotes Sync Logs</string>

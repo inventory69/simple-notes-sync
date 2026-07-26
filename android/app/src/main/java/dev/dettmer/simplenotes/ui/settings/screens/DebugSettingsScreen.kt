@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +42,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.utils.Logger
-import dev.dettmer.simplenotes.utils.SyncDebugLogger
+import kotlinx.coroutines.launch
 
 private const val TAG = "DebugSettingsScreen"
 
@@ -55,6 +56,7 @@ private const val TAG = "DebugSettingsScreen"
 fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigate: (SettingsRoute) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
     val syncDebugLoggingEnabled by viewModel.syncDebugLoggingEnabled.collectAsState()
 
@@ -120,46 +122,46 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                 SettingsButton(
                     text = stringResource(R.string.debug_export_logs),
                     onClick = {
-                        // Collect all non-empty log files (regular log + sync debug log)
-                        val logFiles = listOfNotNull(
-                            viewModel.getLogFile()?.takeIf { it.exists() && it.length() > 0L },
-                            SyncDebugLogger.getLogFile(context)?.takeIf { it.exists() && it.length() > 0L }
-                        )
-                        if (logFiles.isEmpty()) {
-                            viewModel.showSnackbar(exportEmptyMsg)
-                            return@SettingsButton
-                        }
-                        viewModel.showSnackbar(exportPreparingMsg)
-                        val uris = ArrayList(
-                            logFiles.map { file ->
-                                FileProvider.getUriForFile(
-                                    context,
-                                    "${BuildConfig.APPLICATION_ID}.fileprovider",
-                                    file
-                                )
+                        // 🆕 v2.14.0: Geteilt werden anonymisierte Kopien, nie die Originale —
+                        // das Lesen/Schreiben läuft im ViewModel auf Dispatchers.IO.
+                        scope.launch {
+                            viewModel.showSnackbar(exportPreparingMsg)
+                            val logFiles = viewModel.prepareLogsForSharing()
+                            if (logFiles.isEmpty()) {
+                                viewModel.showSnackbar(exportEmptyMsg)
+                                return@launch
                             }
-                        )
-                        val shareIntent = if (uris.size == 1) {
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_STREAM, uris[0])
-                                putExtra(Intent.EXTRA_SUBJECT, logsSubject)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            val uris = ArrayList(
+                                logFiles.map { file ->
+                                    FileProvider.getUriForFile(
+                                        context,
+                                        "${BuildConfig.APPLICATION_ID}.fileprovider",
+                                        file
+                                    )
+                                }
+                            )
+                            val shareIntent = if (uris.size == 1) {
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_STREAM, uris[0])
+                                    putExtra(Intent.EXTRA_SUBJECT, logsSubject)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                            } else {
+                                Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = "text/plain"
+                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                    putExtra(Intent.EXTRA_SUBJECT, logsSubject)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
                             }
-                        } else {
-                            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                                type = "text/plain"
-                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                                putExtra(Intent.EXTRA_SUBJECT, logsSubject)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            try {
+                                context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
+                                if (fileLoggingEnabled) pendingDisableDialog = true
+                            } catch (e: ActivityNotFoundException) {
+                                Logger.w(TAG, "No app available to handle share intent for logs: ${e.message}")
+                                viewModel.showSnackbar(exportFailedMsg)
                             }
-                        }
-                        try {
-                            context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
-                            if (fileLoggingEnabled) pendingDisableDialog = true
-                        } catch (e: ActivityNotFoundException) {
-                            Logger.w(TAG, "No app available to handle share intent for logs: ${e.message}")
-                            viewModel.showSnackbar(exportFailedMsg)
                         }
                     },
                     modifier = Modifier.padding(horizontal = 16.dp)

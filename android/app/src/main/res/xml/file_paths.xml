@@ -6,4 +6,6 @@
     <cache-path name="shared_pdfs" path="shared_pdfs/" />
     <!-- 🆕 Bild-Attachments: dedicated entry for sharing note images (ACTION_SEND_MULTIPLE) -->
     <files-path name="assets" path="assets/" />
+    <!-- 🆕 v2.14.0: anonymisierte Log-Kopien für den Export (Originale bleiben in files/) -->
+    <cache-path name="shared_logs" path="shared_logs/" />
 </paths>

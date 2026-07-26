@@ -23,10 +23,12 @@ import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
+import dev.dettmer.simplenotes.utils.LogAnonymizer
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
@@ -1556,6 +1558,43 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getLogFile() = Logger.getLogFile(getApplication())
+
+    /**
+     * 🆕 v2.14.0: Baut anonymisierte Kopien der Logdateien für den Export.
+     *
+     * Geteilt wird nie die Originaldatei — die bleibt vollständig auf dem Gerät. Die Kopien
+     * liegen im Cache (`shared_logs/`), werden bei jedem Export überschrieben und räumt das
+     * System bei Platzmangel selbst weg. Siehe [LogAnonymizer] für das, was ersetzt wird.
+     *
+     * @return teilbare Dateien, leer wenn es nichts zu exportieren gibt oder das Schreiben
+     *         fehlschlägt (der Aufrufer zeigt dann seine Fehlermeldung).
+     */
+    suspend fun prepareLogsForSharing(): List<File> = withContext(Dispatchers.IO) {
+        val context = getApplication<Application>()
+        val sources = listOfNotNull(
+            Logger.getLogFile(context),
+            SyncDebugLogger.getLogFile(context)
+        ).filter { it.exists() && it.length() > 0L }
+        if (sources.isEmpty()) return@withContext emptyList()
+
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
+        val username = CredentialStore.getUsername(context)
+        // Scheitert das Laden, wird trotzdem exportiert — nur ohne Titel-Ersetzung.
+        val titles = runCatching { notesStorage.loadAllNotes().map { it.title } }
+            .onFailure { Logger.w(TAG, "could not load note titles for anonymization: ${it.message}") }
+            .getOrDefault(emptyList())
+        val targetDir = File(context.cacheDir, "shared_logs").apply { mkdirs() }
+
+        sources.mapNotNull { source ->
+            runCatching {
+                File(targetDir, source.name).apply {
+                    writeText(LogAnonymizer.anonymize(source.readText(), serverUrl, username, titles))
+                }
+            }.onFailure {
+                Logger.w(TAG, "could not anonymize ${source.name} for sharing: ${it.message}")
+            }.getOrNull()
+        }
+    }
 
     // 🆕 v2.2.0: Toggle persistent sync debug logging
     fun setSyncDebugLogging(enabled: Boolean) {
