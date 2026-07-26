@@ -2,7 +2,6 @@ package dev.dettmer.simplenotes.noteimport
 
 import android.content.Context
 import android.net.Uri
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -10,6 +9,7 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictResolver
 import dev.dettmer.simplenotes.noteimport.keep.conflict.ConflictStrategy
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
@@ -60,7 +60,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     }
 
     sealed class ImportSource {
-        data class WebDav(val url: String, val sardine: Sardine) : ImportSource()
+        data class WebDav(val url: String, val webdav: WebDavClient) : ImportSource()
 
         data class LocalFile(val uri: Uri) : ImportSource()
     }
@@ -83,16 +83,16 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
      * Scannt einen WebDAV-Ordner nach importierbaren Dateien.
      * Scannt NUR den angegebenen Ordner (depth=1), NICHT /notes/ oder /notes-md/.
      *
-     * @param sardine Authentifizierter Sardine-Client
+     * @param webdav Authentifizierter WebDavClient-Client
      * @param folderUrl WebDAV-URL des zu scannenden Ordners
      * @return Liste der importierbaren Dateien
      */
-    fun scanWebDavFolder(sardine: Sardine, folderUrl: String): List<ImportCandidate> {
+    fun scanWebDavFolder(webdav: WebDavClient, folderUrl: String): List<ImportCandidate> {
         val baseUrl = folderUrl.trimEnd('/')
         val results = mutableListOf<ImportCandidate>()
 
         try {
-            val resources = sardine.list(baseUrl, 1)
+            val resources = webdav.list(baseUrl, 1)
 
             // Dateien im aktuellen Ordner sammeln
             resources
@@ -106,7 +106,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                         name = resource.name,
                         source = ImportSource.WebDav(
                             url = "$baseUrl/${resource.name}",
-                            sardine = sardine
+                            webdav = webdav
                         ),
                         size = resource.contentLength,
                         modified = resource.modified?.time ?: System.currentTimeMillis(),
@@ -126,7 +126,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                 .forEach { subDir ->
                     val subUrl = "$baseUrl/${subDir.name}"
                     try {
-                        val subResources = sardine.list(subUrl, 1)
+                        val subResources = webdav.list(subUrl, 1)
                         subResources
                             .filter { res ->
                                 !res.isDirectory &&
@@ -138,7 +138,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                                     name = "${subDir.name}/${resource.name}",
                                     source = ImportSource.WebDav(
                                         url = "$subUrl/${resource.name}",
-                                        sardine = sardine
+                                        webdav = webdav
                                     ),
                                     size = resource.contentLength,
                                     modified = resource.modified?.time ?: System.currentTimeMillis(),
@@ -533,11 +533,7 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     private fun readContent(source: ImportSource): String {
         return when (source) {
             is ImportSource.WebDav -> {
-                source.sardine.get(source.url)?.bufferedReader()?.use { it.readText() }
-                    ?: run {
-                        Logger.w(TAG, "WebDAV resource not found: ${source.url}")
-                        ""
-                    }
+                source.webdav.get(source.url).bufferedReader().use { it.readText() }
             }
             is ImportSource.LocalFile -> {
                 checkNotNull(context.contentResolver.openInputStream(source.uri)) {

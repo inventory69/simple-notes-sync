@@ -1,9 +1,10 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -114,18 +115,18 @@ class MarkdownSyncManagerFilenameTest {
     )
 
     @Test fun `deleteSingle tolerates 404 (already gone)`() {
-        val sardine = mockk<Sardine>(relaxed = true)
-        every { sardine.delete(any()) } throws IOException("HTTP 404 Not Found")
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.delete(any()) } throws WebDavException("DELETE failed: 404 Not Found", 404)
         // Must not throw — parallel purge on two devices is safe.
-        manager.deleteSingle(sardine, "http://server", trashNote())
-        verify { sardine.delete(any()) }
+        manager.deleteSingle(webdav, "http://server", trashNote())
+        verify { webdav.delete(any()) }
     }
 
     @Test fun `deleteSingle rethrows non-404 errors`() {
-        val sardine = mockk<Sardine>(relaxed = true)
-        every { sardine.delete(any()) } throws IOException("HTTP 500 Server Error")
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.delete(any()) } throws IOException("HTTP 500 Server Error")
         assertThrows(IOException::class.java) {
-            manager.deleteSingle(sardine, "http://server", trashNote())
+            manager.deleteSingle(webdav, "http://server", trashNote())
         }
     }
 }

@@ -185,10 +185,9 @@ dependencies {
     // Splash Screen API (Android 12+)
     implementation(libs.androidx.core.splashscreen)
 
-    // WebDAV
-    implementation(libs.sardine.android) {
-        exclude(group = "xpp3", module = "xpp3")
-    }
+    // WebDAV — eigener Mini-Client (sync/webdav/) auf OkHttp, Basic + Digest Auth
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.digest)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.gson)
@@ -232,6 +231,10 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.okhttp.mockwebserver)
+    // org.json ist im android.jar der Unit-Tests nur gestubbt (jede Methode wirft).
+    // Die echte Implementierung auf dem Test-Classpath macht DeletionTracker-JSON testbar.
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

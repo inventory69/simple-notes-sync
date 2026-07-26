@@ -4,10 +4,10 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.sanitized
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -32,10 +32,10 @@ class FolderSyncManager(
      *  Für die Upload-Seite wird stattdessen der Remote-Stand unverändert durchgereicht
      *  („Auf Server behalten") bzw. als Tombstone geschrieben, wenn der Ordner in der
      *  Server-Removal-Queue steht („Vom Server entfernen"). */
-    suspend fun sync(sardine: Sardine, serverUrl: String): Boolean {
+    suspend fun sync(webdav: WebDavClient, serverUrl: String): Boolean {
         return try {
             val url = foldersFileUrl(serverUrl)
-            val remote = downloadRemote(sardine, url)
+            val remote = downloadRemote(webdav, url)
             val local = folderStore.loadMeta()
 
             val localOnlyLower = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
@@ -50,7 +50,7 @@ class FolderSyncManager(
             val uploadList = buildUploadList(merged, remote, localOnlyLower, removalLower)
             val dirty = prefs.getBoolean(Constants.KEY_FOLDERS_DIRTY, false)
             if (dirty || uploadList.toSet() != remote.toSet()) {
-                sardine.put(url, gson.toJson(uploadList).toByteArray(Charsets.UTF_8), "application/json")
+                webdav.put(url, gson.toJson(uploadList).toByteArray(Charsets.UTF_8), "application/json")
             }
             prefs.edit { putBoolean(Constants.KEY_FOLDERS_DIRTY, false) }
             // Removal-Intents sind nach erfolgreichem Upload erledigt (Tombstone liegt auf dem Server).
@@ -89,19 +89,16 @@ class FolderSyncManager(
         return merged.filterNot { it.name.lowercase() in excludedLower } + passThrough
     }
 
-    private fun downloadRemote(sardine: Sardine, url: String): List<FolderMeta> = try {
-        val exists = when (sardine) {
-            is SafeSardineWrapper -> sardine.exists(url)
-            else -> try {
-                sardine.exists(url)
-            } catch (_: Exception) {
-                false
-            }
+    private fun downloadRemote(webdav: WebDavClient, url: String): List<FolderMeta> = try {
+        val exists = try {
+            webdav.exists(url)
+        } catch (_: Exception) {
+            false
         }
         if (!exists) {
             emptyList()
         } else {
-            sardine.get(url).use { input ->
+            webdav.get(url).use { input ->
                 val type = object : TypeToken<List<FolderMeta>>() {}.type
                 (gson.fromJson<List<FolderMeta>>(input.reader(), type) ?: emptyList()).sanitized()
             }

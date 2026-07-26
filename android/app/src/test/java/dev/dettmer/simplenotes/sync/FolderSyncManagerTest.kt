@@ -2,12 +2,10 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
-import io.mockk.Runs
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import java.io.File
 import java.nio.file.Files
@@ -23,10 +21,26 @@ class FolderSyncManagerTest {
     private lateinit var folderStore: FolderStore
     private lateinit var tmpDir: File
 
+    private val prefsBacking = mutableMapOf<String, Any?>()
+
     @Before fun setUp() {
         tmpDir = Files.createTempDirectory("foldersync-test").toFile()
+        prefsBacking.clear()
+        // Echte Backing-Map: der ETag-Fast-Path liest und schreibt über die Prefs.
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { editor.putString(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<String?>(); editor }
+        every { editor.putBoolean(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<Boolean>(); editor }
+        every { editor.remove(any()) } answers { prefsBacking.remove(firstArg<String>()); editor }
+        every { editor.putStringSet(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<Set<String>?>(); editor }
         val prefs = mockk<SharedPreferences>(relaxed = true) {
-            every { edit() } returns mockk(relaxed = true)
+            every { edit() } returns editor
+            every { getString(any(), any()) } answers { prefsBacking[firstArg()] as? String ?: secondArg() }
+            every { getBoolean(any(), any()) } answers { prefsBacking[firstArg()] as? Boolean ?: secondArg() }
+            // Rückgabe muss mutable sein — mockks secondArg() castet sonst EmptySet auf MutableSet.
+            @Suppress("UNCHECKED_CAST")
+            every { getStringSet(any(), any()) } answers {
+                (prefsBacking[firstArg<String>()] as? Set<String>)?.toMutableSet() ?: mutableSetOf()
+            }
         }
         val context = mockk<Context> {
             every { filesDir } returns tmpDir
@@ -142,29 +156,29 @@ class FolderSyncManagerTest {
 
     // ── sync() → Boolean ──────────────────────────────────────────────────
 
-    private fun sardineWith(json: String): Sardine {
-        val sardine = mockk<Sardine>()
-        every { sardine.exists(any()) } returns true
-        every { sardine.get(any<String>()) } returns json.byteInputStream()
-        every { sardine.put(any(), any<ByteArray>(), any()) } just Runs
-        return sardine
+    private fun webDavWith(json: String): WebDavClient {
+        val webdav = mockk<WebDavClient>()
+        every { webdav.exists(any()) } returns true
+        every { webdav.get(any<String>()) } returns json.byteInputStream()
+        every { webdav.put(any(), any<ByteArray>(), any()) } returns null
+        return webdav
     }
 
     @Test fun `sync returns true when remote brings newer color (empty-folder case)`() = runTest {
         folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
-        val sardine = sardineWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
-        assertTrue(manager.sync(sardine, "https://server/"))
+        val webdav = webDavWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
+        assertTrue(manager.sync(webdav, "https://server/"))
     }
 
     @Test fun `sync returns false when merged equals local`() = runTest {
         folderStore.replaceMeta(listOf(FolderMeta("A", color = "#FF0000", updatedAt = 200L)))
-        val sardine = sardineWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
-        assertFalse(manager.sync(sardine, "https://server/"))
+        val webdav = webDavWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
+        assertFalse(manager.sync(webdav, "https://server/"))
     }
 
-    @Test fun `sync returns false when sardine throws`() = runTest {
+    @Test fun `sync returns false when webdav throws`() = runTest {
         folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
-        val sardine = mockk<Sardine> { every { exists(any()) } throws RuntimeException("network error") }
-        assertFalse(manager.sync(sardine, "https://server/"))
+        val webdav = mockk<WebDavClient> { every { exists(any()) } throws RuntimeException("network error") }
+        assertFalse(manager.sync(webdav, "https://server/"))
     }
 }

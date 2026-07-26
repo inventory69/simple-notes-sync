@@ -1173,6 +1173,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * - mapSyncExceptionToMessage() für user-freundliche Fehlertexte
      * - Toggle wird bei Fehler/Timeout automatisch zurückgesetzt
      */
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 1
+    @Suppress("LongMethod")
     fun setMarkdownAutoSync(enabled: Boolean) {
         if (enabled) {
             // 🆕 v1.10.0: Optimistic Update — Toggle springt sofort auf ON,
@@ -1714,11 +1716,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         withContext(ioDispatcher) {
             try {
                 val syncService = WebDavSyncService(getApplication())
-                val sardine = syncService.getOrCreateSardine() ?: return@withContext emptyList()
+                val webdav = syncService.getOrCreateWebDavClient() ?: return@withContext emptyList()
                 val serverUrl = syncService.getServerUrl() ?: return@withContext emptyList()
 
                 val wizard = dev.dettmer.simplenotes.noteimport.NotesImportWizard(notesStorage, getApplication())
-                wizard.scanWebDavFolder(sardine, serverUrl)
+                wizard.scanWebDavFolder(webdav, serverUrl)
             } catch (e: Exception) {
                 Logger.e(TAG, "Import scan failed: ${e.message}")
                 emptyList()

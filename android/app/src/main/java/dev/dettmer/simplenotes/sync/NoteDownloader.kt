@@ -2,7 +2,6 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -12,6 +11,9 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
 import dev.dettmer.simplenotes.sync.parallel.DownloadTaskResult
 import dev.dettmer.simplenotes.sync.parallel.ParallelDownloader
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -83,7 +85,7 @@ internal class NoteDownloader(
     // Sync logic requires nested conditions for comprehensive error handling and conflict resolution
     // 🛡️ v1.8.2 (IMPL_19b): suspend fun ermöglicht coroutineScope statt runBlocking
     suspend fun downloadAll(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         includeRootFallback: Boolean = false, // 🆕 v1.2.2: Only for restore from server
         forceOverwrite: Boolean = false, // 🆕 v1.3.0: For OVERWRITE_DUPLICATES mode
@@ -126,20 +128,13 @@ internal class NoteDownloader(
             // 🔧 v2.0.0 (Issue #44): Use listOrNull() instead of exists()+list() to avoid
             // false-negative exists() on servers that return 403 for HEAD on collections (Jianguoyun).
             // PROPFIND (list) works universally on all WebDAV servers.
-            val notesResources: List<com.thegrizzlylabs.sardineandroid.DavResource>? = when (sardine) {
-                is SafeSardineWrapper -> sardine.listOrNull(notesUrl)
-                else -> try {
-                    sardine.list(notesUrl)
-                } catch (_: java.io.IOException) {
-                    null
-                }
-            }
+            val notesResources: List<WebDavResource>? = webdav.listOrNull(notesUrl)
 
             if (notesResources != null) {
                 Logger.d(TAG, "   ✅ /$activeSyncFolderName/ exists, scanning...")
 
                 // 🆕 v2.7.0 (Folders): Root-JSONs (folderName=null) + je Subdir ein zweiter list().
-                data class ScanItem(val resource: com.thegrizzlylabs.sardineandroid.DavResource, val folder: String?)
+                data class ScanItem(val resource: WebDavResource, val folder: String?)
                 val scanItems = mutableListOf<ScanItem>()
 
                 // Root-Ebene: nur Top-Level-JSONs der Notes-Basis (ohne href-Self-Eintrag).
@@ -166,14 +161,7 @@ internal class NoteDownloader(
                     }
                     discoveredFolders.add(folder)
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
-                    val folderResources = when (sardine) {
-                        is SafeSardineWrapper -> sardine.listOrNull(folderUrl)
-                        else -> try {
-                            sardine.list(folderUrl)
-                        } catch (_: java.io.IOException) {
-                            null
-                        }
-                    } ?: continue
+                    val folderResources = webdav.listOrNull(folderUrl) ?: continue
                     folderResources
                         .filter { !it.isDirectory && it.name.endsWith(".json") }
                         .forEach { scanItems.add(ScanItem(it, folder)) }
@@ -329,7 +317,7 @@ internal class NoteDownloader(
                     )
 
                     val downloader = ParallelDownloader(
-                        sardine = sardine,
+                        webdav = webdav,
                         maxParallelDownloads = maxParallel
                     )
 
@@ -533,7 +521,7 @@ internal class NoteDownloader(
                 Logger.d(TAG, "🔍 Phase 2: Checking ROOT at: $rootUrl (v1.2.0 compat)")
 
                 try {
-                    val rootResources = sardine.list(rootUrl)
+                    val rootResources = webdav.list(rootUrl)
                     Logger.d(TAG, "   📂 Found ${rootResources.size} resources in ROOT")
 
                     val oldNotes = rootResources.filter { resource ->
@@ -568,7 +556,7 @@ internal class NoteDownloader(
                                 continue
                             }
 
-                            val jsonContent = sardine.get(noteUrl).use { it.bufferedReader().readText() }
+                            val jsonContent = webdav.get(noteUrl).use { it.bufferedReader().readText() }
                             val remoteNote = Note.fromJson(jsonContent) ?: continue
 
                             // 🔧 v2.3.0 (Issue #62): ID-Mismatch-Check — spiegelt Phase 1C.
@@ -811,9 +799,11 @@ internal class NoteDownloader(
      * @param noteId The ID of the note to delete
      * @return true if at least one file was deleted (or already absent), false on error
      */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod")
     suspend fun deleteFromServer(noteId: String, folderName: String? = null): Boolean = withContext(ioDispatcher) {
         return@withContext try {
-            val sardine = connectionManager.getOrCreateClient() ?: return@withContext false
+            val webdav = connectionManager.getOrCreateClient() ?: return@withContext false
             val serverUrl = urlBuilder.getServerUrl() ?: return@withContext false
 
             var deletedJson = false
@@ -824,20 +814,20 @@ internal class NoteDownloader(
             // false-negative exists() on servers returning 403 for HEAD on collections.
             val jsonUrl = urlBuilder.getNotesFolderUrl(serverUrl, folderName) + "$noteId.json"
             try {
-                sardine.delete(jsonUrl)
+                webdav.delete(jsonUrl)
                 deletedJson = true
                 Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from /$activeSyncFolderName/)")
             } catch (e: java.io.IOException) {
-                if (e.message?.contains("404") == true) {
+                if (e.isWebDavNotFound()) {
                     // v1.4.1: Fallback - check ROOT folder for v1.2.0 compatibility
                     val rootJsonUrl = serverUrl.trimEnd('/') + "/$noteId.json"
                     Logger.d(TAG, "🔍 JSON not in /$activeSyncFolderName/, checking ROOT: $rootJsonUrl")
                     try {
-                        sardine.delete(rootJsonUrl)
+                        webdav.delete(rootJsonUrl)
                         deletedJson = true
                         Logger.d(TAG, "🗑️ Deleted from server: $noteId.json (from ROOT - v1.2.0 compat)")
                     } catch (e2: java.io.IOException) {
-                        if (e2.message?.contains("404") != true) throw e2
+                        if (!e2.isWebDavNotFound()) throw e2
                         Logger.d(TAG, "ℹ️ $noteId.json not found on server (already gone)")
                     }
                 } else {
@@ -857,18 +847,18 @@ internal class NoteDownloader(
             } else {
                 // Fallback: Note deleted locally, scan YAML frontmatter
                 Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
-                mdFilenameToDelete = markdownSyncManager.findByNoteId(sardine, mdBaseUrl, noteId)
+                mdFilenameToDelete = markdownSyncManager.findByNoteId(webdav, mdBaseUrl, noteId)
             }
 
             if (mdFilenameToDelete != null) {
                 val mdUrl = mdBaseUrl.trimEnd('/') + "/" + mdFilenameToDelete
                 // 🔧 v2.0.0 (Issue #44): try/delete instead of exists()+delete()
                 try {
-                    sardine.delete(mdUrl)
+                    webdav.delete(mdUrl)
                     deletedMd = true
                     Logger.d(TAG, "🗑️ Deleted from server: $mdFilenameToDelete")
                 } catch (e: java.io.IOException) {
-                    if (e.message?.contains("404") == true) {
+                    if (e.isWebDavNotFound()) {
                         Logger.w(TAG, "⚠️ MD file not found on server: $mdFilenameToDelete")
                     } else {
                         throw e

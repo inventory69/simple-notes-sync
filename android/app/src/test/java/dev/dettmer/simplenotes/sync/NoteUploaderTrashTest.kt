@@ -2,11 +2,11 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
 import io.mockk.every
 import io.mockk.mockk
@@ -73,17 +73,28 @@ class NoteUploaderTrashTest {
             )
         )
 
-        val sardine = mockk<Sardine>(relaxed = true) {
+        val webdav = mockk<WebDavClient>(relaxed = true) {
             every { exists(any()) } returns true
             every { list(any(), any()) } returns emptyList()
         }
 
-        uploader.uploadAll(sardine, serverUrl)
+        uploader.uploadAll(webdav, serverUrl)
 
-        verify(exactly = 1) { sardine.put(match { it.endsWith("tn.json") }, any<ByteArray>(), any()) }
+        verify(exactly = 1) { webdav.put(match { it.endsWith("tn.json") }, any<ByteArray>(), any()) }
         assertEquals("MD export must be skipped for trashed note", 0, exportCalls)
         assertEquals("MD delete must run for trashed note", 1, deleteCalls)
         // trashedAt bleibt nach Upload erhalten (Sync-Payload).
         assertTrue(storage.loadNote("tn")!!.isTrashed)
     }
+
+    private fun uploader() = NoteUploader(
+        prefs = prefs,
+        storage = storage,
+        eTagCache = ETagCache(prefs),
+        urlBuilder = SyncUrlBuilder(prefs),
+        ioDispatcher = Dispatchers.Unconfined,
+        folderStore = FolderStore(mockk(relaxed = true)),
+        markdownExporter = { _, _, _, _ -> },
+        markdownDeleter = { _, _, _ -> }
+    )
 }

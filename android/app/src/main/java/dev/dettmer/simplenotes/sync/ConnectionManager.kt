@@ -2,17 +2,27 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
+import androidx.annotation.VisibleForTesting
+import com.burgstaller.okhttp.AuthenticationCacheInterceptor
+import com.burgstaller.okhttp.CachingAuthenticatorDecorator
+import com.burgstaller.okhttp.DispatchingAuthenticator
+import com.burgstaller.okhttp.basic.BasicAuthenticator
+import com.burgstaller.okhttp.digest.CachingAuthenticator
+import com.burgstaller.okhttp.digest.Credentials
+import com.burgstaller.okhttp.digest.DigestAuthenticator
 import dev.dettmer.simplenotes.BuildConfig
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 
 /**
  * 🆕 v2.0.0: Extracted from WebDavSyncService (Commit 18).
- * Manages the WebDAV/Sardine client lifecycle:
+ * Manages the WebDAV client lifecycle:
  * - Client creation (credentials, timeout, OkHttp config)
  * - Session caching (one client per sync operation)
  * - Session cleanup (close client + reset caches)
@@ -42,10 +52,71 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
                 FALLBACK_TIMEOUT_MS
             }
         }
+
+        /**
+         * Prozessweiter Auth-Cache. okhttp-digest cached per `scheme:host:port` (ohne
+         * Credentials im Key) — deshalb wird der Cache bei Credential-Wechsel komplett
+         * verworfen. Stale Einträge heilen sich sonst via 401 → Decorator selbst.
+         */
+        private val sharedAuthCache = ConcurrentHashMap<String, CachingAuthenticator>()
+
+        @Volatile
+        private var sharedAuthCacheKey: String? = null
+
+        /**
+         * 🆕 v2.14.0: Baut den OkHttpClient für WebDAV-Requests.
+         *
+         * Auth läuft über `okhttp-digest`: [DispatchingAuthenticator] wählt anhand der
+         * `WWW-Authenticate`-Challenge zwischen Digest und Basic. Der Auth-Cache
+         * (Decorator + Interceptor) sorgt dafür, dass nur der erste Request einen
+         * 401-Round-Trip kostet — alle Folge-Requests authentifizieren preemptiv.
+         * Der Cache ist prozessweit, überlebt also [clearSession] und kostet damit
+         * nur einen 401 pro App-Start statt einen pro Sync.
+         *
+         * Single source of truth für Timeouts: [getTimeoutMs].
+         */
+        fun buildHttpClient(timeoutMs: Long, username: String, password: String): OkHttpClient {
+            val credentials = Credentials(username, password)
+            val authenticator = DispatchingAuthenticator.Builder()
+                .with("digest", DigestAuthenticator(credentials))
+                .with("basic", BasicAuthenticator(credentials))
+                .build()
+            val authCache = sharedAuthCache.also { cache ->
+                val key = credentialFingerprint(username, password)
+                synchronized(this) {
+                    if (sharedAuthCacheKey != key) {
+                        cache.clear()
+                        sharedAuthCacheKey = key
+                    }
+                }
+            }
+
+            return OkHttpClient.Builder()
+                .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .authenticator(CachingAuthenticatorDecorator(authenticator, authCache))
+                .addInterceptor(AuthenticationCacheInterceptor(authCache))
+                .build()
+        }
+
+        /** SHA-256 über `user:pass` — der Klartext darf nirgends gehalten oder geloggt werden. */
+        private fun credentialFingerprint(username: String, password: String): String =
+            MessageDigest.getInstance("SHA-256")
+                .digest("$username:$password".toByteArray())
+                .joinToString("") { "%02x".format(it) }
+
+        @VisibleForTesting
+        internal fun clearSharedAuthCacheForTest() {
+            synchronized(this) {
+                sharedAuthCache.clear()
+                sharedAuthCacheKey = null
+            }
+        }
     }
 
-    // ⚡ v1.3.1 Performance: Session-cached Sardine client
-    private var sessionSardine: SafeSardineWrapper? = null
+    // ⚡ v1.3.1 Performance: Session-cached WebDAV client
+    private var sessionClient: WebDavClient? = null
 
     /** Tracks whether the notes/ directory has been verified this session. */
     var notesDirEnsured: Boolean = false
@@ -57,59 +128,50 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
     var assetsDirEnsured: Boolean = false
 
     /**
-     * Returns the cached Sardine client or creates a new one.
+     * Returns the cached WebDAV client or creates a new one.
      * Saves ~100ms per call by reusing the existing client.
      * internal for NotesImportWizard access (Issue #21).
      */
-    internal fun getOrCreateClient(): Sardine? {
-        sessionSardine?.let {
-            Logger.d(TAG, "⚡ Reusing cached Sardine client")
+    internal fun getOrCreateClient(): WebDavClient? {
+        sessionClient?.let {
+            Logger.d(TAG, "⚡ Reusing cached WebDAV client")
             return it
         }
-        val sardine = createClient()
-        sessionSardine = sardine
-        return sardine
+        val client = createClient()
+        sessionClient = client
+        return client
     }
 
     /**
-     * Creates a new SafeSardineWrapper with credentials and timeout from SharedPreferences.
+     * Creates a new WebDavClient with credentials and timeout from SharedPreferences.
      *
-     * v1.7.2: Intelligent routing based on target address —
-     *   local servers use WiFi binding, external servers use default routing.
-     * v1.7.1: Uses SafeSardineWrapper (prevents connection leaks, preemptive auth).
+     * v1.8.2: readTimeout added — prevents indefinite wait on hanging servers.
+     * v1.10.0: Configurable timeout from SharedPreferences.
+     * v2.14.0: Eigener Client statt WebDavClient; Basic + Digest via okhttp-digest.
      */
-    private fun createClient(): SafeSardineWrapper? {
+    private fun createClient(): WebDavClient? {
         val username = CredentialStore.getUsername(context) ?: return null
         val password = CredentialStore.getPassword(context) ?: return null
 
-        Logger.d(TAG, "🔧 Creating SafeSardineWrapper")
+        Logger.d(TAG, "🔧 Creating WebDavClient")
 
-        // v1.8.2: readTimeout added — prevents indefinite wait on hanging servers
-        // v1.10.0: Configurable timeout from SharedPreferences
-        val timeoutMs = getTimeoutMs()
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-            .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-            .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-            .build()
-
-        return SafeSardineWrapper.create(okHttpClient, username, password)
+        return WebDavClient(buildHttpClient(getTimeoutMs(), username, password))
     }
 
     /**
-     * Clears the session cache and closes the Sardine client.
+     * Clears the session cache and closes the WebDAV client.
      * Called at the end of each syncNotes() invocation.
      */
     fun clearSession() {
-        sessionSardine?.let { sardine ->
+        sessionClient?.let { client ->
             try {
-                sardine.close()
-                Logger.d(TAG, "🧹 Sardine client closed")
+                client.close()
+                Logger.d(TAG, "🧹 WebDAV client closed")
             } catch (e: Exception) {
-                Logger.w(TAG, "Failed to close Sardine client: ${e.message}")
+                Logger.w(TAG, "Failed to close WebDAV client: ${e.message}")
             }
         }
-        sessionSardine = null
+        sessionClient = null
         notesDirEnsured = false
         markdownDirEnsured = false
         assetsDirEnsured = false

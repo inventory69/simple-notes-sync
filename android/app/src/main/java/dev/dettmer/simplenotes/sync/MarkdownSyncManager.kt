@@ -2,24 +2,26 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
 import java.util.Date
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 
 /**
  * 🆕 v2.0.0: Extrahiert Markdown-Export/-Import-Logik aus WebDavSyncService.
  * Verantwortlich für alle Operationen mit notes-md/ auf dem WebDAV-Server.
  */
-@Suppress("TooManyFunctions", "LongParameterList")
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class MarkdownSyncManager(
     private val prefs: SharedPreferences,
     private val storage: NotesStorage,
@@ -35,6 +37,7 @@ internal class MarkdownSyncManager(
         private const val MAX_FILENAME_LENGTH = 200
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val CONTENT_PREVIEW_LENGTH = 50
+        private const val SHORT_ID_LENGTH = 8
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -47,28 +50,27 @@ internal class MarkdownSyncManager(
      * 🔧 v1.9.0 (Opt 1): markdownDirExists-Parameter eliminiert redundanten exists()-Call
      * 🔧 v1.9.0 (Opt 6): MD-Content-Hash-Cache für Skip bei unverändertem Inhalt
      */
-    fun exportSingle(sardine: Sardine, serverUrl: String, note: Note, markdownDirExists: Boolean = true) {
+    fun exportSingle(webdav: WebDavClient, serverUrl: String, note: Note, markdownDirExists: Boolean = true) {
         // 🆕 v2.7.0 (Folders): Basis-md-Ordner sicherstellen, danach ggf. das Subdir der Notiz.
         val mdRootUrl = urlBuilder.getMarkdownUrl(serverUrl)
         if (!markdownDirExists) {
-            if (!sardine.exists(mdRootUrl)) {
-                sardine.createDirectory(mdRootUrl)
+            if (!webdav.exists(mdRootUrl)) {
+                webdav.createDirectory(mdRootUrl)
                 Logger.d(TAG, "📁 Created notes-md/ directory")
             }
         }
         val mdUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
         if (note.folderName != null) {
             try {
-                sardine.createDirectory(mdUrl)
+                webdav.createDirectory(mdUrl)
             } catch (e: Exception) {
                 Logger.w(TAG, "createDirectory($mdUrl) failed (continuing): ${e.message}")
             }
         }
 
         val baseFilename = sanitizeFilename(note.title)
-        var filename = "$baseFilename.md"
         // 🔧 v1.8.2 (IMPL_025): trimEnd('/') verhindert Double-Slash
-        var noteUrl = "${mdUrl.trimEnd('/')}/$filename"
+        val noteUrlByTitle = "${mdUrl.trimEnd('/')}/$baseFilename.md"
 
         // 🆕 v1.9.0 (Opt 6): MD-Content-Hash berechnen und mit Cache vergleichen
         val mdContentStr = rewriteAssetLinksForMdMirror(note.toMarkdown(), note.folderName)
@@ -84,35 +86,14 @@ internal class MarkdownSyncManager(
             return
         }
 
-        // Prüfe ob Datei bereits existiert und von anderer Note stammt
-        try {
-            if (sardine.exists(noteUrl)) {
-                // Lese existierende Datei und prüfe ID im YAML-Header
-                val existingContent = sardine.get(noteUrl).use { it.bufferedReader().readText() }
-                val existingIdMatch = Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
-                    .find(existingContent)
-                val existingId = existingIdMatch?.groupValues?.get(1)
-
-                if (existingId != null && existingId != note.id) {
-                    // Andere Note hat gleichen Titel - verwende ID-Suffix
-                    val shortId = note.id.take(8)
-                    filename = "${baseFilename}_$shortId.md"
-                    noteUrl = "${mdUrl.trimEnd('/')}/$filename"
-                    Logger.d(TAG, "📝 Duplicate title, using: $filename")
-                }
-            }
-        } catch (e: Exception) {
-            Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
-            // Continue with default filename
-        }
+        val noteUrl = resolveExportUrl(webdav, note, mdUrl, baseFilename, noteUrlByTitle)
 
         // Upload
-        sardine.put(noteUrl, mdContentBytes, "text/markdown")
+        putMarkdown(webdav, noteUrl, mdContentBytes)
 
         // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
         try {
-            val mdResource = sardine.list(noteUrl, 0).firstOrNull()
-            val mdETag = mdResource?.etag
+            val mdETag = webdav.list(noteUrl, 0).firstOrNull()?.etag
             prefs.edit {
                 putString("content_hash_md_${note.id}", mdHash)
                 if (mdETag != null) {
@@ -128,6 +109,41 @@ internal class MarkdownSyncManager(
     }
 
     /**
+     * Liegt unter dem Titel-Dateinamen bereits die MD-Datei einer ANDEREN Notiz, weicht der
+     * Export auf `<titel>_<kurz-id>.md` aus. Fehler beim Check sind non-fatal — dann bleibt es
+     * beim Titel-Dateinamen.
+     */
+    private fun resolveExportUrl(
+        webdav: WebDavClient,
+        note: Note,
+        mdUrl: String,
+        baseFilename: String,
+        noteUrlByTitle: String
+    ): String {
+        val existingId = try {
+            if (!webdav.exists(noteUrlByTitle)) return noteUrlByTitle
+            val existingContent = webdav.get(noteUrlByTitle).use { it.bufferedReader().readText() }
+            Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
+                .find(existingContent)
+                ?.groupValues?.get(1)
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
+            return noteUrlByTitle
+        }
+
+        if (existingId == null || existingId == note.id) return noteUrlByTitle
+
+        val filename = "${baseFilename}_${note.id.take(SHORT_ID_LENGTH)}.md"
+        Logger.d(TAG, "📝 Duplicate title, using: $filename")
+        return "${mdUrl.trimEnd('/')}/$filename"
+    }
+
+    /** PUT der MD-Datei. */
+    private fun putMarkdown(webdav: WebDavClient, noteUrl: String, bytes: ByteArray) {
+        webdav.put(noteUrl, bytes, "text/markdown")
+    }
+
+    /**
      * 🆕 v2.9.0 (Trash): Löscht den Server-Markdown-Spiegel einer Notiz, die soeben in den
      * Papierkorb verschoben wurde. Spiegelt den MD-Delete-Block aus
      * [NoteDownloader.deleteFromServer], 404-tolerant. Die Notiz existiert noch lokal, daher wird
@@ -136,15 +152,15 @@ internal class MarkdownSyncManager(
      * Invalidiert anschließend MD-Content-Hash + E-Tag, damit ein späteres Restore die Datei neu
      * exportiert (sonst würde der Skip-per-Hash den Re-Export verschlucken).
      */
-    fun deleteSingle(sardine: Sardine, serverUrl: String, note: Note) {
+    fun deleteSingle(webdav: WebDavClient, serverUrl: String, note: Note) {
         val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
         val filename = sanitizeFilename(note.title) + ".md"
         val mdUrl = mdBaseUrl.trimEnd('/') + "/" + filename
         try {
-            sardine.delete(mdUrl)
+            webdav.delete(mdUrl)
             Logger.d(TAG, "🗑️ Deleted server MD (trashed): $filename")
         } catch (e: java.io.IOException) {
-            if (e.message?.contains("404") == true) {
+            if (e.isWebDavNotFound()) {
                 Logger.d(TAG, "ℹ️ Server MD not found (already gone): $filename")
             } else {
                 throw e
@@ -172,20 +188,15 @@ internal class MarkdownSyncManager(
     ): Int = withContext(ioDispatcher) {
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
 
-        val timeoutMs = connectionManager.getTimeoutMs()
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .build()
-
-        val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
+        val webdav = WebDavClient(
+            ConnectionManager.buildHttpClient(connectionManager.getTimeoutMs(), username, password)
+        )
 
         try {
             val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
             // Ordner sollte bereits existieren, aber Sicherheitscheck
-            ensureMarkdownDirExists(sardine, serverUrl)
+            ensureMarkdownDirExists(webdav, serverUrl)
 
             // Hole ALLE lokalen Notizen (inklusive SYNCED)
             // 🆕 v2.9.0 (Trash): getrashte Notizen nicht exportieren — ihr MD-Spiegel wird beim
@@ -208,7 +219,7 @@ internal class MarkdownSyncManager(
                     val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
                     if (note.folderName != null && ensuredFolders.add(note.folderName)) {
                         try {
-                            sardine.createDirectory(folderUrl)
+                            webdav.createDirectory(folderUrl)
                         } catch (e: Exception) {
                             Logger.w(TAG, "createDirectory($folderUrl) failed: ${e.message}")
                         }
@@ -222,7 +233,7 @@ internal class MarkdownSyncManager(
                     val mdContent = rewriteAssetLinksForMdMirror(note.toMarkdown(), note.folderName).toByteArray()
 
                     // Upload (überschreibt falls vorhanden)
-                    sardine.put(noteUrl, mdContent, "text/markdown")
+                    webdav.put(noteUrl, mdContent, "text/markdown")
 
                     exportedCount++
                     Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
@@ -243,8 +254,8 @@ internal class MarkdownSyncManager(
 
             return@withContext exportedCount
         } finally {
-            // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
-            sardine.close()
+            // 🐛 FIX: Connection Leak — WebDavClient explizit schließen
+            webdav.close()
         }
     }
 
@@ -254,31 +265,27 @@ internal class MarkdownSyncManager(
 
     /**
      * Manueller Markdown-Sync: Import aller Server-Markdown-Dateien.
-     * Erstellt seinen eigenen Sardine-Client für eigenständige Aufrufe.
+     * Erstellt seinen eigenen WebDavClient-Client für eigenständige Aufrufe.
      */
     suspend fun syncAll(serverUrl: String, username: String, password: String): Int = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "📝 Starting Markdown sync...")
 
-            val timeoutMs = connectionManager.getTimeoutMs()
-            val okHttpClient = OkHttpClient.Builder()
-                .connectTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .readTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .writeTimeout(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .build()
-            val sardine = SafeSardineWrapper.create(okHttpClient, username, password)
+            val webdav = WebDavClient(
+                ConnectionManager.buildHttpClient(connectionManager.getTimeoutMs(), username, password)
+            )
 
             try {
                 val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
                 // Check if notes-md/ exists
-                if (!sardine.exists(mdUrl)) {
+                if (!webdav.exists(mdUrl)) {
                     Logger.d(TAG, "⚠️ notes-md/ directory not found - skipping MD import")
                     return@withContext 0
                 }
 
                 val localNotes = storage.loadAllNotes()
-                val mdResources = sardine.list(mdUrl).filter { it.name.endsWith(".md") }
+                val mdResources = webdav.list(mdUrl).filter { it.name.endsWith(".md") }
                 var importedCount = 0
 
                 Logger.d(TAG, "📂 Found ${mdResources.size} markdown files")
@@ -286,7 +293,7 @@ internal class MarkdownSyncManager(
                 for (resource in mdResources) {
                     try {
                         // Download MD-File
-                        val mdContent = sardine.get(resource.href.toString())
+                        val mdContent = webdav.get(resource.href.toString())
                             .use { it.bufferedReader().readText() }
 
                         // Parse zu Note
@@ -322,8 +329,8 @@ internal class MarkdownSyncManager(
                 Logger.d(TAG, "✅ Markdown sync completed: $importedCount imported")
                 importedCount
             } finally {
-                // 🐛 FIX: Connection Leak — SafeSardineWrapper explizit schließen
-                sardine.close()
+                // 🐛 FIX: Connection Leak — WebDavClient explizit schließen
+                webdav.close()
             }
         } catch (e: Exception) {
             Logger.e(TAG, "Markdown sync failed", e)
@@ -341,28 +348,29 @@ internal class MarkdownSyncManager(
      *
      * 🆕 v1.11.0: excludeNoteIds verhindert Re-Import von soeben exportierten Dateien.
      */
-    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements", "CyclomaticComplexMethod")
-    suspend fun importAll(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int {
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("NestedBlockDepth", "LoopWithTooManyJumpStatements", "CyclomaticComplexMethod", "LongMethod")
+    suspend fun importAll(webdav: WebDavClient, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int {
         return try {
             Logger.d(TAG, "📝 Importing Markdown files...")
 
             val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
-            if (!sardine.exists(mdUrl)) {
+            if (!webdav.exists(mdUrl)) {
                 Logger.d(TAG, "   ⚠️ notes-md/ directory not found - skipping")
                 return 0
             }
 
-            cleanupStaleRoot(sardine, serverUrl)
+            cleanupStaleRoot(webdav, serverUrl)
 
             // 🆕 v2.7.0 (Folders): Root-md + alle Subdirs einsammeln.
             data class MdItem(
-                val resource: com.thegrizzlylabs.sardineandroid.DavResource,
+                val resource: WebDavResource,
                 val fileUrl: String,
                 val folder: String?
             )
             val mdItems = mutableListOf<MdItem>()
-            val rootList = sardine.list(mdUrl)
+            val rootList = webdav.list(mdUrl)
             rootList.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
                 mdItems.add(MdItem(it, mdUrl.trimEnd('/') + "/" + it.name, null))
             }
@@ -381,7 +389,7 @@ internal class MarkdownSyncManager(
                 }
                 val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
                 val sub = try {
-                    sardine.list(folderUrl)
+                    webdav.list(folderUrl)
                 } catch (e: Exception) {
                     Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}")
                     continue
@@ -436,7 +444,7 @@ internal class MarkdownSyncManager(
                     val mdFileUrl = mdItem.fileUrl
 
                     // Download MD content
-                    val mdContent = sardine.get(mdFileUrl).use { it.bufferedReader().readText() }
+                    val mdContent = webdav.get(mdFileUrl).use { it.bufferedReader().readText() }
                     Logger.d(TAG, "      Downloaded ${mdContent.length} chars")
 
                     // 🔧 v1.7.2 (IMPL_014): Server mtime übergeben für korrekte Timestamp-Sync
@@ -672,10 +680,10 @@ internal class MarkdownSyncManager(
      * Finds a Markdown file by scanning YAML frontmatter for note ID.
      * Used when local note is deleted and title is unavailable.
      */
-    suspend fun findByNoteId(sardine: Sardine, mdUrl: String, noteId: String): String? = withContext(ioDispatcher) {
+    suspend fun findByNoteId(webdav: WebDavClient, mdUrl: String, noteId: String): String? = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "🔍 Scanning MD files for ID: $noteId")
-            val resources = sardine.list(mdUrl)
+            val resources = webdav.list(mdUrl)
 
             for (resource in resources) {
                 if (resource.isDirectory || !resource.name.endsWith(".md")) {
@@ -684,7 +692,7 @@ internal class MarkdownSyncManager(
 
                 try {
                     val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
-                    val mdContent = sardine.get(mdFileUrl).use { it.bufferedReader().readText() }
+                    val mdContent = webdav.get(mdFileUrl).use { it.bufferedReader().readText() }
 
                     val idMatch = Regex("""^---\s*\n.*?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
                         .find(mdContent)
@@ -709,11 +717,11 @@ internal class MarkdownSyncManager(
     /**
      * 🔧 v1.8.2: One-time cleanup of stale "/" directory at WebDAV root.
      */
-    fun cleanupStaleRoot(sardine: Sardine, serverUrl: String) {
+    fun cleanupStaleRoot(webdav: WebDavClient, serverUrl: String) {
         try {
             val rootUrl = serverUrl.trimEnd('/')
             Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
-            val rootResources = sardine.list(rootUrl)
+            val rootResources = webdav.list(rootUrl)
             Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
             for ((index, res) in rootResources.withIndex()) {
                 Logger.d(
@@ -727,7 +735,7 @@ internal class MarkdownSyncManager(
                 val staleHref = staleSlashDir.href?.toString().orEmpty()
                 Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
                 try {
-                    sardine.delete(rootUrl + staleSlashDir.href.path)
+                    webdav.delete(rootUrl + staleSlashDir.href.path)
                     Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
                 } catch (e: Exception) {
                     Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")
@@ -744,21 +752,21 @@ internal class MarkdownSyncManager(
     // Private helpers
     // ─────────────────────────────────────────────────────────────
 
-    private fun ensureMarkdownDirExists(sardine: Sardine, serverUrl: String) {
+    private fun ensureMarkdownDirExists(webdav: WebDavClient, serverUrl: String) {
         if (connectionManager.markdownDirEnsured) return
 
         try {
             val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
             // 🔧 v2.2.1 (Issue #50): exists() may return HTTP 405 on bewCloud/some servers,
-            // which Sardine throws as an IOException. Fallback: try list() — if it succeeds,
+            // which WebDavClient throws as an IOException. Fallback: try list() — if it succeeds,
             // the directory exists. Identical pattern to WebDavSyncService.ensureMarkdownDirectoryExists().
             val dirExists = try {
-                sardine.exists(mdUrl)
+                webdav.exists(mdUrl)
             } catch (e: java.io.IOException) {
                 Logger.w(TAG, "⚠️ notes-md/ exists() check failed: ${e.message}, trying list()")
                 try {
-                    sardine.list(mdUrl)
+                    webdav.list(mdUrl)
                     true
                 } catch (_: java.io.IOException) {
                     false
@@ -766,7 +774,7 @@ internal class MarkdownSyncManager(
             }
 
             if (!dirExists) {
-                sardine.createDirectory(mdUrl)
+                webdav.createDirectory(mdUrl)
                 Logger.d(TAG, "📁 Created notes-md/ directory")
             }
             connectionManager.markdownDirEnsured = true

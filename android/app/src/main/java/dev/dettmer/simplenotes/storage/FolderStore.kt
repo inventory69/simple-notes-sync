@@ -38,6 +38,8 @@ internal fun List<FolderMeta>.sanitized(): List<FolderMeta> = filter { !it.name.
  * abgebildet (Backward-Compat). Schreib-Operationen sind Mutex-geschützt und atomar (tmp-Rename).
  * Dirty-Flag in SharedPreferences signalisiert ausstehende Uploads an den `FolderSyncManager`.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("TooManyFunctions")
 class FolderStore(private val context: Context) {
     private val mutex = Mutex()
     private val gson = Gson()

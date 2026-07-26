@@ -2,12 +2,12 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.utils.Constants
 import io.mockk.every
 import io.mockk.mockk
@@ -74,24 +74,24 @@ class NoteDownloaderTieBreakTest {
         tmpDir.deleteRecursively()
     }
 
-    private fun folderDir(dirName: String): DavResource = mockk(relaxed = true) {
+    private fun folderDir(dirName: String): WebDavResource = mockk(relaxed = true) {
         every { isDirectory } returns true
         every { name } returns dirName
     }
 
-    private fun noteFile(): DavResource = mockk(relaxed = true) {
+    private fun noteFile(): WebDavResource = mockk(relaxed = true) {
         every { isDirectory } returns false
         every { name } returns "$noteId.json"
         every { etag } returns "etag-new"
         every { modified } returns Date(serverModified)
     }
 
-    private fun mockSardine(remoteJson: String): Sardine {
-        val sardine = mockk<Sardine>(relaxed = true)
-        every { sardine.list(match { it.endsWith("/notes/") }) } returns listOf(folderDir(folder))
-        every { sardine.list(match { it.contains(folder) }) } returns listOf(noteFile())
-        every { sardine.get(any<String>()) } answers { ByteArrayInputStream(remoteJson.toByteArray()) }
-        return sardine
+    private fun mockWebDav(remoteJson: String): WebDavClient {
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.listOrNull(match { it.endsWith("/notes/") }) } returns listOf(folderDir(folder))
+        every { webdav.listOrNull(match { it.contains(folder) }) } returns listOf(noteFile())
+        every { webdav.get(any<String>()) } answers { ByteArrayInputStream(remoteJson.toByteArray()) }
+        return webdav
     }
 
     @Test fun `tied timestamp with changed server content adopts remote and marks PENDING`() = runTest {
@@ -116,7 +116,7 @@ class NoteDownloaderTieBreakTest {
             folderName = folder
         ).toJson()
 
-        val result = downloader.downloadAll(mockSardine(remoteJson), serverUrl)
+        val result = downloader.downloadAll(mockWebDav(remoteJson), serverUrl)
 
         assertEquals(1, result.downloadedCount)
         assertTrue("note id must be flagged as adopted", noteId in result.adoptedNoteIds)
@@ -147,7 +147,7 @@ class NoteDownloaderTieBreakTest {
             folderName = folder
         ).toJson()
 
-        val result = downloader.downloadAll(mockSardine(remoteJson), serverUrl)
+        val result = downloader.downloadAll(mockWebDav(remoteJson), serverUrl)
 
         assertEquals(0, result.downloadedCount)
         assertTrue("must not be adopted", noteId !in result.adoptedNoteIds)

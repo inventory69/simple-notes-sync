@@ -1,8 +1,8 @@
 package dev.dettmer.simplenotes.sync
 
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.DeletionRecord
 import dev.dettmer.simplenotes.models.DeletionTracker
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -15,19 +15,16 @@ internal class DeletionSyncManager(private val urlBuilder: SyncUrlBuilder) {
         urlBuilder.getNotesUrl(serverUrl).trimEnd('/') + "/" + DELETIONS_FILE_NAME
 
     /** GET deletions.json; 404 or parse error → empty tracker. */
-    fun downloadRemote(sardine: Sardine, url: String): DeletionTracker = try {
-        val exists = when (sardine) {
-            is SafeSardineWrapper -> sardine.exists(url)
-            else -> try {
-                sardine.exists(url)
-            } catch (_: Exception) {
-                false
-            }
+    fun downloadRemote(webdav: WebDavClient, url: String): DeletionTracker = try {
+        val exists = try {
+            webdav.exists(url)
+        } catch (_: Exception) {
+            false
         }
         if (!exists) {
             DeletionTracker()
         } else {
-            sardine.get(url).use { input ->
+            webdav.get(url).use { input ->
                 DeletionTracker.fromJson(input.reader().readText()) ?: DeletionTracker()
             }
         }
@@ -41,13 +38,13 @@ internal class DeletionSyncManager(private val urlBuilder: SyncUrlBuilder) {
      * (keeps newest deletedAt), prunes entries older than [Constants.TRASH_RETENTION_MS],
      * then PUTs the result back. Best-effort — logs on failure, never throws.
      */
-    fun appendAndUpload(sardine: Sardine, url: String, noteId: String, deviceId: String) {
+    fun appendAndUpload(webdav: WebDavClient, url: String, noteId: String, deviceId: String) {
         try {
-            val tracker = downloadRemote(sardine, url)
+            val tracker = downloadRemote(webdav, url)
             val now = System.currentTimeMillis()
             tracker.upsertIfNewer(DeletionRecord(noteId, now, deviceId))
             tracker.pruneOlderThan(Constants.TRASH_RETENTION_MS, now)
-            sardine.put(url, tracker.toJson().toByteArray(Charsets.UTF_8), "application/json")
+            webdav.put(url, tracker.toJson().toByteArray(Charsets.UTF_8), "application/json")
             Logger.d(TAG, "📝 deletions.json updated: added $noteId, ${tracker.deletedNotes.size} entries")
         } catch (e: Exception) {
             Logger.w(TAG, "appendAndUpload deletions.json for $noteId failed (non-fatal): ${e.message}")

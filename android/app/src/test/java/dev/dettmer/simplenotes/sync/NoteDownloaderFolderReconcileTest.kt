@@ -2,12 +2,12 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.utils.Constants
 import io.mockk.every
 import io.mockk.mockk
@@ -60,33 +60,33 @@ class NoteDownloaderFolderReconcileTest {
         tmpDir.deleteRecursively()
     }
 
-    private fun folderDir(dirName: String): DavResource = mockk(relaxed = true) {
+    private fun folderDir(dirName: String): WebDavResource = mockk(relaxed = true) {
         every { isDirectory } returns true
         every { name } returns dirName
     }
 
-    private fun noteFile(id: String, etagValue: String? = null): DavResource = mockk(relaxed = true) {
+    private fun noteFile(id: String, etagValue: String? = null): WebDavResource = mockk(relaxed = true) {
         every { isDirectory } returns false
         every { name } returns "$id.json"
         every { etag } returns etagValue
         every { modified } returns Date(serverModified)
     }
 
-    private fun mockSardine(): Sardine = mockk(relaxed = true) {
-        every { list(match { it.endsWith("/notes/") }) } returns listOf(folderDir("Noltenius"))
-        every { list(match { it.contains("Noltenius") }) } returns listOf(noteFile(noteId))
+    private fun mockWebDav(): WebDavClient = mockk(relaxed = true) {
+        every { listOrNull(match { it.endsWith("/notes/") }) } returns listOf(folderDir("Noltenius"))
+        every { listOrNull(match { it.contains("Noltenius") }) } returns listOf(noteFile(noteId))
     }
 
     @Test fun `stale folderName is healed to server path without download`() = runTest {
         storage.saveNote(
             Note(id = noteId, title = "T", content = "C", deviceId = "", syncStatus = SyncStatus.SYNCED, folderName = null)
         )
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
 
-        val result = downloader.downloadAll(sardine, serverUrl)
+        val result = downloader.downloadAll(webdav, serverUrl)
 
         assertEquals(0, result.downloadedCount)
-        verify(exactly = 0) { sardine.get(any<String>()) }
+        verify(exactly = 0) { webdav.get(any<String>()) }
         assertEquals(1, result.folderReconciledCount)
         val healed = storage.loadNote(noteId)!!
         assertEquals("Noltenius", healed.folderName)
@@ -97,7 +97,7 @@ class NoteDownloaderFolderReconcileTest {
         storage.saveNote(
             Note(id = noteId, title = "T", content = "C", deviceId = "", syncStatus = SyncStatus.PENDING, folderName = null)
         )
-        val result = downloader.downloadAll(mockSardine(), serverUrl)
+        val result = downloader.downloadAll(mockWebDav(), serverUrl)
         assertEquals(0, result.folderReconciledCount)
         assertNull(storage.loadNote(noteId)!!.folderName)
     }
@@ -106,7 +106,7 @@ class NoteDownloaderFolderReconcileTest {
         storage.saveNote(
             Note(id = noteId, title = "T", content = "C", deviceId = "", syncStatus = SyncStatus.SYNCED, folderName = "Noltenius")
         )
-        val result = downloader.downloadAll(mockSardine(), serverUrl)
+        val result = downloader.downloadAll(mockWebDav(), serverUrl)
         assertEquals(0, result.folderReconciledCount)
         assertEquals("Noltenius", storage.loadNote(noteId)!!.folderName)
     }
@@ -124,7 +124,7 @@ class NoteDownloaderFolderReconcileTest {
             )
         )
 
-        val result = downloader.downloadAll(mockSardine(), serverUrl)
+        val result = downloader.downloadAll(mockWebDav(), serverUrl)
 
         assertEquals(1, result.folderReconciledCount)
         val healed = storage.loadNote(noteId)!!
@@ -143,12 +143,12 @@ class NoteDownloaderFolderReconcileTest {
                 folderName = null
             )
         )
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
 
-        val result = downloader.downloadAll(sardine, serverUrl)
+        val result = downloader.downloadAll(webdav, serverUrl)
 
         assertEquals(0, result.downloadedCount)
-        verify(exactly = 0) { sardine.get(any<String>()) } // kein Download — lokaler Inhalt bleibt
+        verify(exactly = 0) { webdav.get(any<String>()) } // kein Download — lokaler Inhalt bleibt
         assertEquals(1, result.folderReconciledCount)
         val healed = storage.loadNote(noteId)!!
         assertEquals(SyncStatus.SYNCED, healed.syncStatus)

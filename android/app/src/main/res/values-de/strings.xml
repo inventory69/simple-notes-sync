@@ -215,7 +215,7 @@
     <string name="error_invalid_protocol">Ungültiges Protokoll: %s. Bitte verwende HTTP oder HTTPS.</string>
     <string name="error_invalid_url">Ungültige URL: %s</string>
     <string name="error_server_not_configured">WebDAV-Server nicht vollständig konfiguriert</string>
-    <string name="error_sardine_client_failed">Sardine Client konnte nicht erstellt werden</string>
+    <string name="error_sardine_client_failed">WebDAV-Client konnte nicht erstellt werden</string>
     <string name="error_server_url_not_configured">Server-URL nicht konfiguriert</string>
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->

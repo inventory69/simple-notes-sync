@@ -11,11 +11,11 @@ import org.junit.Test
  * - DownloadTaskResult sealed class variants
  * - ParallelDownloader constants
  *
- * Note: Full integration tests with mocked Sardine would require MockK/Mockito,
+ * Note: Full integration tests with mocked WebDavClient would require MockK/Mockito,
  * which are not currently in the project dependencies.
  */
 class ParallelDownloadTest {
-    // Note: DownloadTask tests require mocking DavResource, skipping for now
+    // Note: DownloadTask tests require mocking WebDavResource, skipping for now
     // Full integration tests would require MockK or Mockito
 
     @Test

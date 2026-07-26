@@ -36,23 +36,11 @@
 -dontwarn sun.misc.**
 
 # ═══════════════════════════════════════════════════════════════════════
-# Sardine WebDAV (com.thegrizzlylabs:sardine-android — KEINE consumer rules)
+# WebDAV: eigener Client in sync/webdav/ — keine Keep-Rules nötig.
+# PROPFIND-Parsing läuft über SAX (javax.xml.parsers, Plattform-API), nicht
+# über Reflection; WebDavResource ist kein Gson-Objekt. okhttp/okio und
+# okhttp-digest bringen eigene consumer rules mit.
 # ═══════════════════════════════════════════════════════════════════════
-# SimpleXML Reflection für PROPFIND-Parsing — Modell- und Handler-Klassen
-# müssen vollständig erhalten bleiben.
--keep class com.thegrizzlylabs.sardineandroid.model.** { *; }
--keep class com.thegrizzlylabs.sardineandroid.handler.** { *; }
--keep class com.thegrizzlylabs.sardineandroid.impl.** { *; }
--keep class com.thegrizzlylabs.sardineandroid.DavResource { *; }
-# Public-API-Surface — nur das Sardine-Interface explizit (interne Subpackages
-# durch obige Klassen-Keeps abgedeckt).
--keepclassmembers interface com.thegrizzlylabs.sardineandroid.Sardine {
-    public <methods>;
-}
--keepclassmembers class com.thegrizzlylabs.sardineandroid.DavResource {
-    public <methods>;
-    <init>(...);
-}
 
 # ═══════════════════════════════════════════════════════════════════════
 # Tink (transitiv via androidx.security:security-crypto — KEINE consumer rules)

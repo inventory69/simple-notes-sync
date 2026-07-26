@@ -2,8 +2,6 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import androidx.core.content.edit
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
@@ -11,6 +9,9 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.PendingServerDeletions.PendingDeletion
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavException
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
@@ -38,7 +39,8 @@ data class ManualMarkdownSyncResult(val exportedCount: Int, val importedCount: I
  */
 data class UploadBatchResult(val uploadedCount: Int, val markdownExportedNoteIds: Set<String>)
 
-@Suppress("LargeClass") // Functions extracted into NoteUploader/NoteDownloader/MarkdownSyncManager (v2.0.0)
+// Abbau: TECH_DEBT_ROADMAP.md Slice 4
+@Suppress("LargeClass", "TooManyFunctions") // Functions extracted into NoteUploader/NoteDownloader/MarkdownSyncManager (v2.0.0)
 class WebDavSyncService(private val context: Context, private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     companion object {
         private const val TAG = "WebDavSyncService"
@@ -110,12 +112,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         urlBuilder = urlBuilder,
         ioDispatcher = ioDispatcher,
         folderStore = folderStore, // 🆕 v2.8.0 (Local-Only Folders)
-        markdownExporter = { sardine, serverUrl, note, mdDirExists ->
-            markdownSyncManager.exportSingle(sardine, serverUrl, note, mdDirExists)
+        markdownExporter = { webdav, serverUrl, note, mdDirExists ->
+            markdownSyncManager.exportSingle(webdav, serverUrl, note, mdDirExists)
         },
         // 🆕 v2.9.0 (Trash): getrashte Notiz → Server-MD löschen statt exportieren.
-        markdownDeleter = { sardine, serverUrl, note ->
-            markdownSyncManager.deleteSingle(sardine, serverUrl, note)
+        markdownDeleter = { webdav, serverUrl, note ->
+            markdownSyncManager.deleteSingle(webdav, serverUrl, note)
         }
     )
 
@@ -149,11 +151,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     )
 
     /**
-     * ⚡ v1.3.1: Gecachten Sardine-Client zurückgeben oder erstellen
+     * ⚡ v1.3.1: Gecachten WebDavClient-Client zurückgeben oder erstellen
      * Spart ~100ms pro Aufruf durch Wiederverwendung
      * 🆕 Issue #21: internal für NotesImportWizard-Zugriff
      */
-    internal fun getOrCreateSardine(): Sardine? = connectionManager.getOrCreateClient()
+    internal fun getOrCreateWebDavClient(): WebDavClient? = connectionManager.getOrCreateClient()
 
     /**
      * 🆕 v2.0.0: Delegiert an SyncUrlBuilder (extrahiert in Commit 17).
@@ -167,7 +169,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * See: bug-401-error-mapping.md
      */
     private fun isAuthException(e: IOException): Boolean {
-        if (e is com.thegrizzlylabs.sardineandroid.impl.SardineException) {
+        if (e is WebDavException) {
             return e.statusCode == HTTP_UNAUTHORIZED
         }
         val msg = e.message?.lowercase().orEmpty()
@@ -180,7 +182,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Wird beim ersten erfolgreichen Sync aufgerufen (unabhängig von MD-Feature).
      * Cached in Memory - nur einmal pro App-Session.
      */
-    private fun ensureMarkdownDirectoryExists(sardine: Sardine, serverUrl: String) {
+    private fun ensureMarkdownDirectoryExists(webdav: WebDavClient, serverUrl: String) {
         if (connectionManager.markdownDirEnsured) return
 
         try {
@@ -189,12 +191,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // 🔧 v2.0.0 (Issue #44): exists() may throw IOException on servers with auth quirks.
             // Fallback: try list() — if it succeeds, the directory exists.
             val dirExists = try {
-                sardine.exists(mdUrl)
+                webdav.exists(mdUrl)
             } catch (e: IOException) {
                 if (isAuthException(e)) throw e
                 Logger.w(TAG, "⚠️ notes-md/ exists() check failed: ${e.message}, trying list()")
                 try {
-                    sardine.list(mdUrl)
+                    webdav.list(mdUrl)
                     true
                 } catch (listEx: IOException) {
                     if (isAuthException(listEx)) throw listEx
@@ -204,7 +206,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             }
 
             if (!dirExists) {
-                sardine.createDirectory(mdUrl)
+                webdav.createDirectory(mdUrl)
                 Logger.d(TAG, "📁 Created notes-md/ directory (for future use)")
             }
 
@@ -222,7 +224,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * 🔧 v2.0.0 (Issue #44): Fallback auf list() wenn exists() fehlschlägt
      */
     @Suppress("ThrowsCount") // Auth re-throws in exists/list fallback + outer re-throw
-    private fun ensureNotesDirectoryExists(sardine: Sardine, notesUrl: String) {
+    private fun ensureNotesDirectoryExists(webdav: WebDavClient, notesUrl: String) {
         if (connectionManager.notesDirEnsured) {
             Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
             return
@@ -233,12 +235,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // 🔧 v2.0.0 (Issue #44): exists() may throw if server returns unexpected HTTP code.
             // Fallback: try list() — PROPFIND works universally (Jianguoyun, Nextcloud, Apache).
             val dirExists = try {
-                sardine.exists(notesUrl)
+                webdav.exists(notesUrl)
             } catch (e: IOException) {
                 if (isAuthException(e)) throw e
                 Logger.w(TAG, "⚠️ exists() check failed: ${e.message}, trying list()")
                 try {
-                    sardine.list(notesUrl)
+                    webdav.list(notesUrl)
                     true
                 } catch (listEx: IOException) {
                     if (isAuthException(listEx)) throw listEx
@@ -248,7 +250,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             }
             if (!dirExists) {
                 Logger.d(TAG, "📁 Creating $activeSyncFolderName/ directory...")
-                sardine.createDirectory(notesUrl)
+                webdav.createDirectory(notesUrl)
             }
             Logger.d(TAG, "    ✅ $activeSyncFolderName/ directory ready")
             connectionManager.notesDirEnsured = true
@@ -272,8 +274,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * 3. If changed → server has updates
      * 4. If unchanged → skip sync
      */
-    @Suppress("ReturnCount") // Early returns for conditional checks
-    private fun checkServerForChanges(sardine: Sardine, serverUrl: String): Boolean {
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 4
+    @Suppress("ReturnCount", "CyclomaticComplexMethod") // Early returns for conditional checks
+    private fun checkServerForChanges(webdav: WebDavClient, serverUrl: String): Boolean {
         return try {
             val startTime = System.currentTimeMillis()
             val lastSyncTime = getLastSyncTimestamp()
@@ -285,13 +288,13 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             // 🔧 v1.7.2: Exception wird NICHT gefangen - muss nach oben propagieren!
-            // Wenn sardine.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
+            // Wenn webdav.exists() timeout hat, soll hasUnsyncedChanges() das behandeln
             // 🐛 Fix #21: Wenn /notes/ nicht existiert → true zurückgeben, damit syncNotes()
             // aufgerufen wird und ensureNotesDirectoryExists() das Verzeichnis anlegen kann.
             // Vorher: return false → Deadlock (Verzeichnis wird nie erstellt, Sync nie gestartet)
             // 🔧 v2.0.0 (Issue #44): Catch IOException from exists() to avoid masking real errors
             val notesExistCheck = try {
-                sardine.exists(notesUrl)
+                webdav.exists(notesUrl)
             } catch (e: IOException) {
                 Logger.w(TAG, "⚠️ Server check failed: ${e.message}")
                 return true // Trigger sync anyway — let syncNotes() handle errors
@@ -322,14 +325,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
 
                 // 🔧 v2.0.0 (Issue #44): Use listOrNull() to avoid 403 false-negative on Jianguoyun
-                val mdResources: List<DavResource>? = when (sardine) {
-                    is SafeSardineWrapper -> sardine.listOrNull(mdUrl)
-                    else -> try {
-                        sardine.list(mdUrl)
-                    } catch (_: IOException) {
-                        null
-                    }
-                }
+                val mdResources: List<WebDavResource>? = webdav.listOrNull(mdUrl)
 
                 if (mdResources == null) {
                     Logger.d(TAG, "📁 /notes-md/ doesn't exist - no markdown changes")
@@ -370,14 +366,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // Greift wenn hasJsonChanges konditionell wird oder KEY_ALWAYS_CHECK_SERVER deaktiviert ist.
             val foldersUrl = urlBuilder.getNotesUrl(serverUrl).trimEnd('/') + "/" + FolderSyncManager.FOLDERS_FILE_NAME
             val hasFolderChanges = try {
-                val resources = when (sardine) {
-                    is SafeSardineWrapper -> sardine.listOrNull(foldersUrl)
-                    else -> try {
-                        sardine.list(foldersUrl)
-                    } catch (_: IOException) {
-                        null
-                    }
-                }
+                val resources = webdav.listOrNull(foldersUrl)
                 resources?.firstOrNull { !it.isDirectory }?.modified?.time?.let { it > lastSyncTime } ?: false
             } catch (_: Exception) {
                 false
@@ -474,15 +463,15 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             }
 
             // Perform intelligent server check
-            val sardine = getOrCreateSardine()
+            val webdav = getOrCreateWebDavClient()
             val serverUrl = getServerUrl()
 
-            if (sardine == null || serverUrl == null) {
+            if (webdav == null || serverUrl == null) {
                 Logger.w(TAG, "⚠️ Cannot check server - no credentials")
                 return@withContext false
             }
 
-            val hasServerChanges = checkServerForChanges(sardine, serverUrl)
+            val hasServerChanges = checkServerForChanges(webdav, serverUrl)
             Logger.d(TAG, "📊 Final check: local=$hasLocalChanges, server=$hasServerChanges")
 
             hasServerChanges
@@ -509,7 +498,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
     suspend fun testConnection(): SyncResult = withContext(ioDispatcher) {
         return@withContext try {
-            val sardine = getOrCreateSardine() ?: return@withContext SyncResult(
+            val webdav = getOrCreateWebDavClient() ?: return@withContext SyncResult(
                 isSuccess = false,
                 errorMessage = "Server-Zugangsdaten nicht konfiguriert"
             )
@@ -522,9 +511,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // Only test if directory exists or can be created
             // 🔧 v2.0.0 (Issue #44): exists() may throw on Jianguoyun — let it propagate;
             // the outer catch maps it to an error message properly.
-            val exists = sardine.exists(serverUrl)
+            val exists = webdav.exists(serverUrl)
             if (!exists) {
-                sardine.createDirectory(serverUrl)
+                webdav.createDirectory(serverUrl)
             }
 
             // 🔧 v2.3.0 (Issue #55): Verify WebDAV capability with PROPFIND.
@@ -532,7 +521,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // the URL is an actual WebDAV collection. Without this check, testConnection()
             // reports "Reachable" for non-WebDAV URLs, and the subsequent MKCOL fails with 404.
             try {
-                sardine.list(serverUrl)
+                webdav.list(serverUrl)
             } catch (e: Exception) {
                 Logger.w(TAG, "⚠️ PROPFIND failed on base URL: ${e.message}")
                 return@withContext SyncResult(
@@ -550,7 +539,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // 🆕 Issue #21: Sync-Ordner prüfen und Status mit Ordnernamen kommunizieren
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
             val notesExist = try {
-                sardine.exists(notesUrl)
+                webdav.exists(notesUrl)
             } catch (e: Exception) {
                 Logger.d(TAG, "exists() check failed during testConnection: ${e.message}")
                 false
@@ -558,7 +547,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val folderName = activeSyncFolderName
             val infoMessage = if (notesExist) {
                 val mdExists = try {
-                    sardine.exists(urlBuilder.getMarkdownUrl(serverUrl))
+                    webdav.exists(urlBuilder.getMarkdownUrl(serverUrl))
                 } catch (e: Exception) {
                     Logger.d(TAG, "md exists() check failed during testConnection: ${e.message}")
                     false
@@ -586,6 +575,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 4
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun syncNotes(): SyncResult = withContext(ioDispatcher) {
         // 🔒 v1.3.1: Verhindere parallele Syncs
         if (!syncMutex.tryLock()) {
@@ -606,24 +597,24 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             return@withContext try {
                 // 🆕 v1.8.0: Banner bleibt in PREPARING bis echte Arbeit (Upload/Download) anfällt
 
-                Logger.d(TAG, "📍 Step 1: Getting Sardine client")
+                Logger.d(TAG, "📍 Step 1: Getting WebDavClient client")
 
-                val sardine = try {
-                    getOrCreateSardine()
+                val webdav = try {
+                    getOrCreateWebDavClient()
                 } catch (e: Exception) {
-                    Logger.e(TAG, "💥 CRASH in getOrCreateSardine()!", e)
+                    Logger.e(TAG, "💥 CRASH in getOrCreateWebDavClient()!", e)
                     e.printStackTrace()
                     throw e
                 }
 
-                if (sardine == null) {
-                    Logger.e(TAG, "❌ Sardine is null - credentials missing")
+                if (webdav == null) {
+                    Logger.e(TAG, "❌ WebDavClient is null - credentials missing")
                     return@withContext SyncResult(
                         isSuccess = false,
                         errorMessage = "Server-Zugangsdaten nicht konfiguriert"
                     )
                 }
-                Logger.d(TAG, "    ✅ Sardine client created")
+                Logger.d(TAG, "    ✅ WebDavClient client created")
 
                 Logger.d(TAG, "📍 Step 2: Getting server URL")
                 val serverUrl = getServerUrl()
@@ -650,16 +641,16 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 Logger.d(TAG, "📍 Step 3: Checking server directory")
                 // ⚡ v1.3.1: Verwende gecachte Directory-Checks
                 val notesUrl = urlBuilder.getNotesUrl(serverUrl)
-                ensureNotesDirectoryExists(sardine, notesUrl)
+                ensureNotesDirectoryExists(webdav, notesUrl)
 
                 // Ensure notes-md/ directory exists (for Markdown export)
-                ensureMarkdownDirectoryExists(sardine, serverUrl)
+                ensureMarkdownDirectoryExists(webdav, serverUrl)
 
                 // 🆕 Bild-Attachments: -assets/ sicherstellen + einziges PROPFIND für alle drei Diffs
-                assetSyncManager.ensureAssetsDirectoryExists(sardine, serverUrl)
-                val serverAssets = assetSyncManager.listServerAssets(sardine, serverUrl)
+                assetSyncManager.ensureAssetsDirectoryExists(webdav, serverUrl)
+                val serverAssets = assetSyncManager.listServerAssets(webdav, serverUrl)
 
-                uploadReferencedAssets(sardine, serverUrl, serverAssets)
+                uploadReferencedAssets(webdav, serverUrl, serverAssets)
 
                 Logger.d(TAG, "📍 Step 4: Uploading local notes")
                 // Upload local notes
@@ -672,7 +663,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 try {
                     Logger.d(TAG, "⬆️ Uploading local notes...")
                     val uploadResult = uploadLocalNotes(
-                        sardine,
+                        webdav,
                         serverUrl,
                         onProgress = { current, total, noteTitle ->
                             SyncStateManager.updateProgress(
@@ -694,9 +685,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
                 // Step 4.5: Process pending server deletions (queued from offline deletes)
                 Logger.d(TAG, "📍 Step 4.5: Processing pending server deletions")
-                purgedFromServerCount = processPendingServerDeletions(sardine, serverUrl)
+                purgedFromServerCount = processPendingServerDeletions(webdav, serverUrl)
 
-                seedDeletionTrackerFromSharedLedger(sardine, serverUrl)
+                seedDeletionTrackerFromSharedLedger(webdav, serverUrl)
 
                 // 🆕 v1.8.0: Phase 3 - Downloading (Phase wird nur bei echten Downloads gesetzt)
                 Logger.d(TAG, "📍 Step 5: Downloading remote notes")
@@ -707,7 +698,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 try {
                     Logger.d(TAG, "⬇️ Downloading remote notes...")
                     val downloadResult = downloadRemoteNotes(
-                        sardine,
+                        webdav,
                         serverUrl,
                         // 🔧 v2.3.0 (Issue #62): Normal sync must NOT scan WebDAV root.
                         // v1.2.0 compat-scan caused phantom "Untitled" notes when foreign
@@ -751,10 +742,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     throw e
                 }
 
-                downloadAndGcAssets(sardine, serverUrl, serverAssets)
+                downloadAndGcAssets(webdav, serverUrl, serverAssets)
 
                 // 🆕 v2.7.0 (Folders): Step 5.6 — Ordner-Metadaten syncen (Namen + Farben + Tombstones).
-                val foldersChanged = syncFolderMetadataSafe(sardine, serverUrl)
+                val foldersChanged = syncFolderMetadataSafe(webdav, serverUrl)
 
                 Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
 
@@ -775,7 +766,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         // 🆕 Also exclude IDs adopted from a server JSON edit at a tied timestamp so a
                         // divergent MD mirror cannot override the authoritative JSON in the same cycle.
                         markdownImportedCount = importMarkdownFiles(
-                            sardine,
+                            webdav,
                             serverUrl,
                             markdownExportedNoteIds + adoptedFromDownloadIds
                         )
@@ -784,7 +775,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         // 🔧 v1.7.2 (IMPL_014): Re-upload notes that were updated from Markdown
                         if (markdownImportedCount > 0) {
                             Logger.d(TAG, "📤 Re-uploading notes updated from Markdown (JSON sync)...")
-                            val reUploadResult = uploadLocalNotes(sardine, serverUrl)
+                            val reUploadResult = uploadLocalNotes(webdav, serverUrl)
                             Logger.d(
                                 TAG,
                                 "✅ Re-uploaded: ${reUploadResult.uploadedCount} notes (JSON updated on server)"
@@ -893,7 +884,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    private suspend fun processPendingServerDeletions(sardine: Sardine, serverUrl: String): Int {
+    private suspend fun processPendingServerDeletions(webdav: WebDavClient, serverUrl: String): Int {
         return try {
             val pendingDeletions = PendingServerDeletions(context)
             val pendingIds = pendingDeletions.getAll()
@@ -918,7 +909,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     // Lösch-Ledger, sonst wird die nur verschobene Notiz geräteweit als gelöscht
                     // markiert und beim Download wieder getilgt (Datenverlust bei Ordner-Rename).
                     if (!pd.isMove) {
-                        deletionSyncManager.appendAndUpload(sardine, deletionsUrl, pd.id, deviceId)
+                        deletionSyncManager.appendAndUpload(webdav, deletionsUrl, pd.id, deviceId)
                         purgedCount++
                     }
                 } catch (e: Exception) {
@@ -960,10 +951,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    private fun seedDeletionTrackerFromSharedLedger(sardine: Sardine, serverUrl: String) {
+    private fun seedDeletionTrackerFromSharedLedger(webdav: WebDavClient, serverUrl: String) {
         try {
             val url = deletionSyncManager.deletionsFileUrl(serverUrl)
-            val remoteLedger = deletionSyncManager.downloadRemote(sardine, url)
+            val remoteLedger = deletionSyncManager.downloadRemote(webdav, url)
             if (remoteLedger.deletedNotes.isEmpty()) return
             val localTracker = storage.loadDeletionTracker()
             val now = System.currentTimeMillis()
@@ -976,9 +967,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    private suspend fun syncFolderMetadataSafe(sardine: Sardine, serverUrl: String): Boolean =
+    private suspend fun syncFolderMetadataSafe(webdav: WebDavClient, serverUrl: String): Boolean =
         try {
-            folderSyncManager.sync(sardine, serverUrl)
+            folderSyncManager.sync(webdav, serverUrl)
         } catch (e: Exception) {
             Logger.w(TAG, "folder metadata sync failed (non-fatal): ${e.message}")
             false
@@ -990,13 +981,13 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * der Markdown-Renderer zeigt bis zum nächsten Sync einen Platzhalter.
      */
     private suspend fun uploadReferencedAssets(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
-        serverAssets: Map<String, DavResource>
+        serverAssets: Map<String, WebDavResource>
     ) {
         try {
             val referenced = AssetReferences.extractAllReferenced(storage.loadAllNotes())
-            val uploadedCount = assetSyncManager.uploadMissing(sardine, serverUrl, referenced, serverAssets)
+            val uploadedCount = assetSyncManager.uploadMissing(webdav, serverUrl, referenced, serverAssets)
             Logger.d(TAG, "✅ Assets uploaded: $uploadedCount")
         } catch (e: Exception) {
             Logger.e(TAG, "⚠️ Asset upload failed (non-fatal)", e)
@@ -1009,21 +1000,21 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Mark-and-Sweep-GC. Best-effort, wie [uploadReferencedAssets].
      */
     private suspend fun downloadAndGcAssets(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
-        serverAssets: Map<String, DavResource>
+        serverAssets: Map<String, WebDavResource>
     ) {
         try {
             val freshNotes = storage.loadAllNotes(forceReload = true)
             val referenced = AssetReferences.extractAllReferenced(freshNotes)
-            val downloadedCount = assetSyncManager.downloadMissing(sardine, serverUrl, referenced, serverAssets)
+            val downloadedCount = assetSyncManager.downloadMissing(webdav, serverUrl, referenced, serverAssets)
             Logger.d(TAG, "✅ Assets downloaded: $downloadedCount")
 
             // Guard analog ALL_DELETED_GUARD_THRESHOLD: eine leere Notizliste deutet auf einen
             // fehlgeschlagenen Load hin, nicht auf "alle Assets sind Waisen" — Remote-GC würde
             // sonst serverseitige Assets aller Geräte fälschlich löschen.
             assetSyncManager.garbageCollect(
-                sardine,
+                webdav,
                 serverUrl,
                 freshNotes,
                 serverAssets,
@@ -1039,10 +1030,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Analog zu ParallelDownloader-Pattern, aber für Uploads.
      */
     private suspend fun uploadLocalNotes(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }
-    ): UploadBatchResult = noteUploader.uploadAll(sardine, serverUrl, onProgress)
+    ): UploadBatchResult = noteUploader.uploadAll(webdav, serverUrl, onProgress)
 
     /**
      * 🆕 v1.9.0 (Opt 5): Berechnet SHA-256-Hash des JSON-Inhalts einer Notiz.
@@ -1064,14 +1055,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Delegiert an NoteDownloader (v2.0.0 Commit 21).
      */
     private suspend fun downloadRemoteNotes(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         includeRootFallback: Boolean = false,
         forceOverwrite: Boolean = false,
         deletionTracker: DeletionTracker = storage.loadDeletionTracker(),
         onProgress: (current: Int, total: Int, fileName: String) -> Unit = { _, _, _ -> }
     ): DownloadResult = noteDownloader.downloadAll(
-        sardine = sardine,
+        webdav = webdav,
         serverUrl = serverUrl,
         includeRootFallback = includeRootFallback,
         forceOverwrite = forceOverwrite,
@@ -1096,6 +1087,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * @param mode RestoreMode (REPLACE, MERGE, or OVERWRITE_DUPLICATES)
      * @return RestoreResult with count of restored notes
      */
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 4
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun restoreFromServer(
         mode: dev.dettmer.simplenotes.backup.RestoreMode = dev.dettmer.simplenotes.backup.RestoreMode.REPLACE,
         // 🆕 v2.11.0: Ordnerwechsel-Dialog ("Nicht mitnehmen") — ein legitim leerer
@@ -1104,7 +1097,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         emptyIsSuccess: Boolean = false
     ): RestoreResult = withContext(ioDispatcher) {
         return@withContext try {
-            val sardine = getOrCreateSardine() ?: return@withContext RestoreResult(
+            val webdav = getOrCreateWebDavClient() ?: return@withContext RestoreResult(
                 isSuccess = false,
                 errorMessage = "Server-Zugangsdaten nicht konfiguriert",
                 restoredCount = 0
@@ -1182,7 +1175,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             )
             val emptyTracker = DeletionTracker() // Fresh empty tracker after clear
             val result = downloadRemoteNotes(
-                sardine = sardine,
+                webdav = webdav,
                 serverUrl = serverUrl,
                 includeRootFallback = true, // ✅ Enable backward compatibility for restore
                 forceOverwrite = forceOverwrite, // ✅ v1.3.0: Force overwrite for OVERWRITE_DUPLICATES mode
@@ -1227,7 +1220,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
             // 🐛 Fix: Ordner-Metadaten (Farben, Tombstones, leere Ordner) aus folders.json anwenden.
             // downloadRemoteNotes() legt nur nackte Ordnernamen an — Farben/leere Ordner kommen nur hierüber.
-            syncFolderMetadataSafe(sardine, serverUrl)
+            syncFolderMetadataSafe(webdav, serverUrl)
 
             saveLastSyncTimestamp()
 
@@ -1263,8 +1256,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     /**
      * Auto-Import Markdown files during regular sync — delegiert an MarkdownSyncManager.
      */
-    private suspend fun importMarkdownFiles(sardine: Sardine, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
-        markdownSyncManager.importAll(sardine, serverUrl, excludeNoteIds)
+    private suspend fun importMarkdownFiles(webdav: WebDavClient, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
+        markdownSyncManager.importAll(webdav, serverUrl, excludeNoteIds)
 
     /**
      * Deletes a note from the server (JSON + Markdown)
@@ -1284,7 +1277,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * aber nur wenn beide leer sind. Nicht-leere Verzeichnisse bleiben unangetastet.
      */
     suspend fun deleteServerFolderIfEmpty(folderName: String): Boolean = withContext(Dispatchers.IO) {
-        val sardine = connectionManager.getOrCreateClient() ?: return@withContext false
+        val webdav = connectionManager.getOrCreateClient() ?: return@withContext false
         val serverUrl = urlBuilder.getServerUrl() ?: return@withContext false
         var ok = true
         for (url in listOf(
@@ -1292,14 +1285,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
         )) {
             try {
-                val entries = (sardine as? SafeSardineWrapper)?.listOrNull(url) ?: sardine.list(url)
+                val entries = webdav.listOrNull(url)
                 // depth=1 liefert das Verzeichnis selbst als ersten Eintrag → "leer" = nur Self.
                 // Decoded-Pfad-Vergleich, damit Ordnernamen mit Sonderzeichen (z.B. "Test neu" →
                 // "Test%20neu" im href) korrekt als Self erkannt werden.
                 val dirPath = java.net.URI(url).path.trimEnd('/')
                 val children = entries?.filter { it.href.path.trimEnd('/') != dirPath }
                 if (children.isNullOrEmpty()) {
-                    sardine.delete(url)
+                    webdav.delete(url)
                     Logger.d(TAG, "🗑️ Deleted empty server folder: $url")
                 }
             } catch (e: Exception) {
@@ -1318,7 +1311,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      */
     suspend fun manualMarkdownSync(): ManualMarkdownSyncResult = withContext(ioDispatcher) {
         return@withContext try {
-            val sardine = getOrCreateSardine()
+            val webdav = getOrCreateWebDavClient()
                 ?: throw SyncException(context.getString(R.string.error_sardine_client_failed))
             val serverUrl = getServerUrl()
                 ?: throw SyncException(context.getString(R.string.error_server_url_not_configured))
@@ -1341,7 +1334,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             Logger.d(TAG, "   ✅ Export: $exportedCount notes")
 
             // Step 2: Import alle Server-Markdown-Dateien
-            val importedCount = importMarkdownFiles(sardine, serverUrl)
+            val importedCount = importMarkdownFiles(webdav, serverUrl)
             Logger.d(TAG, "   ✅ Import: $importedCount notes")
 
             Logger.d(TAG, "🎉 Manual Markdown Sync COMPLETE: exported=$exportedCount, imported=$importedCount")

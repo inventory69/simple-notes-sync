@@ -1,12 +1,12 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
@@ -33,9 +33,9 @@ internal class NoteUploader(
     private val urlBuilder: SyncUrlBuilder,
     private val ioDispatcher: CoroutineDispatcher,
     private val folderStore: FolderStore, // 🆕 v2.8.0 (Local-Only Folders)
-    private val markdownExporter: ((Sardine, String, Note, Boolean) -> Unit)? = null,
+    private val markdownExporter: ((WebDavClient, String, Note, Boolean) -> Unit)? = null,
     // 🆕 v2.9.0 (Trash): löscht den Server-MD-Spiegel getrashter Notizen statt sie zu exportieren.
-    private val markdownDeleter: ((Sardine, String, Note) -> Unit)? = null
+    private val markdownDeleter: ((WebDavClient, String, Note) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "NoteUploader"
@@ -52,9 +52,10 @@ internal class NoteUploader(
      * - Opt 4: Batch-E-Tag-Fetch per list(depth=1) nach allen Uploads
      * - Opt 5: Upload-Skip per Content-Hash
      */
-    @Suppress("NestedBlockDepth")
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     suspend fun uploadAll(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }
     ): UploadBatchResult {
@@ -66,9 +67,9 @@ internal class NoteUploader(
         val markdownDirExists: Boolean = if (markdownExportEnabled) {
             try {
                 val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
-                val exists = sardine.exists(mdUrl)
+                val exists = webdav.exists(mdUrl)
                 if (!exists) {
-                    sardine.createDirectory(mdUrl)
+                    webdav.createDirectory(mdUrl)
                     Logger.d(TAG, "📁 Created notes-md/ directory (one-time check)")
                 }
                 true
@@ -95,11 +96,11 @@ internal class NoteUploader(
         }
 
         // 🆕 v2.7.0 (Folders): benötigte Subdirectories einmalig anlegen (vor parallelem Upload).
-        // SafeSardineWrapper.createDirectory toleriert 405 (existiert) und macht list()-Fallback bei 404.
+        // WebDavClient.createDirectory toleriert 405 (existiert) und macht list()-Fallback bei 404.
         val foldersToCreate = pendingNotes.mapNotNull { it.folderName }.distinct()
         for (folder in foldersToCreate) {
             try {
-                sardine.createDirectory(urlBuilder.getNotesFolderUrl(serverUrl, folder))
+                webdav.createDirectory(urlBuilder.getNotesFolderUrl(serverUrl, folder))
                 Logger.d(TAG, "📁 Ensured folder dir: $folder")
             } catch (e: Exception) {
                 Logger.w(TAG, "⚠️ createDirectory for folder '$folder' failed: ${e.message}")
@@ -130,7 +131,7 @@ internal class NoteUploader(
                 async(ioDispatcher) {
                     semaphore.withPermit {
                         val result = uploadSingle(
-                            sardine = sardine,
+                            webdav = webdav,
                             serverUrl = serverUrl,
                             note = note,
                             markdownExportEnabled = markdownExportEnabled,
@@ -181,7 +182,7 @@ internal class NoteUploader(
                 val batchEtagUpdates = mutableMapOf<String, String?>()
                 for (folder in foldersWithUploads) {
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
-                    val allResources = sardine.list(folderUrl, 1)
+                    val allResources = webdav.list(folderUrl, 1)
                     for (resource in allResources) {
                         val filename = resource.name
                         if (!filename.endsWith(".json")) continue
@@ -257,7 +258,7 @@ internal class NoteUploader(
      * @return UploadTaskResult mit Erfolgs-/Fehler-Info
      */
     private suspend fun uploadSingle(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         note: Note,
         markdownExportEnabled: Boolean,
@@ -300,7 +301,7 @@ internal class NoteUploader(
                 val jsonBytes = noteToUpload.toJson().toByteArray()
 
                 Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title}) [attempt ${attempt + 1}]")
-                sardine.put(noteUrl, jsonBytes, "application/json")
+                webdav.put(noteUrl, jsonBytes, "application/json")
                 Logger.d(TAG, "      ✅ Upload successful")
 
                 // 🔒 Thread-sicherer Storage-Write via Mutex
@@ -317,10 +318,10 @@ internal class NoteUploader(
                         try {
                             if (noteToUpload.isTrashed) {
                                 // 🆕 v2.9.0 (Trash): MD-Export überspringen, Server-MD stattdessen löschen.
-                                markdownDeleter?.invoke(sardine, serverUrl, noteToUpload)
+                                markdownDeleter?.invoke(webdav, serverUrl, noteToUpload)
                                 Logger.d(TAG, "   🗑️ MD deleted (trashed): ${noteToUpload.title}")
                             } else {
-                                markdownExporter?.invoke(sardine, serverUrl, noteToUpload, markdownDirExists)
+                                markdownExporter?.invoke(webdav, serverUrl, noteToUpload, markdownDirExists)
                                 didExportMarkdown = true // 🆕 v1.11.0
                                 Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
                             }

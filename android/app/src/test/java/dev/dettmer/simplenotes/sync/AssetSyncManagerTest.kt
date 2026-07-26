@@ -2,9 +2,9 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.storage.AssetStore
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -53,23 +53,26 @@ class AssetSyncManagerTest {
         tmpDir.deleteRecursively()
     }
 
-    private fun davResource(name: String, modifiedMs: Long? = null): DavResource = mockk {
-        every { isDirectory } returns false
-        every { getName() } returns name
-        every { modified } returns modifiedMs?.let { java.util.Date(it) }
-    }
+    // WebDavResource ist eine reine Data-Class → echtes Objekt statt Mock.
+    private fun davResource(name: String, modifiedMs: Long? = null): WebDavResource = WebDavResource(
+        href = java.net.URI("/notes-assets/$name"),
+        modified = modifiedMs?.let { java.util.Date(it) },
+        contentLength = 0L,
+        isDirectory = false,
+        etag = null
+    )
 
     @Test fun `uploadMissing only uploads referenced assets that exist locally but not on server`() = runBlocking {
         assetStore.saveAssetAs("bytes-a".toByteArray(), "a.webp")
         assetStore.saveAssetAs("bytes-b".toByteArray(), "b.webp")
         // "c.webp" is referenced but never saved locally — must be skipped, nothing to upload.
 
-        val sardine = mockk<Sardine>(relaxed = true)
+        val webdav = mockk<WebDavClient>(relaxed = true)
         val uploadedUrl = slot<String>()
-        every { sardine.put(capture(uploadedUrl), any<ByteArray>(), any()) } just Runs
+        every { webdav.put(capture(uploadedUrl), any<ByteArray>(), any()) } returns null
 
         val uploaded = manager.uploadMissing(
-            sardine,
+            webdav,
             "http://server/notes",
             referenced = setOf("a.webp", "b.webp", "c.webp"),
             serverAssets = mapOf("b.webp" to davResource("b.webp")) // b already on server
@@ -82,11 +85,11 @@ class AssetSyncManagerTest {
     @Test fun `downloadMissing only downloads referenced assets on server but missing locally`() = runBlocking {
         assetStore.saveAssetAs("already here".toByteArray(), "have.webp")
 
-        val sardine = mockk<Sardine>(relaxed = true)
-        every { sardine.get(any()) } returns ByteArrayInputStream("downloaded content".toByteArray())
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.get(any()) } returns ByteArrayInputStream("downloaded content".toByteArray())
 
         val downloaded = manager.downloadMissing(
-            sardine,
+            webdav,
             "http://server/notes",
             referenced = setOf("have.webp", "missing.webp", "not-on-server.webp"),
             serverAssets = mapOf(
@@ -113,9 +116,9 @@ class AssetSyncManagerTest {
         keptFile.setLastModified(old)
         orphanFile.setLastModified(old)
 
-        val sardine = mockk<Sardine>(relaxed = true)
+        val webdav = mockk<WebDavClient>(relaxed = true)
         val deletedUrls = slot<String>()
-        every { sardine.delete(capture(deletedUrls)) } just Runs
+        every { webdav.delete(capture(deletedUrls)) } just Runs
 
         val note = dev.dettmer.simplenotes.models.Note(
             id = "n1",
@@ -125,7 +128,7 @@ class AssetSyncManagerTest {
         )
 
         manager.garbageCollect(
-            sardine,
+            webdav,
             "http://server/notes",
             allNotes = listOf(note),
             serverAssets = mapOf("orphan.webp" to davResource("orphan.webp", modifiedMs = old)),
@@ -142,16 +145,16 @@ class AssetSyncManagerTest {
         assetStore.saveAssetAs("orphan".toByteArray(), "orphan.webp")
         assetStore.getAssetFile("orphan.webp").setLastModified(old)
 
-        val sardine = mockk<Sardine>(relaxed = true)
+        val webdav = mockk<WebDavClient>(relaxed = true)
 
         manager.garbageCollect(
-            sardine,
+            webdav,
             "http://server/notes",
             allNotes = emptyList(),
             serverAssets = mapOf("orphan.webp" to davResource("orphan.webp", modifiedMs = old)),
             allowRemoteSweep = false
         )
 
-        verify(exactly = 0) { sardine.delete(any()) }
+        verify(exactly = 0) { webdav.delete(any()) }
     }
 }

@@ -1,13 +1,11 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Constants
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
@@ -50,31 +48,31 @@ class MarkdownSyncManagerAssetLinkTest {
     )
 
     @Test fun `root note gets one level up to the assets sibling folder`() {
-        val sardine = mockk<Sardine>(relaxed = true)
+        val webdav = mockk<WebDavClient>(relaxed = true)
         val bytes = slot<ByteArray>()
-        every { sardine.put(any(), capture(bytes), any()) } just Runs
+        every { webdav.put(any(), capture(bytes), any()) } returns null
 
-        manager.exportSingle(sardine, "http://server", note("![](.assets/abc123.webp)"))
+        manager.exportSingle(webdav, "http://server", note("![](.assets/abc123.webp)"))
 
         assertTrue(String(bytes.captured).contains("![](../notes-assets/abc123.webp)"))
     }
 
     @Test fun `note inside a folder gets two levels up`() {
-        val sardine = mockk<Sardine>(relaxed = true)
+        val webdav = mockk<WebDavClient>(relaxed = true)
         val bytes = slot<ByteArray>()
-        every { sardine.put(any(), capture(bytes), any()) } just Runs
+        every { webdav.put(any(), capture(bytes), any()) } returns null
 
-        manager.exportSingle(sardine, "http://server", note("![](.assets/abc123.webp)", folderName = "Rezepte"))
+        manager.exportSingle(webdav, "http://server", note("![](.assets/abc123.webp)", folderName = "Rezepte"))
 
         assertTrue(String(bytes.captured).contains("![](../../notes-assets/abc123.webp)"))
     }
 
     @Test fun `content without image links is unaffected`() {
-        val sardine = mockk<Sardine>(relaxed = true)
+        val webdav = mockk<WebDavClient>(relaxed = true)
         val bytes = slot<ByteArray>()
-        every { sardine.put(any(), capture(bytes), any()) } just Runs
+        every { webdav.put(any(), capture(bytes), any()) } returns null
 
-        manager.exportSingle(sardine, "http://server", note("just plain text"))
+        manager.exportSingle(webdav, "http://server", note("just plain text"))
 
         assertEquals(true, String(bytes.captured).contains("just plain text"))
     }
