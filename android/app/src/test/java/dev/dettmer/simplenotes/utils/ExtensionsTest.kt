@@ -6,7 +6,7 @@ import org.junit.Test
 /**
  * Unit-Tests für Extension Functions.
  *
- * Hinweis: Context-abhängige Extensions (showToast, toReadableTime(Context))
+ * Hinweis: Context-abhängige Extensions (toReadableTime(Context))
  * können hier nicht getestet werden – sie benötigen Android-Ressourcen.
  * truncate() ist pure Logik und wird hier abgedeckt.
  */

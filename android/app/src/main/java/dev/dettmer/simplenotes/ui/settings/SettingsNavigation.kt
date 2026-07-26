@@ -46,6 +46,8 @@ private const val NAV_ANIM_DURATION_MS = 500
  * Settings navigation host with all routes
  * v1.5.0: Jetpack Compose Settings Redesign
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun SettingsNavHost(
     navController: NavHostController,

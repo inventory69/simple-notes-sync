@@ -62,6 +62,8 @@ private fun scaleTypography(multiplier: Float): Typography {
     )
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod")
 @Composable
 fun SimpleNotesTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,

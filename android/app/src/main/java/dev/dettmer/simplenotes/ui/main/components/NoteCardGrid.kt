@@ -72,7 +72,12 @@ private val CORNER_SYNC_ICON_SIZE = 14.dp
  * - Kein externes Padding - Grid steuert Abstände
  * - Optimiert für Pinterest-style dynamisches Layout
  */
-@Suppress("LongParameterList") // 🆕 Issue #100: zwei weitere Display-Toggles neben bestehendem State
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress(
+    "LongParameterList",
+    "CyclomaticComplexMethod",
+    "LongMethod"
+) // 🆕 Issue #100: zwei weitere Display-Toggles neben bestehendem State
 @Composable
 fun NoteCardGrid(
     note: Note,

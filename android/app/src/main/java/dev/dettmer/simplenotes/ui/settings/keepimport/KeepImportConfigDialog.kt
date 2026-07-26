@@ -40,6 +40,8 @@ private const val LARGE_ZIP_WARN_MB = 200L
  * Zeigt Pre-Scan-Vorschau (oder Spinner während Scan), Switches für
  * Archived/Trashed, RadioGroup für Konflikt-Strategie, drei InfoTexts.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun KeepImportConfigDialog(
     state: KeepImportUiState.Configuring,

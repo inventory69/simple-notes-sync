@@ -62,6 +62,8 @@ private val CORNER_SYNC_ICON_SIZE = 14.dp
  * - Max 3 Zeilen Preview
  * - Optimiert für Grid-Ansicht
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun NoteCardCompact(
     note: Note,

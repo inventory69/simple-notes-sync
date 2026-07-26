@@ -49,7 +49,8 @@ internal class KeepImportUseCase(
      *
      * @return vollständige [KeepImportSummary]; throws nur bei Fatal-IOException.
      */
-    @Suppress("LongMethod") // klarer linearer Ablauf; Aufsplitten würde Lesbarkeit verschlechtern
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("LongMethod", "CyclomaticComplexMethod") // klarer linearer Ablauf; Aufsplitten würde Lesbarkeit verschlechtern
     suspend fun import(
         zipUri: Uri,
         options: KeepImportOptions,

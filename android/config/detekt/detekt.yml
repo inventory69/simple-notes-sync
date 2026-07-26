@@ -23,14 +23,14 @@ complexity:
     threshold: 5
   CyclomaticComplexMethod:
     active: true
-    threshold: 65  # v2.0.0: Still required for WebDavSyncService (refactored in Commit 13)
+    threshold: 15  # v2.14.0: Zielwert (TECH_DEBT_ROADMAP.md). Bestandsklassen per @Suppress markiert.
     ignoreSingleWhenExpression: true
   LargeClass:
     active: true
-    threshold: 600  # Increased for WebDavSyncService
+    threshold: 400  # v2.14.0: Zielwert (TECH_DEBT_ROADMAP.md). Bestandsklassen per @Suppress markiert.
   LongMethod:
     active: true
-    threshold: 245  # v1.9.0 (F07): Increased for markdown toolbar + preview in NoteEditorScreen
+    threshold: 80  # v2.14.0: Zielwert (TECH_DEBT_ROADMAP.md). Bestandsmethoden per @Suppress markiert.
   LongParameterList:
     active: true
     functionThreshold: 10  # v1.5.0: Compose functions often have many params
@@ -40,8 +40,8 @@ complexity:
     threshold: 5
   TooManyFunctions:
     active: true
-    thresholdInFiles: 35  # v1.5.0: Increased for large classes
-    thresholdInClasses: 40  # v1.9.0 (F06): MainViewModel extended with filter functions
+    thresholdInFiles: 20  # v2.14.0: Zielwert (TECH_DEBT_ROADMAP.md)
+    thresholdInClasses: 20  # v2.14.0: Zielwert (TECH_DEBT_ROADMAP.md)
     thresholdInInterfaces: 20
     thresholdInObjects: 20
     thresholdInEnums: 10

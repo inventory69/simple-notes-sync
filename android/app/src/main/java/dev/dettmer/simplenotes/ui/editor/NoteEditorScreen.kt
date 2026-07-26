@@ -483,8 +483,9 @@ private suspend fun traceCheckPlacement(listState: LazyListState, trace: CheckTr
  * - Drag & Drop reordering for checklist items
  * - Auto-keyboard focus for new items
  */
+// Abbau: TECH_DEBT_ROADMAP.md Slice 5
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
@@ -1406,7 +1407,8 @@ private fun TextNoteContent(
  * 🆕 v1.8.1 IMPL_14: Extrahiertes Composable für ein einzelnes draggbares Checklist-Item.
  * Entkoppelt von der Separator-Logik — wiederverwendbar für unchecked und checked Items.
  */
-@Suppress("LongParameterList") // Compose callbacks — cannot be reduced without wrapper class
+// Abbau: TECH_DEBT_ROADMAP.md Slice 5
+@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod") // Compose callbacks — cannot be reduced without wrapper class
 @Composable
 private fun LazyItemScope.DraggableChecklistItem(
     item: ChecklistItemState,
@@ -1650,7 +1652,8 @@ private fun LazyItemScope.DraggableChecklistItem(
 
 // 🔧 v2.13.0: internal statt private — ChecklistUncheckAnimationInstrumentedTest hostet den
 // Editor direkt, um die Collapse-/Placement-Animationen frameweise zu vermessen.
-@Suppress("LongParameterList") // Compose functions commonly have many callback parameters
+// Abbau: TECH_DEBT_ROADMAP.md Slice 5
+@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod") // Compose functions commonly have many callback parameters
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ChecklistEditor(

@@ -68,7 +68,8 @@ import dev.dettmer.simplenotes.utils.CredentialStore
  * v2.12.0: Settings save immediately on input; folder/server switches gate via
  *   remoteTargetChangePending + RemoteChangeDialog (no save-on-exit anymore)
  */
-@Suppress("LongMethod", "MagicNumber") // Compose UI + Color hex values
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod", "MagicNumber", "CyclomaticComplexMethod") // Compose UI + Color hex values
 @Composable
 fun ServerSettingsScreen(
     viewModel: SettingsViewModel,

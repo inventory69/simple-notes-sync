@@ -84,7 +84,12 @@ import kotlinx.coroutines.delay
  * Note: Using 10 parameters for Composable is acceptable for complex UI components.
  * @suppress LongParameterList - Composables naturally have many parameters
  */
-@Suppress("LongParameterList", "LongMethod") // 🔧 v2.2.0: DropdownMenu adds lines; complex UI component, deliberate design
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress(
+    "LongParameterList",
+    "LongMethod",
+    "CyclomaticComplexMethod"
+) // 🔧 v2.2.0: DropdownMenu adds lines; complex UI component, deliberate design
 @Composable
 fun ChecklistItemRow(
     item: ChecklistItemState,

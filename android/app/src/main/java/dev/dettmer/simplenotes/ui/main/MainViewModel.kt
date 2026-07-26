@@ -1199,6 +1199,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_ON_RESUME
      * v1.7.0: Uses central canSync() gate for WiFi-only check
      */
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 2
+    @Suppress("CyclomaticComplexMethod")
     fun triggerAutoSync(source: String = "auto") {
         // 🌟 v1.6.0: Check if onResume trigger is enabled
         if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)) {

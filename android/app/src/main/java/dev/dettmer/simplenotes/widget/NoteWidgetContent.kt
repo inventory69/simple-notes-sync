@@ -143,6 +143,8 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
     return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 fun NoteWidgetContent(
     note: Note?,
@@ -430,6 +432,8 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
  * Kompakte Checklist-Ansicht für MEDIUM-Größen.
  * Zeigt maxItems interaktive Checkboxen + Zusammenfassung.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, glanceId: GlanceId, fontSizeScale: Float = 1.0f) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
@@ -537,6 +541,8 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
 /**
  * Vollständige Checklist-Ansicht für LARGE-Größen.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId, fontSizeScale: Float = 1.0f) {
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen

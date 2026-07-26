@@ -43,7 +43,8 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
  * Main Settings overview screen with clickable group cards
  * v1.5.0: Jetpack Compose Settings Redesign
  */
-@Suppress("MagicNumber", "LongMethod") // Color hex values; pre-established large composable
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod") // Color hex values; pre-established large composable
 @Composable
 fun SettingsMainScreen(
     viewModel: SettingsViewModel,

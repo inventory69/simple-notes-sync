@@ -48,7 +48,8 @@ import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
  * - 🔧 Perf: pinned/unpinned split is remember(notes)-cached (matches NotesStaggeredGrid) so the
  *   30s timestampTicker recomposition doesn't re-filter the full note list every tick
  */
-@Suppress("LongParameterList") // Composable with many UI state parameters
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod") // Composable with many UI state parameters
 @Composable
 fun NotesList(
     notes: List<Note>,

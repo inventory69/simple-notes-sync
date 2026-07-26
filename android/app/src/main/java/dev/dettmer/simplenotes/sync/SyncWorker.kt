@@ -19,6 +19,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LargeClass")
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     companion object {
         private const val TAG = "SyncWorker"
@@ -497,6 +499,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
      *
      * Extracted to keep doWork() within cyclomatic complexity limits.
      */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod")
     @androidx.annotation.RequiresApi(31)
     private fun logCancellationStopReason(reason: Int) {
         val reasonName = when (reason) {

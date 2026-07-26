@@ -68,6 +68,8 @@ private const val BYTES_PER_MB = 1024L * 1024L
  *
  * v1.9.0: Issue #21
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun ImportSettingsScreen(
     viewModel: SettingsViewModel,
@@ -253,7 +255,8 @@ private fun WebDavImportSection(
     }
 }
 
-@Suppress("LongParameterList")
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun ScanResultsContent(
     scanResults: List<NotesImportWizard.ImportCandidate>,

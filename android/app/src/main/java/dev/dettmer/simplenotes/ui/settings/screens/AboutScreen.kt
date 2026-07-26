@@ -55,6 +55,8 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
  * About app information screen
  * v1.5.0: Jetpack Compose Settings Redesign
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current

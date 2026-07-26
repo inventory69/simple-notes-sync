@@ -49,6 +49,8 @@ private const val TAG = "DebugSettingsScreen"
  * Debug and diagnostics settings screen
  * v1.5.0: Jetpack Compose Settings Redesign
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigate: (SettingsRoute) -> Unit) {
     val context = LocalContext.current

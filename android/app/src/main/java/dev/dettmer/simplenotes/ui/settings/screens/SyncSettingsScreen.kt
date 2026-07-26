@@ -88,6 +88,8 @@ import kotlinx.coroutines.launch
  * 3. Notifications (global toggle + sub-options + permission linking)
  * 4. Markdown (folder path + auto-sync toggle + manual sync)
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigateToServerSettings: () -> Unit) {
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
@@ -218,6 +220,8 @@ fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavig
  * Contains all 5 trigger toggles and the periodic interval selector.
  * Own recomposition scope: changes to trigger states only recompose this section.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
     val triggerOnSave by viewModel.triggerOnSave.collectAsState()
@@ -366,6 +370,8 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
     }
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()

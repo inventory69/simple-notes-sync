@@ -135,6 +135,8 @@ class ComposeMainActivity : FragmentActivity() {
         outState.putBoolean(KEY_CAME_FROM_SETTINGS, cameFromSettings)
     }
 
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
         val splashScreen = installSplashScreen()

@@ -34,7 +34,12 @@ import kotlin.math.max
  * - Efficient LazyVerticalStaggeredGrid
  * - ⏱️ timestampTicker triggers recomposition for relative time updates
  */
-@Suppress("LongParameterList") // 🔧 v2.1.0 (F46): Compose grid needs adaptiveScaling + manualColumns
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress(
+    "LongParameterList",
+    "CyclomaticComplexMethod",
+    "LongMethod"
+) // 🔧 v2.1.0 (F46): Compose grid needs adaptiveScaling + manualColumns
 @Composable
 fun NotesStaggeredGrid(
     notes: List<Note>,

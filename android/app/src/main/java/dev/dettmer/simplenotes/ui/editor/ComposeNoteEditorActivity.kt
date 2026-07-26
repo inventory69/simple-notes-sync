@@ -151,6 +151,8 @@ class ComposeNoteEditorActivity : FragmentActivity() {
     private var colorTheme by mutableStateOf(ColorTheme.DYNAMIC)
     private var fontSizeScale by mutableStateOf(FontSizeScale.SYSTEM)
 
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

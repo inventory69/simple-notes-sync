@@ -28,7 +28,8 @@ object UrlValidator {
      * - 127.x.x.x (Localhost)
      * - .local domains (mDNS/Bonjour)
      */
-    @Suppress("ReturnCount") // Early returns for validation checks are clearer
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("ReturnCount", "CyclomaticComplexMethod") // Early returns for validation checks are clearer
     fun isLocalUrl(url: String): Boolean {
         return try {
             val parsedUrl = URL(url)

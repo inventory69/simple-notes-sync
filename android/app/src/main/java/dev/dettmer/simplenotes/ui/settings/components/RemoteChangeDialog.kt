@@ -48,6 +48,8 @@ import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
  * (3 gleichwertige gestapelte Aktionen statt Standard-AlertDialog-Buttons).
  * Spacing: rohe .dp-Literale statt Dimensions.*, um exakt mit diesem Muster konsistent zu bleiben.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteChangeDialog(

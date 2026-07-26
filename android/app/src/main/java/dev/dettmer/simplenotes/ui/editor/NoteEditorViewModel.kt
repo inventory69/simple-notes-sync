@@ -1025,7 +1025,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      *
      * @return true wenn gespeichert wurde (oder nichts zu speichern war), false bei Fehler
      */
-    @Suppress("ReturnCount")
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 3
+    @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod")
     fun saveOnBack(): Boolean {
         if (isDiscarded) return true // 🆕 Issue #114: verworfene Notiz nicht wieder auf Platte schreiben
         if (!autosaveEnabled) {
@@ -1167,6 +1168,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * @param silent When true (autosave), empty-note check silently returns false without Toast.
      * Returns true if the note was saved, false if it was empty (nothing to save).
      */
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 3
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun performSave(silent: Boolean = false): Boolean {
         val state = _uiState.value
         val title = state.title.trim()

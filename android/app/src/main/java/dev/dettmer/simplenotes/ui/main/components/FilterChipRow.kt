@@ -69,7 +69,8 @@ import dev.dettmer.simplenotes.ui.theme.NoteColorSlot
  * v2.0.0: Sort-Button als gleichwertiger FilterChip, zentrierte Labels, responsive Layout.
  * v2.5.0: Text/Listen-Chips auf Icon-only umgestellt; Farbfilter-Chip mit Dropdown ergänzt.
  */
-@Suppress("LongParameterList") // Compose-Filterleiste — viele UI-State-Parameter
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongParameterList", "LongMethod") // Compose-Filterleiste — viele UI-State-Parameter
 @Composable
 fun FilterChipRow(
     currentFilter: NoteFilter,
