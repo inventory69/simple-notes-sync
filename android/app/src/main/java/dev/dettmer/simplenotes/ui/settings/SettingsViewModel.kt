@@ -29,6 +29,9 @@ import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
@@ -1564,19 +1567,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /**
      * 🆕 v2.14.0: Baut anonymisierte Kopien der Logdateien für den Export.
      *
-     * Geteilt wird nie die Originaldatei — die bleibt vollständig auf dem Gerät. Die Kopien
-     * liegen im Cache (`shared_logs/`), werden bei jedem Export überschrieben und räumt das
-     * System bei Platzmangel selbst weg. Siehe [LogAnonymizer] für das, was ersetzt wird.
+     * Geteilt wird nie die Originaldatei — die bleibt vollständig und unter ihrem Namen auf dem
+     * Gerät. Die Kopien liegen im Cache (`shared_logs/`) und räumt das System bei Platzmangel
+     * selbst weg. Siehe [LogAnonymizer] für das, was ersetzt wird.
+     *
+     * Die Kopien bekommen sprechende Namen mit Datum: `simplenotes_debug.log` sagt einem
+     * Empfänger im Postfach nichts, `simplenotes-app-2026-07-26.txt` schon. `.txt` statt `.log`,
+     * weil Mail-Clients Textdateien inline anzeigen, `.log` dagegen meist nur zum Download.
      *
      * @return teilbare Dateien, leer wenn es nichts zu exportieren gibt oder das Schreiben
      *         fehlschlägt (der Aufrufer zeigt dann seine Fehlermeldung).
      */
     suspend fun prepareLogsForSharing(): List<File> = withContext(Dispatchers.IO) {
         val context = getApplication<Application>()
+        val stamp = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         val sources = listOfNotNull(
-            Logger.getLogFile(context),
-            SyncDebugLogger.getLogFile(context)
-        ).filter { it.exists() && it.length() > 0L }
+            Logger.getLogFile(context)?.let { it to "simplenotes-app-$stamp.txt" },
+            SyncDebugLogger.getLogFile(context)?.let { it to "simplenotes-sync-$stamp.txt" }
+        ).filter { (source, _) -> source.exists() && source.length() > 0L }
         if (sources.isEmpty()) return@withContext emptyList()
 
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
@@ -1586,10 +1594,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             .onFailure { Logger.w(TAG, "could not load note titles for anonymization: ${it.message}") }
             .getOrDefault(emptyList())
         val targetDir = File(context.cacheDir, "shared_logs").apply { mkdirs() }
+        // Der Datumsstempel im Namen überschreibt ältere Kopien nicht mehr — die müssen weg,
+        // sonst sammeln sich anonymisierte Logs vergangener Tage unbegrenzt im Cache.
+        targetDir.listFiles()?.forEach { it.delete() }
 
-        sources.mapNotNull { source ->
+        sources.mapNotNull { (source, targetName) ->
             runCatching {
-                File(targetDir, source.name).apply {
+                File(targetDir, targetName).apply {
                     writeText(LogAnonymizer.anonymize(source.readText(), serverUrl, username, titles))
                 }
             }.onFailure {

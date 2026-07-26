@@ -23,6 +23,19 @@
     <!-- v2.10.0: Biometric app lock -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!--
+      🆕 v2.14.0: Package Visibility (Android 11+). Ohne diese Deklaration bleiben
+      installierte Mail-Apps für uns unsichtbar und der mailto-Selector des
+      "Log an Entwickler senden"-Buttons löst ins Leere auf. Bewusst eng auf
+      mailto beschränkt statt QUERY_ALL_PACKAGES (F-Droid/Play-Compliance).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
+
     <application
         android:name=".SimpleNotesApplication"
         android:allowBackup="true"

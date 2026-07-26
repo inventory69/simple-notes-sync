@@ -1,7 +1,10 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -42,9 +46,76 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.File
 import kotlinx.coroutines.launch
 
 private const val TAG = "DebugSettingsScreen"
+
+/** Nur in Beta-Builds sichtbar. Steht ohnehin öffentlich in den F-Droid-Metadaten. */
+private const val MAINTAINER_EMAIL = "admin@dettmer.dev"
+
+/**
+ * 🆕 v2.14.0: Teilen-Intent für die bereits anonymisierten Logdateien.
+ *
+ * [recipient] != null hängt nur die Empfängeradresse an. Die Einschränkung auf Mail-Apps
+ * passiert nicht hier, sondern über [resolveMailTargets] — ein `mailto:`-Selector wäre der
+ * naheliegende Weg, scheitert aber am MIME-Typ (siehe dort).
+ */
+private fun buildLogShareIntent(
+    context: Context,
+    files: List<File>,
+    subject: String,
+    body: String?,
+    recipient: String?
+): Intent {
+    val uris = ArrayList(
+        files.map {
+            FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", it)
+        }
+    )
+    val single = uris.size == 1
+    return Intent(if (single) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "text/plain"
+        if (single) {
+            putExtra(Intent.EXTRA_STREAM, uris[0])
+        } else {
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        }
+        // Ohne ClipData hängt das Leserecht auf die content://-URIs daran, dass der
+        // System-Chooser sie aus EXTRA_STREAM nachträgt. Beim Direktstart in eine Mail-App
+        // gibt es keinen Chooser, die Anhänge kämen ohne Leserecht an.
+        clipData = ClipData.newRawUri(null, uris[0]).apply {
+            uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+        }
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        body?.let { putExtra(Intent.EXTRA_TEXT, it) }
+        recipient?.let { putExtra(Intent.EXTRA_EMAIL, arrayOf(it)) }
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+}
+
+/**
+ * 🆕 v2.14.0: Packages, die sowohl `mailto:` beantworten als auch [share] samt Anhang annehmen.
+ *
+ * Der offensichtliche Weg wäre ein `mailto:`-Selector auf [share]. Der scheitert daran, dass
+ * das Framework zwar den Selector auflöst, den resolvedType aber aus dem Basis-Intent zieht:
+ * Mail-Apps registrieren `SENDTO`/`mailto` ohne mimeType, und ein Filter ohne Typ matcht nicht
+ * gegen `text/plain`. Ohne Typ wiederum verwirft die Mail-App die Anhänge. Beides zusammen geht
+ * nur über einen expliziten Package-Start.
+ *
+ * Der Schnitt beider Abfragen ist nötig, weil `mailto:` auch von Nicht-Mail-Apps beansprucht
+ * wird (PayPal etwa) — die würden am Anhang scheitern.
+ */
+private fun resolveMailTargets(context: Context, share: Intent): List<String> {
+    val pm = context.packageManager
+    val mailtoPackages = pm
+        .queryIntentActivities(Intent(Intent.ACTION_SENDTO, "mailto:".toUri()), 0)
+        .mapTo(mutableSetOf()) { it.activityInfo.packageName }
+    return pm.queryIntentActivities(share, 0)
+        .map { it.activityInfo.packageName }
+        .filter { it in mailtoPackages }
+        .distinct()
+}
 
 /**
  * Debug and diagnostics settings screen
@@ -131,30 +202,9 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                                 viewModel.showSnackbar(exportEmptyMsg)
                                 return@launch
                             }
-                            val uris = ArrayList(
-                                logFiles.map { file ->
-                                    FileProvider.getUriForFile(
-                                        context,
-                                        "${BuildConfig.APPLICATION_ID}.fileprovider",
-                                        file
-                                    )
-                                }
+                            val shareIntent = buildLogShareIntent(
+                                context, logFiles, logsSubject, body = null, recipient = null
                             )
-                            val shareIntent = if (uris.size == 1) {
-                                Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_STREAM, uris[0])
-                                    putExtra(Intent.EXTRA_SUBJECT, logsSubject)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            } else {
-                                Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                                    type = "text/plain"
-                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                                    putExtra(Intent.EXTRA_SUBJECT, logsSubject)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            }
                             try {
                                 context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
                                 if (fileLoggingEnabled) pendingDisableDialog = true
@@ -166,6 +216,68 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                     },
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+
+                // 🆕 v2.14.0: Direktweg für Beta-Tester. In Release-Builds bewusst nicht sichtbar
+                // — dort führt der Weg über ein Issue, sonst kommen Logs ohne Kontext an.
+                if (BuildConfig.BETA_BUILD) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val mailSubject = stringResource(
+                        R.string.debug_logs_mail_subject,
+                        BuildConfig.VERSION_NAME,
+                        BuildConfig.VERSION_CODE,
+                        BuildConfig.GIT_HASH
+                    )
+                    val mailBody = stringResource(
+                        R.string.debug_logs_mail_body,
+                        "${Build.MANUFACTURER} ${Build.MODEL}",
+                        Build.VERSION.RELEASE,
+                        Build.VERSION.SDK_INT
+                    )
+                    val noMailAppMsg = stringResource(R.string.debug_send_no_mail_app)
+
+                    SettingsButton(
+                        text = stringResource(R.string.debug_send_to_developer),
+                        onClick = {
+                            scope.launch {
+                                viewModel.showSnackbar(exportPreparingMsg)
+                                val logFiles = viewModel.prepareLogsForSharing()
+                                if (logFiles.isEmpty()) {
+                                    viewModel.showSnackbar(exportEmptyMsg)
+                                    return@launch
+                                }
+                                // Bewusst ohne pendingDisableDialog — wer gerade einen Fehler
+                                // meldet, soll das Logging anlassen.
+                                val share = buildLogShareIntent(
+                                    context, logFiles, mailSubject, mailBody, MAINTAINER_EMAIL
+                                )
+                                val targets = resolveMailTargets(context, share)
+                                    .map { Intent(share).setPackage(it) }
+                                if (targets.isEmpty()) {
+                                    Logger.w(TAG, "No mail app available for log hand-off")
+                                    viewModel.showSnackbar(noMailAppMsg)
+                                    return@launch
+                                }
+                                // Chooser über das erste Ziel, der Rest als initial intents —
+                                // so bleibt die Liste auf Mail-Apps beschränkt.
+                                val picker = Intent.createChooser(targets.first(), logsShareVia)
+                                if (targets.size > 1) {
+                                    picker.putExtra(
+                                        Intent.EXTRA_INITIAL_INTENTS,
+                                        targets.drop(1).toTypedArray()
+                                    )
+                                }
+                                try {
+                                    context.startActivity(picker)
+                                } catch (e: ActivityNotFoundException) {
+                                    Logger.w(TAG, "Mail app vanished before hand-off: ${e.message}")
+                                    viewModel.showSnackbar(noMailAppMsg)
+                                }
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
