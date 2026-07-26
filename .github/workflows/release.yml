@@ -2,7 +2,15 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      # Finale Versionen → Draft-Release wie bisher.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      # Pre-Releases → sofort veröffentlichtes Pre-Release (siehe draft/prerelease unten).
+      #
+      # ACHTUNG: Solange fdroiddata `UpdateCheckMode: Tags` OHNE Regex stehen hat, greift der
+      # F-Droid-Update-Bot JEDEN Tag ab, liest versionCode/versionName aus build.gradle.kts und
+      # würde eine Beta als reguläres F-Droid-Update ausliefern. Erst nach einem fdroiddata-MR
+      # (`UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$`) darf ein Beta-Tag gepusht werden.
+      - 'v[0-9]+.[0-9]+.[0-9]+-beta*'
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -27,6 +35,15 @@ jobs:
           BUILD_NUMBER=$(grep "versionCode = " android/app/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          # Ein Bindestrich im Tag heißt Pre-Release (v2.14.0-beta1). Der baut den
+          # `beta`-Build-Typ, damit Sideloader dieselben Diagnose-Defaults bekommen wie die
+          # Tester im Play-Testtrack. F-Droid liefert keine Testtracks aus, `fdroidBeta` ist
+          # als Variante abgeschaltet — daher nur eine APK statt zwei.
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
+          fi
           echo "🚀 Building version: $VERSION (Code: $BUILD_NUMBER)"
 
       - name: Configure Android signing
@@ -38,8 +55,14 @@ jobs:
           echo "storeFile=simple-notes-release.jks" >> android/key.properties
           echo "✅ Signing configuration created"
 
-      - name: Build release APKs
-        run: cd android && ./gradlew assembleStandardRelease assembleFdroidRelease --no-daemon --stacktrace
+      - name: Build APKs
+        run: |
+          cd android
+          if [ "${{ steps.version.outputs.IS_PRERELEASE }}" = "true" ]; then
+            ./gradlew assembleStandardBeta --no-daemon --stacktrace
+          else
+            ./gradlew assembleStandardRelease assembleFdroidRelease --no-daemon --stacktrace
+          fi
 
       - name: Run tests
         run: cd android && ./gradlew testFdroidReleaseUnitTest testStandardReleaseUnitTest
@@ -47,10 +70,16 @@ jobs:
       - name: Copy APKs with version names
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/standard/release/app-standard-release.apk \
-             apk-output/simple-notes-sync-v${{ steps.version.outputs.VERSION }}-standard.apk
-          cp android/app/build/outputs/apk/fdroid/release/app-fdroid-release.apk \
-             apk-output/simple-notes-sync-v${{ steps.version.outputs.VERSION }}-fdroid.apk
+          VERSION=${{ steps.version.outputs.VERSION }}
+          if [ "${{ steps.version.outputs.IS_PRERELEASE }}" = "true" ]; then
+            cp android/app/build/outputs/apk/standard/beta/app-standard-beta.apk \
+               apk-output/simple-notes-sync-v${VERSION}-standard.apk
+          else
+            cp android/app/build/outputs/apk/standard/release/app-standard-release.apk \
+               apk-output/simple-notes-sync-v${VERSION}-standard.apk
+            cp android/app/build/outputs/apk/fdroid/release/app-fdroid-release.apk \
+               apk-output/simple-notes-sync-v${VERSION}-fdroid.apk
+          fi
           echo "✅ APK files prepared:"
           ls -lh apk-output/
 
@@ -74,12 +103,40 @@ jobs:
             echo "CHANGELOG_EN=" >> $GITHUB_ENV
           fi
 
-      - name: Create Draft Release
+      - name: Compose downloads section
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          echo "DOWNLOADS<<GHADELIMITER" >> $GITHUB_ENV
+          if [ "${{ steps.version.outputs.IS_PRERELEASE }}" = "true" ]; then
+            cat <<EOF >> $GITHUB_ENV
+          > **This is a beta build.** Diagnostic logging is on by default so you can attach a sync
+          > log to a report - Settings → Debug & Diagnostics to export or switch it off. Exported
+          > logs have your server address, user name and note titles replaced. It is signed with
+          > the same key as the release builds, so it installs over a normal install and back.
+          > Not published on F-Droid.
+
+          | Variant | File | Info |
+          |---------|------|------|
+          | **Beta** | \`simple-notes-sync-v${VERSION}-standard.apk\` | Works on all devices |
+          EOF
+          else
+            cat <<EOF >> $GITHUB_ENV
+          | Variant | File | Info |
+          |---------|------|------|
+          | **🏆 Recommended** | \`simple-notes-sync-v${VERSION}-standard.apk\` | Standard version (works on all devices) |
+          | F-Droid | \`simple-notes-sync-v${VERSION}-fdroid.apk\` | For F-Droid Store |
+          EOF
+          fi
+          echo "GHADELIMITER" >> $GITHUB_ENV
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: "📝 Simple Notes Sync v${{ steps.version.outputs.VERSION }}"
-          draft: true
-          prerelease: false
+          # Finale Releases bleiben Draft (manuell prüfen und veröffentlichen).
+          # Pre-Releases gehen direkt raus, sonst wartet der Tester auf einen Klick.
+          draft: ${{ steps.version.outputs.IS_PRERELEASE != 'true' }}
+          prerelease: ${{ steps.version.outputs.IS_PRERELEASE == 'true' }}
           generate_release_notes: false
           files: apk-output/*.apk
           body: |
@@ -96,10 +153,7 @@ jobs:
 
             ## 📦 Downloads
 
-            | Variant | File | Info |
-            |---------|------|------|
-            | **🏆 Recommended** | `simple-notes-sync-v${{ steps.version.outputs.VERSION }}-standard.apk` | Standard version (works on all devices) |
-            | F-Droid | `simple-notes-sync-v${{ steps.version.outputs.VERSION }}-fdroid.apk` | For F-Droid Store |
+            ${{ env.DOWNLOADS }}
 
             ## 📊 Build Info
 
