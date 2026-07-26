@@ -10,6 +10,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
+import dev.dettmer.simplenotes.sync.webdav.listTreeOrNull
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
@@ -47,7 +48,7 @@ internal class MarkdownSyncManager(
 
     /**
      * 🆕 v2.14.0: URLs der in diesem Sync-Zyklus selbst exportierten MD-Dateien. [importAll]
-     * überspringt sie, bevor es sie herunterlädt. Bisher wurde die Datei erst geladen und dann
+     * überspringt sie, bevor es sie herunterlädt — bisher wurde die Datei erst geladen und dann
      * anhand der ID aus dem YAML-Header verworfen.
      *
      * Synchronized, weil [exportSingle] aus parallelen Upload-Coroutinen läuft.
@@ -395,7 +396,7 @@ internal class MarkdownSyncManager(
                 return 0
             }
 
-            // 🆕 v2.14.0: Einmal pro Server-Config statt bei jedem Import, spart ein PROPFIND
+            // 🆕 v2.14.0: Einmal pro Server-Config statt bei jedem Import — spart ein PROPFIND
             // auf das komplette WebDAV-Root. Siehe [ConnectionManager.staleRootCleaned].
             if (!connectionManager.staleRootCleaned) {
                 cleanupStaleRoot(webdav, serverUrl)
@@ -409,7 +410,13 @@ internal class MarkdownSyncManager(
                 val folder: String?
             )
             val mdItems = mutableListOf<MdItem>()
-            val rootList = webdav.list(mdUrl)
+            // 🆕 v2.14.0: Deep-PROPFIND statt 1+N (siehe [listTreeOrNull]); `null` → wie bisher.
+            val deepTree = if (connectionManager.deepPropfindRefused) {
+                null
+            } else {
+                webdav.listTreeOrNull(mdUrl) { connectionManager.deepPropfindRefused = true }
+            }
+            val rootList = deepTree?.get(null) ?: webdav.list(mdUrl)
             rootList.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
                 mdItems.add(MdItem(it, mdUrl.trimEnd('/') + "/" + it.name, null))
             }
@@ -427,7 +434,7 @@ internal class MarkdownSyncManager(
                     continue
                 }
                 val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
-                val sub = try {
+                val sub = deepTree?.get(dir.name) ?: try {
                     webdav.list(folderUrl)
                 } catch (e: Exception) {
                     Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}")
@@ -477,7 +484,7 @@ internal class MarkdownSyncManager(
                         continue
                     }
 
-                    // 🆕 v2.14.0: In diesem Zyklus selbst exportiert, gar nicht erst laden.
+                    // 🆕 v2.14.0: In diesem Zyklus selbst exportiert → gar nicht erst laden.
                     // Die ID-Prüfung gegen excludeNoteIds weiter unten bleibt als zweite
                     // Verteidigungslinie (greift, wenn eine Titeländerung den Pfad verschoben hat).
                     if (mdItem.fileUrl in exportedThisCycle) {

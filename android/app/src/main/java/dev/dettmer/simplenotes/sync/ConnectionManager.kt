@@ -162,11 +162,21 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
      * 🆕 v2.14.0: Der Scan nach dem stale `/`-Verzeichnis (Artefakt eines behobenen
      * Double-Slash-Bugs) läuft einmal pro Server-Config statt bei jedem Import.
      * Trade-off: schreibt ein alter Client das Artefakt erneut, wird es erst beim nächsten
-     * Config-Wechsel geräumt. Vertretbar, weil der verursachende Bug behoben ist.
+     * Config-Wechsel geräumt — vertretbar, weil der verursachende Bug behoben ist.
      */
     var staleRootCleaned: Boolean
         get() = dirEnsured(Constants.KEY_STALE_ROOT_CLEANED)
         set(value) = setDirEnsured(Constants.KEY_STALE_ROOT_CLEANED, value)
+
+    /**
+     * 🆕 v2.14.0: `true`, sobald der Server ein `Depth: infinity`-PROPFIND abgelehnt hat
+     * (403/400/507). Ohne dieses Flag zahlte jeder Sync gegen so einen Server einen
+     * Fehlversuch. Ein Server-/Config-Wechsel lässt es über den Fingerprint verfallen,
+     * der Deep-Scan wird dort also erneut versucht.
+     */
+    var deepPropfindRefused: Boolean
+        get() = dirEnsured(Constants.KEY_DEEP_PROPFIND_REFUSED)
+        set(value) = setDirEnsured(Constants.KEY_DEEP_PROPFIND_REFUSED, value)
 
     /**
      * Returns the cached WebDAV client or creates a new one.

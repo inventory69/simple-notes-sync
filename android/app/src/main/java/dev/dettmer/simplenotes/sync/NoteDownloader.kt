@@ -15,6 +15,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.sync.webdav.etagsMatch
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
+import dev.dettmer.simplenotes.sync.webdav.listTreeOrNull
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -143,7 +144,15 @@ internal class NoteDownloader(
             // 🔧 v2.0.0 (Issue #44): Use listOrNull() instead of exists()+list() to avoid
             // false-negative exists() on servers that return 403 for HEAD on collections (Jianguoyun).
             // PROPFIND (list) works universally on all WebDAV servers.
-            val notesResources: List<WebDavResource>? = webdav.listOrNull(notesUrl)
+            // 🆕 v2.14.0: Ein Deep-PROPFIND liefert Basis + alle Unterordner auf einmal.
+            // `null` → Server kann kein Depth: infinity, unten greift das 1+N-Listing wie bisher.
+            val deepTree = if (connectionManager.deepPropfindRefused) {
+                null
+            } else {
+                webdav.listTreeOrNull(notesUrl) { connectionManager.deepPropfindRefused = true }
+            }
+
+            val notesResources: List<WebDavResource>? = deepTree?.get(null) ?: webdav.listOrNull(notesUrl)
             // 🆕 v2.14.0: folders.json steckt schon in diesem Listing — ETag mitnehmen.
             foldersJsonEtag = notesResources
                 ?.firstOrNull { !it.isDirectory && it.name == FOLDERS_FILE_NAME }
@@ -180,7 +189,9 @@ internal class NoteDownloader(
                     }
                     discoveredFolders.add(folder)
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
-                    val folderResources = webdav.listOrNull(folderUrl) ?: continue
+                    val folderResources = deepTree?.get(dir.name)
+                        ?: webdav.listOrNull(folderUrl)
+                        ?: continue
                     folderResources
                         .filter { !it.isDirectory && it.name.endsWith(".json") }
                         .forEach { scanItems.add(ScanItem(it, folder)) }
