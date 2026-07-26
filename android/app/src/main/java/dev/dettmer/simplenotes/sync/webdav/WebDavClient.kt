@@ -181,6 +181,10 @@ class WebDavClient(private val okHttpClient: OkHttpClient) : Closeable {
      * @return den `ETag`-Header der Antwort, oder `null` wenn der Server keinen schickt.
      * Spart dem Aufrufer einen PROPFIND — Format-Unterschiede zum PROPFIND-`getetag`
      * (W/-Präfix, Quotes) gleicht [etagsMatch] aus.
+     *
+     * 🆕 v2.14.0: Nextcloud schickt bei `201` (neue Datei) **keinen** `ETag`, wohl aber
+     * `OC-ETag` mit exakt dem Wert, den ein PROPFIND später als `getetag` liefert. Ohne
+     * diesen Fallback kostete jede neu angelegte Datei einen zusätzlichen PROPFIND.
      */
     fun put(url: String, data: ByteArray, contentType: String?): String? {
         val body = data.toRequestBody(contentType?.toMediaTypeOrNull())
@@ -191,7 +195,7 @@ class WebDavClient(private val okHttpClient: OkHttpClient) : Closeable {
                 throw WebDavException("PUT failed: ${response.code} ${response.message}", response.code)
             }
             Logger.d(TAG, "put($url) → ${response.code}")
-            response.header("ETag")
+            response.header("ETag") ?: response.header("OC-ETag")
         }
     }
 

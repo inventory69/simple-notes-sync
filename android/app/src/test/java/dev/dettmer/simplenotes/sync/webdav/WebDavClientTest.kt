@@ -192,6 +192,21 @@ class WebDavClientTest {
         assertEquals("\"abc123\"", client.put(url("/notes/x.json"), ByteArray(0), null))
     }
 
+    /** Nextcloud lässt bei 201 den ETag-Header weg und schickt nur OC-ETag. */
+    @Test fun `put falls back to the OC-ETag header`() {
+        server.enqueue(MockResponse().setResponseCode(201).setHeader("OC-ETag", "\"oc123\""))
+        assertEquals("\"oc123\"", client.put(url("/notes/x.json"), ByteArray(0), null))
+    }
+
+    @Test fun `put prefers ETag over OC-ETag`() {
+        server.enqueue(
+            MockResponse().setResponseCode(204)
+                .setHeader("ETag", "\"abc123\"")
+                .setHeader("OC-ETag", "\"oc123\"")
+        )
+        assertEquals("\"abc123\"", client.put(url("/notes/x.json"), ByteArray(0), null))
+    }
+
     @Test fun `put returns null when the server sends no ETag`() {
         server.enqueue(MockResponse().setResponseCode(201))
         assertNull(client.put(url("/notes/x.json"), ByteArray(0), null))
