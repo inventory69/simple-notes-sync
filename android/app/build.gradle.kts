@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 48  // 🆕 v2.13.1 - widget back navigation, editor menu, settings cards
-        versionName = "2.13.1"  // 🆕 v2.13.1 - widget back navigation, editor menu, settings cards
+        versionCode = 49  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
+        versionName = "2.14.0"  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
@@ -41,10 +41,15 @@ android {
         // user explicitly enables it via Debug & Diagnose settings.
         buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "false")
 
+        // 🆕 v2.14.0: Kennzeichnet den `beta`-Build-Typ (Play-Testtracks). Schaltet
+        // Diagnose-Defaults vor, damit Tester nichts suchen müssen — siehe buildTypes.
+        buildConfigField("boolean", "BETA_BUILD", "false")
+
         // Debug-Builds unterscheidbar machen: welcher Build läuft beim Tester?
-        // (Beta-Feedback: alle Builds hießen "2.11.0-debug (44)"). Nur in "Über
-        // diese App" für Debug-Builds angezeigt. Build-Zeit wird bei jeder
-        // Konfiguration frisch ausgewertet — für Debug-Diagnose gewollt.
+        // (Beta-Feedback: alle Builds hießen "2.11.0-debug (44)"). In "Über diese App"
+        // angezeigt für Debug- und (seit v2.14.0) Beta-Builds — bei Tester-Meldungen aus
+        // einem Play-Testtrack ist sonst nicht erkennbar, welcher Build lief. Build-Zeit
+        // wird bei jeder Konfiguration frisch ausgewertet — für Diagnose gewollt.
         val gitHash = runCatching {
             ProcessBuilder("git", "rev-parse", "--short", "HEAD")
                 .directory(rootDir).start()
@@ -118,6 +123,34 @@ android {
                 signingConfigs.getByName("debug")
             }
         }
+
+        // 🆕 v2.14.0: Build-Typ für die Play-Testtracks (internal/alpha/beta).
+        //
+        // Identisch zu `release` — gleiche applicationId, gleicher Signing-Key, gleiches R8 —
+        // damit ein Tester-Build sich genau so verhält wie das spätere Production-Release und
+        // In-Place-Updates in beide Richtungen funktionieren. Einziger Unterschied: BETA_BUILD
+        // schaltet die Diagnose-Defaults vor (Logging an, Entwickleroptionen offen), damit
+        // Tester für einen Sync-Log nicht erst 5× auf das App-Banner tippen müssen.
+        //
+        // Bewusst KEIN applicationIdSuffix: Play akzeptiert pro Eintrag nur eine applicationId,
+        // und die Testtracks sind derselbe Eintrag wie Production.
+        create("beta") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            versionNameSuffix = "-beta"
+            buildConfigField("boolean", "BETA_BUILD", "true")
+            buildConfigField("boolean", "SYNC_DEBUG_LOGGING_DEFAULT", "true")
+        }
+    }
+
+    // F-Droid liefert keine Testtracks aus — die Variante würde nur die Build- und Testmatrix
+    // verdoppeln. Nur `standardBeta` wird gebaut.
+    androidComponents {
+        beforeVariants(
+            selector().withBuildType("beta").withFlavor("distribution" to "fdroid")
+        ) { variant ->
+            variant.enable = false
+        }
     }
 
     buildFeatures {
@@ -185,10 +218,9 @@ dependencies {
     // Splash Screen API (Android 12+)
     implementation(libs.androidx.core.splashscreen)
 
-    // WebDAV
-    implementation(libs.sardine.android) {
-        exclude(group = "xpp3", module = "xpp3")
-    }
+    // WebDAV — eigener Mini-Client (sync/webdav/) auf OkHttp, Basic + Digest Auth
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.digest)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.gson)
@@ -232,6 +264,10 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.okhttp.mockwebserver)
+    // org.json ist im android.jar der Unit-Tests nur gestubbt (jede Methode wirft).
+    // Die echte Implementierung auf dem Test-Classpath macht DeletionTracker-JSON testbar.
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

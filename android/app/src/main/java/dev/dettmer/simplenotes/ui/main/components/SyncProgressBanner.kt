@@ -112,6 +112,8 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
     }
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun BannerContent(p: SyncProgress, contentColor: Color) {
     val pIsError = p.phase == SyncPhase.ERROR

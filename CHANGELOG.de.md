@@ -8,6 +8,36 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.14.0] - 2026-07-26
+
+### ⚡ Performance
+
+**Der Sync fragt nicht mehr nach Dingen, die er schon weiß** ([ef54a2b](https://github.com/inventory69/simple-notes-sync/commit/ef54a2b), [6493018](https://github.com/inventory69/simple-notes-sync/commit/6493018), [17d5218](https://github.com/inventory69/simple-notes-sync/commit/17d5218), [79d1ec6](https://github.com/inventory69/simple-notes-sync/commit/79d1ec6), [20a86e1](https://github.com/inventory69/simple-notes-sync/commit/20a86e1))
+- Jede Anfrage an einen WebDAV-Server kostet echte Zeit - gegen Nextcloud hinter Cloudflare gemessen etwa eine halbe Sekunde pro Stück. Ein Sync ohne Änderungen verbrauchte davon zehn bis zwölf. Jetzt sind es etwa zwei, und ein gemessener Sync ging von 6,5 auf 4,0 Sekunden
+- Die App meldet sich nicht mehr bei jedem einzelnen Sync neu an. Eine Anmeldung pro App-Start reicht, wiederholt wird sie nur bei geänderten Zugangsdaten
+- Verzeichnisprüfungen, Ordnerlisten und das Löschprotokoll werden zwischen Syncs gemerkt statt jedes Mal neu erfragt. Notizen zu löschen hat das gemeinsame Protokoll bisher einmal pro Notiz neu geschrieben - jetzt ist es ein Lesen und ein Schreiben
+- Eine Prüfung lief bei jedem Sync mit, die nie etwas anderes antworten konnte als "ja, schau auf den Server" - sie ist samt ihrer Anfragen entfernt
+- Sind Markdown-Export oder Bilder ausgeschaltet, fasst die App die zugehörigen Ordner gar nicht mehr an. Sind sie an, werden gerade exportierte Dateien nicht mehr heruntergeladen, nur um ihre ID zurückzulesen
+- Ordner werden in einem Durchgang geholt statt mit einer Anfrage pro Ordner, sofern der Server das unterstützt
+
+### ✨ Neue Features
+
+**Digest-Authentifizierung** ([bd009ec](https://github.com/inventory69/simple-notes-sync/commit/bd009ec))
+- WebDAV-Server ohne Basic-Auth funktionieren jetzt. Beide Verfahren werden automatisch ausgehandelt - nichts einzustellen
+
+### 🔧 Technische Verbesserungen
+
+**Eigener WebDAV-Client statt ungepflegter Bibliothek** ([bd009ec](https://github.com/inventory69/simple-notes-sync/commit/bd009ec))
+- Der Sync lief über `sardine-android`, das seit Jahren keine Updates mehr bekommt. Ersetzt durch einen kleinen Client direkt auf OkHttp, der genau das abdeckt, was die App braucht: PROPFIND, GET, PUT, DELETE, MKCOL. Nicht mehr
+- Alle Server-Workarounds sind unverändert übernommen - Jianguoyun mit seinem 403, bewCloud ohne HEAD, der MKCOL-Fallback. Sie sind jetzt durch Tests gegen einen Mock-Server abgedeckt, was vorher nicht möglich war
+- Die App wurde kleiner: Die Abhängigkeit und ihre ProGuard-Regeln sind weg
+- **Wenn irgendetwas anders synct als vorher, bitte ein Issue aufmachen.** Dieses Release tauscht genau das Stück der App aus, das mit deinem Server spricht, und keine Testsuite deckt jeden WebDAV-Server da draußen ab
+
+**Schärferes Code-Qualitätsgate** ([61ea842](https://github.com/inventory69/simple-notes-sync/commit/61ea842))
+- Die Komplexitätsgrenzen waren über die Zeit angehoben worden, um Bestandscode durchzulassen - damit waren sie auch für neuen Code wirkungslos. Sie stehen wieder auf ihren Zielwerten; die Stellen, die sie noch überschreiten, sind einzeln markiert und werden Release für Release abgebaut
+
+---
+
 ## [2.13.1] - 2026-07-25
 
 ### 🐛 Bug-Fixes

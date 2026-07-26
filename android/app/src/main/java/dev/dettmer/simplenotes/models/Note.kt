@@ -403,6 +403,8 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
          * @param serverModifiedTime Optionaler Server-Datei mtime (Priorität über YAML timestamp)
          * @return Note-Objekt oder null bei Parse-Fehler
          */
+        // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
         fun fromMarkdown(md: String, serverModifiedTime: Long? = null): Note? {
             return try {
                 // FIX-06 (v2.2.0): Normalisiere Zeilenumbrüche vor Regex-Matching
@@ -765,6 +767,8 @@ private fun JsonReader.nextChecklistItemsOrNull(): MutableList<ChecklistItem>? {
     return items
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod")
 private fun JsonReader.nextChecklistItem(): ChecklistItem {
     var id: String? = null
     var text = ""

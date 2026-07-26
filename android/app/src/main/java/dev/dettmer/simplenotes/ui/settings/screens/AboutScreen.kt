@@ -55,6 +55,8 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
  * About app information screen
  * v1.5.0: Jetpack Compose Settings Redesign
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -161,7 +163,10 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
 
-                    if (BuildConfig.DEBUG) {
+                    // 🆕 v2.14.0: Auch in Beta-Builds — bei Tester-Meldungen muss erkennbar sein,
+                    // welcher Build lief. Die Versionszeile darüber trägt bereits das
+                    // "-beta"-Suffix und den versionCode.
+                    if (BuildConfig.DEBUG || BuildConfig.BETA_BUILD) {
                         Text(
                             text = stringResource(
                                 R.string.about_build_info,
@@ -170,6 +175,16 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    // Erklärt dem Tester, warum Logging läuft und wo er es findet.
+                    if (BuildConfig.BETA_BUILD) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.about_beta_notice),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }

@@ -1,12 +1,13 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
@@ -33,14 +34,21 @@ internal class NoteUploader(
     private val urlBuilder: SyncUrlBuilder,
     private val ioDispatcher: CoroutineDispatcher,
     private val folderStore: FolderStore, // 🆕 v2.8.0 (Local-Only Folders)
-    private val markdownExporter: ((Sardine, String, Note, Boolean) -> Unit)? = null,
+    private val markdownExporter: ((WebDavClient, String, Note, Boolean) -> Unit)? = null,
     // 🆕 v2.9.0 (Trash): löscht den Server-MD-Spiegel getrashter Notizen statt sie zu exportieren.
-    private val markdownDeleter: ((Sardine, String, Note) -> Unit)? = null
+    private val markdownDeleter: ((WebDavClient, String, Note) -> Unit)? = null,
+    // 🆕 v2.14.0 Self-Heal: 404/409 beim PUT heißt, das persistierte "notes/ existiert"-Flag ist stale.
+    private val onMissingServerDir: () -> Unit = {},
+    // 🆕 v2.14.0: Quelle der persistierten Dir-Flags. null in Tests, die den Flag-Pfad nicht brauchen.
+    private val connectionManager: ConnectionManager? = null
 ) {
     companion object {
         private const val TAG = "NoteUploader"
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val LOG_PREVIEW_IDS_MAX = 3
+
+        /** 404 = Parent fehlt, 409 = Conflict (Parent-Collection existiert nicht). */
+        private val MISSING_DIR_STATUS_CODES = setOf(404, 409)
     }
 
     /**
@@ -52,33 +60,16 @@ internal class NoteUploader(
      * - Opt 4: Batch-E-Tag-Fetch per list(depth=1) nach allen Uploads
      * - Opt 5: Upload-Skip per Content-Hash
      */
-    @Suppress("NestedBlockDepth")
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     suspend fun uploadAll(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         onProgress: (current: Int, total: Int, noteTitle: String) -> Unit = { _, _, _ -> }
     ): UploadBatchResult {
         val localNotes = storage.loadAllNotes()
         val markdownExportEnabled = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
         Logger.d(TAG, "📋 Markdown export enabled: $markdownExportEnabled") // 🔧 v2.2.1 (Issue #50)
-
-        // 🆕 v1.9.0 (Opt 1): Einmalige Prüfung statt N × exists(notes-md/)
-        val markdownDirExists: Boolean = if (markdownExportEnabled) {
-            try {
-                val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
-                val exists = sardine.exists(mdUrl)
-                if (!exists) {
-                    sardine.createDirectory(mdUrl)
-                    Logger.d(TAG, "📁 Created notes-md/ directory (one-time check)")
-                }
-                true
-            } catch (e: Exception) {
-                Logger.w(TAG, "⚠️ notes-md/ check failed, falling back to per-note check: ${e.message}")
-                false
-            }
-        } else {
-            true
-        }
 
         // 🆕 v2.8.0 (Local-Only Folders): Notizen in "nur lokal"-Ordnern nie hochladen.
         // Case-insensitiver Vergleich — Ordnernamen sind im FolderStore case-insensitiv eindeutig.
@@ -94,12 +85,34 @@ internal class NoteUploader(
             return UploadBatchResult(uploadedCount = 0, markdownExportedNoteIds = emptySet())
         }
 
+        // 🆕 v1.9.0 (Opt 1): Einmalige Prüfung statt N × exists(notes-md/)
+        // 🆕 v2.14.0: entfällt komplett, wenn das Verzeichnis für die aktuelle Server-Config
+        // bereits verifiziert ist (persistiertes Flag) — der Steady-State-Sync macht dann
+        // gar keinen Dir-Ensure-Request mehr. Ein 404/409 beim MD-PUT heilt das Flag.
+        val markdownDirExists: Boolean = if (markdownExportEnabled && connectionManager?.markdownDirEnsured != true) {
+            try {
+                val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
+                val exists = webdav.exists(mdUrl)
+                if (!exists) {
+                    webdav.createDirectory(mdUrl)
+                    Logger.d(TAG, "📁 Created notes-md/ directory (one-time check)")
+                }
+                connectionManager?.markdownDirEnsured = true
+                true
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ notes-md/ check failed, falling back to per-note check: ${e.message}")
+                false
+            }
+        } else {
+            true
+        }
+
         // 🆕 v2.7.0 (Folders): benötigte Subdirectories einmalig anlegen (vor parallelem Upload).
-        // SafeSardineWrapper.createDirectory toleriert 405 (existiert) und macht list()-Fallback bei 404.
+        // WebDavClient.createDirectory toleriert 405 (existiert) und macht list()-Fallback bei 404.
         val foldersToCreate = pendingNotes.mapNotNull { it.folderName }.distinct()
         for (folder in foldersToCreate) {
             try {
-                sardine.createDirectory(urlBuilder.getNotesFolderUrl(serverUrl, folder))
+                webdav.createDirectory(urlBuilder.getNotesFolderUrl(serverUrl, folder))
                 Logger.d(TAG, "📁 Ensured folder dir: $folder")
             } catch (e: Exception) {
                 Logger.w(TAG, "⚠️ createDirectory for folder '$folder' failed: ${e.message}")
@@ -130,7 +143,7 @@ internal class NoteUploader(
                 async(ioDispatcher) {
                     semaphore.withPermit {
                         val result = uploadSingle(
-                            sardine = sardine,
+                            webdav = webdav,
                             serverUrl = serverUrl,
                             note = note,
                             markdownExportEnabled = markdownExportEnabled,
@@ -157,31 +170,32 @@ internal class NoteUploader(
         val skippedCount = results.count { it is UploadTaskResult.Skipped }
         Logger.d(TAG, "📊 Upload complete: $successCount success, $failureCount failed, $skippedCount skipped")
 
-        // 🆕 v1.9.0 (Opt 4): Batch-E-Tag-Fetch per list(depth=1)
-        val successfulNoteIds = results
-            .filterIsInstance<UploadTaskResult.Success>()
-            .map { it.noteId }
-            .toSet()
+        val successes = results.filterIsInstance<UploadTaskResult.Success>()
+        val successfulNoteIds = successes.map { it.noteId }.toSet()
 
         if (successfulNoteIds.isNotEmpty()) {
             try {
+                // 🆕 v2.14.0: ETags aus den PUT-Antworten übernehmen. Nur für Uploads ohne
+                // PUT-ETag bleibt der Batch-PROPFIND nötig — und nur in deren Ordnern.
+                val batchEtagUpdates = mutableMapOf<String, String?>()
+                successes.filter { it.etag != null }.forEach { batchEtagUpdates["etag_json_${it.noteId}"] = it.etag }
+
                 // 🆕 v2.7.0 (Folders): pro Ordner (inkl. Root = null) listen, der erfolgreiche Uploads hatte.
-                val foldersWithUploads: Set<String?> = results
-                    .filterIsInstance<UploadTaskResult.Success>()
+                val foldersWithUploads: Set<String?> = successes
+                    .filter { it.etag == null }
                     .mapNotNull { res -> pendingNotes.find { it.id == res.noteId } }
                     .map { it.folderName }
                     .toSet()
 
                 Logger.d(
                     TAG,
-                    "⚡ Batch-fetching E-Tags via list(depth=1) for ${successfulNoteIds.size} notes " +
-                        "across ${foldersWithUploads.size} folder(s)"
+                    "⚡ E-Tags: ${batchEtagUpdates.size} from PUT responses, " +
+                        "batch-fetching the rest across ${foldersWithUploads.size} folder(s)"
                 )
 
-                val batchEtagUpdates = mutableMapOf<String, String?>()
                 for (folder in foldersWithUploads) {
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
-                    val allResources = sardine.list(folderUrl, 1)
+                    val allResources = webdav.list(folderUrl, 1)
                     for (resource in allResources) {
                         val filename = resource.name
                         if (!filename.endsWith(".json")) continue
@@ -257,7 +271,7 @@ internal class NoteUploader(
      * @return UploadTaskResult mit Erfolgs-/Fehler-Info
      */
     private suspend fun uploadSingle(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         note: Note,
         markdownExportEnabled: Boolean,
@@ -300,7 +314,8 @@ internal class NoteUploader(
                 val jsonBytes = noteToUpload.toJson().toByteArray()
 
                 Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title}) [attempt ${attempt + 1}]")
-                sardine.put(noteUrl, jsonBytes, "application/json")
+                // 🆕 v2.14.0: ETag direkt aus der PUT-Antwort — spart den Batch-PROPFIND.
+                val putEtag = webdav.put(noteUrl, jsonBytes, "application/json")
                 Logger.d(TAG, "      ✅ Upload successful")
 
                 // 🔒 Thread-sicherer Storage-Write via Mutex
@@ -317,10 +332,10 @@ internal class NoteUploader(
                         try {
                             if (noteToUpload.isTrashed) {
                                 // 🆕 v2.9.0 (Trash): MD-Export überspringen, Server-MD stattdessen löschen.
-                                markdownDeleter?.invoke(sardine, serverUrl, noteToUpload)
+                                markdownDeleter?.invoke(webdav, serverUrl, noteToUpload)
                                 Logger.d(TAG, "   🗑️ MD deleted (trashed): ${noteToUpload.title}")
                             } else {
-                                markdownExporter?.invoke(sardine, serverUrl, noteToUpload, markdownDirExists)
+                                markdownExporter?.invoke(webdav, serverUrl, noteToUpload, markdownDirExists)
                                 didExportMarkdown = true // 🆕 v1.11.0
                                 Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
                             }
@@ -333,7 +348,7 @@ internal class NoteUploader(
                 // 🆕 v1.11.0: markdownExported-Flag für Import-Exclusion
                 return UploadTaskResult.Success(
                     noteId = note.id,
-                    etag = null,
+                    etag = putEtag,
                     markdownExported = didExportMarkdown
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -351,6 +366,7 @@ internal class NoteUploader(
 
         // Alle Retries fehlgeschlagen → Note als PENDING markieren
         Logger.e(TAG, "❌ Upload failed after ${maxRetries + 1} attempts: ${note.id}")
+        healServerDirFlagIfMissing(lastError)
         try {
             storageMutex.withLock {
                 storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
@@ -359,6 +375,18 @@ internal class NoteUploader(
             Logger.w(TAG, "Failed to mark note as PENDING: ${e.message}")
         }
         return UploadTaskResult.Failure(note.id, lastError ?: Exception("Unknown upload error"))
+    }
+
+    /**
+     * 🆕 v2.14.0 Self-Heal: 404/409 vom PUT heißt "Zielverzeichnis fehlt". Hier gezielt auf
+     * [WebDavException] prüfen, nicht auf IOException — die erbt davon, und ein Timeout darf
+     * das persistierte Flag nicht löschen.
+     */
+    private fun healServerDirFlagIfMissing(error: Throwable?) {
+        if (error is WebDavException && error.statusCode in MISSING_DIR_STATUS_CODES) {
+            Logger.d(TAG, "🔄 Server dir flag cleared (PUT → ${error.statusCode})")
+            onMissingServerDir()
+        }
     }
 
     /**

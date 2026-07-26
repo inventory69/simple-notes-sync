@@ -1,0 +1,94 @@
+package dev.dettmer.simplenotes.utils
+
+/**
+ * 🆕 v2.14.0: Entfernt identifizierende Daten aus Logs, **bevor sie das Gerät verlassen**.
+ *
+ * Die Logdateien auf dem Gerät bleiben unangetastet — anonymisiert wird nur die Kopie, die der
+ * Export-Button teilt. Damit behält der Nutzer (und der Maintainer auf dem eigenen Gerät) die
+ * volle Information, und was in einem GitHub-Issue oder einer Mail landet, ist entschärft.
+ *
+ * Ersetzt wird:
+ * - der Server-Host aus der konfigurierten Sync-URL → `<server>`
+ * - der WebDAV-Benutzername → `<user>` (steckt bei Nextcloud im Pfad `/dav/files/<user>/`)
+ * - **die tatsächlichen Notiztitel** → `<note>`
+ * - Markdown-Dateinamen in URLs → `/<note>.md`
+ *
+ * Die Titel kommen aus dem Storage und werden als exakte Strings ersetzt, nicht geraten. Das ist
+ * nötig, weil der Sync-Log Titel überwiegend **blank** schreibt (`⏭️ MD skip: <Titel>`,
+ * `✅ Imported new: <Titel>`) und nicht als Dateiname — ein Muster auf `.md` würde die Mehrheit
+ * der Titel-Leaks verfehlen. Der zusätzliche URL-Fall deckt Dateinamen ab, die durch
+ * Umlaut-Ersetzung vom Titel abweichen (`Steuererklärung` → `Steuererklaerung.md`).
+ *
+ * Bewusst **nicht** ersetzt: Ordnernamen und Notiz-UUIDs. Die Ordnerstruktur ist genau das, was
+ * bei Sync-Fehlern diagnostiziert wird (siehe Deep-PROPFIND, `WebDavTree`), und eine UUID
+ * identifiziert niemanden. Wer auch Ordnernamen für sensibel hält, muss vor dem Senden
+ * nachbessern — darauf weist der Export-Dialog hin.
+ *
+ * Passwörter tauchen in Logs nicht auf: Auth läuft über den OkHttp-Authenticator, es wird kein
+ * `Authorization`-Header geloggt, und der Auth-Cache-Key ist ein SHA-256, der nie in ein Log geht.
+ */
+object LogAnonymizer {
+
+    private const val SERVER_PLACEHOLDER = "<server>"
+    private const val USER_PLACEHOLDER = "<user>"
+    private const val NOTE_PLACEHOLDER = "<note>"
+
+    /**
+     * Kürzester Wert, der noch ersetzt wird.
+     *
+     * ponytail: Titel wie „ok" oder „TODO" unter dieser Länge bleiben stehen — sie einzeln zu
+     * ersetzen würde jedes Vorkommen im Log zerschießen und die Datei unlesbar machen. Wer so
+     * kurze Titel für sensibel hält, muss vor dem Senden selbst nachbessern.
+     */
+    private const val MIN_REPLACEABLE_LENGTH = 3
+
+    /**
+     * Dateiname zwischen einem `/` und `.md`. Links durch den Pfadtrenner begrenzt, damit der
+     * Ausdruck nicht in den umgebenden Log-Text hineinläuft — Leerzeichen im Dateinamen sind
+     * dadurch unproblematisch. Quotes und Klammern begrenzen rechts die Log-Syntax.
+     */
+    private val MARKDOWN_PATH = Regex("""/[^/\\"'()<>]+\.md""")
+
+    /**
+     * @param serverUrl konfigurierte Sync-URL, für die Host-Extraktion. Darf null/leer sein.
+     * @param username WebDAV-Benutzername. Darf null/leer sein.
+     * @param noteTitles alle bekannten Notiztitel. Leer, wenn sie nicht geladen werden konnten —
+     *        dann bleiben Titel im Klartext stehen, der Rest wird trotzdem anonymisiert.
+     */
+    fun anonymize(
+        text: String,
+        serverUrl: String?,
+        username: String?,
+        noteTitles: Collection<String> = emptyList()
+    ): String {
+        var result = text
+
+        hostOf(serverUrl)?.let { host ->
+            result = result.replace(host, SERVER_PLACEHOLDER, ignoreCase = true)
+        }
+
+        // Nach dem Host, sonst bliebe ein Benutzername stehen, der auch im Host vorkommt.
+        username?.takeIf { it.length >= MIN_REPLACEABLE_LENGTH }?.let { user ->
+            result = result.replace(user, USER_PLACEHOLDER)
+        }
+
+        // Längste zuerst: sonst macht „Urlaub" aus „Urlaub 2026" ein „<note> 2026".
+        noteTitles.asSequence()
+            .filter { it.length >= MIN_REPLACEABLE_LENGTH }
+            .distinct()
+            .sortedByDescending { it.length }
+            .forEach { title -> result = result.replace(title, NOTE_PLACEHOLDER) }
+
+        return MARKDOWN_PATH.replace(result, "/$NOTE_PLACEHOLDER.md")
+    }
+
+    /**
+     * Host aus einer URL, ohne `java.net.URI` — die wirft bei den halbfertigen URLs, die während
+     * der Server-Einrichtung in den Prefs stehen können.
+     */
+    private fun hostOf(serverUrl: String?): String? {
+        val withoutScheme = serverUrl.orEmpty().substringAfter("://", "")
+        val host = withoutScheme.substringBefore('/').substringBefore(':')
+        return host.takeIf { it.length >= MIN_REPLACEABLE_LENGTH }
+    }
+}

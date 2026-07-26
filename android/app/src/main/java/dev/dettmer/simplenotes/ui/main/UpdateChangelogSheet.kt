@@ -51,6 +51,8 @@ import kotlinx.coroutines.launch
  * - Uses Material 3 ModalBottomSheet with built-in slide-up animation
  * - Dismissable via button or swipe-down
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateChangelogSheet(

@@ -92,6 +92,22 @@ object Constants {
     const val DEFAULT_SYNC_FOLDER_NAME = "notes" // Backward compatible default
     const val MAX_SYNC_FOLDER_NAME_LENGTH = 50
 
+    // 🆕 v2.14.0: ETag der zuletzt gesehenen folders.json — erlaubt es dem FolderSyncManager,
+    // den GET/PUT-Round-Trip zu überspringen.
+    // Das Präfix `etag_json_` ist ABSICHTLICH: ETagCache.clearAll() (restoreFromServer) und die
+    // Prefix-Filter in clearServerCaches()/clearETagCache() räumen den Key dadurch automatisch mit.
+    const val KEY_FOLDERS_JSON_ETAG = "etag_json_folders.json"
+
+    // 🆕 v2.14.0: Server-Verzeichnisse bleiben über App-Starts hinweg als "verifiziert" bekannt.
+    // Der Fingerprint (serverUrl|syncFolder|username) invalidiert die Flags bei jeder
+    // Config-Änderung von selbst — deshalb braucht es keinen expliziten Reset-Hook.
+    const val KEY_DIRS_ENSURED_FINGERPRINT = "dirs_ensured_fingerprint"
+    const val KEY_NOTES_DIR_ENSURED = "dirs_ensured_notes"
+    const val KEY_MD_DIR_ENSURED = "dirs_ensured_md"
+    const val KEY_ASSETS_DIR_ENSURED = "dirs_ensured_assets"
+    const val KEY_STALE_ROOT_CLEANED = "dirs_ensured_stale_root"
+    const val KEY_DEEP_PROPFIND_REFUSED = "dirs_ensured_deep_propfind_refused"
+
     // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
     const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8 // 8s default, good for mobile

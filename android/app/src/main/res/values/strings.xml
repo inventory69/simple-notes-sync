@@ -230,7 +230,7 @@
     <string name="error_invalid_protocol">Invalid protocol: %s. Please use HTTP or HTTPS.</string>
     <string name="error_invalid_url">Invalid URL: %s</string>
     <string name="error_server_not_configured">WebDAV server not fully configured</string>
-    <string name="error_sardine_client_failed">Sardine client could not be created</string>
+    <string name="error_sardine_client_failed">WebDAV client could not be created</string>
     <string name="error_server_url_not_configured">Server URL not configured</string>
 
     <!-- ============================= -->
@@ -477,7 +477,7 @@
     <!-- 🆕 v2.2.0: Persistent sync debug log -->
     <string name="debug_sync_debug_logging_title">Persistent sync debug log</string>
     <string name="debug_sync_debug_logging_subtitle">Records sync triggers and outcomes for diagnosing background sync issues.</string>
-    <string name="debug_privacy_info">🔒 Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time.</string>
+    <string name="debug_privacy_info">🔒 Privacy: Logs are only stored locally on your device and are never sent to external servers. Logs contain sync activities for troubleshooting. You can delete or export them at any time. Exporting replaces your server address, user name and note titles with placeholders; folder names remain, since they are what sync problems are diagnosed from.</string>
     <string name="debug_log_actions_section">Log Actions</string>
     <string name="debug_export_logs">📤 Export &amp; Share Logs</string>
     <string name="debug_logs_subject">SimpleNotes Sync Logs</string>
@@ -706,6 +706,7 @@
     <string name="about_app_name">Simple Notes Sync</string>
     <string name="about_version">Version %1$s (%2$d)</string>
     <string name="about_build_info">Build: %1$s · %2$s</string>
+    <string name="about_beta_notice">🧪 Beta build. Diagnostic logging is on so you can send a sync log with a report — Settings → Debug &amp; Diagnostics to export or switch it off. Exported logs have your server address, user name and note titles replaced.</string>
     <string name="about_links_section">Links</string>
     <string name="about_app_section">App</string>
     <string name="about_github_title">GitHub Repository</string>

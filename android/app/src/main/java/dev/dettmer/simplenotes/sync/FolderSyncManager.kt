@@ -4,10 +4,11 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.sanitized
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.etagsMatch
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -32,27 +33,47 @@ class FolderSyncManager(
      *  Für die Upload-Seite wird stattdessen der Remote-Stand unverändert durchgereicht
      *  („Auf Server behalten") bzw. als Tombstone geschrieben, wenn der Ordner in der
      *  Server-Removal-Queue steht („Vom Server entfernen"). */
-    suspend fun sync(sardine: Sardine, serverUrl: String): Boolean {
+    suspend fun sync(
+        webdav: WebDavClient,
+        serverUrl: String,
+        remoteEtag: String? = null,
+        allowSkip: Boolean = false
+    ): Boolean {
         return try {
             val url = foldersFileUrl(serverUrl)
-            val remote = downloadRemote(sardine, url)
-            val local = folderStore.loadMeta()
-
             val localOnlyLower = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
             val removalQueue = folderStore.getServerRemovalQueue()
             val removalLower = removalQueue.map { it.lowercase() }.toSet()
             val excludedLower = localOnlyLower + removalLower
+            val dirty = prefs.getBoolean(Constants.KEY_FOLDERS_DIRTY, false)
+
+            // 🆕 v2.14.0 Fast-Path: unverändertes folders.json + nichts lokal ausstehend →
+            // GET und PUT komplett überspringen. Server ohne ETags skippen nie (remoteEtag null).
+            if (allowSkip && !dirty && removalQueue.isEmpty() &&
+                etagsMatch(remoteEtag, prefs.getString(Constants.KEY_FOLDERS_JSON_ETAG, null))
+            ) {
+                Logger.d(TAG, "⏭️ folders.json unchanged (E-Tag match) — skipping round-trip")
+                return false
+            }
+
+            val remote = downloadRemote(webdav, url)
+            val local = folderStore.loadMeta()
 
             val remoteVisible = remote.filterNot { it.name.lowercase() in excludedLower }
             val merged = mergeByName(local, remoteVisible)
             folderStore.replaceMeta(merged)
 
             val uploadList = buildUploadList(merged, remote, localOnlyLower, removalLower)
-            val dirty = prefs.getBoolean(Constants.KEY_FOLDERS_DIRTY, false)
-            if (dirty || uploadList.toSet() != remote.toSet()) {
-                sardine.put(url, gson.toJson(uploadList).toByteArray(Charsets.UTF_8), "application/json")
+            val uploaded = dirty || uploadList.toSet() != remote.toSet()
+            if (uploaded) {
+                webdav.put(url, gson.toJson(uploadList).toByteArray(Charsets.UTF_8), "application/json")
             }
-            prefs.edit { putBoolean(Constants.KEY_FOLDERS_DIRTY, false) }
+            prefs.edit {
+                putBoolean(Constants.KEY_FOLDERS_DIRTY, false)
+                // Ohne PUT ist der gesehene ETag weiterhin gültig; nach einem PUT ist der neue
+                // unbekannt — Key entfernen, der übernächste Sync cached ihn wieder.
+                if (uploaded) remove(Constants.KEY_FOLDERS_JSON_ETAG) else putString(Constants.KEY_FOLDERS_JSON_ETAG, remoteEtag)
+            }
             // Removal-Intents sind nach erfolgreichem Upload erledigt (Tombstone liegt auf dem Server).
             if (removalQueue.isNotEmpty()) {
                 folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() - removalQueue)
@@ -89,22 +110,11 @@ class FolderSyncManager(
         return merged.filterNot { it.name.lowercase() in excludedLower } + passThrough
     }
 
-    private fun downloadRemote(sardine: Sardine, url: String): List<FolderMeta> = try {
-        val exists = when (sardine) {
-            is SafeSardineWrapper -> sardine.exists(url)
-            else -> try {
-                sardine.exists(url)
-            } catch (_: Exception) {
-                false
-            }
-        }
-        if (!exists) {
-            emptyList()
-        } else {
-            sardine.get(url).use { input ->
-                val type = object : TypeToken<List<FolderMeta>>() {}.type
-                (gson.fromJson<List<FolderMeta>>(input.reader(), type) ?: emptyList()).sanitized()
-            }
+    /** Kein vorheriges `exists()` — der catch-all deckt den 404-Fall mit ab und spart einen Request. */
+    private fun downloadRemote(webdav: WebDavClient, url: String): List<FolderMeta> = try {
+        webdav.get(url).use { input ->
+            val type = object : TypeToken<List<FolderMeta>>() {}.type
+            (gson.fromJson<List<FolderMeta>>(input.reader(), type) ?: emptyList()).sanitized()
         }
     } catch (e: Exception) {
         Logger.w(TAG, "download folders.json: ${e.message}")

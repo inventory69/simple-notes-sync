@@ -57,6 +57,8 @@ private const val DIALOG_CLOSE_DELAY_MS = 200L
  * Backup and restore settings screen
  * v1.5.0: Jetpack Compose Settings Redesign
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val isBackupInProgress by viewModel.isBackupInProgress.collectAsState()

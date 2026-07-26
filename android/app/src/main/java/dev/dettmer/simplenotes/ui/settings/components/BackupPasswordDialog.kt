@@ -39,6 +39,8 @@ private const val MIN_PASSWORD_LENGTH = 8
 /**
  * 🔒 v1.7.0: Password input dialog for backup encryption/decryption
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun BackupPasswordDialog(title: String, onDismiss: () -> Unit, onConfirm: (password: String) -> Unit, requireConfirmation: Boolean = true) {
     var password by remember { mutableStateOf("") }

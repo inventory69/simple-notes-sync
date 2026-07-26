@@ -77,7 +77,8 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
     return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
 }
 
-@Suppress("LongParameterList") // 🆕 Issue #120: showTypeIcon neben bestehenden Widget-Optionen
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongParameterList", "LongMethod") // 🆕 Issue #120: showTypeIcon neben bestehenden Widget-Optionen
 @Composable
 fun NotesListWidgetContent(
     notes: List<Note>,

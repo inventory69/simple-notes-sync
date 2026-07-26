@@ -1,7 +1,6 @@
 package dev.dettmer.simplenotes.utils
 
 import android.content.Context
-import android.widget.Toast
 import dev.dettmer.simplenotes.R
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,12 +20,6 @@ inline fun <reified T : Enum<T>> String?.toEnumOrDefault(default: T): T =
             default
         }
     }
-
-// Toast Extensions
-@Deprecated("Use ViewModel.emitSnackbar() instead", level = DeprecationLevel.WARNING)
-fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, message, duration).show()
-}
 
 // Timestamp to readable format (with context for i18n)
 fun Long.toReadableTime(context: Context): String {

@@ -107,6 +107,8 @@ private fun decodeWidgetBitmap(file: File): Bitmap? {
     }
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod")
 private fun flattenToRenderItems(
     blocks: List<MarkdownBlock>,
     maxItems: Int,
@@ -174,6 +176,8 @@ private fun flattenToRenderItems(
     return result
 }
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
     val context = LocalContext.current

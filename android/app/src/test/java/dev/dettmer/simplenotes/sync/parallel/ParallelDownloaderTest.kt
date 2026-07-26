@@ -1,7 +1,7 @@
 package dev.dettmer.simplenotes.sync.parallel
 
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import io.mockk.*
 import java.io.ByteArrayInputStream
 import java.io.IOException
@@ -13,15 +13,15 @@ import org.junit.Test
 /**
  * Unit-Tests für ParallelDownloader mit MockK.
  *
- * Testet die echte Download-Logik mit gemocktem Sardine-Client.
+ * Testet die echte Download-Logik mit gemocktem WebDavClient-Client.
  */
 class ParallelDownloaderTest {
-    private fun mockSardine(): Sardine = mockk(relaxed = true)
+    private fun mockWebDav(): WebDavClient = mockk(relaxed = true)
 
     private fun createTask(noteId: String, url: String = "https://server/notes/$noteId.json") = DownloadTask(
         noteId = noteId,
         url = url,
-        resource = mockk<DavResource>(relaxed = true),
+        resource = mockk<WebDavResource>(relaxed = true),
         serverETag = "etag-$noteId",
         serverModified = System.currentTimeMillis()
     )
@@ -32,9 +32,9 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll with empty list returns empty results`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
-        val downloader = ParallelDownloader(sardine, ioDispatcher = dispatcher)
+        val downloader = ParallelDownloader(webdav, ioDispatcher = dispatcher)
 
         val results = downloader.downloadAll(emptyList())
         assertTrue(results.isEmpty())
@@ -46,13 +46,13 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll single task succeeds`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val content = """{"id":"note-1","title":"Test"}"""
-        every { sardine.get(any()) } returns ByteArrayInputStream(content.toByteArray())
+        every { webdav.get(any()) } returns ByteArrayInputStream(content.toByteArray())
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 2,
             retryCount = 0,
             ioDispatcher = dispatcher
@@ -70,8 +70,8 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll multiple tasks all succeed`() = runTest {
-        val sardine = mockSardine()
-        every { sardine.get(any()) } answers {
+        val webdav = mockWebDav()
+        every { webdav.get(any()) } answers {
             val url = firstArg<String>()
             val noteId = url.substringAfterLast("/").removeSuffix(".json")
             ByteArrayInputStream("""{"id":"$noteId"}""".toByteArray())
@@ -79,7 +79,7 @@ class ParallelDownloaderTest {
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 3,
             retryCount = 0,
             ioDispatcher = dispatcher
@@ -97,12 +97,12 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll single task failure returns Failure`() = runTest {
-        val sardine = mockSardine()
-        every { sardine.get(any()) } throws IOException("Connection refused")
+        val webdav = mockWebDav()
+        every { webdav.get(any()) } throws IOException("Connection refused")
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 2,
             retryCount = 0,
             ioDispatcher = dispatcher
@@ -119,16 +119,16 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll mixed success and failure`() = runTest {
-        val sardine = mockSardine()
-        every { sardine.get(match { it.contains("note-1") }) } returns
+        val webdav = mockWebDav()
+        every { webdav.get(match { it.contains("note-1") }) } returns
             ByteArrayInputStream("""{"id":"note-1"}""".toByteArray())
-        every { sardine.get(match { it.contains("note-2") }) } throws IOException("Timeout")
-        every { sardine.get(match { it.contains("note-3") }) } returns
+        every { webdav.get(match { it.contains("note-2") }) } throws IOException("Timeout")
+        every { webdav.get(match { it.contains("note-3") }) } returns
             ByteArrayInputStream("""{"id":"note-3"}""".toByteArray())
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 3,
             retryCount = 0,
             ioDispatcher = dispatcher
@@ -147,9 +147,9 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll retries on failure and succeeds`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         var callCount = 0
-        every { sardine.get(any()) } answers {
+        every { webdav.get(any()) } answers {
             callCount++
             if (callCount == 1) {
                 throw IOException("First attempt fails")
@@ -159,7 +159,7 @@ class ParallelDownloaderTest {
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 1,
             retryCount = 2,
             ioDispatcher = dispatcher
@@ -174,12 +174,12 @@ class ParallelDownloaderTest {
 
     @Test
     fun `downloadAll fails after all retries exhausted`() = runTest {
-        val sardine = mockSardine()
-        every { sardine.get(any()) } throws IOException("Persistent failure")
+        val webdav = mockWebDav()
+        every { webdav.get(any()) } throws IOException("Persistent failure")
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 1,
             retryCount = 2,
             ioDispatcher = dispatcher
@@ -190,8 +190,8 @@ class ParallelDownloaderTest {
         assertEquals(1, results.size)
         assertTrue("Should fail after all retries", results[0] is DownloadTaskResult.Failure)
 
-        // Sardine.get() should be called retryCount + 1 times
-        verify(exactly = 3) { sardine.get(any()) }
+        // WebDavClient.get() should be called retryCount + 1 times
+        verify(exactly = 3) { webdav.get(any()) }
     }
 
     // ═══════════════════════════════════════════════
@@ -200,14 +200,14 @@ class ParallelDownloaderTest {
 
     @Test
     fun `progress callback is called for each task`() = runTest {
-        val sardine = mockSardine()
-        every { sardine.get(any()) } returns ByteArrayInputStream("{}".toByteArray())
+        val webdav = mockWebDav()
+        every { webdav.get(any()) } returns ByteArrayInputStream("{}".toByteArray())
 
         val progressCalls = mutableListOf<Triple<Int, Int, String?>>()
 
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val downloader = ParallelDownloader(
-            sardine,
+            webdav,
             maxParallelDownloads = 1,
             retryCount = 0,
             ioDispatcher = dispatcher

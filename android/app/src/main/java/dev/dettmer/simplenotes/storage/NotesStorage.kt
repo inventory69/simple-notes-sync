@@ -19,6 +19,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("TooManyFunctions")
 class NotesStorage(private val context: Context) {
     companion object {
         private const val TAG = "NotesStorage"
@@ -289,23 +291,6 @@ class NotesStorage(private val context: Context) {
             saveDeletionTracker(tracker)
             Logger.d(TAG, "📝 Tracked ${ids.size} deletions (mutex-protected, batch)")
         }
-    }
-
-    /**
-     * Legacy-Methode ohne Mutex-Schutz.
-     * Verwendet für synchrone Aufrufe wo Coroutines nicht verfügbar sind.
-     *
-     * @deprecated Verwende trackDeletionSafe() für Thread-Safety wo möglich
-     */
-    @Deprecated(
-        "Use trackDeletionSafe() for thread-safety",
-        ReplaceWith("trackDeletionSafe(noteId, deviceId)")
-    )
-    fun trackDeletion(noteId: String, deviceId: String) {
-        val tracker = loadDeletionTracker()
-        tracker.addDeletion(noteId, deviceId)
-        saveDeletionTracker(tracker)
-        Logger.d(TAG, "📝 Tracked deletion: $noteId")
     }
 
     fun isNoteDeleted(noteId: String): Boolean {

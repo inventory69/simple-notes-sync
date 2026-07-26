@@ -34,6 +34,8 @@ import kotlinx.coroutines.withContext
  * - Auto-Backup vor Restore (Sicherheitsnetz)
  * - Backup-Validierung
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LargeClass")
 class BackupManager(private val context: Context, private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     companion object {
         private const val TAG = "BackupManager"
@@ -60,7 +62,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * @return BackupResult mit Erfolg/Fehler Info
      */
     // Recycle: false positive — `?.use { }` closes the stream, lint can't track through the safe call.
-    @Suppress("MaxLineLength", "Recycle")
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("MaxLineLength", "Recycle", "LongMethod")
     suspend fun createBackup(uri: Uri, password: String? = null, includeServerSettings: Boolean = false): BackupResult =
         withContext(ioDispatcher) {
             return@withContext try {
@@ -281,6 +284,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      * @param restoreServerSettings v1.9.0: If true and backup contains server settings, restore them
      * @return RestoreResult mit Details
      */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun restoreBackup(
         uri: Uri,
         mode: RestoreMode,

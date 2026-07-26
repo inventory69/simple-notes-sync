@@ -2,10 +2,11 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
 import android.webkit.MimeTypeMap
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.storage.AssetStore
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -42,23 +43,23 @@ internal class AssetSyncManager(
         private const val FALLBACK_MIME = "application/octet-stream"
     }
 
-    fun ensureAssetsDirectoryExists(sardine: Sardine, serverUrl: String) {
+    fun ensureAssetsDirectoryExists(webdav: WebDavClient, serverUrl: String) {
         if (connectionManager.assetsDirEnsured) return
         try {
             val url = urlBuilder.getAssetsUrl(serverUrl)
             val dirExists = try {
-                sardine.exists(url)
+                webdav.exists(url)
             } catch (e: IOException) {
                 Logger.w(TAG, "⚠️ -assets/ exists() check failed: ${e.message}, trying list()")
                 try {
-                    sardine.list(url)
+                    webdav.list(url)
                     true
                 } catch (_: IOException) {
                     false
                 }
             }
             if (!dirExists) {
-                sardine.createDirectory(url)
+                webdav.createDirectory(url)
                 Logger.d(TAG, "📁 Created -assets/ directory")
             }
             connectionManager.assetsDirEnsured = true
@@ -67,22 +68,47 @@ internal class AssetSyncManager(
         }
     }
 
+    /**
+     * 🆕 v2.14.0: [ensureAssetsDirectoryExists] + [listServerAssets] nur, wenn es überhaupt etwas
+     * zu diffen gibt. Ohne lokale UND ohne referenzierte Assets kosten die beiden Requests nichts
+     * als Zeit — `null` heißt „nicht gelistet, Assets-Zweig übersprungen".
+     *
+     * Trade-off (bewusst): der Remote-Orphan-Sweep läuft dann nur noch auf Geräten mit Assets.
+     */
+    fun listServerAssetsIfNeeded(
+        webdav: WebDavClient,
+        serverUrl: String,
+        referenced: Set<String>
+    ): Map<String, WebDavResource>? {
+        if (referenced.isEmpty() && assetStore.listAssets().isEmpty()) {
+            Logger.d(TAG, "⏭️ Assets skipped (no local assets, none referenced)")
+            return null
+        }
+        ensureAssetsDirectoryExists(webdav, serverUrl)
+        return listServerAssets(webdav, serverUrl)
+    }
+
     /** Ein PROPFIND für alle drei Diffs (Upload, Download, GC) — siehe Plan-Vorgabe. */
-    fun listServerAssets(sardine: Sardine, serverUrl: String): Map<String, DavResource> = try {
-        sardine.list(urlBuilder.getAssetsUrl(serverUrl))
+    fun listServerAssets(webdav: WebDavClient, serverUrl: String): Map<String, WebDavResource> = try {
+        webdav.list(urlBuilder.getAssetsUrl(serverUrl))
             .filterNot { it.isDirectory }
             .associateBy { it.name }
     } catch (e: Exception) {
         Logger.w(TAG, "⚠️ listServerAssets failed: ${e.message}")
+        // 🆕 v2.14.0 Self-Heal: 404 heißt, das persistierte "-assets/ existiert"-Flag ist stale.
+        if (e.isWebDavNotFound()) {
+            connectionManager.assetsDirEnsured = false
+            Logger.d(TAG, "🔄 assetsDirEnsured cleared (directory is gone)")
+        }
         emptyMap()
     }
 
     /** Lokal vorhandene, referenzierte Assets hochladen, die auf dem Server fehlen. */
     suspend fun uploadMissing(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         referenced: Set<String>,
-        serverAssets: Map<String, DavResource>
+        serverAssets: Map<String, WebDavResource>
     ): Int {
         val toUpload = referenced.filter { it !in serverAssets && assetStore.getAssetFile(it).exists() }
         if (toUpload.isEmpty()) return 0
@@ -90,17 +116,17 @@ internal class AssetSyncManager(
 
         val successCount = AtomicInteger(0)
         runParallel(toUpload) { name ->
-            if (putWithRetry(sardine, serverUrl, name)) successCount.incrementAndGet()
+            if (putWithRetry(webdav, serverUrl, name)) successCount.incrementAndGet()
         }
         return successCount.get()
     }
 
     /** Referenzierte Assets herunterladen, die lokal fehlen, aber auf dem Server liegen. */
     suspend fun downloadMissing(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         referenced: Set<String>,
-        serverAssets: Map<String, DavResource>
+        serverAssets: Map<String, WebDavResource>
     ): Int {
         val toDownload = referenced.filter { it in serverAssets && !assetStore.getAssetFile(it).exists() }
         if (toDownload.isEmpty()) return 0
@@ -108,7 +134,7 @@ internal class AssetSyncManager(
 
         val successCount = AtomicInteger(0)
         runParallel(toDownload) { name ->
-            if (getWithRetry(sardine, serverUrl, name)) successCount.incrementAndGet()
+            if (getWithRetry(webdav, serverUrl, name)) successCount.incrementAndGet()
         }
         return successCount.get()
     }
@@ -118,10 +144,10 @@ internal class AssetSyncManager(
      * auf `false` setzen, wenn die Notizliste leer war oder die Download-Phase fehlschlug.
      */
     suspend fun garbageCollect(
-        sardine: Sardine,
+        webdav: WebDavClient,
         serverUrl: String,
         allNotes: List<Note>,
-        serverAssets: Map<String, DavResource>,
+        serverAssets: Map<String, WebDavResource>,
         allowRemoteSweep: Boolean
     ) {
         val referenced = AssetReferences.extractAllReferenced(allNotes)
@@ -140,7 +166,7 @@ internal class AssetSyncManager(
         }
         targets.remoteToDelete.forEach { name ->
             try {
-                sardine.delete(urlBuilder.getAssetUrl(serverUrl, name))
+                webdav.delete(urlBuilder.getAssetUrl(serverUrl, name))
                 Logger.d(TAG, "🗑️ GC: deleted remote orphan asset $name")
             } catch (e: IOException) {
                 Logger.w(TAG, "⚠️ GC: failed to delete remote asset $name: ${e.message}")
@@ -163,14 +189,14 @@ internal class AssetSyncManager(
         }
     }
 
-    private suspend fun putWithRetry(sardine: Sardine, serverUrl: String, name: String): Boolean {
+    private suspend fun putWithRetry(webdav: WebDavClient, serverUrl: String, name: String): Boolean {
         val file = assetStore.getAssetFile(name)
         val url = urlBuilder.getAssetUrl(serverUrl, name)
         val mime = mimeForExtension(file.extension) ?: FALLBACK_MIME
 
         repeat(RETRY_COUNT + 1) { attempt ->
             try {
-                sardine.put(url, file.readBytes(), mime)
+                webdav.put(url, file.readBytes(), mime)
                 Logger.d(TAG, "📤 Uploaded asset: $name")
                 return true
             } catch (e: CancellationException) {
@@ -186,12 +212,12 @@ internal class AssetSyncManager(
 
     /** Binärer Download-Zwilling zu [dev.dettmer.simplenotes.sync.parallel.ParallelDownloader] —
      * dessen `readText()` würde Bilddaten korrumpieren. */
-    private suspend fun getWithRetry(sardine: Sardine, serverUrl: String, name: String): Boolean {
+    private suspend fun getWithRetry(webdav: WebDavClient, serverUrl: String, name: String): Boolean {
         val url = urlBuilder.getAssetUrl(serverUrl, name)
 
         repeat(RETRY_COUNT + 1) { attempt ->
             try {
-                val bytes = sardine.get(url).use { it.readBytes() }
+                val bytes = webdav.get(url).use { it.readBytes() }
                 assetStore.saveAssetAs(bytes, name)
                 Logger.d(TAG, "📥 Downloaded asset: $name")
                 return true

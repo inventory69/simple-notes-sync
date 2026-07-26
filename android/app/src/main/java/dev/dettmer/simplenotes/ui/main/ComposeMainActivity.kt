@@ -26,6 +26,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.color.DynamicColors
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -135,6 +136,8 @@ class ComposeMainActivity : FragmentActivity() {
         outState.putBoolean(KEY_CAME_FROM_SETTINGS, cameFromSettings)
     }
 
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen — keep visible until notes are loaded (v2.0.0 fix)
         val splashScreen = installSplashScreen()
@@ -165,7 +168,9 @@ class ComposeMainActivity : FragmentActivity() {
 
         // Initialize Logger and enable file logging if configured
         Logger.init(this)
-        if (prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, false)) {
+        // 🆕 v2.14.0: In Beta-Builds standardmäßig an (siehe BuildConfig.BETA_BUILD) — der
+        // Tester kann es in den Debug-Einstellungen jederzeit abschalten, die Präferenz gewinnt.
+        if (prefs.getBoolean(Constants.KEY_FILE_LOGGING_ENABLED, BuildConfig.BETA_BUILD)) {
             Logger.setFileLoggingEnabled(true)
         }
 

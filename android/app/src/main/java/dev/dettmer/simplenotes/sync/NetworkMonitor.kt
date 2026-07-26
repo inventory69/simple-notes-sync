@@ -100,7 +100,8 @@ class NetworkMonitor(context: Context) {
      *
      * Alle Skip-Pfade loggen via SyncDebugLogger für Post-Mortem-Diagnose.
      */
-    @Suppress("ReturnCount") // Linear guard-clause chain — splitting would hurt readability
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("ReturnCount", "LongMethod") // Linear guard-clause chain — splitting would hurt readability
     private fun evaluateAndMaybeTrigger(network: Network, caps: NetworkCapabilities?) {
         val networkState = SyncDebugLogger.snapshotNetwork(context)
 

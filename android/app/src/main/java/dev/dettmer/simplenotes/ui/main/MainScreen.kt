@@ -134,8 +134,9 @@ private const val SELECTION_TITLE_RESERVE_DP = 160
  * - Scaffold FAB slot for proper z-ordering
  * - Scroll-to-top on new note
  */
+// Abbau: TECH_DEBT_ROADMAP.md Slice 5
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongMethod") // 🔧 v2.5.0: color picker state + sheet push over limit
+@Suppress("LongMethod", "CyclomaticComplexMethod") // 🔧 v2.5.0: color picker state + sheet push over limit
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
@@ -825,7 +826,8 @@ private fun folderNavTransition(forward: Boolean): ContentTransform {
  * ihres eigenen `folderKey` (via `sortAndPin`), damit die abgehende Pane während der Animation
  * ihren eigenen (korrekten) Inhalt in ihrer eigenen Reihenfolge behält — kein Flackern.
  */
-@Suppress("LongParameterList") // viele UI-State-Parameter
+// Abbau: TECH_DEBT_ROADMAP.md Slice 5
+@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod") // viele UI-State-Parameter
 @Composable
 private fun NotesPane(
     folderKey: String?,
@@ -1031,8 +1033,9 @@ private data class SelectionAction(
 )
 
 /** 🆕 v2.7.0 (Folders): zeigt so viele Action-Icons wie passen, Rest ins ⋮-Overflow-Menü. */
+// Abbau: TECH_DEBT_ROADMAP.md Slice 5
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun SelectionActions(
     selectedNoteCount: Int,

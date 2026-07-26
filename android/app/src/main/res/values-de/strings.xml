@@ -215,7 +215,7 @@
     <string name="error_invalid_protocol">Ungültiges Protokoll: %s. Bitte verwende HTTP oder HTTPS.</string>
     <string name="error_invalid_url">Ungültige URL: %s</string>
     <string name="error_server_not_configured">WebDAV-Server nicht vollständig konfiguriert</string>
-    <string name="error_sardine_client_failed">Sardine Client konnte nicht erstellt werden</string>
+    <string name="error_sardine_client_failed">WebDAV-Client konnte nicht erstellt werden</string>
     <string name="error_server_url_not_configured">Server-URL nicht konfiguriert</string>
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
@@ -441,7 +441,7 @@
     <!-- 🆕 v2.2.0: Persistentes Sync-Debug-Log -->
     <string name="debug_sync_debug_logging_title">Persistentes Sync-Debug-Log</string>
     <string name="debug_sync_debug_logging_subtitle">Speichert Sync-Trigger und Ergebnisse zur Fehleranalyse im Hintergrund-Sync.</string>
-    <string name="debug_privacy_info">🔒 Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren.</string>
+    <string name="debug_privacy_info">🔒 Datenschutz: Logs werden nur lokal auf deinem Gerät gespeichert und niemals an externe Server gesendet. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren. Beim Export werden Serveradresse, Benutzername und Notiztitel durch Platzhalter ersetzt; Ordnernamen bleiben stehen, weil Sync-Probleme genau daran diagnostiziert werden.</string>
     <string name="debug_log_actions_section">Log-Aktionen</string>
     <string name="debug_export_logs">📤 Logs exportieren &amp; teilen</string>
     <string name="debug_logs_subject">SimpleNotes Sync Logs</string>
@@ -659,6 +659,7 @@
     <string name="about_app_name">Simple Notes Sync</string>
     <string name="about_version">Version %1$s (%2$d)</string>
     <string name="about_build_info">Build: %1$s · %2$s</string>
+    <string name="about_beta_notice">🧪 Beta-Build. Diagnose-Logging ist an, damit du einem Bericht einen Sync-Log beilegen kannst — Einstellungen → Debug &amp; Diagnose zum Exportieren oder Abschalten. Beim Export werden Serveradresse, Benutzername und Notiztitel ersetzt.</string>
     <string name="about_links_section">Links</string>
     <string name="about_app_section">App</string>
     <string name="about_github_title">GitHub Repository</string>

@@ -23,11 +23,13 @@ gson = "2.14.0"
 workRuntime = "2.11.2"
 splashscreen = "1.2.0"
 securityCrypto = "1.1.0"
-sardine = "0.8"
+okhttp = "4.12.0"
+okhttpDigest = "3.1.1"
 glance = "1.1.1"
 biometric = "1.1.0"
 exifinterface = "1.4.2"
 coil = "3.5.0"
+orgJson = "20250517"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -62,7 +64,10 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeCompose" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
-sardine-android = { group = "com.github.thegrizzlylabs", name = "sardine-android", version.ref = "sardine" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-digest = { group = "io.github.rburgst", name = "okhttp-digest", version.ref = "okhttpDigest" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }

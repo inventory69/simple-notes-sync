@@ -24,6 +24,8 @@ internal class KeepEntryParserImpl(
     private val htmlFallback: KeepHtmlFallbackParser,
     private val gson: Gson = Gson()
 ) : KeepEntryParser {
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod")
     override fun parse(jsonEntry: KeepZipEntry, htmlEntry: KeepZipEntry?): KeepNote? {
         val raw = readUtf8Stripped(jsonEntry.bytes)
         if (raw.isBlank()) {

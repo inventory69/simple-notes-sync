@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.sync.parallel
 
-import com.thegrizzlylabs.sardineandroid.DavResource
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 
 /**
  * 🆕 v1.8.0: Repräsentiert einen einzelnen Download-Task
@@ -11,7 +11,13 @@ import com.thegrizzlylabs.sardineandroid.DavResource
  * @param serverETag E-Tag vom Server (für Caching)
  * @param serverModified Letztes Änderungsdatum vom Server (Unix timestamp)
  */
-data class DownloadTask(val noteId: String, val url: String, val resource: DavResource, val serverETag: String?, val serverModified: Long)
+data class DownloadTask(
+    val noteId: String,
+    val url: String,
+    val resource: WebDavResource,
+    val serverETag: String?,
+    val serverModified: Long
+)
 
 /**
  * 🆕 v1.8.0: Ergebnis eines einzelnen Downloads

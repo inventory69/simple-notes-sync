@@ -59,6 +59,8 @@ object MarkdownEngine {
     /**
      * Parse raw Markdown [text] into a list of [MarkdownBlock]s.
      */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun parse(text: String): List<MarkdownBlock> {
         val blocks = mutableListOf<MarkdownBlock>()
         val lines = text.lines().toMutableList()

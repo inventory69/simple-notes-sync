@@ -63,7 +63,8 @@ private val CORNER_SYNC_ICON_SIZE = 16.dp
  * - Long-press starts selection mode
  * - Tap in selection mode toggles selection
  */
-@Suppress("LongParameterList") // 🆕 Issue #100: zwei weitere Display-Toggles neben bestehendem State
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongParameterList", "LongMethod") // 🆕 Issue #100: zwei weitere Display-Toggles neben bestehendem State
 @Composable
 fun NoteCard(
     note: Note,

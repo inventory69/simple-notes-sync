@@ -67,8 +67,9 @@ private fun fontScaleToSlider(scale: Float): Float {
 private fun sliderToFontScale(pos: Float): Float =
     WIDGET_FONT_SCALE_STEPS[pos.roundToInt().coerceIn(0, WIDGET_FONT_SCALE_STEPS.lastIndex)]
 
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun NoteWidgetConfigScreen(
     storage: NotesStorage,

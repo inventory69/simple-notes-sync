@@ -77,6 +77,8 @@ private const val COMPACT_HEADING_LEVEL = 3
  * Handles both block-level layout (headings, lists, code blocks, etc.)
  * and inline formatting (bold, italic, strikethrough, inline code, links).
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 fun MarkdownPreview(
     blocks: List<MarkdownBlock>,
@@ -832,6 +834,8 @@ private fun String.escapeHtml(): String =
  * links → link text only (URL discarded), bare URLs → kept as escaped plain text.
  * All captured content is HTML-escaped to prevent injection into [android.text.Html.fromHtml].
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("CyclomaticComplexMethod")
 internal fun markdownInlineToHtml(text: String): String = buildString {
     var pos = 0
     for (match in INLINE_COMBINED_REGEX.findAll(text)) {

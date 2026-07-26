@@ -38,6 +38,8 @@ internal fun List<FolderMeta>.sanitized(): List<FolderMeta> = filter { !it.name.
  * abgebildet (Backward-Compat). Schreib-Operationen sind Mutex-geschützt und atomar (tmp-Rename).
  * Dirty-Flag in SharedPreferences signalisiert ausstehende Uploads an den `FolderSyncManager`.
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("TooManyFunctions")
 class FolderStore(private val context: Context) {
     private val mutex = Mutex()
     private val gson = Gson()
@@ -87,10 +89,16 @@ class FolderStore(private val context: Context) {
         }
     }
 
-    /** Discovery-Mirror: Registriert nur unbekannte Namen mit updatedAt=0. Kein dirty-Flag. */
-    suspend fun addFolders(names: Collection<String>) {
-        if (names.isEmpty()) return
-        mutex.withLock {
+    /**
+     * Discovery-Mirror: Registriert nur unbekannte Namen mit updatedAt=0. Kein dirty-Flag.
+     *
+     * @return `true`, wenn mindestens ein neuer Name hinzukam. Der Aufrufer braucht das, weil
+     * Discovery bewusst kein dirty-Flag setzt — ohne dieses Signal würde ein reiner
+     * Server-Unterordner nie in folders.json landen (siehe FolderSyncManager-Fast-Path).
+     */
+    suspend fun addFolders(names: Collection<String>): Boolean {
+        if (names.isEmpty()) return false
+        return mutex.withLock {
             val current = loadMetaUnsafe().toMutableList()
             var changed = false
             for (raw in names) {
@@ -101,6 +109,7 @@ class FolderStore(private val context: Context) {
                 }
             }
             if (changed) writeMetaUnsafe(current.sortedBy { it.name.lowercase() })
+            changed
         }
     }
 

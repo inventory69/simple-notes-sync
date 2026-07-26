@@ -2,18 +2,19 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.thegrizzlylabs.sardineandroid.Sardine
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
-import io.mockk.Runs
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
+import io.mockk.verify
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -23,10 +24,26 @@ class FolderSyncManagerTest {
     private lateinit var folderStore: FolderStore
     private lateinit var tmpDir: File
 
+    private val prefsBacking = mutableMapOf<String, Any?>()
+
     @Before fun setUp() {
         tmpDir = Files.createTempDirectory("foldersync-test").toFile()
+        prefsBacking.clear()
+        // Echte Backing-Map: der ETag-Fast-Path liest und schreibt über die Prefs.
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { editor.putString(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<String?>(); editor }
+        every { editor.putBoolean(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<Boolean>(); editor }
+        every { editor.remove(any()) } answers { prefsBacking.remove(firstArg<String>()); editor }
+        every { editor.putStringSet(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<Set<String>?>(); editor }
         val prefs = mockk<SharedPreferences>(relaxed = true) {
-            every { edit() } returns mockk(relaxed = true)
+            every { edit() } returns editor
+            every { getString(any(), any()) } answers { prefsBacking[firstArg()] as? String ?: secondArg() }
+            every { getBoolean(any(), any()) } answers { prefsBacking[firstArg()] as? Boolean ?: secondArg() }
+            // Rückgabe muss mutable sein — mockks secondArg() castet sonst EmptySet auf MutableSet.
+            @Suppress("UNCHECKED_CAST")
+            every { getStringSet(any(), any()) } answers {
+                (prefsBacking[firstArg<String>()] as? Set<String>)?.toMutableSet() ?: mutableSetOf()
+            }
         }
         val context = mockk<Context> {
             every { filesDir } returns tmpDir
@@ -142,29 +159,146 @@ class FolderSyncManagerTest {
 
     // ── sync() → Boolean ──────────────────────────────────────────────────
 
-    private fun sardineWith(json: String): Sardine {
-        val sardine = mockk<Sardine>()
-        every { sardine.exists(any()) } returns true
-        every { sardine.get(any<String>()) } returns json.byteInputStream()
-        every { sardine.put(any(), any<ByteArray>(), any()) } just Runs
-        return sardine
+    private fun webDavWith(json: String): WebDavClient {
+        val webdav = mockk<WebDavClient>()
+        every { webdav.get(any<String>()) } returns json.byteInputStream()
+        every { webdav.put(any(), any<ByteArray>(), any()) } returns null
+        return webdav
     }
 
     @Test fun `sync returns true when remote brings newer color (empty-folder case)`() = runTest {
         folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
-        val sardine = sardineWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
-        assertTrue(manager.sync(sardine, "https://server/"))
+        val webdav = webDavWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
+        assertTrue(manager.sync(webdav, "https://server/"))
     }
 
     @Test fun `sync returns false when merged equals local`() = runTest {
         folderStore.replaceMeta(listOf(FolderMeta("A", color = "#FF0000", updatedAt = 200L)))
-        val sardine = sardineWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
-        assertFalse(manager.sync(sardine, "https://server/"))
+        val webdav = webDavWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
+        assertFalse(manager.sync(webdav, "https://server/"))
     }
 
-    @Test fun `sync returns false when sardine throws`() = runTest {
+    @Test fun `sync returns false when webdav throws`() = runTest {
         folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
-        val sardine = mockk<Sardine> { every { exists(any()) } throws RuntimeException("network error") }
-        assertFalse(manager.sync(sardine, "https://server/"))
+        val webdav = mockk<WebDavClient>()
+        every { webdav.get(any<String>()) } throws RuntimeException("network error")
+        every { webdav.put(any(), any<ByteArray>(), any()) } throws RuntimeException("network error")
+        assertFalse(manager.sync(webdav, "https://server/"))
+    }
+
+    /** folders.json wird direkt geGETtet — der 404-Fall läuft über den catch-all, kein HEAD davor. */
+    @Test fun `sync downloads folders json without an exists probe`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        val webdav = webDavWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
+
+        manager.sync(webdav, "https://server/")
+
+        verify(exactly = 0) { webdav.exists(any()) }
+        verify(exactly = 1) { webdav.get(any<String>()) }
+    }
+
+    @Test fun `sync treats a missing folders json as empty remote`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        val webdav = mockk<WebDavClient>()
+        every { webdav.get(any<String>()) } throws WebDavException("not found", 404)
+        every { webdav.put(any(), any<ByteArray>(), any()) } returns null
+
+        assertFalse(manager.sync(webdav, "https://server/"))
+        verify(exactly = 1) { webdav.put(any(), any<ByteArray>(), any()) }
+    }
+
+    // ── ETag-Fast-Path (v2.14.0) ──────────────────────────────────────────────
+
+    private fun cacheEtag(value: String?) {
+        prefsBacking[dev.dettmer.simplenotes.utils.Constants.KEY_FOLDERS_JSON_ETAG] = value
+    }
+
+    private fun cachedEtag(): String? =
+        prefsBacking[dev.dettmer.simplenotes.utils.Constants.KEY_FOLDERS_JSON_ETAG] as? String
+
+    @Test fun `sync skips the round-trip on an ETag match`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        cacheEtag("\"e1\"")
+        val webdav = mockk<WebDavClient>()
+
+        assertFalse(manager.sync(webdav, "https://server/", remoteEtag = "W/\"e1\"", allowSkip = true))
+
+        verify(exactly = 0) { webdav.get(any<String>()) }
+        verify(exactly = 0) { webdav.put(any(), any<ByteArray>(), any()) }
+    }
+
+    @Test fun `sync does not skip when allowSkip is false`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        cacheEtag("\"e1\"")
+        val webdav = webDavWith("""[{"name":"A","updatedAt":100}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = "\"e1\"", allowSkip = false)
+
+        verify(exactly = 1) { webdav.get(any<String>()) }
+    }
+
+    @Test fun `sync does not skip on an ETag difference`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        cacheEtag("\"e1\"")
+        val webdav = webDavWith("""[{"name":"A","updatedAt":100}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = "\"e2\"", allowSkip = true)
+
+        verify(exactly = 1) { webdav.get(any<String>()) }
+    }
+
+    /** Server ohne ETags (remoteEtag == null) dürfen nie skippen. */
+    @Test fun `sync does not skip without a remote ETag`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        cacheEtag("\"e1\"")
+        val webdav = webDavWith("""[{"name":"A","updatedAt":100}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = null, allowSkip = true)
+
+        verify(exactly = 1) { webdav.get(any<String>()) }
+    }
+
+    @Test fun `sync does not skip while the dirty flag is set`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        cacheEtag("\"e1\"")
+        prefsBacking[dev.dettmer.simplenotes.utils.Constants.KEY_FOLDERS_DIRTY] = true
+        val webdav = webDavWith("""[{"name":"A","updatedAt":100}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = "\"e1\"", allowSkip = true)
+
+        verify(exactly = 1) { webdav.get(any<String>()) }
+    }
+
+    @Test fun `sync does not skip while the server-removal queue is pending`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L)))
+        folderStore.setServerRemovalQueue(setOf("A"))
+        cacheEtag("\"e1\"")
+        val webdav = webDavWith("""[{"name":"A","updatedAt":100}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = "\"e1\"", allowSkip = true)
+
+        verify(exactly = 1) { webdav.get(any<String>()) }
+    }
+
+    @Test fun `a run without a PUT caches the remote ETag`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("A", color = "#FF0000", updatedAt = 200L)))
+        val webdav = webDavWith("""[{"name":"A","color":"#FF0000","updatedAt":200}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = "\"fresh\"", allowSkip = true)
+
+        verify(exactly = 0) { webdav.put(any(), any<ByteArray>(), any()) }
+        assertEquals("\"fresh\"", cachedEtag())
+    }
+
+    /** Nach einem PUT ist der neue Server-ETag unbekannt — der Key muss weg. */
+    @Test fun `a run with a PUT clears the cached ETag`() = runTest {
+        folderStore.replaceMeta(listOf(FolderMeta("B", updatedAt = 300L)))
+        cacheEtag("\"stale\"")
+        val webdav = webDavWith("""[{"name":"A","updatedAt":100}]""")
+
+        manager.sync(webdav, "https://server/", remoteEtag = "\"other\"", allowSkip = true)
+
+        verify(exactly = 1) { webdav.put(any(), any<ByteArray>(), any()) }
+        assertNull(cachedEtag())
     }
 }

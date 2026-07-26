@@ -44,6 +44,8 @@ import kotlinx.coroutines.withTimeout
  * Adaptiert von: Calvin-LL/Reorderable v3.0.0 (Apache 2.0)
  * Custom: Separator-Logik, Adjazenz-Filter, Visual/Data-Index-Konvertierung
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LargeClass")
 class DragDropListState(private val state: LazyListState, private val scope: CoroutineScope, private val onMove: (Int, Int) -> Unit) {
     // --- Primary Drag State ---
     internal var draggingItemKey by mutableStateOf<Any?>(null)
@@ -309,6 +311,8 @@ class DragDropListState(private val state: LazyListState, private val scope: Cor
      *   findTarget(itemsInContentArea) ?: findLast/findFirst(visibleItems) →
      *   isTargetDirectionCorrect? → moveItems (with viewport-safe positions)
      */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun moveDraggingItemToEnd(scrollDirection: Int) {
         swapMutex.lock()
 
@@ -633,6 +637,8 @@ class DragDropListState(private val state: LazyListState, private val scope: Cor
      * 4. scrollBy(min(speed, maxDist)) → BEGRENZTER Scroll
      * 5. delay(16ms) → nächste Iteration
      */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod")
     private fun ensureAutoScrollRunning() {
         if (autoScrollJob?.isActive == true) return
         logD("AUTOSCROLL_STATE", "action=START draggingKey=$draggingItemKey")

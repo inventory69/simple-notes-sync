@@ -1,6 +1,6 @@
 package dev.dettmer.simplenotes.sync.parallel
 
-import com.thegrizzlylabs.sardineandroid.Sardine
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.utils.Logger
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
@@ -21,12 +21,12 @@ import kotlinx.coroutines.sync.withPermit
  * - 100 Notizen: ~20s → ~4s (5x schneller)
  * - 50 Notizen: ~10s → ~2s
  *
- * @param sardine WebDAV-Client für Downloads
+ * @param webdav WebDAV-Client für Downloads
  * @param maxParallelDownloads Maximale Anzahl gleichzeitiger Downloads (1-10)
  * @param retryCount Anzahl der Wiederholungsversuche bei Fehlern
  */
 class ParallelDownloader(
-    private val sardine: Sardine,
+    private val webdav: WebDavClient,
     private val maxParallelDownloads: Int = DEFAULT_MAX_PARALLEL,
     private val retryCount: Int = DEFAULT_RETRY_COUNT,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -110,7 +110,7 @@ class ParallelDownloader(
 
         repeat(retryCount + 1) { attempt ->
             try {
-                val content = sardine.get(task.url).use { it.bufferedReader().readText() }
+                val content = webdav.get(task.url).use { it.bufferedReader().readText() }
 
                 Logger.d(TAG, "✅ Downloaded ${task.noteId} (attempt ${attempt + 1})")
 

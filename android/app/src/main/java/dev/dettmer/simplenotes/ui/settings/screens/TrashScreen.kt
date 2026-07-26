@@ -48,6 +48,8 @@ import dev.dettmer.simplenotes.utils.Constants
  * 🆕 v2.9.0 (Trash): Papierkorb-Screen. Listet getrashte Notizen (neueste zuerst), erlaubt
  * Wiederherstellen und endgültiges Löschen (mit Bestätigung) sowie „Papierkorb leeren".
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+@Suppress("LongMethod")
 @Composable
 fun TrashScreen(
     onBack: () -> Unit,

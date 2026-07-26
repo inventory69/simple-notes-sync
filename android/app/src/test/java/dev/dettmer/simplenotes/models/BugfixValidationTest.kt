@@ -9,7 +9,7 @@ import org.junit.Test
  * This test file validates that the critical bugfixes are working:
  * - IMPL_001: Deletion Tracker Race Condition
  * - IMPL_002: ISO8601 Timezone Parsing
- * - IMPL_003: SafeSardine Memory Leak (Closeable)
+ * - IMPL_003: WebDAV-Client Memory Leak (Closeable)
  * - IMPL_004: E-Tag Batch Caching
  * - IMPL_014: JSON/Markdown Timestamp Sync
  * - IMPL_015: SyncStatus PENDING Fix

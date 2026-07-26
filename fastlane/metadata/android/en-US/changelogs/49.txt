@@ -1,0 +1,7 @@
+📡 v2.14.0 - Fewer Round Trips
+
+• Sync is noticeably faster - it stops asking the server what the app already knows
+• No repeated sign-in on every single sync
+• New: digest authentication, for servers that do not offer basic auth
+• WebDAV now runs on our own client instead of a library that stopped getting updates years ago
+• Same servers, same workarounds - please report anything that syncs differently than before

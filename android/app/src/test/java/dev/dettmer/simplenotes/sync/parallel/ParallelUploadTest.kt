@@ -1,7 +1,7 @@
 package dev.dettmer.simplenotes.sync.parallel
 
-import com.thegrizzlylabs.sardineandroid.DavResource
-import com.thegrizzlylabs.sardineandroid.Sardine
+import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import io.mockk.*
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -30,14 +30,14 @@ import org.junit.Test
  * - notes-md/ Exists-Cache (einmalige Prüfung)
  */
 class ParallelUploadTest {
-    private fun mockSardine(): Sardine = mockk(relaxed = true)
+    private fun mockWebDav(): WebDavClient = mockk(relaxed = true)
 
     /**
      * Simuliert uploadSingleNoteParallel() Kernlogik:
-     * sardine.put() → storageMutex.withLock {} → optional MD-Export
+     * webdav.put() → storageMutex.withLock {} → optional MD-Export
      */
     private suspend fun simulateUpload(
-        sardine: Sardine,
+        webdav: WebDavClient,
         noteId: String,
         storageMutex: Mutex,
         storageWrites: MutableList<String>,
@@ -46,7 +46,7 @@ class ParallelUploadTest {
     ): UploadTaskResult {
         return try {
             val noteUrl = "https://server/notes/$noteId.json"
-            sardine.put(noteUrl, "{}".toByteArray(), "application/json")
+            webdav.put(noteUrl, "{}".toByteArray(), "application/json")
 
             storageMutex.withLock {
                 storageWrites.add(noteId)
@@ -55,9 +55,9 @@ class ParallelUploadTest {
             if (markdownExportEnabled) {
                 if (!markdownDirExists) {
                     // Simuliere Ordner-Check (Fallback-Pfad)
-                    sardine.exists("https://server/notes-md/")
+                    webdav.exists("https://server/notes-md/")
                 }
-                sardine.put("https://server/notes-md/$noteId.md", "# Test".toByteArray(), "text/markdown")
+                webdav.put("https://server/notes-md/$noteId.md", "# Test".toByteArray(), "text/markdown")
             }
 
             UploadTaskResult.Success(noteId = noteId, etag = null)
@@ -72,7 +72,7 @@ class ParallelUploadTest {
      * Simuliert uploadSingleNoteParallel() mit Retry-Logik.
      */
     private suspend fun simulateUploadWithRetry(
-        sardine: Sardine,
+        webdav: WebDavClient,
         noteId: String,
         storageMutex: Mutex,
         storageWrites: MutableList<String>,
@@ -83,7 +83,7 @@ class ParallelUploadTest {
         repeat(maxRetries + 1) { attempt ->
             try {
                 val noteUrl = "https://server/notes/$noteId.json"
-                sardine.put(noteUrl, "{}".toByteArray(), "application/json")
+                webdav.put(noteUrl, "{}".toByteArray(), "application/json")
                 storageMutex.withLock {
                     storageWrites.add(noteId)
                 }
@@ -106,10 +106,10 @@ class ParallelUploadTest {
 
     @Test
     fun `empty note list returns zero uploads`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val pendingNotes = emptyList<String>()
         assertEquals(0, pendingNotes.size)
-        verify(exactly = 0) { sardine.put(any<String>(), any<ByteArray>(), any<String>()) }
+        verify(exactly = 0) { webdav.put(any<String>(), any<ByteArray>(), any<String>()) }
     }
 
     // ═══════════════════════════════════════════════
@@ -117,17 +117,17 @@ class ParallelUploadTest {
     // ═══════════════════════════════════════════════
 
     @Test
-    fun `single note upload calls sardine put once`() = runTest {
-        val sardine = mockSardine()
+    fun `single note upload calls webdav put once`() = runTest {
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
 
-        val result = simulateUpload(sardine, "note-1", storageMutex, storageWrites)
+        val result = simulateUpload(webdav, "note-1", storageMutex, storageWrites)
 
         assertTrue(result is UploadTaskResult.Success)
         assertEquals("note-1", (result as UploadTaskResult.Success).noteId)
         verify(exactly = 1) {
-            sardine.put(match<String> { it.contains("note-1.json") }, any<ByteArray>(), any<String>())
+            webdav.put(match<String> { it.contains("note-1.json") }, any<ByteArray>(), any<String>())
         }
         assertEquals(listOf("note-1"), storageWrites)
     }
@@ -138,7 +138,7 @@ class ParallelUploadTest {
 
     @Test
     fun `parallel uploads with semaphore complete all tasks`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
         val semaphore = Semaphore(3)
@@ -150,7 +150,7 @@ class ParallelUploadTest {
             noteIds.map { noteId ->
                 async(dispatcher) {
                     semaphore.withPermit {
-                        simulateUpload(sardine, noteId, storageMutex, storageWrites)
+                        simulateUpload(webdav, noteId, storageMutex, storageWrites)
                     }
                 }
             }.awaitAll()
@@ -168,14 +168,14 @@ class ParallelUploadTest {
 
     @Test
     fun `mixed success and failure - failures do not stop other uploads`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
         val semaphore = Semaphore(3)
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
 
         // note-2 schlägt fehl
-        every { sardine.put(match<String> { it.contains("note-2.json") }, any<ByteArray>(), any<String>()) } throws
+        every { webdav.put(match<String> { it.contains("note-2.json") }, any<ByteArray>(), any<String>()) } throws
             IOException("Server error")
 
         val noteIds = listOf("note-1", "note-2", "note-3")
@@ -184,7 +184,7 @@ class ParallelUploadTest {
             noteIds.map { noteId ->
                 async(dispatcher) {
                     semaphore.withPermit {
-                        simulateUpload(sardine, noteId, storageMutex, storageWrites)
+                        simulateUpload(webdav, noteId, storageMutex, storageWrites)
                     }
                 }
             }.awaitAll()
@@ -204,19 +204,20 @@ class ParallelUploadTest {
 
     @Test
     fun `retry succeeds on second attempt`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
         var callCount = 0
 
-        every { sardine.put(any<String>(), any<ByteArray>(), any<String>()) } answers {
+        every { webdav.put(any<String>(), any<ByteArray>(), any<String>()) } answers {
             callCount++
             if (callCount == 1) throw IOException("Transient error")
-            // Zweiter Versuch erfolgreich
+            // Zweiter Versuch erfolgreich (Server schickt keinen ETag)
+            null
         }
 
         val result = simulateUploadWithRetry(
-            sardine,
+            webdav,
             "note-retry",
             storageMutex,
             storageWrites,
@@ -231,14 +232,14 @@ class ParallelUploadTest {
 
     @Test
     fun `retry exhausted returns Failure`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
 
-        every { sardine.put(any<String>(), any<ByteArray>(), any<String>()) } throws IOException("Persistent failure")
+        every { webdav.put(any<String>(), any<ByteArray>(), any<String>()) } throws IOException("Persistent failure")
 
         val result = simulateUploadWithRetry(
-            sardine,
+            webdav,
             "note-fail",
             storageMutex,
             storageWrites,
@@ -248,7 +249,7 @@ class ParallelUploadTest {
 
         assertTrue("Should fail after all retries", result is UploadTaskResult.Failure)
         assertTrue(storageWrites.isEmpty())
-        verify(exactly = 3) { sardine.put(any<String>(), any<ByteArray>(), any<String>()) }
+        verify(exactly = 3) { webdav.put(any<String>(), any<ByteArray>(), any<String>()) }
     }
 
     // ═══════════════════════════════════════════════
@@ -257,15 +258,15 @@ class ParallelUploadTest {
 
     @Test(expected = CancellationException::class)
     fun `CancellationException is propagated not caught`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
 
-        every { sardine.put(any<String>(), any<ByteArray>(), any<String>()) } throws
+        every { webdav.put(any<String>(), any<ByteArray>(), any<String>()) } throws
             CancellationException("Job cancelled")
 
         simulateUploadWithRetry(
-            sardine,
+            webdav,
             "note-cancel",
             storageMutex,
             storageWrites,
@@ -279,7 +280,7 @@ class ParallelUploadTest {
 
     @Test
     fun `progress callback is called for each completed upload`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
         val semaphore = Semaphore(3)
@@ -294,7 +295,7 @@ class ParallelUploadTest {
             noteIds.map { noteId ->
                 async(dispatcher) {
                     semaphore.withPermit {
-                        val result = simulateUpload(sardine, noteId, storageMutex, storageWrites)
+                        val result = simulateUpload(webdav, noteId, storageMutex, storageWrites)
                         val completed = completedCount.incrementAndGet()
                         synchronized(progressCalls) {
                             progressCalls.add(completed to total)
@@ -316,7 +317,7 @@ class ParallelUploadTest {
 
     @Test
     fun `storage mutex prevents concurrent writes`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
         val concurrentWrites = AtomicInteger(0)
@@ -330,7 +331,7 @@ class ParallelUploadTest {
             noteIds.map { noteId ->
                 async(dispatcher) {
                     semaphore.withPermit {
-                        sardine.put("url/$noteId.json", "{}".toByteArray(), "application/json")
+                        webdav.put("url/$noteId.json", "{}".toByteArray(), "application/json")
                         storageMutex.withLock {
                             val current = concurrentWrites.incrementAndGet()
                             maxConcurrentWrites.updateAndGet { maxOf(it, current) }
@@ -356,30 +357,30 @@ class ParallelUploadTest {
 
     @Test
     fun `batch etag fetch via list depth 1 extracts etags correctly`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
 
         val resources = listOf(
-            mockk<DavResource>(relaxed = true).apply {
+            mockk<WebDavResource>(relaxed = true).apply {
                 every { name } returns "note-1.json"
                 every { etag } returns "\"etag-aaa\""
             },
-            mockk<DavResource>(relaxed = true).apply {
+            mockk<WebDavResource>(relaxed = true).apply {
                 every { name } returns "note-2.json"
                 every { etag } returns "\"etag-bbb\""
             },
-            mockk<DavResource>(relaxed = true).apply {
+            mockk<WebDavResource>(relaxed = true).apply {
                 every { name } returns "note-3.json"
                 every { etag } returns "\"etag-ccc\""
             },
-            mockk<DavResource>(relaxed = true).apply {
+            mockk<WebDavResource>(relaxed = true).apply {
                 every { name } returns "" // Parent directory entry
                 every { etag } returns null
             }
         )
-        every { sardine.list(any(), eq(1)) } returns resources
+        every { webdav.list(any(), eq(1)) } returns resources
 
         val successfulNoteIds = setOf("note-1", "note-3") // note-2 war kein Upload
-        val allResources = sardine.list("https://server/notes/", 1)
+        val allResources = webdav.list("https://server/notes/", 1)
 
         val batchEtagUpdates = mutableMapOf<String, String?>()
         for (resource in allResources) {
@@ -399,18 +400,18 @@ class ParallelUploadTest {
 
     @Test
     fun `batch etag fetch detects missing etags and invalidates`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
 
         val resources = listOf(
-            mockk<DavResource>(relaxed = true).apply {
+            mockk<WebDavResource>(relaxed = true).apply {
                 every { name } returns "note-1.json"
                 every { etag } returns "\"etag-aaa\""
             }
         )
-        every { sardine.list(any(), eq(1)) } returns resources
+        every { webdav.list(any(), eq(1)) } returns resources
 
         val successfulNoteIds = setOf("note-1", "note-2")
-        val allResources = sardine.list("https://server/notes/", 1)
+        val allResources = webdav.list("https://server/notes/", 1)
 
         val batchEtagUpdates = mutableMapOf<String, String?>()
         for (resource in allResources) {
@@ -437,13 +438,13 @@ class ParallelUploadTest {
     @Suppress("SwallowedException")
     @Test
     fun `batch etag fetch handles list failure gracefully`() = runTest {
-        val sardine = mockSardine()
-        every { sardine.list(any(), eq(1)) } throws IOException("PROPFIND failed")
+        val webdav = mockWebDav()
+        every { webdav.list(any(), eq(1)) } throws IOException("PROPFIND failed")
 
         val successfulNoteIds = setOf("note-1", "note-2")
 
         val invalidationMap = try {
-            sardine.list("https://server/notes/", 1)
+            webdav.list("https://server/notes/", 1)
             emptyMap<String, String?>() // Sollte nicht erreicht werden
         } catch (e: Exception) {
             successfulNoteIds.associate { "etag_json_$it" to null as String? }
@@ -460,7 +461,7 @@ class ParallelUploadTest {
 
     @Test
     fun `markdown dir check is not called when markdownDirExists is true`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
         val semaphore = Semaphore(3)
@@ -474,7 +475,7 @@ class ParallelUploadTest {
                 async(dispatcher) {
                     semaphore.withPermit {
                         simulateUpload(
-                            sardine,
+                            webdav,
                             noteId,
                             storageMutex,
                             storageWrites,
@@ -487,21 +488,21 @@ class ParallelUploadTest {
         }
 
         // exists(notes-md/) sollte NIE aufgerufen werden wenn markdownDirExists=true
-        verify(exactly = 0) { sardine.exists(match<String> { it.contains("notes-md") }) }
+        verify(exactly = 0) { webdav.exists(match<String> { it.contains("notes-md") }) }
         // MD-put() sollte 3× aufgerufen werden
-        verify(exactly = 3) { sardine.put(match<String> { it.endsWith(".md") }, any<ByteArray>(), eq("text/markdown")) }
+        verify(exactly = 3) { webdav.put(match<String> { it.endsWith(".md") }, any<ByteArray>(), eq("text/markdown")) }
     }
 
     @Test
     fun `markdown dir check is called when markdownDirExists is false`() = runTest {
-        val sardine = mockSardine()
+        val webdav = mockWebDav()
         val storageMutex = Mutex()
         val storageWrites = mutableListOf<String>()
 
-        every { sardine.exists(match<String> { it.contains("notes-md") }) } returns true
+        every { webdav.exists(match<String> { it.contains("notes-md") }) } returns true
 
         simulateUpload(
-            sardine,
+            webdav,
             "note-1",
             storageMutex,
             storageWrites,
@@ -509,7 +510,7 @@ class ParallelUploadTest {
             markdownDirExists = false
         )
 
-        verify(exactly = 1) { sardine.exists(match<String> { it.contains("notes-md") }) }
+        verify(exactly = 1) { webdav.exists(match<String> { it.contains("notes-md") }) }
     }
 
     // ═══════════════════════════════════════════════

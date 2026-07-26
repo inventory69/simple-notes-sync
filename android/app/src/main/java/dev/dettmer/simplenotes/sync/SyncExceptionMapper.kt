@@ -2,16 +2,17 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.Context
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.sync.webdav.WebDavException
 
 /**
  * Maps sync exceptions to user-friendly error messages.
  *
  * Extracted from WebDavSyncService in v2.0.0 (Commit 16).
- * Centralizes all Sardine/IO/SSL exception handling in one place.
+ * Centralizes all WebDavClient/IO/SSL exception handling in one place.
  */
 class SyncExceptionMapper(private val context: Context) {
     companion object {
-        // HTTP Status codes for SardineException mapping
+        // HTTP Status codes for WebDavException mapping
         private const val HTTP_UNAUTHORIZED = 401
         private const val HTTP_FORBIDDEN = 403
         private const val HTTP_NOT_FOUND = 404
@@ -34,6 +35,8 @@ class SyncExceptionMapper(private val context: Context) {
                 context.getString(R.string.snackbar_connection_timeout)
             is java.net.NoRouteToHostException ->
                 context.getString(R.string.snackbar_server_unreachable)
+            // ⚠️ Muss VOR dem IOException-Zweig stehen — WebDavException erbt davon.
+            is WebDavException -> mapWebDavException(e)
             is java.io.IOException -> {
                 // IOException kann vieles sein — prüfe ob es ein Timeout-artiger Fehler ist
                 val msg = e.message?.lowercase().orEmpty()
@@ -52,16 +55,24 @@ class SyncExceptionMapper(private val context: Context) {
             }
             is javax.net.ssl.SSLException ->
                 context.getString(R.string.sync_error_ssl)
-            is com.thegrizzlylabs.sardineandroid.impl.SardineException -> {
-                when (e.statusCode) {
-                    HTTP_UNAUTHORIZED -> context.getString(R.string.sync_error_auth_failed)
-                    HTTP_FORBIDDEN -> context.getString(R.string.sync_error_access_denied)
-                    HTTP_NOT_FOUND -> context.getString(R.string.sync_error_path_not_found)
-                    HTTP_INTERNAL_SERVER_ERROR -> context.getString(R.string.sync_error_server)
-                    else -> context.getString(R.string.sync_error_http, e.statusCode)
-                }
-            }
             else -> e.message ?: context.getString(R.string.sync_error_unknown)
+        }
+    }
+
+    /**
+     * MKCOL-404 behält seine eigene Meldung ("Server-Pfad prüfen") — der generische
+     * 404-Text ("Pfad nicht gefunden") wäre beim Erstsetup irreführend.
+     */
+    private fun mapWebDavException(e: WebDavException): String {
+        if (e.message?.lowercase()?.contains("mkcol failed") == true && e.statusCode == HTTP_NOT_FOUND) {
+            return context.getString(R.string.sync_error_mkcol_failed)
+        }
+        return when (e.statusCode) {
+            HTTP_UNAUTHORIZED -> context.getString(R.string.sync_error_auth_failed)
+            HTTP_FORBIDDEN -> context.getString(R.string.sync_error_access_denied)
+            HTTP_NOT_FOUND -> context.getString(R.string.sync_error_path_not_found)
+            HTTP_INTERNAL_SERVER_ERROR -> context.getString(R.string.sync_error_server)
+            else -> context.getString(R.string.sync_error_http, e.statusCode)
         }
     }
 }
