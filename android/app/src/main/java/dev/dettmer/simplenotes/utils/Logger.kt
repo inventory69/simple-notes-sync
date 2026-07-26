@@ -15,6 +15,9 @@ import java.util.*
 object Logger {
     private const val MAX_LOG_ENTRIES = 5000 // Nur letzte 5000 Einträge
 
+    // Ab dieser Größe wird überhaupt erst getrimmt. Gleicher Wert wie in SyncDebugLogger.
+    private const val TRIM_THRESHOLD_BYTES = 2L * 1024L * 1024L // 2 MB
+
     private var fileLoggingEnabled = false
     private var logFile: File? = null
     private var appContext: Context? = null
@@ -143,6 +146,12 @@ object Logger {
      * Begrenzt Log-Datei auf MAX_LOG_ENTRIES
      */
     private fun trimLogFile() {
+        // ponytail: length() ist ein stat, kein Read. Ohne diesen Guard las und schrieb jeder
+        // einzelne Log-Write die komplette Datei neu, sobald sie über MAX_LOG_ENTRIES lag — in
+        // einer langen Session mit viel Sync-Logging also dauerhaft. Die Datei wächst jetzt bis
+        // zum Schwellwert und wird dann einmal auf MAX_LOG_ENTRIES gekürzt. Nebeneffekt: das
+        // Diagnosefenster ist größer, weil zwischen zwei Trims mehr als MAX_LOG_ENTRIES liegen.
+        if ((logFile?.length() ?: 0L) < TRIM_THRESHOLD_BYTES) return
         try {
             val lines = logFile?.readLines() ?: return
             if (lines.size > MAX_LOG_ENTRIES) {
