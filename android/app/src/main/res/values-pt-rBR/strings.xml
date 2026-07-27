@@ -1,3 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Simple Notes</string>
+    <string name="main_title">Simple Notes</string>
+    <string name="action_sync">Sincronizar</string>
+    <string name="action_settings">Configurações</string>
+    <string name="action_close_selection">Fechar seleção</string>
+    <string name="action_select_all">Selecionar tudo</string>
+    <string name="action_delete_selected">Excluir selecionados</string>
+    <string name="action_toggle_pin">Alternar fixação</string>
+    <string name="selection_count">%d selecionado</string>
+    <string name="section_pinned">Fixado</string>
+    <string name="section_notes">Notas</string>
+    <string name="action_collapse_section">Colapso %1$s</string>
+    <string name="action_expand_section">Expandir %1$s</string>
+    <string name="action_move_section_up">Subir</string>
+    <string name="action_move_section_down">Descer</string>
+    <string name="section_reorder_hint">Dica: Mantenha pressionado o botão de seta para reordenar as seções.</string>
+    <string name="empty_state_title">Sem anotações ainda</string>
+    <string name="empty_state_message">Toque em + para criar uma nova nota</string>
+    <string name="fab_new_note">Nova Nota</string>
+    <string name="fab_close">Fechar menu</string>
+    <string name="fab_text_note">Nota de Texto</string>
+    <string name="fab_checklist">Lista de tarefas</string>
+    <string name="untitled">Sem título</string>
+    <string name="checklist_items_more">+%d mais</string>
+    <string name="sync_status_completed">Sincronização concluída</string>
+    <string name="sync_status_error">Falha na sincronização</string>
+    <string name="sync_already_running">Sincronização já em andamento</string>
+    <string name="sync_status_synced">Sincronizado com o servidor</string>
+    <string name="sync_status_pending">Aguardando sincronização</string>
+    <string name="sync_status_conflict">Detectado conflito de sincronização</string>
+    <string name="sync_status_local_only">Ainda não sincronizado</string>
+    <string name="sync_status_deleted_on_server">Excluído no servidor</string>
+    <string name="sync_legend_button">Ajuda sobre o status da sincronização</string>
+    <string name="sync_legend_title">Ícones de status de sincronização</string>
+    <string name="sync_legend_description">Cada nota exibe um pequeno ícone que indica seu status de sincronização:</string>
+    <string name="sync_legend_synced_label">Sincronizado</string>
+    <string name="sync_legend_synced_desc">Esta nota está atualizada em todos os dispositivos.</string>
+    <string name="sync_legend_pending_label">Em espera</string>
+    <string name="sync_legend_pending_desc">Esta nota contém alterações locais que aguardam sincronização.</string>
+    <string name="sync_legend_conflict_label">Conflito</string>
+    <string name="sync_legend_conflict_desc">Esta nota foi alterada em vários dispositivos ao mesmo tempo. Foi mantida a versão mais recente.</string>
+    <string name="sync_legend_local_only_label">Apenas local</string>
+    <string name="sync_legend_local_only_desc">Esta nota permanece apenas neste dispositivo — ou ainda não foi sincronizada, ou está em uma pasta que você excluiu da sincronização.</string>
+    <string name="sync_legend_trash_hint">As anotações excluídas — e as anotações removidas em outro dispositivo — vão para a lixeira, de onde você pode restaurá-las por %1$d dias.</string>
+    <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Excluído no servidor</string>
+    <string name="sync_legend_deleted_desc" tools:ignore="UnusedResources">Esta nota foi excluída em outro dispositivo ou diretamente no servidor. Ela ainda está salva localmente.</string>
+    <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d excluídos no servidor</string>
+    <string name="sync_moved_to_trash_count">%d foram movidos para a lixeira</string>
+    <string name="sync_deleted_from_server_count">%1$d foi excluído do servidor</string>
+    <string name="sync_trashed_from_server_count">%1$d na lixeira</string>
+    <string name="sync_phase_preparing">Sincronizando…</string>
+    <string name="sync_phase_uploading">Carregando…</string>
+    <string name="sync_phase_uploading_exporting_markdown">Carregando e exportando Markdown…</string>
+    <string name="sync_phase_downloading">Baixando…</string>
+    <string name="sync_phase_deleting">Excluindo do servidor…</string>
+    <string name="sync_quota_warning">⚠️ A sincronização foi adiada devido ao gerenciamento de energia do Android. Abra o aplicativo regularmente ou desative a otimização da bateria para garantir uma sincronização em segundo plano confiável.</string>
+    <string name="sort_notes">Organizar notas</string>
+    <string name="sort_ascending">Ascendente</string>
+    <string name="sort_descending">Decrescente</string>
+    <string name="sort_by_updated">Última modificação</string>
+    <string name="sort_by_created">Data de criação</string>
+    <string name="sort_by_name">Nome</string>
+    <string name="sort_by_type">Tipo</string>
+    <string name="sort_by_color">Cor</string>
+    <string name="close">Fechar</string>
+    <string name="sort_checklist">Organizar Lista de tarefas</string>
+    <string name="sort_checklist_manual">Manual</string>
+    <string name="sort_checklist_alpha_asc">A → Z</string>
+    <string name="sort_checklist_alpha_desc">Z → A</string>
+    <string name="sort_checklist_unchecked_first">Pendentes primeiro</string>
+    <string name="sort_checklist_checked_first">Marcados primeiro</string>
+    <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation">Data de criação ↑</string>
+    <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation">Data de criação ↓</string>
+    <string name="apply">Aplicar</string>
+    <string name="sync_phase_importing_markdown">Importando Markdown…</string>
+    <string name="sync_phase_completed">Sincronização concluída</string>
+    <string name="sync_phase_error">Falha na sincronização</string>
+    <string name="delete_folder_message">Como você deseja excluir esta pasta?</string>
+    <string name="delete_folders_message">Como você deseja excluir essas %1$d pastas?</string>
+    <string name="delete_selection_message">Como você deseja excluir essa seleção?</string>
+    <string name="delete">Excluir</string>
+    <string name="cancel">Cancelar</string>
+    <string name="ok">OK</string>
+    <string name="snackbar_undo">DESFAZER</string>
+    <string name="snackbar_deleted_from_server">Excluído do servidor</string>
+    <plurals name="snackbar_notes_deleted_from_server">
+        <item quantity="one">%d nota excluída do servidor</item>
+        <item quantity="many">%d notas excluídas do servidor</item>
+        <item quantity="other">%d notas excluídas do servidor</item>
+    </plurals>
+    <string name="snackbar_notes_deleted_from_server_partial">%1$d de %2$d notas excluídas do servidor</string>
+    <string name="snackbar_server_delete_failed">Falha na exclusão do servidor</string>
+    <string name="snackbar_delete_queued_for_sync">Servidor inacessível – exclusão colocada na fila para a próxima sincronização</string>
+    <string name="snackbar_folder_removed_from_server">Pasta removida do servidor</string>
+    <string name="snackbar_folder_sync_queued">A pasta será sincronizada quando a conexão for restabelecida</string>
+    <string name="snackbar_server_error">Erro do servidor: %s</string>
+    <string name="snackbar_server_unreachable">Servidor indisponível</string>
+    <string name="snackbar_connection_timeout">Tempo limite da conexão</string>
+    <string name="snackbar_nothing_to_sync">ℹ️ Nada para sincronizar</string>
+    <string name="trash_title">Lixo</string>
+    <string name="settings_trash_subtitle">Recuperar notas ou excluí-las definitivamente</string>
+    <string name="trash_empty_state">A lixeira está vazia</string>
+    <string name="trash_retention_duration_title">Excluir notas da lixeira após</string>
+    <string name="trash_retention_settings_cd">Configurações de retenção da Lixeira</string>
+    <string name="trash_retention_immediate">Imediatamente</string>
+    <string name="trash_retention_immediate_hint">Os itens que já estiverem na lixeira serão removidos imediatamente.</string>
+    <string name="trash_retention_hint">As notas na lixeira são excluídas definitivamente após %1$d dias.</string>
+    <string name="trash_retention_hint_immediate">As anotações excluídas são removidas permanentemente logo após o fechamento da janela de desfazer.</string>
+    <plurals name="days">
+        <item quantity="one">%d dia</item>
+        <item quantity="many">%d dias</item>
+        <item quantity="other">%d dias</item>
+    </plurals>
+    <plurals name="trash_days_left">
+        <item quantity="one">Restam %d dia</item>
+        <item quantity="many">Restam %d dias</item>
+        <item quantity="other">Restam %d dias</item>
+    </plurals>
+    <string name="trash_restore_cd">Restaurar nota</string>
+    <string name="trash_delete_forever">Excluir permanentemente</string>
+    <string name="trash_delete_forever_cd">Excluir a nota definitivamente</string>
+    <string name="trash_delete_forever_title">Excluir definitivamente?</string>
+    <string name="trash_delete_forever_message">\"%s\" será excluído definitivamente. Essa ação não pode ser revertida.</string>
+    <string name="trash_empty_action">Esvaziar a lixeira</string>
+    <string name="trash_empty_confirm_title">Esvaziar a lixeira?</string>
+    <plurals name="trash_empty_confirm_message">
+        <item quantity="one">A nota %d será excluída permanentemente. Essa ação não pode ser revertida.</item>
+        <item quantity="many">%d notas serão excluídas permanentemente. Essa ação não pode ser revertida.</item>
+        <item quantity="other">%d notas serão excluídas permanentemente. Essa ação não pode ser revertida.</item>
+    </plurals>
+    <string name="trash_empty_confirm_server_hint">As notas sincronizadas também são excluídas do servidor.</string>
+    <string name="snackbar_note_trashed">\"%s\" foi movido para a lixeira</string>
+    <string name="snackbar_note_deleted_permanently">\"%1$s\" foi excluído permanentemente</string>
 </resources>
