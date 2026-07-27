@@ -363,7 +363,7 @@
     <string name="debug_file_logging_subtitle">Enregistrer les journaux de synchro dans un fichier</string>
     <string name="debug_sync_debug_logging_title">Journal de débogage persistant</string>
     <string name="debug_sync_debug_logging_subtitle">Enregistre les déclencheurs et les résultats de la synchronisation pour diagnostiquer les problèmes en arrière-plan.</string>
-    <string name="debug_privacy_info">🔒 Confidentialité : Les journaux sont uniquement stockés localement sur votre appareil et ne sont jamais envoyés à des serveurs externes. Ils contiennent les activités de synchro pour le dépannage. Vous pouvez les supprimer ou les exporter à tout moment.</string>
+    <string name="debug_privacy_info">🔒 Confidentialité : Les journaux sont uniquement stockés localement sur votre appareil et ne sont jamais envoyés à des serveurs externes. Ils contiennent les activités de synchro pour le dépannage. Vous pouvez les supprimer ou les exporter à tout moment.</string>
     <string name="debug_log_actions_section">Actions sur les journaux</string>
     <string name="debug_export_logs">📤 Exporter et partager les journaux</string>
     <string name="debug_logs_subject">Journaux de synchronisation SimpleNotes</string>
