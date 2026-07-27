@@ -246,17 +246,17 @@
     <string name="backup_restore_button">Восстановить</string>
     <string name="debug_settings_title">Отладка и диагностика</string>
     <string name="debug_file_logging_title">Файловое логирование</string>
-    <string name="debug_file_logging_subtitle">Сохранять журналы синхронизации в файл</string>
-    <string name="debug_privacy_info">🔒 Конфиденциальность: Журналы хранятся только локально на вашем устройстве и никогда не отправляются на внешние серверы. Журналы содержат действия синхронизации для устранения неполадок. Вы можете удалить или экспортировать их в любое время.</string>
-    <string name="debug_log_actions_section">Действия с журналами</string>
-    <string name="debug_export_logs">📤 Экспортировать и поделиться журналами</string>
-    <string name="debug_logs_subject">Журналы синхронизации SimpleNotes</string>
-    <string name="debug_logs_share_via">Поделиться журналами через…</string>
-    <string name="debug_delete_logs">🗑️ Удалить журналы</string>
-    <string name="debug_delete_logs_title">Удалить журналы?</string>
-    <string name="debug_delete_logs_message">Все сохранённые журналы синхронизации будут безвозвратно удалены.</string>
+    <string name="debug_file_logging_subtitle">Сохранять логи синхронизации в файл</string>
+    <string name="debug_privacy_info">🔒 Конфиденциальность: Логи хранятся локально на вашем устройстве. Приложение никогда и никуда их не загружает; отправка или передача всегда происходит через выбранное вами приложение. Логи содержат действия синхронизации для устранения неполадок. Вы можете удалить или экспортировать их в любое время. При экспорте ваш адрес сервера, имя пользователя и заголовки заметок заменяются на заполнители; имена папок остаются, так как именно по ним диагностируются проблемы с синхронизацией.</string>
+    <string name="debug_log_actions_section">Действия с логами</string>
+    <string name="debug_export_logs">📤 Экспортировать и поделиться логами</string>
+    <string name="debug_logs_subject">Логи SimpleNotes Sync</string>
+    <string name="debug_logs_share_via">Поделиться логами через…</string>
+    <string name="debug_delete_logs">🗑️ Удалить логи</string>
+    <string name="debug_delete_logs_title">Удалить логи?</string>
+    <string name="debug_delete_logs_message">Все сохранённые логи синхронизации будут безвозвратно удалены.</string>
     <string name="debug_after_export_title">Отключить файловое логирование?</string>
-    <string name="debug_after_export_message">Теперь, когда вы поделились журналами, вы можете отключить файловое логирование. Файловое логирование можно снова включить здесь в любое время.</string>
+    <string name="debug_after_export_message">Теперь, когда вы поделились логами, вы можете отключить файловое логирование. Файловое логирование можно снова включить здесь в любое время.</string>
     <string name="debug_after_export_disable">Отключить логирование</string>
     <string name="debug_after_export_keep">Оставить включённым</string>
     <string name="debug_test_section">Тестовый режим</string>
@@ -890,4 +890,9 @@
     <string name="share_type_append_note">Добавить в заметку…</string>
     <string name="share_append_picker_title">Выбрать заметку</string>
     <string name="notes_list_widget_preview_content_1">• Молоко\n• Хлеб\n• Яйца</string>
+    <string name="debug_send_to_developer">Отправить лог разработчику</string>
+    <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: лог синхронизации</string>
+    <string name="debug_logs_mail_body">Устройство: %1$s\nAndroid: %2$s (API %3$d)\n\nЧто пошло не так (необязательно):\n</string>
+    <string name="debug_send_no_mail_app">Почтовое приложение не найдено. Используйте экспорт логов.</string>
+    <string name="about_beta_notice">🧪 Бета-сборка. Диагностическое логирование включено, чтобы вы могли отправить лог синхронизации вместе с отчётом — настройки → Отладка и диагностика, чтобы экспортировать или отключить его. В экспортированных логах ваш адрес сервера, имя пользователя и заголовки заметок заменены.</string>
 </resources>
