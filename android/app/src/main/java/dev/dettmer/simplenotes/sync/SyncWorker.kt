@@ -229,6 +229,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     runAttemptCount < Constants.MAX_WIFI_CONNECT_RETRY_COUNT
                 // 🆕 v2.4.0: EXHAUSTED when this IS a retried worker-job but has run out of attempts
                 val isLastAttempt = (runAttemptCount + 1) >= Constants.MAX_WIFI_CONNECT_RETRY_COUNT
+                // MAX_WIFI_CONNECT_RETRY_COUNT zählt Retries, der erste Lauf ist keiner. Ohne das
+                // +1 meldete der letzte Versuch "attempt=4/3" — Zähler in Läufen, Nenner in Retries.
+                val totalRuns = Constants.MAX_WIFI_CONNECT_RETRY_COUNT + 1
                 val outcome = when {
                     canRetry -> SyncDebugLogger.Outcome.RETRY
                     (isWifiConnectTrigger || isFallbackTrigger) && isLastAttempt ->
@@ -238,7 +241,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 SyncDebugLogger.logTrigger(
                     triggerType = tagOrUnknown(),
                     outcome = outcome,
-                    reason = "server unreachable (attempt=${runAttemptCount + 1}/${Constants.MAX_WIFI_CONNECT_RETRY_COUNT})",
+                    reason = "server unreachable (attempt=${runAttemptCount + 1}/$totalRuns)",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
                     runAttempt = runAttemptCount
                 )
@@ -246,7 +249,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     Logger.d(
                         TAG,
                         "🔁 Server unreachable — scheduling retry " +
-                            "(attempt ${runAttemptCount + 1}/${Constants.MAX_WIFI_CONNECT_RETRY_COUNT})"
+                            "(attempt ${runAttemptCount + 1}/$totalRuns)"
                     )
                     SyncStateManager.reset()
                     return@withContext Result.retry()
