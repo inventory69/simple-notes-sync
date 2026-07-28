@@ -122,7 +122,7 @@
     <string name="error_invalid_protocol">无效的协议：%s。请使用HTTP 或 HTTPS。</string>
     <string name="error_invalid_url">无效的 URL：%s</string>
     <string name="error_server_not_configured">未完全配置 WebDAV 服务器</string>
-    <string name="error_sardine_client_failed">不能创建沙丁鱼客户端</string>
+    <string name="error_sardine_client_failed">不能创建 WebDAV 客户端</string>
     <string name="error_server_url_not_configured">未配置服务器 URL</string>
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
@@ -289,7 +289,7 @@
     <string name="debug_settings_title">调试和诊断</string>
     <string name="debug_file_logging_title">日志文件</string>
     <string name="debug_file_logging_subtitle">保存同步日志到文件</string>
-    <string name="debug_privacy_info">🔒 隐私：日志仅存储在你的设备上并且绝对不会发送到外部服务器。日志包含同步活动用于排查错误。你可以在任何时间删除或导出它们。</string>
+    <string name="debug_privacy_info">🔒 隐私：日志存储在你的本地设备上。本应用从不上传它们到任何地方；分享或发送一个日志总是通过你挑选的一个应用。日志包含同步活动用于故障排除。你可以随时删除或导出它们。导出时用占位符替换服务器地址、用户名和笔记标题；保留文件夹名字，因为同步问题是从它们来诊断的。</string>
     <string name="debug_log_actions_section">日志操作</string>
     <string name="debug_export_logs">📤 导出和分享日志</string>
     <string name="debug_logs_subject">简单笔记同步日志</string>
@@ -950,4 +950,9 @@
     <string name="notes_list_widget_config_hide_preview">仅标题</string>
     <string name="notes_list_widget_config_hide_preview_desc">卡片只显示笔记标题，无预览文本</string>
     <string name="debug_logging_section">日志</string>
+    <string name="debug_send_to_developer">发送日志到开发者</string>
+    <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: sync log</string>
+    <string name="debug_logs_mail_body">Device: %1$s\nAndroid: %2$s (API %3$d)\n\n什么出错（可选）：\n</string>
+    <string name="debug_send_no_mail_app">未找到邮箱应用。使用导出日志作为代替。</string>
+    <string name="about_beta_notice">🧪 测试版构建。诊断日志是开启的，这样你可以用一个报告发送同步日志 — 设置 → 调试和诊断来导出或关闭它。导出的日志会替换掉你的服务器地址、用户名和笔记标题。</string>
 </resources>
