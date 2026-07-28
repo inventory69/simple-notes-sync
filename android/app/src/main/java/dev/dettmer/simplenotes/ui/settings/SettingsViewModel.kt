@@ -14,6 +14,7 @@ import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.security.AppLock
+import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
@@ -81,6 +82,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     val backupManager = BackupManager(application)
     private val notesStorage = NotesStorage(application) // v1.7.0: For server change detection
+    private val folderStore = FolderStore(application) // 🆕 v2.14.0: Ordnernamen für die Log-Anonymisierung
 
     // 🔧 v1.7.0 Hotfix: Track last confirmed server URL for change detection
     // This prevents false-positive "server changed" toasts during text input
@@ -1593,6 +1595,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val titles = runCatching { notesStorage.loadAllNotes().map { it.title } }
             .onFailure { Logger.w(TAG, "could not load note titles for anonymization: ${it.message}") }
             .getOrDefault(emptyList())
+        // Inkl. Tombstones: gelöschte Ordner stehen noch in älteren Logzeilen.
+        val folders = runCatching { folderStore.loadMeta().map { it.name } }
+            .onFailure { Logger.w(TAG, "could not load folder names for anonymization: ${it.message}") }
+            .getOrDefault(emptyList())
         val targetDir = File(context.cacheDir, "shared_logs").apply { mkdirs() }
         // Der Datumsstempel im Namen überschreibt ältere Kopien nicht mehr — die müssen weg,
         // sonst sammeln sich anonymisierte Logs vergangener Tage unbegrenzt im Cache.
@@ -1601,7 +1607,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         sources.mapNotNull { (source, targetName) ->
             runCatching {
                 File(targetDir, targetName).apply {
-                    writeText(LogAnonymizer.anonymize(source.readText(), serverUrl, username, titles))
+                    writeText(
+                        LogAnonymizer.anonymize(source.readText(), serverUrl, username, titles, folders)
+                    )
                 }
             }.onFailure {
                 Logger.w(TAG, "could not anonymize ${source.name} for sharing: ${it.message}")

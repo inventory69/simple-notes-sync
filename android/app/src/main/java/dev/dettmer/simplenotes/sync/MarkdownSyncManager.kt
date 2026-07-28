@@ -190,10 +190,10 @@ internal class MarkdownSyncManager(
         val mdUrl = mdBaseUrl.trimEnd('/') + "/" + filename
         try {
             webdav.delete(mdUrl)
-            Logger.d(TAG, "🗑️ Deleted server MD (trashed): $filename")
+            Logger.d(TAG, "🗑️ Deleted server MD (trashed): $mdUrl")
         } catch (e: java.io.IOException) {
             if (e.isWebDavNotFound()) {
-                Logger.d(TAG, "ℹ️ Server MD not found (already gone): $filename")
+                Logger.d(TAG, "ℹ️ Server MD not found (already gone): $mdUrl")
             } else {
                 throw e
             }
@@ -353,7 +353,7 @@ internal class MarkdownSyncManager(
                             }
                         }
                     } catch (e: Exception) {
-                        Logger.e(TAG, "Failed to import ${resource.name}", e)
+                        Logger.e(TAG, "Failed to import ${resource.path}", e)
                         // Continue with other files
                     }
                 }
@@ -480,7 +480,7 @@ internal class MarkdownSyncManager(
                     // ⚡ v1.3.1: PERFORMANCE - Skip wenn Datei seit letztem Sync nicht geändert wurde
                     if (lastSyncTime > 0 && serverModifiedTime <= lastSyncTime) {
                         skippedCount++
-                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: not modified since last sync")
+                        Logger.d(TAG, "   ⏭️ Skipping ${resource.path}: not modified since last sync")
                         continue
                     }
 
@@ -489,11 +489,11 @@ internal class MarkdownSyncManager(
                     // Verteidigungslinie (greift, wenn eine Titeländerung den Pfad verschoben hat).
                     if (mdItem.fileUrl in exportedThisCycle) {
                         skippedCount++
-                        Logger.d(TAG, "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle")
+                        Logger.d(TAG, "   ⏭️ Skipping ${resource.path}: just exported in this sync cycle")
                         continue
                     }
 
-                    Logger.d(TAG, "   🔍 Processing: ${resource.name}, modified=${resource.modified}")
+                    Logger.d(TAG, "   🔍 Processing: ${resource.path}, modified=${resource.modified}")
 
                     // Build full URL
                     val mdFileUrl = mdItem.fileUrl
@@ -505,7 +505,7 @@ internal class MarkdownSyncManager(
                     // 🔧 v1.7.2 (IMPL_014): Server mtime übergeben für korrekte Timestamp-Sync
                     val mdNote = Note.fromMarkdown(mdContent, serverModifiedTime)
                     if (mdNote == null) {
-                        Logger.w(TAG, "      ⚠️ Failed to parse ${resource.name} - fromMarkdown returned null")
+                        Logger.w(TAG, "      ⚠️ Failed to parse ${resource.path} - fromMarkdown returned null")
                         continue
                     }
                     // 🆕 v2.7.0 (Folders): Verzeichnis ist autoritativ für folderName.
@@ -518,7 +518,7 @@ internal class MarkdownSyncManager(
                             @Suppress("MagicNumber")
                             val previewLength = 200
                             Logger.e(TAG, "🚨 CORRUPTION WARNING: Checklist pattern in title after parse: '${mdNote.title}'")
-                            Logger.e(TAG, "🚨 Source: ${resource.name}, first $previewLength chars: ${mdContent.take(previewLength)}")
+                            Logger.e(TAG, "🚨 Source: ${resource.path}, first $previewLength chars: ${mdContent.take(previewLength)}")
                         }
                     }
 
@@ -527,7 +527,7 @@ internal class MarkdownSyncManager(
                         skippedCount++
                         Logger.d(
                             TAG,
-                            "   ⏭️ Skipping ${resource.name}: just exported in this sync cycle (ID=${mdNote.id})"
+                            "   ⏭️ Skipping ${resource.path}: just exported in this sync cycle (ID=${mdNote.id})"
                         )
                         continue
                     }
@@ -541,7 +541,7 @@ internal class MarkdownSyncManager(
                     ) {
                         Logger.w(
                             TAG,
-                            "      ⚠️ Skipping ${resource.name}: " +
+                            "      ⚠️ Skipping ${resource.path}: " +
                                 "MD content empty but local has content - likely parse error!"
                         )
                         continue
@@ -670,7 +670,7 @@ internal class MarkdownSyncManager(
                         }
                     }
                 } catch (e: Exception) {
-                    Logger.e(TAG, "   ⚠️ Failed to import ${resource.name}", e)
+                    Logger.e(TAG, "   ⚠️ Failed to import ${resource.path}", e)
                     // Continue with other files
                 }
             }
@@ -753,11 +753,11 @@ internal class MarkdownSyncManager(
                         .find(mdContent)
 
                     if (idMatch?.groupValues?.get(1) == noteId) {
-                        Logger.d(TAG, "   ✅ Found MD file: ${resource.name}")
+                        Logger.d(TAG, "   ✅ Found MD file: ${resource.path}")
                         return@withContext resource.name
                     }
                 } catch (e: Exception) {
-                    Logger.w(TAG, "   ⚠️ Failed to parse ${resource.name}: ${e.message}")
+                    Logger.w(TAG, "   ⚠️ Failed to parse ${resource.path}: ${e.message}")
                 }
             }
 
@@ -781,7 +781,7 @@ internal class MarkdownSyncManager(
             for ((index, res) in rootResources.withIndex()) {
                 Logger.d(
                     TAG,
-                    "   🔍 DEBUG [$index]: name='${res.name}', path='${res.path}', " +
+                    "   🔍 DEBUG [$index]: path='${res.path}', " +
                         "isDir=${res.isDirectory}, href=${res.href}"
                 )
             }
