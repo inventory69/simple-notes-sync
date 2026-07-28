@@ -886,7 +886,7 @@ internal class NoteDownloader(
                 if (note != null) {
                     // Fast path: Note still exists locally, use title
                     mdFilenameToDelete = markdownSyncManager.sanitizeFilename(note.title) + ".md"
-                    Logger.d(TAG, "🔍 MD deletion: Using title from local note: $mdFilenameToDelete")
+                    Logger.d(TAG, "🔍 MD deletion: Using title from local note")
                 } else {
                     // Fallback: Note deleted locally, scan YAML frontmatter
                     Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
@@ -899,10 +899,10 @@ internal class NoteDownloader(
                     try {
                         webdav.delete(mdUrl)
                         deletedMd = true
-                        Logger.d(TAG, "🗑️ Deleted from server: $mdFilenameToDelete")
+                        Logger.d(TAG, "🗑️ Deleted from server: $mdUrl")
                     } catch (e: java.io.IOException) {
                         if (e.isWebDavNotFound()) {
-                            Logger.w(TAG, "⚠️ MD file not found on server: $mdFilenameToDelete")
+                            Logger.w(TAG, "⚠️ MD file not found on server: $mdUrl")
                         } else {
                             throw e
                         }

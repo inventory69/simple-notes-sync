@@ -14,9 +14,10 @@ class LogAnonymizerTest {
     private val serverUrl = "https://cloud.example.org/remote.php/dav/files/klausi/notes"
     private val username = "klausi"
     private val titles = listOf("Steuererklärung 2026", "Einkauf", "Urlaub", "Urlaub 2026")
+    private val folders = listOf("Arbeit", "Privat")
 
     private fun anonymize(line: String) =
-        LogAnonymizer.anonymize(line, serverUrl, username, titles)
+        LogAnonymizer.anonymize(line, serverUrl, username, titles, folders)
 
     @Test
     fun `replaces host and user in a webdav url`() {
@@ -63,14 +64,39 @@ class LogAnonymizerTest {
     }
 
     @Test
-    fun `keeps folder names and note uuids`() {
+    fun `replaces folder names but keeps note uuids`() {
         val result = anonymize(
             "list(https://cloud.example.org/dav/klausi/notes/Arbeit/" +
                 "5c851a63-0000-4000-8000-000000000000.json, depth=1)"
         )
 
-        assertTrue("folder name is diagnostic data", result.contains("Arbeit"))
+        assertFalse("folder leaked: $result", result.contains("Arbeit"))
+        assertTrue(result.contains("/<folder>/"))
         assertTrue("uuid identifies nobody", result.contains("5c851a63-0000-4000-8000-000000000000"))
+    }
+
+    @Test
+    fun `replaces a folder name logged bare, without a path`() {
+        // NoteUploader: "📁 Ensured folder dir: Privat"
+        assertEquals("NoteUploader: 📁 Ensured folder dir: <folder>", anonymize("NoteUploader: 📁 Ensured folder dir: Privat"))
+    }
+
+    @Test
+    fun `redacts a markdown filename that no local title matches`() {
+        // Regression aus den Beta-Logs: verwaiste MD-Mirrors gelöschter Notizen liegen weiter auf
+        // dem Server. Ihr Name steht in keiner Titelliste — nur der Pfad-Fall fängt sie ab, und
+        // nur deshalb loggt MarkdownSyncManager `resource.path` statt `resource.name`.
+        val result = anonymize(
+            "MarkdownSyncManager:    ⏭️ Skipping /notes-md/Privat/015152953036 Galinsky.md: " +
+                "not modified since last sync"
+        )
+
+        assertFalse("orphan filename leaked: $result", result.contains("Galinsky"))
+        assertFalse("phone number leaked: $result", result.contains("015152953036"))
+        assertEquals(
+            "MarkdownSyncManager:    ⏭️ Skipping /notes-md/<folder>/<note>.md: not modified since last sync",
+            result
+        )
     }
 
     @Test

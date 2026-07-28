@@ -11,18 +11,24 @@ package dev.dettmer.simplenotes.utils
  * - der Server-Host aus der konfigurierten Sync-URL → `<server>`
  * - der WebDAV-Benutzername → `<user>` (steckt bei Nextcloud im Pfad `/dav/files/<user>/`)
  * - **die tatsächlichen Notiztitel** → `<note>`
- * - Markdown-Dateinamen in URLs → `/<note>.md`
+ * - **die Ordnernamen** → `<folder>`
+ * - Markdown-Dateinamen in Pfaden → `/<note>.md`
  *
  * Die Titel kommen aus dem Storage und werden als exakte Strings ersetzt, nicht geraten. Das ist
  * nötig, weil der Sync-Log Titel überwiegend **blank** schreibt (`⏭️ MD skip: <Titel>`,
  * `✅ Imported new: <Titel>`) und nicht als Dateiname — ein Muster auf `.md` würde die Mehrheit
- * der Titel-Leaks verfehlen. Der zusätzliche URL-Fall deckt Dateinamen ab, die durch
- * Umlaut-Ersetzung vom Titel abweichen (`Steuererklärung` → `Steuererklaerung.md`).
+ * der Titel-Leaks verfehlen. Der zusätzliche Pfad-Fall deckt Dateinamen ab, die durch
+ * Umlaut-Ersetzung vom Titel abweichen (`Steuererklärung` → `Steuererklaerung.md`) und solche,
+ * zu denen es **keine lokale Notiz mehr gibt** — verwaiste MD-Mirrors gelöschter oder
+ * umbenannter Notizen bleiben auf dem Server liegen und tauchen weiter im Log auf. Deshalb loggt
+ * `MarkdownSyncManager` Ressourcen als `path` und nicht als `name`: nur mit führendem `/` greift
+ * [MARKDOWN_PATH] als Auffangnetz für alles, was die Titelliste nicht kennt.
  *
- * Bewusst **nicht** ersetzt: Ordnernamen und Notiz-UUIDs. Die Ordnerstruktur ist genau das, was
- * bei Sync-Fehlern diagnostiziert wird (siehe Deep-PROPFIND, `WebDavTree`), und eine UUID
- * identifiziert niemanden. Wer auch Ordnernamen für sensibel hält, muss vor dem Senden
- * nachbessern — darauf weist der Export-Dialog hin.
+ * Ordnernamen kommen inklusive Tombstones aus dem [dev.dettmer.simplenotes.storage.FolderStore] —
+ * gelöschte Ordner stehen noch in wochenalten Logzeilen.
+ *
+ * Bewusst **nicht** ersetzt: Notiz-UUIDs. Eine UUID identifiziert niemanden, ist aber der einzige
+ * stabile Faden, an dem sich ein Sync-Problem über mehrere Logzeilen verfolgen lässt.
  *
  * Passwörter tauchen in Logs nicht auf: Auth läuft über den OkHttp-Authenticator, es wird kein
  * `Authorization`-Header geloggt, und der Auth-Cache-Key ist ein SHA-256, der nie in ein Log geht.
@@ -32,6 +38,7 @@ object LogAnonymizer {
     private const val SERVER_PLACEHOLDER = "<server>"
     private const val USER_PLACEHOLDER = "<user>"
     private const val NOTE_PLACEHOLDER = "<note>"
+    private const val FOLDER_PLACEHOLDER = "<folder>"
 
     /**
      * Kürzester Wert, der noch ersetzt wird.
@@ -54,12 +61,14 @@ object LogAnonymizer {
      * @param username WebDAV-Benutzername. Darf null/leer sein.
      * @param noteTitles alle bekannten Notiztitel. Leer, wenn sie nicht geladen werden konnten —
      *        dann bleiben Titel im Klartext stehen, der Rest wird trotzdem anonymisiert.
+     * @param folderNames alle bekannten Ordnernamen inkl. gelöschter. Gleiche Fallback-Regel.
      */
     fun anonymize(
         text: String,
         serverUrl: String?,
         username: String?,
-        noteTitles: Collection<String> = emptyList()
+        noteTitles: Collection<String> = emptyList(),
+        folderNames: Collection<String> = emptyList()
     ): String {
         var result = text
 
@@ -72,12 +81,16 @@ object LogAnonymizer {
             result = result.replace(user, USER_PLACEHOLDER)
         }
 
-        // Längste zuerst: sonst macht „Urlaub" aus „Urlaub 2026" ein „<note> 2026".
-        noteTitles.asSequence()
-            .filter { it.length >= MIN_REPLACEABLE_LENGTH }
+        // Titel und Ordner in einem Durchgang, längste zuerst: sonst macht „Urlaub" aus
+        // „Urlaub 2026" ein „<note> 2026", und ein kurzer Ordnername zersägt einen längeren Titel,
+        // der ihn enthält.
+        val replacements = noteTitles.map { it to NOTE_PLACEHOLDER } +
+            folderNames.map { it to FOLDER_PLACEHOLDER }
+        replacements.asSequence()
+            .filter { (value, _) -> value.length >= MIN_REPLACEABLE_LENGTH }
             .distinct()
-            .sortedByDescending { it.length }
-            .forEach { title -> result = result.replace(title, NOTE_PLACEHOLDER) }
+            .sortedByDescending { (value, _) -> value.length }
+            .forEach { (value, placeholder) -> result = result.replace(value, placeholder) }
 
         return MARKDOWN_PATH.replace(result, "/$NOTE_PLACEHOLDER.md")
     }

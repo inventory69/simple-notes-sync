@@ -441,7 +441,7 @@
     <!-- 🆕 v2.2.0: Persistentes Sync-Debug-Log -->
     <string name="debug_sync_debug_logging_title">Persistentes Sync-Debug-Log</string>
     <string name="debug_sync_debug_logging_subtitle">Speichert Sync-Trigger und Ergebnisse zur Fehleranalyse im Hintergrund-Sync.</string>
-    <string name="debug_privacy_info">🔒 Datenschutz: Logs werden lokal auf deinem Gerät gespeichert. Die App lädt sie nirgendwohin hoch; Teilen oder Senden läuft immer über eine App, die du selbst auswählst. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren. Beim Export werden Serveradresse, Benutzername und Notiztitel durch Platzhalter ersetzt; Ordnernamen bleiben stehen, weil Sync-Probleme genau daran diagnostiziert werden.</string>
+    <string name="debug_privacy_info">🔒 Datenschutz: Logs werden lokal auf deinem Gerät gespeichert. Die App lädt sie nirgendwohin hoch; Teilen oder Senden läuft immer über eine App, die du selbst auswählst. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren. Beim Export werden Serveradresse, Benutzername, Notiztitel und Ordnernamen durch Platzhalter ersetzt. Sehr kurze Namen (unter drei Zeichen) und Notiz-IDs bleiben stehen — sieh die Datei vor dem Senden durch.</string>
     <string name="debug_send_to_developer">Log an Entwickler senden</string>
     <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: Sync-Log</string>
     <string name="debug_logs_mail_body">Gerät: %1$s\nAndroid: %2$s (API %3$d)\n\nWas ist passiert (optional):\n</string>
