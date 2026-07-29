@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import dev.dettmer.simplenotes.utils.Constants
 import io.mockk.every
 import io.mockk.mockk
+import java.net.URI
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -34,5 +35,28 @@ class SyncUrlBuilderTest {
 
     @Test fun `markdownFolderUrl is nested and not corrupted by folder named notes`() {
         assertEquals("http://s:8080/notes-md/notes/", builder.getMarkdownFolderUrl("http://s:8080/", "notes"))
+    }
+
+    /**
+     * Regression: eine OX-App-Suite-URL mit Klarnamen im Pfad enthält ein rohes Leerzeichen.
+     * Ungekodiert warf `URI(baseUrl)` in `groupByFolder` und riss den ganzen Sync mit
+     * ("Illegal character in path at index 63").
+     */
+    @Test fun `serverUrl encodes raw spaces so java-net-URI parses it`() {
+        every { prefs.getString(Constants.KEY_SERVER_URL, null) } returns
+            "https://s/servlet/webdav.infostore/Userstore/Max Mustermann/"
+
+        val url = builder.getServerUrl()!!
+
+        assertEquals("https://s/servlet/webdav.infostore/Userstore/Max%20Mustermann/", url)
+        // Der dekodierte Pfad muss das Leerzeichen zurückgeben — so vergleicht groupByFolder
+        // gegen die (ebenfalls dekodierten) hrefs aus der PROPFIND-Antwort.
+        assertEquals("/servlet/webdav.infostore/Userstore/Max Mustermann/", URI(url).path)
+    }
+
+    @Test fun `serverUrl passes unparsable values through untouched`() {
+        every { prefs.getString(Constants.KEY_SERVER_URL, null) } returns "https://"
+
+        assertEquals("https://", builder.getServerUrl())
     }
 }

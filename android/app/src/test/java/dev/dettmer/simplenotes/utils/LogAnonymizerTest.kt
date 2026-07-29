@@ -28,7 +28,16 @@ class LogAnonymizerTest {
         assertFalse("host leaked: $result", result.contains("cloud.example.org"))
         assertFalse("user leaked: $result", result.contains("klausi"))
         assertTrue(result.contains("<server>"))
-        assertTrue(result.contains("<user>"))
+        // Kein `<user>`: bei Nextcloud steht der Benutzername **im** Sync-Pfad, den `<path>`
+        // komplett ersetzt. `<user>` greift weiter dort, wo der Name außerhalb der URL steht.
+        assertTrue(result.contains("<path>"))
+    }
+
+    @Test
+    fun `replaces the username outside of the url too`() {
+        val result = anonymize("ConnectionManager: auth cache miss for klausi")
+
+        assertEquals("ConnectionManager: auth cache miss for <user>", result)
     }
 
     @Test
@@ -134,5 +143,51 @@ class LogAnonymizerTest {
         )
 
         assertFalse(result.contains("192.168.0.6"))
+    }
+
+    /**
+     * Regression: OX App Suite legt den Userstore unter dem **Klarnamen** an. Der steckt in
+     * keiner Titel-, Ordner- oder Benutzernamen-Liste (der Login ist eine Mailadresse) und stand
+     * deshalb im exportierten Log — ein Beta-Tester musste die Datei von Hand nachbearbeiten.
+     */
+    @Test
+    fun `strips a legal name that only appears in the url path`() {
+        val ox = "https://webmail.example.org/servlet/webdav.infostore/Userstore/Max Mustermann/"
+
+        val result = LogAnonymizer.anonymize(
+            "WebDavClient: list(https://webmail.example.org/servlet/webdav.infostore/" +
+                "Userstore/Max%20Mustermann/notes/, depth=infinity)",
+            ox,
+            "max.mustermann@example.org"
+        )
+
+        assertFalse("legal name leaked: $result", result.contains("Mustermann", ignoreCase = true))
+        assertEquals("WebDavClient: list(https://<server><path>/notes/, depth=infinity)", result)
+    }
+
+    /** Dieselbe URL roh — so steht sie in Logzeilen, die vor der URL-Kanonisierung entstanden. */
+    @Test
+    fun `strips the raw path variant too`() {
+        val ox = "https://webmail.example.org/servlet/webdav.infostore/Userstore/Max Mustermann/"
+
+        val result = LogAnonymizer.anonymize(
+            "📡 Server URL: https://webmail.example.org/servlet/webdav.infostore/" +
+                "Userstore/Max Mustermann/",
+            ox,
+            null
+        )
+
+        assertFalse("legal name leaked: $result", result.contains("Mustermann"))
+        assertEquals("📡 Server URL: https://<server><path>/", result)
+    }
+
+    /** Der Pfad darf den Nextcloud-Fall nicht schlechter machen: Rest der URL bleibt lesbar. */
+    @Test
+    fun `keeps the part below the sync base readable`() {
+        val result = anonymize(
+            "get(https://cloud.example.org/remote.php/dav/files/klausi/notes/deletions.json)"
+        )
+
+        assertTrue("diagnosability lost: $result", result.endsWith("/deletions.json)"))
     }
 }

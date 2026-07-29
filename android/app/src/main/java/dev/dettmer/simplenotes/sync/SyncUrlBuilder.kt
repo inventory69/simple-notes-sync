@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
 import dev.dettmer.simplenotes.utils.Constants
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /**
  * 🆕 v2.0.0: Extracted from WebDavSyncService (Commit 17).
@@ -18,9 +19,21 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
 
     /**
      * Returns the configured server URL, or null if not set.
+     *
+     * 🔧 Kanonisiert den gespeicherten Wert über OkHttps `HttpUrl`: der kommt aus einem Textfeld
+     * und darf rohe Sonderzeichen im Pfad enthalten — etwa das Leerzeichen in
+     * `.../Userstore/Max Mustermann/notes/` (OX App Suite legt den Userstore unter dem Klarnamen
+     * an). OkHttp kodiert das beim Request selbst, `java.net.URI` in [dev.dettmer.simplenotes.sync
+     * .webdav.groupByFolder] wirft dagegen `URISyntaxException` und ließ den kompletten Sync
+     * scheitern. Nach dem Encoding liefert `URI(url).path` denselben dekodierten Pfad, gegen den
+     * die PROPFIND-hrefs verglichen werden.
+     *
+     * Unparsbare Werte (z. B. der Platzhalter `https://`) gehen unverändert zurück — die
+     * bestehenden Leer-Prüfungen der Aufrufer greifen wie bisher.
      */
     fun getServerUrl(): String? {
-        return prefs.getString(Constants.KEY_SERVER_URL, null)
+        val raw = prefs.getString(Constants.KEY_SERVER_URL, null) ?: return null
+        return raw.toHttpUrlOrNull()?.toString() ?: raw
     }
 
     /**
