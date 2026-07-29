@@ -289,7 +289,7 @@
     <string name="debug_settings_title">调试和诊断</string>
     <string name="debug_file_logging_title">日志文件</string>
     <string name="debug_file_logging_subtitle">保存同步日志到文件</string>
-    <string name="debug_privacy_info">🔒 隐私：日志存储在你的本地设备上。本应用从不上传它们到任何地方；分享或发送一个日志总是通过你挑选的一个应用。日志包含同步活动用于故障排除。你可以随时删除或导出它们。导出时用占位符替换服务器地址、用户名和笔记标题；保留文件夹名字，因为同步问题是从它们来诊断的。</string>
+    <string name="debug_privacy_info">🔒 隐私：日志存储在你的设备。本应用从不上传它们到任何地方；分享或发送一个日志总是通过你挑选的一个应用。日志包含同步活动用于故障排除。你可以随时删除或导出它们。导出时用占位符替换服务器地址、用户名、笔记标题、文件夹名字；保留很短的名字（三个字符之下）和笔记 ID — 发送它之前检查文件。</string>
     <string name="debug_log_actions_section">日志操作</string>
     <string name="debug_export_logs">📤 导出和分享日志</string>
     <string name="debug_logs_subject">简单笔记同步日志</string>
