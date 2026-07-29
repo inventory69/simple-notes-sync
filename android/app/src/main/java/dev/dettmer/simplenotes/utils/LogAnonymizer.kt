@@ -1,5 +1,7 @@
 package dev.dettmer.simplenotes.utils
 
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+
 /**
  * 🆕 v2.14.0: Entfernt identifizierende Daten aus Logs, **bevor sie das Gerät verlassen**.
  *
@@ -9,6 +11,7 @@ package dev.dettmer.simplenotes.utils
  *
  * Ersetzt wird:
  * - der Server-Host aus der konfigurierten Sync-URL → `<server>`
+ * - der **Pfad-Anteil** der Sync-URL → `<path>`
  * - der WebDAV-Benutzername → `<user>` (steckt bei Nextcloud im Pfad `/dav/files/<user>/`)
  * - **die tatsächlichen Notiztitel** → `<note>`
  * - **die Ordnernamen** → `<folder>`
@@ -27,6 +30,14 @@ package dev.dettmer.simplenotes.utils
  * Ordnernamen kommen inklusive Tombstones aus dem [dev.dettmer.simplenotes.storage.FolderStore] —
  * gelöschte Ordner stehen noch in wochenalten Logzeilen.
  *
+ * Der Pfad ist **nicht** nur Deko: OX App Suite legt den Userstore unter dem Klarnamen an
+ * (`/servlet/webdav.infostore/Userstore/Max Mustermann/`). Der steht in keiner Titel-, Ordner-
+ * oder Benutzernamen-Liste — der Login ist dort eine Mailadresse — und blieb deshalb bis v2.14.0
+ * im exportierten Log stehen. Ersetzt wird der Pfad in roher **und** percent-enkodierter Form:
+ * seit v2.14.0 kanonisiert [dev.dettmer.simplenotes.sync.SyncUrlBuilder.getServerUrl] die URL,
+ * geloggt wird also `Max%20Mustermann`, während in den Prefs `Max Mustermann` steht — und ältere
+ * Logzeilen desselben Tages enthalten noch die rohe Variante.
+ *
  * Bewusst **nicht** ersetzt: Notiz-UUIDs. Eine UUID identifiziert niemanden, ist aber der einzige
  * stabile Faden, an dem sich ein Sync-Problem über mehrere Logzeilen verfolgen lässt.
  *
@@ -36,6 +47,7 @@ package dev.dettmer.simplenotes.utils
 object LogAnonymizer {
 
     private const val SERVER_PLACEHOLDER = "<server>"
+    private const val PATH_PLACEHOLDER = "<path>"
     private const val USER_PLACEHOLDER = "<user>"
     private const val NOTE_PLACEHOLDER = "<note>"
     private const val FOLDER_PLACEHOLDER = "<folder>"
@@ -76,6 +88,12 @@ object LogAnonymizer {
             result = result.replace(host, SERVER_PLACEHOLDER, ignoreCase = true)
         }
 
+        // Vor dem Benutzernamen: bei Nextcloud steckt der im Pfad, und ein bereits ersetztes
+        // `/dav/files/<user>` würde den Pfad-Vergleich nicht mehr treffen.
+        basePathsOf(serverUrl).forEach { path ->
+            result = result.replace(path, PATH_PLACEHOLDER)
+        }
+
         // Nach dem Host, sonst bliebe ein Benutzername stehen, der auch im Host vorkommt.
         username?.takeIf { it.length >= MIN_REPLACEABLE_LENGTH }?.let { user ->
             result = result.replace(user, USER_PLACEHOLDER)
@@ -103,5 +121,25 @@ object LogAnonymizer {
         val withoutScheme = serverUrl.orEmpty().substringAfter("://", "")
         val host = withoutScheme.substringBefore('/').substringBefore(':')
         return host.takeIf { it.length >= MIN_REPLACEABLE_LENGTH }
+    }
+
+    /**
+     * Der Pfad-Anteil der Sync-URL mit führendem `/` und ohne Trailing-Slash — roh wie in den
+     * Prefs **und** percent-enkodiert wie in den Logzeilen. Beides, weil in derselben Datei beide
+     * Schreibweisen stehen können (siehe Klassen-KDoc); ohne Sonderzeichen im Pfad fallen die
+     * zwei Varianten zusammen und `distinct()` lässt eine übrig.
+     *
+     * Längste zuerst, damit die enkodierte Variante nicht an einem gemeinsamen Präfix der rohen
+     * hängen bleibt.
+     */
+    private fun basePathsOf(serverUrl: String?): List<String> {
+        val raw = serverUrl.orEmpty().substringAfter("://", "").substringAfter('/', "")
+        val encoded = serverUrl?.toHttpUrlOrNull()?.encodedPath.orEmpty().removePrefix("/")
+        return listOf(raw, encoded)
+            .map { it.trim('/') }
+            .filter { it.length >= MIN_REPLACEABLE_LENGTH }
+            .distinct()
+            .sortedByDescending { it.length }
+            .map { "/$it" }
     }
 }
