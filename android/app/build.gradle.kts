@@ -20,7 +20,7 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 52  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
+        versionCode = 53  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
         versionName = "2.14.0"  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/

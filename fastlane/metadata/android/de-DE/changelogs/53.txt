@@ -1,0 +1,6 @@
+🧭 v2.14.0 Beta 5 - Pfade mit Namen darin
+
+• Fix: Der Sync brach komplett ab, wenn die Server-URL ein Leerzeichen enthielt - die Anfrage war immer in Ordnung, die App stolperte über ihre eigene Adress-Auswertung
+• Fix: Im exportierten Log stand der URL-Pfad im Klartext. Wer seinen Speicher beim Anbieter unter dem Klarnamen liegen hat, fand ihn in der Datei
+
+Danke an Peter für beide Meldungen - die zweite kam nur, weil er sein Log vor dem Senden gelesen hat.

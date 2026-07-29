@@ -1,0 +1,6 @@
+🧭 v2.14.0 beta 5 - Paths With Names In Them
+
+• Fix: sync stopped completely if the server URL contained a space - the request itself was always fine, the app tripped over its own address parsing
+• Fix: the exported log kept the URL path in cleartext. If your provider puts your storage under your real name, it was in the file
+
+Thanks to Peter for both reports - the second one only turned up because he read his log before sending it.
