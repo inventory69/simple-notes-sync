@@ -203,7 +203,11 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                                 return@launch
                             }
                             val shareIntent = buildLogShareIntent(
-                                context, logFiles, logsSubject, body = null, recipient = null
+                                context,
+                                logFiles,
+                                logsSubject,
+                                body = null,
+                                recipient = null
                             )
                             try {
                                 context.startActivity(Intent.createChooser(shareIntent, logsShareVia))
@@ -249,7 +253,11 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                                 // Bewusst ohne pendingDisableDialog — wer gerade einen Fehler
                                 // meldet, soll das Logging anlassen.
                                 val share = buildLogShareIntent(
-                                    context, logFiles, mailSubject, mailBody, MAINTAINER_EMAIL
+                                    context,
+                                    logFiles,
+                                    mailSubject,
+                                    mailBody,
+                                    MAINTAINER_EMAIL
                                 )
                                 val targets = resolveMailTargets(context, share)
                                     .map { Intent(share).setPackage(it) }

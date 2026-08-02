@@ -31,10 +31,22 @@ class FolderSyncManagerTest {
         prefsBacking.clear()
         // Echte Backing-Map: der ETag-Fast-Path liest und schreibt über die Prefs.
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        every { editor.putString(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<String?>(); editor }
-        every { editor.putBoolean(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<Boolean>(); editor }
-        every { editor.remove(any()) } answers { prefsBacking.remove(firstArg<String>()); editor }
-        every { editor.putStringSet(any(), any()) } answers { prefsBacking[firstArg()] = secondArg<Set<String>?>(); editor }
+        every { editor.putString(any(), any()) } answers {
+            prefsBacking[firstArg()] = secondArg<String?>()
+            editor
+        }
+        every { editor.putBoolean(any(), any()) } answers {
+            prefsBacking[firstArg()] = secondArg<Boolean>()
+            editor
+        }
+        every { editor.remove(any()) } answers {
+            prefsBacking.remove(firstArg<String>())
+            editor
+        }
+        every { editor.putStringSet(any(), any()) } answers {
+            prefsBacking[firstArg()] = secondArg<Set<String>?>()
+            editor
+        }
         val prefs = mockk<SharedPreferences>(relaxed = true) {
             every { edit() } returns editor
             every { getString(any(), any()) } answers { prefsBacking[firstArg()] as? String ?: secondArg() }

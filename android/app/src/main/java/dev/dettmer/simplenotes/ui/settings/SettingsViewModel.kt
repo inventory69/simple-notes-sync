@@ -30,11 +30,11 @@ import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.net.HttpURLConnection
-import java.net.URL
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException

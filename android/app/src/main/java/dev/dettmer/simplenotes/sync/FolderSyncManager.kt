@@ -49,7 +49,9 @@ class FolderSyncManager(
 
             // 🆕 v2.14.0 Fast-Path: unverändertes folders.json + nichts lokal ausstehend →
             // GET und PUT komplett überspringen. Server ohne ETags skippen nie (remoteEtag null).
-            if (allowSkip && !dirty && removalQueue.isEmpty() &&
+            if (allowSkip &&
+                !dirty &&
+                removalQueue.isEmpty() &&
                 etagsMatch(remoteEtag, prefs.getString(Constants.KEY_FOLDERS_JSON_ETAG, null))
             ) {
                 Logger.d(TAG, "⏭️ folders.json unchanged (E-Tag match) — skipping round-trip")

@@ -45,7 +45,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * `Authorization`-Header geloggt, und der Auth-Cache-Key ist ein SHA-256, der nie in ein Log geht.
  */
 object LogAnonymizer {
-
     private const val SERVER_PLACEHOLDER = "<server>"
     private const val PATH_PLACEHOLDER = "<path>"
     private const val USER_PLACEHOLDER = "<user>"

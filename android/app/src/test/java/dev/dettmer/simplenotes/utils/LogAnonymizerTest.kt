@@ -10,7 +10,6 @@ import org.junit.Test
  * öffentlichen GitHub-Issue.
  */
 class LogAnonymizerTest {
-
     private val serverUrl = "https://cloud.example.org/remote.php/dav/files/klausi/notes"
     private val username = "klausi"
     private val titles = listOf("Steuererklärung 2026", "Einkauf", "Urlaub", "Urlaub 2026")
