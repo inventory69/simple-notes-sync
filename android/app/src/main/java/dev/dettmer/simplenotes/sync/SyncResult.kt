@@ -16,6 +16,8 @@ data class SyncResult(
     val trashedFromServerCount: Int = 0, // Notizen, die vom Server bereits mit trashedAt ankamen
     val foldersChanged: Boolean = false, // 🆕 v2.7.0 (Folders): Ordner-Metadaten haben sich geändert
     val foldersReconciled: Boolean = false, // 🆕 v2.7.2: folderName einer Notiz an Server-Pfad geheilt
+    val restoredCount: Int = 0, // 🆕 Issue #128: falsches DELETED_ON_SERVER zurückgenommen
+    val deletionDetectionSkipped: Boolean = false, // 🆕 Issue #128: Listing unvollständig → nichts getrasht
     val errorMessage: String? = null,
     val infoMessage: String? = null // 🆕 v1.9.0 Issue #21: Non-error status info
 ) {

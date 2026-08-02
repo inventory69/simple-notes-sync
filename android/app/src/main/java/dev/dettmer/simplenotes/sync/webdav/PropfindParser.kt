@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.sync.webdav
 
+import dev.dettmer.simplenotes.utils.Logger
 import java.io.InputStream
 import java.net.URI
 import java.net.URISyntaxException
@@ -13,6 +14,8 @@ import org.xml.sax.Attributes
 import org.xml.sax.EntityResolver
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.DefaultHandler
+
+private const val TAG = "PropfindParser"
 
 /**
  * 🆕 v2.14.0: Minimaler Parser für PROPFIND-`multistatus`-Antworten.
@@ -152,13 +155,20 @@ private class MultistatusHandler : DefaultHandler() {
     private fun emitResource() {
         val rawHref = href ?: return
         // Server mit nicht-URI-konformen hrefs (unkodierte Leerzeichen o. ä.):
-        // Eintrag überspringen statt die ganze Liste zu verlieren — wie Sardine.
-        val uri = try {
-            URI(rawHref)
-        } catch (_: URISyntaxException) {
+        // 🆕 Issue #128: erst mit escapten Leerzeichen erneut versuchen — ein verworfener
+        // Ordner-Eintrag ließ dessen Notizen früher als „auf dem Server gelöscht" erscheinen.
+        // Erst wenn auch das scheitert, Eintrag überspringen statt die ganze Liste zu verlieren.
+        val uri = parseHref(rawHref) ?: parseHref(rawHref.replace(" ", "%20")) ?: run {
+            Logger.w(TAG, "Dropping resource with unparsable href: $rawHref")
             return
         }
         resources.add(WebDavResource(uri, modified, contentLength, isDirectory, etag))
+    }
+
+    private fun parseHref(value: String): URI? = try {
+        URI(value)
+    } catch (_: URISyntaxException) {
+        null
     }
 
     private fun parseDate(value: String): Date? {

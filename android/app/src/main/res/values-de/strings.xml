@@ -74,6 +74,10 @@
     <!-- 🆕 v2.9.x (Trash): via „Papierkorb leeren" vom Server gelöschte Notizen -->
     <string name="sync_deleted_from_server_count">%1$d vom Server gelöscht</string>
     <string name="sync_trashed_from_server_count">%1$d im Papierkorb</string>
+    <!-- 🆕 Issue #128: fälschlich als server-gelöscht markierte Notizen wurden zurückgeholt -->
+    <string name="sync_restored_count">%1$d wiederhergestellt</string>
+    <!-- 🆕 Issue #128: unvollständiges Server-Listing → Löscherkennung übersprungen -->
+    <string name="sync_deletion_check_skipped">Löschprüfung übersprungen (Server-Listing unvollständig)</string>
     <!-- 🆕 v1.8.0 (IMPL_006): Sync-Phasen Strings -->
     <string name="sync_phase_preparing">Synchronisiere…</string>
     <string name="sync_phase_uploading">Hochladen…</string>

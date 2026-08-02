@@ -236,13 +236,39 @@ class PropfindParserTest {
         assertNull(resources[0].modified)
     }
 
-    @Test fun `entry with an invalid href is skipped, the rest survives`() {
+    /**
+     * 🆕 Issue #128: Ein href mit rohem Leerzeichen ist kein gültiger URI, der Eintrag darf aber
+     * nicht verloren gehen — fehlte ein Ordner im Listing, galten seine Notizen als server-gelöscht.
+     */
+    @Test fun `href with a raw space is recovered instead of dropped`() {
         val resources = parse(
             """
             <?xml version="1.0"?>
             <d:multistatus xmlns:d="DAV:">
               <d:response>
-                <d:href>/dav/notes/bad file.json</d:href>
+                <d:href>/dav/notes/My Folder/</d:href>
+                <d:propstat><d:prop/><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+              </d:response>
+              <d:response>
+                <d:href>/dav/notes/good.json</d:href>
+                <d:propstat><d:prop/><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+              </d:response>
+            </d:multistatus>
+            """
+        )
+
+        assertEquals(2, resources.size)
+        assertEquals("My Folder", resources[0].name)
+        assertEquals("good.json", resources[1].name)
+    }
+
+    @Test fun `entry with an unrecoverable href is skipped, the rest survives`() {
+        val resources = parse(
+            """
+            <?xml version="1.0"?>
+            <d:multistatus xmlns:d="DAV:">
+              <d:response>
+                <d:href>http://[bad/notes/x.json</d:href>
                 <d:propstat><d:prop/><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
               </d:response>
               <d:response>
