@@ -44,7 +44,11 @@ internal data class DownloadResult(
     val foldersJsonEtag: String? = null,
     // 🆕 v2.14.0: Discovery-only-Ordner setzen kein dirty-Flag; ohne dieses Signal würde ein
     // reiner Server-Unterordner nie in folders.json injiziert.
-    val newFoldersDiscovered: Boolean = false
+    val newFoldersDiscovered: Boolean = false,
+    // 🆕 Issue #128: Das Server-Listing war unvollständig → Löscherkennung wurde übersprungen.
+    val deletionDetectionSkipped: Boolean = false,
+    // 🆕 Issue #128: Notizen, deren falsches DELETED_ON_SERVER zurückgenommen wurde.
+    val healedCount: Int = 0
 )
 
 /**
@@ -110,6 +114,11 @@ internal class NoteDownloader(
         var skippedDeleted = 0 // Track skipped deleted notes
         var folderReconciledCount = 0
         var trashedDownloadedCount = 0
+        var healedCount = 0 // 🆕 Issue #128: zurückgenommene Falsch-Trashungen
+        // 🆕 Issue #128: Nur ein nachweislich vollständiges Listing darf Löschungen auslösen.
+        // Fällt ein einziger Unterordner aus dem Scan, fehlen dessen Notizen in serverNoteIds —
+        // ohne dieses Flag landen sie im Papierkorb, obwohl sie auf dem Server unangetastet sind.
+        var listingComplete = true
         val processedIds = mutableSetOf<String>() // 🆕 v1.2.2: Track already loaded notes
         val adoptedNoteIds = mutableSetOf<String>() // 🆕 JSON adopted at tied timestamp (server wins)
 
@@ -182,16 +191,26 @@ internal class NoteDownloader(
                 // Case-insensitiv — Server-Verzeichnisname kann in der Groß-/Kleinschreibung abweichen.
                 val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
                 for (dir in subDirs) {
-                    val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
+                    val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name)
+                    if (folder == null) {
+                        Logger.w(TAG, "   ⚠️ Unusable folder name '${dir.name}' — listing incomplete")
+                        listingComplete = false
+                        continue
+                    }
                     if (folder.lowercase() in localOnlyFolders) {
                         Logger.d(TAG, "   ⏭️ Skipping local-only folder: $folder")
                         continue
                     }
                     discoveredFolders.add(folder)
                     val folderUrl = urlBuilder.getNotesFolderUrl(serverUrl, folder)
-                    val folderResources = deepTree?.get(dir.name)
-                        ?: webdav.listOrNull(folderUrl)
-                        ?: continue
+                    val folderResources = deepTree?.get(dir.name) ?: webdav.listOrNull(folderUrl)
+                    if (folderResources == null) {
+                        // 🛡️ Issue #128: Ordner ist im Root-Listing, listet sich aber nicht (404/Rechte).
+                        // Früher ein stilles `continue` — seine Notizen galten dann als server-gelöscht.
+                        Logger.w(TAG, "   ⚠️ Folder '$folder' did not list — listing incomplete")
+                        listingComplete = false
+                        continue
+                    }
                     folderResources
                         .filter { !it.isDirectory && it.name.endsWith(".json") }
                         .forEach { scanItems.add(ScanItem(it, folder)) }
@@ -281,6 +300,9 @@ internal class NoteDownloader(
                     if (!forceOverwrite && fileExistsLocally && etagsMatch(serverETag, cachedETag)) {
                         skippedUnchanged++
                         Logger.d(TAG, "   ⏭️ Skipping $noteId: E-Tag match (content unchanged) [localStatus=${localNote.syncStatus}]")
+                        // 🆕 Issue #128: reconcileSkippedNote nimmt hier ein falsches
+                        // DELETED_ON_SERVER zurück — für die Rückmeldung mitzählen.
+                        if (localNote.syncStatus == SyncStatus.DELETED_ON_SERVER) healedCount++
                         if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
                         processedIds.add(noteId)
                         continue
@@ -300,6 +322,9 @@ internal class NoteDownloader(
                             "   ⏭️ Skipping $noteId: No E-Tag, timestamp unchanged (fallback)" +
                                 " [localStatus=${localNote.syncStatus}]"
                         )
+                        // 🆕 Issue #128: reconcileSkippedNote nimmt hier ein falsches
+                        // DELETED_ON_SERVER zurück — für die Rückmeldung mitzählen.
+                        if (localNote.syncStatus == SyncStatus.DELETED_ON_SERVER) healedCount++
                         if (reconcileSkippedNote(localNote, folderByNoteId[noteId])) folderReconciledCount++
                         processedIds.add(noteId)
                         continue
@@ -444,6 +469,26 @@ internal class NoteDownloader(
                                                 etagUpdates["etag_json_${result.noteId}"] = result.etag
                                             }
                                         }
+                                    }
+                                    // 🆕 Issue #128: Die Notiz liegt nachweislich auf dem Server —
+                                    // ein lokales DELETED_ON_SERVER war also falsch. Ohne diesen
+                                    // Zweig heilte nur der ETag-Skip-Pfad; wurde die Server-Datei
+                                    // nach der Falsch-Trashung einmal geändert, blieb die Notiz für
+                                    // immer im Papierkorb.
+                                    localNote.syncStatus == SyncStatus.DELETED_ON_SERVER -> {
+                                        storage.saveNote(
+                                            localNote.copy(
+                                                syncStatus = SyncStatus.SYNCED,
+                                                folderName = folderByNoteId[result.noteId],
+                                                trashedAt = null
+                                            )
+                                        )
+                                        healedCount++
+                                        Logger.d(
+                                            TAG,
+                                            "   🔧 Cleared false DELETED_ON_SERVER for ${result.noteId} " +
+                                                "(present on server) → SYNCED"
+                                        )
                                     }
                                     else -> {
                                         // Local timestamp is newer or equal to server.
@@ -674,9 +719,11 @@ internal class NoteDownloader(
             }
         } catch (e: Exception) {
             Logger.e(TAG, "❌ downloadAll failed", e)
-            // 🛡️ v1.8.2 (IMPL_21): Exception merken statt verschlucken —
-            // Deletion-Detection + Tracker-Save laufen trotzdem (Safety-Guards greifen)
+            // 🛡️ v1.8.2 (IMPL_21): Exception merken statt verschlucken — der Tracker-Save läuft
+            // trotzdem. 🆕 Issue #128: Die Löscherkennung aber nicht mehr; ein abgebrochener Scan
+            // kann kein vollständiges Server-Listing geliefert haben.
             downloadException = e
+            listingComplete = false
         }
 
         // Save deletion tracker if modified
@@ -690,7 +737,8 @@ internal class NoteDownloader(
 
         // 🆕 v1.8.0: Server-Deletions erkennen (nach Downloads)
         val allLocalNotes = storage.loadAllNotes()
-        val deletedOnServerCount = detectDeletions(serverNoteIds, allLocalNotes, deletionTracker)
+        val deletedOnServerCount =
+            detectDeletions(serverNoteIds, allLocalNotes, deletionTracker, listingComplete)
 
         if (deletedOnServerCount > 0) {
             Logger.d(TAG, "$deletedOnServerCount note(s) detected as deleted on server")
@@ -707,7 +755,9 @@ internal class NoteDownloader(
             downloadError = downloadException?.message,
             adoptedNoteIds = adoptedNoteIds,
             foldersJsonEtag = foldersJsonEtag,
-            newFoldersDiscovered = newFoldersDiscovered
+            newFoldersDiscovered = newFoldersDiscovered,
+            deletionDetectionSkipped = !listingComplete,
+            healedCount = healedCount
         )
     }
 
@@ -718,14 +768,18 @@ internal class NoteDownloader(
      * Keine zusätzlichen HTTP-Requests! Nutzt die bereits geladene
      * serverNoteIds-Liste aus dem PROPFIND-Request.
      *
+     * 🛡️ Issue #128: fail-closed — ein unvollständiges Listing löscht gar nichts.
+     *
      * @param serverNoteIds Set aller Note-IDs auf dem Server (aus PROPFIND)
      * @param localNotes Alle lokalen Notizen
+     * @param listingComplete false, wenn der Server-Scan nachweislich Lücken hat
      * @return Anzahl der als DELETED_ON_SERVER markierten Notizen
      */
     suspend fun detectDeletions(
         serverNoteIds: Set<String>,
         localNotes: List<Note>,
-        deletionTracker: dev.dettmer.simplenotes.models.DeletionTracker = dev.dettmer.simplenotes.models.DeletionTracker()
+        deletionTracker: dev.dettmer.simplenotes.models.DeletionTracker = dev.dettmer.simplenotes.models.DeletionTracker(),
+        listingComplete: Boolean = true
     ): Int {
         // 🆕 v2.8.0 (Local-Only Folders): Notizen in lokalen Ordnern nie als server-gelöscht markieren.
         val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
@@ -733,36 +787,7 @@ internal class NoteDownloader(
             it.syncStatus == SyncStatus.SYNCED && it.folderName?.lowercase() !in localOnlyFolders
         }
 
-        // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
-        // Ein leeres Set bedeutet wahrscheinlich: PROPFIND fehlgeschlagen, /notes/ nicht gefunden,
-        // oder Netzwerkfehler — NICHT dass alle Notizen gelöscht wurden.
-        if (serverNoteIds.isEmpty()) {
-            Logger.w(
-                TAG,
-                "⚠️ detectDeletions: serverNoteIds is EMPTY! " +
-                    "Skipping deletion detection to prevent data loss. " +
-                    "localSynced=${syncedNotes.size}, localTotal=${localNotes.size}"
-            )
-            return 0
-        }
-
-        // 🔧 v1.9.0: Guard-Schwellenwert auf ≥10 angehoben
-        // Vorher: syncedNotes.size > 1 — blockierte legitime Massenlöschung bei 2–5 Notizen
-        // User mit wenigen Notizen, die alle über Nextcloud-Web-UI löschen, bekamen nie
-        // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
-        // 🆕 v2.8.0: Schwellenwert bewusst auf die GEFILTERTE Menge (ohne local-only-Ordner) —
-        // nur sie kann markiert werden. Ein Gesamt-Count würde z. B. bei 1 fehlenden Notiz +
-        // vielen local-only-Notizen legitime Einzellöschungen dauerhaft blockieren.
-        val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
-        if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
-            Logger.e(
-                TAG,
-                "🚨 detectDeletions: ALL ${syncedNotes.size} synced notes " +
-                    "would be marked as deleted! This is almost certainly a bug. " +
-                    "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection."
-            )
-            return 0
-        }
+        if (deletionDetectionBlocked(serverNoteIds, syncedNotes, localNotes.size, listingComplete)) return 0
 
         // 🆕 v1.8.0 (IMPL_022): Statistik-Log für Debugging
         Logger.d(
@@ -823,6 +848,65 @@ internal class NoteDownloader(
         }
 
         return deletedCount
+    }
+
+    /**
+     * Die Sicherheitsnetze vor der Löscherkennung — true heißt: dieser Zyklus löscht nichts.
+     *
+     * Reihenfolge = Schärfe des Beweises: ein unvollständiges Listing *weiß*, dass Daten fehlen;
+     * die beiden älteren Wächter raten anhand der Mengen.
+     */
+    private fun deletionDetectionBlocked(
+        serverNoteIds: Set<String>,
+        syncedNotes: List<Note>,
+        localTotal: Int,
+        listingComplete: Boolean
+    ): Boolean {
+        // 🛡️ Issue #128 SAFETY: Ein Ordner, der sich nicht listen ließ, ist nicht dasselbe wie ein
+        // gelöschter Ordner. Ohne vollständiges Listing weiß niemand, ob eine Notiz wirklich fehlt —
+        // also lieber eine Löschung einen Zyklus später erkennen als eine Notiz fälschlich trashen.
+        if (!listingComplete) {
+            Logger.w(
+                TAG,
+                "⚠️ detectDeletions: SKIPPED — server listing was incomplete " +
+                    "(a folder failed to list or the scan aborted). " +
+                    "serverNotes=${serverNoteIds.size}, localSynced=${syncedNotes.size}"
+            )
+            return true
+        }
+
+        // 🔧 v1.8.1 SAFETY: Wenn serverNoteIds leer ist, NIEMALS Notizen als gelöscht markieren!
+        // Ein leeres Set bedeutet wahrscheinlich: PROPFIND fehlgeschlagen, /notes/ nicht gefunden,
+        // oder Netzwerkfehler — NICHT dass alle Notizen gelöscht wurden.
+        if (serverNoteIds.isEmpty()) {
+            Logger.w(
+                TAG,
+                "⚠️ detectDeletions: serverNoteIds is EMPTY! " +
+                    "Skipping deletion detection to prevent data loss. " +
+                    "localSynced=${syncedNotes.size}, localTotal=$localTotal"
+            )
+            return true
+        }
+
+        // 🔧 v1.9.0: Guard-Schwellenwert auf ≥10 angehoben
+        // Vorher: syncedNotes.size > 1 — blockierte legitime Massenlöschung bei 2–5 Notizen
+        // User mit wenigen Notizen, die alle über Nextcloud-Web-UI löschen, bekamen nie
+        // DELETED_ON_SERVER. Bei ≥10 Notizen ist "alle gleichzeitig gelöscht" sehr unwahrscheinlich.
+        // 🆕 v2.8.0: Schwellenwert bewusst auf die GEFILTERTE Menge (ohne local-only-Ordner) —
+        // nur sie kann markiert werden. Ein Gesamt-Count würde z. B. bei 1 fehlenden Notiz +
+        // vielen local-only-Notizen legitime Einzellöschungen dauerhaft blockieren.
+        val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
+        if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
+            Logger.e(
+                TAG,
+                "🚨 detectDeletions: ALL ${syncedNotes.size} synced notes " +
+                    "would be marked as deleted! This is almost certainly a bug. " +
+                    "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection."
+            )
+            return true
+        }
+
+        return false
     }
 
     /**

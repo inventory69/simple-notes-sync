@@ -21,6 +21,13 @@ fun buildSyncResultBanner(context: Context, result: SyncResult): String? {
         if (result.trashedFromServerCount > 0) {
             add(context.getString(R.string.sync_trashed_from_server_count, result.trashedFromServerCount))
         }
+        // 🆕 Issue #128
+        if (result.restoredCount > 0) {
+            add(context.getString(R.string.sync_restored_count, result.restoredCount))
+        }
+        if (result.deletionDetectionSkipped) {
+            add(context.getString(R.string.sync_deletion_check_skipped))
+        }
     }
     return if (parts.isEmpty()) null else parts.joinToString(" · ")
 }

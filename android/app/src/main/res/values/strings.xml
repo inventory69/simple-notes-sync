@@ -83,6 +83,10 @@
     <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
     <string name="sync_deleted_from_server_count">%1$d deleted from server</string>
     <string name="sync_trashed_from_server_count">%1$d in trash</string>
+    <!-- 🆕 Issue #128: notes wrongly marked as deleted on server were brought back -->
+    <string name="sync_restored_count">%1$d restored</string>
+    <!-- 🆕 Issue #128: the server listing was incomplete, so deletion detection was skipped -->
+    <string name="sync_deletion_check_skipped">Deletion check skipped (server listing incomplete)</string>
 
     <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
     <string name="sync_phase_preparing">Synchronizing…</string>

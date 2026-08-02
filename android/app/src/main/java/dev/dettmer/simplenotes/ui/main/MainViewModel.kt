@@ -1276,7 +1276,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
                     SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE
                     // 🆕 v2.7.2: Ordner-Zuordnung wurde lokal geheilt → Notenliste neu laden
-                    if (result.foldersReconciled) loadNotes(forceReload = true)
+                    // 🆕 Issue #128: dito, wenn ein falsches DELETED_ON_SERVER zurückgenommen wurde —
+                    // sonst bleibt die zurückgeholte Notiz bis zum nächsten Reload unsichtbar.
+                    if (result.foldersReconciled || result.restoredCount > 0) loadNotes(forceReload = true)
                     // 🆕 v2.7.0 (Folders): Farbe leerer Ordner auch ohne Note-Sync ins UI laden
                     if (result.foldersChanged || result.foldersReconciled) refreshFolders()
                 } else {

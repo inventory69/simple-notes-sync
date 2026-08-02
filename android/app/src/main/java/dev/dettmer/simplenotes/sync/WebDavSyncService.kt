@@ -185,6 +185,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Wird beim ersten erfolgreichen Sync aufgerufen (unabhängig von MD-Feature).
      * Cached in Memory - nur einmal pro App-Session.
      */
+
     /** MD-Export ODER MD-Auto-Import aktiv — Gate für alle Requests gegen `notes-md/`. */
     private fun markdownFeaturesEnabled(): Boolean =
         prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) ||
@@ -576,6 +577,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 var deletedOnServerCount = 0 // 🆕 v1.8.0
                 var folderReconciledCount = 0 // 🆕 v2.7.2
                 var trashedFromServerCount = 0
+                var restoredCount = 0 // 🆕 Issue #128
+                var deletionDetectionSkipped = false // 🆕 Issue #128
                 // 🆕 v2.14.0: aus dem Root-Listing für den folders.json-Fast-Path.
                 var foldersJsonEtag: String? = null
                 var newFoldersDiscovered = false
@@ -605,6 +608,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     deletedOnServerCount = downloadResult.deletedOnServerCount // 🆕 v1.8.0
                     folderReconciledCount = downloadResult.folderReconciledCount // 🆕 v2.7.2
                     trashedFromServerCount = downloadResult.trashedDownloadedCount
+                    restoredCount = downloadResult.healedCount // 🆕 Issue #128
+                    deletionDetectionSkipped = downloadResult.deletionDetectionSkipped // 🆕 Issue #128
                     adoptedFromDownloadIds = downloadResult.adoptedNoteIds
                     foldersJsonEtag = downloadResult.foldersJsonEtag
                     newFoldersDiscovered = downloadResult.newFoldersDiscovered
@@ -743,7 +748,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     purgedFromServerCount = purgedFromServerCount, // 🆕 v2.9.x (Trash)
                     trashedFromServerCount = trashedFromServerCount,
                     foldersChanged = foldersChanged, // 🆕 v2.7.0 (Folders)
-                    foldersReconciled = folderReconciledCount > 0 // 🆕 v2.7.2
+                    foldersReconciled = folderReconciledCount > 0, // 🆕 v2.7.2
+                    restoredCount = restoredCount, // 🆕 Issue #128
+                    deletionDetectionSkipped = deletionDetectionSkipped // 🆕 Issue #128
                 )
             } catch (e: Exception) {
                 Logger.e(TAG, "═══════════════════════════════════════")
