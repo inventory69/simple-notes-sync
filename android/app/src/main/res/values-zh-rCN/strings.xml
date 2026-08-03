@@ -955,4 +955,6 @@
     <string name="debug_logs_mail_body">Device: %1$s\nAndroid: %2$s (API %3$d)\n\n什么出错（可选）：\n</string>
     <string name="debug_send_no_mail_app">未找到邮箱应用。使用导出日志作为代替。</string>
     <string name="about_beta_notice">🧪 测试版构建。诊断日志是开启的，这样你可以用一个报告发送同步日志 — 设置 → 调试和诊断来导出或关闭它。导出的日志会替换掉你的服务器地址、用户名和笔记标题。</string>
+    <string name="sync_restored_count">已恢复 %1$d</string>
+    <string name="sync_deletion_check_skipped">已跳过删除检查（未完成服务器列出文件）</string>
 </resources>
