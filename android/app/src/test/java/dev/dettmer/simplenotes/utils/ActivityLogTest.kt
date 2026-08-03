@@ -8,6 +8,7 @@ import java.io.FileWriter
 import java.nio.file.Files
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -107,6 +108,24 @@ class ActivityLogTest {
         assertTrue(ActivityLog.clearLocal(context))
 
         assertNull(ActivityLog.getLogFile(context))
+    }
+
+    @Test
+    fun `trigger round-trips, legacy lines and unknown trigger tokens degrade to null (not dropped)`() {
+        ActivityLog.log(ActivityLog.Op.SYNC_OK, ActivityLog.Src.LOCAL, trigger = ActivityLog.Trigger.WIFI_CONNECT)
+        val logged = ActivityLog.readTail(context, maxLines = 100).first()
+        assertEquals(ActivityLog.Trigger.WIFI_CONNECT, logged.trigger)
+
+        val legacyLine = """{"v":1,"ts":10,"op":"SYNC_OK","src":"LOCAL","dev":"d"}"""
+        val legacy = ActivityLog.parseLine(legacyLine)
+        assertNotNull(legacy)
+        assertNull(legacy?.trigger)
+
+        // Ein Token aus einem neueren Build (oder Desktop-Client) darf die Zeile nicht verwerfen.
+        val futureLine = """{"v":1,"ts":11,"op":"SYNC_OK","src":"LOCAL","dev":"d","trigger":"FROM_THE_FUTURE"}"""
+        val future = ActivityLog.parseLine(futureLine)
+        assertNotNull(future)
+        assertNull(future?.trigger)
     }
 
     private fun sampleEntry(ts: Long) = ActivityLog.Entry(

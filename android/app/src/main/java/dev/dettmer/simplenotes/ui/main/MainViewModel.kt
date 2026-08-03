@@ -1096,7 +1096,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * v1.7.0: Uses central canSync() gate for WiFi-only check
      * v1.8.0: Banner erscheint sofort beim Klick (PREPARING-Phase)
      */
-    fun triggerManualSync(source: String = "manual") {
+    fun triggerManualSync(trigger: ActivityLog.Trigger) {
+        // ponytail: Alias hält die bestehenden "$source"-Logzeilen unverändert.
+        val source = trigger.name
         // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
         val syncService = WebDavSyncService(getApplication())
         val gateResult = syncService.canSync()
@@ -1171,7 +1173,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Perform sync
                 val result = withContext(ioDispatcher) {
-                    syncService.syncNotes()
+                    syncService.syncNotes(trigger)
                 }
 
                 if (result.isSuccess) {
@@ -1202,7 +1204,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     // Abbau: TECH_DEBT_ROADMAP.md Slice 2
     @Suppress("CyclomaticComplexMethod")
-    fun triggerAutoSync(source: String = "auto") {
+    fun triggerAutoSync(trigger: ActivityLog.Trigger) {
+        // ponytail: Alias hält die bestehenden "$source"-Logzeilen unverändert.
+        val source = trigger.name
         // 🌟 v1.6.0: Check if onResume trigger is enabled
         if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)) {
             Logger.d(TAG, "⏭️ onResume sync disabled - skipping")
@@ -1257,7 +1261,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Perform sync
                 val result = withContext(ioDispatcher) {
-                    syncService.syncNotes()
+                    syncService.syncNotes(trigger)
                 }
 
                 if (result.isSuccess && result.syncedCount > 0) {
@@ -1539,7 +1543,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 false
             }
             if (isReachable) {
-                triggerManualSync(source = "folder-include")
+                triggerManualSync(ActivityLog.Trigger.FOLDER_INCLUDE)
             } else {
                 SyncStateManager.showInfo(getString(R.string.snackbar_folder_sync_queued))
                 triggerOnSaveSync()

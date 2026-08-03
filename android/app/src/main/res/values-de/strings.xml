@@ -208,6 +208,11 @@
     <string name="activity_op_sync_fail">Sync fehlgeschlagen: %1$s</string>
     <string name="activity_op_deletion_skipped">Löscherkennung übersprungen — Server-Listing war unvollständig</string>
     <string name="activity_folder_suffix"> · %1$s</string>
+    <string name="activity_trigger_manual">Manuell</string>
+    <string name="activity_trigger_resume">App geöffnet</string>
+    <string name="activity_trigger_onsave">Nach dem Speichern</string>
+    <string name="activity_trigger_wifi">WLAN</string>
+    <string name="activity_trigger_periodic">Zeitplan</string>
     <string name="activity_untitled_sync_entry">Sync</string>
     <string name="snackbar_note_restored">Notiz wiederhergestellt</string>
     <string name="snackbar_trash_emptied">Papierkorb geleert</string>

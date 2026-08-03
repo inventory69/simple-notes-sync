@@ -41,6 +41,19 @@ object ActivityLog {
 
     enum class Src { LOCAL, REMOTE }
 
+    /** Was den Sync ausgelöst hat. `null` = unbekannt (Altzeilen, unerwartet getaggte Worker). */
+    enum class Trigger {
+        TOOLBAR,
+        PULL_REFRESH,
+        RESUME,
+        FOLDER_INCLUDE,
+        SETTINGS, // vom Nutzer
+        ONSAVE,
+        WIFI_CONNECT,
+        WIFI_FALLBACK,
+        PERIODIC // vom System
+    }
+
     data class Entry(
         val v: Int = 1,
         val ts: Long,
@@ -51,7 +64,8 @@ object ActivityLog {
         val folder: String? = null,
         val dev: String,
         val why: String? = null,
-        val err: String? = null
+        val err: String? = null,
+        val trigger: Trigger? = null
     )
 
     const val FILE_NAME = "activity.jsonl"
@@ -82,7 +96,8 @@ object ActivityLog {
         title: String? = null,
         folder: String? = null,
         why: String? = null,
-        err: String? = null
+        err: String? = null,
+        trigger: Trigger? = null
     ) {
         val ctx = appContext ?: return
         val entry = Entry(
@@ -94,7 +109,8 @@ object ActivityLog {
             folder = folder,
             dev = deviceDisplayName(),
             why = why,
-            err = err?.take(ERR_MAX_LENGTH)
+            err = err?.take(ERR_MAX_LENGTH),
+            trigger = trigger
         )
         synchronized(fileLock) {
             try {
@@ -165,7 +181,9 @@ object ActivityLog {
                 folder = o.optString("folder").ifEmpty { null },
                 dev = o.optString("dev", "?"),
                 why = o.optString("why").ifEmpty { null },
-                err = o.optString("err").ifEmpty { null }
+                err = o.optString("err").ifEmpty { null },
+                trigger = o.optString("trigger").ifEmpty { null }
+                    ?.let { runCatching { Trigger.valueOf(it) }.getOrNull() }
             )
         } catch (e: Exception) {
             Logger.w(TAG, "Skipping corrupt activity log line: ${e.message}")
@@ -186,6 +204,7 @@ object ActivityLog {
         put("dev", dev)
         why?.let { put("why", it) }
         err?.let { put("err", it) }
+        trigger?.let { put("trigger", it.name) }
     }
 
     private fun rotateIfNeeded(ctx: Context, file: File) {

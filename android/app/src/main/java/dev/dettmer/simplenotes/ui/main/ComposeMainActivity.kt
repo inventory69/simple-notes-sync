@@ -44,6 +44,7 @@ import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.BatteryOptimizationHelper
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -314,7 +315,7 @@ class ComposeMainActivity : FragmentActivity() {
 
         // Trigger Auto-Sync on app resume — but not when returning from editor/settings
         if (!returningFromChild) {
-            viewModel.triggerAutoSync("onResume")
+            viewModel.triggerAutoSync(ActivityLog.Trigger.RESUME)
         }
 
         // 🆕 v1.10.0-P2: Show one-time hint if last sync was stopped by quota/standby

@@ -22,6 +22,7 @@ import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.LogAnonymizer
@@ -1042,7 +1043,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
-                val result = syncService.syncNotes()
+                val result = syncService.syncNotes(ActivityLog.Trigger.SETTINGS)
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
                 } else {

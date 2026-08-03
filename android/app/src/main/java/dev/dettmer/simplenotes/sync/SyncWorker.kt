@@ -10,6 +10,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -29,6 +30,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         private const val STOP_REASON_QUOTA = 10
         private const val STOP_REASON_BACKGROUND_RESTRICTION = 11
         private const val STOP_REASON_APP_STANDBY = 12
+
+        /** `getTags()` ist ein ungeordnetes Set — anders als [tagOrUnknown] hier keine Set-Reihenfolge-Annahme. */
+        internal fun triggerFromTags(tags: Set<String>): ActivityLog.Trigger? = when {
+            Constants.SYNC_ONSAVE_TAG in tags -> ActivityLog.Trigger.ONSAVE
+            Constants.SYNC_WIFI_CONNECT_TAG in tags -> ActivityLog.Trigger.WIFI_CONNECT
+            Constants.SYNC_WIFI_FALLBACK_TAG in tags -> ActivityLog.Trigger.WIFI_FALLBACK
+            Constants.SYNC_PERIODIC_TAG in tags -> ActivityLog.Trigger.PERIODIC
+            else -> null
+        }
     }
 
     /** Returns the first worker tag or "unknown" — used as triggerType for SyncDebugLogger. */
@@ -319,7 +329,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "    Calling syncService.syncNotes()...")
                 }
-                syncService.syncNotes().also {
+                syncService.syncNotes(triggerFromTags(tags)).also {
                     if (BuildConfig.DEBUG) {
                         Logger.d(TAG, "    ✅ syncNotes() returned")
                     }

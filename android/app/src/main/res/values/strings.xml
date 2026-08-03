@@ -222,6 +222,11 @@
     <string name="activity_op_sync_fail">Sync failed: %1$s</string>
     <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
     <string name="activity_folder_suffix"> · %1$s</string>
+    <string name="activity_trigger_manual">Manual</string>
+    <string name="activity_trigger_resume">App opened</string>
+    <string name="activity_trigger_onsave">After saving</string>
+    <string name="activity_trigger_wifi">Wi-Fi</string>
+    <string name="activity_trigger_periodic">Scheduled</string>
     <string name="activity_untitled_sync_entry">Sync</string>
     <string name="snackbar_note_restored">Note restored</string>
     <string name="snackbar_trash_emptied">Trash emptied</string>

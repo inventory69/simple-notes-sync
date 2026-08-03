@@ -292,8 +292,11 @@ private fun ActivityRow(
                 }
             )
             val folderSuffix = entry.folder?.let { stringResource(R.string.activity_folder_suffix, it) }.orEmpty()
+            // ponytail: activity_folder_suffix ist generisch " · %1$s" — kein zweiter Separator-String.
+            val triggerSuffix = triggerLabel(entry.trigger)
+                ?.let { stringResource(R.string.activity_folder_suffix, it) }.orEmpty()
             Text(
-                text = opLabel(entry) + folderSuffix,
+                text = opLabel(entry) + folderSuffix + triggerSuffix,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -337,4 +340,18 @@ private fun opLabel(entry: ActivityLog.Entry): String = when (entry.op) {
     ActivityLog.Op.SYNC_OK -> stringResource(R.string.activity_op_sync_ok)
     ActivityLog.Op.SYNC_FAIL -> stringResource(R.string.activity_op_sync_fail, entry.err ?: "?")
     ActivityLog.Op.DELETION_SKIPPED -> stringResource(R.string.activity_op_deletion_skipped)
+}
+
+@Composable
+private fun triggerLabel(t: ActivityLog.Trigger?): String? = when (t) {
+    null -> null
+    // Vier Wege, denselben Knopf zu drücken — im UI eine Zeile, im File weiter unterscheidbar.
+    ActivityLog.Trigger.TOOLBAR, ActivityLog.Trigger.PULL_REFRESH,
+    ActivityLog.Trigger.SETTINGS, ActivityLog.Trigger.FOLDER_INCLUDE ->
+        stringResource(R.string.activity_trigger_manual)
+    ActivityLog.Trigger.RESUME -> stringResource(R.string.activity_trigger_resume)
+    ActivityLog.Trigger.ONSAVE -> stringResource(R.string.activity_trigger_onsave)
+    ActivityLog.Trigger.WIFI_CONNECT, ActivityLog.Trigger.WIFI_FALLBACK ->
+        stringResource(R.string.activity_trigger_wifi)
+    ActivityLog.Trigger.PERIODIC -> stringResource(R.string.activity_trigger_periodic)
 }

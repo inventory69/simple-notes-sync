@@ -449,22 +449,25 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
-    suspend fun syncNotes(): SyncResult = syncNotesInternal().also { logSyncOutcome(it) }
+    suspend fun syncNotes(trigger: ActivityLog.Trigger?): SyncResult =
+        syncNotesInternal().also { logSyncOutcome(it, trigger) }
 
     // Ein Ort für alle vier Aufrufer (Worker, pullToRefresh, onResume, Einstellungen):
     // vorher schrieb nur der Worker, ein manueller Sync blieb unsichtbar.
-    private fun logSyncOutcome(result: SyncResult) {
+    private fun logSyncOutcome(result: SyncResult, trigger: ActivityLog.Trigger?) {
         when {
             !result.isSuccess -> ActivityLog.log(
                 ActivityLog.Op.SYNC_FAIL,
                 ActivityLog.Src.LOCAL,
-                err = result.errorMessage ?: "unknown"
+                err = result.errorMessage ?: "unknown",
+                trigger = trigger
             )
             // Guard bleibt: Leerlauf-Syncs verdrängen sonst die Zeilen, wegen derer es das Log gibt.
             result.syncedCount > 0 -> ActivityLog.log(
                 ActivityLog.Op.SYNC_OK,
                 ActivityLog.Src.LOCAL,
-                why = "synced=${result.syncedCount}"
+                why = "synced=${result.syncedCount}",
+                trigger = trigger
             )
         }
     }

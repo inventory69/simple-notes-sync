@@ -101,6 +101,7 @@ import dev.dettmer.simplenotes.ui.main.components.SortDialog
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
+import dev.dettmer.simplenotes.utils.ActivityLog
 import kotlinx.coroutines.launch
 
 private const val TIMESTAMP_UPDATE_INTERVAL_MS = 30_000L
@@ -321,7 +322,7 @@ fun MainScreen(
                             onSyncLegendClick = { showSyncLegend = true },
                             showFilterRow = showFilterRow,
                             onFilterToggle = { showFilterRow = !showFilterRow },
-                            onSyncClick = { viewModel.triggerManualSync("toolbar") },
+                            onSyncClick = { viewModel.triggerManualSync(ActivityLog.Trigger.TOOLBAR) },
                             onSettingsClick = onOpenSettings
                         )
                     } else {
@@ -333,7 +334,7 @@ fun MainScreen(
                             // 🆕 v1.9.0 (F11): Sort button replaced by filter row toggle
                             showFilterRow = showFilterRow,
                             onFilterToggle = { showFilterRow = !showFilterRow },
-                            onSyncClick = { viewModel.triggerManualSync("toolbar") },
+                            onSyncClick = { viewModel.triggerManualSync(ActivityLog.Trigger.TOOLBAR) },
                             onSettingsClick = onOpenSettings
                         )
                     }
@@ -358,7 +359,7 @@ fun MainScreen(
             // 🌟 v1.6.0: PullToRefreshBox only enabled when sync available
             PullToRefreshBox(
                 isRefreshing = isSyncing,
-                onRefresh = { if (isSyncAvailable) viewModel.triggerManualSync("pullToRefresh") },
+                onRefresh = { if (isSyncAvailable) viewModel.triggerManualSync(ActivityLog.Trigger.PULL_REFRESH) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
