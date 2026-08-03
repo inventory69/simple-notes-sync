@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.storage
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -49,6 +50,13 @@ class TrashManager(
                 )
             )
             Logger.d(TAG, "🗑️ Moved to trash: ${note.id} ('${note.title}')")
+            ActivityLog.log(
+                ActivityLog.Op.TRASH,
+                ActivityLog.Src.LOCAL,
+                id = note.id,
+                title = note.title,
+                folder = note.folderName
+            )
         }
         return notes
     }
@@ -72,6 +80,13 @@ class TrashManager(
             )
         )
         Logger.d(TAG, "♻️ Restored from trash: ${note.id} → folder '$resolvedFolder'")
+        ActivityLog.log(
+            ActivityLog.Op.RESTORE,
+            ActivityLog.Src.LOCAL,
+            id = note.id,
+            title = note.title,
+            folder = resolvedFolder
+        )
     }
 
     /**
@@ -80,7 +95,7 @@ class TrashManager(
      * Sync-Phase 4.5); lokal werden alle immer hart gelöscht (schreibt DeletionTracker gegen Zombies).
      * DELETED_ON_SERVER- und LOCAL_ONLY-Notizen werden nur lokal entfernt.
      */
-    suspend fun purge(notes: List<Note>) {
+    suspend fun purge(notes: List<Note>, why: String? = null) {
         val deletions = notes
             .filter { it.syncStatus in SERVER_RESIDENT && !folderStore.isLocalOnly(it.folderName) }
             .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
@@ -89,6 +104,16 @@ class TrashManager(
         }
         storage.deleteNotes(notes.map { it.id })
         Logger.d(TAG, "🔥 Purged ${notes.size} note(s) from trash")
+        notes.forEach { note ->
+            ActivityLog.log(
+                ActivityLog.Op.PURGE,
+                ActivityLog.Src.LOCAL,
+                id = note.id,
+                title = note.title,
+                folder = note.folderName,
+                why = why
+            )
+        }
     }
 
     /**
@@ -104,7 +129,7 @@ class TrashManager(
         val expired = storage.loadTrashedNotes(forceReload = true)
             .filter { it.trashedAt != null && now - it.trashedAt >= threshold }
         if (expired.isNotEmpty()) {
-            purge(expired)
+            purge(expired, why = "auto_purge_expired")
             Logger.d(TAG, "⏰ Auto-purged ${expired.size} expired note(s) from trash")
         }
         return expired.size

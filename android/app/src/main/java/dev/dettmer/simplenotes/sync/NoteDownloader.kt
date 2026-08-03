@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.sync.webdav.etagsMatch
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.sync.webdav.listTreeOrNull
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -433,6 +434,15 @@ internal class NoteDownloader(
                                         storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                                         if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(TAG, "   ✅ Downloaded from /$activeSyncFolderName/: ${remoteNote.id}")
+                                        if (remoteNote.trashedAt == null) {
+                                            ActivityLog.log(
+                                                ActivityLog.Op.DOWNLOAD,
+                                                ActivityLog.Src.REMOTE,
+                                                id = remoteNote.id,
+                                                title = remoteNote.title,
+                                                folder = remoteNoteFoldered.folderName
+                                            )
+                                        }
 
                                         // ⚡ Batch E-Tag for later
                                         if (result.etag != null) {
@@ -459,11 +469,27 @@ internal class NoteDownloader(
                                             storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                             conflictCount++
                                             Logger.w(TAG, "   ⚠️ Conflict: ${remoteNote.id}")
+                                            ActivityLog.log(
+                                                ActivityLog.Op.CONFLICT,
+                                                ActivityLog.Src.REMOTE,
+                                                id = remoteNote.id,
+                                                title = localNote.title,
+                                                folder = localNote.folderName
+                                            )
                                         } else {
                                             // Safe to overwrite
                                             storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                                             if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                             Logger.d(TAG, "   ✅ Updated from /$activeSyncFolderName/: ${remoteNote.id}")
+                                            if (remoteNote.trashedAt == null) {
+                                                ActivityLog.log(
+                                                    ActivityLog.Op.DOWNLOAD,
+                                                    ActivityLog.Src.REMOTE,
+                                                    id = remoteNote.id,
+                                                    title = remoteNote.title,
+                                                    folder = remoteNoteFoldered.folderName
+                                                )
+                                            }
 
                                             if (result.etag != null) {
                                                 etagUpdates["etag_json_${result.noteId}"] = result.etag
@@ -488,6 +514,14 @@ internal class NoteDownloader(
                                             TAG,
                                             "   🔧 Cleared false DELETED_ON_SERVER for ${result.noteId} " +
                                                 "(present on server) → SYNCED"
+                                        )
+                                        ActivityLog.log(
+                                            ActivityLog.Op.RESTORE,
+                                            ActivityLog.Src.REMOTE,
+                                            id = result.noteId,
+                                            title = localNote.title,
+                                            folder = folderByNoteId[result.noteId],
+                                            why = "self_heal_present_on_server"
                                         )
                                     }
                                     else -> {
@@ -682,6 +716,15 @@ internal class NoteDownloader(
                                     storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                     if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                     Logger.d(TAG, "   ✅ Downloaded from ROOT: ${remoteNote.id}")
+                                    if (remoteNote.trashedAt == null) {
+                                        ActivityLog.log(
+                                            ActivityLog.Op.DOWNLOAD,
+                                            ActivityLog.Src.REMOTE,
+                                            id = remoteNote.id,
+                                            title = remoteNote.title,
+                                            folder = null
+                                        )
+                                    }
                                 }
                                 forceOverwrite -> {
                                     // OVERWRITE mode: Always replace regardless of timestamps
@@ -693,10 +736,26 @@ internal class NoteDownloader(
                                     if (localNote.syncStatus == SyncStatus.PENDING) {
                                         storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                         conflictCount++
+                                        ActivityLog.log(
+                                            ActivityLog.Op.CONFLICT,
+                                            ActivityLog.Src.REMOTE,
+                                            id = remoteNote.id,
+                                            title = localNote.title,
+                                            folder = null
+                                        )
                                     } else {
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(TAG, "   ✅ Updated from ROOT: ${remoteNote.id}")
+                                        if (remoteNote.trashedAt == null) {
+                                            ActivityLog.log(
+                                                ActivityLog.Op.DOWNLOAD,
+                                                ActivityLog.Src.REMOTE,
+                                                id = remoteNote.id,
+                                                title = remoteNote.title,
+                                                folder = null
+                                            )
+                                        }
                                     }
                                 }
                                 else -> {
@@ -835,6 +894,14 @@ internal class NoteDownloader(
                         "🗑️ Note '${note.title}' (${note.id}) " +
                             "was deleted on server → moved to trash (DELETED_ON_SERVER)"
                     )
+                    ActivityLog.log(
+                        ActivityLog.Op.TRASH,
+                        ActivityLog.Src.REMOTE,
+                        id = note.id,
+                        title = note.title,
+                        folder = note.folderName,
+                        why = "server_deletion_detected"
+                    )
                 }
             }
         }
@@ -871,6 +938,11 @@ internal class NoteDownloader(
                 "⚠️ detectDeletions: SKIPPED — server listing was incomplete " +
                     "(a folder failed to list or the scan aborted). " +
                     "serverNotes=${serverNoteIds.size}, localSynced=${syncedNotes.size}"
+            )
+            ActivityLog.log(
+                ActivityLog.Op.DELETION_SKIPPED,
+                ActivityLog.Src.LOCAL,
+                why = "listing_incomplete"
             )
             return true
         }
@@ -1060,6 +1132,14 @@ internal class NoteDownloader(
                     TAG,
                     "   🔧 Cleared false DELETED_ON_SERVER for ${localNote.id}: " +
                         "present in server listing → SYNCED, folder '$serverFolder'"
+                )
+                ActivityLog.log(
+                    ActivityLog.Op.RESTORE,
+                    ActivityLog.Src.REMOTE,
+                    id = localNote.id,
+                    title = localNote.title,
+                    folder = serverFolder,
+                    why = "self_heal_present_on_server"
                 )
                 true
             }

@@ -20,6 +20,7 @@ import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncScheduler
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
@@ -1082,7 +1083,12 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
                     // und MUSS synchron abschließen bevor die Activity zerstört wird.
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
+                    runBlocking {
+                        withContext(Dispatchers.IO) {
+                            storage.saveNote(note)
+                            logCreateIfNew(note)
+                        }
+                    }
                     existingNote = note
                 }
                 NoteType.CHECKLIST -> {
@@ -1145,7 +1151,12 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     // und MUSS synchron abschließen bevor die Activity zerstört wird.
                     hasUnsavedChecklistEdits = false
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    runBlocking { withContext(Dispatchers.IO) { storage.saveNote(note) } }
+                    runBlocking {
+                        withContext(Dispatchers.IO) {
+                            storage.saveNote(note)
+                            logCreateIfNew(note)
+                        }
+                    }
                     existingNote = note
                 }
             }
@@ -1203,6 +1214,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 )
 
                 storage.saveNote(note)
+                withContext(Dispatchers.IO) { logCreateIfNew(note) }
                 existingNote = note // 🆕 v1.9.0: keep reference current so next save is an update
             }
 
@@ -1271,6 +1283,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
                 hasUnsavedChecklistEdits = false // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
                 storage.saveNote(note)
+                withContext(Dispatchers.IO) { logCreateIfNew(note) }
                 existingNote = note // 🆕 v1.9.0: keep reference current so next save is an update
             }
         }
@@ -1281,6 +1294,25 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private fun pendingOrLocalOnly(folderName: String?): SyncStatus =
         if (folderStore.isLocalOnly(folderName)) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+
+    /**
+     * 🆕 Issue #128 Teil 3: Protokolliert eine Neuanlage (erkennbar daran, dass [existingNote]
+     * noch nicht gesetzt ist — der Aufrufer weist erst danach zu). Bearbeitungen werden bewusst
+     * NICHT protokolliert: bei Autosave wäre das eine Zeile pro Tastendruck-Pause.
+     *
+     * Schreibt auf die Platte, gehört also in einen IO-Kontext — [saveOnBack] läuft aus
+     * `onPause()` auf dem Main-Thread.
+     */
+    private fun logCreateIfNew(note: Note) {
+        if (existingNote != null) return
+        ActivityLog.log(
+            ActivityLog.Op.CREATE,
+            ActivityLog.Src.LOCAL,
+            id = note.id,
+            title = note.title,
+            folder = note.folderName
+        )
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // 🆕 v1.10.0: Undo/Redo

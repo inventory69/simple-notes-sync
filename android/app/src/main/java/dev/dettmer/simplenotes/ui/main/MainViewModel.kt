@@ -28,6 +28,7 @@ import dev.dettmer.simplenotes.ui.main.components.SECTION_PINNED
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.trashRetentionDays
@@ -1650,6 +1651,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Ordner tombstonen — nur-lokale Ordner werden hard-entfernt, kein Tombstone zum Server.
                 folderNames.forEach { name ->
                     folderStore.deleteFolder(name, propagateToServer = name !in localOnlyDeleted)
+                    ActivityLog.log(ActivityLog.Op.FOLDER_DELETE, ActivityLog.Src.LOCAL, folder = name)
                 }
             }
             _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
