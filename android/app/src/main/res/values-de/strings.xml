@@ -193,8 +193,8 @@
     <string name="activity_log_today">Heute</string>
     <string name="activity_log_yesterday">Gestern</string>
     <string name="activity_log_note_gone_cd">Notiz existiert nicht mehr</string>
-    <string name="activity_log_origin_local_cd">Lokale Geräteaktion</string>
-    <string name="activity_log_origin_remote_cd">Mit Server synchronisiert</string>
+    <string name="activity_log_origin_local">Gerät</string>
+    <string name="activity_log_origin_remote">Server</string>
     <string name="activity_op_create">Erstellt</string>
     <string name="activity_op_edit">Bearbeitet</string>
     <string name="activity_op_trash">In den Papierkorb verschoben</string>
