@@ -1,0 +1,7 @@
+🐾 v2.14.0 Beta 6 - Fußspuren
+
+• Neu: ein Aktivitätsprotokoll in den Einstellungen - was mit deinen Notizen passiert ist, wann, und was jeden Sync ausgelöst hat. Bleibt auf diesem Gerät, teilbar wenn du etwas melden willst
+• Fix: Ein Ordner, dessen Listing fehlschlug, sah aus wie eine Löschung - Notizen waren auf dem Server unangetastet, landeten aber im Papierkorb. Heilt beim nächsten Sync
+• Fix: Ordnernamen mit Leerzeichen fielen nicht mehr aus dem Server-Listing
+
+Danke an @daalja!
