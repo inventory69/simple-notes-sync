@@ -10,7 +10,6 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
-import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
@@ -352,16 +351,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
                     runAttempt = runAttemptCount
                 )
-                // Nur protokollieren, wenn der Sync tatsächlich Notizen bewegt hat: der
-                // Sync-bei-App-Start feuert auch im Leerlauf, und "Sync abgeschlossen" ohne
-                // Wirkung verdrängt über die Zeit die Zeilen, wegen derer es das Protokoll gibt.
-                if (result.syncedCount > 0) {
-                    ActivityLog.log(
-                        ActivityLog.Op.SYNC_OK,
-                        ActivityLog.Src.LOCAL,
-                        why = "synced=${result.syncedCount}"
-                    )
-                }
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 if (result.purgedFromServerCount > 0) {
                     SyncStateManager.promoteToVisible()
@@ -414,11 +403,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     reason = result.errorMessage ?: "unknown",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
                     runAttempt = runAttemptCount
-                )
-                ActivityLog.log(
-                    ActivityLog.Op.SYNC_FAIL,
-                    ActivityLog.Src.LOCAL,
-                    err = result.errorMessage ?: "unknown"
                 )
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 SyncStateManager.markError(result.errorMessage)
