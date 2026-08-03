@@ -221,7 +221,7 @@
     <string name="activity_op_sync_ok">Sync completed</string>
     <string name="activity_op_sync_fail">Sync failed: %1$s</string>
     <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
-    <string name="activity_folder_suffix"> · %1$s</string>
+    <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manual</string>
     <string name="activity_trigger_resume">App opened</string>
     <string name="activity_trigger_onsave">After saving</string>

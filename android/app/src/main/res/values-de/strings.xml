@@ -207,7 +207,7 @@
     <string name="activity_op_sync_ok">Sync abgeschlossen</string>
     <string name="activity_op_sync_fail">Sync fehlgeschlagen: %1$s</string>
     <string name="activity_op_deletion_skipped">Löscherkennung übersprungen — Server-Listing war unvollständig</string>
-    <string name="activity_folder_suffix"> · %1$s</string>
+    <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manuell</string>
     <string name="activity_trigger_resume">App geöffnet</string>
     <string name="activity_trigger_onsave">Nach dem Speichern</string>
