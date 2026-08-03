@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
@@ -87,6 +88,9 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
 
         // 🆕 v2.2.0: Persistent sync debug logger
         SyncDebugLogger.init(this)
+
+        // 🆕 Issue #128 Teil 3: Aktivitätsprotokoll — immer aktiv, kein Opt-in
+        ActivityLog.init(this)
 
         Logger.d(TAG, "🚀 Application onCreate()")
 

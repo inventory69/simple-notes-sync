@@ -4,16 +4,13 @@
    for details.
 -->
 <data-extraction-rules>
+    <!-- 🆕 Issue #128 Teil 3: Gerätehistorie, kein Inhalt — siehe backup_rules.xml -->
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="file" path="activity.jsonl"/>
+        <exclude domain="file" path="activity.jsonl.1"/>
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="activity.jsonl"/>
+        <exclude domain="file" path="activity.jsonl.1"/>
     </device-transfer>
-    -->
 </data-extraction-rules>

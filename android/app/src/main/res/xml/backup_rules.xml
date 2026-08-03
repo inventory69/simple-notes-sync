@@ -10,4 +10,9 @@
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>
 -->
+    <!-- 🆕 Issue #128 Teil 3: Das Aktivitätsprotokoll beschreibt die Historie DIESES Geräts,
+         nicht die Notizinhalte. Aus einem Backup zurückgespielt behauptet es Ereignisse, die auf
+         dem neuen Gerät nie stattgefunden haben (und die deviceId ist dort eine andere). -->
+    <exclude domain="file" path="activity.jsonl"/>
+    <exclude domain="file" path="activity.jsonl.1"/>
 </full-backup-content>
