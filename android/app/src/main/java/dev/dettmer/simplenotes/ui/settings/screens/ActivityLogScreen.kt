@@ -273,19 +273,7 @@ private fun ActivityRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
     ) {
-        // Sync-Zeilen selbst sind immer Src.LOCAL (dieses Gerät führt den Sync-Lauf aus) —
-        // src beschreibt hier nichts über die Notiz, das Sync-Symbol passt trotzdem besser
-        // als das Geräte-Symbol, das sonst "lokale Aktion" bedeutet.
-        val isSyncOutcome = entry.op == ActivityLog.Op.SYNC_OK || entry.op == ActivityLog.Op.SYNC_FAIL
-        Icon(
-            imageVector = if (isSyncOutcome || entry.src == ActivityLog.Src.REMOTE) {
-                Icons.Default.Sync
-            } else {
-                Icons.Default.PhoneAndroid
-            },
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        OriginIcon(entry)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = entry.title?.takeIf { it.isNotBlank() }
@@ -324,6 +312,24 @@ private fun ActivityRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun OriginIcon(entry: ActivityLog.Entry) {
+    // Sync-Zeilen selbst sind immer Src.LOCAL (dieses Gerät führt den Sync-Lauf aus) —
+    // src beschreibt hier nichts über die Notiz, das Sync-Symbol passt trotzdem besser
+    // als das Geräte-Symbol, das sonst "lokale Aktion" bedeutet.
+    val isSyncOutcome = entry.op == ActivityLog.Op.SYNC_OK || entry.op == ActivityLog.Op.SYNC_FAIL
+    val isRemoteOrigin = isSyncOutcome || entry.src == ActivityLog.Src.REMOTE
+    Icon(
+        imageVector = if (isRemoteOrigin) Icons.Default.Sync else Icons.Default.PhoneAndroid,
+        contentDescription = if (isRemoteOrigin) {
+            stringResource(R.string.activity_log_origin_remote_cd)
+        } else {
+            stringResource(R.string.activity_log_origin_local_cd)
+        },
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable

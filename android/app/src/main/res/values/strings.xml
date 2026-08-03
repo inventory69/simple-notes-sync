@@ -207,6 +207,8 @@
     <string name="activity_log_today">Today</string>
     <string name="activity_log_yesterday">Yesterday</string>
     <string name="activity_log_note_gone_cd">Note no longer exists</string>
+    <string name="activity_log_origin_local_cd">Local device action</string>
+    <string name="activity_log_origin_remote_cd">Synced with server</string>
     <string name="activity_op_create">Created</string>
     <string name="activity_op_edit">Edited</string>
     <string name="activity_op_trash">Moved to trash</string>
