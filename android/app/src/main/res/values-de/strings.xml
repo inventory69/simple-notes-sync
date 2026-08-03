@@ -178,6 +178,37 @@
         <item quantity="one">%d Notiz in den Papierkorb verschoben</item>
         <item quantity="other">%d Notizen in den Papierkorb verschoben</item>
     </plurals>
+
+    <!-- ============================= -->
+    <!-- ACTIVITY LOG (Issue #128 Teil 3) -->
+    <!-- ============================= -->
+    <string name="activity_log_title">Aktivitätsprotokoll</string>
+    <string name="settings_activity_log_subtitle">Sehen, was mit deinen Notizen passiert ist und wann</string>
+    <string name="activity_log_empty_state">Noch keine Aktivität</string>
+    <string name="activity_log_share_cd">Protokoll teilen</string>
+    <string name="activity_log_share_empty">Noch nichts zum Teilen</string>
+    <string name="activity_log_clear_cd">Protokoll löschen</string>
+    <string name="activity_log_clear_confirm_title">Aktivitätsprotokoll löschen?</string>
+    <string name="activity_log_clear_confirm_message">Löscht nur das Protokoll auf diesem Gerät. Deine Notizen sind davon nicht betroffen.</string>
+    <string name="activity_log_today">Heute</string>
+    <string name="activity_log_yesterday">Gestern</string>
+    <string name="activity_log_note_gone_cd">Notiz existiert nicht mehr</string>
+    <string name="activity_op_create">Erstellt</string>
+    <string name="activity_op_edit">Bearbeitet</string>
+    <string name="activity_op_trash">In den Papierkorb verschoben</string>
+    <string name="activity_op_restore">Wiederhergestellt</string>
+    <string name="activity_op_restore_self_heal">Wiederhergestellt (war fälschlich als gelöscht markiert)</string>
+    <string name="activity_op_purge">Endgültig gelöscht</string>
+    <string name="activity_op_purge_auto">Endgültig gelöscht (Aufbewahrungsfrist abgelaufen)</string>
+    <string name="activity_op_upload">Auf Server hochgeladen</string>
+    <string name="activity_op_download">Vom Server heruntergeladen</string>
+    <string name="activity_op_conflict">Konflikt erkannt</string>
+    <string name="activity_op_folder_delete">Ordner gelöscht: %1$s</string>
+    <string name="activity_op_sync_ok">Sync abgeschlossen</string>
+    <string name="activity_op_sync_fail">Sync fehlgeschlagen: %1$s</string>
+    <string name="activity_op_deletion_skipped">Löscherkennung übersprungen — Server-Listing war unvollständig</string>
+    <string name="activity_folder_suffix"> · %1$s</string>
+    <string name="activity_untitled_sync_entry">Sync</string>
     <string name="snackbar_note_restored">Notiz wiederhergestellt</string>
     <string name="snackbar_trash_emptied">Papierkorb geleert</string>
 
