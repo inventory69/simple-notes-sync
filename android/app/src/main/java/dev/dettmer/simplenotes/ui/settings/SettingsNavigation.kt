@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import dev.dettmer.simplenotes.ui.settings.screens.AboutScreen
+import dev.dettmer.simplenotes.ui.settings.screens.ActivityLogScreen
 import dev.dettmer.simplenotes.ui.settings.screens.BackupSettingsScreen
 import dev.dettmer.simplenotes.ui.settings.screens.CalendarParsingExperimentScreen
 import dev.dettmer.simplenotes.ui.settings.screens.ChangelogScreen
@@ -199,6 +200,11 @@ fun SettingsNavHost(
                         }
                     }
                 )
+            }
+
+            // 🆕 Issue #128 Teil 3: Aktivitätsprotokoll
+            composable(SettingsRoute.ActivityLog.route) {
+                ActivityLogScreen(onBack = { navController.popBackStack() })
             }
 
             // v2.10.0: Security Settings

@@ -1,0 +1,7 @@
+🐾 v2.14.0 beta 6 - Footprints
+
+• New: an activity log in Settings - what happened to your notes and when, and what started each sync. Stays on this device, shareable when you want to report something
+• Fix: a folder that failed to list looked like a deletion - notes were untouched on the server but moved to the trash. Wrongly marked notes heal on the next sync
+• Fix: folder names with spaces no longer drop out of the server listing
+
+Thanks to @daalja for the report and the request!

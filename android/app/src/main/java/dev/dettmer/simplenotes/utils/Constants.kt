@@ -172,6 +172,11 @@ object Constants {
     // 🆕 v1.8.1 (IMPL_08B): onSave-Sync Worker-Tag (bypassed globalen Cooldown)
     const val SYNC_ONSAVE_TAG = "onsave"
 
+    // Trigger-Tags fürs Aktivitätsprotokoll (ActivityLog.Trigger) — zweiter Leser neben NetworkMonitor
+    const val SYNC_WIFI_CONNECT_TAG = "wifi-connect"
+    const val SYNC_WIFI_FALLBACK_TAG = "wifi-fallback"
+    const val SYNC_PERIODIC_TAG = "periodic"
+
     // 🆕 v2.2.0: WiFi-Connect Fallback Worker — überlebt Prozess-Tod
     const val WIFI_FALLBACK_WORK_NAME = "wifi_connect_fallback"
 

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
@@ -284,6 +285,16 @@ fun SettingsMainScreen(
                     title = stringResource(R.string.trash_title),
                     subtitle = stringResource(R.string.settings_trash_subtitle),
                     onClick = { onNavigate(SettingsRoute.Trash) }
+                )
+            }
+
+            // 🆕 Issue #128 Teil 3: Aktivitätsprotokoll
+            item {
+                SettingsCard(
+                    icon = Icons.Default.History,
+                    title = stringResource(R.string.activity_log_title),
+                    subtitle = stringResource(R.string.settings_activity_log_subtitle),
+                    onClick = { onNavigate(SettingsRoute.ActivityLog) }
                 )
             }
 

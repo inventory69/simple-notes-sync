@@ -250,7 +250,7 @@ class NetworkMonitor(context: Context) {
                 java.util.concurrent.TimeUnit.SECONDS
             )
             .addTag(Constants.SYNC_WORK_TAG)
-            .addTag("wifi-connect")
+            .addTag(Constants.SYNC_WIFI_CONNECT_TAG)
             .build()
 
         // 🆕 v2.4.0: Persist trigger timestamp for cold-start-guard bypass logic
@@ -290,7 +290,7 @@ class NetworkMonitor(context: Context) {
                 TimeUnit.SECONDS
             )
             .addTag(Constants.SYNC_WORK_TAG)
-            .addTag("wifi-fallback")
+            .addTag(Constants.SYNC_WIFI_FALLBACK_TAG)
             .build()
 
         // ⚠️ ExistingPeriodicWorkPolicy.UPDATE (not KEEP) — required so that existing
@@ -422,6 +422,7 @@ class NetworkMonitor(context: Context) {
         )
             .setConstraints(constraints)
             .addTag(Constants.SYNC_WORK_TAG)
+            .addTag(Constants.SYNC_PERIODIC_TAG)
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(

@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.sync.PendingServerDeletions.PendingDeletion
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
@@ -448,9 +449,32 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
+    suspend fun syncNotes(trigger: ActivityLog.Trigger?): SyncResult =
+        syncNotesInternal().also { logSyncOutcome(it, trigger) }
+
+    // Ein Ort für alle vier Aufrufer (Worker, pullToRefresh, onResume, Einstellungen):
+    // vorher schrieb nur der Worker, ein manueller Sync blieb unsichtbar.
+    private fun logSyncOutcome(result: SyncResult, trigger: ActivityLog.Trigger?) {
+        when {
+            !result.isSuccess -> ActivityLog.log(
+                ActivityLog.Op.SYNC_FAIL,
+                ActivityLog.Src.LOCAL,
+                err = result.errorMessage ?: "unknown",
+                trigger = trigger
+            )
+            // Guard bleibt: Leerlauf-Syncs verdrängen sonst die Zeilen, wegen derer es das Log gibt.
+            result.syncedCount > 0 -> ActivityLog.log(
+                ActivityLog.Op.SYNC_OK,
+                ActivityLog.Src.LOCAL,
+                why = "synced=${result.syncedCount}",
+                trigger = trigger
+            )
+        }
+    }
+
     // Abbau: TECH_DEBT_ROADMAP.md Slice 4
     @Suppress("CyclomaticComplexMethod", "LongMethod")
-    suspend fun syncNotes(): SyncResult = withContext(ioDispatcher) {
+    private suspend fun syncNotesInternal(): SyncResult = withContext(ioDispatcher) {
         // 🔒 v1.3.1: Verhindere parallele Syncs
         if (!syncMutex.tryLock()) {
             Logger.d(TAG, "⏭️ Sync already in progress - skipping")

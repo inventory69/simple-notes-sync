@@ -192,6 +192,42 @@
         <item quantity="one">%d note moved to trash</item>
         <item quantity="other">%d notes moved to trash</item>
     </plurals>
+
+    <!-- ============================= -->
+    <!-- ACTIVITY LOG (Issue #128 Teil 3) -->
+    <!-- ============================= -->
+    <string name="activity_log_title">Activity log</string>
+    <string name="settings_activity_log_subtitle">See what happened to your notes and when</string>
+    <string name="activity_log_empty_state">No activity yet</string>
+    <string name="activity_log_share_cd">Share log</string>
+    <string name="activity_log_share_empty">Nothing to share yet</string>
+    <string name="activity_log_clear_cd">Clear log</string>
+    <string name="activity_log_clear_confirm_title">Clear activity log?</string>
+    <string name="activity_log_clear_confirm_message">This only deletes the log on this device. It does not affect your notes.</string>
+    <string name="activity_log_today">Today</string>
+    <string name="activity_log_yesterday">Yesterday</string>
+    <string name="activity_log_note_gone_cd">Note no longer exists</string>
+    <string name="activity_op_create">Created</string>
+    <string name="activity_op_edit">Edited</string>
+    <string name="activity_op_trash">Moved to trash</string>
+    <string name="activity_op_restore">Restored</string>
+    <string name="activity_op_restore_self_heal">Restored (was mistakenly marked deleted)</string>
+    <string name="activity_op_purge">Deleted permanently</string>
+    <string name="activity_op_purge_auto">Deleted permanently (trash retention expired)</string>
+    <string name="activity_op_upload">Uploaded to server</string>
+    <string name="activity_op_download">Downloaded from server</string>
+    <string name="activity_op_conflict">Conflict detected</string>
+    <string name="activity_op_folder_delete">Folder deleted: %1$s</string>
+    <string name="activity_op_sync_ok">Sync completed</string>
+    <string name="activity_op_sync_fail">Sync failed: %1$s</string>
+    <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
+    <string name="activity_folder_suffix">" · %1$s"</string>
+    <string name="activity_trigger_manual">Manual</string>
+    <string name="activity_trigger_resume">App opened</string>
+    <string name="activity_trigger_onsave">After saving</string>
+    <string name="activity_trigger_wifi">Wi-Fi</string>
+    <string name="activity_trigger_periodic">Scheduled</string>
+    <string name="activity_untitled_sync_entry">Sync</string>
     <string name="snackbar_note_restored">Note restored</string>
     <string name="snackbar_trash_emptied">Trash emptied</string>
 

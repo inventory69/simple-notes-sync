@@ -8,6 +8,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
@@ -270,6 +271,12 @@ internal class NoteUploader(
      *
      * @return UploadTaskResult mit Erfolgs-/Fehler-Info
      */
+    // Trash-Zustand wird schon lokal geloggt (TrashManager) — hier nur echte Content-Uploads.
+    private fun logUpload(note: Note) {
+        if (note.isTrashed) return
+        ActivityLog.log(ActivityLog.Op.UPLOAD, ActivityLog.Src.LOCAL, id = note.id, title = note.title, folder = note.folderName)
+    }
+
     private suspend fun uploadSingle(
         webdav: WebDavClient,
         serverUrl: String,
@@ -322,6 +329,7 @@ internal class NoteUploader(
                 storageMutex.withLock {
                     storage.saveNote(noteToUpload)
                 }
+                logUpload(noteToUpload)
 
                 // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
                 // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition

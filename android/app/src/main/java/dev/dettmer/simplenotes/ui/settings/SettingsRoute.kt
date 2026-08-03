@@ -27,6 +27,8 @@ sealed class SettingsRoute(val route: String) {
 
     data object Trash : SettingsRoute("settings_trash") // 🆕 v2.9.0 (Trash)
 
+    data object ActivityLog : SettingsRoute("settings_activity_log") // 🆕 Issue #128 Teil 3
+
     data object Changelog : SettingsRoute("settings_changelog")
 
     data object Contributors : SettingsRoute("settings_contributors")

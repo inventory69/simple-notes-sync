@@ -11,6 +11,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.sync.webdav.listTreeOrNull
+import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
@@ -610,6 +611,14 @@ internal class MarkdownSyncManager(
                             storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
                             importedCount++
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
+                            ActivityLog.log(
+                                ActivityLog.Op.CREATE,
+                                ActivityLog.Src.REMOTE,
+                                id = mdNoteFoldered.id,
+                                title = mdNote.title,
+                                folder = mdNoteFoldered.folderName,
+                                why = "markdown_import"
+                            )
                         }
                         localNote.syncStatus == SyncStatus.SYNCED &&
                             !contentChanged &&
