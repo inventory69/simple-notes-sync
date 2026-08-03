@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -273,7 +274,7 @@ private fun ActivityRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
     ) {
-        OriginIcon(entry)
+        OriginIndicator(entry)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = entry.title?.takeIf { it.isNotBlank() }
@@ -315,21 +316,36 @@ private fun ActivityRow(
 }
 
 @Composable
-private fun OriginIcon(entry: ActivityLog.Entry) {
+private fun OriginIndicator(entry: ActivityLog.Entry) {
     // Sync-Zeilen selbst sind immer Src.LOCAL (dieses Gerät führt den Sync-Lauf aus) —
     // src beschreibt hier nichts über die Notiz, das Sync-Symbol passt trotzdem besser
     // als das Geräte-Symbol, das sonst "lokale Aktion" bedeutet.
     val isSyncOutcome = entry.op == ActivityLog.Op.SYNC_OK || entry.op == ActivityLog.Op.SYNC_FAIL
     val isRemoteOrigin = isSyncOutcome || entry.src == ActivityLog.Src.REMOTE
-    Icon(
-        imageVector = if (isRemoteOrigin) Icons.Default.Sync else Icons.Default.PhoneAndroid,
-        contentDescription = if (isRemoteOrigin) {
-            stringResource(R.string.activity_log_origin_remote_cd)
-        } else {
-            stringResource(R.string.activity_log_origin_local_cd)
-        },
-        tint = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    // Text trägt jetzt die Bedeutung fürs Auge und für TalkBack — das Icon ist daneben
+    // rein dekorativ, sonst kündigt ein Screenreader dieselbe Aussage doppelt an.
+    // Feste Breite (MinTouchTarget als vorhandener Dimension-Token, kein neuer nur für
+    // diesen Wert): ohne sie richtet sich die Spalte nach dem breiteren Kind aus ("Device"
+    // vs. "Server"/"Gerät"), und das Icon wandert dadurch zeilenweise horizontal.
+    Column(
+        modifier = Modifier.width(Dimensions.MinTouchTarget),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = if (isRemoteOrigin) Icons.Default.Sync else Icons.Default.PhoneAndroid,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = if (isRemoteOrigin) {
+                stringResource(R.string.activity_log_origin_remote)
+            } else {
+                stringResource(R.string.activity_log_origin_local)
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
