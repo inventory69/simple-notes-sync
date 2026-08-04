@@ -555,6 +555,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val msgNoteDeleted = stringResource(R.string.note_deleted)
     val msgItemCopiedToChecklist = stringResource(R.string.checklist_item_copied_toast) // 🆕 v2.2.0
     val msgNoteCopied = stringResource(R.string.toast_note_copied)
+    val msgImageCopied = stringResource(R.string.toast_image_copied)
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -1060,6 +1061,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
                                 onImageTokensChange = { image, size, align, altText ->
                                     applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
+                                },
+                                // Ab Android 13 zeigt das System selbst eine Kopier-Bestätigung.
+                                onImageCopied = {
+                                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                        scope.launch { snackbarHostState.showSnackbar(msgImageCopied) }
+                                    }
                                 }
                             )
                         } else {

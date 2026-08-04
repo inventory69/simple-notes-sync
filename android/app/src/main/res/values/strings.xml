@@ -731,6 +731,7 @@
     <string name="image_menu_size_large">L</string>
     <string name="image_menu_size_full">XL</string>
     <string name="image_menu_info">Image information</string>
+    <string name="image_menu_copy">Copy image</string>
     <string name="image_menu_alt_text">Alt text</string>
     <string name="image_info_title">Image information</string>
     <string name="image_info_dimensions">Dimensions</string>
@@ -1015,6 +1016,7 @@
     <string name="share_to_calendar">Add to calendar</string>
     <string name="action_copy_note_text">Copy text</string>
     <string name="toast_note_copied">Text copied to clipboard</string>
+    <string name="toast_image_copied">Image copied to clipboard</string>
     <string name="share_as_text">Share as text</string>
     <string name="share_as_pdf">Share as PDF</string>
     <string name="share_chooser_title">Share note</string>

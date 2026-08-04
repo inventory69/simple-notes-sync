@@ -685,6 +685,7 @@
     <string name="image_menu_size_large">L</string>
     <string name="image_menu_size_full">XL</string>
     <string name="image_menu_info">Bildinformationen</string>
+    <string name="image_menu_copy">Bild kopieren</string>
     <string name="image_menu_alt_text">Alt-Text</string>
     <string name="image_info_title">Bildinformationen</string>
     <string name="image_info_dimensions">Abmessungen</string>
@@ -943,6 +944,7 @@
     <string name="share_to_calendar">Zum Kalender hinzufügen</string>
     <string name="action_copy_note_text">Text kopieren</string>
     <string name="toast_note_copied">Text in Zwischenablage kopiert</string>
+    <string name="toast_image_copied">Bild in Zwischenablage kopiert</string>
     <string name="share_as_text">Als Text teilen</string>
     <string name="share_as_pdf">Als PDF teilen</string>
     <string name="share_chooser_title">Notiz teilen</string>
