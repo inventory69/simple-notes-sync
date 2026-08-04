@@ -3,6 +3,8 @@ package dev.dettmer.simplenotes.utils
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.markdown.parseImageAlt
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
@@ -71,4 +73,11 @@ object NoteShareHelper {
             FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         }
     }
+
+    /** Ersetzt Bild-Tags durch [placeholder]-Text (Alt-Text ohne Größen-/Align-Tokens). */
+    fun formatTextForShare(textContent: String, placeholder: (cleanAlt: String) -> String): String =
+        MarkdownEngine.IMAGE_REGEX
+            .replace(textContent) { m -> placeholder(parseImageAlt(m.groupValues[1]).cleanAlt) }
+            .replace(Regex("""\n{3,}"""), "\n\n")
+            .trim()
 }

@@ -1023,6 +1023,8 @@
     <string name="share_no_calendar_app">No calendar app found</string>
     <string name="share_error">Could not open share dialog</string>
     <string name="share_pdf_error">Could not create PDF</string>
+    <string name="share_image_placeholder">[🖼]</string>
+    <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
 
     <!-- v2.2.0: Share Intent — Note Type Chooser -->
     <string name="share_type_dialog_title">Save as</string>

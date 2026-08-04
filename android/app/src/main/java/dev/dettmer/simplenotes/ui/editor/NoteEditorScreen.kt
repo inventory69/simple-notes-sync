@@ -143,8 +143,10 @@ import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.NoteShareHelper
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -556,6 +558,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val msgItemCopiedToChecklist = stringResource(R.string.checklist_item_copied_toast) // 🆕 v2.2.0
     val msgNoteCopied = stringResource(R.string.toast_note_copied)
     val msgImageCopied = stringResource(R.string.toast_image_copied)
+    val msgImagePlaceholder = stringResource(R.string.share_image_placeholder)
+    val msgImagePlaceholderAltTemplate = stringResource(R.string.share_image_placeholder_alt)
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -667,7 +671,18 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 is NoteEditorEvent.ShareAsPdf -> Unit
                 is NoteEditorEvent.CopyToClipboard -> {
                     scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", event.text)))
+                        // 🆕 Bild-Attachments: bewusst reiner Text mit Platzhaltern. Ein Clip mit
+                        // Text + Bild-URIs liefert pro Empfänger ein anderes Ergebnis (Telegram und
+                        // Thunderbird nehmen den Text, Element X nur die Bilder und verliert den Text) —
+                        // der Sender kann das nicht steuern. Bilder gehen über Teilen (SEND_MULTIPLE).
+                        val text = if (AssetReferences.extractAssetNames(event.text).isEmpty()) {
+                            event.text
+                        } else {
+                            NoteShareHelper.formatTextForShare(event.text) { alt ->
+                                if (alt.isBlank()) msgImagePlaceholder else msgImagePlaceholderAltTemplate.format(alt)
+                            }
+                        }
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", text)))
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                             snackbarHostState.showSnackbar(msgNoteCopied)
                         }
