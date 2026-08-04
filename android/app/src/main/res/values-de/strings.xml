@@ -620,6 +620,8 @@
     <string name="image_compression_mode_lossless_subtitle">WebP ohne Qualitätsverlust, auf max. 1920px verkleinert. Größere Dateien; entfernt EXIF-/GPS-Daten.</string>
     <string name="image_compression_mode_original">Original</string>
     <string name="image_compression_mode_original_subtitle">Behält die Datei unverändert, ohne Verkleinerung. Größte Dateien; behält EXIF-/GPS-Standortdaten.</string>
+    <string name="settings_default_image_size_title">Standardgröße für Bilder</string>
+    <string name="settings_default_image_size_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Größe bereits eingefügter Bilder bleibt unverändert — per Long-Press am Bild anpassbar.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
     <string name="theme_mode_subsection">Modus</string>

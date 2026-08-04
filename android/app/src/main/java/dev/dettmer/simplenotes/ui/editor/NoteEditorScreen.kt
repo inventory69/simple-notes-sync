@@ -131,6 +131,7 @@ import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import dev.dettmer.simplenotes.markdown.buildImageAlt
 import dev.dettmer.simplenotes.markdown.computeImageRewrite
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
@@ -1260,22 +1261,22 @@ private suspend fun attachAndInsertImages(
 ) {
     uris.forEach { uri ->
         viewModel.attachImage(uri)?.let { assetName ->
-            insertImageMarkdownOnOwnLine(textFieldState, assetName)
+            insertImageMarkdownOnOwnLine(textFieldState, assetName, viewModel.defaultImageSizePercent)
         }
     }
 }
 
 /**
- * Wie insertImageMarkdown (MarkdownToolbar.kt), aber mit führendem Umbruch,
- * wenn der Cursor nicht am Zeilenanfang steht — bei mehreren Bildern landet
- * so jedes `![](.assets/…)` auf einer eigenen Zeile (Renderer erwartet
- * Bild-Links als eigene Zeile).
+ * Fügt `![|sizePercent](.assets/…)` mit führendem Umbruch ein, wenn der Cursor nicht am
+ * Zeilenanfang steht — bei mehreren Bildern landet so jeder Link auf einer eigenen Zeile
+ * (Renderer erwartet Bild-Links als eigene Zeile).
  */
-private fun insertImageMarkdownOnOwnLine(state: TextFieldState, assetName: String) {
+private fun insertImageMarkdownOnOwnLine(state: TextFieldState, assetName: String, sizePercent: Int) {
     state.edit {
         val start = selection.min
         val atLineStart = start == 0 || asCharSequence()[start - 1] == '\n'
-        val link = (if (atLineStart) "" else "\n") + "![](.assets/$assetName)"
+        val alt = buildImageAlt("", sizePercent, ImageAlign.CENTER)
+        val link = (if (atLineStart) "" else "\n") + "![$alt](.assets/$assetName)"
         insert(start, link)
         selection = TextRange(start + link.length)
     }

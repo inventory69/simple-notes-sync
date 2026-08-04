@@ -274,6 +274,10 @@ object Constants {
     // 🆕 Bild-Attachments: Kompressionsmodus für neu eingefügte Bilder (ImageCompressionMode.name).
     const val KEY_IMAGE_COMPRESSION_MODE = "image_compression_mode"
     const val DEFAULT_IMAGE_COMPRESSION_MODE = "COMPRESSED"
+
+    // 🆕 Bild-Attachments: Standardgröße für neu eingefügte Bilder (Prozent, S/M/L/XL-Chips).
+    const val KEY_DEFAULT_IMAGE_SIZE_PERCENT = "default_image_size_percent"
+    const val DEFAULT_DEFAULT_IMAGE_SIZE_PERCENT = 50
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed

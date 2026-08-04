@@ -662,6 +662,8 @@
     <string name="image_compression_mode_lossless_subtitle">WebP without quality loss, resized to max. 1920px. Larger files; strips EXIF/GPS data.</string>
     <string name="image_compression_mode_original">Original</string>
     <string name="image_compression_mode_original_subtitle">Keeps the file as-is, unresized. Largest files; keeps EXIF/GPS location data.</string>
+    <string name="settings_default_image_size_title">Default image size</string>
+    <string name="settings_default_image_size_info">Applies when you insert a new image into a note. Size of already-inserted images is unaffected — change it per image via long-press.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
     <string name="theme_mode_subsection">Mode</string>
