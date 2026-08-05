@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -58,7 +59,6 @@ import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.SimpleNotesTheme
 import dev.dettmer.simplenotes.ui.theme.ThemeMode
 import dev.dettmer.simplenotes.ui.theme.ThemePreferences
-import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
@@ -414,9 +414,15 @@ class ComposeNoteEditorActivity : FragmentActivity() {
     private fun handleShareAsText(event: NoteEditorEvent.ShareAsText) {
         val imageUris = NoteShareHelper.resolveShareableImageUris(this, event.text)
         Logger.d(TAG, "handleShareAsText: textLength=${event.text.length}, imageUris=${imageUris.size}")
-        // Bilder gehen als eigener Stream raus — der rohe ![alt](.assets/...)-Tag im Text wäre
-        // sonst Duplikat (Bild + Tag-Text landen beide beim Empfänger).
-        val shareText = if (imageUris.isEmpty()) event.text else AssetReferences.stripImageTags(event.text)
+        // Bilder gehen als eigener Stream raus — der rohe ![alt](.assets/...)-Tag im Text wird
+        // durch einen Platzhalter ersetzt (Duplikat wäre sonst Bild + Tag-Text beim Empfänger).
+        val shareText = if (imageUris.isEmpty()) {
+            event.text
+        } else {
+            NoteShareHelper.formatTextForShare(event.text) { alt ->
+                if (alt.isBlank()) getString(R.string.share_image_placeholder) else getString(R.string.share_image_placeholder_alt, alt)
+            }
+        }
         val shareIntent = when (imageUris.size) {
             0 -> Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
@@ -432,16 +438,20 @@ class ComposeNoteEditorActivity : FragmentActivity() {
                 putExtra(Intent.EXTRA_SUBJECT, event.title)
                 putExtra(Intent.EXTRA_TEXT, shareText)
                 putExtra(Intent.EXTRA_STREAM, imageUris.first())
+                clipData = ClipData.newUri(contentResolver, "", imageUris.first())
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             else -> Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "*/*"
+                type = "image/*"
                 putExtra(Intent.EXTRA_SUBJECT, event.title)
-                // ACTION_SEND_MULTIPLE erwartet EXTRA_TEXT als ArrayList<CharSequence> (parallel zu
-                // EXTRA_STREAM). Als plain String liest das Sharesheet es per
-                // getCharSequenceArrayListExtra() falsch, Cast schlägt fehl, Preview zeigt "Nur Bild".
-                putCharSequenceArrayListExtra(Intent.EXTRA_TEXT, arrayListOf<CharSequence>(shareText))
+                // Plain String statt ArrayList<CharSequence>: die AOSP-Doku beschreibt Letzteres
+                // für ACTION_SEND_MULTIPLE, aber praktisch jeder Empfänger liest EXTRA_TEXT per
+                // getStringExtra() — das liefert bei einer ArrayList null (leerer Body).
+                putExtra(Intent.EXTRA_TEXT, shareText)
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(imageUris))
+                clipData = ClipData.newUri(contentResolver, "", imageUris.first()).apply {
+                    imageUris.drop(1).forEach { addItem(ClipData.Item(it)) }
+                }
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         }

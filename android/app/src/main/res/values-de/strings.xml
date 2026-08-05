@@ -620,6 +620,8 @@
     <string name="image_compression_mode_lossless_subtitle">WebP ohne Qualitätsverlust, auf max. 1920px verkleinert. Größere Dateien; entfernt EXIF-/GPS-Daten.</string>
     <string name="image_compression_mode_original">Original</string>
     <string name="image_compression_mode_original_subtitle">Behält die Datei unverändert, ohne Verkleinerung. Größte Dateien; behält EXIF-/GPS-Standortdaten.</string>
+    <string name="settings_default_image_size_title">Standardgröße für Bilder</string>
+    <string name="settings_default_image_size_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Größe bereits eingefügter Bilder bleibt unverändert — per Long-Press am Bild anpassbar.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Erscheinungsbild</string>
     <string name="theme_mode_subsection">Modus</string>
@@ -683,6 +685,7 @@
     <string name="image_menu_size_large">L</string>
     <string name="image_menu_size_full">XL</string>
     <string name="image_menu_info">Bildinformationen</string>
+    <string name="image_menu_copy">Bild kopieren</string>
     <string name="image_menu_alt_text">Alt-Text</string>
     <string name="image_info_title">Bildinformationen</string>
     <string name="image_info_dimensions">Abmessungen</string>
@@ -941,12 +944,15 @@
     <string name="share_to_calendar">Zum Kalender hinzufügen</string>
     <string name="action_copy_note_text">Text kopieren</string>
     <string name="toast_note_copied">Text in Zwischenablage kopiert</string>
+    <string name="toast_image_copied">Bild in Zwischenablage kopiert</string>
     <string name="share_as_text">Als Text teilen</string>
     <string name="share_as_pdf">Als PDF teilen</string>
     <string name="share_chooser_title">Notiz teilen</string>
     <string name="share_no_calendar_app">Keine Kalender-App gefunden</string>
     <string name="share_error">Teilen-Dialog konnte nicht geöffnet werden</string>
     <string name="share_pdf_error">PDF konnte nicht erstellt werden</string>
+    <string name="share_image_placeholder">[🖼]</string>
+    <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
     <!-- v2.2.0: Share Intent — Notiztyp-Auswahl -->
     <string name="share_type_dialog_title">Speichern als</string>
     <string name="share_type_dialog_message">Wie soll der geteilte Text gespeichert werden?</string>

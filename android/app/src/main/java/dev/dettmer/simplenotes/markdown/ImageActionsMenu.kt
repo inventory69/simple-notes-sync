@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
 import androidx.compose.material.icons.automirrored.filled.FormatAlignRight
 import androidx.compose.material.icons.automirrored.filled.WrapText
 import androidx.compose.material.icons.filled.FormatAlignCenter
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
@@ -41,6 +42,7 @@ import androidx.compose.ui.window.PopupProperties
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.readImageMetadata
 import dev.dettmer.simplenotes.images.shouldShowImageInfo
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -68,6 +70,8 @@ fun ImageActionsMenu(
     currentAlt: String,
     onSelect: (sizePercent: Int, align: ImageAlign, altText: String) -> Unit,
     onInfoClick: () -> Unit,
+    // null = Asset fehlt (Sync noch nicht durch) → kein Kopieren-Button statt leerem Clip.
+    onCopyImage: (() -> Unit)?,
     onDismiss: () -> Unit
 ) {
     // I/O erst beim Öffnen des Menüs. Re-encodete WebP → kein "i"; jedes andere lesbare
@@ -121,8 +125,21 @@ fun ImageActionsMenu(
                     ) {
                         onSelect(currentSize, ImageAlign.INLINE, altText)
                     }
+                    if (showInfo || onCopyImage != null) {
+                        VerticalDivider(modifier = Modifier.padding(horizontal = Dimensions.SpacingSmall))
+                    }
+                    if (onCopyImage != null) {
+                        IconButton(onClick = {
+                            onCopyImage()
+                            commitDismiss()
+                        }) {
+                            Icon(
+                                Icons.Outlined.ContentCopy,
+                                contentDescription = stringResource(R.string.image_menu_copy)
+                            )
+                        }
+                    }
                     if (showInfo) {
-                        VerticalDivider(modifier = Modifier.padding(horizontal = 4.dp))
                         IconButton(onClick = {
                             onInfoClick()
                             commitDismiss()

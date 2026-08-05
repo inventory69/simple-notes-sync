@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.markdown
 
+import android.content.ClipData
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -36,11 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -59,6 +63,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.orientationSwapsAxes
@@ -68,6 +73,7 @@ import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.truncate
 import java.io.File
+import kotlinx.coroutines.launch
 
 private const val COMPACT_HEADING_LEVEL = 3
 
@@ -85,7 +91,9 @@ fun MarkdownPreview(
     modifier: Modifier = Modifier,
     scrollEnabled: Boolean = true,
     compactHeaders: Boolean = false,
-    onImageTokensChange: ((image: MarkdownBlock.Image, sizePercent: Int, align: ImageAlign, altText: String) -> Unit)? = null
+    onImageTokensChange: ((image: MarkdownBlock.Image, sizePercent: Int, align: ImageAlign, altText: String) -> Unit)? = null,
+    // Nur für die Snackbar-Bestätigung nach „Bild kopieren" — der Host kennt den SnackbarHostState.
+    onImageCopied: (() -> Unit)? = null
 ) {
     val bodyStyle = if (compactHeaders) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
     // Fullscreen-Viewer + Long-Press-Menü sind self-contained: kein Wiring in den Consumern nötig.
@@ -159,6 +167,8 @@ fun MarkdownPreview(
     if (menuImage != null && onImageTokensChange != null) {
         val context = LocalContext.current
         val assetFile = remember(context, menuImage.assetName) { AssetStore(context).getAssetFile(menuImage.assetName) }
+        val clipboard = LocalClipboard.current
+        val scope = rememberCoroutineScope()
         ImageActionsMenu(
             assetFile = assetFile,
             currentSize = menuImage.sizePercent,
@@ -169,6 +179,20 @@ fun MarkdownPreview(
                 menuTarget = menuImage.copy(sizePercent = size, align = align, altText = altText)
             },
             onInfoClick = { infoAsset = menuImage.assetName },
+            // Reiner Bild-Clip, kein Text daneben: ClipData.newUri zieht den konkreten MIME-Typ
+            // (image/webp …) aus dem Provider, damit jeder Empfänger das Bild auch als Bild sieht.
+            // Ein gemischter Text+Bild-Clip landet je nach App mal als Text, mal als Bild.
+            onCopyImage = if (assetFile.exists()) {
+                {
+                    scope.launch {
+                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", assetFile)
+                        clipboard.setClipEntry(ClipEntry(ClipData.newUri(context.contentResolver, "", uri)))
+                        onImageCopied?.invoke()
+                    }
+                }
+            } else {
+                null
+            },
             onDismiss = { menuTarget = null }
         )
     }

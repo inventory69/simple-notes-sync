@@ -206,8 +206,8 @@ private fun insertHeading(state: TextFieldState) {
  * Inserts a Markdown link `[text](url)` using selected text as link text,
  * or a placeholder if nothing is selected.
  *
- * Cursor lands AFTER the link, same reasoning as [insertImageMarkdown]: leaving it inside
- * the brackets/parens means the next toolbar button tears the link syntax apart.
+ * Cursor lands AFTER the link: leaving it inside the brackets/parens means the next
+ * toolbar button tears the link syntax apart.
  */
 private fun insertLink(state: TextFieldState) {
     state.edit {
@@ -225,25 +225,6 @@ private fun insertLink(state: TextFieldState) {
             insert(start, link)
             selection = TextRange(start + link.length)
         }
-    }
-}
-
-/**
- * Inserts a Markdown image link `![](.assets/<assetName>)` at the cursor, once the
- * image has been processed and stored (called from the Screen after async attachImage()
- * completes — Toolbar itself has no I/O access).
- *
- * Cursor lands AFTER the link, not between `![` and `]`: a toolbar button pressed next
- * inserts at the cursor, and a rule/code block dropped inside the brackets tears the image
- * syntax apart (`![\n---\n](.assets/x)` parses as two broken paragraphs, and stays broken
- * after the rule line is deleted again). Alt text is set via the image menu in preview mode.
- */
-fun insertImageMarkdown(state: TextFieldState, assetName: String) {
-    state.edit {
-        val sel = selection
-        val link = "![](.assets/$assetName)"
-        insert(sel.start, link)
-        selection = TextRange(sel.start + link.length)
     }
 }
 

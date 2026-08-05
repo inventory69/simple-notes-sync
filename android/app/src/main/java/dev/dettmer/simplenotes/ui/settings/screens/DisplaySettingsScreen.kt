@@ -343,6 +343,37 @@ private fun ImageCompressionSection(viewModel: SettingsViewModel) {
         )
 
         SettingsHint(text = stringResource(R.string.settings_image_compression_info))
+
+        val defaultImageSizePercent by viewModel.defaultImageSizePercent.collectAsState()
+        SettingsSectionHeader(text = stringResource(R.string.settings_default_image_size_title))
+        DefaultImageSizeSelector(
+            currentPercent = defaultImageSizePercent,
+            onPercentSelected = { viewModel.setDefaultImageSizePercent(it) }
+        )
+        SettingsHint(text = stringResource(R.string.settings_default_image_size_info))
+    }
+}
+
+// Gleiche Presets wie das Long-Press-Bildmenü (ImageActionsMenu.SIZE_PRESETS) — bewusst dupliziert
+// statt geteilt, da dort private und UI-Kontext (Popup) ein anderer ist.
+private val DEFAULT_IMAGE_SIZE_PRESETS = listOf(
+    R.string.image_menu_size_small to 25,
+    R.string.image_menu_size_medium to 50,
+    R.string.image_menu_size_large to 75,
+    R.string.image_menu_size_full to 100
+)
+
+@Composable
+private fun DefaultImageSizeSelector(currentPercent: Int, onPercentSelected: (Int) -> Unit) {
+    SettingsChipRow {
+        for ((labelRes, percent) in DEFAULT_IMAGE_SIZE_PRESETS) {
+            SettingsChip(
+                label = stringResource(labelRes),
+                selected = currentPercent == percent,
+                onClick = { onPercentSelected(percent) },
+                modifier = Modifier.widthIn(min = 56.dp)
+            )
+        }
     }
 }
 

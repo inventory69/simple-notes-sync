@@ -662,6 +662,8 @@
     <string name="image_compression_mode_lossless_subtitle">WebP without quality loss, resized to max. 1920px. Larger files; strips EXIF/GPS data.</string>
     <string name="image_compression_mode_original">Original</string>
     <string name="image_compression_mode_original_subtitle">Keeps the file as-is, unresized. Largest files; keeps EXIF/GPS location data.</string>
+    <string name="settings_default_image_size_title">Default image size</string>
+    <string name="settings_default_image_size_info">Applies when you insert a new image into a note. Size of already-inserted images is unaffected — change it per image via long-press.</string>
     <!-- v2.0.0: Theme System -->
     <string name="theme_mode_title">Appearance</string>
     <string name="theme_mode_subsection">Mode</string>
@@ -729,6 +731,7 @@
     <string name="image_menu_size_large">L</string>
     <string name="image_menu_size_full">XL</string>
     <string name="image_menu_info">Image information</string>
+    <string name="image_menu_copy">Copy image</string>
     <string name="image_menu_alt_text">Alt text</string>
     <string name="image_info_title">Image information</string>
     <string name="image_info_dimensions">Dimensions</string>
@@ -1013,12 +1016,15 @@
     <string name="share_to_calendar">Add to calendar</string>
     <string name="action_copy_note_text">Copy text</string>
     <string name="toast_note_copied">Text copied to clipboard</string>
+    <string name="toast_image_copied">Image copied to clipboard</string>
     <string name="share_as_text">Share as text</string>
     <string name="share_as_pdf">Share as PDF</string>
     <string name="share_chooser_title">Share note</string>
     <string name="share_no_calendar_app">No calendar app found</string>
     <string name="share_error">Could not open share dialog</string>
     <string name="share_pdf_error">Could not create PDF</string>
+    <string name="share_image_placeholder">[🖼]</string>
+    <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
 
     <!-- v2.2.0: Share Intent — Note Type Chooser -->
     <string name="share_type_dialog_title">Save as</string>

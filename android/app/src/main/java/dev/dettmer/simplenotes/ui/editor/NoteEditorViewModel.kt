@@ -126,6 +126,13 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * Gibt den Asset-Dateinamen zurück, oder null bei Fehler (Snackbar wird intern emittiert).
      * Läuft auf IO; [isAttachingImage] steuert den Toolbar-Spinner in der Zwischenzeit.
      */
+    // 🆕 Bild-Attachments: Standardgröße für neu eingefügte Bilder (S/M/L/XL-Einstellung).
+    // Wie scrollTopOnUncheck beim VM-Bau gelesen — der Editor-VM wird pro geöffneter Notiz neu erstellt.
+    val defaultImageSizePercent = prefs.getInt(
+        Constants.KEY_DEFAULT_IMAGE_SIZE_PERCENT,
+        Constants.DEFAULT_DEFAULT_IMAGE_SIZE_PERCENT
+    )
+
     suspend fun attachImage(uri: Uri): String? {
         _isAttachingImage.value = true
         return try {

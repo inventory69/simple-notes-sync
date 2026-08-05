@@ -131,6 +131,7 @@ import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import dev.dettmer.simplenotes.markdown.buildImageAlt
 import dev.dettmer.simplenotes.markdown.computeImageRewrite
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
@@ -142,8 +143,10 @@ import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
+import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.NoteShareHelper
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -554,6 +557,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val msgNoteDeleted = stringResource(R.string.note_deleted)
     val msgItemCopiedToChecklist = stringResource(R.string.checklist_item_copied_toast) // 🆕 v2.2.0
     val msgNoteCopied = stringResource(R.string.toast_note_copied)
+    val msgImageCopied = stringResource(R.string.toast_image_copied)
+    val msgImagePlaceholder = stringResource(R.string.share_image_placeholder)
+    val msgImagePlaceholderAltTemplate = stringResource(R.string.share_image_placeholder_alt)
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -665,7 +671,18 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 is NoteEditorEvent.ShareAsPdf -> Unit
                 is NoteEditorEvent.CopyToClipboard -> {
                     scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", event.text)))
+                        // 🆕 Bild-Attachments: bewusst reiner Text mit Platzhaltern. Ein Clip mit
+                        // Text + Bild-URIs liefert pro Empfänger ein anderes Ergebnis (Telegram und
+                        // Thunderbird nehmen den Text, Element X nur die Bilder und verliert den Text) —
+                        // der Sender kann das nicht steuern. Bilder gehen über Teilen (SEND_MULTIPLE).
+                        val text = if (AssetReferences.extractAssetNames(event.text).isEmpty()) {
+                            event.text
+                        } else {
+                            NoteShareHelper.formatTextForShare(event.text) { alt ->
+                                if (alt.isBlank()) msgImagePlaceholder else msgImagePlaceholderAltTemplate.format(alt)
+                            }
+                        }
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("", text)))
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                             snackbarHostState.showSnackbar(msgNoteCopied)
                         }
@@ -1059,6 +1076,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
                                 onImageTokensChange = { image, size, align, altText ->
                                     applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
+                                },
+                                // Ab Android 13 zeigt das System selbst eine Kopier-Bestätigung.
+                                onImageCopied = {
+                                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                        scope.launch { snackbarHostState.showSnackbar(msgImageCopied) }
+                                    }
                                 }
                             )
                         } else {
@@ -1260,22 +1283,22 @@ private suspend fun attachAndInsertImages(
 ) {
     uris.forEach { uri ->
         viewModel.attachImage(uri)?.let { assetName ->
-            insertImageMarkdownOnOwnLine(textFieldState, assetName)
+            insertImageMarkdownOnOwnLine(textFieldState, assetName, viewModel.defaultImageSizePercent)
         }
     }
 }
 
 /**
- * Wie insertImageMarkdown (MarkdownToolbar.kt), aber mit führendem Umbruch,
- * wenn der Cursor nicht am Zeilenanfang steht — bei mehreren Bildern landet
- * so jedes `![](.assets/…)` auf einer eigenen Zeile (Renderer erwartet
- * Bild-Links als eigene Zeile).
+ * Fügt `![|sizePercent](.assets/…)` mit führendem Umbruch ein, wenn der Cursor nicht am
+ * Zeilenanfang steht — bei mehreren Bildern landet so jeder Link auf einer eigenen Zeile
+ * (Renderer erwartet Bild-Links als eigene Zeile).
  */
-private fun insertImageMarkdownOnOwnLine(state: TextFieldState, assetName: String) {
+private fun insertImageMarkdownOnOwnLine(state: TextFieldState, assetName: String, sizePercent: Int) {
     state.edit {
         val start = selection.min
         val atLineStart = start == 0 || asCharSequence()[start - 1] == '\n'
-        val link = (if (atLineStart) "" else "\n") + "![](.assets/$assetName)"
+        val alt = buildImageAlt("", sizePercent, ImageAlign.CENTER)
+        val link = (if (atLineStart) "" else "\n") + "![$alt](.assets/$assetName)"
         insert(start, link)
         selection = TextRange(start + link.length)
     }

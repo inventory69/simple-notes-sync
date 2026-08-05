@@ -493,6 +493,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getString(Constants.KEY_IMAGE_COMPRESSION_MODE, Constants.DEFAULT_IMAGE_COMPRESSION_MODE)
             .toEnumOrDefault(ImageCompressionMode.valueOf(Constants.DEFAULT_IMAGE_COMPRESSION_MODE))
 
+    // 🆕 Bild-Attachments: Standardgröße für neu eingefügte Bilder (S/M/L/XL-Chips)
+    private val _defaultImageSizePercent = MutableStateFlow(
+        prefs.getInt(Constants.KEY_DEFAULT_IMAGE_SIZE_PERCENT, Constants.DEFAULT_DEFAULT_IMAGE_SIZE_PERCENT)
+    )
+    val defaultImageSizePercent: StateFlow<Int> = _defaultImageSizePercent.asStateFlow()
+
     // 🆕 v1.10.0: Configurable connection timeout
     private val _connectionTimeoutSeconds = MutableStateFlow(
         prefs.getInt(
@@ -682,6 +688,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setImageCompressionMode(mode: ImageCompressionMode) {
         prefs.edit { putString(Constants.KEY_IMAGE_COMPRESSION_MODE, mode.name) }
         _imageCompressionMode.value = mode
+    }
+
+    /** 🆕 Bild-Attachments: Standardgröße für künftig eingefügte Bilder. */
+    fun setDefaultImageSizePercent(percent: Int) {
+        prefs.edit { putInt(Constants.KEY_DEFAULT_IMAGE_SIZE_PERCENT, percent) }
+        _defaultImageSizePercent.value = percent
     }
 
     /**
@@ -1468,6 +1480,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _notificationsServerWarning.value =
             prefs.getBoolean(Constants.KEY_NOTIFICATIONS_SERVER_WARNING, Constants.DEFAULT_NOTIFICATIONS_SERVER_WARNING)
         _imageCompressionMode.value = readImageCompressionMode()
+        _defaultImageSizePercent.value =
+            prefs.getInt(Constants.KEY_DEFAULT_IMAGE_SIZE_PERCENT, Constants.DEFAULT_DEFAULT_IMAGE_SIZE_PERCENT)
         Logger.d(TAG, "🔄 App settings reloaded from prefs after backup restore")
     }
 
