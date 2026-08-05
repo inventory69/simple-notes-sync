@@ -69,6 +69,19 @@ object LogAnonymizer {
     private val MARKDOWN_PATH = Regex("""/[^/\\"'()<>]+\.md""")
 
     /**
+     * Wortgrenzen für Titel- und Ordner-Ersetzungen: links und rechts darf kein Buchstabe und
+     * keine Ziffer stehen. Ohne das zersägt ein Ordner „Auto" jedes „Automatischer Upload" im Log
+     * zu „<folder>matischer Upload" — ein Beta-Log war voll davon.
+     *
+     * Satzzeichen und Pfadtrenner zählen **nicht** als Wortzeichen, `notes/Auto/x.md` und `Auto:`
+     * werden also weiterhin ersetzt. Ein Titel, der selbst mit einem Buchstaben-Zeichen an einen
+     * Nachbarn grenzt (Substring eines längeren Titels), bleibt stehen — der längere Titel steht
+     * in der Liste und greift dank Längensortierung vorher.
+     */
+    private const val NON_WORD_LEFT = """(?<![\p{L}\p{N}])"""
+    private const val NON_WORD_RIGHT = """(?![\p{L}\p{N}])"""
+
+    /**
      * @param serverUrl konfigurierte Sync-URL, für die Host-Extraktion. Darf null/leer sein.
      * @param username WebDAV-Benutzername. Darf null/leer sein.
      * @param noteTitles alle bekannten Notiztitel. Leer, wenn sie nicht geladen werden konnten —
@@ -108,7 +121,10 @@ object LogAnonymizer {
             .filter { (value, _) -> value.length >= MIN_REPLACEABLE_LENGTH }
             .distinct()
             .sortedByDescending { (value, _) -> value.length }
-            .forEach { (value, placeholder) -> result = result.replace(value, placeholder) }
+            .forEach { (value, placeholder) ->
+                val bounded = Regex(NON_WORD_LEFT + Regex.escape(value) + NON_WORD_RIGHT)
+                result = bounded.replace(result, Regex.escapeReplacement(placeholder))
+            }
 
         return MARKDOWN_PATH.replace(result, "/$NOTE_PLACEHOLDER.md")
     }

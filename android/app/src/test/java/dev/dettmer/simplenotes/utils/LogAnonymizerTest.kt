@@ -205,6 +205,40 @@ class LogAnonymizerTest {
         )
     }
 
+    /**
+     * Regression: ein kurzer Ordnername darf keine fremden Wörter zersägen. Im Beta-Log wurde aus
+     * `Automatischer Upload` ein `<folder>matischer Upload` — kein Leak, aber unlesbar.
+     */
+    @Test
+    fun `does not replace a title inside a longer unrelated word`() {
+        val result = LogAnonymizer.anonymize(
+            "WebDavClient: list(.../Automatischer Upload/) → Einkaufsliste beim Discounter",
+            null,
+            null,
+            listOf("Einkauf"),
+            listOf("Auto")
+        )
+
+        assertEquals(
+            "WebDavClient: list(.../Automatischer Upload/) → Einkaufsliste beim Discounter",
+            result
+        )
+    }
+
+    /** Die Wortgrenze darf echte Treffer nicht kosten: Pfadtrenner und Satzzeichen zählen nicht. */
+    @Test
+    fun `still replaces a title bounded by punctuation or path separators`() {
+        val result = LogAnonymizer.anonymize(
+            "NoteUploader: put(/notes/Arbeit/x.json), title='Einkauf' — done",
+            null,
+            null,
+            listOf("Einkauf"),
+            listOf("Arbeit")
+        )
+
+        assertEquals("NoteUploader: put(/notes/<folder>/x.json), title='<note>' — done", result)
+    }
+
     /** Der Pfad darf den Nextcloud-Fall nicht schlechter machen: Rest der URL bleibt lesbar. */
     @Test
     fun `keeps the part below the sync base readable`() {
