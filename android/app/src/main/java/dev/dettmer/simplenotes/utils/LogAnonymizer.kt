@@ -33,7 +33,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * Der Pfad ist **nicht** nur Deko: OX App Suite legt den Userstore unter dem Klarnamen an
  * (`/servlet/webdav.infostore/Userstore/Max Mustermann/`). Der steht in keiner Titel-, Ordner-
  * oder Benutzernamen-Liste — der Login ist dort eine Mailadresse — und blieb deshalb bis v2.14.0
- * im exportierten Log stehen. Ersetzt wird der Pfad in roher **und** percent-enkodierter Form:
+ * im exportierten Log stehen. Ersetzt wird der Pfad in roher, percent-enkodierter **und**
+ * percent-dekodierter Form (die `path`-Felder der PROPFIND-Antworten tragen die dekodierte):
  * seit v2.14.0 kanonisiert [dev.dettmer.simplenotes.sync.SyncUrlBuilder.getServerUrl] die URL,
  * geloggt wird also `Max%20Mustermann`, während in den Prefs `Max Mustermann` steht — und ältere
  * Logzeilen desselben Tages enthalten noch die rohe Variante.
@@ -124,17 +125,29 @@ object LogAnonymizer {
 
     /**
      * Der Pfad-Anteil der Sync-URL mit führendem `/` und ohne Trailing-Slash — roh wie in den
-     * Prefs **und** percent-enkodiert wie in den Logzeilen. Beides, weil in derselben Datei beide
+     * Prefs, percent-enkodiert wie in URL-Logzeilen **und** percent-dekodiert wie in den
+     * `path`-Feldern der PROPFIND-Antworten. Alle drei, weil in derselben Datei alle
      * Schreibweisen stehen können (siehe Klassen-KDoc); ohne Sonderzeichen im Pfad fallen die
-     * zwei Varianten zusammen und `distinct()` lässt eine übrig.
+     * Varianten zusammen und `distinct()` lässt eine übrig.
      *
-     * Längste zuerst, damit die enkodierte Variante nicht an einem gemeinsamen Präfix der rohen
+     * Die dekodierte Variante ist nicht optional: seit v2.14.0 kanonisiert
+     * [dev.dettmer.simplenotes.sync.SyncUrlBuilder.getServerUrl] die URL, in den Prefs steht also
+     * bereits `David%20Jany` — damit wären „roh" und „enkodiert" dieselbe Zeichenkette und der
+     * Klarname aus `path='/servlet/webdav.infostore/Userstore/David Jany/…'` bliebe stehen.
+     * `MarkdownSyncManager` loggt bewusst `path` statt `name`, der Basispfad hängt deshalb an
+     * jeder einzelnen Skip-Zeile.
+     *
+     * Längste zuerst, damit eine Variante nicht an einem gemeinsamen Präfix einer anderen
      * hängen bleibt.
      */
     private fun basePathsOf(serverUrl: String?): List<String> {
         val raw = serverUrl.orEmpty().substringAfter("://", "").substringAfter('/', "")
-        val encoded = serverUrl?.toHttpUrlOrNull()?.encodedPath.orEmpty().removePrefix("/")
-        return listOf(raw, encoded)
+        val url = serverUrl?.toHttpUrlOrNull()
+        val encoded = url?.encodedPath.orEmpty().removePrefix("/")
+        // pathSegments liefert die Segmente bereits dekodiert — kein URLDecoder, der „+" zu
+        // einem Leerzeichen machen würde.
+        val decoded = url?.pathSegments?.joinToString("/").orEmpty()
+        return listOf(raw, encoded, decoded)
             .map { it.trim('/') }
             .filter { it.length >= MIN_REPLACEABLE_LENGTH }
             .distinct()
