@@ -840,4 +840,8 @@
     <string name="settings_group_data">Dati</string>
     <string name="settings_group_info">Info</string>
     <string name="debug_logging_section">Log</string>
+    <string name="checklist_scroll_top_on_uncheck_description">Deselezionare un elemento scorre a lista in alto. Disattiva per mantenere la posizione.</string>
+    <string name="note_card_show_timestamp_toggle">Mostra data e ora</string>
+    <string name="note_card_show_timestamp_description">Mostra data e ora dell\'ultima modifica sulle preview delle note.</string>
+    <string name="note_card_show_icon_toggle">Mostra icona nota</string>
 </resources>
