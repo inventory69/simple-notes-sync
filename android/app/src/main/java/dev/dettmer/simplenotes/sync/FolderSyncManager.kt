@@ -9,6 +9,7 @@ import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.sanitized
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.etagsMatch
+import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -119,7 +120,9 @@ class FolderSyncManager(
             (gson.fromJson<List<FolderMeta>>(input.reader(), type) ?: emptyList()).sanitized()
         }
     } catch (e: Exception) {
-        Logger.w(TAG, "download folders.json: ${e.message}")
+        // 404 = folders.json noch nie geschrieben. Normalfall, kein Warnfall.
+        val msg = "download folders.json: ${e.message}"
+        if (e.isWebDavNotFound()) Logger.d(TAG, msg) else Logger.w(TAG, msg)
         emptyList()
     }
 

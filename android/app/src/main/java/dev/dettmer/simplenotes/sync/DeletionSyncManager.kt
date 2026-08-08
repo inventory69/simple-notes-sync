@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.sync
 import dev.dettmer.simplenotes.models.DeletionRecord
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
+import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -23,7 +24,10 @@ internal class DeletionSyncManager(private val urlBuilder: SyncUrlBuilder) {
             DeletionTracker.fromJson(input.reader().readText()) ?: DeletionTracker()
         }
     } catch (e: Exception) {
-        Logger.w(TAG, "download deletions.json failed (non-fatal): ${e.message}")
+        // 404 ist der Normalfall, solange auf dem Server noch nie gelöscht wurde — sonst würde
+        // jeder Sync eine WARN-Zeile in den Beta-Log schreiben.
+        val msg = "download deletions.json failed (non-fatal): ${e.message}"
+        if (e.isWebDavNotFound()) Logger.d(TAG, msg) else Logger.w(TAG, msg)
         DeletionTracker()
     }
 
