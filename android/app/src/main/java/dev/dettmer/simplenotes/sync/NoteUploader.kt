@@ -205,7 +205,7 @@ internal class NoteUploader(
                             val etag = resource.etag
                             batchEtagUpdates["etag_json_$noteId"] = etag
                             if (etag != null) {
-                                Logger.d(TAG, "   ⚡ E-Tag: $noteId → ${etag.take(ETAG_PREVIEW_LENGTH)}")
+                                Logger.d(TAG, "   ⚡ E-Tag: $noteId → ${etag.takeLast(ETAG_PREVIEW_LENGTH)}")
                             }
                         }
                     }

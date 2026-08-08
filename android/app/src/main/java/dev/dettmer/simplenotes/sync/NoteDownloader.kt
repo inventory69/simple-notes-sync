@@ -262,8 +262,10 @@ internal class NoteDownloader(
                     val serverModified = resource.modified?.time ?: 0L
 
                     // 🐛 DEBUG: Log every file check to diagnose performance
-                    val serverETagPreview = serverETag?.take(ETAG_PREVIEW_LENGTH) ?: "null"
-                    val cachedETagPreview = cachedETag?.take(ETAG_PREVIEW_LENGTH) ?: "null"
+                    // takeLast: Apache-artige E-Tags ("<inode>-<size>-<mtime>") teilen sich einen
+                    // konstanten Präfix — mit take() sähen alle Notizen im Log identisch aus.
+                    val serverETagPreview = serverETag?.takeLast(ETAG_PREVIEW_LENGTH) ?: "null"
+                    val cachedETagPreview = cachedETag?.takeLast(ETAG_PREVIEW_LENGTH) ?: "null"
                     Logger.d(
                         TAG,
                         "   🔍 [$noteId] etag=$serverETagPreview/$cachedETagPreview " +
