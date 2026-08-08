@@ -8,7 +8,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.14.0] - 2026-07-26
+## [2.14.0] - 2026-08-08
+
+### ✨ New Features
+
+**An Activity Log That Never Leaves the Device** ([ae27ff2](https://github.com/inventory69/simple-notes-sync/commit/ae27ff2), [40fd353](https://github.com/inventory69/simple-notes-sync/commit/40fd353), [cf449ae](https://github.com/inventory69/simple-notes-sync/commit/cf449ae), [fd15fbe](https://github.com/inventory69/simple-notes-sync/commit/fd15fbe))
+- When a note went missing there was no way to find out what happened to it. Settings now has an activity log: created, edited, moved, trashed, restored, and every sync with the reason it started - a save, the widget, a pull-to-refresh, the periodic job. It is written locally, never uploaded, and only leaves the device if you share it yourself
+- Each row says where the action came from, in text and not only as an icon ([fac13a0](https://github.com/inventory69/simple-notes-sync/commit/fac13a0), [96716d4](https://github.com/inventory69/simple-notes-sync/commit/96716d4))
+
+**Images: A Default Size, and Copy From the Long-Press Menu** ([3dbd400](https://github.com/inventory69/simple-notes-sync/commit/3dbd400), [8f5ef72](https://github.com/inventory69/simple-notes-sync/commit/8f5ef72))
+- Newly inserted images took the full width and had to be resized by hand every time. Display settings now hold a default size that new images start at
+- The image long-press menu can copy the image, next to the actions it already had
+
+**Digest Authentication** ([bd009ec](https://github.com/inventory69/simple-notes-sync/commit/bd009ec))
+- WebDAV servers that do not offer basic authentication now work. Both methods are negotiated automatically - nothing to configure
+
+### 🔒 Privacy
+
+**Logs Get Scrubbed Before They Leave the Device** ([0d7ce77](https://github.com/inventory69/simple-notes-sync/commit/0d7ce77), [7ec7eff](https://github.com/inventory69/simple-notes-sync/commit/7ec7eff), [7645954](https://github.com/inventory69/simple-notes-sync/commit/7645954), [e7ff37e](https://github.com/inventory69/simple-notes-sync/commit/e7ff37e), [a333dfb](https://github.com/inventory69/simple-notes-sync/commit/a333dfb))
+- A debug log is the fastest way to get a sync problem fixed and the easiest way to publish more than you meant to. The copy the share button hands out now has the server host and path, the username, note titles, folder names and markdown filenames replaced with placeholders. The file on the device stays complete
+- Note UUIDs deliberately stay: they identify nobody and are the only thread that ties a problem together across log lines
+- Some servers put the account holder's legal name in the WebDAV path. That name is in no title or folder list, so it survived until the path itself started being replaced - in all three spellings it can appear in
+- Replacements respect word boundaries, so a folder named "Auto" no longer turns "Automatischer Upload" into placeholder soup
+
+**The Sync Log Stopped Reading the Neighbours' Mail** ([4088e3d](https://github.com/inventory69/simple-notes-sync/commit/4088e3d))
+- A one-time cleanup scan listed every entry of the directory *above* the sync folders into the log - other people's folder names and document titles that have nothing to do with this app, and that no anonymizer can recognise. Only the count is logged now
+- Thanks to David Jany for spotting this in a beta log
+
+### 🐛 Bug Fixes
+
+**A Folder That Would Not List Looked Like a Deletion** ([9569173](https://github.com/inventory69/simple-notes-sync/commit/9569173))
+- When the server failed to list a folder, the notes inside it were absent from the listing, and absent reads as deleted. Notes sat untouched on the server and went to the trash locally. Deletion detection now refuses to run on an incomplete listing, and notes that were already marked wrongly heal on the next sync
+- Thanks to [@daalja](https://github.com/daalja) for the report! (#128)
+
+**Folder Names With Spaces Fell Out of the Server Listing** ([68f87d3](https://github.com/inventory69/simple-notes-sync/commit/68f87d3))
+- A raw space in the configured server URL produced a request the server answered with an error, and the sync died on it. The URL is canonicalized once now, so what goes on the wire is encoded no matter how it was typed
+
+**Sharing or Copying a Note Lost Its Images** ([46ccccf](https://github.com/inventory69/simple-notes-sync/commit/46ccccf))
+- Shared and copied note text dropped the image references, so the receiving app got a note with holes in it
+
+**Cleaning Up a Folder Tried to Delete Directories That Were Not There** ([dda9ab2](https://github.com/inventory69/simple-notes-sync/commit/dda9ab2))
+- After the last note left a folder, the app removes the now empty directory from the server. A directory the server did not have counted as "empty" and got a delete request that could only fail - once per cleanup, each one a wasted round trip and a warning in the log that looked like a real problem
+- Thanks to [@xmichelf](https://github.com/xmichelf) for the beta log that surfaced this
+
+**Smaller Ones**
+- A missing `deletions.json` or `folders.json` is logged as a normal event instead of a warning - on a sync folder where nothing has been deleted yet, the 404 is the expected answer, and it was drowning the warnings that meant something ([2b94d28](https://github.com/inventory69/simple-notes-sync/commit/2b94d28))
+- Debug logs show the end of an E-Tag rather than its beginning. Some servers give every file the same leading characters, which made all notes look identical in the log ([fc3b980](https://github.com/inventory69/simple-notes-sync/commit/fc3b980))
+- A deep directory listing that returned no nested entries is no longer taken at face value ([48ffa8d](https://github.com/inventory69/simple-notes-sync/commit/48ffa8d))
+- JSON files on the server that are not notes stayed out of the note ID set ([1fa738f](https://github.com/inventory69/simple-notes-sync/commit/1fa738f))
+- The retry counter counted runs, not retries ([d2ca5ae](https://github.com/inventory69/simple-notes-sync/commit/d2ca5ae))
+- Sync outcomes are recorded for every caller, not only the background worker ([3b4cf32](https://github.com/inventory69/simple-notes-sync/commit/3b4cf32))
+- The debug log survives a process restart and is only trimmed once it has actually grown ([399c1c5](https://github.com/inventory69/simple-notes-sync/commit/399c1c5), [38d97d0](https://github.com/inventory69/simple-notes-sync/commit/38d97d0))
 
 ### ⚡ Performance
 
@@ -19,11 +69,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - One check ran on every sync that could never answer anything but "yes, look at the server" - it was removed along with the requests it made
 - With markdown export or images turned off, the app no longer touches those folders at all. With them on, files just exported are no longer downloaded again to read back their ID
 - Folders are fetched in one pass instead of one request per folder, where the server supports it
-
-### ✨ New Features
-
-**Digest Authentication** ([bd009ec](https://github.com/inventory69/simple-notes-sync/commit/bd009ec))
-- WebDAV servers that do not offer basic authentication now work. Both methods are negotiated automatically - nothing to configure
+- Moving a note into a folder, or renaming a folder, no longer downloads the note straight back. The move uploads it to the new path and then cleans up the old one, and that cleanup was throwing away what the upload had just learned. Renaming a folder cost one pointless download per note in it ([dba25cf](https://github.com/inventory69/simple-notes-sync/commit/dba25cf))
+- Folder cleanup no longer reaches for the markdown mirror when markdown is switched off ([9924cf4](https://github.com/inventory69/simple-notes-sync/commit/9924cf4))
 
 ### 🔧 Technical Improvements
 
@@ -35,6 +82,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **Stricter Code Quality Gate** ([61ea842](https://github.com/inventory69/simple-notes-sync/commit/61ea842))
 - The complexity limits had been raised over time to let existing code through, which made them useless for new code. They are back at their target values; the places that still exceed them are marked individually and get cleaned up release by release
+
+**A Build Type for Testers** ([6f1c616](https://github.com/inventory69/simple-notes-sync/commit/6f1c616), [572b267](https://github.com/inventory69/simple-notes-sync/commit/572b267), [25b27a8](https://github.com/inventory69/simple-notes-sync/commit/25b27a8), [1fc02a9](https://github.com/inventory69/simple-notes-sync/commit/1fc02a9))
+- Beta builds are identical to release builds - same signing key, same R8 - and only turn on file logging, the sync debug log and the developer options, so a tester can hand over a log without hunting for a hidden switch. Tags carrying a suffix publish a pre-release and never reach Play or F-Droid; superseded pre-releases are cleaned up automatically
+- Thanks to everyone who tested the betas of this release and sent in logs
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (99%): [@heretic43](https://github.com/heretic43)
+- **Indonesian** (95%): Arif Budiman
+- **Norwegian Bokmål** (95%): [@xdpirate](https://github.com/xdpirate)
+- **Russian** (95%): PONYATIN
+- **Italian** (91%): GVE
+- **French** (85%): Fred
+- Dutch and Brazilian Portuguese were started this release - thanks to Quinten and Rafael. They are not shipped in the app yet: a language joins the system language picker at 40% translated, so a user picking it does not land in a mostly English interface. Both are already open on [Hosted Weblate](https://hosted.weblate.org/projects/simple-notes-sync/android-app/) if you want to help them over the line
 
 ---
 

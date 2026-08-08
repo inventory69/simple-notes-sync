@@ -1,0 +1,10 @@
+🪶 v2.14.0 - Featherweight
+
+• New: activity log in Settings - what happened to your notes, what started each sync. Local only
+• New: WebDAV servers without basic auth now work
+• Faster sync: far fewer requests, none when nothing to do
+• Fix: a folder that failed to list looked like a deletion - notes went to trash. Heals next sync
+• Fix: shared logs no longer carry your server path or filenames
+• Updated translations: ZH, ID, NB, RU, IT, FR
+
+Thanks to @daalja, David Jany, @xmichelf and Peter!

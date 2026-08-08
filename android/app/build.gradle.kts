@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 54  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
-        versionName = "2.14.0"  // 🆕 v2.14.0 - own WebDAV client, digest auth, sync request reduction
+        versionCode = 55  // 🆕 v2.14.0 stable - own WebDAV client, digest auth, activity log
+        versionName = "2.14.0"  // 🆕 v2.14.0 stable - own WebDAV client, digest auth, activity log
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
