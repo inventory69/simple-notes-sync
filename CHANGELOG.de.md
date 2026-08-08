@@ -8,7 +8,57 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.14.0] - 2026-07-26
+## [2.14.0] - 2026-08-08
+
+### ✨ Neue Features
+
+**Ein Aktivitätsprotokoll, das das Gerät nie verlässt** ([ae27ff2](https://github.com/inventory69/simple-notes-sync/commit/ae27ff2), [40fd353](https://github.com/inventory69/simple-notes-sync/commit/40fd353), [cf449ae](https://github.com/inventory69/simple-notes-sync/commit/cf449ae), [fd15fbe](https://github.com/inventory69/simple-notes-sync/commit/fd15fbe))
+- Wenn eine Notiz verschwand, gab es keine Möglichkeit herauszufinden, was mit ihr passiert ist. In den Einstellungen steht jetzt ein Aktivitätsprotokoll: erstellt, bearbeitet, verschoben, in den Papierkorb gelegt, wiederhergestellt - und jeder Sync mit dem Grund, aus dem er startete: ein Speichern, das Widget, ein Pull-to-Refresh, der periodische Job. Es wird lokal geschrieben, nie hochgeladen, und verlässt das Gerät nur, wenn du es selbst teilst
+- Jede Zeile sagt, woher die Aktion kam - als Text, nicht nur als Symbol ([fac13a0](https://github.com/inventory69/simple-notes-sync/commit/fac13a0), [96716d4](https://github.com/inventory69/simple-notes-sync/commit/96716d4))
+
+**Bilder: eine Standardgröße und Kopieren aus dem Longpress-Menü** ([3dbd400](https://github.com/inventory69/simple-notes-sync/commit/3dbd400), [8f5ef72](https://github.com/inventory69/simple-notes-sync/commit/8f5ef72))
+- Neu eingefügte Bilder nahmen die volle Breite ein und mussten jedes Mal von Hand verkleinert werden. In den Anzeige-Einstellungen steht jetzt eine Standardgröße, mit der neue Bilder starten
+- Das Longpress-Menü eines Bildes kann es jetzt kopieren, zusätzlich zu den bisherigen Aktionen
+
+**Digest-Authentifizierung** ([bd009ec](https://github.com/inventory69/simple-notes-sync/commit/bd009ec))
+- WebDAV-Server, die keine Basic-Authentifizierung anbieten, funktionieren jetzt. Beide Verfahren werden automatisch ausgehandelt - nichts einzustellen
+
+### 🔒 Datenschutz
+
+**Logs werden gesäubert, bevor sie das Gerät verlassen** ([0d7ce77](https://github.com/inventory69/simple-notes-sync/commit/0d7ce77), [7ec7eff](https://github.com/inventory69/simple-notes-sync/commit/7ec7eff), [7645954](https://github.com/inventory69/simple-notes-sync/commit/7645954), [e7ff37e](https://github.com/inventory69/simple-notes-sync/commit/e7ff37e), [a333dfb](https://github.com/inventory69/simple-notes-sync/commit/a333dfb))
+- Ein Debug-Log ist der schnellste Weg, ein Sync-Problem zu beheben, und der einfachste Weg, mehr zu veröffentlichen als beabsichtigt. In der Kopie, die der Teilen-Button herausgibt, sind jetzt Server-Host und -Pfad, Benutzername, Notiztitel, Ordnernamen und Markdown-Dateinamen durch Platzhalter ersetzt. Die Datei auf dem Gerät bleibt vollständig
+- Notiz-UUIDs bleiben bewusst stehen: sie identifizieren niemanden und sind der einzige Faden, an dem sich ein Problem über mehrere Logzeilen verfolgen lässt
+- Manche Server legen den Klarnamen des Kontoinhabers in den WebDAV-Pfad. Der steht in keiner Titel- oder Ordnerliste und blieb deshalb stehen, bis der Pfad selbst ersetzt wurde - in allen drei Schreibweisen, in denen er auftauchen kann
+- Ersetzungen halten sich an Wortgrenzen, ein Ordner namens „Auto" macht aus „Automatischer Upload" also keinen Platzhalterbrei mehr
+
+**Das Sync-Log liest nicht mehr die Post der Nachbarn** ([4088e3d](https://github.com/inventory69/simple-notes-sync/commit/4088e3d))
+- Eine einmalige Aufräumroutine schrieb jeden Eintrag des Verzeichnisses *über* den Sync-Ordnern ins Log - fremde Ordnernamen und Dokumenttitel, die mit dieser App nichts zu tun haben und die keine Anonymisierung erkennen kann. Geloggt wird jetzt nur noch die Anzahl
+- Danke an David Jany fürs Entdecken in einem Beta-Log
+
+### 🐛 Bug-Fixes
+
+**Ein Ordner, der sich nicht auflisten ließ, sah aus wie eine Löschung** ([9569173](https://github.com/inventory69/simple-notes-sync/commit/9569173))
+- Wenn der Server einen Ordner nicht auflisten konnte, fehlten die Notizen darin in der Auflistung - und fehlend liest sich wie gelöscht. Die Notizen lagen unangetastet auf dem Server und landeten lokal im Papierkorb. Die Löschungserkennung läuft jetzt nicht mehr auf einer unvollständigen Auflistung, und bereits falsch markierte Notizen heilen beim nächsten Sync
+- Danke an [@daalja](https://github.com/daalja) für den Bericht! (#128)
+
+**Ordnernamen mit Leerzeichen fielen aus der Server-Auflistung** ([68f87d3](https://github.com/inventory69/simple-notes-sync/commit/68f87d3))
+- Ein rohes Leerzeichen in der konfigurierten Server-URL erzeugte eine Anfrage, die der Server mit einem Fehler beantwortete, woran der Sync starb. Die URL wird jetzt einmal kanonisiert, was auf die Leitung geht, ist also enkodiert - egal wie sie eingetippt wurde
+
+**Teilen oder Kopieren einer Notiz verlor ihre Bilder** ([46ccccf](https://github.com/inventory69/simple-notes-sync/commit/46ccccf))
+- Geteilter und kopierter Notiztext ließ die Bildreferenzen fallen, die empfangende App bekam eine Notiz mit Löchern
+
+**Das Aufräumen eines Ordners versuchte Verzeichnisse zu löschen, die es nicht gab** ([dda9ab2](https://github.com/inventory69/simple-notes-sync/commit/dda9ab2))
+- Wenn die letzte Notiz einen Ordner verlässt, entfernt die App das nun leere Verzeichnis vom Server. Ein Verzeichnis, das der Server gar nicht hatte, galt dabei als "leer" und bekam eine Löschanfrage, die nur scheitern konnte - eine pro Aufräumvorgang, jedes Mal ein vergeudeter Roundtrip und eine Warnung im Log, die nach einem echten Problem aussah
+- Danke an [@xmichelf](https://github.com/xmichelf) für das Beta-Log, das das ans Licht gebracht hat
+
+**Kleinere**
+- Eine fehlende `deletions.json` oder `folders.json` wird als normales Ereignis protokolliert statt als Warnung - in einem Sync-Ordner, in dem noch nichts gelöscht wurde, ist der 404 die erwartete Antwort, und er ersäufte die Warnungen, die etwas bedeuteten ([2b94d28](https://github.com/inventory69/simple-notes-sync/commit/2b94d28))
+- Debug-Logs zeigen das Ende eines E-Tags statt seinen Anfang. Manche Server geben jeder Datei dieselben führenden Zeichen, wodurch im Log alle Notizen gleich aussahen ([fc3b980](https://github.com/inventory69/simple-notes-sync/commit/fc3b980))
+- Eine tiefe Verzeichnisauflistung ohne verschachtelte Einträge wird nicht mehr für bare Münze genommen ([48ffa8d](https://github.com/inventory69/simple-notes-sync/commit/48ffa8d))
+- JSON-Dateien auf dem Server, die keine Notizen sind, bleiben aus der Notiz-ID-Menge heraus ([1fa738f](https://github.com/inventory69/simple-notes-sync/commit/1fa738f))
+- Der Retry-Zähler zählte Durchläufe statt Wiederholungen ([d2ca5ae](https://github.com/inventory69/simple-notes-sync/commit/d2ca5ae))
+- Sync-Ergebnisse werden für jeden Aufrufer protokolliert, nicht nur für den Hintergrund-Worker ([3b4cf32](https://github.com/inventory69/simple-notes-sync/commit/3b4cf32))
+- Das Debug-Log überlebt einen Prozess-Neustart und wird erst gekürzt, wenn es tatsächlich gewachsen ist ([399c1c5](https://github.com/inventory69/simple-notes-sync/commit/399c1c5), [38d97d0](https://github.com/inventory69/simple-notes-sync/commit/38d97d0))
 
 ### ⚡ Performance
 
@@ -19,11 +69,8 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Eine Prüfung lief bei jedem Sync mit, die nie etwas anderes antworten konnte als "ja, schau auf den Server" - sie ist samt ihrer Anfragen entfernt
 - Sind Markdown-Export oder Bilder ausgeschaltet, fasst die App die zugehörigen Ordner gar nicht mehr an. Sind sie an, werden gerade exportierte Dateien nicht mehr heruntergeladen, nur um ihre ID zurückzulesen
 - Ordner werden in einem Durchgang geholt statt mit einer Anfrage pro Ordner, sofern der Server das unterstützt
-
-### ✨ Neue Features
-
-**Digest-Authentifizierung** ([bd009ec](https://github.com/inventory69/simple-notes-sync/commit/bd009ec))
-- WebDAV-Server ohne Basic-Auth funktionieren jetzt. Beide Verfahren werden automatisch ausgehandelt - nichts einzustellen
+- Eine Notiz in einen Ordner zu verschieben oder einen Ordner umzubenennen lädt die Notiz nicht mehr direkt wieder herunter. Das Verschieben lädt sie auf den neuen Pfad hoch und räumt danach den alten auf - und dieses Aufräumen warf weg, was der Upload gerade gelernt hatte. Ein Ordner-Rename kostete so einen sinnlosen Download pro Notiz darin ([dba25cf](https://github.com/inventory69/simple-notes-sync/commit/dba25cf))
+- Das Ordner-Aufräumen greift nicht mehr nach dem Markdown-Spiegel, wenn Markdown abgeschaltet ist ([9924cf4](https://github.com/inventory69/simple-notes-sync/commit/9924cf4))
 
 ### 🔧 Technische Verbesserungen
 
@@ -35,6 +82,20 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **Schärferes Code-Qualitätsgate** ([61ea842](https://github.com/inventory69/simple-notes-sync/commit/61ea842))
 - Die Komplexitätsgrenzen waren über die Zeit angehoben worden, um Bestandscode durchzulassen - damit waren sie auch für neuen Code wirkungslos. Sie stehen wieder auf ihren Zielwerten; die Stellen, die sie noch überschreiten, sind einzeln markiert und werden Release für Release abgebaut
+
+**Ein Build-Typ für Tester** ([6f1c616](https://github.com/inventory69/simple-notes-sync/commit/6f1c616), [572b267](https://github.com/inventory69/simple-notes-sync/commit/572b267), [25b27a8](https://github.com/inventory69/simple-notes-sync/commit/25b27a8), [1fc02a9](https://github.com/inventory69/simple-notes-sync/commit/1fc02a9))
+- Beta-Builds sind identisch zu Release-Builds - gleicher Signing-Key, gleiches R8 - und schalten nur Datei-Logging, Sync-Debug-Log und die Entwickleroptionen frei, damit ein Tester ein Log herausgeben kann, ohne nach einem versteckten Schalter zu suchen. Tags mit Suffix veröffentlichen ein Pre-Release und erreichen weder Play noch F-Droid; überholte Pre-Releases werden automatisch aufgeräumt
+- Danke an alle, die die Betas dieser Version getestet und Logs geschickt haben
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (99 %): [@heretic43](https://github.com/heretic43)
+- **Indonesisch** (95 %): Arif Budiman
+- **Norwegisch Bokmål** (95 %): [@xdpirate](https://github.com/xdpirate)
+- **Russisch** (95 %): PONYATIN
+- **Italienisch** (91 %): GVE
+- **Französisch** (85 %): Fred
+- Niederländisch und brasilianisches Portugiesisch wurden in diesem Release begonnen - danke an Quinten und Rafael. Ausgeliefert werden sie noch nicht: Eine Sprache kommt ab 40 % Übersetzungsgrad in die System-Sprachauswahl, damit niemand nach der Auswahl in einer überwiegend englischen Oberfläche landet. Beide stehen auf [Hosted Weblate](https://hosted.weblate.org/projects/simple-notes-sync/android-app/) offen, wer mithelfen mag
 
 ---
 

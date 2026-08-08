@@ -122,7 +122,7 @@
     <string name="error_invalid_protocol">无效的协议：%s。请使用HTTP 或 HTTPS。</string>
     <string name="error_invalid_url">无效的 URL：%s</string>
     <string name="error_server_not_configured">未完全配置 WebDAV 服务器</string>
-    <string name="error_sardine_client_failed">不能创建沙丁鱼客户端</string>
+    <string name="error_sardine_client_failed">不能创建 WebDAV 客户端</string>
     <string name="error_server_url_not_configured">未配置服务器 URL</string>
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
@@ -289,7 +289,7 @@
     <string name="debug_settings_title">调试和诊断</string>
     <string name="debug_file_logging_title">日志文件</string>
     <string name="debug_file_logging_subtitle">保存同步日志到文件</string>
-    <string name="debug_privacy_info">🔒 隐私：日志仅存储在你的设备上并且绝对不会发送到外部服务器。日志包含同步活动用于排查错误。你可以在任何时间删除或导出它们。</string>
+    <string name="debug_privacy_info">🔒 隐私：日志存储在你的设备。本应用从不上传它们到任何地方；分享或发送一个日志总是通过你挑选的一个应用。日志包含同步活动用于故障排除。你可以随时删除或导出它们。导出时用占位符替换服务器地址、用户名、笔记标题、文件夹名字；保留很短的名字（三个字符之下）和笔记 ID — 发送它之前检查文件。</string>
     <string name="debug_log_actions_section">日志操作</string>
     <string name="debug_export_logs">📤 导出和分享日志</string>
     <string name="debug_logs_subject">简单笔记同步日志</string>
@@ -949,4 +949,46 @@
     <string name="theme_mode_subsection">模式</string>
     <string name="notes_list_widget_config_hide_preview">仅标题</string>
     <string name="notes_list_widget_config_hide_preview_desc">卡片只显示笔记标题，无预览文本</string>
+    <string name="debug_logging_section">日志</string>
+    <string name="debug_send_to_developer">发送日志到开发者</string>
+    <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: sync log</string>
+    <string name="debug_logs_mail_body">Device: %1$s\nAndroid: %2$s (API %3$d)\n\n什么出错（可选）：\n</string>
+    <string name="debug_send_no_mail_app">未找到邮箱应用。使用导出日志作为代替。</string>
+    <string name="about_beta_notice">🧪 测试版构建。诊断日志是开启的，这样你可以用一个报告发送同步日志 — 设置 → 调试和诊断来导出或关闭它。导出的日志会替换掉你的服务器地址、用户名和笔记标题。</string>
+    <string name="sync_restored_count">已恢复 %1$d</string>
+    <string name="sync_deletion_check_skipped">已跳过删除检查（未完成服务器列出文件）</string>
+    <string name="activity_log_title">活动日志</string>
+    <string name="settings_activity_log_subtitle">看你的笔记发生什么事和什么时候发生</string>
+    <string name="activity_log_empty_state">还没有活动</string>
+    <string name="activity_log_share_cd">分享日志</string>
+    <string name="activity_log_share_empty">还没有东西可以分享</string>
+    <string name="activity_log_clear_cd">清除日志</string>
+    <string name="activity_log_clear_confirm_title">清除活动日志？</string>
+    <string name="activity_log_clear_confirm_message">这个仅删除此设备上的日志。它不影响你的笔记。</string>
+    <string name="activity_log_today">今天</string>
+    <string name="activity_log_yesterday">昨天</string>
+    <string name="activity_log_note_gone_cd">笔记不再存在</string>
+    <string name="activity_log_origin_local">设备</string>
+    <string name="activity_log_origin_remote">服务器</string>
+    <string name="activity_op_create">已创建</string>
+    <string name="activity_op_edit">已编辑</string>
+    <string name="activity_op_trash">已移动到垃圾桶</string>
+    <string name="activity_op_restore">已恢复</string>
+    <string name="activity_op_restore_self_heal">已恢复（错误地标记为已删除）</string>
+    <string name="activity_op_purge">已永久删除</string>
+    <string name="activity_op_purge_auto">已永久删除（垃圾桶滞留时间到期）</string>
+    <string name="activity_op_upload">已上传到服务器</string>
+    <string name="activity_op_download">已从服务器下载</string>
+    <string name="activity_op_conflict">检测到冲突</string>
+    <string name="activity_op_folder_delete">已删除文件夹：%1$s</string>
+    <string name="activity_op_sync_ok">已完成同步</string>
+    <string name="activity_op_sync_fail">同步失败了：%1$s</string>
+    <string name="activity_op_deletion_skipped">已跳过删除检查 — 未完成服务器列出文件</string>
+    <string name="activity_folder_suffix">" · %1$s"</string>
+    <string name="activity_trigger_manual">手动</string>
+    <string name="activity_trigger_resume">打开应用后</string>
+    <string name="activity_trigger_onsave">保存后</string>
+    <string name="activity_trigger_wifi">Wi-Fi</string>
+    <string name="activity_trigger_periodic">定期</string>
+    <string name="activity_untitled_sync_entry">同步</string>
 </resources>

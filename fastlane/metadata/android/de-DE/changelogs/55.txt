@@ -1,0 +1,10 @@
+🪶 v2.14.0 - Federgewicht
+
+• Neu: Aktivitätsprotokoll in den Einstellungen - was mit Notizen passierte, was Syncs auslöste. Bleibt lokal
+• Neu: WebDAV-Server ohne Basic Auth funktionieren
+• Schnellerer Sync: deutlich weniger Anfragen
+• Fix: nicht auflistbarer Ordner sah aus wie Löschung - Notizen landeten im Papierkorb. Heilt beim nächsten Sync
+• Fix: geteilte Logs ohne Serverpfad und Dateinamen
+• Übersetzungsupdate: ZH, ID, NB, RU, IT, FR
+
+Danke an @daalja, David Jany, @xmichelf und Peter!
