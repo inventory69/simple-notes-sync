@@ -180,6 +180,65 @@ class LogAnonymizerTest {
         assertEquals("📡 Server URL: https://<server><path>/", result)
     }
 
+    /**
+     * Regression (Beta-Log 2026-08-04, Tester David Jany): seit der URL-Kanonisierung steht in
+     * den Prefs bereits `%20`, „roh" und „enkodiert" sind damit dieselbe Zeichenkette. Die
+     * `path`-Felder der PROPFIND-Antworten tragen aber die **dekodierte** Form — der Klarname
+     * stand dadurch 1521 mal im exportierten Log.
+     */
+    @Test
+    fun `strips the decoded path variant when prefs hold the canonicalized url`() {
+        val canonicalized =
+            "https://webmail.example.org/servlet/webdav.infostore/Userstore/Max%20Mustermann"
+
+        val result = LogAnonymizer.anonymize(
+            "MarkdownSyncManager:    ⏭️ Skipping /servlet/webdav.infostore/Userstore/" +
+                "Max Mustermann/notes-md/Steuer.md: not modified since last sync",
+            canonicalized,
+            "max.mustermann@example.org"
+        )
+
+        assertFalse("legal name leaked: $result", result.contains("Mustermann"))
+        assertEquals(
+            "MarkdownSyncManager:    ⏭️ Skipping <path>/notes-md/<note>.md: not modified since last sync",
+            result
+        )
+    }
+
+    /**
+     * Regression: ein kurzer Ordnername darf keine fremden Wörter zersägen. Im Beta-Log wurde aus
+     * `Automatischer Upload` ein `<folder>matischer Upload` — kein Leak, aber unlesbar.
+     */
+    @Test
+    fun `does not replace a title inside a longer unrelated word`() {
+        val result = LogAnonymizer.anonymize(
+            "WebDavClient: list(.../Automatischer Upload/) → Einkaufsliste beim Discounter",
+            null,
+            null,
+            listOf("Einkauf"),
+            listOf("Auto")
+        )
+
+        assertEquals(
+            "WebDavClient: list(.../Automatischer Upload/) → Einkaufsliste beim Discounter",
+            result
+        )
+    }
+
+    /** Die Wortgrenze darf echte Treffer nicht kosten: Pfadtrenner und Satzzeichen zählen nicht. */
+    @Test
+    fun `still replaces a title bounded by punctuation or path separators`() {
+        val result = LogAnonymizer.anonymize(
+            "NoteUploader: put(/notes/Arbeit/x.json), title='Einkauf' — done",
+            null,
+            null,
+            listOf("Einkauf"),
+            listOf("Arbeit")
+        )
+
+        assertEquals("NoteUploader: put(/notes/<folder>/x.json), title='<note>' — done", result)
+    }
+
     /** Der Pfad darf den Nextcloud-Fall nicht schlechter machen: Rest der URL bleibt lesbar. */
     @Test
     fun `keeps the part below the sync base readable`() {

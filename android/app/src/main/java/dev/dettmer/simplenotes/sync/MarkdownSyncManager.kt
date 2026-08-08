@@ -784,16 +784,16 @@ internal class MarkdownSyncManager(
     fun cleanupStaleRoot(webdav: WebDavClient, serverUrl: String) {
         try {
             val rootUrl = serverUrl.trimEnd('/')
-            Logger.d(TAG, "   🔍 DEBUG: Scanning root for stale '/' directory: $rootUrl")
+            Logger.d(TAG, "   🔍 Scanning root for stale '/' directory")
             val rootResources = webdav.list(rootUrl)
-            Logger.d(TAG, "   🔍 DEBUG: Found ${rootResources.size} resources at root")
-            for ((index, res) in rootResources.withIndex()) {
-                Logger.d(
-                    TAG,
-                    "   🔍 DEBUG [$index]: path='${res.path}', " +
-                        "isDir=${res.isDirectory}, href=${res.href}"
-                )
-            }
+            // 🔒 v2.14.0: Nur zählen, nicht auflisten. Das Elternverzeichnis der Sync-Ordner
+            // gehört dem Nutzer und enthält Fremddateien, die der LogAnonymizer prinzipiell
+            // nicht kennt — sie gingen beim Log-Export ungefiltert raus (Datenminimierung).
+            Logger.d(
+                TAG,
+                "   🔍 Found ${rootResources.size} resources at root " +
+                    "(${rootResources.count { it.isDirectory }} directories)"
+            )
             val staleSlashDir = rootResources.find { res -> res.isDirectory && res.name == "/" }
             if (staleSlashDir != null) {
                 val staleHref = staleSlashDir.href?.toString().orEmpty()
