@@ -121,7 +121,7 @@ internal class MarkdownSyncManager(
                     putString("etag_md_${note.id}", mdETag)
                 }
             }
-            Logger.d(TAG, "   ⚡ MD E-Tag cached: ${mdETag?.take(ETAG_PREVIEW_LENGTH)}")
+            Logger.d(TAG, "   ⚡ MD E-Tag cached: ${mdETag?.takeLast(ETAG_PREVIEW_LENGTH)}")
         } catch (e: Exception) {
             // Non-fatal: Hash trotzdem cachen für nächsten Content-Vergleich
             prefs.edit { putString("content_hash_md_${note.id}", mdHash) }

@@ -49,6 +49,22 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
         // � v1.3.1: Mutex um parallele Syncs zu verhindern
         private val syncMutex = Mutex()
+
+        /**
+         * Darf [url] gelöscht werden? Nur wenn das PROPFIND das Verzeichnis geliefert hat und es
+         * ausser sich selbst nichts enthält.
+         *
+         * - `entries == null` heisst 404 (siehe [WebDavClient.listOrNull]) — das Verzeichnis
+         *   existiert nicht und ist damit *nicht* "leer"; ein DELETE liefe ins Leere (🔧 v2.14.0).
+         * - depth=1 liefert das Verzeichnis selbst als Eintrag mit → "leer" = nur Self. Der
+         *   Vergleich läuft über den dekodierten Pfad, damit Ordnernamen mit Sonderzeichen
+         *   ("Test neu" → "Test%20neu" im href) korrekt als Self erkannt werden.
+         */
+        internal fun isDeletableEmptyDir(url: String, entries: List<WebDavResource>?): Boolean {
+            if (entries == null) return false
+            val dirPath = java.net.URI(url).path.trimEnd('/')
+            return entries.none { it.href.path.trimEnd('/') != dirPath }
+        }
     }
 
     private val storage: NotesStorage
@@ -835,7 +851,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val purgedIds = mutableListOf<String>()
             pendingIds.forEach { pd ->
                 try {
-                    val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
+                    val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName, pd.isMove)
                     if (!deleted) return@forEach
                     successIds.add(pd.id)
                     // 🔒 Moves räumen nur den alten Pfad auf — die Note-ID darf NICHT ins geteilte
@@ -1238,18 +1254,16 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         val webdav = connectionManager.getOrCreateClient() ?: return@withContext false
         val serverUrl = urlBuilder.getServerUrl() ?: return@withContext false
         var ok = true
-        for (url in listOf(
-            urlBuilder.getNotesFolderUrl(serverUrl, folderName),
-            urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
-        )) {
+        // 🔧 v2.14.0: MD-Spiegel nur anfassen, wenn ein MD-Feature aktiv ist — dasselbe Gate wie
+        // in NoteDownloader.deleteFromServer. Ohne das kostet jeder Ordner-Cleanup einen PROPFIND
+        // plus ein 404-DELETE gegen ein Verzeichnis, das es nie gab.
+        val urls = buildList {
+            add(urlBuilder.getNotesFolderUrl(serverUrl, folderName))
+            if (markdownFeaturesEnabled()) add(urlBuilder.getMarkdownFolderUrl(serverUrl, folderName))
+        }
+        for (url in urls) {
             try {
-                val entries = webdav.listOrNull(url)
-                // depth=1 liefert das Verzeichnis selbst als ersten Eintrag → "leer" = nur Self.
-                // Decoded-Pfad-Vergleich, damit Ordnernamen mit Sonderzeichen (z.B. "Test neu" →
-                // "Test%20neu" im href) korrekt als Self erkannt werden.
-                val dirPath = java.net.URI(url).path.trimEnd('/')
-                val children = entries?.filter { it.href.path.trimEnd('/') != dirPath }
-                if (children.isNullOrEmpty()) {
+                if (isDeletableEmptyDir(url, webdav.listOrNull(url))) {
                     webdav.delete(url)
                     Logger.d(TAG, "🗑️ Deleted empty server folder: $url")
                 }
