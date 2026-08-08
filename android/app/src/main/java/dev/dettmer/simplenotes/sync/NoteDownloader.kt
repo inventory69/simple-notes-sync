@@ -991,11 +991,16 @@ internal class NoteDownloader(
      * Moved from WebDavSyncService.deleteNoteFromServer() in v2.0.0 (Commit 21).
      *
      * @param noteId The ID of the note to delete
+     * @param isMove true, wenn nur der alte Pfad eines Verschiebens/Ordner-Renames aufgeräumt wird
      * @return true if at least one file was deleted (or already absent), false on error
      */
     // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
     @Suppress("CyclomaticComplexMethod")
-    suspend fun deleteFromServer(noteId: String, folderName: String? = null): Boolean = withContext(ioDispatcher) {
+    suspend fun deleteFromServer(
+        noteId: String,
+        folderName: String? = null,
+        isMove: Boolean = false
+    ): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             val webdav = connectionManager.getOrCreateClient() ?: return@withContext false
             val serverUrl = urlBuilder.getServerUrl() ?: return@withContext false
@@ -1083,12 +1088,18 @@ internal class NoteDownloader(
             }
 
             // 🆕 v1.9.0 (Opt 5): Content-Hash und E-Tag bei Deletion invalidieren
-            eTagCache.clearForNote(noteId)
-            prefs.edit {
-                remove("content_hash_$noteId")
-                remove("content_hash_md_$noteId")
+            // 🔧 v2.14.0: Bei einem Move NICHT — der Upload auf den neuen Pfad ist im selben Sync
+            // schon gelaufen und hat den gültigen E-Tag gecacht. Löschen würde die Notiz direkt
+            // danach als "Modified + no cached E-Tag" erneut herunterladen (bei Ordner-Rename
+            // ein überflüssiger GET pro Notiz).
+            if (!isMove) {
+                eTagCache.clearForNote(noteId)
+                prefs.edit {
+                    remove("content_hash_$noteId")
+                    remove("content_hash_md_$noteId")
+                }
+                Logger.d(TAG, "🗑️ Cleared E-Tag + content hash for deleted note: $noteId")
             }
-            Logger.d(TAG, "🗑️ Cleared E-Tag + content hash for deleted note: $noteId")
 
             true
         } catch (e: Exception) {

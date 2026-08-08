@@ -851,7 +851,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             val purgedIds = mutableListOf<String>()
             pendingIds.forEach { pd ->
                 try {
-                    val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName)
+                    val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName, pd.isMove)
                     if (!deleted) return@forEach
                     successIds.add(pd.id)
                     // 🔒 Moves räumen nur den alten Pfad auf — die Note-ID darf NICHT ins geteilte
