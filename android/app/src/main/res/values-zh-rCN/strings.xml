@@ -991,4 +991,10 @@
     <string name="activity_trigger_wifi">Wi-Fi</string>
     <string name="activity_trigger_periodic">定期</string>
     <string name="activity_untitled_sync_entry">同步</string>
+    <string name="settings_default_image_size_title">默认图片大小</string>
+    <string name="settings_default_image_size_info">向笔记插入新图片时应用。已经插入的图片的大小不受影响 — 长按一个图片来更改它。</string>
+    <string name="image_menu_copy">复制图片</string>
+    <string name="toast_image_copied">图片已复制到剪贴板</string>
+    <string name="share_image_placeholder">[🖼]</string>
+    <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
 </resources>
