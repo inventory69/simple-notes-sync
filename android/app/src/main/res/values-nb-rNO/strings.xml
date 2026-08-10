@@ -865,4 +865,5 @@
     <string name="app_lock_no_biometric_title">Ingen skjermlås satt opp</string>
     <string name="app_lock_no_biometric_message">Sett opp fingeravtrykk, ansikt, eller skjermlås i enhetsinnstillingene for å bruke applåsen.</string>
     <string name="app_lock_open_settings">Åpne Innstillinger</string>
+    <string name="sync_restored_count">%1$d gjenopprettet</string>
 </resources>
