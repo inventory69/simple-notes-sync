@@ -6,7 +6,6 @@
     android:minHeight="250dp"
     android:minResizeWidth="110dp"
     android:minResizeHeight="180dp"
-    android:maxResizeWidth="530dp"
     android:targetCellWidth="3"
     android:targetCellHeight="3"
     android:resizeMode="horizontal|vertical"
