@@ -89,6 +89,11 @@ fun LanguageSettingsScreen(onBack: () -> Unit) {
             subtitle = "Norwegian Bokmål"
         ),
         RadioOption(
+            value = "pl",
+            title = stringResource(R.string.language_polish),
+            subtitle = "Polish"
+        ),
+        RadioOption(
             value = "ru",
             title = stringResource(R.string.language_russian),
             subtitle = "Russian"

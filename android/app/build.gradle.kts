@@ -27,11 +27,12 @@ android {
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
         // mit nicht gelisteten Locales fallen wie gewohnt auf den Default (en) zurück.
         // Liste muss synchron zu res/xml/locales_config.xml gehalten werden.
-        // Aufnahme erst ab >= 40% Übersetzungsgrad (v2.12.0: hi 5%, et 2% noch draußen,
-        // bleiben in Weblate und kommen rein, sobald sie die Schwelle reißen).
+        // Aufnahme erst ab >= 40% Übersetzungsgrad (Stand v2.14.0: pt-rBR 32%, nl 9%,
+        // hi 4%, et 2% noch draußen — bleiben in Weblate und kommen rein, sobald sie
+        // die Schwelle reißen).
         androidResources {
             localeFilters += listOf(
-                "en", "de", "es", "fr", "in", "it", "nb-rNO", "ru", "tr", "uk", "zh-rCN",
+                "en", "de", "es", "fr", "in", "it", "nb-rNO", "pl", "ru", "tr", "uk", "zh-rCN",
             )
         }
 
