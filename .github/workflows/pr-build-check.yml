@@ -98,6 +98,10 @@ jobs:
       - name: Post PR comment
         uses: actions/github-script@v7
         if: success()
+        # Fork-PRs: GITHUB_TOKEN ist beim pull_request-Event read-only, egal was
+        # permissions: sagt -> createComment gibt 403. Der Kommentar ist Beiwerk,
+        # das Build-Ergebnis steht schon in den Steps davor. Job darf nicht rot werden.
+        continue-on-error: true
         with:
           script: |
             const fs = require('fs');
