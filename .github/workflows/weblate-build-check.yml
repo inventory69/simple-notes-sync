@@ -99,6 +99,8 @@ jobs:
       - name: Post PR comment
         uses: actions/github-script@v7
         if: success()
+        # siehe pr-build-check.yml: Kommentar darf den Job nicht rot machen.
+        continue-on-error: true
         with:
           script: |
             // workflow_dispatch passes pr_number as input; PR events use context.issue.number
