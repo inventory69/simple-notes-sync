@@ -997,4 +997,5 @@
     <string name="toast_image_copied">图片已复制到剪贴板</string>
     <string name="share_image_placeholder">[🖼]</string>
     <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
+    <string name="language_polish">波兰语</string>
 </resources>
