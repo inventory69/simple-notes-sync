@@ -480,7 +480,7 @@
     <string name="language_turkish">Türkçe</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_chinese_simplified">Chinese (Simplified)</string>
-    <string name="language_info">ℹ️ Wybierz preferowany język. Widok zostanie krótko odświeżony, aby zastosować zmianę.</string>
+    <string name="language_info">ℹ️ Wybierz preferowany język. Widok zostanie natychmiast odświeżony, aby zastosować zmianę.</string>
     <string name="display_settings_title">Wyświetlanie</string>
     <string name="settings_section_note_list">Lista notatek</string>
     <string name="display_mode_title">Tryb wyświetlania notatek</string>
@@ -937,4 +937,5 @@
     <string name="notes_list_widget_preview_content_2">Omówić roadmapę i nadchodzące kamienie milowe</string>
     <string name="notes_list_widget_preview_title_3">Pomysły</string>
     <string name="notes_list_widget_preview_content_3">Nowe koncepcje funkcji dla następnej iteracji</string>
+    <string name="language_polish">Polski</string>
 </resources>
