@@ -907,4 +907,5 @@
     <string name="toast_image_copied">Bilde kopiert til utklippstavlen</string>
     <string name="share_image_placeholder">[🖼]</string>
     <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
+    <string name="language_polish">Polsk</string>
 </resources>
