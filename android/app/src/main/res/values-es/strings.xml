@@ -49,7 +49,7 @@
     <string name="sort_by_name">Nombre</string>
     <string name="sort_by_type">Tipo</string>
     <string name="sort_by_color">Color</string>
-    <string name="action_close_selection">Cerrar selección</string>
+    <string name="action_close_selection">Eliminar selección</string>
     <string name="action_delete_selected">Eliminar seleccionado</string>
     <string name="action_toggle_pin">Cambiar pin</string>
     <string name="section_pinned">Anclado</string>
@@ -616,4 +616,10 @@
     <string name="note_color_gray">Gris</string>
     <string name="folder_create_hint">Nombre de la carpeta</string>
     <string name="folder_create_action">Crear</string>
+    <string name="action_collapse_section">Colapsar %1$s</string>
+    <string name="action_expand_section">Expandir %1$s</string>
+    <string name="action_move_section_up">Mover arriba</string>
+    <string name="action_move_section_down">Mover abajo</string>
+    <string name="section_reorder_hint">Consejo: Deja presionado el botón de flecha para reordenar las secciones.</string>
+    <string name="sync_restored_count">%1$d restaurado</string>
 </resources>
