@@ -8,6 +8,39 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.15.0] - 2026-09-03
+
+### ✨ Neue Features
+
+**Widgets wachsen so weit, wie der Homescreen es zulässt** ([1a67c3e](https://github.com/inventory69/simple-notes-sync/commit/1a67c3e))
+- Beide Widgets trugen eine Größengrenze von 530 dp, auf einem Tablet oder einem aufgeklappten Foldable hörten sie also lange vor dem Bildschirmrand auf zu wachsen. Die Grenze ist weg - ziehen lässt sich jetzt so weit, wie der Launcher es erlaubt
+- Danke an [@Wuts0n](https://github.com/Wuts0n) für den Pull Request! (#136)
+
+**Polnisch** ([8339409](https://github.com/inventory69/simple-notes-sync/commit/8339409))
+- Polnisch war auf Weblate vollständig übersetzt, wurde aber weiterhin aus der APK entfernt und fehlte in der Sprachauswahl. Jetzt ist es dabei und auswählbar
+- Die Abdeckungs-Kommentare in `localeFilters` und `locales_config.xml` beschrieben noch den Stand von v2.12.0 und erwähnten pt-rBR und nl nicht; beide sind wieder aktuell
+
+### 🐛 Bug-Fixes
+
+**Speichern ohne Änderung schob die Notiz nach oben** ([78801c6](https://github.com/inventory69/simple-notes-sync/commit/78801c6))
+- Der Speichern-Button lief immer durch den vollen Speichervorgang und setzte ein neues Änderungsdatum, auch wenn nichts getippt worden war. Eine Notiz öffnen, lesen und speichern reichte, um sie in einer nach Datum sortierten Liste nach vorne zu schieben - und sie beim nächsten Sync erneut hochzuladen
+- Der Button prüft jetzt dasselbe Dirty-Flag, das die Zurück-Geste seit jeher prüft. Sync und Navigation laufen weiterhin, eine von der Autospeicherung geschriebene offene Änderung wird also beim Druck auf Speichern trotzdem hochgeladen
+- Danke an [@JavaRaf](https://github.com/JavaRaf) für den Bericht! (#124)
+
+**Zugangsdaten überstanden keinen Gerätewechsel** ([fac2414](https://github.com/inventory69/simple-notes-sync/commit/fac2414))
+- Ein Gerätewechsel kopiert die verschlüsselte Zugangsdaten-Datei mit, aber nicht den Hardware-Schlüssel, der sie öffnet - der kann das Gerät nicht verlassen, auf dem er entstanden ist. Die zurückgespielte Datei war dauerhaft unlesbar, und weil nur Erfolge gemerkt wurden, versuchte jeder Zugriff es erneut: acht Fehlversuche pro Sync, 40-69% der gesamten Sync-Zeit, während das Passwort stillschweigend in unverschlüsseltem Speicher landete
+- Die App erkennt die tote Datei jetzt, verwirft sie einmal und legt eine neue an. Zusätzlich ist die Datei von Backup und Gerätewechsel ausgenommen, damit sie nicht zurückkommt. Auf einer echten Installation ging das von 53 Fehlern auf 0 und der Sync-Median von 398 ms auf 84,5 ms
+- Verworfen wird nur bei einem Entschlüsselungsfehler. Ein vorübergehendes Problem wie eine volle Festplatte gibt für diese Sitzung auf und versucht es beim nächsten Start erneut - nach der Migration hält der verschlüsselte Speicher die einzige Kopie des Passworts
+
+### 🌍 Übersetzungen
+
+- **Polnisch** (100%): [@ldvk0](https://github.com/ldvk0) - eine komplett neue Sprache
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43)
+- **Norwegisch Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Indonesisch** (100%): [@arifpedia](https://github.com/arifpedia) / Arif Budiman
+
+---
+
 ## [2.14.0] - 2026-08-08
 
 ### ✨ Neue Features

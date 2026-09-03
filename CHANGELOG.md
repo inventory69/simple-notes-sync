@@ -8,6 +8,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.15.0] - 2026-09-03
+
+### ✨ New Features
+
+**Widgets Grow As Large As the Home Screen Allows** ([1a67c3e](https://github.com/inventory69/simple-notes-sync/commit/1a67c3e))
+- Both widgets carried a 530dp resize ceiling, so on a tablet or an unfolded foldable they stopped growing long before the screen ran out. The cap is gone - drag them as far as the launcher permits
+- Thanks to [@Wuts0n](https://github.com/Wuts0n) for the pull request! (#136)
+
+**Polish** ([8339409](https://github.com/inventory69/simple-notes-sync/commit/8339409))
+- Polish reached full coverage on Weblate but was still being stripped out of the APK and was missing from the language picker. It ships now, and it is selectable
+- The coverage comments in `localeFilters` and `locales_config.xml` still described the v2.12.0 state and never mentioned pt-rBR and nl; both are current again
+
+### 🐛 Bug Fixes
+
+**Saving an Unchanged Note Moved It to the Top of the List** ([78801c6](https://github.com/inventory69/simple-notes-sync/commit/78801c6))
+- The save button always ran the full save, stamping a new modification date even when nothing had been typed. Opening a note, reading it, and pressing save was enough to push it to the front of a list sorted by date - and to upload it again on the next sync
+- The button now checks the same dirty flag the back gesture has always checked. Sync and navigation still run, so a pending change written by autosave is still uploaded when you press save
+- Thanks to [@JavaRaf](https://github.com/JavaRaf) for the report! (#124)
+
+**Credentials Did Not Survive a Device Transfer** ([fac2414](https://github.com/inventory69/simple-notes-sync/commit/fac2414))
+- A device transfer copies the encrypted credential file but not the hardware key that opens it - that key cannot leave the device it was made on. The restored file was permanently unreadable, and because only successes were remembered, every credential access tried to open it again: eight failed attempts per sync, taking 40-69% of the total sync time, with the password quietly falling back to unencrypted storage
+- The app now recognises the dead file, discards it once, and builds a fresh one. The file is also excluded from backup and device transfer so it cannot come back. On a real install this took the failures from 53 to 0 and the sync median from 398 ms to 84.5 ms
+- Only a decryption failure discards the store. A transient problem such as a full disk gives up for that session and retries on the next start, because after migration the encrypted store holds the only copy of the password
+
+### 🌍 Translations
+
+- **Polish** (100%): [@ldvk0](https://github.com/ldvk0) - a complete new locale
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+- **Norwegian Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Indonesian** (100%): [@arifpedia](https://github.com/arifpedia) / Arif Budiman
+
+---
+
 ## [2.14.0] - 2026-08-08
 
 ### ✨ New Features

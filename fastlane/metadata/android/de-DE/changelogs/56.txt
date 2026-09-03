@@ -1,0 +1,9 @@
+🪴 v2.15.0 - Raum zum Wachsen
+
+• Neu: Widgets lassen sich nun an den Startbildschirm anpassen - die Größenbeschränkung ist weg
+• Neu: Polnisch, vollständig übersetzt
+• Behoben: Speichern ohne Änderungen ändert das Datum nicht mehr und verschiebt die Notiz nicht nach oben
+• Behoben: Nach einem Gerätewechsel konnte der Sync das gespeicherte Passwort nicht lesen - behebt sich automatisch
+• Übersetzungsupdate: PL, ZH, NB, ID
+
+Danke an @Wuts0n, @JavaRaf, @ldvk0, @heretic43, @xdpirate und @arifpedia!

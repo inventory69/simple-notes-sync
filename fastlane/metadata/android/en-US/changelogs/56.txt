@@ -1,0 +1,9 @@
+🪴 v2.15.0 - Room to grow
+
+• New: Widgets can now be resized to fit the home screen - the size restriction is gone
+• New: Polish, fully translated
+• Fixed: When saving a note you haven’t edited, the date is no longer changed and the note no longer moves to the top
+• Fixed: After switching to a new phone, sync could not read your saved password - this is now resolved automatically
+• Updated translations: PL, ZH, NB, ID
+
+Thanks to @Wuts0n, @JavaRaf, @ldvk0, @heretic43, @xdpirate and @arifpedia!
