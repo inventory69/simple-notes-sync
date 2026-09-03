@@ -77,14 +77,16 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
         // appear as offline even though they have a configured server
         migrateOfflineModeSetting(prefs)
 
-        // 🔐 v2.3.0: Migrate credentials to EncryptedSharedPreferences
-        migrateCredentialsToEncryptedPrefs(prefs)
-
         // File-Logging ZUERST aktivieren (damit alle Logs geschrieben werden!)
         if (prefs.getBoolean("file_logging_enabled", false)) {
             Logger.enableFileLogging(this)
             Logger.d(TAG, "📝 File logging enabled at Application startup")
         }
+
+        // 🔐 v2.3.0: Migrate credentials to EncryptedSharedPreferences.
+        // Läuft NACH dem File-Logging: Wenn der KeyStore hier repariert wird, ist das der
+        // einzige Ort, an dem man das je zu sehen bekommt — vorher fiel die Meldung raus.
+        migrateCredentialsToEncryptedPrefs(prefs)
 
         // 🆕 v2.2.0: Persistent sync debug logger
         SyncDebugLogger.init(this)

@@ -15,4 +15,10 @@
          dem neuen Gerät nie stattgefunden haben (und die deviceId ist dort eine andere). -->
     <exclude domain="file" path="activity.jsonl"/>
     <exclude domain="file" path="activity.jsonl.1"/>
+
+    <!-- Das Tink-Keyset der EncryptedSharedPreferences ist mit einem AndroidKeyStore-MasterKey
+         verschlüsselt, der sich nicht exportieren lässt und deshalb nie mitkommt. Restauriert
+         landet hier also eine Datei, die auf dem neuen Gerät dauerhaft unentschlüsselbar ist.
+         Nicht sichern: die Credentials kommen ohnehin aus den regulären Prefs zurück. -->
+    <exclude domain="sharedpref" path="simple_notes_secure_prefs.xml"/>
 </full-backup-content>

@@ -5,12 +5,17 @@
 -->
 <data-extraction-rules>
     <!-- 🆕 Issue #128 Teil 3: Gerätehistorie, kein Inhalt — siehe backup_rules.xml -->
+    <!-- simple_notes_secure_prefs.xml: siehe backup_rules.xml — das Keyset ist ohne den
+         nicht exportierbaren MasterKey wertlos und blockiert sonst die Verschlüsselung
+         auf dem Zielgerät. -->
     <cloud-backup>
         <exclude domain="file" path="activity.jsonl"/>
         <exclude domain="file" path="activity.jsonl.1"/>
+        <exclude domain="sharedpref" path="simple_notes_secure_prefs.xml"/>
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="activity.jsonl"/>
         <exclude domain="file" path="activity.jsonl.1"/>
+        <exclude domain="sharedpref" path="simple_notes_secure_prefs.xml"/>
     </device-transfer>
 </data-extraction-rules>

@@ -1007,11 +1007,32 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         viewModelScope.launch { performSave(silent = true) }
     }
 
+    /**
+     * v2.0.0: Holt den aktuellen Inhalt aus dem Compose-`TextFieldState`, den `snapshotFlow`
+     * womöglich noch nicht propagiert hat. Muss vor jeder [isDirty]-Prüfung laufen, sonst gelten
+     * die letzten Tastendrücke als „nichts geändert“.
+     */
+    private fun flushLatestContent() {
+        if (currentNoteType != NoteType.TEXT) return
+        val latest = contentProvider?.invoke() ?: return
+        if (latest == _uiState.value.content) return
+        _uiState.update { it.copy(content = latest) }
+        isDirty = true
+    }
+
     fun saveNote() {
         autosaveJob?.cancel() // 🆕 v1.9.0: manual save supersedes pending autosave
         viewModelScope.launch {
-            val saved = performSave()
-            if (!saved) return@launch
+            // 🔧 Issue #124: Ohne echte Änderung nicht neu schreiben — performSave() würde sonst
+            // updatedAt und syncStatus anfassen, obwohl der Nutzer nichts geändert hat. Sync und
+            // Navigation laufen trotzdem: ein per Autosave geschriebener PENDING-Stand soll auch
+            // vom Button noch hochgeladen werden.
+            flushLatestContent()
+            if (!isDirty && existingNote != null) {
+                Logger.d(TAG, "⏭️ saveNote: nothing dirty — skipping write")
+            } else if (!performSave()) {
+                return@launch
+            }
 
             // 🌟 v1.6.0: Trigger onSave Sync
             triggerOnSaveSync()
@@ -1042,16 +1063,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             return true
         }
 
-        // v2.0.0: Flush latest content from Compose TextFieldState BEFORE the
-        // isDirty check — snapshotFlow may not have propagated the last keystrokes yet
-        if (currentNoteType == NoteType.TEXT) {
-            contentProvider?.invoke()?.let { latestContent ->
-                if (latestContent != _uiState.value.content) {
-                    _uiState.update { it.copy(content = latestContent) }
-                    isDirty = true
-                }
-            }
-        }
+        flushLatestContent()
 
         if (!isDirty) {
             Logger.d(TAG, "⏭️ saveOnBack: nothing dirty — skipping")

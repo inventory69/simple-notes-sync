@@ -9,6 +9,8 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import java.security.GeneralSecurityException
+import java.security.KeyStore
 
 /**
  * 🔐 v2.3.0: Secure credential storage using EncryptedSharedPreferences.
@@ -23,30 +25,101 @@ import androidx.security.crypto.MasterKey
 object CredentialStore {
     private const val PREFS_NAME = "simple_notes_secure_prefs"
     private const val TAG = "CredentialStore"
+    private const val ANDROID_KEYSTORE = "AndroidKeyStore"
 
     @Volatile private var securePrefs: SharedPreferences? = null
 
+    /**
+     * Merkt sich, dass der KeyStore dauerhaft nicht nutzbar ist. Ohne dieses Flag wurde bei
+     * jedem Credential-Zugriff ein neuer `EncryptedSharedPreferences.create()`-Versuch
+     * gestartet, weil nur der Erfolgsfall gecached war. Auf einem Gerät mit kaputtem Keyset
+     * kostete das ~15-35 ms pro Aufruf und damit 40-69 % der gesamten Sync-Dauer (10 Zugriffe
+     * pro Sync).
+     */
+    @Volatile private var secureUnavailable = false
+
     fun getSecurePrefs(context: Context): SharedPreferences? {
-        return securePrefs ?: synchronized(this) {
-            securePrefs ?: createSecurePrefs(context.applicationContext).also { securePrefs = it }
+        securePrefs?.let { return it }
+        if (secureUnavailable) return null
+        return synchronized(this) {
+            securePrefs ?: if (secureUnavailable) {
+                null
+            } else {
+                createSecurePrefs(context.applicationContext).also {
+                    securePrefs = it
+                    secureUnavailable = it == null
+                }
+            }
         }
     }
 
     private fun createSecurePrefs(appContext: Context): SharedPreferences? {
         return try {
-            val masterKey = MasterKey.Builder(appContext)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            EncryptedSharedPreferences.create(
-                appContext,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            buildSecurePrefs(appContext)
+        } catch (e: GeneralSecurityException) {
+            // Das Keyset lässt sich mit dem vorhandenen MasterKey nicht mehr entschlüsseln. Typisch
+            // nach einem Gerätewechsel: die Prefs-Datei wird mitkopiert, der AndroidKeyStore-Key
+            // nicht - der ist nicht exportierbar. Der Zustand heilt nicht von selbst, einmal
+            // wegwerfen und neu anlegen ist die einzige Reparatur. Verloren geht dabei nichts, was
+            // noch lesbar wäre: die Credentials liegen dann im Fallback (reguläre Prefs) und werden
+            // von SimpleNotesApplication.migrateCredentialsToEncryptedPrefs() neu verschlüsselt.
+            Logger.w(
+                TAG,
+                "⚠️ Secure prefs unreadable (${e.javaClass.simpleName}: ${e.message}) — recreating keyset"
             )
+            recreateSecurePrefs(appContext)
         } catch (e: Exception) {
-            Logger.e(TAG, "⚠️ Failed to create EncryptedSharedPreferences (KeyStore issue): ${e.message}")
+            // Alles andere ist ein Momentzustand, kein totes Keyset: voller Speicher (IOException),
+            // KeyStore gerade nicht ansprechbar. Nach abgeschlossener Migration ist der
+            // verschlüsselte Store die EINZIGE Kopie der Credentials — hier zu löschen würde das
+            // Passwort vernichten. Also nur für diesen Prozess aufgeben; der nächste App-Start
+            // versucht es erneut.
+            Logger.e(
+                TAG,
+                "⚠️ Secure prefs unavailable (${e.javaClass.simpleName}: ${e.message}) — keyset kept"
+            )
             null
+        }
+    }
+
+    /** Verwirft Keyset + MasterKey und legt den Store genau einmal neu an. */
+    private fun recreateSecurePrefs(appContext: Context): SharedPreferences? {
+        return try {
+            appContext.deleteSharedPreferences(PREFS_NAME)
+            deleteMasterKey()
+            buildSecurePrefs(appContext)
+        } catch (e: Exception) {
+            Logger.e(
+                TAG,
+                "⚠️ Failed to create EncryptedSharedPreferences (KeyStore issue): " +
+                    "${e.javaClass.simpleName}: ${e.message}"
+            )
+            null
+        }
+    }
+
+    private fun buildSecurePrefs(appContext: Context): SharedPreferences {
+        val masterKey = MasterKey.Builder(appContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        return EncryptedSharedPreferences.create(
+            appContext,
+            PREFS_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
+    private fun deleteMasterKey() {
+        try {
+            KeyStore.getInstance(ANDROID_KEYSTORE)
+                .apply { load(null) }
+                .deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+        } catch (e: Exception) {
+            // Kein MasterKey vorhanden ist der Normalfall auf einem frisch zurückgespielten
+            // Gerät — das Neuanlegen darunter funktioniert trotzdem.
+            Logger.d(TAG, "MasterKey not removed (${e.javaClass.simpleName}) — continuing")
         }
     }
 
