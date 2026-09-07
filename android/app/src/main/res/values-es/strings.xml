@@ -49,7 +49,7 @@
     <string name="sort_by_name">Nombre</string>
     <string name="sort_by_type">Tipo</string>
     <string name="sort_by_color">Color</string>
-    <string name="action_close_selection">Eliminar selección</string>
+    <string name="action_close_selection">Cerrar selección</string>
     <string name="action_delete_selected">Eliminar seleccionado</string>
     <string name="action_toggle_pin">Cambiar pin</string>
     <string name="section_pinned">Anclado</string>
