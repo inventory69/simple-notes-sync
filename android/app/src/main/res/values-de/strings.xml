@@ -61,6 +61,15 @@
     <string name="sync_legend_pending_desc">Diese Notiz hat lokale Änderungen, die noch synchronisiert werden müssen.</string>
     <string name="sync_legend_conflict_label">Konflikt</string>
     <string name="sync_legend_conflict_desc">Diese Notiz wurde auf mehreren Geräten gleichzeitig geändert. Die neueste Version wurde beibehalten.</string>
+    <!-- v2.16.0 (#126): Wort-/Zeichenzähler im Editor -->
+    <plurals name="note_stats_words">
+        <item quantity="one">%1$d Wort</item>
+        <item quantity="other">%1$d Wörter</item>
+    </plurals>
+    <plurals name="note_stats_characters">
+        <item quantity="one">%1$d Zeichen</item>
+        <item quantity="other">%1$d Zeichen</item>
+    </plurals>
     <!-- v2.16.0: Konflikt-Auflösung im Editor -->
     <string name="conflict_banner_title">Auf einem anderen Gerät geändert</string>
     <string name="conflict_banner_message">Diese Notiz wurde hier und woanders bearbeitet. Wähle, welche Fassung gilt — bis dahin wird sie nicht synchronisiert.</string>

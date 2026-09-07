@@ -140,6 +140,7 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
+import dev.dettmer.simplenotes.ui.editor.components.NoteStatsRow
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
@@ -1134,6 +1135,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 )
                             }
                         }
+
+                        // 🆕 v2.16.0 (Issue #126): Wort-/Zeichenzahl, Tippen wechselt.
+                        NoteStatsRow(text = uiState.content)
                     }
 
                     NoteType.CHECKLIST -> {
@@ -1187,6 +1191,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 .fillMaxWidth()
                                 .weight(1f)
                         )
+
+                        // 🆕 v2.16.0 (Issue #126): dieselbe Zählung über den Item-Texten.
+                        val checklistText = remember(checklistItems) {
+                            checklistItems.joinToString(" ") { it.text }
+                        }
+                        NoteStatsRow(text = checklistText)
                     }
                 }
             }
