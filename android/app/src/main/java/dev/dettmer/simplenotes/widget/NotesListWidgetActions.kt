@@ -36,6 +36,13 @@ class OpenNotesListConfigAction : ActionCallback {
         val glanceManager = GlanceAppWidgetManager(context)
         val appWidgetId = glanceManager.getAppWidgetId(glanceId)
 
+        // 🆕 v2.16.0 (Issue #119): Das Zahnrad sitzt jetzt im aufgeklappten FAB-Menü — das muss
+        // sich beim Öffnen der Einstellungen schließen, sonst steht es beim Zurückkommen offen.
+        updateAppWidgetState(context, glanceId) { prefs ->
+            prefs[NotesListWidgetState.KEY_FAB_EXPANDED] = false
+        }
+        NotesListWidget().update(context, glanceId)
+
         val intent = Intent(context, NotesListWidgetConfigActivity::class.java).apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
