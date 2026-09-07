@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.models.holdsLocalEdit
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
@@ -660,7 +661,7 @@ internal class MarkdownSyncManager(
                         }
                         mdNote.updatedAt > localNote.updatedAt -> {
                             Logger.d(TAG, "      Decision: Markdown has newer timestamp!")
-                            if (localNote.syncStatus == SyncStatus.PENDING) {
+                            if (localNote.syncStatus.holdsLocalEdit) {
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {

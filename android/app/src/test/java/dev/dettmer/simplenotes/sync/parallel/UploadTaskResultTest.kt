@@ -93,7 +93,8 @@ class UploadTaskResultTest {
         val results = listOf(
             UploadTaskResult.Success("id1", "etag"),
             UploadTaskResult.Failure("id2", Exception("error")),
-            UploadTaskResult.Skipped("id3", "reason")
+            UploadTaskResult.Skipped("id3", "reason"),
+            UploadTaskResult.Conflict("id4") // 🆕 v2.16.0
         )
 
         val labels = results.map { result ->
@@ -101,10 +102,11 @@ class UploadTaskResultTest {
                 is UploadTaskResult.Success -> "success"
                 is UploadTaskResult.Failure -> "failure"
                 is UploadTaskResult.Skipped -> "skipped"
+                is UploadTaskResult.Conflict -> "conflict"
             }
         }
 
-        assertEquals(listOf("success", "failure", "skipped"), labels)
+        assertEquals(listOf("success", "failure", "skipped", "conflict"), labels)
     }
 
     // ═══════════════════════════════════════════════

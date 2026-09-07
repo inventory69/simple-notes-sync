@@ -159,6 +159,18 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
         set(value) = setDirEnsured(Constants.KEY_ASSETS_DIR_ENSURED, value)
 
     /**
+     * 🆕 v2.16.0: `true`, sobald der Server das `If-Match` beim PUT nicht verarbeiten kann
+     * (400/501). Der Upload läuft dann wieder ohne Precondition — lieber kein Konfliktschutz
+     * als ein Server, auf den nichts mehr hochgeladen werden kann.
+     *
+     * Teilt sich Speicherung und [dirsFingerprint] mit den Dir-Flags: Ein Wechsel von Server,
+     * Ordner oder Benutzer probiert die Precondition von selbst wieder aus.
+     */
+    var preconditionsUnsupported: Boolean
+        get() = dirEnsured(Constants.KEY_PRECONDITIONS_UNSUPPORTED)
+        set(value) = setDirEnsured(Constants.KEY_PRECONDITIONS_UNSUPPORTED, value)
+
+    /**
      * 🆕 v2.14.0: Der Scan nach dem stale `/`-Verzeichnis (Artefakt eines behobenen
      * Double-Slash-Bugs) läuft einmal pro Server-Config statt bei jedem Import.
      * Trade-off: schreibt ein alter Client das Artefakt erneut, wird es erst beim nächsten

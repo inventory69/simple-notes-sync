@@ -38,7 +38,12 @@ data class ManualMarkdownSyncResult(val exportedCount: Int, val importedCount: I
  * durchgeführt wurde. Diese werden an importMarkdownFiles() weitergegeben, um
  * Re-Import der soeben exportierten Dateien zu verhindern.
  */
-data class UploadBatchResult(val uploadedCount: Int, val markdownExportedNoteIds: Set<String>)
+data class UploadBatchResult(
+    val uploadedCount: Int,
+    val markdownExportedNoteIds: Set<String>,
+    // 🆕 v2.16.0: Uploads, die der Server per If-Match abgelehnt hat (412) — fremde Änderung.
+    val conflictCount: Int = 0
+)
 
 // Abbau: TECH_DEBT_ROADMAP.md Slice 4
 @Suppress("LargeClass", "TooManyFunctions") // Functions extracted into NoteUploader/NoteDownloader/MarkdownSyncManager (v2.0.0)
@@ -594,8 +599,13 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         }
                     )
                     syncedCount += uploadResult.uploadedCount
+                    conflictCount += uploadResult.conflictCount // 🆕 v2.16.0 (If-Match → 412)
                     markdownExportedNoteIds = uploadResult.markdownExportedNoteIds
-                    Logger.d(TAG, "✅ Uploaded: ${uploadResult.uploadedCount} notes")
+                    Logger.d(
+                        TAG,
+                        "✅ Uploaded: ${uploadResult.uploadedCount} notes, " +
+                            "Conflicts: ${uploadResult.conflictCount}"
+                    )
                 } catch (e: Exception) {
                     Logger.e(TAG, "💥 CRASH in uploadLocalNotes()!", e)
                     e.printStackTrace()

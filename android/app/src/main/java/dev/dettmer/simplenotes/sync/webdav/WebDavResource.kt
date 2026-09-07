@@ -72,3 +72,12 @@ fun etagsMatch(a: String?, b: String?): Boolean {
 
 private fun String.normalizeEtag(): String =
     trim().removePrefix("W/").removePrefix("w/").trim('"')
+
+/**
+ * 🆕 v2.16.0: Formt einen gespeicherten ETag zu einem gültigen `If-Match`-Header-Wert.
+ *
+ * Gespeichert wird der rohe Server-Wert — je nach Quelle mit Quotes (`"abc"`), ohne
+ * (Nextclouds `OC-ETag`) oder als schwacher Tag (`W/"abc"`). `If-Match` verlangt einen
+ * starken, gequoteten Entity-Tag: das `W/`-Präfix muss weg, die Quotes müssen dran.
+ */
+fun String.toIfMatchValue(): String = "\"" + trim().removePrefix("W/").removePrefix("w/").trim('"') + "\""
