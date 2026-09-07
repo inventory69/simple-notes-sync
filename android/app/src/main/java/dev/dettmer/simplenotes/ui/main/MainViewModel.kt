@@ -1199,14 +1199,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      *
      * Ein stiller Sync (onResume) läuft dem sichtbaren oft um Sekunden voraus und hat den
      * Konflikt dann schon erkannt. Dieser Zyklus zählt ihn nicht mehr mit und meldete bisher
-     * „Nichts zu synchronisieren", während in der Liste ein Warndreieck stand — deshalb der
-     * Blick auf den Ist-Zustand statt nur auf das Ergebnis dieses Laufs.
+     * „Nichts zu synchronisieren", während in der Liste ein Warndreieck stand. Deshalb zählt
+     * [WebDavSyncService] in `conflictCount` den Ist-Zustand — offene Notizen, nicht Ereignisse
+     * dieses Laufs.
      */
-    private suspend fun completionBanner(result: SyncResult): String {
-        val conflicts = maxOf(result.conflictCount, unresolvedConflictCount())
-        return buildSyncResultBanner(getApplication(), result.copy(conflictCount = conflicts))
+    private suspend fun completionBanner(result: SyncResult): String =
+        buildSyncResultBanner(getApplication(), result)
             ?: getString(R.string.snackbar_nothing_to_sync)
-    }
 
     /** „Bereits synchronisiert" — es sei denn, eine Notiz wartet auf eine Entscheidung. */
     private suspend fun alreadySyncedBanner(): String =

@@ -6,6 +6,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.PendingServerDeletions.PendingDeletion
@@ -48,6 +49,26 @@ data class UploadBatchResult(
 // Abbau: TECH_DEBT_ROADMAP.md Slice 4
 @Suppress("LargeClass", "TooManyFunctions") // Functions extracted into NoteUploader/NoteDownloader/MarkdownSyncManager (v2.0.0)
 class WebDavSyncService(private val context: Context, private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
+    /**
+     * 🆕 v2.16.0: Wie viele **Notizen** auf eine Konfliktentscheidung warten.
+     *
+     * Die Phasenzähler summieren Ereignisse, nicht Notizen: Dieselbe Notiz wird in der
+     * Upload-Phase erkannt (Server-ETag weicht ab → kein PUT) und in der Download-Phase gleich
+     * noch einmal (sie hält jetzt eine lokale Änderung) — das Banner meldete dafür „2 Konflikte".
+     * Der Ist-Zustand im Storage zählt dagegen pro Notiz und erfasst zusätzlich die, die aus
+     * einem früheren Zyklus unentschieden liegengeblieben sind.
+     *
+     * Kostet einen Storage-Read pro Sync; der Cache ist an dieser Stelle warm, weil die
+     * Phasen davor ohnehin über alle Notizen gelaufen sind. [fallback] greift, falls der Read
+     * scheitert — lieber eine zu hohe Zahl als eine verschwiegene Warnung.
+     */
+    private suspend fun unresolvedConflicts(fallback: Int): Int = try {
+        storage.loadAllNotes().count { it.syncStatus == SyncStatus.CONFLICT }
+    } catch (e: java.io.IOException) {
+        Logger.w(TAG, "⚠️ Could not count unresolved conflicts: ${e.message}")
+        fallback
+    }
+
     companion object {
         private const val TAG = "WebDavSyncService"
         private const val HTTP_UNAUTHORIZED = 401
@@ -793,7 +814,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 SyncResult(
                     isSuccess = true,
                     syncedCount = effectiveSyncedCount,
-                    conflictCount = conflictCount,
+                    conflictCount = unresolvedConflicts(conflictCount),
                     deletedOnServerCount = deletedOnServerCount, // 🆕 v1.8.0
                     purgedFromServerCount = purgedFromServerCount, // 🆕 v2.9.x (Trash)
                     trashedFromServerCount = trashedFromServerCount,
