@@ -54,6 +54,7 @@ fun NotesStaggeredGrid(
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     showTimestamp: Boolean = true,
     showTypeIcon: Boolean = true,
+    showFolderLabels: Boolean = false, // 🆕 v2.16.0 (#141): Suche zeigt Treffer aus allen Ordnern
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit,
     folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
@@ -140,6 +141,7 @@ fun NotesStaggeredGrid(
                                     previewLength = previewLength,
                                     showTimestamp = showTimestamp,
                                     showTypeIcon = showTypeIcon,
+                                    showFolderLabels = showFolderLabels,
                                     onNoteClick = onNoteClick,
                                     onNoteLongClick = onNoteLongClick
                                 )
@@ -226,6 +228,7 @@ fun NotesStaggeredGrid(
                                 previewLength = previewLength,
                                 showTimestamp = showTimestamp,
                                 showTypeIcon = showTypeIcon,
+                                showFolderLabel = showFolderLabels,
                                 onClick = { onNoteClick(note) },
                                 onLongClick = { onNoteLongClick(note) }
                             )
@@ -250,6 +253,7 @@ private fun PinnedNotesGrid(
     previewLength: NotePreviewLength,
     showTimestamp: Boolean,
     showTypeIcon: Boolean,
+    showFolderLabels: Boolean,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
 ) {
@@ -274,6 +278,7 @@ private fun PinnedNotesGrid(
                             previewLength = previewLength,
                             showTimestamp = showTimestamp,
                             showTypeIcon = showTypeIcon,
+                            showFolderLabel = showFolderLabels,
                             onClick = { onNoteClick(note) },
                             onLongClick = { onNoteLongClick(note) }
                         )

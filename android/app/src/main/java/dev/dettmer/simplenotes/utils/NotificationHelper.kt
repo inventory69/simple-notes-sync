@@ -17,6 +17,9 @@ object NotificationHelper {
     private const val TAG = "NotificationHelper"
     private const val CHANNEL_ID = "notes_sync_channel"
     private const val NOTIFICATION_ID = 1001
+
+    // 🆕 v2.16.0: eigener Slot für die Konflikt-Notification (vorher inline NOTIFICATION_ID + 1).
+    private const val CONFLICT_NOTIFICATION_ID = 1002
     private const val SYNC_NOTIFICATION_ID = 2
     const val SYNC_PROGRESS_NOTIFICATION_ID = 1003 // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
@@ -211,9 +214,20 @@ object NotificationHelper {
     }
 
     /**
-     * Zeigt Notification bei erkanntem Konflikt
+     * Zeigt Notification bei erkanntem Konflikt.
+     *
+     * 🆕 v2.16.0: Endlich angeschlossen — die Funktion stand seit v1.4.0 samt Titel- und
+     * Plural-Strings in allen Sprachen da und hatte keinen einzigen Aufrufer. Der einzige
+     * Hinweis auf einen Konflikt war das Warn-Icon am Listeneintrag.
+     *
+     * Der [KEY_NOTIFICATIONS_ERRORS_ONLY]-Modus unterdrückt sie bewusst **nicht**: ein
+     * Konflikt ist kein Erfolg, sondern eine Notiz, die ohne Zutun des Nutzers nicht mehr
+     * synchronisiert. `setOnlyAlertOnce` verhindert, dass jeder weitere Sync-Zyklus mit
+     * demselben ungelösten Konflikt erneut Ton und Vibration auslöst.
      */
     fun showConflictNotification(context: Context, conflictCount: Int) {
+        if (!areNotificationsEnabled(context)) return
+
         val intent = Intent(context, ComposeMainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -235,6 +249,7 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setOnlyAlertOnce(true) // 🆕 v2.16.0: nicht bei jedem Sync erneut anpiepen
             .build()
 
         with(NotificationManagerCompat.from(context)) {
@@ -244,12 +259,13 @@ object NotificationHelper {
                         android.Manifest.permission.POST_NOTIFICATIONS
                     ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
-                    notify(NOTIFICATION_ID + 1, notification)
+                    notify(CONFLICT_NOTIFICATION_ID, notification)
                 }
             } else {
-                notify(NOTIFICATION_ID + 1, notification)
+                notify(CONFLICT_NOTIFICATION_ID, notification)
             }
         }
+        Logger.d(TAG, "⚠️ Conflict notification shown for $conflictCount note(s)")
     }
 
     /**

@@ -6,6 +6,7 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.models.holdsLocalEdit
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.DownloadTask
@@ -466,18 +467,23 @@ internal class NoteDownloader(
                                     }
                                     localNote.updatedAt < remoteNote.updatedAt -> {
                                         // Remote is newer
-                                        if (localNote.syncStatus == SyncStatus.PENDING) {
-                                            // Conflict detected
-                                            storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                        if (localNote.syncStatus.holdsLocalEdit) {
+                                            // Conflict detected. 🆕 v2.16.0: gilt auch für eine bereits
+                                            // markierte Notiz — sie bleibt liegen, bis der Nutzer auflöst.
+                                            // Markieren und protokollieren aber nur beim ersten Mal, sonst
+                                            // schreibt jeder Sync-Zyklus denselben Eintrag ins Activity-Log.
+                                            if (localNote.syncStatus != SyncStatus.CONFLICT) {
+                                                storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                                ActivityLog.log(
+                                                    ActivityLog.Op.CONFLICT,
+                                                    ActivityLog.Src.REMOTE,
+                                                    id = remoteNote.id,
+                                                    title = localNote.title,
+                                                    folder = localNote.folderName
+                                                )
+                                            }
                                             conflictCount++
                                             Logger.w(TAG, "   ⚠️ Conflict: ${remoteNote.id}")
-                                            ActivityLog.log(
-                                                ActivityLog.Op.CONFLICT,
-                                                ActivityLog.Src.REMOTE,
-                                                id = remoteNote.id,
-                                                title = localNote.title,
-                                                folder = localNote.folderName
-                                            )
                                         } else {
                                             // Safe to overwrite
                                             storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
@@ -735,16 +741,18 @@ internal class NoteDownloader(
                                     Logger.d(TAG, "   ♻️ Overwritten from ROOT: ${remoteNote.id}")
                                 }
                                 localNote.updatedAt < remoteNote.updatedAt -> {
-                                    if (localNote.syncStatus == SyncStatus.PENDING) {
-                                        storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                    if (localNote.syncStatus.holdsLocalEdit) {
+                                        if (localNote.syncStatus != SyncStatus.CONFLICT) {
+                                            storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                                            ActivityLog.log(
+                                                ActivityLog.Op.CONFLICT,
+                                                ActivityLog.Src.REMOTE,
+                                                id = remoteNote.id,
+                                                title = localNote.title,
+                                                folder = null
+                                            )
+                                        }
                                         conflictCount++
-                                        ActivityLog.log(
-                                            ActivityLog.Op.CONFLICT,
-                                            ActivityLog.Src.REMOTE,
-                                            id = remoteNote.id,
-                                            title = localNote.title,
-                                            folder = null
-                                        )
                                     } else {
                                         storage.saveNote(remoteNote.copy(syncStatus = SyncStatus.SYNCED))
                                         if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++

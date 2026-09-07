@@ -34,6 +34,17 @@ object MarkdownEngine {
         /** Horizontal rule (---, ***, ___). */
         data object HorizontalRule : MarkdownBlock()
 
+        /**
+         * 🆕 v2.16.0 (Issue #140): Bewusst gesetzte Leerzeilen.
+         *
+         * Markdown fasst aufeinanderfolgende Leerzeilen laut Spezifikation zu einem einzigen
+         * Absatztrenner zusammen. In einer Notiz-App ist das falsch: Wer dreimal Enter drückt,
+         * will eine Lücke sehen und keine Absatzgrenze. Die **erste** Leerzeile bleibt der
+         * Trenner (der Renderer setzt dafür seinen Blockabstand), [count] zählt nur die
+         * darüber hinaus gehenden.
+         */
+        data class BlankLines(val count: Int) : MarkdownBlock()
+
         /** 🆕 v1.9.0: Task list (GitHub-style checkboxes: - [ ] / - [x]). */
         data class TaskList(val items: List<TaskItem>) : MarkdownBlock()
 
@@ -167,8 +178,17 @@ object MarkdownEngine {
                     blocks.add(MarkdownBlock.UnorderedList(items))
                 }
 
-                // ── Blank line (skip) ──
-                line.isBlank() -> i++
+                // ── Blank lines ──
+                // 🆕 v2.16.0 (Issue #140): Die erste Leerzeile trennt zwei Blöcke und steckt
+                // schon im Blockabstand des Renderers; jede weitere ist eine gewollte Lücke.
+                line.isBlank() -> {
+                    var blankCount = 0
+                    while (i < lines.size && lines[i].isBlank()) {
+                        blankCount++
+                        i++
+                    }
+                    if (blankCount > 1) blocks.add(MarkdownBlock.BlankLines(blankCount - 1))
+                }
 
                 // ── Paragraph (collect consecutive non-blank, non-special lines) ──
                 else -> {

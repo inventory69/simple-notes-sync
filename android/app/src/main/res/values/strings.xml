@@ -67,7 +67,29 @@
     <string name="sync_legend_pending_label">Pending</string>
     <string name="sync_legend_pending_desc">This note has local changes waiting to be synced.</string>
     <string name="sync_legend_conflict_label">Conflict</string>
-    <string name="sync_legend_conflict_desc">This note was changed on multiple devices simultaneously. The latest version was kept.</string>
+    <string name="sync_legend_conflict_desc">This note was changed on another device too. Your version is kept and no longer synced until you open the note and choose which one to keep.</string>
+    <!-- v2.16.0 (#126): word / character counter in the editor -->
+    <plurals name="note_stats_words">
+        <item quantity="one">%1$d word</item>
+        <item quantity="other">%1$d words</item>
+    </plurals>
+    <plurals name="note_stats_characters">
+        <item quantity="one">%1$d character</item>
+        <item quantity="other">%1$d characters</item>
+    </plurals>
+    <!-- v2.16.0: conflict resolution in the editor -->
+    <string name="conflict_banner_title">Changed on another device</string>
+    <string name="conflict_banner_message">This note was edited here and somewhere else. Pick the version to keep — until then it is not synced.</string>
+    <string name="conflict_action_keep_local">Keep mine</string>
+    <string name="conflict_action_use_server">Use server version</string>
+    <string name="conflict_action_compare">Compare</string>
+    <string name="conflict_compare_title">Compare versions</string>
+    <string name="conflict_compare_local">Your version</string>
+    <string name="conflict_compare_server">Server version</string>
+    <string name="conflict_compare_empty">(no text)</string>
+    <string name="conflict_resolved_keep_local">Your version is kept and will be uploaded.</string>
+    <string name="conflict_resolved_use_server">Server version loaded.</string>
+    <string name="conflict_resolve_failed">Could not resolve the conflict. Check the server connection.</string>
     <string name="sync_legend_local_only_label">Local only</string>
     <string name="sync_legend_local_only_desc">This note stays on this device only - either it hasn\'t been synced yet, or it\'s in a folder you excluded from sync.</string>
     <string name="sync_legend_trash_hint">Deleted notes - and notes removed on another device - move to the trash, where you can restore them for %1$d days.</string>
@@ -80,6 +102,11 @@
     <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d deleted on server</string>
     <!-- 🆕 v2.9.0 (Trash): server-deleted notes are moved to the trash -->
     <string name="sync_moved_to_trash_count">%d moved to trash</string>
+    <!-- v2.16.0: conflicts were missing from the sync result banner entirely -->
+    <plurals name="sync_conflict_count">
+        <item quantity="one">⚠️ %1$d conflict needs your decision</item>
+        <item quantity="other">⚠️ %1$d conflicts need your decision</item>
+    </plurals>
     <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
     <string name="sync_deleted_from_server_count">%1$d deleted from server</string>
     <string name="sync_trashed_from_server_count">%1$d in trash</string>
@@ -240,6 +267,10 @@
     <string name="action_unarchive">Unarchive</string>
     <string name="archive_empty_state_title">Archive is empty</string>
     <string name="archive_empty_state_message">Archived notes appear here</string>
+    <!-- v2.16.0 (#141): search runs across every folder -->
+    <string name="search_empty_state_title">No notes found</string>
+    <string name="search_empty_state_message">Nothing matches your search — in this folder or any other.</string>
+    <string name="note_card_in_folder">In folder</string>
     <string name="snackbar_note_archived">\"%s\" archived</string>
     <string name="snackbar_note_unarchived">\"%s\" unarchived</string>
     <plurals name="snackbar_notes_archived">
@@ -1118,7 +1149,7 @@
     <string name="notes_list_widget_section_folders">Folders</string>
     <string name="notes_list_widget_config_visibility_label">Visibility</string>
     <string name="notes_list_widget_config_hide_header">Hide widget title</string>
-    <string name="notes_list_widget_config_hide_header_desc">The gear icon will float in the top corner instead</string>
+    <string name="notes_list_widget_config_hide_header_desc">Frees up the top row — the settings stay in the plus menu</string>
     <string name="notes_list_widget_config_hide_pinned">Hide pinned notes</string>
     <string name="notes_list_widget_config_hide_pinned_desc">Pinned notes won\'t appear in the widget</string>
     <string name="notes_list_widget_config_hide_folders">Hide folder cards</string>

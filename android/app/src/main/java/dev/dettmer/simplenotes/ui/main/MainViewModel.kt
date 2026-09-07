@@ -18,6 +18,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
+import dev.dettmer.simplenotes.sync.SyncResult
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.WebDavSyncService
@@ -416,6 +417,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    // 🆕 v2.16.0 (#141): Läuft gerade eine Suche? Solange sie läuft, entfällt der Ordner-Filter —
+    // die Suche geht über ALLE Ordner, sonst blieben Treffer in Ordnern unsichtbar.
+    // Wird bewusst IN sortedNotesUnfoldered gesetzt (nicht aus _searchQuery abgeleitet), damit die
+    // Flanke zur debounce-verzögerten Liste passt. Sonst zeigte die Pane 300 ms lang alle Notizen
+    // aus allen Ordnern ungefiltert, bevor die Suchtreffer nachkommen.
+    private val _searchActive = MutableStateFlow(false)
+    val searchActive: StateFlow<Boolean> = _searchActive.asStateFlow()
+
     /**
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
      * 🆕 v1.9.0 (F06): + Filter nach NoteType
@@ -438,6 +447,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val (filter, colorFilter, showArchived) = filterCriteria
         val filtered = filterNotes(notes, filter, colorFilter, showArchived)
         val searched = searchNotes(filtered, query)
+        _searchActive.value = query.isNotBlank() // 🆕 v2.16.0 (#141): synchron zur ausgelieferten Liste
         val sorted = sortNotes(searched, option, direction)
         val result = sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
 
@@ -670,8 +680,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 🆕 v2.7.0 (Folders): Notizen der aktuell sichtbaren Ordner-Ansicht (sortiert/gefiltert). */
     private fun notesInCurrentFolder(): List<Note> =
-        if (_showArchived.value) {
-            sortedNotesUnfoldered.value // 🆕 v2.11.0 (Archive): flache Liste
+        if (_showArchived.value || _searchActive.value) {
+            // 🆕 v2.11.0 (Archive) / 🆕 v2.16.0 (#141, Suche): flache Liste über alle Ordner
+            sortedNotesUnfoldered.value
         } else {
             sortedNotesUnfoldered.value.filter { it.folderName == _currentFolder.value }
         }
@@ -679,7 +690,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** 🆕 v2.7.0 (Folders): Alles auswählen — Notizen + (im Root) Ordner. */
     fun selectAll() {
         _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
-        _selectedFolders.value = if (_currentFolder.value == null && !_showArchived.value) {
+        // 🆕 v2.16.0 (#141): während einer Suche zeigt die Pane keine Ordner-Kacheln → keine mitauswählen
+        _selectedFolders.value = if (_currentFolder.value == null && !_showArchived.value && !_searchActive.value) {
             _folders.value.map { it.name }.toSet()
         } else {
             emptySet()
@@ -1152,7 +1164,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Check for unsynced changes (Banner zeigt bereits PREPARING)
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
-                    SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
+                    SyncStateManager.markCompleted(alreadySyncedBanner())
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
                     // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
@@ -1177,9 +1189,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (result.isSuccess) {
-                    val bannerMessage = buildSyncResultBanner(getApplication(), result)
-                        ?: getString(R.string.snackbar_nothing_to_sync)
-                    SyncStateManager.markCompleted(bannerMessage)
+                    SyncStateManager.markCompleted(completionBanner(result))
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
                     // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
@@ -1193,6 +1203,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SyncStateManager.markError(e.message)
             }
         }
+    }
+
+    /**
+     * 🆕 v2.16.0: Die Abschlussmeldung eines Syncs.
+     *
+     * Ein stiller Sync (onResume) läuft dem sichtbaren oft um Sekunden voraus und hat den
+     * Konflikt dann schon erkannt. Dieser Zyklus zählt ihn nicht mehr mit und meldete bisher
+     * „Nichts zu synchronisieren", während in der Liste ein Warndreieck stand. Deshalb zählt
+     * [WebDavSyncService] in `conflictCount` den Ist-Zustand — offene Notizen, nicht Ereignisse
+     * dieses Laufs.
+     */
+    private suspend fun completionBanner(result: SyncResult): String =
+        buildSyncResultBanner(getApplication(), result)
+            ?: getString(R.string.snackbar_nothing_to_sync)
+
+    /** „Bereits synchronisiert" — es sei denn, eine Notiz wartet auf eine Entscheidung. */
+    private suspend fun alreadySyncedBanner(): String =
+        conflictBannerOrNull() ?: getString(R.string.toast_already_synced)
+
+    /**
+     * 🆕 v2.16.0: Wie viele Notizen gerade auf eine Konfliktentscheidung warten.
+     *
+     * Nicht aus [_notes] — das ist die gefilterte Liste, ein aktiver Ordner- oder Suchfilter
+     * würde die Zahl kleiner machen als sie ist. Der Storage-Cache beantwortet das ohne
+     * zusätzliche Datei-Reads.
+     */
+    private suspend fun unresolvedConflictCount(): Int =
+        storage.loadAllNotes().count { it.syncStatus == SyncStatus.CONFLICT }
+
+    /** Fertige Banner-Zeile, wenn Konflikte offen sind — sonst null. */
+    private suspend fun conflictBannerOrNull(): String? {
+        val count = unresolvedConflictCount()
+        if (count == 0) return null
+        return getApplication<Application>().resources.getQuantityString(
+            R.plurals.sync_conflict_count,
+            count,
+            count
+        )
     }
 
     /**
@@ -1279,7 +1327,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     loadNotes(forceReload = true)
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
-                    SyncStateManager.markCompleted() // Silent → geht direkt auf IDLE
+                    // 🆕 v2.16.0: Meldung statt null — ein stiller Sync, den der Nutzer per
+                    // Toolbar/Pull sichtbar gemacht hat, endete sonst mit dem generischen
+                    // „Sync abgeschlossen", auch wenn gerade eine Notiz in den Konflikt lief.
+                    // Bleibt der Sync still, geht er ohnehin direkt auf IDLE.
+                    SyncStateManager.markCompleted(completionBanner(result))
                     // 🆕 v2.7.2: Ordner-Zuordnung wurde lokal geheilt → Notenliste neu laden
                     // 🆕 Issue #128: dito, wenn ein falsches DELETED_ON_SERVER zurückgenommen wurde —
                     // sonst bleibt die zurückgeholte Notiz bis zum nächsten Reload unsichtbar.

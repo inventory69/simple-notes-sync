@@ -88,10 +88,12 @@ fun NoteCardGrid(
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     showTimestamp: Boolean = true,
     showTypeIcon: Boolean = true,
+    showFolderLabel: Boolean = false, // 🆕 v2.16.0 (#141): nur während der ordnerübergreifenden Suche
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val folderLabel = note.folderName.takeIf { showFolderLabel } // null im Root und außerhalb der Suche
 
     // 🚀 Performance: Cache noteSize - nur bei note-Änderung neu berechnen
     val noteSize = remember(note.id, note.content, note.checklistItems) { note.getSize() }
@@ -208,6 +210,13 @@ fun NoteCardGrid(
                         showTypeIcon = showTypeIcon,
                         showSyncIcon = showCornerSyncIcon
                     )
+                }
+
+                // 🆕 v2.16.0 (#141): eigene Zeile — die Footer-Row unten gibt es ohne Zeitstempel
+                // gar nicht (Issue #100), das Label muss aber auch dann sichtbar sein.
+                if (folderLabel != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    NoteCardFolderLabel(folderName = folderLabel, iconSize = 12.dp)
                 }
 
                 // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row komplett — das Sync-Icon

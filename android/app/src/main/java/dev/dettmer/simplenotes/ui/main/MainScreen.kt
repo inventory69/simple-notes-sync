@@ -217,6 +217,8 @@ fun MainScreen(
     val noteFilter by viewModel.noteFilter.collectAsState()
     // 🆕 v1.9.0 (F10): Search query state
     val searchQuery by viewModel.searchQuery.collectAsState()
+    // 🆕 v2.16.0 (#141): Suche läuft → ordnerübergreifende, flache Trefferliste (siehe NotesPane)
+    val searchActive by viewModel.searchActive.collectAsState()
     // 🆕 v2.5.0: Farbfilter-State
     val colorFilter by viewModel.colorFilter.collectAsState()
     val availableColors by viewModel.availableColors.collectAsState()
@@ -278,7 +280,8 @@ fun MainScreen(
                     SelectionTopBar(
                         selectedNoteCount = selectedNotes.size,
                         selectedFolderCount = selectedFolders.size,
-                        totalCount = notes.size + (if (currentFolder == null && !showArchived) folders.size else 0),
+                        totalCount = notes.size +
+                            (if (currentFolder == null && !showArchived && !searchActive) folders.size else 0),
                         allSelectedPinned = notes.filter { it.id in selectedNotes }.all { it.isPinned == true },
                         isSelectedFolderLocalOnly = selectedAllLocalOnly,
                         isArchiveView = showArchived, // 🆕 v2.11.0 (Archive)
@@ -453,6 +456,7 @@ fun MainScreen(
                                 noteFilter = noteFilter,
                                 colorFilter = colorFilter,
                                 showArchived = showArchived, // 🆕 v2.11.0 (Archive)
+                                searchActive = searchActive, // 🆕 v2.16.0 (#141)
                                 onResetScrollToTop = { viewModel.resetScrollToTop() },
                                 onResetSyncScrollToTop = { viewModel.resetSyncCompletedScrollToTop() },
                                 onEnterFolder = { viewModel.enterFolder(it) },
@@ -858,6 +862,7 @@ private fun NotesPane(
     noteFilter: NoteFilter,
     colorFilter: String?,
     showArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
+    searchActive: Boolean = false, // 🆕 v2.16.0 (#141): Suche geht über alle Ordner
     onResetScrollToTop: () -> Unit,
     onResetSyncScrollToTop: () -> Unit,
     onEnterFolder: (String) -> Unit,
@@ -877,13 +882,18 @@ private fun NotesPane(
     // Kaltstart (Prozess-Tod) immer ganz oben mit sichtbarem "Angeheftet"-Header.
     val listState = remember(folderKey) { LazyListState() }
     val gridState = remember(folderKey) { LazyStaggeredGridState() }
-    val foldersForPane = if (folderKey == null && !showArchived) folders else emptyList() // Ordner nur in der Root-Ansicht
+    // Ordner nur in der Root-Ansicht — und nicht während einer Suche, die ohnehin flach über alles geht
+    val foldersForPane =
+        if (folderKey == null && !showArchived && !searchActive) folders else emptyList()
     // 🆕 v2.7.0 (Folders): Notizen dieses Slots — eigener folderKey, nicht der gerade aktive Ordner.
     // 🆕 v2.11.0 (Archive): Archiv-Ansicht ist eine flache Liste über alle Ordner.
+    // 🆕 v2.16.0 (#141): Suche ebenso — sonst zeigt die Root-Ansicht nur Root-Treffer und
+    // verschweigt jeden Treffer in einem Ordner, ohne das irgendwo anzuzeigen.
     // ponytail: sortiert den (kleinen) Ordner-Ausschnitt synchron auf dem Main-Thread — Wechsel auf
     // Dispatchers.Default nur nötig, falls ein einzelner Ordner je Tausende Notizen enthält.
-    val paneNotes = remember(notes, folderKey, showArchived, sortOption, sortDirection) {
-        val filtered = if (showArchived) notes else notes.filter { it.folderName == folderKey }
+    val paneNotes = remember(notes, folderKey, showArchived, searchActive, sortOption, sortDirection) {
+        val filtered =
+            if (showArchived || searchActive) notes else notes.filter { it.folderName == folderKey }
         sortAndPin(filtered, folderKey)
     }
     // 🔧 Fix Flash aufgeklappter Sections: aktive Pane liest reaktiv (Live-Toggle), die
@@ -945,14 +955,23 @@ private fun NotesPane(
     }
 
     if (paneNotes.isEmpty() && foldersForPane.isEmpty()) {
-        if (showArchived) {
-            EmptyState(
+        when {
+            // 🆕 v2.16.0 (#141): „Erste Notiz anlegen“ ist bei einer ergebnislosen Suche die falsche
+            // Auskunft — es gibt Notizen, sie passen nur nicht. Der Text sagt außerdem, dass die
+            // Suche wirklich überall war, sonst sucht der Nutzer weiter in anderen Ordnern.
+            searchActive -> EmptyState(
+                modifier = Modifier.fillMaxSize(),
+                title = stringResource(R.string.search_empty_state_title),
+                message = stringResource(R.string.search_empty_state_message)
+            )
+
+            showArchived -> EmptyState(
                 modifier = Modifier.fillMaxSize(),
                 title = stringResource(R.string.archive_empty_state_title),
                 message = stringResource(R.string.archive_empty_state_message)
             )
-        } else {
-            EmptyState(modifier = Modifier.fillMaxSize())
+
+            else -> EmptyState(modifier = Modifier.fillMaxSize())
         }
     } else if (displayMode == "grid") {
         NotesStaggeredGrid(
@@ -967,6 +986,7 @@ private fun NotesPane(
             previewLength = notePreviewLength,
             showTimestamp = showNoteTimestamp,
             showTypeIcon = showNoteTypeIcon,
+            showFolderLabels = searchActive, // 🆕 v2.16.0 (#141)
             modifier = Modifier.fillMaxSize(),
             onNoteClick = { note ->
                 focusManager.clearFocus()
@@ -998,6 +1018,7 @@ private fun NotesPane(
             previewLength = notePreviewLength,
             showTimestamp = showNoteTimestamp,
             showTypeIcon = showNoteTypeIcon,
+            showFolderLabels = searchActive, // 🆕 v2.16.0 (#141)
             listState = listState,
             modifier = Modifier.fillMaxSize(),
             folders = foldersForPane,

@@ -186,10 +186,16 @@ class WebDavClient(private val okHttpClient: OkHttpClient) : Closeable {
      * 🆕 v2.14.0: Nextcloud schickt bei `201` (neue Datei) **keinen** `ETag`, wohl aber
      * `OC-ETag` mit exakt dem Wert, den ein PROPFIND später als `getetag` liefert. Ohne
      * diesen Fallback kostete jede neu angelegte Datei einen zusätzlichen PROPFIND.
+     *
+     * @param ifMatch 🆕 v2.16.0: Optionale Precondition. Ist der Wert gesetzt und die
+     *   Server-Fassung inzwischen eine andere, antwortet der Server mit `412` statt die
+     *   fremde Änderung zu überschreiben. Wert über [toIfMatchValue] normalisieren.
      */
-    fun put(url: String, data: ByteArray, contentType: String?): String? {
+    fun put(url: String, data: ByteArray, contentType: String?, ifMatch: String? = null): String? {
         val body = data.toRequestBody(contentType?.toMediaTypeOrNull())
-        val request = Request.Builder().url(url).put(body).build()
+        val request = Request.Builder().url(url).put(body)
+            .apply { ifMatch?.let { header("If-Match", it) } }
+            .build()
 
         return okHttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {

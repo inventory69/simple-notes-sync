@@ -1,0 +1,11 @@
+⚖️ v2.16.0 - Beide Fassungen
+
+• Fix: Eine auf zwei Geräten geänderte Notiz wird nicht mehr überschrieben - du wählst die Fassung
+• Fix: Sync meldet jetzt Konflikte
+• Fix: Die Suche geht über alle Ordner, nicht nur den aktuellen
+• Fix: Leerzeilen bleiben in der Vorschau
+• Neu: Wort- und Zeichenzahl unter der Notiz
+• Neu: Widget-Einstellungen im Plus-Menü
+• Übersetzungsupdate: Spanisch, Polnisch, Norwegisch
+
+Danke an @Haagel-FR, @annny001, @J4CKED, @lincomax, @Kiimby, @ldvk0, @xdpirate!

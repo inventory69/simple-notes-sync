@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,11 +42,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.noteCardMarkdownPreview
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
@@ -76,10 +79,11 @@ fun NoteCard(
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     showTimestamp: Boolean = true,
     showTypeIcon: Boolean = true,
+    showFolderLabel: Boolean = false, // 🆕 v2.16.0 (#141): nur während der ordnerübergreifenden Suche
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    val context = LocalContext.current
+    val folderLabel = note.folderName.takeIf { showFolderLabel } // null im Root und außerhalb der Suche
 
     // ⏱️ Reading timestampTicker triggers recomposition only for visible cards
     @Suppress("UNUSED_VARIABLE")
@@ -180,28 +184,12 @@ fun NoteCard(
                     )
                 }
 
-                // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row komplett — das Sync-Icon
-                // hängt stattdessen inline am Ende der letzten Vorschauzeile (siehe oben).
-                if (showTimestamp) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Footer
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = note.updatedAt.toReadableTime(context),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        if (showSyncStatus) {
-                            NoteCardSyncIcon(note = note, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
+                NoteCardMeta(
+                    note = note,
+                    folderLabel = folderLabel,
+                    showTimestamp = showTimestamp,
+                    showSyncStatus = showSyncStatus
+                )
             }
 
             // Selection indicator checkbox (top-right)
@@ -246,6 +234,85 @@ fun NoteCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Fußzeile der Karte: Ordner-Label (nur während der Suche) und Zeitstempel-Row.
+ *
+ * Ausgelagert, weil beide Blöcke zusammen `NoteCard` über die Cyclomatic-Complexity-Schwelle
+ * gehoben haben — die Alternative wäre ein weiteres `@Suppress` gewesen, und die Liste davon
+ * soll kürzer werden, nicht länger (TECH_DEBT_ROADMAP.md §4).
+ */
+@Composable
+private fun NoteCardMeta(
+    note: Note,
+    folderLabel: String?,
+    showTimestamp: Boolean,
+    showSyncStatus: Boolean
+) {
+    val context = LocalContext.current
+
+    // 🆕 v2.16.0 (#141): eigene Zeile statt in die Footer-Row gehängt — die Footer-Row gibt es
+    // ohne Zeitstempel gar nicht (Issue #100), das Label muss aber auch dann sichtbar sein.
+    if (folderLabel != null) {
+        Spacer(modifier = Modifier.height(8.dp))
+        NoteCardFolderLabel(folderName = folderLabel, iconSize = 14.dp)
+    }
+
+    // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row komplett — das Sync-Icon hängt
+    // stattdessen inline am Ende der letzten Vorschauzeile (siehe NoteCardPreviewContent).
+    if (showTimestamp) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = note.updatedAt.toReadableTime(context),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.weight(1f)
+            )
+
+            if (showSyncStatus) {
+                NoteCardSyncIcon(note = note, modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
+
+/**
+ * 🆕 v2.16.0 (#141): Ordnername auf der Karte. Wird nur während einer Suche gezeigt — die läuft
+ * über alle Ordner, und ohne diese Zeile stünde ein Treffer ohne jede Herkunft in der Liste.
+ * Außerhalb der Suche wäre sie redundant: dort zeigt jede Ansicht ohnehin genau einen Ordner.
+ *
+ * Geteilt mit [NoteCardGrid] — deshalb `internal` statt `private`.
+ */
+@Composable
+internal fun NoteCardFolderLabel(
+    folderName: String,
+    iconSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Folder,
+            contentDescription = stringResource(R.string.note_card_in_folder),
+            tint = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(iconSize)
+        )
+        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
+        Text(
+            text = folderName,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

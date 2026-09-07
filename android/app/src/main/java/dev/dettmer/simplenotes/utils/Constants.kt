@@ -105,6 +105,9 @@ object Constants {
     const val KEY_NOTES_DIR_ENSURED = "dirs_ensured_notes"
     const val KEY_MD_DIR_ENSURED = "dirs_ensured_md"
     const val KEY_ASSETS_DIR_ENSURED = "dirs_ensured_assets"
+
+    // 🆕 v2.16.0: Server verarbeitet kein If-Match beim PUT (400/501) → Upload ohne Precondition.
+    const val KEY_PRECONDITIONS_UNSUPPORTED = "preconditions_unsupported"
     const val KEY_STALE_ROOT_CLEANED = "dirs_ensured_stale_root"
     const val KEY_DEEP_PROPFIND_REFUSED = "dirs_ensured_deep_propfind_refused"
 

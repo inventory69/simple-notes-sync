@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.ui.editor
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -19,6 +20,7 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncConflictResolver
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
@@ -66,6 +68,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     private val assetStore = AssetStore(application)
     private val imageProcessor = ImageProcessor(application)
     private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+
+    // 🆕 v2.16.0: die beiden Wege aus einem Sync-Konflikt heraus.
+    private val conflictResolver = SyncConflictResolver(application, storage)
     private val initialFolderName: String? = savedStateHandle.get<String>(ARG_FOLDER)
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -284,6 +289,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     isLoading = false,
                     color = note.color, // 🆕 v2.5.0
                     isArchived = note.isArchived, // 🆕 v2.11.0 (Archive)
+                    hasConflict = note.syncStatus == SyncStatus.CONFLICT, // 🆕 v2.16.0
                     toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
                         ToolbarTitle.EDIT_CHECKLIST
                     } else {
@@ -1044,6 +1050,85 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 v2.16.0: Konflikt-Auflösung
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * "Meine behalten" — die lokale Fassung wird beim nächsten Sync hochgeladen.
+     *
+     * Der Editor bleibt offen und zeigt weiter denselben Text; nur das Banner verschwindet.
+     */
+    fun resolveConflictKeepLocal() {
+        val noteId = existingNote?.id ?: return
+        viewModelScope.launch {
+            if (!conflictResolver.keepLocal(noteId)) {
+                emitSnackbar(getApplication<Application>().getString(R.string.conflict_resolve_failed))
+                return@launch
+            }
+            existingNote = existingNote?.copy(syncStatus = SyncStatus.PENDING)
+            _uiState.update { it.copy(hasConflict = false, conflictVersions = null) }
+            emitSnackbar(getApplication<Application>().getString(R.string.conflict_resolved_keep_local))
+            triggerOnSaveSync()
+        }
+    }
+
+    /**
+     * "Server nehmen" — die Server-Fassung ersetzt die lokale und wird sofort in den Editor
+     * geladen. Ohne das Neuladen stünde weiter der alte Text im Feld und der nächste
+     * Tastendruck machte daraus eine Änderung gegen die gerade übernommene Fassung.
+     */
+    fun resolveConflictUseServer() {
+        val noteId = existingNote?.id ?: return
+        viewModelScope.launch {
+            if (!conflictResolver.useServer(noteId)) {
+                emitSnackbar(getApplication<Application>().getString(R.string.conflict_resolve_failed))
+                return@launch
+            }
+            undoRedoManager.clear() // der übernommene Text ist ein neuer Ausgangspunkt
+            loadExistingNote(noteId)
+            _uiState.update { it.copy(hasConflict = false, conflictVersions = null) }
+            _events.emit(NoteEditorEvent.RestoreContent(_uiState.value.content))
+            emitSnackbar(getApplication<Application>().getString(R.string.conflict_resolved_use_server))
+        }
+    }
+
+    /**
+     * "Vergleichen" — holt die Server-Fassung und stellt sie der lokalen gegenüber.
+     *
+     * Ohne den Dialog fällt die Entscheidung blind: "Server nehmen" ist keine Vorschau,
+     * sondern schreibt sofort. Die geholte Fassung lebt nur im UI-State und wird beim
+     * Schließen verworfen — kein zweiter Datensatz im Storage, kein Aufräumen.
+     *
+     * Gegenübergestellt wird die **gespeicherte** lokale Fassung: genau die, die
+     * "Meine behalten" hochlädt.
+     *
+     * Ist der Server nicht erreichbar, öffnet der Dialog gar nicht erst — die beiden
+     * Aktionen im Banner bleiben nutzbar, "Meine behalten" braucht kein Netz.
+     */
+    fun showConflictCompare() {
+        val local = existingNote ?: return
+        if (_uiState.value.conflictCompareLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(conflictCompareLoading = true) }
+            val server = conflictResolver.fetchServerVersion(local.id)
+            _uiState.update {
+                it.copy(
+                    conflictCompareLoading = false,
+                    conflictVersions = server?.let { remote -> ConflictVersions(local, remote) }
+                )
+            }
+            if (server == null) {
+                emitSnackbar(getApplication<Application>().getString(R.string.conflict_resolve_failed))
+            }
+        }
+    }
+
+    /** Schließt die Vergleichsansicht, ohne zu entscheiden. Der Konflikt bleibt bestehen. */
+    fun dismissConflictCompare() {
+        _uiState.update { it.copy(conflictVersions = null) }
+    }
+
     /**
      * 🆕 v1.10.0: Silent save for back-navigation.
      *
@@ -1680,8 +1765,17 @@ data class NoteEditorUiState(
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
     val defaultStartInPreviewMode: Boolean = false,
     val newNoteFocusContent: Boolean = false, // 🆕 v2.11.0
-    val isArchived: Boolean = false // 🆕 v2.11.0 (Archive)
+    val isArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
+    // 🆕 v2.16.0: Notiz steht auf CONFLICT — der Editor zeigt darüber das Auflösungs-Banner.
+    val hasConflict: Boolean = false,
+    // 🆕 v2.16.0: Beide Fassungen für den Vergleichsdialog. null = Dialog zu.
+    val conflictVersions: ConflictVersions? = null,
+    val conflictCompareLoading: Boolean = false
 )
+
+/** 🆕 v2.16.0: Die zwei Fassungen, die der Vergleichsdialog gegenüberstellt. */
+@Immutable
+data class ConflictVersions(val local: Note, val server: Note)
 
 data class ChecklistItemState(
     val id: String = UUID.randomUUID().toString(),

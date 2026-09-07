@@ -140,7 +140,9 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
+import dev.dettmer.simplenotes.ui.editor.components.NoteStatsRow
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.AssetReferences
@@ -1012,6 +1014,26 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
                     .padding(16.dp)
             ) {
+                // 🆕 v2.16.0: Konflikt-Banner über allem anderen — die Entscheidung kommt vor
+                // dem Weiterschreiben, sonst läuft der nächste Upload wieder in dasselbe 412.
+                if (uiState.hasConflict) {
+                    ConflictBanner(
+                        onKeepLocal = { viewModel.resolveConflictKeepLocal() },
+                        onUseServer = { viewModel.resolveConflictUseServer() },
+                        onCompare = { viewModel.showConflictCompare() },
+                        compareEnabled = !uiState.conflictCompareLoading,
+                        modifier = Modifier.padding(bottom = Dimensions.SpacingMedium)
+                    )
+                }
+                uiState.conflictVersions?.let { versions ->
+                    ConflictCompareDialog(
+                        versions = versions,
+                        onKeepLocal = { viewModel.resolveConflictKeepLocal() },
+                        onUseServer = { viewModel.resolveConflictUseServer() },
+                        onDismiss = { viewModel.dismissConflictCompare() }
+                    )
+                }
+
                 // Title Input (for both types)
                 OutlinedTextField(
                     value = uiState.title,
@@ -1113,6 +1135,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 )
                             }
                         }
+
+                        // 🆕 v2.16.0 (Issue #126): Wort-/Zeichenzahl, Tippen wechselt.
+                        NoteStatsRow(text = uiState.content)
                     }
 
                     NoteType.CHECKLIST -> {
@@ -1166,6 +1191,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 .fillMaxWidth()
                                 .weight(1f)
                         )
+
+                        // 🆕 v2.16.0 (Issue #126): dieselbe Zählung über den Item-Texten.
+                        val checklistText = remember(checklistItems) {
+                            checklistItems.joinToString(" ") { it.text }
+                        }
+                        NoteStatsRow(text = checklistText)
                     }
                 }
             }

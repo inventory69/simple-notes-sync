@@ -156,6 +156,10 @@ private fun flattenToRenderItems(
                     }
                 }
             }
+            // 🆕 v2.16.0 (Issue #140): Im Widget bewusst übersprungen — der Platz dort ist knapp
+            // und eine gewollte Lücke wäre eine verlorene Textzeile.
+            is MarkdownBlock.BlankLines -> Unit
+
             MarkdownBlock.HorizontalRule -> {
                 result.add(WidgetRenderItem.Divider)
             }

@@ -51,6 +51,20 @@ cp .env.example .env
 # Set WEBDAV_PORT in .env
 ```
 
+## Conflict handling — no server requirement
+
+This server does **not evaluate write preconditions**: a `PUT` with a wrong `If-Match` answers
+`201` and overwrites instead of returning `412` (measured for v2.16.0 —
+`golang.org/x/net/webdav`, the basis of hacdias/webdav, does not implement it).
+
+That is **fine**: the app does not rely on it. Before uploading it fetches the current state of
+the target folder and compares E-Tags itself — which works against any WebDAV server. `If-Match`
+is sent in addition and takes effect on servers that support it (Nextcloud, ownCloud, Baïkal —
+all sabre/dav).
+
+**Do not change this:** never make conflict protection depend on `If-Match` again. It would leave
+exactly those users unprotected who follow this directory's own recommendation.
+
 ## Management
 
 ```bash

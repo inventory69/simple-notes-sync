@@ -275,10 +275,13 @@ suspend fun uploadNotes(): Int {
             val jsonContent = note.toJson()
             val remotePath = "$serverUrl/${note.id}.json"
             
-            sardine.put(remotePath, jsonContent.toByteArray())
+            // v2.16.0: zuerst ein PROPFIND je Ordner — passt der Server-E-Tag
+            // nicht mehr zum gecachten, ist das ein Konflikt und es wird nichts
+            // geschrieben. If-Match fährt als zweite Schicht mit (siehe
+            // Conflict Resolution).
+            webdav.put(remotePath, jsonContent.toByteArray(), "application/json", ifMatch)
             
-            note.syncStatus = SyncStatus.SYNCED
-            storage.saveNote(note)
+            storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
             uploadedCount++
         }
     }
@@ -291,14 +294,14 @@ suspend fun uploadNotes(): Int {
 
 ```kotlin
 suspend fun downloadNotes(): DownloadResult {
-    val remoteFiles = sardine.list(serverUrl)
+    val remoteFiles = webdav.list(serverUrl)
     var downloadedCount = 0
     var conflictCount = 0
     
     for (file in remoteFiles) {
         if (!file.name.endsWith(".json")) continue
         
-        val content = sardine.get(file.href)
+        val content = webdav.get(file.href)
         val remoteNote = Note.fromJson(content)
         val localNote = storage.loadNote(remoteNote.id)
         
@@ -306,14 +309,16 @@ suspend fun downloadNotes(): DownloadResult {
             // Neue Note vom Server
             storage.saveNote(remoteNote)
             downloadedCount++
-        } else if (localNote.modifiedAt < remoteNote.modifiedAt) {
-            // Server hat neuere Version
-            storage.saveNote(remoteNote)
-            downloadedCount++
-        } else if (localNote.modifiedAt > remoteNote.modifiedAt) {
-            // Lokale Version ist neuer → Conflict
-            resolveConflict(localNote, remoteNote)
-            conflictCount++
+        } else if (localNote.updatedAt < remoteNote.updatedAt) {
+            // Server hat die neuere Fassung. Sie gewinnt nur, wenn lokal keine
+            // unhochgeladene Änderung liegt — sonst ist das ein Konflikt (siehe unten).
+            if (localNote.syncStatus.holdsLocalEdit) {
+                storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
+                conflictCount++
+            } else {
+                storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                downloadedCount++
+            }
         }
     }
     
@@ -323,23 +328,81 @@ suspend fun downloadNotes(): DownloadResult {
 
 ### Conflict Resolution
 
-Strategie: **Last-Write-Wins** mit **Conflict Copy**
+Strategie: **Last-Write-Wins**, außer dort, wo dabei eine lokale Änderung verloren ginge. Es gibt
+kein automatisches Merge und keine Conflict-Kopie — beides bewusst, siehe *Nicht implementiert*.
+
+Ein Konflikt entsteht an zwei Stellen:
+
+**1. Beim Upload (`NoteUploader`).** Seit v2.16.0, in zwei Schichten.
+
+Die Schicht, die den Schutz tatsächlich trägt, ist ein **PROPFIND vor dem ersten geschriebenen
+Byte**. Für jeden Ordner, der eine hochzuladende Notiz *mit* gecachtem E-Tag enthält, holt der
+Uploader die aktuellen Server-E-Tags und vergleicht selbst. Weicht einer ab, hat sich die
+Server-Fassung geändert, seit dieses Gerät sie zuletzt gesehen hat — die Notiz wird als Konflikt
+markiert, ein `PUT` findet nicht statt:
 
 ```kotlin
-fun resolveConflict(local: Note, remote: Note) {
-    // Remote Note umbenennen (Conflict Copy)
-    val conflictNote = remote.copy(
-        id = "${remote.id}_conflict_${System.currentTimeMillis()}",
-        title = "${remote.title} (Konflikt)"
-    )
-    
-    storage.saveNote(conflictNote)
-    
-    // Lokale Note bleibt
-    local.syncStatus = SyncStatus.SYNCED
-    storage.saveNote(local)
+// NoteUploader.checkPreconditions()
+if (isStaleAgainstServer(note, cachedETag, serverSnapshot)) {
+    return markConflict(note, storageMutex, why = "server_etag_changed")
 }
 ```
+
+Das muss clientseitig passieren, weil es von keiner Server-Fähigkeit abhängen darf: Der in
+[`server/README.md`](../server/README.md) empfohlene Server (hacdias/webdav auf
+`golang.org/x/net/webdav`) wertet Write-Preconditions **nicht** aus — ein `PUT` mit falschem
+`If-Match` antwortet dort mit `201` und überschreibt. Für v2.16.0 nachgemessen. Den
+Konfliktschutz nie wieder allein an `If-Match` hängen.
+
+Die zweite Schicht ist genau diese `If-Match`-Precondition, mitgeschickt beim `PUT` und wirksam
+auf Servern, die sie auswerten (sabre/dav: Nextcloud, ownCloud, Baïkal). Sie schließt das
+Zeitfenster zwischen PROPFIND und `PUT`:
+
+```kotlin
+// NoteUploader.uploadSingle()
+val putEtag = try {
+    putWithPrecondition(webdav, noteUrl, jsonBytes, cachedETag)
+} catch (e: WebDavException) {
+    if (e.statusCode == 412) return markConflict(note, storageMutex, why = "if_match_412")
+    throw e
+}
+```
+
+Ein Server, der `If-Match` nicht auswerten kann (`400`/`501`), bekommt einen Versuch ohne
+Precondition, und das wird für die Server-Konfiguration gemerkt — die PROPFIND-Schicht schützt
+weiterhin, und ein Gerät, das gar nicht mehr hochladen kann, wäre schlimmer.
+
+Kosten: ein PROPFIND je Ordner, in dem etwas mit gecachtem E-Tag hochzuladen ist. Der No-Op-Sync
+erreicht die Stelle gar nicht, und ein Erst-Upload lauter neuer Notizen listet ebenfalls nichts —
+ohne gecachten E-Tag gibt es nichts zu vergleichen.
+
+**2. Beim Download (`NoteDownloader`).** Die Server-Fassung ist neuer *und* die lokale Notiz hält
+noch eine Änderung, die nie beim Server ankam (`PENDING` oder `CONFLICT`). Die lokale Fassung
+bleibt und wird markiert, die heruntergeladene wird verworfen.
+
+**Was eine markierte Notiz macht.** Absichtlich nichts. Der Uploader nimmt nur `LOCAL_ONLY` und
+`PENDING`, schiebt sie also nie hoch; seit v2.16.0 überschreibt der Downloader sie ebenfalls
+nicht mehr (davor hielt die Markierung genau einen Sync-Zyklus, danach war die lokale Fassung
+still ersetzt). Die Notiz bleibt aus dem Sync heraus, bis ein Mensch entscheidet. Pro Sync mit
+Konflikten erscheint eine Benachrichtigung, in der Liste trägt die Notiz ein Warn-Icon.
+
+**Auflösen.** Beim Öffnen zeigt der Editor ein Banner mit den beiden Optionen — dasselbe Paar,
+das der Desktop-Client als `resolve_conflict(id, "keep_mine" | "use_server")` anbietet:
+
+| Aktion | Was passiert (`SyncConflictResolver`) |
+|---|---|
+| **Meine behalten** | Gecachter E-Tag und Content-Hash fallen weg, die Notiz geht auf `PENDING` zurück. Der nächste Upload läuft ohne Precondition und gewinnt. |
+| **Server-Fassung nehmen** | Die Server-Fassung wird mit einem einzelnen `GET` geholt, ersetzt die lokale als `SYNCED` und landet direkt im offenen Editor. |
+
+#### Nicht implementiert (bewusst)
+
+- **Keine Conflict-Kopie.** Frühere Fassungen dieses Dokuments beschrieben ein
+  `resolveConflict()`, das die Server-Version als „… (Konflikt)" zusätzlich speichert. Eine
+  solche Funktion hat es im `sync/`-Paket nie gegeben.
+- **Kein zeilenweises Drei-Wege-Merge.** Es bräuchte eine gemeinsame Basisversion, also
+  Versionshistorie auf dem Server, und lieferte bei Fließtext trotzdem Ergebnisse, die niemand
+  haben will. Eine Fassung behalten und den Menschen entscheiden lassen löst dasselbe Problem
+  für einen Bruchteil des Aufwands.
 
 ---
 
@@ -545,8 +608,9 @@ androidx.work:work-runtime-ktx:2.11.2
 // JSON
 com.google.code.gson:gson:2.14.0
 
-// WebDAV Client
-com.github.thegrizzlylabs:sardine-android:0.8
+// WebDAV-Client: eigene Implementierung seit v2.14.0 (sync/webdav/, ~620 Zeilen).
+// Die Dependency sardine-android ist mit diesem Release entfallen.
+// HTTP-Transport: com.squareup.okhttp3:okhttp + com.burgstaller:okhttp-digest
 ```
 
 ---

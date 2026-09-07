@@ -8,9 +8,12 @@
 
 ## 📋 Overview
 
-Simple Notes Sync currently ships **11 languages**:
+Simple Notes Sync currently ships **12 languages**:
 
-🇺🇸 English (en, primary) · 🇩🇪 German (de) · 🇪🇸 Spanish (es) · 🇮🇹 Italian (it) · 🇷🇺 Russian (ru) · 🇺🇦 Ukrainian (uk) · 🇹🇷 Turkish (tr) · 🇮🇳 Hindi (hi) · 🇮🇩 Indonesian (in) · 🇳🇴 Norwegian Bokmål (nb-rNO) · 🇨🇳 Chinese, Simplified (zh-rCN)
+🇺🇸 English (en, primary) · 🇩🇪 German (de) · 🇪🇸 Spanish (es) · 🇫🇷 French (fr) · 🇮🇩 Indonesian (in) · 🇮🇹 Italian (it) · 🇳🇴 Norwegian Bokmål (nb-rNO) · 🇵🇱 Polish (pl) · 🇷🇺 Russian (ru) · 🇹🇷 Turkish (tr) · 🇺🇦 Ukrainian (uk) · 🇨🇳 Chinese, Simplified (zh-rCN)
+
+More languages are being translated on Weblate but do not ship yet — a locale is only added to the
+app once it passes 40% coverage, otherwise the UI would still be almost entirely English.
 
 We welcome new translations and improvements to existing ones!
 

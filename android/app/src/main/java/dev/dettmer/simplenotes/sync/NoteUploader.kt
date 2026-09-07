@@ -8,6 +8,8 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.parallel.UploadTaskResult
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
+import dev.dettmer.simplenotes.sync.webdav.etagsMatch
+import dev.dettmer.simplenotes.sync.webdav.toIfMatchValue
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
@@ -46,6 +48,13 @@ internal class NoteUploader(
     companion object {
         private const val TAG = "NoteUploader"
         private const val ETAG_PREVIEW_LENGTH = 8
+
+        // 🆕 v2.16.0: Server hat die Datei seit dem letzten Sync geändert (If-Match schlug fehl).
+        private const val HTTP_PRECONDITION_FAILED = 412
+
+        // 🆕 v2.16.0: Server kennt das If-Match nicht — einmal ohne Precondition wiederholen
+        // und das für diese Server-Config merken.
+        private val PRECONDITION_UNSUPPORTED_CODES = setOf(400, 501)
         private const val LOG_PREVIEW_IDS_MAX = 3
 
         /** 404 = Parent fehlt, 409 = Conflict (Parent-Collection existiert nicht). */
@@ -108,6 +117,10 @@ internal class NoteUploader(
             true
         }
 
+        // 🆕 v2.16.0: Stand des Servers holen, BEVOR irgendetwas geschrieben wird — sonst
+        // gewinnt, wer als Zweiter synct, und der Download sieht den Konflikt nie.
+        val serverSnapshot = fetchServerSnapshot(webdav, serverUrl, pendingNotes)
+
         // 🆕 v2.7.0 (Folders): benötigte Subdirectories einmalig anlegen (vor parallelem Upload).
         // WebDavClient.createDirectory toleriert 405 (existiert) und macht list()-Fallback bei 404.
         val foldersToCreate = pendingNotes.mapNotNull { it.folderName }.distinct()
@@ -150,7 +163,8 @@ internal class NoteUploader(
                             markdownExportEnabled = markdownExportEnabled,
                             markdownDirExists = markdownDirExists,
                             storageMutex = storageMutex,
-                            mdExportMutex = mdExportMutex
+                            mdExportMutex = mdExportMutex,
+                            serverSnapshot = serverSnapshot // 🆕 v2.16.0
                         )
 
                         // Progress-Update thread-safe via AtomicInteger
@@ -169,7 +183,12 @@ internal class NoteUploader(
         val successCount = results.count { it is UploadTaskResult.Success }
         val failureCount = results.count { it is UploadTaskResult.Failure }
         val skippedCount = results.count { it is UploadTaskResult.Skipped }
-        Logger.d(TAG, "📊 Upload complete: $successCount success, $failureCount failed, $skippedCount skipped")
+        val conflictCount = results.count { it is UploadTaskResult.Conflict } // 🆕 v2.16.0
+        Logger.d(
+            TAG,
+            "📊 Upload complete: $successCount success, $failureCount failed, " +
+                "$skippedCount skipped, $conflictCount conflicts"
+        )
 
         val successes = results.filterIsInstance<UploadTaskResult.Success>()
         val successfulNoteIds = successes.map { it.noteId }.toSet()
@@ -256,7 +275,8 @@ internal class NoteUploader(
 
         return UploadBatchResult(
             uploadedCount = successCount,
-            markdownExportedNoteIds = mdExportedIds
+            markdownExportedNoteIds = mdExportedIds,
+            conflictCount = conflictCount // 🆕 v2.16.0
         )
     }
 
@@ -284,7 +304,8 @@ internal class NoteUploader(
         markdownExportEnabled: Boolean,
         markdownDirExists: Boolean,
         storageMutex: Mutex,
-        mdExportMutex: Mutex
+        mdExportMutex: Mutex,
+        serverSnapshot: ServerSnapshot
     ): UploadTaskResult {
         val maxRetries = 2
         val retryDelayMs = 500L
@@ -295,34 +316,28 @@ internal class NoteUploader(
                 val notesUrl = urlBuilder.getNotesFolderUrl(serverUrl, note.folderName)
                 val noteUrl = "$notesUrl${note.id}.json"
 
-                // 🆕 v1.9.0 (Opt 5): Skip-Logik per Content-Hash
-                val currentHash = computeContentHash(note)
-                val cachedHash = prefs.getString("content_hash_${note.id}", null)
                 val cachedETag = eTagCache.getJsonETag(note.id)
 
-                if (currentHash == cachedHash && cachedETag != null) {
-                    Logger.d(
-                        TAG,
-                        "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})"
-                    )
-                    // Status trotzdem auf SYNCED setzen (war evtl. fälschlich PENDING)
-                    if (note.syncStatus != SyncStatus.SYNCED) {
-                        storageMutex.withLock {
-                            storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
-                        }
-                    }
-                    return UploadTaskResult.Skipped(
-                        noteId = note.id,
-                        reason = "Content unchanged (hash match)"
-                    )
-                }
+                // Skip (Inhalt unverändert) und Konflikt (Server hat sich bewegt) werden beide
+                // entschieden, BEVOR irgendetwas geschrieben wird.
+                preflight(note, cachedETag, serverSnapshot, storageMutex)?.let { return it }
 
                 val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
                 val jsonBytes = noteToUpload.toJson().toByteArray()
 
                 Logger.d(TAG, "   📤 Uploading: ${note.id}.json (${note.title}) [attempt ${attempt + 1}]")
                 // 🆕 v2.14.0: ETag direkt aus der PUT-Antwort — spart den Batch-PROPFIND.
-                val putEtag = webdav.put(noteUrl, jsonBytes, "application/json")
+                // 🆕 v2.16.0: Mit dem gecachten ETag als If-Match. Ohne die Precondition gewinnt,
+                // wer als Zweiter synct — der blinde PUT überschreibt die fremde Fassung, bevor
+                // der Download sie überhaupt zu sehen bekommt.
+                val putEtag = try {
+                    putWithPrecondition(webdav, noteUrl, jsonBytes, cachedETag)
+                } catch (e: WebDavException) {
+                    // 412 heißt: auf dem Server steht eine Fassung, die diese Änderung nicht kennt.
+                    // Kein Retry — der nächste Versuch bekäme dieselbe Antwort.
+                    if (e.statusCode == HTTP_PRECONDITION_FAILED) return markConflict(note, storageMutex)
+                    throw e
+                }
                 Logger.d(TAG, "      ✅ Upload successful")
 
                 // 🔒 Thread-sicherer Storage-Write via Mutex
@@ -331,26 +346,10 @@ internal class NoteUploader(
                 }
                 logUpload(noteToUpload)
 
-                // MD-Export (optional, Opt 6: Skip via MD-Hash in exportToMarkdown)
-                // 🔒 v1.9.0 (Bug B): Mutex serialisiert MD-Export um Race Condition
-                // bei gleichen Titeln zu verhindern (exists+put muss atomar sein)
-                var didExportMarkdown = false // 🆕 v1.11.0
-                if (markdownExportEnabled) {
-                    mdExportMutex.withLock {
-                        try {
-                            if (noteToUpload.isTrashed) {
-                                // 🆕 v2.9.0 (Trash): MD-Export überspringen, Server-MD stattdessen löschen.
-                                markdownDeleter?.invoke(webdav, serverUrl, noteToUpload)
-                                Logger.d(TAG, "   🗑️ MD deleted (trashed): ${noteToUpload.title}")
-                            } else {
-                                markdownExporter?.invoke(webdav, serverUrl, noteToUpload, markdownDirExists)
-                                didExportMarkdown = true // 🆕 v1.11.0
-                                Logger.d(TAG, "   📝 MD exported: ${noteToUpload.title}")
-                            }
-                        } catch (e: Exception) {
-                            Logger.e(TAG, "MD-Export/-Delete failed for ${noteToUpload.id}: ${e.message}")
-                        }
-                    }
+                val didExportMarkdown = if (markdownExportEnabled) {
+                    syncMarkdownMirror(webdav, serverUrl, noteToUpload, markdownDirExists, mdExportMutex)
+                } else {
+                    false
                 }
 
                 // 🆕 v1.11.0: markdownExported-Flag für Import-Exclusion
@@ -383,6 +382,212 @@ internal class NoteUploader(
             Logger.w(TAG, "Failed to mark note as PENDING: ${e.message}")
         }
         return UploadTaskResult.Failure(note.id, lastError ?: Exception("Unknown upload error"))
+    }
+
+    /**
+     * Entscheidet vor dem PUT, ob überhaupt hochgeladen wird.
+     *
+     * @return [UploadTaskResult.Skipped] wenn der Inhalt unverändert ist (v1.9.0, Opt 5),
+     *   [UploadTaskResult.Conflict] wenn auf dem Server inzwischen eine andere Fassung liegt
+     *   (🆕 v2.16.0), sonst `null` — dann läuft der Upload.
+     */
+    private suspend fun preflight(
+        note: Note,
+        cachedETag: String?,
+        serverSnapshot: ServerSnapshot,
+        storageMutex: Mutex
+    ): UploadTaskResult? {
+        val currentHash = computeContentHash(note)
+        val cachedHash = prefs.getString("content_hash_${note.id}", null)
+
+        if (currentHash == cachedHash && cachedETag != null) {
+            Logger.d(
+                TAG,
+                "   ⏭️ Skipping ${note.id} (content unchanged, hash=${currentHash.take(ETAG_PREVIEW_LENGTH)})"
+            )
+            // Status trotzdem auf SYNCED setzen (war evtl. fälschlich PENDING)
+            if (note.syncStatus != SyncStatus.SYNCED) {
+                storageMutex.withLock {
+                    storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
+                }
+            }
+            return UploadTaskResult.Skipped(noteId = note.id, reason = "Content unchanged (hash match)")
+        }
+
+        // 🆕 v2.16.0: Der eigentliche Konfliktschutz — vor dem ersten geschriebenen Byte.
+        if (isStaleAgainstServer(note, cachedETag, serverSnapshot)) {
+            return markConflict(note, storageMutex, why = "server_etag_changed")
+        }
+        return null
+    }
+
+    /**
+     * 🆕 v2.16.0: Stand des Servers vor dem Upload, so weit er günstig zu haben ist.
+     *
+     * @param etags Note-ID → ETag der Server-Datei, aus den gelisteten Ordnern.
+     * @param listedFolders Ordner, deren Listing **erfolgreich** war. Nur für die darf aus
+     *   "ID fehlt in [etags]" geschlossen werden, dass die Datei serverseitig nicht existiert.
+     *   Ein fehlgeschlagenes Listing darf niemals einen Upload blockieren.
+     */
+    private data class ServerSnapshot(
+        val etags: Map<String, String?> = emptyMap(),
+        val listedFolders: Set<String?> = emptySet()
+    )
+
+    /**
+     * 🆕 v2.16.0: Holt die aktuellen Server-ETags der Ordner, in denen etwas hochzuladen ist.
+     *
+     * Der eigentliche Schutz gegen "wer als Zweiter synct, gewinnt" — und zwar server**unabhängig**:
+     * `If-Match` wertet der in `server/README.md` empfohlene Server (hacdias/webdav) beim PUT
+     * gar nicht aus, ein falscher Wert kommt dort als `201` zurück. Der Vergleich muss deshalb
+     * hier passieren, mit Daten, die jeder WebDAV-Server liefert.
+     *
+     * Kosten: ein PROPFIND je Ordner, der eine hochzuladende Notiz **mit** gecachtem ETag
+     * enthält. Der No-Op-Sync erreicht diese Stelle gar nicht (früher Ausstieg oben), und ein
+     * Erst-Upload lauter neuer Notizen listet ebenfalls nichts — ohne gecachten ETag gibt es
+     * nichts zu vergleichen.
+     */
+    private fun fetchServerSnapshot(
+        webdav: WebDavClient,
+        serverUrl: String,
+        pendingNotes: List<Note>
+    ): ServerSnapshot {
+        val foldersToCheck = pendingNotes
+            .filter { !eTagCache.getJsonETag(it.id).isNullOrBlank() }
+            .map { it.folderName }
+            .toSet()
+        if (foldersToCheck.isEmpty()) return ServerSnapshot()
+
+        val etags = mutableMapOf<String, String?>()
+        val listed = mutableSetOf<String?>()
+        for (folder in foldersToCheck) {
+            val resources = try {
+                webdav.listOrNull(urlBuilder.getNotesFolderUrl(serverUrl, folder))
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ Pre-upload listing failed for folder=$folder: ${e.message}")
+                null
+            } ?: continue
+            listed.add(folder)
+            for (resource in resources) {
+                if (resource.isDirectory || !resource.name.endsWith(".json")) continue
+                etags[resource.name.removeSuffix(".json")] = resource.etag
+            }
+        }
+        Logger.d(TAG, "🔍 Pre-upload snapshot: ${etags.size} server file(s) in ${listed.size} folder(s)")
+        return ServerSnapshot(etags, listed)
+    }
+
+    /**
+     * 🆕 v2.16.0: Steht auf dem Server eine Fassung, die diese Änderung nicht kennt?
+     *
+     * Nur dann `true`, wenn das sicher entscheidbar ist. Jeder Zweifelsfall lässt den Upload
+     * laufen wie bisher — ein blockierter Upload wäre schlimmer als der fehlende Schutz.
+     */
+    private fun isStaleAgainstServer(note: Note, cachedETag: String?, snapshot: ServerSnapshot): Boolean {
+        // Ohne gecachten ETag gibt es keinen Bezugspunkt: neue Notiz, oder der Cache wurde
+        // geleert (clearServerCaches). Beides ist kein Konflikt.
+        if (cachedETag.isNullOrBlank()) return false
+        // Ordner nicht (erfolgreich) gelistet → kein Urteil.
+        if (note.folderName !in snapshot.listedFolders) return false
+        // Datei serverseitig nicht vorhanden → es gibt nichts zu überschreiben.
+        val serverETag = snapshot.etags[note.id] ?: return false
+        // Formattolerant: PUT-Header und PROPFIND-getetag unterscheiden sich in W/ und Quotes.
+        return !etagsMatch(serverETag, cachedETag)
+    }
+
+    /**
+     * MD-Spiegel der Notiz nachziehen (optional, Opt 6: Skip via MD-Hash in exportToMarkdown).
+     *
+     * 🔒 v1.9.0 (Bug B): Der Mutex serialisiert den MD-Export gegen die Race Condition bei
+     * gleichen Titeln — `exists` + `put` müssen atomar sein.
+     *
+     * @return `true`, wenn tatsächlich exportiert wurde (für die Import-Exclusion, v1.11.0).
+     */
+    private suspend fun syncMarkdownMirror(
+        webdav: WebDavClient,
+        serverUrl: String,
+        note: Note,
+        markdownDirExists: Boolean,
+        mdExportMutex: Mutex
+    ): Boolean = mdExportMutex.withLock {
+        try {
+            if (note.isTrashed) {
+                // 🆕 v2.9.0 (Trash): MD-Export überspringen, Server-MD stattdessen löschen.
+                markdownDeleter?.invoke(webdav, serverUrl, note)
+                Logger.d(TAG, "   🗑️ MD deleted (trashed): ${note.title}")
+                false
+            } else {
+                markdownExporter?.invoke(webdav, serverUrl, note, markdownDirExists)
+                Logger.d(TAG, "   📝 MD exported: ${note.title}")
+                true
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "MD-Export/-Delete failed for ${note.id}: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * 🆕 v2.16.0: PUT mit `If-Match` aus dem gecachten ETag.
+     *
+     * Ein `412` fliegt bewusst weiter zum Aufrufer — nur der weiß, dass daraus ein Konflikt
+     * wird. `null` bleibt damit die normale Bedeutung "Server schickt keinen ETag".
+     *
+     * @return den ETag der Antwort, wie [WebDavClient.put].
+     */
+    private fun putWithPrecondition(
+        webdav: WebDavClient,
+        noteUrl: String,
+        jsonBytes: ByteArray,
+        cachedETag: String?
+    ): String? {
+        val ifMatch = cachedETag
+            // Leerer ETag ist kein ETag — ein `If-Match: ""` würde der Server zu Recht ablehnen.
+            ?.takeIf { it.isNotBlank() && connectionManager?.preconditionsUnsupported != true }
+            ?.toIfMatchValue()
+        if (ifMatch == null) return webdav.put(noteUrl, jsonBytes, "application/json")
+
+        return try {
+            webdav.put(noteUrl, jsonBytes, "application/json", ifMatch)
+        } catch (e: WebDavException) {
+            when (e.statusCode) {
+                in PRECONDITION_UNSUPPORTED_CODES -> {
+                    // Der Server kann die Precondition nicht auswerten. Einmal ohne wiederholen
+                    // und für diese Server-Config merken — ein dauerhaft blockierter Upload wäre
+                    // schlimmer als der fehlende Konfliktschutz.
+                    Logger.w(TAG, "⚠️ Server rejects If-Match (${e.statusCode}) — retrying without precondition")
+                    connectionManager?.preconditionsUnsupported = true
+                    webdav.put(noteUrl, jsonBytes, "application/json")
+                }
+                else -> throw e
+            }
+        }
+    }
+
+    /**
+     * 🆕 v2.16.0: Die Server-Fassung ist neuer als die, auf der diese Änderung aufsetzt.
+     * Lokale Fassung behalten und markieren — der Nutzer entscheidet (siehe Konflikt-Dialog).
+     */
+    private suspend fun markConflict(
+        note: Note,
+        storageMutex: Mutex,
+        why: String = "if_match_412"
+    ): UploadTaskResult {
+        Logger.w(TAG, "   ⚠️ Conflict on upload ($why): ${note.id} — server copy differs")
+        if (note.syncStatus != SyncStatus.CONFLICT) {
+            storageMutex.withLock {
+                storage.saveNote(note.copy(syncStatus = SyncStatus.CONFLICT))
+            }
+            ActivityLog.log(
+                ActivityLog.Op.CONFLICT,
+                ActivityLog.Src.LOCAL,
+                id = note.id,
+                title = note.title,
+                folder = note.folderName,
+                why = why
+            )
+        }
+        return UploadTaskResult.Conflict(note.id)
     }
 
     /**

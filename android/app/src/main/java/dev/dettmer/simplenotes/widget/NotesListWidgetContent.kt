@@ -12,12 +12,12 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionRunCallback
-import androidx.glance.appwidget.components.CircleIconButton
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.background
@@ -104,33 +104,20 @@ fun NotesListWidgetContent(
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             if (!hideHeader) {
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.Vertical.CenterVertically
-                ) {
-                    Spacer(GlanceModifier.width(48.dp))
-                    Box(
-                        modifier = GlanceModifier.defaultWeight(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = context.getString(R.string.notes_list_widget_name),
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onSurface,
-                                fontSize = (16 * fontSizeScale).sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                        )
-                    }
-                    CircleIconButton(
-                        imageProvider = ImageProvider(R.drawable.ic_settings),
-                        contentDescription = context.getString(R.string.notes_list_widget_config_title),
-                        backgroundColor = null,
-                        contentColor = GlanceTheme.colors.onSurface,
-                        onClick = actionRunCallback<OpenNotesListConfigAction>()
-                    )
-                }
+                // 🆕 v2.16.0 (Issue #119): Kein Dauer-Zahnrad mehr in der Ecke — die
+                // Einstellungen hängen jetzt im aufgeklappten FAB-Menü (siehe [CreateFab]).
+                Text(
+                    text = context.getString(R.string.notes_list_widget_name),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = (16 * fontSizeScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    // ponytail: vertical padding ersetzt die Hoehe, die vorher der
+                    // CircleIconButton (48dp) der Header-Row gegeben hat
+                    modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp)
+                )
             }
 
             if (notes.isEmpty() && folders.isEmpty()) {
@@ -195,21 +182,6 @@ fun NotesListWidgetContent(
                     .fillMaxSize()
                     .clickable(actionRunCallback<ToggleFabExpandedAction>())
             ) {}
-        }
-
-        if (hideHeader) {
-            Box(
-                modifier = GlanceModifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 4.dp),
-                contentAlignment = Alignment.TopEnd
-            ) {
-                CircleIconButton(
-                    imageProvider = ImageProvider(R.drawable.ic_settings),
-                    contentDescription = context.getString(R.string.notes_list_widget_config_title),
-                    backgroundColor = null,
-                    contentColor = GlanceTheme.colors.onSurface,
-                    onClick = actionRunCallback<OpenNotesListConfigAction>()
-                )
-            }
         }
 
         Box(
@@ -500,16 +472,23 @@ private fun CreateFab(expanded: Boolean) {
         Column(
             horizontalAlignment = Alignment.Horizontal.End
         ) {
+            // 🆕 v2.16.0 (Issue #119): Einstellungen, vorher das Zahnrad oben rechts.
+            FabSubAction(
+                iconRes = R.drawable.ic_settings,
+                label = context.getString(R.string.notes_list_widget_config_title),
+                onClick = actionRunCallback<OpenNotesListConfigAction>()
+            )
+            Spacer(GlanceModifier.height(8.dp))
             FabSubAction(
                 iconRes = R.drawable.ic_type_text,
                 label = context.getString(R.string.fab_text_note),
-                noteType = NoteType.TEXT
+                onClick = createNoteAction(NoteType.TEXT)
             )
             Spacer(GlanceModifier.height(8.dp))
             FabSubAction(
                 iconRes = R.drawable.ic_type_checklist,
                 label = context.getString(R.string.fab_checklist),
-                noteType = NoteType.CHECKLIST
+                onClick = createNoteAction(NoteType.CHECKLIST)
             )
             Spacer(GlanceModifier.height(8.dp))
             FabMainButton(
@@ -545,20 +524,18 @@ private fun FabMainButton(iconRes: Int, contentDescription: String) {
     }
 }
 
+private fun createNoteAction(noteType: NoteType): Action = actionRunCallback<CreateNoteAndCollapseAction>(
+    actionParametersOf(CreateNoteAndCollapseAction.KEY_NOTE_TYPE to noteType.name)
+)
+
 @Composable
-private fun FabSubAction(iconRes: Int, label: String, noteType: NoteType) {
+private fun FabSubAction(iconRes: Int, label: String, onClick: Action) {
     Row(
         modifier = GlanceModifier
             .cornerRadius(24.dp)
             .background(GlanceTheme.colors.primaryContainer)
             .padding(horizontal = 12.dp, vertical = 10.dp)
-            .clickable(
-                actionRunCallback<CreateNoteAndCollapseAction>(
-                    actionParametersOf(
-                        CreateNoteAndCollapseAction.KEY_NOTE_TYPE to noteType.name
-                    )
-                )
-            ),
+            .clickable(onClick),
         verticalAlignment = Alignment.Vertical.CenterVertically
     ) {
         Image(

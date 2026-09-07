@@ -269,7 +269,7 @@
 
 > **Status:** Veröffentlicht 🎉
 
-Seit der letzten Überarbeitung dieser Roadmap erschienen: verschlüsselte Zugangsdaten, der persistente Sync-Debug-Logger, **Google-Keep-Import**, **Notiz-Farben**, **angeheftete Notizen**, Umwandlung Text ↔ Checkliste, **Ordner** (inkl. nur-lokal), ein **Papierkorb** mit konfigurierbarer Aufbewahrung, Live-Markdown im Editor und in Karten-Vorschauen, das scrollbare Notizlisten-Widget, ein In-App-Changelog und Mitwirkende-Screen sowie der Ausbau auf 11 Sprachen. Siehe den [CHANGELOG](../CHANGELOG.de.md) für die vollständige Versionshistorie.
+Seit der letzten Überarbeitung dieser Roadmap erschienen: verschlüsselte Zugangsdaten, der persistente Sync-Debug-Logger, **Google-Keep-Import**, **Notiz-Farben**, **angeheftete Notizen**, Umwandlung Text ↔ Checkliste, **Ordner** (inkl. nur-lokal), ein **Papierkorb** mit konfigurierbarer Aufbewahrung, Live-Markdown im Editor und in Karten-Vorschauen, das scrollbare Notizlisten-Widget, ein In-App-Changelog und Mitwirkende-Screen sowie der Ausbau auf 12 Sprachen. Siehe den [CHANGELOG](../CHANGELOG.de.md) für die vollständige Versionshistorie.
 
 ---
 
@@ -289,7 +289,7 @@ Seit der letzten Überarbeitung dieser Roadmap erschienen: verschlüsselte Zugan
 
 - **Ordner / Notebooks** ✅ _(v2.7.0)_ - inkl. nur-lokaler Ordner, die nie synchronisieren ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) von @happy-turtle)
 - **Suche** ✅ _(v1.9.0)_ - Inline-Suche in der Filter-Zeile
-- **Zusätzliche Sprachen** ✅ - jetzt 11 Sprachen via Weblate
+- **Zusätzliche Sprachen** ✅ - jetzt 12 Sprachen via Weblate
 
 ---
 

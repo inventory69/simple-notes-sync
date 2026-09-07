@@ -46,6 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -62,6 +63,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.em
 import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
@@ -96,15 +98,27 @@ fun MarkdownPreview(
     onImageCopied: (() -> Unit)? = null
 ) {
     val bodyStyle = if (compactHeaders) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
+    // 🆕 v2.16.0 (Issue #140): Höhe einer Leerzeile in dp — bevorzugt die Zeilenhöhe des
+    // Fließtextes, mit der Schriftgröße als Rückfall (lineHeight darf Unspecified sein).
+    val blankLineHeight = with(LocalDensity.current) {
+        val unit = if (bodyStyle.lineHeight.isSpecified) bodyStyle.lineHeight else bodyStyle.fontSize
+        if (unit.isSpecified) unit.toDp() else Dimensions.SpacingLarge
+    }
     // Fullscreen-Viewer + Long-Press-Menü sind self-contained: kein Wiring in den Consumern nötig.
     var viewerAsset by remember { mutableStateOf<String?>(null) }
     var menuTarget by remember { mutableStateOf<MarkdownBlock.Image?>(null) }
     var infoAsset by remember { mutableStateOf<String?>(null) }
 
-    SelectionContainer {
+    // 🔧 v2.16.0 (#141-Nachgang): `modifier` gehört an den SelectionContainer, NICHT an die Column
+    // darin. SelectionContainer legt einen eigenen Layout-Knoten dazwischen — ein `Modifier.weight()`
+    // des Aufrufers landete damit an einem Kind, dessen Elternteil gar keine Column ist, und war
+    // wirkungslos. Die Preview galt der Editor-Column dann als ungewichtet, bekam die volle
+    // Resthöhe und drückte alles unter sich (die Wort-/Zeichenzahl) aus dem Bild — aber nur, wenn
+    // der Text lang genug zum Scrollen war.
+    SelectionContainer(modifier = modifier) {
         val scrollModifier = if (scrollEnabled) Modifier.verticalScroll(rememberScrollState()) else Modifier
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .then(scrollModifier)
                 .padding(horizontal = Dimensions.SpacingSmall)
@@ -148,6 +162,11 @@ fun MarkdownPreview(
                             thickness = 1.dp,
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
+                    }
+
+                    // 🆕 v2.16.0 (Issue #140): so hoch wie die Zeilen, die der Nutzer getippt hat.
+                    is MarkdownBlock.BlankLines -> {
+                        Spacer(modifier = Modifier.height(blankLineHeight * block.count))
                     }
 
                     is MarkdownBlock.Image -> {
@@ -706,7 +725,9 @@ internal fun buildMarkdownCardPreview(
     codeBackground: Color,
     codeColor: Color
 ): AnnotatedString = buildAnnotatedString {
-    blocks.forEachIndexed { i, block ->
+    // 🆕 v2.16.0 (Issue #140): Leerzeilen fliegen aus der Kartenvorschau — die zeigt ohnehin
+    // nur 3–4 Zeilen, eine davon an eine gewollte Lücke zu verlieren hilft niemandem.
+    blocks.filterNot { it is MarkdownBlock.BlankLines }.forEachIndexed { i, block ->
         if (i > 0) append("\n")
         when (block) {
             is MarkdownBlock.Heading -> {
@@ -751,6 +772,9 @@ internal fun buildMarkdownCardPreview(
             }
 
             MarkdownBlock.HorizontalRule -> Unit
+
+            // oben herausgefiltert — der Zweig hält das `when` erschöpfend.
+            is MarkdownBlock.BlankLines -> Unit
 
             is MarkdownBlock.Image -> append("🖼 ${block.altText}".trim())
         }

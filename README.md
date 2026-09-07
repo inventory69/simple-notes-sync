@@ -89,7 +89,7 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 - 💻 **Desktop editor** _(beta)_ - Edit your notes on Windows & Linux with [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop), the WebDAV-synced companion app
 - 📤 **Share & export** - Receive shared text, share as text or PDF, export to calendar
 - ↩️ **Undo/Redo** - Full undo/redo history in the note editor
-- 🌍 **Multilingual** - 11 languages with in-app language selector
+- 🌍 **Multilingual** - 12 languages with in-app language selector
 - 🎨 **Material Design 3** - 7 color schemes incl. AMOLED & Dynamic Color, animated theme transitions
 
 ➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
@@ -185,6 +185,6 @@ GNU Affero General Public License v3.0 - see [LICENSE](LICENSE)
 <div align="center">
 <br /><br />
 
-**v2.15.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
+**v2.16.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
 
 </div>

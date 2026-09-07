@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.models.holdsLocalEdit
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
@@ -660,7 +661,7 @@ internal class MarkdownSyncManager(
                         }
                         mdNote.updatedAt > localNote.updatedAt -> {
                             Logger.d(TAG, "      Decision: Markdown has newer timestamp!")
-                            if (localNote.syncStatus == SyncStatus.PENDING) {
+                            if (localNote.syncStatus.holdsLocalEdit) {
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {
@@ -796,10 +797,13 @@ internal class MarkdownSyncManager(
             )
             val staleSlashDir = rootResources.find { res -> res.isDirectory && res.name == "/" }
             if (staleSlashDir != null) {
-                val staleHref = staleSlashDir.href?.toString().orEmpty()
-                Logger.w(TAG, "   🗑️ Found stale '/' directory at root (double-slash bug artifact): $staleHref")
+                Logger.w(
+                    TAG,
+                    "   🗑️ Found stale '/' directory at root (double-slash bug artifact): " +
+                        staleSlashDir.href
+                )
                 try {
-                    webdav.delete(rootUrl + staleSlashDir.href.path)
+                    webdav.delete(rootUrl + staleSlashDir.path)
                     Logger.d(TAG, "   ✅ Deleted stale '/' directory at root")
                 } catch (e: Exception) {
                     Logger.w(TAG, "   ⚠️ Could not delete stale '/' directory: ${e.message}")

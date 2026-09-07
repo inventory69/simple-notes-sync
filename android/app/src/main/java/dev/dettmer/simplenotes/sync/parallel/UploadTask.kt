@@ -38,6 +38,16 @@ sealed class UploadTaskResult {
     data class Failure(val noteId: String, val error: Throwable) : UploadTaskResult()
 
     /**
+     * 🆕 v2.16.0: Der Server hat die Datei seit dem letzten Sync geändert — das PUT lief mit
+     * `If-Match` und kam als `412` zurück. Die lokale Fassung bleibt unangetastet und wird
+     * als [dev.dettmer.simplenotes.models.SyncStatus.CONFLICT] markiert, statt die fremde
+     * Änderung zu überschreiben.
+     *
+     * @param noteId Die ID der nicht hochgeladenen Notiz
+     */
+    data class Conflict(val noteId: String) : UploadTaskResult()
+
+    /**
      * Upload übersprungen (z.B. Content unverändert)
      *
      * @param noteId Die ID der übersprungenen Notiz

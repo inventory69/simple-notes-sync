@@ -388,6 +388,16 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     Logger.d(TAG, "ℹ️ No changes to sync - no notification")
                 }
 
+                // 🆕 v2.16.0: Konflikte sichtbar machen. `SyncResult.hasConflicts` gab es seit
+                // v1.4.0, ausgewertet hat es nur ein Test — der einzige Hinweis auf einen
+                // Konflikt war bis hierher das Warn-Icon in der Liste. Unabhängig davon, ob die
+                // App im Vordergrund ist: eine markierte Notiz synchronisiert nicht mehr, bis
+                // jemand sie auflöst.
+                if (result.hasConflicts) {
+                    Logger.w(TAG, "⚠️ ${result.conflictCount} conflict(s) detected — notifying")
+                    NotificationHelper.showConflictNotification(applicationContext, result.conflictCount)
+                }
+
                 // **UI REFRESH**: SyncEventBus für ComposeMainActivity
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "    Broadcasting sync completed...")
