@@ -109,10 +109,16 @@ fun MarkdownPreview(
     var menuTarget by remember { mutableStateOf<MarkdownBlock.Image?>(null) }
     var infoAsset by remember { mutableStateOf<String?>(null) }
 
-    SelectionContainer {
+    // 🔧 v2.16.0 (#141-Nachgang): `modifier` gehört an den SelectionContainer, NICHT an die Column
+    // darin. SelectionContainer legt einen eigenen Layout-Knoten dazwischen — ein `Modifier.weight()`
+    // des Aufrufers landete damit an einem Kind, dessen Elternteil gar keine Column ist, und war
+    // wirkungslos. Die Preview galt der Editor-Column dann als ungewichtet, bekam die volle
+    // Resthöhe und drückte alles unter sich (die Wort-/Zeichenzahl) aus dem Bild — aber nur, wenn
+    // der Text lang genug zum Scrollen war.
+    SelectionContainer(modifier = modifier) {
         val scrollModifier = if (scrollEnabled) Modifier.verticalScroll(rememberScrollState()) else Modifier
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .then(scrollModifier)
                 .padding(horizontal = Dimensions.SpacingSmall)
