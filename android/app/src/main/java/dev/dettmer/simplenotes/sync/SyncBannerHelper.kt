@@ -9,6 +9,19 @@ import dev.dettmer.simplenotes.R
  */
 fun buildSyncResultBanner(context: Context, result: SyncResult): String? {
     val parts = buildList {
+        // 🆕 v2.16.0: Konflikte standen bisher in keinem Zweig — ein Sync, der gerade eine Notiz
+        // als CONFLICT markiert hatte, endete mit „Nichts zu synchronisieren". Das war das
+        // Gegenteil der Wahrheit, und zwar genau in dem Fall, der eine Entscheidung braucht.
+        // Steht vorn, damit es beim Zusammenschneiden mehrerer Teile nicht hinten abfällt.
+        if (result.conflictCount > 0) {
+            add(
+                context.resources.getQuantityString(
+                    R.plurals.sync_conflict_count,
+                    result.conflictCount,
+                    result.conflictCount
+                )
+            )
+        }
         if (result.syncedCount > 0) {
             add(context.getString(R.string.toast_sync_success, result.syncedCount))
         }

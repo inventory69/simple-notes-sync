@@ -80,6 +80,11 @@
     <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d deleted on server</string>
     <!-- 🆕 v2.9.0 (Trash): server-deleted notes are moved to the trash -->
     <string name="sync_moved_to_trash_count">%d moved to trash</string>
+    <!-- v2.16.0: conflicts were missing from the sync result banner entirely -->
+    <plurals name="sync_conflict_count">
+        <item quantity="one">⚠️ %1$d conflict needs your decision</item>
+        <item quantity="other">⚠️ %1$d conflicts need your decision</item>
+    </plurals>
     <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
     <string name="sync_deleted_from_server_count">%1$d deleted from server</string>
     <string name="sync_trashed_from_server_count">%1$d in trash</string>
