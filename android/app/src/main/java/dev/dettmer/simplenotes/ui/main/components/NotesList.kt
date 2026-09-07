@@ -61,6 +61,7 @@ fun NotesList(
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     showTimestamp: Boolean = true,
     showTypeIcon: Boolean = true,
+    showFolderLabels: Boolean = false, // 🆕 v2.16.0 (#141): Suche zeigt Treffer aus allen Ordnern
     listState: LazyListState = rememberLazyListState(),
     folders: List<Folder> = emptyList(), // 🆕 v2.7.0 (Folders): List<Folder>
     folderNoteCounts: Map<String, Int> = emptyMap(),
@@ -132,6 +133,7 @@ fun NotesList(
                                     previewLength = previewLength,
                                     showTimestamp = showTimestamp,
                                     showTypeIcon = showTypeIcon,
+                                    showFolderLabel = showFolderLabels,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                     onClick = {
                                         if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note)
@@ -205,6 +207,7 @@ fun NotesList(
                                 previewLength = previewLength,
                                 showTimestamp = showTimestamp,
                                 showTypeIcon = showTypeIcon,
+                                showFolderLabel = showFolderLabels,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 onClick = { if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note) },
                                 onLongClick = { onNoteLongPress(note) }

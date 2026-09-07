@@ -267,6 +267,10 @@
     <string name="action_unarchive">Unarchive</string>
     <string name="archive_empty_state_title">Archive is empty</string>
     <string name="archive_empty_state_message">Archived notes appear here</string>
+    <!-- v2.16.0 (#141): search runs across every folder -->
+    <string name="search_empty_state_title">No notes found</string>
+    <string name="search_empty_state_message">Nothing matches your search — in this folder or any other.</string>
+    <string name="note_card_in_folder">In folder</string>
     <string name="snackbar_note_archived">\"%s\" archived</string>
     <string name="snackbar_note_unarchived">\"%s\" unarchived</string>
     <plurals name="snackbar_notes_archived">

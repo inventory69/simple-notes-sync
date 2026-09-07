@@ -417,6 +417,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    // 🆕 v2.16.0 (#141): Läuft gerade eine Suche? Solange sie läuft, entfällt der Ordner-Filter —
+    // die Suche geht über ALLE Ordner, sonst blieben Treffer in Ordnern unsichtbar.
+    // Wird bewusst IN sortedNotesUnfoldered gesetzt (nicht aus _searchQuery abgeleitet), damit die
+    // Flanke zur debounce-verzögerten Liste passt. Sonst zeigte die Pane 300 ms lang alle Notizen
+    // aus allen Ordnern ungefiltert, bevor die Suchtreffer nachkommen.
+    private val _searchActive = MutableStateFlow(false)
+    val searchActive: StateFlow<Boolean> = _searchActive.asStateFlow()
+
     /**
      * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
      * 🆕 v1.9.0 (F06): + Filter nach NoteType
@@ -439,6 +447,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val (filter, colorFilter, showArchived) = filterCriteria
         val filtered = filterNotes(notes, filter, colorFilter, showArchived)
         val searched = searchNotes(filtered, query)
+        _searchActive.value = query.isNotBlank() // 🆕 v2.16.0 (#141): synchron zur ausgelieferten Liste
         val sorted = sortNotes(searched, option, direction)
         val result = sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
 
@@ -671,8 +680,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 🆕 v2.7.0 (Folders): Notizen der aktuell sichtbaren Ordner-Ansicht (sortiert/gefiltert). */
     private fun notesInCurrentFolder(): List<Note> =
-        if (_showArchived.value) {
-            sortedNotesUnfoldered.value // 🆕 v2.11.0 (Archive): flache Liste
+        if (_showArchived.value || _searchActive.value) {
+            // 🆕 v2.11.0 (Archive) / 🆕 v2.16.0 (#141, Suche): flache Liste über alle Ordner
+            sortedNotesUnfoldered.value
         } else {
             sortedNotesUnfoldered.value.filter { it.folderName == _currentFolder.value }
         }
@@ -680,7 +690,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** 🆕 v2.7.0 (Folders): Alles auswählen — Notizen + (im Root) Ordner. */
     fun selectAll() {
         _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
-        _selectedFolders.value = if (_currentFolder.value == null && !_showArchived.value) {
+        // 🆕 v2.16.0 (#141): während einer Suche zeigt die Pane keine Ordner-Kacheln → keine mitauswählen
+        _selectedFolders.value = if (_currentFolder.value == null && !_showArchived.value && !_searchActive.value) {
             _folders.value.map { it.name }.toSet()
         } else {
             emptySet()

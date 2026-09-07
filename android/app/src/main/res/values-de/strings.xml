@@ -253,6 +253,10 @@
     <string name="action_unarchive">Archivierung aufheben</string>
     <string name="archive_empty_state_title">Archiv ist leer</string>
     <string name="archive_empty_state_message">Archivierte Notizen erscheinen hier</string>
+    <!-- v2.16.0 (#141): Die Suche geht über alle Ordner -->
+    <string name="search_empty_state_title">Keine Notizen gefunden</string>
+    <string name="search_empty_state_message">Nichts passt zu deiner Suche — weder in diesem Ordner noch in einem anderen.</string>
+    <string name="note_card_in_folder">Im Ordner</string>
     <string name="snackbar_note_archived">\"%s\" archiviert</string>
     <string name="snackbar_note_unarchived">Archivierung von \"%s\" aufgehoben</string>
     <plurals name="snackbar_notes_archived">
