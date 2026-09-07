@@ -311,6 +311,11 @@ object PdfExporter {
 
                 MarkdownBlock.HorizontalRule -> renderHorizontalRule(renderer)
 
+                // 🆕 v2.16.0 (Issue #140): Der Export zeigt die Lücke, die im Editor steht.
+                is MarkdownBlock.BlankLines -> {
+                    renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * block.count)
+                }
+
                 is MarkdownBlock.Image -> renderImageBlock(renderer, context, block)
             }
         }
