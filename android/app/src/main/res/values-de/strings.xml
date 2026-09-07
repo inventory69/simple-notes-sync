@@ -61,6 +61,19 @@
     <string name="sync_legend_pending_desc">Diese Notiz hat lokale Änderungen, die noch synchronisiert werden müssen.</string>
     <string name="sync_legend_conflict_label">Konflikt</string>
     <string name="sync_legend_conflict_desc">Diese Notiz wurde auf mehreren Geräten gleichzeitig geändert. Die neueste Version wurde beibehalten.</string>
+    <!-- v2.16.0: Konflikt-Auflösung im Editor -->
+    <string name="conflict_banner_title">Auf einem anderen Gerät geändert</string>
+    <string name="conflict_banner_message">Diese Notiz wurde hier und woanders bearbeitet. Wähle, welche Fassung gilt — bis dahin wird sie nicht synchronisiert.</string>
+    <string name="conflict_action_keep_local">Meine behalten</string>
+    <string name="conflict_action_use_server">Server-Fassung nehmen</string>
+    <string name="conflict_action_compare">Vergleichen</string>
+    <string name="conflict_compare_title">Fassungen vergleichen</string>
+    <string name="conflict_compare_local">Deine Fassung</string>
+    <string name="conflict_compare_server">Server-Fassung</string>
+    <string name="conflict_compare_empty">(kein Text)</string>
+    <string name="conflict_resolved_keep_local">Deine Fassung bleibt und wird hochgeladen.</string>
+    <string name="conflict_resolved_use_server">Server-Fassung geladen.</string>
+    <string name="conflict_resolve_failed">Konflikt konnte nicht aufgelöst werden. Serververbindung prüfen.</string>
     <string name="sync_legend_local_only_label">Nur lokal</string>
     <string name="sync_legend_local_only_desc">Diese Notiz bleibt nur auf diesem Gerät - entweder wurde sie noch nicht synchronisiert oder sie liegt in einem vom Sync ausgeschlossenen Ordner.</string>
     <string name="sync_legend_trash_hint">Gelöschte Notizen - und auf einem anderen Gerät entfernte Notizen - landen im Papierkorb, wo du sie %1$d Tage lang wiederherstellen kannst.</string>

@@ -68,6 +68,19 @@
     <string name="sync_legend_pending_desc">This note has local changes waiting to be synced.</string>
     <string name="sync_legend_conflict_label">Conflict</string>
     <string name="sync_legend_conflict_desc">This note was changed on multiple devices simultaneously. The latest version was kept.</string>
+    <!-- v2.16.0: conflict resolution in the editor -->
+    <string name="conflict_banner_title">Changed on another device</string>
+    <string name="conflict_banner_message">This note was edited here and somewhere else. Pick the version to keep — until then it is not synced.</string>
+    <string name="conflict_action_keep_local">Keep mine</string>
+    <string name="conflict_action_use_server">Use server version</string>
+    <string name="conflict_action_compare">Compare</string>
+    <string name="conflict_compare_title">Compare versions</string>
+    <string name="conflict_compare_local">Your version</string>
+    <string name="conflict_compare_server">Server version</string>
+    <string name="conflict_compare_empty">(no text)</string>
+    <string name="conflict_resolved_keep_local">Your version is kept and will be uploaded.</string>
+    <string name="conflict_resolved_use_server">Server version loaded.</string>
+    <string name="conflict_resolve_failed">Could not resolve the conflict. Check the server connection.</string>
     <string name="sync_legend_local_only_label">Local only</string>
     <string name="sync_legend_local_only_desc">This note stays on this device only - either it hasn\'t been synced yet, or it\'s in a folder you excluded from sync.</string>
     <string name="sync_legend_trash_hint">Deleted notes - and notes removed on another device - move to the trash, where you can restore them for %1$d days.</string>
