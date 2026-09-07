@@ -180,8 +180,8 @@
 ## 🌍 Multilingual Support _(NEW in v1.5.0)_
 
 ### Supported Languages
-11 languages, maintained by the community on [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/):
-- ✅ **English** (default) · **German** · **Spanish** · **Italian** · **Russian** · **Ukrainian** · **Turkish** · **Hindi** · **Indonesian** · **Norwegian Bokmål** · **Chinese (Simplified)**
+12 languages, maintained by the community on [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/):
+- ✅ **English** (default) · **German** · **Spanish** · **French** · **Indonesian** · **Italian** · **Norwegian Bokmål** · **Polish** · **Russian** · **Turkish** · **Ukrainian** · **Chinese (Simplified)**
 
 ### Language Selection
 - ✅ **Automatic detection** - Follows system language

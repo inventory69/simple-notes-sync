@@ -8,9 +8,12 @@
 
 ## 📋 Übersicht
 
-Simple Notes Sync liefert aktuell **11 Sprachen**:
+Simple Notes Sync liefert aktuell **12 Sprachen**:
 
-🇺🇸 Englisch (en, primär) · 🇩🇪 Deutsch (de) · 🇪🇸 Spanisch (es) · 🇮🇹 Italienisch (it) · 🇷🇺 Russisch (ru) · 🇺🇦 Ukrainisch (uk) · 🇹🇷 Türkisch (tr) · 🇮🇳 Hindi (hi) · 🇮🇩 Indonesisch (in) · 🇳🇴 Norwegisch Bokmål (nb-rNO) · 🇨🇳 Chinesisch, vereinfacht (zh-rCN)
+🇺🇸 Englisch (en, primär) · 🇩🇪 Deutsch (de) · 🇪🇸 Spanisch (es) · 🇫🇷 Französisch (fr) · 🇮🇩 Indonesisch (in) · 🇮🇹 Italienisch (it) · 🇳🇴 Norwegisch Bokmål (nb-rNO) · 🇵🇱 Polnisch (pl) · 🇷🇺 Russisch (ru) · 🇹🇷 Türkisch (tr) · 🇺🇦 Ukrainisch (uk) · 🇨🇳 Chinesisch, vereinfacht (zh-rCN)
+
+Weitere Sprachen werden auf Weblate übersetzt, sind aber noch nicht in der App — eine Sprache
+kommt erst ab 40% Übersetzungsgrad dazu, sonst bliebe die Oberfläche fast komplett englisch.
 
 Wir freuen uns über neue Übersetzungen und Verbesserungen bestehender!
 

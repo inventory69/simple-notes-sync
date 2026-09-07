@@ -269,7 +269,7 @@
 
 > **Status:** Released 🎉
 
-Shipped since this roadmap was last revised: encrypted credentials, the persistent sync debug logger, **Google Keep import**, **note colors**, **pinned notes**, text ↔ checklist conversion, **folders** (incl. local-only), a **Trash / recycle bin** with configurable retention, live Markdown in the editor and card previews, the scrollable note-list widget, an in-app changelog and contributors screen, and growth to 11 languages. See the [CHANGELOG](../CHANGELOG.md) for the full per-version history.
+Shipped since this roadmap was last revised: encrypted credentials, the persistent sync debug logger, **Google Keep import**, **note colors**, **pinned notes**, text ↔ checklist conversion, **folders** (incl. local-only), a **Trash / recycle bin** with configurable retention, live Markdown in the editor and card previews, the scrollable note-list widget, an in-app changelog and contributors screen, and growth to 12 languages. See the [CHANGELOG](../CHANGELOG.md) for the full per-version history.
 
 ---
 
@@ -289,7 +289,7 @@ Shipped since this roadmap was last revised: encrypted credentials, the persiste
 
 - **Folders / Notebooks** ✅ _(v2.7.0)_ - incl. local-only folders that never sync ([#38](https://github.com/inventory69/simple-notes-sync/discussions/38) by @happy-turtle)
 - **Search** ✅ _(v1.9.0)_ - inline search in the filter row
-- **Additional languages** ✅ - now 11 languages via Weblate
+- **Additional languages** ✅ - now 12 languages via Weblate
 
 ---
 
