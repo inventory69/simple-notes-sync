@@ -275,8 +275,10 @@ suspend fun uploadNotes(): Int {
             val jsonContent = note.toJson()
             val remotePath = "$serverUrl/${note.id}.json"
             
-            // v2.16.0: If-Match aus dem gecachten E-Tag — ein 412 heißt, die
-            // Server-Fassung hat sich geändert (siehe Conflict Resolution).
+            // v2.16.0: zuerst ein PROPFIND je Ordner — passt der Server-E-Tag
+            // nicht mehr zum gecachten, ist das ein Konflikt und es wird nichts
+            // geschrieben. If-Match fährt als zweite Schicht mit (siehe
+            // Conflict Resolution).
             webdav.put(remotePath, jsonContent.toByteArray(), "application/json", ifMatch)
             
             storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
@@ -331,24 +333,48 @@ kein automatisches Merge und keine Conflict-Kopie — beides bewusst, siehe *Nic
 
 Ein Konflikt entsteht an zwei Stellen:
 
-**1. Beim Upload (`NoteUploader`).** Seit v2.16.0 trägt das `PUT` den gecachten E-Tag als
-`If-Match`-Precondition. Hat sich die Datei auf dem Server geändert, seit dieses Gerät sie
-zuletzt gesehen hat, antwortet der Server mit `412` und der Upload wird abgebrochen, statt die
-fremde Fassung zu überschreiben:
+**1. Beim Upload (`NoteUploader`).** Seit v2.16.0, in zwei Schichten.
+
+Die Schicht, die den Schutz tatsächlich trägt, ist ein **PROPFIND vor dem ersten geschriebenen
+Byte**. Für jeden Ordner, der eine hochzuladende Notiz *mit* gecachtem E-Tag enthält, holt der
+Uploader die aktuellen Server-E-Tags und vergleicht selbst. Weicht einer ab, hat sich die
+Server-Fassung geändert, seit dieses Gerät sie zuletzt gesehen hat — die Notiz wird als Konflikt
+markiert, ein `PUT` findet nicht statt:
+
+```kotlin
+// NoteUploader.checkPreconditions()
+if (isStaleAgainstServer(note, cachedETag, serverSnapshot)) {
+    return markConflict(note, storageMutex, why = "server_etag_changed")
+}
+```
+
+Das muss clientseitig passieren, weil es von keiner Server-Fähigkeit abhängen darf: Der in
+[`server/README.md`](../server/README.md) empfohlene Server (hacdias/webdav auf
+`golang.org/x/net/webdav`) wertet Write-Preconditions **nicht** aus — ein `PUT` mit falschem
+`If-Match` antwortet dort mit `201` und überschreibt. Für v2.16.0 nachgemessen. Den
+Konfliktschutz nie wieder allein an `If-Match` hängen.
+
+Die zweite Schicht ist genau diese `If-Match`-Precondition, mitgeschickt beim `PUT` und wirksam
+auf Servern, die sie auswerten (sabre/dav: Nextcloud, ownCloud, Baïkal). Sie schließt das
+Zeitfenster zwischen PROPFIND und `PUT`:
 
 ```kotlin
 // NoteUploader.uploadSingle()
 val putEtag = try {
     putWithPrecondition(webdav, noteUrl, jsonBytes, cachedETag)
 } catch (e: WebDavException) {
-    if (e.statusCode == 412) return markConflict(note, storageMutex)
+    if (e.statusCode == 412) return markConflict(note, storageMutex, why = "if_match_412")
     throw e
 }
 ```
 
 Ein Server, der `If-Match` nicht auswerten kann (`400`/`501`), bekommt einen Versuch ohne
-Precondition, und das wird für die Server-Konfiguration gemerkt — ein fehlender Konfliktschutz
-ist besser als ein Gerät, das gar nicht mehr hochladen kann.
+Precondition, und das wird für die Server-Konfiguration gemerkt — die PROPFIND-Schicht schützt
+weiterhin, und ein Gerät, das gar nicht mehr hochladen kann, wäre schlimmer.
+
+Kosten: ein PROPFIND je Ordner, in dem etwas mit gecachtem E-Tag hochzuladen ist. Der No-Op-Sync
+erreicht die Stelle gar nicht, und ein Erst-Upload lauter neuer Notizen listet ebenfalls nichts —
+ohne gecachten E-Tag gibt es nichts zu vergleichen.
 
 **2. Beim Download (`NoteDownloader`).** Die Server-Fassung ist neuer *und* die lokale Notiz hält
 noch eine Änderung, die nie beim Server ankam (`PENDING` oder `CONFLICT`). Die lokale Fassung
