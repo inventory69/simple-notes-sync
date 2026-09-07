@@ -306,8 +306,13 @@ Desktop-Version: updated: 2026-01-05 14:30
 
 **Automatisch:**
 - ✅ Beim Markdown-Import
-- ✅ Beim JSON-Sync
 - ⚠️ Keine Merge-Konflikte - nur komplettes Überschreiben
+
+**Ausnahme — JSON-Sync seit v2.16.0.** Für den JSON-Master gilt Last-Write-Wins nicht mehr,
+wenn dabei eine Änderung verloren ginge. Hat sich die Notiz auf dem Server geändert, seit dieses
+Gerät sie zuletzt gesehen hat, markiert der Sync einen Konflikt statt zu überschreiben und lässt
+dich die Fassung wählen. Siehe [Konfliktauflösung](DOCS.de.md#conflict-resolution). Der
+Markdown-Spiegel bleibt reines Last-Write-Wins — er ist ein Spiegel, kein Master.
 
 ---
 

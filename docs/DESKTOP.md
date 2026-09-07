@@ -306,8 +306,13 @@ Desktop version: updated: 2026-01-05 14:30
 
 **Automatic:**
 - ✅ On Markdown import
-- ✅ On JSON sync
 - ⚠️ No merge conflicts - only complete overwrite
+
+**Exception — JSON sync since v2.16.0.** Last-Write-Wins no longer applies to the JSON master
+when it would cost you an edit. If the note also changed on the server since this device last
+saw it, the sync marks a conflict instead of overwriting, and asks you to pick a version. See
+[Conflict Resolution](DOCS.md#conflict-resolution). The Markdown mirror is still plain
+Last-Write-Wins - it is a mirror, not a master.
 
 ---
 
