@@ -106,21 +106,18 @@ fun NotesListWidgetContent(
             if (!hideHeader) {
                 // 🆕 v2.16.0 (Issue #119): Kein Dauer-Zahnrad mehr in der Ecke — die
                 // Einstellungen hängen jetzt im aufgeklappten FAB-Menü (siehe [CreateFab]).
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.Vertical.CenterVertically
-                ) {
-                    Text(
-                        text = context.getString(R.string.notes_list_widget_name),
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurface,
-                            fontSize = (16 * fontSizeScale).sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        ),
-                        modifier = GlanceModifier.fillMaxWidth()
-                    )
-                }
+                Text(
+                    text = context.getString(R.string.notes_list_widget_name),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = (16 * fontSizeScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    // ponytail: vertical padding ersetzt die Hoehe, die vorher der
+                    // CircleIconButton (48dp) der Header-Row gegeben hat
+                    modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp)
+                )
             }
 
             if (notes.isEmpty() && folders.isEmpty()) {
