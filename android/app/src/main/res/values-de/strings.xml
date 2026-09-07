@@ -60,7 +60,7 @@
     <string name="sync_legend_pending_label">Ausstehend</string>
     <string name="sync_legend_pending_desc">Diese Notiz hat lokale Änderungen, die noch synchronisiert werden müssen.</string>
     <string name="sync_legend_conflict_label">Konflikt</string>
-    <string name="sync_legend_conflict_desc">Diese Notiz wurde auf mehreren Geräten gleichzeitig geändert. Die neueste Version wurde beibehalten.</string>
+    <string name="sync_legend_conflict_desc">Diese Notiz wurde auch auf einem anderen Gerät geändert. Deine Fassung bleibt erhalten und wird nicht mehr synchronisiert, bis du die Notiz öffnest und entscheidest, welche gilt.</string>
     <!-- v2.16.0 (#126): Wort-/Zeichenzähler im Editor -->
     <plurals name="note_stats_words">
         <item quantity="one">%1$d Wort</item>

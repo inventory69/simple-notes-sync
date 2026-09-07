@@ -67,7 +67,7 @@
     <string name="sync_legend_pending_label">Pending</string>
     <string name="sync_legend_pending_desc">This note has local changes waiting to be synced.</string>
     <string name="sync_legend_conflict_label">Conflict</string>
-    <string name="sync_legend_conflict_desc">This note was changed on multiple devices simultaneously. The latest version was kept.</string>
+    <string name="sync_legend_conflict_desc">This note was changed on another device too. Your version is kept and no longer synced until you open the note and choose which one to keep.</string>
     <!-- v2.16.0 (#126): word / character counter in the editor -->
     <plurals name="note_stats_words">
         <item quantity="one">%1$d word</item>

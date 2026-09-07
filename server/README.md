@@ -51,6 +51,20 @@ cp .env.example .env
 # WEBDAV_PORT in .env setzen
 ```
 
+## Konfliktbehandlung — keine Server-Voraussetzung
+
+Dieser Server wertet **Write-Preconditions nicht aus**: Ein `PUT` mit falschem `If-Match`
+antwortet mit `201` und überschreibt, statt `412` zu liefern (Stand v2.16.0 nachgemessen —
+`golang.org/x/net/webdav`, die Basis von hacdias/webdav, implementiert das nicht).
+
+Das ist **kein Problem**: Die App verlässt sich nicht darauf. Sie holt vor dem Upload den
+aktuellen Stand des Zielordners und vergleicht die E-Tags selbst — das funktioniert mit jedem
+WebDAV-Server. `If-Match` wird zusätzlich mitgeschickt und greift auf Servern, die es können
+(Nextcloud, ownCloud, Baïkal — alles sabre/dav).
+
+**Nicht ändern:** Den Konfliktschutz nicht wieder an `If-Match` hängen. Sonst wären ausgerechnet
+die Nutzer ungeschützt, die der Empfehlung dieses Verzeichnisses folgen.
+
 ## Management
 
 ```bash
