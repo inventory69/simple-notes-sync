@@ -8,6 +8,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.16.0] - 2026-09-07
+
+### ✨ New Features
+
+**Pick Which Version Survives a Sync Conflict** ([5ad38e3](https://github.com/inventory69/simple-notes-sync/commit/5ad38e3), [803c6de](https://github.com/inventory69/simple-notes-sync/commit/803c6de))
+- A note held back by a conflict used to be a dead end: it was never uploaded, and editing it again only led back into the same conflict. The editor now opens with a banner offering the two ways out - keep yours, or take the server's
+- "Compare" fetches the version currently on the server and puts it next to yours, because "use the server version" writes immediately and should not be a guess
+- The sync banner counts conflicting *notes*, not conflict events - one note detected twice in a single run is one conflict, not two
+
+**A Word and Character Count Below the Note** ([0bb5120](https://github.com/inventory69/simple-notes-sync/commit/0bb5120), [e8a4805](https://github.com/inventory69/simple-notes-sync/commit/e8a4805))
+- Tap it to switch between words and characters. It stays visible in the Markdown preview, where the question "how long is this" is just as reasonable as in the editor ([6d8bd92](https://github.com/inventory69/simple-notes-sync/commit/6d8bd92))
+- Thanks to [@annny001](https://github.com/annny001) for the request! (#126)
+
+**Widget Settings Moved Into the Plus Menu** ([f67a776](https://github.com/inventory69/simple-notes-sync/commit/f67a776))
+- The notes list widget had a gear permanently parked in its corner, taking space from the notes. It now sits in the expanded plus menu, next to "text note" and "checklist", and the menu closes itself when you open the settings
+- The header lost the row height the gear used to give it, so the title sat cramped against the top edge. It has its own spacing now ([0858e13](https://github.com/inventory69/simple-notes-sync/commit/0858e13))
+- The "hide widget title" setting still promised that the gear would float in the top corner instead. That gear no longer exists - the description now says what actually happens
+- Thanks to [@lincomax](https://github.com/lincomax) for the request! (#119)
+
+### 🐛 Bug Fixes
+
+**A Note Edited on Two Devices Was Silently Overwritten** ([0856be9](https://github.com/inventory69/simple-notes-sync/commit/0856be9))
+- Whoever synced second won. The upload went out blind, so a change made on another device was overwritten before the download ever got to see it - and the note that lost was gone without a trace
+- Before anything is written, the sync now compares the server's state against what this device last saw. If the server has moved on, the note is marked as a conflict and **nothing is uploaded**. Every case that cannot be decided safely - no cached state, a folder listing that failed - lets the upload through as before: a blocked upload would be worse than the missing guard
+- The check deliberately does not rely on `If-Match`. The WebDAV server recommended in the setup guide does not evaluate write preconditions at all and answers a wrong one with `201`, so the comparison has to happen in the app, with data every server provides
+- A note already marked as a conflict is no longer overwritten by the next download either. Both branches previously looked only for pending edits, so a marked note fell through and was quietly replaced on the following sync
+
+**A Sync That Ended in a Conflict Said "Nothing to Sync"** ([1547b89](https://github.com/inventory69/simple-notes-sync/commit/1547b89))
+- Conflicts appeared in no branch of the completion banner, so the one run that actually needed a decision reported the opposite of the truth
+
+**Search Only Looked in the Folder You Were Standing In** ([328c7a6](https://github.com/inventory69/simple-notes-sync/commit/328c7a6))
+- Searching from inside a folder hid every match outside it, which is the opposite of what a search is for. Search now spans all folders and each result says which folder it lives in; folder tiles step aside while a search is running, so "select all" no longer picks them up
+- Thanks to [@Haagel-FR](https://github.com/Haagel-FR) for the report! (#141)
+
+**Blank Lines Vanished From the Preview** ([9623c98](https://github.com/inventory69/simple-notes-sync/commit/9623c98))
+- Markdown collapses consecutive blank lines into a single paragraph break. In a notes app that is wrong: pressing enter three times means you want a gap, not a paragraph boundary. The first blank line stays the separator, every further one is kept
+- Thanks to [@J4CKED](https://github.com/J4CKED) for the request! (#140)
+
+### 🌍 Translations
+
+- **Spanish** (52%): [@Kiimby](https://github.com/Kiimby) / Kimby - the section reorder strings and the restore counter
+- **Polish** (100%): [@ldvk0](https://github.com/ldvk0)
+- **Norwegian Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+
+---
+
 ## [2.15.0] - 2026-09-03
 
 ### ✨ New Features

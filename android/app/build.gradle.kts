@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 56  // 🆕 v2.15.0 - unrestricted widget resizing, Polish locale, self-healing keystore
-        versionName = "2.15.0"  // 🆕 v2.15.0 - unrestricted widget resizing, Polish locale, self-healing keystore
+        versionCode = 57  // 🆕 v2.16.0 - sync conflict resolution, cross-folder search, note stats
+        versionName = "2.16.0"  // 🆕 v2.16.0 - sync conflict resolution, cross-folder search, note stats
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

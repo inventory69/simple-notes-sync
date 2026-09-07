@@ -8,6 +8,52 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.16.0] - 2026-09-07
+
+### ✨ Neue Features
+
+**Selbst entscheiden, welche Fassung einen Sync-Konflikt überlebt** ([5ad38e3](https://github.com/inventory69/simple-notes-sync/commit/5ad38e3), [803c6de](https://github.com/inventory69/simple-notes-sync/commit/803c6de))
+- Eine im Konflikt festhängende Notiz war bisher eine Sackgasse: Sie wurde nie hochgeladen, und Weiterbearbeiten führte nur zurück in denselben Konflikt. Der Editor öffnet jetzt mit einem Banner, das die zwei Auswege anbietet - eigene Fassung behalten oder die des Servers nehmen
+- „Vergleichen" holt die Fassung, die gerade auf dem Server liegt, und stellt sie der eigenen gegenüber. „Server-Fassung nehmen" schreibt sofort und sollte deshalb keine Blindentscheidung sein
+- Das Sync-Banner zählt Notizen im Konflikt, nicht Konflikt-Ereignisse - eine Notiz, die in einem Lauf zweimal auffällt, ist ein Konflikt, nicht zwei
+
+**Wort- und Zeichenzahl unter der Notiz** ([0bb5120](https://github.com/inventory69/simple-notes-sync/commit/0bb5120), [e8a4805](https://github.com/inventory69/simple-notes-sync/commit/e8a4805))
+- Antippen wechselt zwischen Wörtern und Zeichen. Die Anzeige bleibt in der Markdown-Vorschau sichtbar - die Frage „wie lang ist das" ist dort genauso berechtigt wie im Editor ([6d8bd92](https://github.com/inventory69/simple-notes-sync/commit/6d8bd92))
+- Danke an [@annny001](https://github.com/annny001) für den Wunsch! (#126)
+
+**Widget-Einstellungen sind ins Plus-Menü umgezogen** ([f67a776](https://github.com/inventory69/simple-notes-sync/commit/f67a776))
+- Im Notizlisten-Widget parkte dauerhaft ein Zahnrad in der Ecke und nahm den Notizen Platz weg. Es sitzt jetzt im aufgeklappten Plus-Menü, neben „Textnotiz" und „Checkliste", und das Menü schließt sich beim Öffnen der Einstellungen von selbst
+- Dem Header fehlte danach die Zeilenhöhe, die das Zahnrad ihm gegeben hatte - der Titel klebte am oberen Rand. Er hat jetzt seinen eigenen Abstand ([0858e13](https://github.com/inventory69/simple-notes-sync/commit/0858e13))
+- Die Einstellung „Widget-Titel ausblenden" versprach weiterhin, das Zahnrad werde stattdessen oben schwebend angezeigt. Dieses Zahnrad gibt es nicht mehr - die Beschreibung sagt jetzt, was wirklich passiert
+- Danke an [@lincomax](https://github.com/lincomax) für den Wunsch! (#119)
+
+### 🐛 Bug-Fixes
+
+**Eine auf zwei Geräten geänderte Notiz wurde still überschrieben** ([0856be9](https://github.com/inventory69/simple-notes-sync/commit/0856be9))
+- Wer als Zweiter synchronisierte, gewann. Der Upload ging blind hinaus und überschrieb eine auf einem anderen Gerät gemachte Änderung, bevor der Download sie überhaupt zu sehen bekam - die unterlegene Fassung war spurlos weg
+- Bevor jetzt irgendetwas geschrieben wird, vergleicht der Sync den Stand des Servers mit dem, was dieses Gerät zuletzt gesehen hat. Hat der Server sich bewegt, wird die Notiz als Konflikt markiert und **nichts hochgeladen**. Jeder Fall, der sich nicht sicher entscheiden lässt - kein gemerkter Stand, ein fehlgeschlagenes Ordner-Listing - lässt den Upload laufen wie bisher: ein blockierter Upload wäre schlimmer als der fehlende Schutz
+- Die Prüfung verlässt sich bewusst nicht auf `If-Match`. Der in der Einrichtungsanleitung empfohlene WebDAV-Server wertet Write-Preconditions gar nicht aus und beantwortet eine falsche mit `201` - der Vergleich muss deshalb in der App passieren, mit Daten, die jeder Server liefert
+- Eine bereits als Konflikt markierte Notiz wird auch vom nächsten Download nicht mehr überschrieben. Beide Zweige prüften vorher nur auf noch nicht hochgeladene Änderungen, eine markierte Notiz fiel durch und wurde beim folgenden Sync still ersetzt
+
+**Ein Sync, der in einem Konflikt endete, meldete „nichts zu synchronisieren"** ([1547b89](https://github.com/inventory69/simple-notes-sync/commit/1547b89))
+- Konflikte kamen in keinem Zweig des Abschluss-Banners vor. Ausgerechnet der Lauf, der eine Entscheidung braucht, meldete damit das Gegenteil der Wahrheit
+
+**Die Suche schaute nur in den Ordner, in dem man gerade stand** ([328c7a6](https://github.com/inventory69/simple-notes-sync/commit/328c7a6))
+- Aus einem Ordner heraus zu suchen verbarg jeden Treffer außerhalb - das Gegenteil dessen, wofür eine Suche da ist. Die Suche geht jetzt über alle Ordner, und jeder Treffer zeigt, in welchem Ordner er liegt. Ordner-Kacheln treten während einer Suche zur Seite, damit „Alles auswählen" sie nicht mitnimmt
+- Danke an [@Haagel-FR](https://github.com/Haagel-FR) für den Hinweis! (#141)
+
+**Leerzeilen verschwanden aus der Vorschau** ([9623c98](https://github.com/inventory69/simple-notes-sync/commit/9623c98))
+- Markdown fasst aufeinanderfolgende Leerzeilen zu einem einzigen Absatztrenner zusammen. In einer Notiz-App ist das falsch: Wer dreimal Enter drückt, will eine Lücke sehen und keine Absatzgrenze. Die erste Leerzeile bleibt der Trenner, jede weitere bleibt erhalten
+- Danke an [@J4CKED](https://github.com/J4CKED) für den Wunsch! (#140)
+
+### 🌍 Übersetzungen
+
+- **Spanisch** (52%): [@Kiimby](https://github.com/Kiimby) / Kimby - die Strings zum Umsortieren von Abschnitten und der Wiederherstellungs-Zähler
+- **Polnisch** (100%): [@ldvk0](https://github.com/ldvk0)
+- **Norwegisch Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+
+---
+
 ## [2.15.0] - 2026-09-03
 
 ### ✨ Neue Features

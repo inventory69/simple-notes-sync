@@ -1,0 +1,11 @@
+⚖️ v2.16.0 - Both sides
+
+• Fix: a note changed on two devices is no longer overwritten - you choose which one stays
+• Fix: sync now says when it ended in a conflict
+• Fix: search covers every folder, not just the current one
+• Fix: blank lines you typed stay in the preview
+• New: word and character count below the note
+• New: widget settings now in the plus menu
+• Updated translations: Spanish, Polish, Norwegian
+
+Thanks to @Haagel-FR, @annny001, @J4CKED, @lincomax, @Kiimby, @ldvk0, @xdpirate!
