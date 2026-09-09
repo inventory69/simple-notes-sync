@@ -1,0 +1,9 @@
+🫧 v2.16.1 - Aus dem Weg
+
+• Fix: Der Wortzähler belegt keine eigene Zeile mehr - er schwebt über der unteren Ecke der Notiz
+• Fix: Tippen wechselt Wörter, Zeichen, versteckt - und die Wahl bleibt über Notizen hinweg
+• Neu: In den Anzeige-Einstellungen wählbar - immer, nur in der Leseansicht oder aus
+• In Checklisten entfällt er: die Pille lag über den Einträgen
+• Übersetzungsupdate: Chinesisch
+
+Danke an @heretic43!

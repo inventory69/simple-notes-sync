@@ -1,0 +1,9 @@
+🫧 v2.16.1 - Out of the way
+
+• Fix: the word counter no longer costs a whole row of editing space - it floats over the bottom corner of the note
+• Fix: tapping it cycles words, characters, hidden - and the choice sticks across notes
+• New: Display settings decide where it appears - always, only in read mode, or off
+• Checklists no longer show it: the pill covered the item rows
+• Updated translations: Chinese
+
+Thanks to @heretic43!
