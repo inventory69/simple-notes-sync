@@ -51,7 +51,7 @@
     <string name="sync_legend_pending_label">待定</string>
     <string name="sync_legend_pending_desc">这个笔记有本地更改，等待同步。</string>
     <string name="sync_legend_conflict_label">冲突</string>
-    <string name="sync_legend_conflict_desc">这个笔记在多个设备上同时被更改。已保留最新版本。</string>
+    <string name="sync_legend_conflict_desc">这个笔记也在另一个设备上更改了。你的版本保留并且不再同步，直到你打开笔记并且选择保留哪一个。</string>
     <string name="sync_legend_local_only_label">仅本地</string>
     <string name="sync_legend_local_only_desc">这个笔记仅保存在这个设备 - 要么它还未同步，要么它在一个排除在同步外的文件夹。</string>
     <string name="sync_legend_deleted_label">已在服务器上删除</string>
@@ -774,7 +774,7 @@
     <string name="notes_list_widget_section_folders">文件夹</string>
     <string name="notes_list_widget_config_visibility_label">可见性</string>
     <string name="notes_list_widget_config_hide_header">隐藏微件标题</string>
-    <string name="notes_list_widget_config_hide_header_desc">齿轮图标会漂浮在顶部角落</string>
+    <string name="notes_list_widget_config_hide_header_desc">腾出顶行 — 设置保留在加号菜单里</string>
     <string name="notes_list_widget_config_hide_pinned">隐藏已置顶笔记</string>
     <string name="notes_list_widget_config_hide_pinned_desc">在微件中不会显示已置顶的笔记</string>
     <string name="notes_list_widget_config_hide_folders">隐藏文件夹卡片</string>
@@ -998,4 +998,28 @@
     <string name="share_image_placeholder">[🖼]</string>
     <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
     <string name="language_polish">波兰语</string>
+    <plurals name="note_stats_words">
+        <item quantity="other">%1$d 词语</item>
+    </plurals>
+    <plurals name="note_stats_characters">
+        <item quantity="other">%1$d 字符</item>
+    </plurals>
+    <string name="conflict_banner_title">在另一个设备上更改了</string>
+    <string name="conflict_banner_message">这个笔记在这里和其他地方编辑了。挑选要保留的版本 — 在此之前它不会同步。</string>
+    <string name="conflict_action_keep_local">保留我的</string>
+    <string name="conflict_action_use_server">使用服务器版本</string>
+    <string name="conflict_action_compare">比较</string>
+    <string name="conflict_compare_title">比较版本</string>
+    <string name="conflict_compare_local">你的版本</string>
+    <string name="conflict_compare_server">服务器版本</string>
+    <string name="conflict_compare_empty">（无文本）</string>
+    <string name="conflict_resolved_keep_local">你的版本保留并且会上传。</string>
+    <string name="conflict_resolved_use_server">服务器版本已载入。</string>
+    <string name="conflict_resolve_failed">不能解决冲突。检查服务器连接。</string>
+    <plurals name="sync_conflict_count">
+        <item quantity="other">%1$d 个冲突需要你的决定</item>
+    </plurals>
+    <string name="search_empty_state_title">未找到笔记</string>
+    <string name="search_empty_state_message">没有东西匹配你的搜索 — 在这个文件夹或任何其他。</string>
+    <string name="note_card_in_folder">在文件夹</string>
 </resources>
