@@ -140,7 +140,7 @@ import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
-import dev.dettmer.simplenotes.ui.editor.components.NoteStatsRow
+import dev.dettmer.simplenotes.ui.editor.components.NoteStatsPill
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
@@ -495,6 +495,8 @@ private suspend fun traceCheckPlacement(listState: LazyListState, trace: CheckTr
 fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     val checklistItems by viewModel.checklistItems.collectAsState()
+    // 🆕 (#126-Nachgang): Anzeigemodus der Statistik-Pille, notizübergreifend gemerkt.
+    val noteStatsMode by viewModel.noteStatsMode.collectAsState()
 
     // 🔧 v2.3.0: Block ALL rendering until async note load completes.
     // Must be before any remember/LaunchedEffect blocks so they never
@@ -1082,62 +1084,76 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         val markdownTransformation = remember(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier) {
                             MarkdownOutputTransformation(linkColor, codeBackground, codeColor, markerColor, fontSizeMultiplier)
                         }
-                        if (isPreviewMode) {
-                            // 🆕 v1.9.0 (F07): Markdown rendered preview
-                            val blocks = remember(uiState.content) {
-                                MarkdownEngine.parse(uiState.content)
-                            }
-                            MarkdownPreview(
-                                blocks = blocks,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                // 🆕 Bild-Attachments v2: Long-Press-Menü schreibt Größe/Ausrichtung
-                                // zurück in die Markdown-Source. Explizites updateContent ist
-                                // zwingend: die snapshotFlow-Bridge lebt in TextNoteContent (im
-                                // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
-                                onImageTokensChange = { image, size, align, altText ->
-                                    applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
-                                },
-                                // Ab Android 13 zeigt das System selbst eine Kopier-Bestätigung.
-                                onImageCopied = {
-                                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                        scope.launch { snackbarHostState.showSnackbar(msgImageCopied) }
-                                    }
+                        // 🔧 (#126-Nachgang): Inhalt und Statistik-Pille teilen sich eine Box —
+                        // die Pille schwebt darüber, statt eine eigene 48-dp-Zeile zu belegen.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        ) {
+                            if (isPreviewMode) {
+                                // 🆕 v1.9.0 (F07): Markdown rendered preview
+                                val blocks = remember(uiState.content) {
+                                    MarkdownEngine.parse(uiState.content)
                                 }
-                            )
-                        } else {
-                            // Content Input for TEXT notes
-                            TextNoteContent(
-                                textFieldState = textFieldState,
-                                onContentChange = { viewModel.updateContent(it) },
-                                focusRequester = contentFocusRequester,
-                                outputTransformation = markdownTransformation,
-                                // 🆕 v2.12.0: Bilder aus der Zwischenablage
-                                onPasteImages = { uris ->
-                                    scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
-                                },
-                                onFocusChanged = { isContentFocused = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                            )
-
-                            if (isContentFocused) {
-                                MarkdownToolbar(
-                                    textFieldState = textFieldState,
-                                    onImageClick = {
-                                        imagePickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
+                                MarkdownPreview(
+                                    blocks = blocks,
+                                    modifier = Modifier.fillMaxSize(),
+                                    // 🆕 Bild-Attachments v2: Long-Press-Menü schreibt Größe/Ausrichtung
+                                    // zurück in die Markdown-Source. Explizites updateContent ist
+                                    // zwingend: die snapshotFlow-Bridge lebt in TextNoteContent (im
+                                    // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
+                                    onImageTokensChange = { image, size, align, altText ->
+                                        applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
                                     },
-                                    isAttachingImage = isAttachingImage
+                                    // Ab Android 13 zeigt das System selbst eine Kopier-Bestätigung.
+                                    onImageCopied = {
+                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                            scope.launch { snackbarHostState.showSnackbar(msgImageCopied) }
+                                        }
+                                    }
+                                )
+                            } else {
+                                // Content Input for TEXT notes
+                                TextNoteContent(
+                                    textFieldState = textFieldState,
+                                    onContentChange = { viewModel.updateContent(it) },
+                                    focusRequester = contentFocusRequester,
+                                    outputTransformation = markdownTransformation,
+                                    // 🆕 v2.12.0: Bilder aus der Zwischenablage
+                                    onPasteImages = { uris ->
+                                        scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
+                                    },
+                                    onFocusChanged = { isContentFocused = it },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            // 🆕 v2.16.0 (Issue #126): Wort-/Zeichenzahl, Tippen wechselt.
+                            if (uiState.wordCounterVisibility.visibleIn(isPreviewMode)) {
+                                NoteStatsPill(
+                                    text = uiState.content,
+                                    mode = noteStatsMode,
+                                    onCycle = { viewModel.cycleNoteStatsMode() },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(Dimensions.SpacingMedium)
                                 )
                             }
                         }
 
-                        // 🆕 v2.16.0 (Issue #126): Wort-/Zeichenzahl, Tippen wechselt.
-                        NoteStatsRow(text = uiState.content)
+                        // Bleibt außerhalb der Box: sonst schwebte die Pille über den Formatier-Icons.
+                        if (!isPreviewMode && isContentFocused) {
+                            MarkdownToolbar(
+                                textFieldState = textFieldState,
+                                onImageClick = {
+                                    imagePickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                isAttachingImage = isAttachingImage
+                            )
+                        }
                     }
 
                     NoteType.CHECKLIST -> {
@@ -1191,12 +1207,6 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 .fillMaxWidth()
                                 .weight(1f)
                         )
-
-                        // 🆕 v2.16.0 (Issue #126): dieselbe Zählung über den Item-Texten.
-                        val checklistText = remember(checklistItems) {
-                            checklistItems.joinToString(" ") { it.text }
-                        }
-                        NoteStatsRow(text = checklistText)
                     }
                 }
             }

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.Immutable
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -22,6 +23,8 @@ import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.SyncConflictResolver
 import dev.dettmer.simplenotes.sync.SyncScheduler
+import dev.dettmer.simplenotes.ui.editor.components.NoteStatsMode
+import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
@@ -87,10 +90,29 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             newNoteFocusContent = prefs.getBoolean(
                 Constants.KEY_NEW_NOTE_FOCUS_CONTENT,
                 Constants.DEFAULT_NEW_NOTE_FOCUS_CONTENT
-            )
+            ),
+            // 🆕 (#126-Nachgang): Wortzähler-Sichtbarkeit aus den Einstellungen
+            wordCounterVisibility = prefs
+                .getString(Constants.KEY_WORD_COUNTER_VISIBILITY, Constants.DEFAULT_WORD_COUNTER_VISIBILITY)
+                .toEnumOrDefault(WordCounterVisibility.valueOf(Constants.DEFAULT_WORD_COUNTER_VISIBILITY))
         )
     )
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
+
+    // 🆕 (#126-Nachgang): Anzeigemodus der Statistik-Pille. Anders als der Settings-Schalter ein
+    // StateFlow — der Zyklus muss im laufenden Editor sofort wirken.
+    private val _noteStatsMode = MutableStateFlow(
+        prefs.getString(Constants.KEY_NOTE_STATS_MODE, Constants.DEFAULT_NOTE_STATS_MODE)
+            .toEnumOrDefault(NoteStatsMode.valueOf(Constants.DEFAULT_NOTE_STATS_MODE))
+    )
+    val noteStatsMode: StateFlow<NoteStatsMode> = _noteStatsMode.asStateFlow()
+
+    /** Tippen auf die Pille: Wörter → Zeichen → versteckt → Wörter. Gilt notizübergreifend. */
+    fun cycleNoteStatsMode() {
+        val next = _noteStatsMode.value.next()
+        prefs.edit { putString(Constants.KEY_NOTE_STATS_MODE, next.name) }
+        _noteStatsMode.value = next
+    }
 
     private val _checklistItems = MutableStateFlow<List<ChecklistItemState>>(emptyList())
     val checklistItems: StateFlow<List<ChecklistItemState>> = _checklistItems.asStateFlow()
@@ -1765,6 +1787,8 @@ data class NoteEditorUiState(
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
     val defaultStartInPreviewMode: Boolean = false,
     val newNoteFocusContent: Boolean = false, // 🆕 v2.11.0
+    // 🆕 (#126-Nachgang): aus / immer / nur im Lesemodus
+    val wordCounterVisibility: WordCounterVisibility = WordCounterVisibility.ALWAYS,
     val isArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
     // 🆕 v2.16.0: Notiz steht auf CONFLICT — der Editor zeigt darüber das Auflösungs-Banner.
     val hasConflict: Boolean = false,

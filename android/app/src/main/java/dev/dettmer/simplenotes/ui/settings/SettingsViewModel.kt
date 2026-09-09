@@ -17,6 +17,7 @@ import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.WebDavSyncService
+import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
@@ -483,6 +484,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val showNoteTypeIcon: StateFlow<Boolean> = _showNoteTypeIcon.asStateFlow()
 
+    // 🆕 (#126-Nachgang): Wortzähler im Editor — immer, nur im Lesemodus, oder aus
+    private val _wordCounterVisibility = MutableStateFlow(
+        prefs.getString(Constants.KEY_WORD_COUNTER_VISIBILITY, Constants.DEFAULT_WORD_COUNTER_VISIBILITY)
+            .toEnumOrDefault(WordCounterVisibility.valueOf(Constants.DEFAULT_WORD_COUNTER_VISIBILITY))
+    )
+    val wordCounterVisibility: StateFlow<WordCounterVisibility> = _wordCounterVisibility.asStateFlow()
+
     // 🆕 Bild-Attachments: Kompressionsmodus für neu eingefügte Bilder
     private val _imageCompressionMode = MutableStateFlow(readImageCompressionMode())
     val imageCompressionMode: StateFlow<ImageCompressionMode> = _imageCompressionMode.asStateFlow()
@@ -666,6 +674,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setChecklistScrollTopOnUncheck(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK, enabled) }
         _checklistScrollTopOnUncheck.value = enabled
+    }
+
+    /**
+     * 🆕 (#126-Nachgang): Wortzähler immer, nur im Lesemodus oder gar nicht zeigen.
+     * NoteEditorViewModel liest die Preference beim Öffnen einer Notiz.
+     */
+    fun setWordCounterVisibility(visibility: WordCounterVisibility) {
+        prefs.edit {
+            putString(Constants.KEY_WORD_COUNTER_VISIBILITY, visibility.name)
+            // Ohne Reset sähe man nach dem Wiedereinschalten nur den Pfeil, falls der Zähler
+            // vorher weggetippt war.
+            if (visibility != WordCounterVisibility.OFF) {
+                putString(Constants.KEY_NOTE_STATS_MODE, Constants.DEFAULT_NOTE_STATS_MODE)
+            }
+        }
+        _wordCounterVisibility.value = visibility
     }
 
     /** 🆕 Issue #100: Toggle — Zeitstempel in Notizkarten-Footern ein-/ausblenden. */

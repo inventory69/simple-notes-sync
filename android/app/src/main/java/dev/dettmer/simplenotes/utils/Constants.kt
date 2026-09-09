@@ -281,6 +281,14 @@ object Constants {
     // 🆕 Bild-Attachments: Standardgröße für neu eingefügte Bilder (Prozent, S/M/L/XL-Chips).
     const val KEY_DEFAULT_IMAGE_SIZE_PERCENT = "default_image_size_percent"
     const val DEFAULT_DEFAULT_IMAGE_SIZE_PERCENT = 50
+
+    // 🆕 (#126-Nachgang): Wortzähler-Sichtbarkeit (WordCounterVisibility.name) + gemerkter Modus.
+    const val KEY_WORD_COUNTER_VISIBILITY = "word_counter_visibility"
+    const val DEFAULT_WORD_COUNTER_VISIBILITY = "ALWAYS"
+
+    // Enum-Name, nicht Ordinal: ein Ordinal bricht still, wenn die Reihenfolge sich ändert.
+    const val KEY_NOTE_STATS_MODE = "note_stats_mode"
+    const val DEFAULT_NOTE_STATS_MODE = "WORDS"
 }
 
 // ponytail: extension over a new class — single getInt call, no wrapper needed
