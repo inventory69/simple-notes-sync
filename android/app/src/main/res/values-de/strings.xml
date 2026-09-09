@@ -70,6 +70,7 @@
         <item quantity="one">%1$d Zeichen</item>
         <item quantity="other">%1$d Zeichen</item>
     </plurals>
+    <string name="note_stats_show">Wortzähler einblenden</string>
     <!-- v2.16.0: Konflikt-Auflösung im Editor -->
     <string name="conflict_banner_title">Auf einem anderen Gerät geändert</string>
     <string name="conflict_banner_message">Diese Notiz wurde hier und woanders bearbeitet. Wähle, welche Fassung gilt — bis dahin wird sie nicht synchronisiert.</string>
@@ -638,6 +639,12 @@
     <!-- 🆕 Issue #112: Scroll-Verhalten der Checkliste beim Abwählen -->
     <string name="checklist_scroll_top_on_uncheck_toggle">Beim Abwählen nach oben scrollen</string>
     <string name="checklist_scroll_top_on_uncheck_description">Das Abwählen eines Eintrags scrollt die Checkliste an den Anfang. Aus = Position bleibt erhalten.</string>
+    <!-- (#126-Nachgang): Sichtbarkeit des Wortzählers -->
+    <string name="word_counter_toggle">Wortzähler</string>
+    <string name="word_counter_always">Immer</string>
+    <string name="word_counter_preview_only">Nur in der Leseansicht</string>
+    <string name="word_counter_off">Aus</string>
+    <string name="word_counter_description">Zeigt Wörter und Zeichen im Notiz-Editor. Tippen wechselt zu Zeichen, nochmal tippen blendet ihn aus.</string>
     <!-- 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten -->
     <string name="note_card_show_timestamp_toggle">Zeitstempel anzeigen</string>
     <string name="note_card_show_timestamp_description">Zeigt den Zeitstempel der letzten Bearbeitung auf Notizkarten an.</string>

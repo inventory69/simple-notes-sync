@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.16.1] - 2026-09-09
+
+### 🐛 Bug Fixes
+
+**The Word Counter Now Gets Out of the Way** ([9e1c611](https://github.com/inventory69/simple-notes-sync/commit/9e1c611))
+- The counter shipped in 2.16.0 as a fixed row under the note. It cost a 48 dp line of editing space on every note, it could not be turned off, and it forgot the chosen unit the moment the editor closed
+- It is an overlay now: the pill floats over the bottom-right corner of the content, and the row's height goes back to the text
+- Tapping cycles words, characters, hidden - and the mode is remembered across notes, so a pill tapped away collapses to a small chevron instead of returning on the next note
+- Display settings gain a three-way choice: always, only in read mode, or off. Turning it back on resets a tapped-away pill, or switching it on would reveal nothing but the chevron
+- Checklists no longer show the counter: a floating pill overlaps the item rows and their drag handles, and the fixed row it used to sit in is gone
+- Follow-up to the counter requested in [#126](https://github.com/inventory69/simple-notes-sync/issues/126)
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43) - the conflict resolution, note stats and cross-folder search strings from 2.16.0
+
+---
+
 ## [2.16.0] - 2026-09-07
 
 ### ✨ New Features

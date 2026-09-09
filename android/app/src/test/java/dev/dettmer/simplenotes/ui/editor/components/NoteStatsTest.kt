@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.ui.editor.components
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -45,5 +47,20 @@ class NoteStatsTest {
         val text = "Der schnelle braune Fuchs springt über den faulen Hund"
         val naive = text.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
         assertEquals(naive, countWords(text))
+    }
+
+    @Test fun `visibility decides per editor mode`() {
+        assertTrue(WordCounterVisibility.ALWAYS.visibleIn(previewMode = false))
+        assertTrue(WordCounterVisibility.ALWAYS.visibleIn(previewMode = true))
+        assertFalse(WordCounterVisibility.PREVIEW_ONLY.visibleIn(previewMode = false))
+        assertTrue(WordCounterVisibility.PREVIEW_ONLY.visibleIn(previewMode = true))
+        assertFalse(WordCounterVisibility.OFF.visibleIn(previewMode = true))
+    }
+
+    /** Der Rundlauf HIDDEN → WORDS ist der Übergang, der beim Umbau still kaputtgehen kann. */
+    @Test fun `mode cycles words to characters to hidden and back`() {
+        assertEquals(NoteStatsMode.CHARACTERS, NoteStatsMode.WORDS.next())
+        assertEquals(NoteStatsMode.HIDDEN, NoteStatsMode.CHARACTERS.next())
+        assertEquals(NoteStatsMode.WORDS, NoteStatsMode.HIDDEN.next())
     }
 }

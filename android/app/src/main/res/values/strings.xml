@@ -77,6 +77,7 @@
         <item quantity="one">%1$d character</item>
         <item quantity="other">%1$d characters</item>
     </plurals>
+    <string name="note_stats_show">Show word counter</string>
     <!-- v2.16.0: conflict resolution in the editor -->
     <string name="conflict_banner_title">Changed on another device</string>
     <string name="conflict_banner_message">This note was edited here and somewhere else. Pick the version to keep — until then it is not synced.</string>
@@ -680,6 +681,12 @@
     <!-- 🆕 Issue #112: Checklist scroll behaviour on un-check -->
     <string name="checklist_scroll_top_on_uncheck_toggle">Scroll to top when unchecking</string>
     <string name="checklist_scroll_top_on_uncheck_description">Unchecking an item scrolls the checklist back to the top. Turn off to keep the current position.</string>
+    <!-- (#126 follow-up): word counter visibility -->
+    <string name="word_counter_toggle">Word counter</string>
+    <string name="word_counter_always">Always</string>
+    <string name="word_counter_preview_only">Only in read mode</string>
+    <string name="word_counter_off">Off</string>
+    <string name="word_counter_description">Shows words and characters in the note editor. Tap it to switch to characters, tap again to hide it.</string>
     <!-- 🆕 Issue #100: Note card timestamp/icon visibility -->
     <string name="note_card_show_timestamp_toggle">Show timestamp</string>
     <string name="note_card_show_timestamp_description">Show the last-edited timestamp on note cards.</string>

@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.ImageCompressionMode
+import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
@@ -268,6 +269,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
     val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
+    val wordCounterVisibility by viewModel.wordCounterVisibility.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.autosave_section)) {
         SettingsSwitch(
@@ -305,6 +307,22 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             onCheckedChange = { viewModel.setChecklistScrollTopOnUncheck(it) },
             icon = Icons.Default.Checklist
         )
+
+        // 🆕 (#126-Nachgang): Wortzähler immer, nur im Lesemodus oder gar nicht
+        SettingsSectionHeader(text = stringResource(R.string.word_counter_toggle))
+        SettingsRadioGroup(
+            options = listOf(
+                RadioOption(WordCounterVisibility.ALWAYS, stringResource(R.string.word_counter_always)),
+                RadioOption(
+                    WordCounterVisibility.PREVIEW_ONLY,
+                    stringResource(R.string.word_counter_preview_only)
+                ),
+                RadioOption(WordCounterVisibility.OFF, stringResource(R.string.word_counter_off))
+            ),
+            selectedValue = wordCounterVisibility,
+            onValueSelected = { viewModel.setWordCounterVisibility(it) }
+        )
+        SettingsHint(text = stringResource(R.string.word_counter_description))
 
         // 🆕 v2.11.0: Standard-Notizfarbe für neue Notizen
         DefaultNoteColorRow(

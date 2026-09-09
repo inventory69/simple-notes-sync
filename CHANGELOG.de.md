@@ -8,6 +8,24 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.16.1] - 2026-09-09
+
+### 🐛 Bug-Fixes
+
+**Der Wortzähler geht jetzt aus dem Weg** ([9e1c611](https://github.com/inventory69/simple-notes-sync/commit/9e1c611))
+- In 2.16.0 kam der Zähler als feste Zeile unter der Notiz. Er kostete auf jeder Notiz 48 dp Schreibfläche, ließ sich nicht abschalten, und die gewählte Einheit war vergessen, sobald der Editor zuging
+- Jetzt liegt er als Overlay darüber: Die Pille schwebt über der unteren rechten Ecke des Inhalts, die Höhe der Zeile geht an den Text zurück
+- Tippen wechselt Wörter, Zeichen, versteckt - und der Modus bleibt über Notizen hinweg erhalten. Eine weggetippte Pille schrumpft auf einen kleinen Pfeil, statt bei der nächsten Notiz wieder da zu sein
+- In den Anzeige-Einstellungen gibt es eine Dreifach-Wahl: immer, nur in der Leseansicht oder aus. Beim Wiedereinschalten wird eine weggetippte Pille zurückgesetzt, sonst käme nur der Pfeil zum Vorschein
+- In Checklisten entfällt der Zähler: Eine schwebende Pille liegt über den Einträgen und ihren Ziehgriffen, und die feste Zeile, in der er saß, gibt es nicht mehr
+- Nachtrag zu dem in [#126](https://github.com/inventory69/simple-notes-sync/issues/126) gewünschten Zähler
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43) - die Strings zu Konflikt-Auflösung, Notiz-Statistik und ordnerübergreifender Suche aus 2.16.0
+
+---
+
 ## [2.16.0] - 2026-09-07
 
 ### ✨ Neue Features
