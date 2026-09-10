@@ -1022,4 +1022,10 @@
     <string name="search_empty_state_title">未找到笔记</string>
     <string name="search_empty_state_message">没有东西匹配你的搜索 — 在这个文件夹或任何其他。</string>
     <string name="note_card_in_folder">在文件夹</string>
+    <string name="note_stats_show">显示词语计数器</string>
+    <string name="word_counter_toggle">词语计数器</string>
+    <string name="word_counter_always">总是</string>
+    <string name="word_counter_preview_only">仅在阅读模式</string>
+    <string name="word_counter_off">关闭</string>
+    <string name="word_counter_description">在笔记编辑器中显示词语和字符。点击它切换到字符，再次点击来隐藏它。</string>
 </resources>
