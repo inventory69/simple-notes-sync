@@ -406,7 +406,6 @@
     <string name="toast_already_synced">✅ Zaten senkronize edildi</string>
     <string name="toast_sync_success">✅ %d not senkronize edildi</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Otomatik Senkronizasyon etkin</string>
     <string name="toast_auto_sync_disabled">Otomatik Senkronizasyon devre dışı</string>
     <string name="toast_sync_interval">⏱️ Senkronizasyon aralığı: %s</string>
     <string name="toast_sync_interval_15min">15 dakika</string>
