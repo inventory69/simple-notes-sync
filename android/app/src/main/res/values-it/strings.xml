@@ -520,7 +520,6 @@
     <string name="toast_already_synced">✅ Già sincornizzato</string>
     <string name="toast_sync_success">✅ %d note sincronizzate</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Sincronizzazione automatica attivata</string>
     <string name="toast_auto_sync_disabled">Sincronizzazione automaticca disattivata</string>
     <string name="toast_sync_interval">⏱️ Intervallo di sincronizzazione: %s</string>
     <string name="toast_sync_interval_15min">15 minuti</string>
