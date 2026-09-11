@@ -163,7 +163,6 @@
     <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
     <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
-
     <!-- ============================= -->
     <!-- TRASH (v2.9.0)                -->
     <!-- ============================= -->
@@ -206,7 +205,6 @@
         <item quantity="one">%d Notiz in den Papierkorb verschoben</item>
         <item quantity="other">%d Notizen in den Papierkorb verschoben</item>
     </plurals>
-
     <!-- ============================= -->
     <!-- ACTIVITY LOG (Issue #128 Teil 3) -->
     <!-- ============================= -->
@@ -246,7 +244,6 @@
     <string name="activity_untitled_sync_entry">Sync</string>
     <string name="snackbar_note_restored">Notiz wiederhergestellt</string>
     <string name="snackbar_trash_emptied">Papierkorb geleert</string>
-
     <!-- ============================= -->
     <!-- ARCHIVE (v2.11.0)             -->
     <!-- ============================= -->
@@ -268,7 +265,6 @@
         <item quantity="one">Archivierung von %d Notiz aufgehoben</item>
         <item quantity="other">Archivierung von %d Notizen aufgehoben</item>
     </plurals>
-
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
@@ -800,8 +796,6 @@
     <string name="toast_already_synced">✅ Bereits synchronisiert</string>
     <string name="toast_sync_success">✅ %d Notizen synchronisiert</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Auto-Sync aktiviert</string>
-    <string name="toast_auto_sync_disabled">Auto-Sync deaktiviert</string>
     <string name="toast_sync_interval">⏱️ Sync-Intervall: %s</string>
     <string name="toast_sync_interval_15min">15 Minuten</string>
     <string name="toast_sync_interval_30min">30 Minuten</string>
@@ -982,7 +976,6 @@
     <string name="widget_preview_content">Milch, Eier, Brot, Butter, Käse, Tomaten, Nudeln, Reis, Olivenöl…</string>
     <string name="widget_note_not_found">Notiz nicht gefunden</string>
     <string name="widget_tap_to_reconfigure">Tippen zum Neukonfigurieren</string>
-
     <!-- Quick-Edit-Overlay (Widget → bearbeiten ohne die App zu öffnen) -->
     <string name="widget_quick_edit_title">Notiz bearbeiten</string>
     <string name="widget_quick_edit_hint">Notiztext</string>
@@ -1038,7 +1031,6 @@
     <string name="note_color_pink">Rosa</string>
     <string name="note_color_brown">Braun</string>
     <string name="note_color_gray">Grau</string>
-
     <!-- TYP-KONVERTIERUNG v2.6.0 -->
     <!-- ========================== -->
     <string name="action_convert_to_checklist">Als Checkliste konvertieren</string>
@@ -1046,7 +1038,6 @@
     <string name="confirm_convert_to_checklist">Notiz in eine Checkliste umwandeln? Jede Zeile wird zu einem Eintrag. Zeilen mit Checkbox-Notation (- [ ] / - [x]) behalten ihren Status.</string>
     <string name="confirm_convert_to_note">Checkliste in eine Notiz umwandeln? Jeder Eintrag wird als Textzeile mit erhaltenem Haken-Status gespeichert.</string>
     <string name="action_convert">Konvertieren</string>
-
     <!-- 🆕 v2.7.0 (Folders) -->
     <string name="folder_rename_title">Ordner umbenennen</string>
     <string name="folder_rename_action">Umbenennen</string>
@@ -1080,7 +1071,6 @@
     <string name="folder_exclude_keep_on_server">Auf dem Server behalten</string>
     <string name="snackbar_folder_removed_from_server">Ordner vom Server entfernt</string>
     <string name="snackbar_folder_sync_queued">Ordner wird bei Verbindung synchronisiert</string>
-
     <!-- Notes List Scroll Widget -->
     <string name="notes_list_widget_name">Notizliste</string>
     <string name="notes_list_widget_description">Scrollbare Liste aller Notizen</string>
@@ -1127,7 +1117,6 @@
     <string name="app_lock_no_biometric_title">Keine Sperre eingerichtet</string>
     <string name="app_lock_no_biometric_message">Richte in den Geräteeinstellungen Fingerabdruck, Gesicht oder eine Bildschirmsperre ein, um die App-Sperre zu nutzen.</string>
     <string name="app_lock_open_settings">Einstellungen öffnen</string>
-
     <!-- Preview placeholder strings (not shown to users) -->
     <string name="notes_list_widget_preview_title_1">Einkaufsliste</string>
     <string name="notes_list_widget_preview_content_1">• Milch\n• Brot\n• Eier</string>

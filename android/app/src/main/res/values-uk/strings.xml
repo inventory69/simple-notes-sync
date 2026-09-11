@@ -314,8 +314,6 @@
     <string name="toast_already_synced">✅ Вже синхронізовано</string>
     <string name="toast_sync_success">✅ Нотатки синхронізовано (к-ість: %d)</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Автоматична синхронізація увімкнена</string>
-    <string name="toast_auto_sync_disabled">Автоматична синхронізація вимкнена</string>
     <string name="toast_sync_interval">⏱️ Інтервал Синхронізації: %s</string>
     <string name="toast_sync_interval_15min">15 хвилин</string>
     <string name="toast_sync_interval_30min">30 хвилин</string>

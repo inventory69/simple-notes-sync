@@ -368,8 +368,6 @@
     <string name="toast_already_synced">✅ Sudah tersinkronisasi</string>
     <string name="toast_sync_success">✅ %d catatan tersinkronisasi</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Sinkronisasi Otomatis diaktifkan</string>
-    <string name="toast_auto_sync_disabled">Sinkronisasi Otomatis dinonaktifkan</string>
     <string name="toast_sync_interval">⏱️ Interval sinkronisasi: %s</string>
     <string name="toast_sync_interval_15min">15 menit</string>
     <string name="toast_sync_interval_30min">30 menit</string>

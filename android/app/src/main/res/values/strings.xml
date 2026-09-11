@@ -4,7 +4,6 @@
     <!-- APP IDENTITY                  -->
     <!-- ============================= -->
     <string name="app_name">Simple Notes</string>
-
     <!-- ============================= -->
     <!-- MAIN SCREEN                   -->
     <!-- ============================= -->
@@ -23,13 +22,11 @@
     <string name="action_move_section_up">Move up</string>
     <string name="action_move_section_down">Move down</string>
     <string name="section_reorder_hint">Tip: Long-press the arrow button to reorder sections.</string>
-
     <!-- ============================= -->
     <!-- EMPTY STATE                   -->
     <!-- ============================= -->
     <string name="empty_state_title">No notes yet</string>
     <string name="empty_state_message">Tap + to create a new note</string>
-
     <!-- ============================= -->
     <!-- FAB MENU                      -->
     <!-- ============================= -->
@@ -37,27 +34,23 @@
     <string name="fab_close">Close menu</string>
     <string name="fab_text_note">Text Note</string>
     <string name="fab_checklist">Checklist</string>
-
     <!-- ============================= -->
     <!-- NOTE CARD                     -->
     <!-- ============================= -->
     <string name="untitled">Untitled</string>
     <string name="checklist_items_more">+%d more</string>
-
     <!-- ============================= -->
     <!-- SYNC STATUS BANNER            -->
     <!-- ============================= -->
     <string name="sync_status_completed">Sync completed</string>
     <string name="sync_status_error">Sync failed</string>
     <string name="sync_already_running">Sync already in progress</string>
-
     <!-- 🆕 v1.8.0: SyncStatus enum values -->
     <string name="sync_status_synced">Synced with server</string>
     <string name="sync_status_pending">Waiting for sync</string>
     <string name="sync_status_conflict">Sync conflict detected</string>
     <string name="sync_status_local_only">Not yet synced</string>
     <string name="sync_status_deleted_on_server">Deleted on server</string>
-
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
     <string name="sync_legend_button">Sync status help</string>
     <string name="sync_legend_title">Sync Status Icons</string>
@@ -97,7 +90,6 @@
     <!-- unused since v2.9.0 — DELETED_ON_SERVER legend removed; strings kept to avoid ExtraTranslation in community locales -->
     <string name="sync_legend_deleted_label" tools:ignore="UnusedResources">Deleted on server</string>
     <string name="sync_legend_deleted_desc" tools:ignore="UnusedResources">This note was deleted on another device or directly on the server. It still exists locally.</string>
-
     <!-- 🆕 v1.8.0 (IMPL_022): Sync banner deletion count -->
     <!-- unused since v2.9.0 — server-deleted notes now move to trash (see sync_moved_to_trash_count) -->
     <string name="sync_deleted_on_server_count" tools:ignore="UnusedResources">%d deleted on server</string>
@@ -115,7 +107,6 @@
     <string name="sync_restored_count">%1$d restored</string>
     <!-- 🆕 Issue #128: the server listing was incomplete, so deletion detection was skipped -->
     <string name="sync_deletion_check_skipped">Deletion check skipped (server listing incomplete)</string>
-
     <!-- 🆕 v1.8.0 (IMPL_006): Sync phase strings -->
     <string name="sync_phase_preparing">Synchronizing…</string>
     <string name="sync_phase_uploading">Uploading…</string>
@@ -124,7 +115,6 @@
     <string name="sync_phase_deleting">Deleting from server…</string>
     <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
     <string name="sync_quota_warning">⚠️ Sync was delayed by Android power management. Open the app regularly or disable battery optimization for reliable background sync.</string>
-
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
     <string name="sort_notes">Sort notes</string>
     <string name="sort_ascending">Ascending</string>
@@ -135,7 +125,6 @@
     <string name="sort_by_type">Type</string>
     <string name="sort_by_color">Color</string>
     <string name="close">Close</string>
-
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->
     <string name="sort_checklist">Sort checklist</string>
     <string name="sort_checklist_manual">Manual</string>
@@ -149,7 +138,6 @@
     <string name="sync_phase_importing_markdown">Importing Markdown…</string>
     <string name="sync_phase_completed">Sync complete</string>
     <string name="sync_phase_error">Sync failed</string>
-
     <!-- ============================= -->
     <!-- DELETE DIALOGS                -->
     <!-- ============================= -->
@@ -177,7 +165,6 @@
     <string name="snackbar_server_unreachable">Server not reachable</string>
     <string name="snackbar_connection_timeout">Connection timeout</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nothing to sync</string>
-
     <!-- ============================= -->
     <!-- TRASH (v2.9.0)                -->
     <!-- ============================= -->
@@ -220,7 +207,6 @@
         <item quantity="one">%d note moved to trash</item>
         <item quantity="other">%d notes moved to trash</item>
     </plurals>
-
     <!-- ============================= -->
     <!-- ACTIVITY LOG (Issue #128 Teil 3) -->
     <!-- ============================= -->
@@ -260,7 +246,6 @@
     <string name="activity_untitled_sync_entry">Sync</string>
     <string name="snackbar_note_restored">Note restored</string>
     <string name="snackbar_trash_emptied">Trash emptied</string>
-
     <!-- ============================= -->
     <!-- ARCHIVE (v2.11.0)             -->
     <!-- ============================= -->
@@ -282,7 +267,6 @@
         <item quantity="one">%d note unarchived</item>
         <item quantity="other">%d notes unarchived</item>
     </plurals>
-
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
@@ -296,7 +280,6 @@
     <!-- 🔧 v2.3.0 (Issue #55): Better error messages for MKCOL/WebDAV failures -->
     <string name="sync_error_mkcol_failed">Cannot create sync folder. Please verify your WebDAV URL includes the full path (e.g. /remote.php/dav/files/USERNAME/).</string>
     <string name="sync_error_not_webdav">URL is not a WebDAV endpoint. Please verify the full WebDAV path (e.g. /remote.php/dav/files/USERNAME/).</string>
-
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
@@ -307,7 +290,6 @@
     <string name="error_sardine_client_failed">WebDAV client could not be created</string>
     <string name="error_server_url_not_configured">Server URL not configured</string>
     <string name="error_credentials_not_configured">Server credentials not configured</string>
-
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
     <!-- ============================= -->
@@ -328,7 +310,6 @@
     <string name="note_is_empty">Note is empty</string>
     <string name="note_saved">Note saved</string>
     <string name="note_deleted">Note deleted</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->
     <!-- ============================= -->
@@ -354,7 +335,6 @@
     <string name="settings_markdown">Markdown Desktop Integration</string>
     <string name="settings_backup">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Local or server backup</string>
-
     <!-- Issue #21: Notes Import -->
     <string name="settings_import_title">Import Notes</string>
     <string name="settings_import_subtitle">Import notes from files, server, or Google Keep</string>
@@ -383,7 +363,6 @@
     <string name="settings_debug">Debug &amp; Diagnostics</string>
     <string name="settings_debug_logging_on">Logging: On</string>
     <string name="settings_debug_logging_off">Logging: Off</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - SERVER             -->
     <!-- ============================= -->
@@ -431,7 +410,6 @@
     <string name="server_offline_mode_subtitle">Disable all network features</string>
     <string name="test_connection">Test Connection</string>
     <string name="sync_now">Sync now</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
@@ -458,36 +436,26 @@
     <string name="notifications_permission_settings_title">Notifications blocked</string>
     <string name="notifications_permission_settings_message">Notification permission was permanently denied. To enable notifications, please allow them in the app settings.</string>
     <string name="notifications_permission_open_settings">Open Settings</string>
-
     <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
     <string name="sync_wifi_only_error">Sync only works when WiFi is connected</string>
-
     <string name="sync_trigger_on_save_title">After Saving</string>
     <string name="sync_trigger_on_save_subtitle">Sync immediately after each change</string>
-
     <string name="sync_trigger_on_resume_title">On App Start</string>
     <string name="sync_trigger_on_resume_subtitle">Sync when the app is opened</string>
-
     <string name="sync_trigger_wifi_connect_title">On WiFi Connection</string>
     <string name="sync_trigger_wifi_connect_subtitle">Sync when WiFi is connected</string>
-
     <string name="sync_trigger_periodic_title">Automatically every X minutes</string>
     <string name="sync_trigger_periodic_subtitle">Regular background sync</string>
-
     <string name="sync_trigger_boot_title">After Device Restart</string>
     <string name="sync_trigger_boot_subtitle">Starts background sync after reboot</string>
-
     <!-- 🆕 v1.7.0: WiFi-Only Sync -->
     <string name="sync_wifi_only_title">WiFi-only sync</string>
     <string name="sync_wifi_only_subtitle">Sync only when connected to WiFi. Saves mobile data and prevents long wait times.</string>
-
     <string name="sync_manual_hint">Manual sync (toolbar/pull-to-refresh) is also available.</string>
     <string name="sync_manual_hint_disabled">Sync is not available in offline mode.</string>
-
     <string name="sync_offline_mode_message">You are using the app in offline mode. Set up a server to synchronize notes.</string>
     <string name="sync_no_server_message">No server configured. Set up a server to synchronize notes.</string>
     <string name="sync_offline_mode_button">Set Up Server</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
@@ -502,7 +470,6 @@
     <string name="markdown_manual_sync_button">📝 Manual Markdown Sync</string>
     <string name="markdown_folder_label">MD folder (WebDAV network drive)</string>
     <string name="markdown_folder_copy_cd">Copy path</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
@@ -511,7 +478,6 @@
     <string name="backup_local_section">Local Backup</string>
     <string name="backup_create">💾 Create Backup</string>
     <string name="backup_restore_file">📂 Restore from File</string>
-
     <!-- 🔐 v1.7.0: Encryption -->
     <string name="backup_encryption_title">Encrypt Backup</string>
     <string name="backup_encryption_subtitle">Password-protect your backup file</string>
@@ -527,7 +493,6 @@
     <string name="backup_encryption_confirm">Confirm Password</string>
     <string name="backup_encryption_confirm_hint">Re-enter password</string>
     <string name="backup_decryption_required">🔒 Encrypted Backup</string>
-
     <string name="backup_server_section">Server Backup</string>
     <string name="backup_restore_server">☁️ Restore from Server</string>
     <string name="backup_restore_dialog_title">⚠️ Restore Backup?</string>
@@ -608,7 +573,6 @@
     <string name="calendar_experiment_preview_description">Description</string>
     <string name="calendar_experiment_preview_attendees">Guests (email)</string>
     <string name="calendar_experiment_hint">Your choice is saved and used for calendar export right away.</string>
-
     <!-- 🔧 v1.10.1: Easter-Egg Developer Options -->
     <string name="developer_options_countdown">%d taps to unlock developer options</string>
     <string name="developer_options_unlocked">🔧 Developer options unlocked</string>
@@ -633,7 +597,6 @@
     <string name="language_ukrainian">Українська</string>
     <string name="language_chinese_simplified">Chinese (Simplified)</string>
     <string name="language_info">ℹ️ Choose your preferred language. The view will briefly refresh to apply the change.</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -643,14 +606,12 @@
     <string name="display_mode_list">List View</string>
     <string name="display_mode_grid">Grid View</string>
     <string name="display_mode_info">Grid view arranges notes in multiple columns. The number of columns adapts automatically to your device\'s display size and text scale settings.</string>
-
     <!-- 🆕 v2.1.0 (F46): Grid Column Control -->
     <string name="grid_scaling_title">Grid Column Scaling</string>
     <string name="grid_adaptive_scaling_title">Automatic scaling</string>
     <string name="grid_adaptive_scaling_subtitle">Columns adapt to display size and text scale</string>
     <string name="grid_manual_columns_title">Column count</string>
     <string name="grid_scaling_info">With automatic scaling, the number of columns adapts to your device\'s display size and text scale. When disabled, a fixed column count is used regardless of display settings.</string>
-
     <!-- 🆕 v2.11.0: Note preview length -->
     <string name="note_preview_length_title">Note preview length</string>
     <string name="note_preview_length_info">Controls how many lines (or checklist items) are shown in the note preview, in both List and Grid view.</string>
@@ -660,7 +621,6 @@
     <string name="note_preview_length_standard">Standard</string>
     <string name="note_preview_length_long">Long</string>
     <string name="note_preview_length_extra_long">Extra long</string>
-
     <!-- 🆕 v1.9.0 (F05): Custom App Title -->
     <string name="custom_app_title_section">App Title</string>
     <string name="custom_app_title_label">Custom title</string>
@@ -735,24 +695,20 @@
     <string name="editor_redo">Redo</string>
     <!-- 🆕 v1.9.0 (F06): Note Filter -->
      <string name="filter_all">All</string>
-     <string name="filter_text_only">Text</string>
-     <string name="filter_checklist_only">Lists</string>
-     <!-- 🆕 v2.5.0: Farbfilter -->
+    <string name="filter_text_only">Text</string>
+    <string name="filter_checklist_only">Lists</string>
+    <!-- 🆕 v2.5.0: Farbfilter -->
      <string name="filter_color">Filter by color</string>
-     <string name="filter_color_all">All colors</string>
-     <!-- 🆕 v2.11.0: Archive overflow menu entry -->
+    <string name="filter_color_all">All colors</string>
+    <!-- 🆕 v2.11.0: Archive overflow menu entry -->
      <string name="filter_archive">Archive</string>
-
     <!-- v1.9.0 (F10): Search -->
     <string name="search_notes_placeholder">Search…</string>
     <string name="search_clear">Clear search</string>
-
     <!-- v1.9.0 (F11): Filter row toggle -->
     <string name="toggle_filter_row">Toggle filter bar</string>
-
     <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
     <string name="editor_toggle_preview">Toggle Markdown preview</string>
-
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
     <string name="md_toolbar_bold">Bold</string>
     <string name="md_toolbar_italic">Italic</string>
@@ -790,7 +746,6 @@
     <string name="md_toolbar_rule">Horizontal rule</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
     <string name="md_toolbar_checklist">Checklist</string>
-
     <!-- ============================= -->
     <!-- SETTINGS - ABOUT              -->
     <!-- ============================= -->
@@ -807,7 +762,6 @@
     <string name="about_developer_subtitle">GitHub Profile: @inventory69</string>
     <string name="about_license_title">License</string>
     <string name="about_license_subtitle">AGPL v3 License - Open Source</string>
-
     <!-- v1.8.0: Changelog Link in About -->
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_subtitle">Full version history</string>
@@ -816,30 +770,24 @@
     <string name="contributors_role_code">Code</string>
     <string name="contributors_role_translation">Translations</string>
     <string name="contributors_role_testing">Testing</string>
-
     <!-- v1.8.0: Post-Update Changelog Dialog -->
     <string name="update_changelog_title">What\'s New</string>
     <string name="update_changelog_dismiss">Got it!</string>
     <string name="update_changelog_view_all">View changelog</string>
-
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Creating backup…</string>
     <string name="backup_progress_restoring">Restoring backup…</string>
     <string name="backup_progress_restoring_server">Downloading notes from server…</string>
-
     <!-- v1.8.0: Backup Progress - Completion -->
     <string name="backup_progress_complete">Backup created!</string>
     <string name="restore_progress_complete">Restore complete!</string>
     <string name="restore_server_progress_complete">Download complete!</string>
-
     <!-- v1.8.0: Backup Progress - Error -->
     <string name="backup_progress_failed">Backup failed</string>
     <string name="restore_progress_failed">Restore failed</string>
     <string name="restore_server_progress_failed">Download failed</string>
-
     <string name="about_privacy_title">🔒 Privacy</string>
     <string name="about_privacy_text">This app collects no data. All notes are stored only locally on your device and on your own WebDAV server. No telemetry, no ads.</string>
-
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
@@ -854,8 +802,6 @@
     <string name="toast_already_synced">✅ Already synced</string>
     <string name="toast_sync_success">✅ %d notes synced</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Auto-Sync enabled</string>
-    <string name="toast_auto_sync_disabled">Auto-Sync disabled</string>
     <string name="toast_sync_interval">⏱️ Sync interval: %s</string>
     <string name="toast_sync_interval_15min">15 minutes</string>
     <string name="toast_sync_interval_30min">30 minutes</string>
@@ -897,7 +843,6 @@
     <string name="restore_merge_result">%1$d new notes imported, %2$d skipped</string>
     <string name="restore_overwrite_result">%1$d new, %2$d overwritten</string>
     <string name="restore_replace_result">All notes replaced: %d imported</string>
-
     <!-- ============================= -->
     <!-- RELATIVE TIME                 -->
     <!-- ============================= -->
@@ -914,7 +859,6 @@
         <item quantity="one">%d day ago</item>
         <item quantity="other">%d days ago</item>
     </plurals>
-
     <!-- ============================= -->
     <!-- NOTIFICATIONS                 -->
     <!-- ============================= -->
@@ -943,18 +887,15 @@
     <string name="notification_sync_in_progress_title">Synchronization in progress</string>
     <string name="notification_sync_in_progress_message">Notes are being synchronized…</string>
     <string name="notification_sync_error_title">Sync Error</string>
-
     <!-- 🆕 v2.5.0: Google Keep Import — Snackbar messages (full set in Commit #12) -->
     <string name="keep_import_snackbar_done">Import done: %1$d new, %2$d skipped</string>
     <string name="keep_import_snackbar_cancelled">Import cancelled</string>
     <string name="keep_import_snackbar_error">Import failed</string>
     <string name="keep_import_snackbar_retry_action">Retry</string>
-
     <!-- 🆕 v2.5.0: Google Keep Import — full UI strings -->
     <string name="keep_import_section_title">Google Keep import</string>
     <string name="keep_import_section_description">Import your Google Takeout export as simple-notes-sync notes.</string>
     <string name="keep_import_section_button_pick_zip">Choose ZIP…</string>
-
     <string name="keep_import_config_title">Import from Google Keep</string>
     <string name="keep_import_config_scanning">Analysing archive contents…</string>
     <string name="keep_import_config_include_archived">Import archived notes</string>
@@ -968,7 +909,6 @@
     <string name="keep_import_config_info_color_pin">🎨 Note colours are imported and shown right away. Pinned notes will appear in a separate Pinned section at the top of your notes list.</string>
     <string name="keep_import_config_button_start">Start import</string>
     <string name="keep_import_config_button_cancel">Cancel</string>
-
     <string name="keep_import_prescan_header">📦 Archive contains:</string>
     <string name="keep_import_prescan_active">• %1$d active notes</string>
     <string name="keep_import_prescan_archived">• %1$d archived notes</string>
@@ -977,16 +917,13 @@
     <string name="keep_import_prescan_shared">• %1$d notes from shared lists</string>
     <string name="keep_import_prescan_attachments">• %1$d notes with attachments (will not be imported)</string>
     <string name="keep_import_prescan_large_warning">⚠️ Large archive (%1$d MB), analysis may take a minute.</string>
-
     <string name="keep_import_large_zip_title">Large archive</string>
     <string name="keep_import_large_zip_body">This archive is %1$d MB. The import may take several minutes and consume significant battery. Continue anyway?</string>
     <string name="keep_import_large_zip_button_continue">Continue</string>
     <string name="keep_import_large_zip_button_cancel">Cancel</string>
-
     <string name="keep_import_progress_title">Importing from Google Keep…</string>
     <string name="keep_import_progress_status">Processing %1$d of %2$d: %3$s</string>
     <string name="keep_import_progress_button_cancel">Cancel</string>
-
     <string name="keep_import_result_title">Import complete</string>
     <string name="keep_import_result_imported">✓ %1$d notes imported</string>
     <string name="keep_import_result_replaced">↻ %1$d replaced</string>
@@ -1000,7 +937,6 @@
     <string name="keep_import_result_show_errors">Show details</string>
     <string name="keep_import_result_hide_errors">Hide details</string>
     <string name="keep_import_result_button_close">Close</string>
-
     <!-- ============================= -->
     <!-- PLURALS                       -->
     <!-- ============================= -->
@@ -1013,7 +949,6 @@
         <item quantity="one">%d completed</item>
         <item quantity="other">%d completed</item>
     </plurals>
-
     <!-- ===================================== -->
     <!-- PARALLEL CONNECTIONS v1.9.0           -->
     <!-- (unified downloads + uploads setting) -->
@@ -1023,13 +958,11 @@
     <string name="sync_parallel_connections_desc_1">Sequential (slowest, safest)</string>
     <string name="sync_parallel_connections_desc_3">Balanced (3x faster)</string>
     <string name="sync_parallel_connections_desc_5">Maximum (5x faster)</string>
-
     <!-- ============================= -->
     <!-- WIDGETS v1.8.0                -->
     <!-- ============================= -->
     <string name="widget_name">Simple Notes</string>
     <string name="widget_description">Display a note or checklist on your home screen</string>
-
     <!-- v2.2.0: New Note Shortcut Widget -->
     <string name="new_note_widget_name">New Note</string>
     <string name="new_note_widget_description">Quickly create a new note or checklist</string>
@@ -1053,13 +986,11 @@
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
     <string name="widget_note_not_found">Note not found</string>
     <string name="widget_tap_to_reconfigure">Tap to reconfigure</string>
-
     <!-- Quick-Edit overlay (widget → edit without opening the app) -->
     <string name="widget_quick_edit_title">Edit note</string>
     <string name="widget_quick_edit_hint">Note text</string>
     <string name="widget_quick_edit_add_item_title">Add item</string>
     <string name="widget_quick_edit_add_item_hint">New item</string>
-
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
     <!-- ============================= -->
@@ -1076,7 +1007,6 @@
     <string name="share_pdf_error">Could not create PDF</string>
     <string name="share_image_placeholder">[🖼]</string>
     <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
-
     <!-- v2.2.0: Share Intent — Note Type Chooser -->
     <string name="share_type_dialog_title">Save as</string>
     <string name="share_type_dialog_message">How should the shared text be saved?</string>
@@ -1084,7 +1014,6 @@
     <string name="share_type_checklist">Checklist</string>
     <string name="share_type_append_note">Append to note…</string>
     <string name="share_append_picker_title">Select note</string>
-
     <!-- v2.2.0: Checklist Item Context Menu -->
     <string name="checklist_item_menu">Item options</string>
     <string name="checklist_copy_text">Copy text</string>
@@ -1095,7 +1024,6 @@
     <string name="checklist_copy_to_checklist_untitled">Untitled checklist</string>
     <string name="checklist_copy_to_checklist_item_count">%d items</string>
     <string name="checklist_item_copied_toast">Item copied to checklist</string>
-
     <!-- ============================= -->
     <!-- NOTE COLOR v2.5.0 (Issue #65) -->
     <!-- ============================= -->
@@ -1113,7 +1041,6 @@
     <string name="note_color_pink">Pink</string>
     <string name="note_color_brown">Brown</string>
     <string name="note_color_gray">Gray</string>
-
     <!-- TYPE CONVERSION v2.6.0 -->
     <!-- ======================= -->
     <string name="action_convert_to_checklist">Convert to checklist</string>
@@ -1121,7 +1048,6 @@
     <string name="confirm_convert_to_checklist">Convert this note to a checklist? Each line becomes a checklist item. Lines with existing checkbox notation (- [ ] / - [x]) keep their checked state.</string>
     <string name="confirm_convert_to_note">Convert this checklist to a note? Each item becomes a line of text with its checked state preserved.</string>
     <string name="action_convert">Convert</string>
-
     <!-- 🆕 v2.7.0 (Folders) -->
     <string name="folder_rename_title">Rename folder</string>
     <string name="folder_rename_action">Rename</string>
@@ -1153,7 +1079,6 @@
     <string name="folder_exclude_sync_message">The notes stay on this device but will no longer be synced. What should happen to the copies already on the server?</string>
     <string name="folder_exclude_remove_from_server">Remove from server</string>
     <string name="folder_exclude_keep_on_server">Keep on server</string>
-
     <!-- Notes List Scroll Widget -->
     <string name="notes_list_widget_name">Notes List</string>
     <string name="notes_list_widget_description">Scrollable list of all your notes</string>
@@ -1200,7 +1125,6 @@
     <string name="app_lock_no_biometric_title">No lock screen set up</string>
     <string name="app_lock_no_biometric_message">Set up a fingerprint, face, or screen lock in your device settings to use app lock.</string>
     <string name="app_lock_open_settings">Open Settings</string>
-
     <!-- Preview placeholder strings (not shown to users) -->
     <string name="notes_list_widget_preview_title_1">Shopping list</string>
     <string name="notes_list_widget_preview_content_1">• Milk\n• Bread\n• Eggs</string>
@@ -1208,5 +1132,4 @@
     <string name="notes_list_widget_preview_content_2">Discuss roadmap and upcoming milestones</string>
     <string name="notes_list_widget_preview_title_3">Ideas</string>
     <string name="notes_list_widget_preview_content_3">New feature concepts for next sprint</string>
-
 </resources>
