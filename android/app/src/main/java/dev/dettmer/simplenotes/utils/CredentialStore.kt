@@ -3,8 +3,6 @@ package dev.dettmer.simplenotes.utils
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import java.security.GeneralSecurityException
 import javax.crypto.SecretKey
 
@@ -144,15 +142,17 @@ object CredentialStore {
         // würde auf einer Frischinstallation Keyset + MasterKey erzeugen, die nie jemand braucht.
         if (app.getSharedPreferences(TINK_PREFS_NAME, Context.MODE_PRIVATE).all.isEmpty()) return null
         return try {
-            val masterKey = MasterKey.Builder(app)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            // Voll qualifiziert statt importiert: Kotlin meldet die Deprecation sonst am Import,
+            // und dort greift das @Suppress dieser Funktion nicht.
+            val masterKey = androidx.security.crypto.MasterKey.Builder(app)
+                .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
                 .build()
-            val prefs = EncryptedSharedPreferences.create(
+            val prefs = androidx.security.crypto.EncryptedSharedPreferences.create(
                 app,
                 TINK_PREFS_NAME,
                 masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
             val username = prefs.getString(Constants.KEY_USERNAME, null) ?: return null
             val password = prefs.getString(Constants.KEY_PASSWORD, null) ?: return null
