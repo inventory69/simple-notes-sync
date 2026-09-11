@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
@@ -605,13 +606,21 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
 
             // Zeige Warnung
+            // 🆕 v2.17.0: Ursache unterscheiden. „Server seit %dh nicht erreichbar" war bei
+            // fehlenden Zugangsdaten die falsche Diagnose — und genau dieser Fall tritt nach
+            // einem Gerätewechsel auf, weil die Credentials dort nicht mitkommen.
+            val credentialsMissing = !CredentialStore.hasCredentials(applicationContext)
             val hoursSinceLastSync = timeSinceLastSync / (1000 * 60 * 60)
-            NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync)
+            NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync, credentialsMissing)
 
             // Speichere Zeitpunkt der Warnung
             prefs.edit { putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now) }
 
-            Logger.d(TAG, "⚠️ Sync warning shown: Server unreachable for ${hoursSinceLastSync}h")
+            Logger.d(
+                TAG,
+                "⚠️ Sync warning shown after ${hoursSinceLastSync}h " +
+                    "(${if (credentialsMissing) "credentials missing" else "server unreachable"})"
+            )
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to check/show sync warning", e)
         }

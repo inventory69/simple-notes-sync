@@ -306,6 +306,7 @@
     <string name="error_server_not_configured">WebDAV server not fully configured</string>
     <string name="error_sardine_client_failed">WebDAV client could not be created</string>
     <string name="error_server_url_not_configured">Server URL not configured</string>
+    <string name="error_credentials_not_configured">Server credentials not configured</string>
 
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
@@ -934,6 +935,8 @@
     <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
     <string name="notification_sync_warning_message">Server unreachable for %dh</string>
     <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
+    <string name="notification_sync_warning_credentials_message">Server credentials missing</string>
+    <string name="notification_sync_warning_credentials_detail">Nothing has been synced for %d hours because the WebDAV credentials are missing. They are not carried over to a new device — please re-enter them in the server settings.</string>
     <string name="notification_sync_in_progress_title">Synchronization in progress</string>
     <string name="notification_sync_in_progress_message">Notes are being synchronized…</string>
     <string name="notification_sync_error_title">Sync Error</string>
