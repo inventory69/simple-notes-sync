@@ -83,10 +83,12 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
             Logger.d(TAG, "📝 File logging enabled at Application startup")
         }
 
-        // 🔐 v2.3.0: Migrate credentials to EncryptedSharedPreferences.
+        // 🔐 v2.17.0 (WP-3): Credentials in den AndroidKeyStore-verschlüsselten Store holen —
+        // aus dem alten Tink-Store, aus den regulären Prefs (dort landeten sie bei defektem
+        // Keyset im Klartext) oder aus der Fallback-Datei (Zurückbeförderung).
         // Läuft NACH dem File-Logging: Wenn der KeyStore hier repariert wird, ist das der
         // einzige Ort, an dem man das je zu sehen bekommt — vorher fiel die Meldung raus.
-        migrateCredentialsToEncryptedPrefs(prefs)
+        CredentialStore.migrateIfNeeded(this)
 
         // 🆕 v2.2.0: Persistent sync debug logger
         SyncDebugLogger.init(this)
@@ -132,43 +134,6 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
 
         // WorkManager läuft weiter auch nach onTerminate!
         // Nur bei deaktiviertem Auto-Sync stoppen wir es
-    }
-
-    /**
-     * � v2.3.0: Migrate credentials from regular to EncryptedSharedPreferences.
-     * One-time migration: removes credentials from unencrypted prefs after copying.
-     * If EncryptedSharedPreferences is unavailable (KeyStore issue), credentials
-     * remain in regular prefs and migration is retried on next app start.
-     *
-     * Audit: E-01
-     */
-    private fun migrateCredentialsToEncryptedPrefs(prefs: android.content.SharedPreferences) {
-        val username = prefs.getString(Constants.KEY_USERNAME, null)
-        val password = prefs.getString(Constants.KEY_PASSWORD, null)
-        if (username != null || password != null) {
-            try {
-                val securePrefs = CredentialStore.getSecurePrefs(this)
-                if (securePrefs == null) {
-                    Logger.w(
-                        TAG,
-                        "⚠️ EncryptedSharedPreferences unavailable — credentials remain in regular prefs (KeyStore issue)"
-                    )
-                    return
-                }
-                CredentialStore.setCredentials(
-                    this,
-                    username.orEmpty(),
-                    password.orEmpty()
-                )
-                prefs.edit {
-                    remove(Constants.KEY_USERNAME)
-                    remove(Constants.KEY_PASSWORD)
-                }
-                Logger.d(TAG, "✅ Credentials migrated to EncryptedSharedPreferences")
-            } catch (e: Exception) {
-                Logger.e(TAG, "⚠️ Credential migration failed (non-fatal) — credentials remain in regular prefs", e)
-            }
-        }
     }
 
     /**

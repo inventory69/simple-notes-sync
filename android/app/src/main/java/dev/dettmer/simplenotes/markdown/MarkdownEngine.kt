@@ -60,7 +60,9 @@ object MarkdownEngine {
             val assetName: String,
             val sizePercent: Int = 50,
             val align: ImageAlign = ImageAlign.CENTER,
-            val ordinal: Int = 0
+            val ordinal: Int = 0,
+            /** true = beginnt eine neue Bildreihe (Leerzeile oder Nicht-Bild-Block davor). */
+            val startsNewRow: Boolean = false
         ) : MarkdownBlock()
     }
 
@@ -80,6 +82,9 @@ object MarkdownEngine {
         // konsumiert, zählt seine eigenen Bild-Matches dazu, damit Image.ordinal exakt dem
         // findAll-Index entspricht (auch für Links in Headings/Codeblöcken/Inline-Text).
         var nextOrdinal = 0
+        // Zeile des zuletzt geparsten Bildes — trennt "zweites Bild auf DERSELBEN Zeile"
+        // (gleiche Reihe) von "Bild eine Zeile tiefer" (Reihe nur bei Leerzeile dazwischen).
+        var lineOfLastImage = -1
 
         while (i < lines.size) {
             val line = lines[i]
@@ -130,13 +135,18 @@ object MarkdownEngine {
                     }
                     nextOrdinal += IMAGE_REGEX.findAll(line.substring(0, imageMatch.range.first)).count()
                     val altInfo = parseImageAlt(imageMatch.groupValues[1])
+                    // NACH dem prefix-Paragraph berechnet: ein abgetrennter Text-Prefix zaehlt als Trenner.
+                    val startsNewRow = blocks.lastOrNull() !is MarkdownBlock.Image ||
+                        (lineOfLastImage != i && i > 0 && lines[i - 1].isBlank())
+                    lineOfLastImage = i
                     blocks.add(
                         MarkdownBlock.Image(
                             altText = altInfo.cleanAlt,
                             assetName = imageMatch.groupValues[2],
                             sizePercent = altInfo.sizePercent,
                             align = altInfo.align,
-                            ordinal = nextOrdinal
+                            ordinal = nextOrdinal,
+                            startsNewRow = startsNewRow
                         )
                     )
                     nextOrdinal++
@@ -209,6 +219,51 @@ object MarkdownEngine {
         return blocks
     }
 
+    /**
+     * Laenge der Bildreihe, die bei [start] beginnt: aufeinanderfolgende [MarkdownBlock.Image]s,
+     * abgebrochen bei [MarkdownBlock.Image.startsNewRow] oder sobald die Prozentsumme 100
+     * ueberschreiten wuerde. 0, wenn bei [start] kein Bild steht.
+     *
+     * Einzige Stelle, an der die Packregel lebt — Renderer und PDF-Export teilen sie sich.
+     */
+    fun imageRowLength(blocks: List<MarkdownBlock>, start: Int): Int {
+        var count = 0
+        var sum = 0
+        while (start + count < blocks.size) {
+            val image = blocks[start + count] as? MarkdownBlock.Image
+            if (image == null || count > 0 && image.startsNewRow || sum + image.sizePercent > MAX_ROW_PERCENT) break
+            sum += image.sizePercent
+            count++
+        }
+        return count
+    }
+
+    /**
+     * Trenner vor jedem Vorschau-Block: "" vor dem ersten, " " zwischen Bildern derselben Reihe
+     * (gleiche Packregel wie im Editor, s. [MarkdownEngine.imageRowLength]), sonst "\n".
+     */
+    fun imageRowSeparators(blocks: List<MarkdownBlock>): List<String> {
+        val separators = MutableList(blocks.size) { if (it == 0) "" else "\n" }
+        var i = 0
+        while (i < blocks.size) {
+            val rowLength = if (blocks[i] is MarkdownBlock.Image) imageRowLength(blocks, i) else 0
+            for (j in i + 1 until i + rowLength) separators[j] = " "
+            i += maxOf(rowLength, 1)
+        }
+        return separators
+    }
+
+    /**
+     * Quelltext-Variante derselben Reihen-Regel für Oberflächen, die Markdown als **String**
+     * weiterreichen statt als Blöcke (Listen-Widget): direkt aufeinanderfolgende Bildzeilen
+     * werden zu einer Zeile verbunden, damit ihre Platzhalter nebeneinander stehen.
+     * Eine Leerzeile oder ein Textpräfix trennt weiterhin — wie beim Parsen.
+     *
+     * ponytail: ohne Prozent-Packung (anders als [imageRowLength]) — dort landen nur
+     * Text-Platzhalter, die ohnehin umbrechen. Bei echten Bildern die Blöcke nutzen.
+     */
+    fun joinImageRows(text: String): String = text.replace(IMAGE_ROW_JOIN_REGEX, "$1 ")
+
     /** Returns true if [line] is a plain paragraph line (non-blank, non-structural). */
     private fun isParagraphLine(line: String): Boolean {
         if (line.isBlank()) return false
@@ -239,7 +294,10 @@ object MarkdownEngine {
      */
     internal val TASK_LIST_REGEX = Regex("""^\s*[-*+]\s+\[([ xX]?)\](?:\s+(.*))?$""")
     internal val IMAGE_REGEX = Regex("""!\[([^\]]*)]\(\.assets/([A-Za-z0-9][A-Za-z0-9._-]*)\)""")
+    private val IMAGE_ROW_JOIN_REGEX =
+        Regex("""(!\[[^\]]*]\(\.assets/[A-Za-z0-9][A-Za-z0-9._-]*\))\n(?=!\[)""")
     private const val HORIZONTAL_RULE_MIN_CHARS = 3
+    private const val MAX_ROW_PERCENT = 100
 
     private fun isHorizontalRule(line: String): Boolean {
         val trimmed = line.trim()

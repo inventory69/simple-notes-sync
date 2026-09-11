@@ -14,7 +14,6 @@ import org.junit.Test
  * mehrfacher Whitespace, Zeilenumbrüche, Tabs).
  */
 class NoteStatsTest {
-
     @Test fun `counts plain words`() {
         assertEquals(3, countWords("Milch Brot Eier"))
     }

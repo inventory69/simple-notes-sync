@@ -20,8 +20,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 58  // 🆕 v2.16.1 - word counter visibility
-        versionName = "2.16.1"  // 🆕 v2.16.1 - word counter visibility
+        versionCode = 59  // 🆕 v2.17.0 - keystore credentials, widget quick edit
+        versionName = "2.17.0"  // 🆕 v2.17.0 - keystore credentials, widget quick edit
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
@@ -228,7 +228,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // 🔐 v1.7.0: AndroidX Security Crypto für Backup-Verschlüsselung
+    // 🔐 v1.7.0: AndroidX Security Crypto. Seit v2.17.0 (WP-3) nur noch Migrationspfad —
+    // CredentialStore liest den alten Tink-Store, verschlüsselt selbst per JCA (AES/GCM).
+    // Raus in v2.20.0 (deprecated 2025). EncryptionManager nutzt ohnehin reines JCA, nicht diese Lib.
     implementation(libs.androidx.security.crypto)
 
     // ═══════════════════════════════════════════════════════════════════════

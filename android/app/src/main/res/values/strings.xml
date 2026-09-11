@@ -306,6 +306,7 @@
     <string name="error_server_not_configured">WebDAV server not fully configured</string>
     <string name="error_sardine_client_failed">WebDAV client could not be created</string>
     <string name="error_server_url_not_configured">Server URL not configured</string>
+    <string name="error_credentials_not_configured">Server credentials not configured</string>
 
     <!-- ============================= -->
     <!-- NOTE EDITOR                   -->
@@ -517,6 +518,9 @@
     <string name="backup_include_server_settings_title">Include App Settings</string>
     <string name="backup_include_server_settings_subtitle">Also back up server connection, sync, display, and notification settings</string>
     <string name="backup_server_settings_encryption_hint">App settings include your server credentials in plain text. Enabling encryption is strongly recommended.</string>
+    <string name="server_credentials_unencrypted_warning">This device\'s key store is unavailable, so your credentials are stored unencrypted. They are excluded from backups and will be encrypted automatically as soon as the key store works again.</string>
+    <string name="server_credentials_unencrypted_snackbar">Key store unavailable — credentials stored unencrypted</string>
+    <string name="server_credentials_missing_warning">No credentials are stored for this server, so nothing will sync until you enter them. Credentials are not carried over to a new device.</string>
     <string name="backup_restore_server_settings_label">Restore app settings (if included in backup)</string>
     <string name="backup_encryption_password">Password</string>
     <string name="backup_encryption_password_hint">Enter password (min. 8 characters)</string>
@@ -934,6 +938,8 @@
     <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
     <string name="notification_sync_warning_message">Server unreachable for %dh</string>
     <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
+    <string name="notification_sync_warning_credentials_message">Server credentials missing</string>
+    <string name="notification_sync_warning_credentials_detail">Nothing has been synced for %d hours because the WebDAV credentials are missing. They are not carried over to a new device — please re-enter them in the server settings.</string>
     <string name="notification_sync_in_progress_title">Synchronization in progress</string>
     <string name="notification_sync_in_progress_message">Notes are being synchronized…</string>
     <string name="notification_sync_error_title">Sync Error</string>
@@ -1047,6 +1053,12 @@
     <string name="widget_preview_content">Milk, eggs, bread, butter, cheese, tomatoes, pasta, rice, olive oil…</string>
     <string name="widget_note_not_found">Note not found</string>
     <string name="widget_tap_to_reconfigure">Tap to reconfigure</string>
+
+    <!-- Quick-Edit overlay (widget → edit without opening the app) -->
+    <string name="widget_quick_edit_title">Edit note</string>
+    <string name="widget_quick_edit_hint">Note text</string>
+    <string name="widget_quick_edit_add_item_title">Add item</string>
+    <string name="widget_quick_edit_add_item_hint">New item</string>
 
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->

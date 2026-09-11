@@ -99,9 +99,6 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                         offlineMode = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, false).takeIf {
                             prefs.contains(Constants.KEY_OFFLINE_MODE)
                         },
-                        autoSync = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false).takeIf {
-                            prefs.contains(Constants.KEY_AUTO_SYNC)
-                        },
                         wifiOnlySync = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, false).takeIf {
                             prefs.contains(Constants.KEY_WIFI_ONLY_SYNC)
                         },
@@ -344,14 +341,18 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     s.serverUrl?.let { putString(Constants.KEY_SERVER_URL, it) }
                     s.username?.let { username ->
                         val password = s.password.orEmpty()
-                        CredentialStore.setCredentials(context, username, password)
+                        // 🆕 v2.17.0: Beim Restore kann derselbe Klartext-Downgrade auftreten wie
+                        // bei der Eingabe im Server-Screen. Sichtbar wird er über
+                        // SettingsViewModel.reloadServerSettingsFromPrefs() — Warnzeile + Snackbar.
+                        if (!CredentialStore.setCredentials(context, username, password)) {
+                            Logger.w(TAG, "⚠️ Restored credentials could not be encrypted — fallback prefs")
+                        }
                     }
                     s.syncFolder?.let { putString(Constants.KEY_SYNC_FOLDER_NAME, it) }
                     s.connectionTimeoutSeconds?.let { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, it) }
                     s.maxParallelConnections?.let { putInt(Constants.KEY_MAX_PARALLEL_CONNECTIONS, it) }
                     // Sync behaviour
                     s.offlineMode?.let { putBoolean(Constants.KEY_OFFLINE_MODE, it) }
-                    s.autoSync?.let { putBoolean(Constants.KEY_AUTO_SYNC, it) }
                     s.wifiOnlySync?.let { putBoolean(Constants.KEY_WIFI_ONLY_SYNC, it) }
                     s.markdownExport?.let { putBoolean(Constants.KEY_MARKDOWN_EXPORT, it) }
                     s.markdownAutoImport?.let { putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, it) }
@@ -748,8 +749,6 @@ data class AppSettings(
     // ── Sync behaviour ─────────────────────────────────────────────────────
     @com.google.gson.annotations.SerializedName("offline_mode")
     val offlineMode: Boolean? = null,
-    @com.google.gson.annotations.SerializedName("auto_sync")
-    val autoSync: Boolean? = null,
     @com.google.gson.annotations.SerializedName("wifi_only_sync")
     val wifiOnlySync: Boolean? = null,
     @com.google.gson.annotations.SerializedName("markdown_export")

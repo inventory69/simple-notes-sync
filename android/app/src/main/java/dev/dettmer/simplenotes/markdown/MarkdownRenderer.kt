@@ -7,7 +7,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -63,8 +63,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.isSpecified
 import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import dev.dettmer.simplenotes.R
@@ -78,6 +78,7 @@ import java.io.File
 import kotlinx.coroutines.launch
 
 private const val COMPACT_HEADING_LEVEL = 3
+private const val FULL_WIDTH_PERCENT = 100
 
 /**
  * 🆕 v1.9.0 (F07): Renders parsed [MarkdownBlock]s as Compose UI.
@@ -123,8 +124,20 @@ fun MarkdownPreview(
                 .then(scrollModifier)
                 .padding(horizontal = Dimensions.SpacingSmall)
         ) {
-            blocks.forEach { block ->
-                when (block) {
+            var i = 0
+            while (i < blocks.size) {
+                val rowLength = MarkdownEngine.imageRowLength(blocks, i)
+                if (rowLength > 0) {
+                    ImageRowBlock(
+                        images = blocks.subList(i, i + rowLength).filterIsInstance<MarkdownBlock.Image>(),
+                        onTap = { viewerAsset = it.assetName },
+                        onLongPress = onImageTokensChange?.let { _ -> { image: MarkdownBlock.Image -> menuTarget = image } }
+                    )
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    i += rowLength
+                    continue
+                }
+                when (val block = blocks[i]) {
                     is MarkdownBlock.Heading -> {
                         HeadingBlock(block, compactHeaders)
                         Spacer(modifier = Modifier.height(Dimensions.SpacingLarge))
@@ -169,15 +182,19 @@ fun MarkdownPreview(
                         Spacer(modifier = Modifier.height(blankLineHeight * block.count))
                     }
 
+                    // Nur fuer die when-Exhaustivitaet: imageRowLength packt jedes Bild oben
+                    // schon in eine Reihe (auch ein einzelnes). Erreichbar nur, falls ein
+                    // Consumer die Gruppierung mal nicht will.
                     is MarkdownBlock.Image -> {
-                        ImageBlock(
-                            image = block,
-                            onTap = { viewerAsset = block.assetName },
-                            onLongPress = onImageTokensChange?.let { { menuTarget = block } }
+                        ImageRowBlock(
+                            images = listOf(block),
+                            onTap = { viewerAsset = it.assetName },
+                            onLongPress = onImageTokensChange?.let { _ -> { image: MarkdownBlock.Image -> menuTarget = image } }
                         )
                         Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
                 }
+                i++
             }
         }
     }
@@ -336,12 +353,43 @@ private fun CodeBlockSurface(codeBlock: MarkdownBlock.CodeBlock) {
     }
 }
 
-private fun ImageAlign.toBoxAlignment(): Alignment = when (this) {
-    ImageAlign.LEFT -> Alignment.CenterStart
-    ImageAlign.CENTER -> Alignment.Center
-    ImageAlign.RIGHT -> Alignment.CenterEnd
-    // Die Engine kann INLINE auf einem Block-Image nicht produzieren — defensiver Fallback.
-    ImageAlign.INLINE -> Alignment.Center
+/**
+ * Rendert die von [MarkdownEngine.imageRowLength] gepackte Bildreihe: gewichtete Slots
+ * (ein Slot = sein Prozentwert der Textbreite) plus ein Rest-[Spacer] je nach Ausrichtung.
+ *
+ * Bewusst gewichtete Slots statt `fillMaxWidth(0.5f)` in einer FlowRow: dort koennen zwei
+ * 50-%-Slots durch Aufrunden auf `W+1` px landen und ungewollt umbrechen.
+ */
+@Composable
+private fun ImageRowBlock(
+    images: List<MarkdownBlock.Image>,
+    onTap: (MarkdownBlock.Image) -> Unit,
+    onLongPress: ((MarkdownBlock.Image) -> Unit)?
+) {
+    val slack = (FULL_WIDTH_PERCENT - images.sumOf { it.sizePercent }).coerceAtLeast(0) / 100f
+    val (lead, trail) = when (images.first().align) {
+        ImageAlign.LEFT, ImageAlign.INLINE -> 0f to slack
+        ImageAlign.RIGHT -> slack to 0f
+        ImageAlign.CENTER -> slack / 2f to slack / 2f
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        // Abstand nur bei echten Reihen: sonst schrumpfte ein einzelnes Bild gegenueber
+        // frueher um die Gap-Breite.
+        horizontalArrangement = if (images.size > 1) Arrangement.spacedBy(Dimensions.SpacingSmall) else Arrangement.Start
+    ) {
+        if (lead > 0f) Spacer(modifier = Modifier.weight(lead))
+        images.forEach { image ->
+            ImageBlock(
+                image = image,
+                modifier = Modifier.weight(image.sizePercent / 100f),
+                onTap = { onTap(image) },
+                onLongPress = onLongPress?.let { callback -> { callback(image) } }
+            )
+        }
+        if (trail > 0f) Spacer(modifier = Modifier.weight(trail))
+    }
 }
 
 /**
@@ -355,18 +403,21 @@ private fun ImageAlign.toBoxAlignment(): Alignment = when (this) {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ImageBlock(image: MarkdownBlock.Image, onTap: () -> Unit, onLongPress: (() -> Unit)?) {
+private fun ImageBlock(
+    image: MarkdownBlock.Image,
+    modifier: Modifier = Modifier,
+    onTap: () -> Unit,
+    onLongPress: (() -> Unit)?
+) {
     val context = LocalContext.current
     val assetFile = remember(context, image.assetName) { AssetStore(context).getAssetFile(image.assetName) }
     var loadFailed by remember(image.assetName) { mutableStateOf(false) }
     val aspect = remember(assetFile) { decodeAspectRatio(assetFile) }
 
     if (!assetFile.exists() || loadFailed || aspect == null) {
-        ImagePlaceholder(image.altText)
+        ImagePlaceholder(image.altText, modifier)
         return
     }
-
-    val fraction = image.sizePercent / 100f
 
     // DisableSelection zwingend: Preview liegt in SelectionContainer, Long-Press würde sonst
     // Textselektion starten statt das Menü zu öffnen.
@@ -375,31 +426,31 @@ private fun ImageBlock(image: MarkdownBlock.Image, onTap: () -> Unit, onLongPres
     // aufgelösten Größe und redecoded nicht, das Bild wird nur pixelig hochskaliert.
     DisableSelection {
         key(image.assetName, image.sizePercent) {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = image.align.toBoxAlignment()) {
-                AsyncImage(
-                    model = assetFile,
-                    contentDescription = image.altText.ifBlank { null },
-                    contentScale = ContentScale.Fit,
-                    onError = { loadFailed = true },
-                    // ponytail: Höhe wird deterministisch aus der Bounds-only-decodierten Aspect-Ratio
-                    // abgeleitet statt aus coil3s (asynchron gelieferter, unter unbounded-height-
-                    // verticalScroll gecachter) Intrinsic-Size — die wächst sonst bei Fraction-Änderung
-                    // nicht mit. Falls extreme Panoramen mal stören, harte Obergrenze nachrüsten.
-                    modifier = Modifier
-                        .fillMaxWidth(fraction)
-                        .aspectRatio(aspect)
-                        .combinedClickable(onClick = onTap, onLongClick = onLongPress)
-                )
-            }
+            // Kein Box-Wrapper mehr: die Ausrichtung liegt jetzt in den Rest-Spacern von
+            // [ImageRowBlock], das Bild fuellt seinen Slot immer ganz aus.
+            AsyncImage(
+                model = assetFile,
+                contentDescription = image.altText.ifBlank { null },
+                contentScale = ContentScale.Fit,
+                onError = { loadFailed = true },
+                // ponytail: Höhe wird deterministisch aus der Bounds-only-decodierten Aspect-Ratio
+                // abgeleitet statt aus coil3s (asynchron gelieferter, unter unbounded-height-
+                // verticalScroll gecachter) Intrinsic-Size — die wächst sonst bei Fraction-Änderung
+                // nicht mit. Falls extreme Panoramen mal stören, harte Obergrenze nachrüsten.
+                modifier = modifier
+                    .fillMaxWidth()
+                    .aspectRatio(aspect)
+                    .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+            )
         }
     }
 }
 
 @Composable
-private fun ImagePlaceholder(altText: String) {
+private fun ImagePlaceholder(altText: String, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small)
             .padding(Dimensions.SpacingMediumLarge)
@@ -727,8 +778,10 @@ internal fun buildMarkdownCardPreview(
 ): AnnotatedString = buildAnnotatedString {
     // 🆕 v2.16.0 (Issue #140): Leerzeilen fliegen aus der Kartenvorschau — die zeigt ohnehin
     // nur 3–4 Zeilen, eine davon an eine gewollte Lücke zu verlieren hilft niemandem.
-    blocks.filterNot { it is MarkdownBlock.BlankLines }.forEachIndexed { i, block ->
-        if (i > 0) append("\n")
+    val visible = blocks.filterNot { it is MarkdownBlock.BlankLines }
+    val separators = MarkdownEngine.imageRowSeparators(visible)
+    visible.forEachIndexed { i, block ->
+        append(separators[i])
         when (block) {
             is MarkdownBlock.Heading -> {
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(block.text) }

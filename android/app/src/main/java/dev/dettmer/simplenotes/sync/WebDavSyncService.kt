@@ -320,6 +320,17 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      */
     suspend fun hasUnsyncedChanges(): Boolean = withContext(ioDispatcher) {
         return@withContext try {
+            // 🆕 v2.17.0: Fehlende Zugangsdaten bei konfiguriertem Server sind ein Fehler, kein
+            // „nichts zu synchronisieren". Bisher endete der Sync hier lautlos mit „Bereits
+            // synchronisiert" — nach einem Gerätewechsel (Credentials kommen by design nicht mit)
+            // war der einzige Hinweis eine Notification nach 24 Stunden, mit falscher Diagnose.
+            // true → syncNotesInternal() läuft an und liefert die echte Fehlermeldung, die von dort
+            // als Banner und Notification hochkommt.
+            if (getServerUrl() != null && !CredentialStore.hasCredentials(context)) {
+                Logger.w(TAG, "⚠️ Server configured but credentials missing - surfacing as sync error")
+                return@withContext true
+            }
+
             val lastSyncTime = getLastSyncTimestamp()
 
             // Check 1: Never synced
@@ -384,8 +395,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // konnte nie false liefern (JSON galt immer als potenziell geändert) — seine
             // 2–3 Requests waren reine Kosten. Die eigentliche Ersparnis liefern die
             // Datei-E-Tags während des Downloads.
-            if (getServerUrl() == null || !CredentialStore.hasCredentials(context)) {
-                Logger.w(TAG, "⚠️ Cannot check server - no credentials")
+            if (getServerUrl() == null) {
+                // Kein Server konfiguriert: Konfigurationsfall, kein Fehler.
+                Logger.d(TAG, "⏭️ Cannot check server - no server URL configured")
                 return@withContext false
             }
 
@@ -550,7 +562,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     Logger.e(TAG, "❌ WebDavClient is null - credentials missing")
                     return@withContext SyncResult(
                         isSuccess = false,
-                        errorMessage = "Server-Zugangsdaten nicht konfiguriert"
+                        errorMessage = context.getString(R.string.error_credentials_not_configured)
                     )
                 }
                 Logger.d(TAG, "    ✅ WebDavClient client created")
@@ -561,7 +573,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     Logger.e(TAG, "❌ Server URL is null")
                     return@withContext SyncResult(
                         isSuccess = false,
-                        errorMessage = "Server-URL nicht konfiguriert"
+                        errorMessage = context.getString(R.string.error_server_url_not_configured)
                     )
                 }
 

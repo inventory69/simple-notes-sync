@@ -8,6 +8,52 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.17.0] - 2026-09-11
+
+### ✨ Neue Features
+
+**Notizen direkt im Homescreen-Widget bearbeiten** ([41b4a5c](https://github.com/inventory69/simple-notes-sync/commit/41b4a5c))
+- Ein Tipp auf eine Textnotiz im Widget öffnet eine kleine Bearbeitungskarte über dem Homescreen und speichert die Änderung an Ort und Stelle - ohne Umweg über die App
+- Checklisten-Widgets bekommen einen „+"-Button, der auf dieselbe Weise einen neuen Eintrag anhängt
+- Der volle Editor bleibt über die Optionsleiste des Widgets erreichbar
+- Android-Widgets können kein Textfeld enthalten, deshalb ist die Karte ein transparenter Bildschirm der App selbst. Die Berechtigung „Über anderen Apps einblenden" braucht sie nicht
+
+**Bilder nebeneinander** ([6982982](https://github.com/inventory69/simple-notes-sync/commit/6982982), [808ec94](https://github.com/inventory69/simple-notes-sync/commit/808ec94))
+- Bilder, die ohne Leerzeile aufeinander folgen, teilen sich jetzt eine Reihe, statt untereinander zu stehen. Eine Leerzeile, Text dazwischen oder Größen, die zusammen über 100 % kommen, beginnen eine neue Reihe
+- Dieselbe Regel gilt in der Editor-Vorschau, auf den Notizkarten, im PDF-Export und in beiden Widgets - eine Notiz sieht überall gleich aus
+- Widgets sind nicht mehr auf drei Bilder begrenzt: Bilder werden passgenau verkleinert, und ein Größenbudget ersetzt das feste Limit
+
+### 🐛 Bug-Fixes
+
+**„Automatisch alle X Minuten" hat nie synchronisiert** ([df1fd9e](https://github.com/inventory69/simple-notes-sync/commit/df1fd9e), [227b0ec](https://github.com/inventory69/simple-notes-sync/commit/227b0ec))
+- Die Option ließ sich einschalten, aber der periodische Sync verlangte zusätzlich einen alten Auto-Sync-Schalter, der schon in 1.6.0 aus den Einstellungen verschwunden war. Auf jeder Installation, die den alten Wert nicht mitgebracht hatte, wurde nie etwas geplant
+- Wer die Option eingeschaltet hat, bekommt jetzt Hintergrund-Syncs im gewählten Intervall - viele zum ersten Mal
+- Die 24-Stunden-Warnung „nicht synchronisiert" prüfte denselben Schalter und blieb ebenfalls stumm. Der ausgediente Schalter ist entfernt; Backups, die ihn noch enthalten, lassen sich unverändert wiederherstellen
+
+**Nach einem Gerätewechsel endete der Sync kommentarlos** ([d751e49](https://github.com/inventory69/simple-notes-sync/commit/d751e49), [2ebb992](https://github.com/inventory69/simple-notes-sync/commit/2ebb992))
+- Zugangsdaten werden nicht auf ein neues Gerät übertragen. Ein Server ohne sie galt als „nichts zu synchronisieren", der Sync meldete also Erfolg, während nichts passierte
+- Jetzt endet er im Fehler-Banner, Hintergrund-Syncs zeigen die Fehler-Benachrichtigung. Die 24-Stunden-Warnung nennt die fehlenden Zugangsdaten, statt einen unerreichbaren Server zu beschuldigen
+- Die Server-Einstellungen zeigen einen Hinweis, solange ein Server eingetragen, aber Benutzername oder Passwort leer ist
+
+**Das Passwort konnte in einem Backup landen** ([fe39a52](https://github.com/inventory69/simple-notes-sync/commit/fe39a52), [c633ce7](https://github.com/inventory69/simple-notes-sync/commit/c633ce7))
+- War der Schlüsselspeicher des Geräts nicht nutzbar, wurden Benutzername und Passwort unverschlüsselt in die Einstellungsdatei geschrieben - dieselbe Datei, die in Cloud-Backups und Geräteübertragungen landet
+- Der unverschlüsselte Notnagel liegt jetzt in einer eigenen Datei, und beide Zugangsdaten-Dateien sind von Backups und Übertragungen ausgenommen
+- Lassen sich Zugangsdaten nur unverschlüsselt speichern, sagen die Server-Einstellungen das per Snackbar und mit einer Warnkarte, die bleibt, bis die Verschlüsselung wieder funktioniert. Eine Backup-Wiederherstellung durchläuft dieselbe Prüfung
+
+### 🔧 Technische Verbesserungen
+
+**Zugangsdaten direkt mit dem Android-Keystore verschlüsselt** ([0bd4632](https://github.com/inventory69/simple-notes-sync/commit/0bd4632))
+- `androidx.security:security-crypto` ist seit 2025 deprecated. Zugangsdaten werden jetzt mit einem AES-256-GCM-Schlüssel verschlüsselt, der den Schlüsselspeicher des Geräts nie verlässt
+- Vorhandene Zugangsdaten ziehen automatisch um; solange der Schlüsselspeicher nicht verfügbar ist, wird nichts gelöscht
+- Die alte Bibliothek bleibt nur als Migrationsquelle und entfällt mit 2.20.0
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43) - die Wortzähler-Einstellungen aus 2.16.1
+- **Russisch** (94%): [@disfated](https://github.com/disfated) / Yury Pavlovsky - die Strings zu Konflikt-Auflösung und Notiz-Statistik aus 2.16.0, dazu überarbeitete Texte der Sync-Legende
+
+---
+
 ## [2.16.1] - 2026-09-09
 
 ### 🐛 Bug-Fixes

@@ -388,7 +388,7 @@ object NotificationHelper {
      * Zeigt Warnung wenn Server längere Zeit nicht erreichbar (v1.1.2)
      * Throttling: Max. 1 Warnung pro 24h
      */
-    fun showSyncWarning(context: Context, hoursSinceLastSync: Long) {
+    fun showSyncWarning(context: Context, hoursSinceLastSync: Long, credentialsMissing: Boolean = false) {
         // 🆕 v1.11.0: Notification preferences check
         if (!areNotificationsEnabled(context)) return
         if (!isServerWarningEnabled(context)) return
@@ -407,10 +407,28 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle(context.getString(R.string.notification_sync_warning_title))
-            .setContentText(context.getString(R.string.notification_sync_warning_message, hoursSinceLastSync.toInt()))
+            .setContentText(
+                if (credentialsMissing) {
+                    context.getString(R.string.notification_sync_warning_credentials_message)
+                } else {
+                    context.getString(R.string.notification_sync_warning_message, hoursSinceLastSync.toInt())
+                }
+            )
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText(context.getString(R.string.notification_sync_warning_detail, hoursSinceLastSync.toInt()))
+                    .bigText(
+                        if (credentialsMissing) {
+                            context.getString(
+                                R.string.notification_sync_warning_credentials_detail,
+                                hoursSinceLastSync.toInt()
+                            )
+                        } else {
+                            context.getString(
+                                R.string.notification_sync_warning_detail,
+                                hoursSinceLastSync.toInt()
+                            )
+                        }
+                    )
             )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)

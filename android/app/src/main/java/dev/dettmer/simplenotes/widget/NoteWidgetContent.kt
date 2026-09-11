@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.widget
 
 import android.content.ComponentName
+import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -15,6 +16,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
@@ -143,6 +145,17 @@ private fun resolveWidgetBackgroundModifier(bgOpacity: Float): GlanceModifier {
     return GlanceModifier.background(ColorProvider(day = dayColor, night = nightColor))
 }
 
+/**
+ * Quick-Edit-Overlay öffnen (zwei Einstiegspunkte: "+" auf Checklisten, Tap auf eine Textnotiz).
+ */
+private fun quickEditAction(context: Context, noteId: String): Action =
+    actionStartActivity(
+        ComponentName(context, WidgetQuickEditActivity::class.java),
+        actionParametersOf(
+            ActionParameters.Key<String>(WidgetQuickEditActivity.EXTRA_NOTE_ID) to noteId
+        )
+    )
+
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
@@ -186,6 +199,17 @@ fun NoteWidgetContent(
                 iconColor = GlanceTheme.colors.onSurface,
                 textColor = GlanceTheme.colors.onSurface,
                 actions = {
+                    // Checkliste: Item direkt vom Homescreen anlegen (RemoteViews kennt kein
+                    // EditText — deshalb über das Quick-Edit-Overlay, s. WidgetQuickEditActivity).
+                    if (note.noteType == NoteType.CHECKLIST && !isLocked) {
+                        CircleIconButton(
+                            imageProvider = ImageProvider(R.drawable.ic_fab_add),
+                            contentDescription = context.getString(R.string.widget_quick_edit_add_item_title),
+                            backgroundColor = null,
+                            contentColor = GlanceTheme.colors.onSurface,
+                            onClick = quickEditAction(context, note.id)
+                        )
+                    }
                     CircleIconButton(
                         imageProvider = ImageProvider(R.drawable.ic_more_vert),
                         contentDescription = "Options",
@@ -210,26 +234,36 @@ fun NoteWidgetContent(
                 )
             }
 
-            // Content-Bereich — Click öffnet Editor (unlocked) oder Options (locked)
+            // Content-Bereich — Click öffnet Quick-Edit/Editor (unlocked) oder Options (locked)
+            val contentAction = if (!isLocked) {
+                if (note.noteType == NoteType.TEXT) {
+                    // Text direkt über dem Homescreen ändern. Der volle Editor bleibt
+                    // über "Open in App" in der Optionsleiste erreichbar.
+                    quickEditAction(context, note.id)
+                } else {
+                    actionStartActivity(
+                        ComponentName(context, ComposeNoteEditorActivity::class.java),
+                        actionParametersOf(
+                            ActionParameters.Key<String>(ComposeNoteEditorActivity.EXTRA_NOTE_ID) to note.id,
+                            ActionParameters.Key<Boolean>(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET) to true
+                        )
+                    )
+                }
+            } else {
+                actionRunCallback<ShowOptionsAction>(
+                    actionParametersOf(
+                        NoteWidgetActionKeys.KEY_GLANCE_ID to glanceId.toString()
+                    )
+                )
+            }
+
+            // Der Klick am Box hier greift nur auf der freien Fläche unter dem Inhalt: sobald
+            // Glance eine LazyColumn rendert, wird daraus eine ListView, die Taps schluckt,
+            // bevor der Box-onClick feuert. Die Textzeilen bekommen die Aktion deshalb
+            // zusätzlich einzeln (onItemClick, s. WidgetMarkdownView).
             val contentClickModifier = GlanceModifier
                 .fillMaxSize()
-                .clickable(
-                    onClick = if (!isLocked) {
-                        actionStartActivity(
-                            ComponentName(context, ComposeNoteEditorActivity::class.java),
-                            actionParametersOf(
-                                ActionParameters.Key<String>(ComposeNoteEditorActivity.EXTRA_NOTE_ID) to note.id,
-                                ActionParameters.Key<Boolean>(ComposeNoteEditorActivity.EXTRA_FROM_WIDGET) to true
-                            )
-                        )
-                    } else {
-                        actionRunCallback<ShowOptionsAction>(
-                            actionParametersOf(
-                                NoteWidgetActionKeys.KEY_GLANCE_ID to glanceId.toString()
-                            )
-                        )
-                    }
-                )
+                .clickable(onClick = contentAction)
 
             // Content — abhängig von SizeClass
             when (sizeClass) {
@@ -242,7 +276,7 @@ fun NoteWidgetContent(
                 WidgetSizeClass.NARROW_MED -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content, fontSizeScale)
+                            WidgetMarkdownView(note.content, fontSizeScale, onItemClick = contentAction)
                         }
                         NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
                             ChecklistCompactView(
@@ -261,7 +295,7 @@ fun NoteWidgetContent(
                 WidgetSizeClass.NARROW_TALL -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content, fontSizeScale)
+                            WidgetMarkdownView(note.content, fontSizeScale, onItemClick = contentAction)
                         }
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei
@@ -286,7 +320,7 @@ fun NoteWidgetContent(
                 WidgetSizeClass.WIDE_MED -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content, fontSizeScale)
+                            WidgetMarkdownView(note.content, fontSizeScale, onItemClick = contentAction)
                         }
                         NoteType.CHECKLIST -> Box(modifier = contentClickModifier) {
                             ChecklistCompactView(
@@ -305,7 +339,7 @@ fun NoteWidgetContent(
                 WidgetSizeClass.WIDE_TALL -> {
                     when (note.noteType) {
                         NoteType.TEXT -> Box(modifier = contentClickModifier) {
-                            WidgetMarkdownView(note.content, fontSizeScale)
+                            WidgetMarkdownView(note.content, fontSizeScale, onItemClick = contentAction)
                         }
                         NoteType.CHECKLIST -> {
                             // 🆕 v1.8.1: Locked: Click -> Options | Unlocked: kein Click -> Scroll frei

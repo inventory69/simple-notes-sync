@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.SyncDebugLogger
@@ -569,24 +570,18 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 android.content.Context.MODE_PRIVATE
             )
 
-            // Check 1: Auto-Sync aktiviert?
-            val autoSyncEnabled = prefs.getBoolean(
-                dev.dettmer.simplenotes.utils.Constants.KEY_AUTO_SYNC,
-                false
-            )
-            if (!autoSyncEnabled) {
-                Logger.d(TAG, "⏭️ Auto-Sync disabled - no warning needed")
-                return
-            }
+            // 🆕 v2.17.0: Kein Gate mehr auf auto_sync_enabled. Der Schalter hat seit v1.6.0 keine
+            // Oberfläche, die Warnung kam deshalb auf keiner neueren Installation. Läuft dieser
+            // Worker, hat ihn ohnehin ein aktiver Trigger gestartet.
 
-            // Check 2: Schon mal erfolgreich gesynct?
+            // Check 1: Schon mal erfolgreich gesynct?
             val lastSuccessfulSync = syncService.getLastSuccessfulSyncTimestamp()
             if (lastSuccessfulSync == 0L) {
                 Logger.d(TAG, "⏭️ Never synced successfully - no warning needed")
                 return
             }
 
-            // Check 3: >24h seit letztem erfolgreichen Sync?
+            // Check 2: >24h seit letztem erfolgreichen Sync?
             val now = System.currentTimeMillis()
             val timeSinceLastSync = now - lastSuccessfulSync
             if (timeSinceLastSync < dev.dettmer.simplenotes.utils.Constants.SYNC_WARNING_THRESHOLD_MS) {
@@ -594,7 +589,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 return
             }
 
-            // Check 4: Throttling - schon Warnung in letzten 24h gezeigt?
+            // Check 3: Throttling - schon Warnung in letzten 24h gezeigt?
             val lastWarningShown = prefs.getLong(
                 dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN,
                 0L
@@ -605,13 +600,21 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
 
             // Zeige Warnung
+            // 🆕 v2.17.0: Ursache unterscheiden. „Server seit %dh nicht erreichbar" war bei
+            // fehlenden Zugangsdaten die falsche Diagnose — und genau dieser Fall tritt nach
+            // einem Gerätewechsel auf, weil die Credentials dort nicht mitkommen.
+            val credentialsMissing = !CredentialStore.hasCredentials(applicationContext)
             val hoursSinceLastSync = timeSinceLastSync / (1000 * 60 * 60)
-            NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync)
+            NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync, credentialsMissing)
 
             // Speichere Zeitpunkt der Warnung
             prefs.edit { putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now) }
 
-            Logger.d(TAG, "⚠️ Sync warning shown: Server unreachable for ${hoursSinceLastSync}h")
+            Logger.d(
+                TAG,
+                "⚠️ Sync warning shown after ${hoursSinceLastSync}h " +
+                    "(${if (credentialsMissing) "credentials missing" else "server unreachable"})"
+            )
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to check/show sync warning", e)
         }

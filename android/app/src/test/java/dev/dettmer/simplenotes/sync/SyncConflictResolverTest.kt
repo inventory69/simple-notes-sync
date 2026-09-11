@@ -55,7 +55,10 @@ class SyncConflictResolverTest {
         val putKey = slot<String>()
         val putValue = slot<String?>()
         every { prefs.edit() } returns editor
-        every { editor.remove(capture(removed)) } answers { removedKeys.add(removed.captured); editor }
+        every { editor.remove(capture(removed)) } answers {
+            removedKeys.add(removed.captured)
+            editor
+        }
         every { editor.putString(capture(putKey), captureNullable(putValue)) } answers {
             putStrings[putKey.captured] = putValue.captured
             editor

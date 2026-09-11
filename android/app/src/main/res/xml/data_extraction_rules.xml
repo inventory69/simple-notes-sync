@@ -8,14 +8,20 @@
     <!-- simple_notes_secure_prefs.xml: siehe backup_rules.xml — das Keyset ist ohne den
          nicht exportierbaren MasterKey wertlos und blockiert sonst die Verschlüsselung
          auf dem Zielgerät. -->
+    <!-- 🆕 v2.17.0 (WP-3): simple_notes_credentials*.xml — der AndroidKeyStore-Key kommt nie mit,
+         und die Fallback-Datei enthält das Passwort im Klartext. Beides bleibt auf dem Gerät. -->
     <cloud-backup>
         <exclude domain="file" path="activity.jsonl"/>
         <exclude domain="file" path="activity.jsonl.1"/>
         <exclude domain="sharedpref" path="simple_notes_secure_prefs.xml"/>
+        <exclude domain="sharedpref" path="simple_notes_credentials.xml"/>
+        <exclude domain="sharedpref" path="simple_notes_credentials_fallback.xml"/>
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="activity.jsonl"/>
         <exclude domain="file" path="activity.jsonl.1"/>
         <exclude domain="sharedpref" path="simple_notes_secure_prefs.xml"/>
+        <exclude domain="sharedpref" path="simple_notes_credentials.xml"/>
+        <exclude domain="sharedpref" path="simple_notes_credentials_fallback.xml"/>
     </device-transfer>
 </data-extraction-rules>

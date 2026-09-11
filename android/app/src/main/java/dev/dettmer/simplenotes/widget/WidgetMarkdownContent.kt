@@ -10,9 +10,12 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.action.Action
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.background
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
@@ -25,6 +28,8 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import dev.dettmer.simplenotes.images.calculateInSampleSize
+import dev.dettmer.simplenotes.images.downscaleIfNeeded
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.stripInlineFormatting
@@ -36,8 +41,11 @@ private const val TAG = "WidgetMarkdownContent"
 private const val WIDGET_MAX_MD_ITEMS = 50
 private const val CODE_BLOCK_MAX_LINES = 10
 
-/** Max. Anzahl Bilder pro Widget-Render — Bitmap-Speicher im Binder-Transaktions-Limit halten. */
-private const val WIDGET_MAX_IMAGES = 3
+/** Bitmap-Budget pro Widget-Render. Binder-Limit ist ~1 MB für die gesamte
+ *  RemoteViews-Transaktion — die Hälfte bleibt für Layout und Text. Ein fester Bildzähler
+ *  träfe die Grenze nicht: der Speicher hängt am Seitenverhältnis (ein quadratisches Bild
+ *  kostet bei gleicher längster Kante das Zweieinhalbfache eines 16:6-Bildes). */
+private const val WIDGET_IMAGE_BUDGET_BYTES = 512 * 1024
 
 /** Decode-Ziel für Widget-Bilder (Mini-Canvas): längste Seite max. 256px, RGB_565. */
 private const val WIDGET_IMAGE_MAX_DIM = 256
@@ -57,6 +65,8 @@ internal fun widgetImageHeightDp(sizePercent: Int): Int =
     (WIDGET_IMAGE_FULL_HEIGHT_DP * sizePercent / 100)
         .coerceIn(WIDGET_IMAGE_MIN_HEIGHT_DP, WIDGET_IMAGE_FULL_HEIGHT_DP)
 
+private data class WidgetImage(val bitmap: Bitmap, val altText: String, val sizePercent: Int)
+
 private sealed interface WidgetRenderItem {
     data class Heading(val level: Int, val text: String) : WidgetRenderItem
 
@@ -68,7 +78,8 @@ private sealed interface WidgetRenderItem {
 
     data class CodeLine(val text: String) : WidgetRenderItem
 
-    data class Image(val bitmap: Bitmap, val altText: String, val sizePercent: Int) : WidgetRenderItem
+    /** Bilder einer Reihe (siehe [MarkdownEngine.imageRowSeparators]) — nebeneinander gerendert. */
+    data class ImageRow(val images: List<WidgetImage>) : WidgetRenderItem
 
     data object Divider : WidgetRenderItem
 
@@ -76,8 +87,10 @@ private sealed interface WidgetRenderItem {
 }
 
 /**
- * Bounds-only Decode + `inSampleSize`-Loop auf max. [WIDGET_IMAGE_MAX_DIM]px, dann `RGB_565`
- * (halber Speicher ggü. ARGB_8888 — Mini-Canvas braucht keinen Alphakanal). `null` bei
+ * Bounds-only Decode + `inSampleSize` auf max. [WIDGET_IMAGE_MAX_DIM]px, dann `RGB_565`
+ * (halber Speicher ggü. ARGB_8888 — Mini-Canvas braucht keinen Alphakanal). Der
+ * `downscaleIfNeeded`-Nachlauf ist Pflicht: `inSampleSize` springt nur in Zweierpotenzen und
+ * ließe ein 1600×600-Bild sonst bei 800×300 (≈ 480 KB statt 49 KB) stehen. `null` bei
  * fehlendem/kaputtem Asset — Aufrufer fällt auf den Alt-Text-Platzhalter zurück.
  */
 private fun decodeWidgetBitmap(file: File): Bitmap? {
@@ -87,20 +100,15 @@ private fun decodeWidgetBitmap(file: File): Bitmap? {
         BitmapFactory.decodeFile(file.path, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
-        var sampleSize = 1
-        while (bounds.outWidth / (sampleSize * 2) >= WIDGET_IMAGE_MAX_DIM &&
-            bounds.outHeight / (sampleSize * 2) >= WIDGET_IMAGE_MAX_DIM
-        ) {
-            sampleSize *= 2
-        }
-
-        BitmapFactory.decodeFile(
+        val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, WIDGET_IMAGE_MAX_DIM)
+        val decoded = BitmapFactory.decodeFile(
             file.path,
             BitmapFactory.Options().apply {
                 inSampleSize = sampleSize
                 inPreferredConfig = Bitmap.Config.RGB_565
             }
-        )
+        ) ?: return null
+        decoded.downscaleIfNeeded(WIDGET_IMAGE_MAX_DIM)
     } catch (e: OutOfMemoryError) {
         Logger.w(TAG, "Widget image decode failed: ${e.message}")
         null
@@ -115,10 +123,13 @@ private fun flattenToRenderItems(
     loadImage: (String) -> Bitmap? = { null }
 ): List<WidgetRenderItem> {
     val result = mutableListOf<WidgetRenderItem>()
-    var imagesUsed = 0
+    var bytesUsed = 0
+    val separators = MarkdownEngine.imageRowSeparators(blocks)
     blocks.forEachIndexed { blockIdx, block ->
         if (result.size >= maxItems) return result
-        if (blockIdx > 0) result.add(WidgetRenderItem.BlockSpacer)
+        // " " = Bild derselben Reihe wie der Vorgänger: kein Spacer, es wandert unten in die Reihe.
+        val continuesRow = separators[blockIdx] == " "
+        if (blockIdx > 0 && !continuesRow) result.add(WidgetRenderItem.BlockSpacer)
         when (block) {
             is MarkdownBlock.Heading -> {
                 result.add(WidgetRenderItem.Heading(block.level, stripInlineFormatting(block.text)))
@@ -163,14 +174,23 @@ private fun flattenToRenderItems(
             MarkdownBlock.HorizontalRule -> {
                 result.add(WidgetRenderItem.Divider)
             }
-            // 🆕 Bild-Attachments v2: bis zu WIDGET_MAX_IMAGES echte Bilder, Rest/Decode-Fail → Alt-Text.
-            // Größe steuert die Höhe (siehe [widgetImageHeightDp]), Ausrichtung wird im Widget
-            // ignoriert (Mini-Canvas) — Bild bleibt zentriert.
+            // 🆕 Bild-Attachments v2: echte Bilder bis [WIDGET_IMAGE_BUDGET_BYTES] voll ist,
+            // Rest/Decode-Fail → Alt-Text. Größe steuert die Höhe (siehe [widgetImageHeightDp]),
+            // Ausrichtung wird im Widget ignoriert (Mini-Canvas) — Bild bleibt zentriert.
+            // ponytail: ein Platzhalter jenseits des Budgets bricht die ImageRow auf und landet
+            // als eigene Zeile darunter. Sichtbar nur noch im Decode-Fehler-Fall; erst zusammenlegen,
+            // wenn das in der Praxis auffällt.
             is MarkdownBlock.Image -> {
-                val bitmap = if (imagesUsed < WIDGET_MAX_IMAGES) loadImage(block.assetName) else null
+                val bitmap = if (bytesUsed < WIDGET_IMAGE_BUDGET_BYTES) loadImage(block.assetName) else null
+                val previousRow = result.lastOrNull() as? WidgetRenderItem.ImageRow
                 if (bitmap != null) {
-                    imagesUsed++
-                    result.add(WidgetRenderItem.Image(bitmap, block.altText, block.sizePercent))
+                    bytesUsed += bitmap.allocationByteCount
+                    val image = WidgetImage(bitmap, block.altText, block.sizePercent)
+                    if (continuesRow && previousRow != null) {
+                        result[result.lastIndex] = previousRow.copy(images = previousRow.images + image)
+                    } else {
+                        result.add(WidgetRenderItem.ImageRow(listOf(image)))
+                    }
                 } else {
                     result.add(WidgetRenderItem.Paragraph("🖼 ${block.altText}".trim()))
                 }
@@ -183,7 +203,16 @@ private fun flattenToRenderItems(
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
-internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
+internal fun WidgetMarkdownView(
+    content: String,
+    fontSizeScale: Float = 1.0f,
+    /**
+     * Tap-Aktion für den Textbereich. Muss an jeder **Zeile** hängen: die `LazyColumn` wird zu
+     * einer `ListView`, und die verschluckt Taps, bevor ein `clickable` am umgebenden `Box`
+     * feuert. Gleiches Muster wie `NotesListWidgetContent.NoteCard`.
+     */
+    onItemClick: Action? = null
+) {
     val context = LocalContext.current
     val renderItems = flattenToRenderItems(
         blocks = MarkdownEngine.parse(content),
@@ -199,128 +228,138 @@ internal fun WidgetMarkdownView(content: String, fontSizeScale: Float = 1.0f) {
             .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
     ) {
         items(renderItems.size) { index ->
-            when (val item = renderItems[index]) {
-                is WidgetRenderItem.Heading -> {
-                    val fontSize = when (item.level) {
-                        1 -> (18 * fontSizeScale).sp
-                        2 -> (16 * fontSizeScale).sp
-                        else -> (15 * fontSizeScale).sp
-                    }
-                    Text(
-                        text = item.text,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurface,
-                            fontSize = fontSize,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = GlanceModifier.padding(bottom = 2.dp)
-                    )
-                }
-
-                is WidgetRenderItem.Paragraph -> {
-                    if (item.text.isBlank()) {
-                        Spacer(modifier = GlanceModifier.height(4.dp))
-                    } else {
-                        WidgetInlineText(
-                            text = item.text,
-                            fontSize = 14f * fontSizeScale,
-                            maxLines = 5,
-                            modifier = GlanceModifier.padding(bottom = 4.dp)
-                        )
-                    }
-                }
-
-                is WidgetRenderItem.TaskItem -> {
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            val itemModifier = GlanceModifier.fillMaxWidth()
+                .let { if (onItemClick != null) it.clickable(onItemClick) else it }
+            Box(modifier = itemModifier) {
+                when (val item = renderItems[index]) {
+                    is WidgetRenderItem.Heading -> {
+                        val fontSize = when (item.level) {
+                            1 -> (18 * fontSizeScale).sp
+                            2 -> (16 * fontSizeScale).sp
+                            else -> (15 * fontSizeScale).sp
+                        }
                         Text(
-                            text = if (item.isChecked) "☑" else "☐",
-                            style = TextStyle(
-                                color = if (item.isChecked) {
-                                    GlanceTheme.colors.outline
-                                } else {
-                                    GlanceTheme.colors.onSurface
-                                },
-                                fontSize = (14 * fontSizeScale).sp
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.width(6.dp))
-                        WidgetInlineText(
                             text = item.text,
-                            fontSize = 14f * fontSizeScale,
-                            maxLines = 2,
-                            dimmed = item.isChecked,
-                            addStrikethrough = item.isChecked,
-                            modifier = GlanceModifier.defaultWeight()
-                        )
-                    }
-                }
-
-                is WidgetRenderItem.ListItem -> {
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Text(
-                            text = "•",
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurface,
-                                fontSize = (14 * fontSizeScale).sp
+                                fontSize = fontSize,
+                                fontWeight = FontWeight.Bold
                             ),
-                            modifier = GlanceModifier.width(20.dp)
-                        )
-                        WidgetInlineText(
-                            text = item.text,
-                            fontSize = 14f * fontSizeScale,
-                            maxLines = 3,
-                            modifier = GlanceModifier.defaultWeight()
+                            modifier = GlanceModifier.padding(bottom = 2.dp)
                         )
                     }
-                }
 
-                is WidgetRenderItem.CodeLine -> {
-                    Text(
-                        text = item.text.ifEmpty { " " },
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = (12 * fontSizeScale).sp
-                        ),
-                        maxLines = 1,
-                        modifier = GlanceModifier.padding(start = 8.dp, bottom = 1.dp)
-                    )
-                }
+                    is WidgetRenderItem.Paragraph -> {
+                        if (item.text.isBlank()) {
+                            Spacer(modifier = GlanceModifier.height(4.dp))
+                        } else {
+                            WidgetInlineText(
+                                text = item.text,
+                                fontSize = 14f * fontSizeScale,
+                                maxLines = 5,
+                                modifier = GlanceModifier.padding(bottom = 4.dp)
+                            )
+                        }
+                    }
 
-                is WidgetRenderItem.Image -> {
-                    Image(
-                        provider = ImageProvider(item.bitmap),
-                        contentDescription = item.altText,
-                        contentScale = ContentScale.Fit,
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(widgetImageHeightDp(item.sizePercent).dp)
-                            .padding(bottom = 4.dp)
-                    )
-                }
-
-                WidgetRenderItem.Divider -> {
-                    Column(modifier = GlanceModifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    is WidgetRenderItem.TaskItem -> {
                         Row(
                             modifier = GlanceModifier
                                 .fillMaxWidth()
-                                .height(1.dp)
-                                .background(GlanceTheme.colors.outline)
-                        ) {}
+                                .padding(bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (item.isChecked) "☑" else "☐",
+                                style = TextStyle(
+                                    color = if (item.isChecked) {
+                                        GlanceTheme.colors.outline
+                                    } else {
+                                        GlanceTheme.colors.onSurface
+                                    },
+                                    fontSize = (14 * fontSizeScale).sp
+                                )
+                            )
+                            Spacer(modifier = GlanceModifier.width(6.dp))
+                            WidgetInlineText(
+                                text = item.text,
+                                fontSize = 14f * fontSizeScale,
+                                maxLines = 2,
+                                dimmed = item.isChecked,
+                                addStrikethrough = item.isChecked,
+                                modifier = GlanceModifier.defaultWeight()
+                            )
+                        }
                     }
-                }
 
-                WidgetRenderItem.BlockSpacer -> {
-                    Spacer(modifier = GlanceModifier.height(6.dp))
+                    is WidgetRenderItem.ListItem -> {
+                        Row(
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .padding(bottom = 4.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = "•",
+                                style = TextStyle(
+                                    color = GlanceTheme.colors.onSurface,
+                                    fontSize = (14 * fontSizeScale).sp
+                                ),
+                                modifier = GlanceModifier.width(20.dp)
+                            )
+                            WidgetInlineText(
+                                text = item.text,
+                                fontSize = 14f * fontSizeScale,
+                                maxLines = 3,
+                                modifier = GlanceModifier.defaultWeight()
+                            )
+                        }
+                    }
+
+                    is WidgetRenderItem.CodeLine -> {
+                        Text(
+                            text = item.text.ifEmpty { " " },
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                                fontSize = (12 * fontSizeScale).sp
+                            ),
+                            maxLines = 1,
+                            modifier = GlanceModifier.padding(start = 8.dp, bottom = 1.dp)
+                        )
+                    }
+
+                    is WidgetRenderItem.ImageRow -> {
+                        // ponytail: gleich breite Slots — Glance kennt kein gewichtetes weight(), die
+                        // Prozentgröße steuert im Widget nur die Höhe (s. widgetImageHeightDp).
+                        Row(modifier = GlanceModifier.fillMaxWidth().padding(bottom = 4.dp)) {
+                            item.images.forEach { image ->
+                                Image(
+                                    provider = ImageProvider(image.bitmap),
+                                    contentDescription = image.altText,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = GlanceModifier
+                                        .defaultWeight()
+                                        .height(widgetImageHeightDp(image.sizePercent).dp)
+                                        .padding(horizontal = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    WidgetRenderItem.Divider -> {
+                        Column(modifier = GlanceModifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Row(
+                                modifier = GlanceModifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(GlanceTheme.colors.outline)
+                            ) {}
+                        }
+                    }
+
+                    WidgetRenderItem.BlockSpacer -> {
+                        Spacer(modifier = GlanceModifier.height(6.dp))
+                    }
                 }
             }
         }

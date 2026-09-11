@@ -1,0 +1,10 @@
+🪺 v2.17.0 - Close to home
+
+• New: edit notes right from the widget - tap the text, or + to add a checklist item
+• New: images without a blank line in between sit side by side
+• Fix: "Automatically every X minutes" now actually syncs
+• Fix: missing credentials after a phone switch show an error instead of "synced"
+• Passwords now use Android Keystore encryption and stay out of backups
+• Updated translations: Chinese, Russian
+
+Thanks to @heretic43 and @disfated!
