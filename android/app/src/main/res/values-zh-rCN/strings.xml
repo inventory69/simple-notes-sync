@@ -401,7 +401,6 @@
     <string name="toast_already_synced">✅ 已经同步了</string>
     <string name="toast_sync_success">✅ 已同步 %d 个笔记</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_disabled">已禁用自动同步</string>
     <string name="toast_sync_interval">⏱️ 同步间隔：%s</string>
     <string name="toast_sync_interval_15min">15 分钟</string>
     <string name="toast_sync_interval_30min">30 分钟</string>
