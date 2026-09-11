@@ -802,7 +802,6 @@
     <string name="toast_already_synced">✅ Already synced</string>
     <string name="toast_sync_success">✅ %d notes synced</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_disabled">Auto-Sync disabled</string>
     <string name="toast_sync_interval">⏱️ Sync interval: %s</string>
     <string name="toast_sync_interval_15min">15 minutes</string>
     <string name="toast_sync_interval_30min">30 minutes</string>
