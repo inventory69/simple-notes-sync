@@ -129,6 +129,20 @@
             android:exported="false"
             android:theme="@style/Theme.SimpleNotes" />
 
+        <!-- Quick-Edit-Overlay über dem Homescreen (RemoteViews kennt kein EditText).
+             exported="false" reicht: der PendingIntent entsteht im eigenen Prozess.
+             Keine neue <uses-permission> — SYSTEM_ALERT_WINDOW bräuchte nur, wer über
+             FREMDE Apps zeichnet.
+             taskAffinity="" ist Pflicht: ohne eigenen Task landet das transparente Fenster im
+             Task der App, und statt des Homescreens steht die Notizliste dahinter. -->
+        <activity
+            android:name=".widget.WidgetQuickEditActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.SimpleNotes.QuickEdit"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- 🆕 v2.2.0: New-Note Shortcut Widget Receiver -->
         <receiver
             android:name=".widget.NewNoteWidgetReceiver"

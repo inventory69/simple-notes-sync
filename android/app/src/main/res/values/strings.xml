@@ -1048,6 +1048,12 @@
     <string name="widget_note_not_found">Note not found</string>
     <string name="widget_tap_to_reconfigure">Tap to reconfigure</string>
 
+    <!-- Quick-Edit overlay (widget → edit without opening the app) -->
+    <string name="widget_quick_edit_title">Edit note</string>
+    <string name="widget_quick_edit_hint">Note text</string>
+    <string name="widget_quick_edit_add_item_title">Add item</string>
+    <string name="widget_quick_edit_add_item_hint">New item</string>
+
     <!-- ============================= -->
     <!-- SHARE &amp; EXPORT v1.10.0-Papa   -->
     <!-- ============================= -->

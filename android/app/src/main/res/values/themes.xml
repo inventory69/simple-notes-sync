@@ -35,6 +35,15 @@
 
     <style name="Theme.SimpleNotes" parent="Base.Theme.SimpleNotes" />
 
+    <!-- Transparentes Fenster für das Widget-Quick-Edit: der Homescreen bleibt sichtbar,
+         den Scrim zeichnet Compose selbst. Die Fenster-Animation bleibt dem System überlassen;
+         das Ausblenden beim Schließen macht Compose selbst (siehe WidgetQuickEditActivity). -->
+    <style name="Theme.SimpleNotes.QuickEdit" parent="Theme.SimpleNotes">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
     <!-- Splash Screen Theme (Android 12+) -->
     <!-- windowSplashScreenBackground is neutral (colorBackground), not colorPrimary: this is a
          static, PackageManager-cached resource that Android also uses as the Recents/task-switcher
