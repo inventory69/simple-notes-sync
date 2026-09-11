@@ -38,6 +38,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.stripInlineFormatting
 import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
@@ -417,7 +418,8 @@ private fun NoteCardBody(
         NoteType.TEXT -> {
             if (note.content.isNotBlank()) {
                 WidgetInlineText(
-                    text = note.content,
+                    // Bilder einer Reihe nebeneinander statt untereinander (s. joinImageRows)
+                    text = MarkdownEngine.joinImageRows(note.content),
                     fontSize = 12f * fontSizeScale,
                     maxLines = maxLines,
                     modifier = modifier

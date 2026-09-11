@@ -118,6 +118,9 @@ object PdfExporter {
     /** Upper bound on an embedded image's longest edge in pixels — ample for A4, caps file size. */
     private const val IMAGE_MAX_LONG_EDGE_PX = 2000f
 
+    /** Abstand zwischen zwei Bildern derselben Reihe, in Punkten. */
+    private const val IMAGE_ROW_GAP = 6f
+
     // ═══════════════════════════════════════════════════════════════════════
     // Paint Objects (reused across pages)
     // ═══════════════════════════════════════════════════════════════════════
@@ -291,8 +294,19 @@ object PdfExporter {
     private fun renderTextNote(renderer: PageRenderer, content: String, context: Context) {
         if (content.isBlank()) return
 
-        for (block in MarkdownEngine.parse(content)) {
-            when (block) {
+        val blocks = MarkdownEngine.parse(content)
+        var i = 0
+        while (i < blocks.size) {
+            // Reihen ab 2 Bildern gehen in den Row-Pfad; Einzelbilder bleiben auf
+            // renderImageBlock, damit die bisherige PDF-Ausgabe bitgleich bleibt.
+            val rowLength = MarkdownEngine.imageRowLength(blocks, i)
+            if (rowLength > 1 &&
+                renderImageRow(renderer, context, blocks.subList(i, i + rowLength).filterIsInstance<MarkdownBlock.Image>())
+            ) {
+                i += rowLength
+                continue
+            }
+            when (val block = blocks[i]) {
                 is MarkdownBlock.Heading -> {
                     val paint = headingPaint(block.level)
                     renderer.drawWrappedText(toSpanned(block.text), paint, TEXT_WIDTH)
@@ -318,7 +332,27 @@ object PdfExporter {
 
                 is MarkdownBlock.Image -> renderImageBlock(renderer, context, block)
             }
+            i++
         }
+    }
+
+    /**
+     * Zeichnet [images] als eine Reihe nebeneinander. Gibt `false` zurueck, wenn auch nur ein
+     * Asset fehlt oder nicht dekodierbar ist — der Aufrufer faellt dann auf den bisherigen
+     * sequenziellen [renderImage]-Pfad zurueck, damit der Alt-Text-Platzhalter keine
+     * Sonderbehandlung im Row-Layout braucht.
+     */
+    private fun renderImageRow(renderer: PageRenderer, context: Context, images: List<MarkdownBlock.Image>): Boolean {
+        val store = AssetStore(context)
+        val items = mutableListOf<Pair<Bitmap, Int>>()
+        for (image in images) {
+            val file = store.getAssetFile(image.assetName)
+            val bitmap = file.takeIf { it.exists() }?.let { decodeOrientedSrgbBitmap(it) } ?: return false
+            items += bitmap to image.sizePercent
+        }
+        renderer.drawBitmapRow(items, images.first().align, IMAGE_ROW_GAP)
+        renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
+        return true
     }
 
     /**
@@ -559,11 +593,51 @@ object PdfExporter {
             val destWidth = bitmap.width * scale
             val destHeight = bitmap.height * scale
             ensureSpace(destHeight)
-            val x = when (align) {
-                ImageAlign.LEFT, ImageAlign.INLINE -> MARGIN_HORIZONTAL
-                ImageAlign.CENTER -> MARGIN_HORIZONTAL + (TEXT_WIDTH - destWidth) / 2f
-                ImageAlign.RIGHT -> MARGIN_HORIZONTAL + TEXT_WIDTH - destWidth
+            val x = MARGIN_HORIZONTAL + alignOffset(align, TEXT_WIDTH, destWidth)
+            drawBitmapAt(bitmap, x, currentY, destWidth, destHeight)
+            currentY += destHeight
+        }
+
+        /**
+         * Zeichnet [items] (Bitmap + Groesse in Prozent der Textbreite) nebeneinander, oben
+         * buendig, getrennt durch [gap]. Der Y-Cursor rueckt um die Hoehe des hoechsten Bildes
+         * vor; [ensureSpace] laeuft einmal VOR dem ersten Bild, sonst koennte ein Seitenumbruch
+         * die Reihe mittendrin zerreissen.
+         */
+        fun drawBitmapRow(items: List<Pair<Bitmap, Int>>, align: ImageAlign, gap: Float) {
+            if (items.isEmpty()) return
+            val totalGap = gap * (items.size - 1)
+            val usable = TEXT_WIDTH - totalGap
+            val maxHeight = PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM
+            // slot = der Anteil an der Reihe, dest = das (nie hochskalierte) Bild darin.
+            val slots = items.map { (_, percent) -> usable * percent / 100f }
+            val dests = items.mapIndexed { idx, (bitmap, _) ->
+                val scale = minOf(slots[idx] / bitmap.width, maxHeight / bitmap.height, 1f)
+                bitmap.width * scale to bitmap.height * scale
             }
+            val rowHeight = dests.maxOf { it.second }
+            ensureSpace(rowHeight)
+            var x = MARGIN_HORIZONTAL + alignOffset(align, TEXT_WIDTH, slots.sum() + totalGap)
+            items.forEachIndexed { idx, (bitmap, _) ->
+                val (destWidth, destHeight) = dests[idx]
+                drawBitmapAt(bitmap, x + alignOffset(align, slots[idx], destWidth), currentY, destWidth, destHeight)
+                x += slots[idx] + gap
+            }
+            currentY += rowHeight
+        }
+
+        /** Horizontaler Versatz von [width] innerhalb von [available] gemaess [align]. */
+        private fun alignOffset(align: ImageAlign, available: Float, width: Float): Float = when (align) {
+            ImageAlign.LEFT, ImageAlign.INLINE -> 0f
+            ImageAlign.CENTER -> (available - width) / 2f
+            ImageAlign.RIGHT -> available - width
+        }
+
+        /**
+         * Zeichnet [bitmap] mit der linken oberen Ecke bei ([x], [y]) auf [destWidth]x[destHeight].
+         * Ruecht den Y-Cursor NICHT vor.
+         */
+        private fun drawBitmapAt(bitmap: Bitmap, x: Float, y: Float, destWidth: Float, destHeight: Float) {
             // canvas.drawBitmap(bitmap, srcRect, dstRectF, paint) treibt SkPDFDevice auf einen
             // Fallback, der die ganze Seite zu einem 595x842-Rasterbild flattet, statt das Bild
             // als natives XObject einzubetten — bestätigt per pdfimages -list (Width/Height blieb
@@ -587,12 +661,11 @@ object PdfExporter {
             // Quell-Bitmap (s. renderImage) — Pixel werden erst bei writeTo() konsumiert.
             canvas?.let { c ->
                 c.save()
-                c.translate(x, currentY)
+                c.translate(x, y)
                 c.scale(destWidth / printBitmap.width, destHeight / printBitmap.height)
                 c.drawBitmap(printBitmap, 0f, 0f, null)
                 c.restore()
             }
-            currentY += destHeight
         }
 
         /**
