@@ -13,7 +13,6 @@ import org.junit.Test
  * Leerzeile bleibt der Trenner (Blockabstand des Renderers), gezählt wird nur der Rest.
  */
 class MarkdownEngineBlankLinesTest {
-
     private fun blanks(text: String) = MarkdownEngine.parse(text).filterIsInstance<MarkdownBlock.BlankLines>()
 
     @Test fun `a single blank line stays the plain paragraph separator`() {

@@ -12,7 +12,6 @@ import org.junit.Test
  * hineinpassen). Renderer und PDF-Export teilen sich beides.
  */
 class MarkdownEngineImageRowTest {
-
     private fun images(text: String) = MarkdownEngine.parse(text).filterIsInstance<MarkdownBlock.Image>()
 
     @Test
