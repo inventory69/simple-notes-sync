@@ -644,7 +644,6 @@
     <string name="toast_already_synced">✅ Już zsynchronizowano</string>
     <string name="toast_sync_success">✅ %d notatek zsynchronizowano</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_disabled">Auto-synchronizacja wyłączona</string>
     <string name="toast_sync_interval">⏱️ Interwał synchronizacji: %s</string>
     <string name="toast_sync_interval_15min">15 minut</string>
     <string name="toast_sync_interval_30min">30 minut</string>
