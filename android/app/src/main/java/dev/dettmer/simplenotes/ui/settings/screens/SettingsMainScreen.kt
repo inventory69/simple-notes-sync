@@ -57,7 +57,6 @@ fun SettingsMainScreen(
     val serverUrl by viewModel.serverUrl.collectAsState()
     val syncFolderName by viewModel.syncFolderName.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
-    val autoSyncEnabled by viewModel.autoSyncEnabled.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState() // 🔧 v1.11.0

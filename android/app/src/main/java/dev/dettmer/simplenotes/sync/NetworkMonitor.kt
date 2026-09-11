@@ -315,8 +315,8 @@ class NetworkMonitor(context: Context) {
     /**
      * Startet WorkManager mit Network Constraints + NetworkCallback
      *
-     * 🆕 v1.7.0: Überarbeitete Logik - WiFi-Connect Trigger funktioniert UNABHÄNGIG von KEY_AUTO_SYNC
-     * - KEY_SYNC_TRIGGER_PERIODIC → Periodic Sync (🆕 v2.17.0: nicht mehr zusätzlich an KEY_AUTO_SYNC)
+     * 🆕 v1.7.0: Überarbeitete Logik - WiFi-Connect Trigger funktioniert UNABHÄNGIG von auto_sync_enabled
+     * - KEY_SYNC_TRIGGER_PERIODIC → Periodic Sync (🆕 v2.17.0: nicht mehr zusätzlich an auto_sync_enabled)
      * - KEY_SYNC_TRIGGER_WIFI_CONNECT → WiFi-Connect Trigger (unabhängig!)
      */
     fun startMonitoring() {
@@ -334,7 +334,7 @@ class NetworkMonitor(context: Context) {
         )
 
         // 1. Periodic Sync
-        // 🆕 v2.17.0: Hing zusätzlich an KEY_AUTO_SYNC — einem Schalter, den seit v1.6.0 keine
+        // 🆕 v2.17.0: Hing zusätzlich an auto_sync_enabled — einem Schalter, den seit v1.6.0 keine
         // Oberfläche mehr setzt. „Automatisch alle X Minuten“ blieb damit auf jeder neueren
         // Installation wirkungslos.
         if (periodicEnabled) {
@@ -345,7 +345,7 @@ class NetworkMonitor(context: Context) {
             Logger.d(TAG, "⏭️ Periodic sync disabled")
         }
 
-        // 2. WiFi-Connect Trigger (🆕 UNABHÄNGIG von KEY_AUTO_SYNC!)
+        // 2. WiFi-Connect Trigger (🆕 UNABHÄNGIG von auto_sync_enabled!)
         if (wifiConnectEnabled) {
             Logger.d(TAG, "📶 Starting WiFi monitoring...")
             startWifiMonitoring()

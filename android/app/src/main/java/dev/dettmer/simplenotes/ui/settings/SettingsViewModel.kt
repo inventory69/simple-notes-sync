@@ -216,9 +216,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Sync Settings State
     // ═══════════════════════════════════════════════════════════════════════
 
-    private val _autoSyncEnabled = MutableStateFlow(prefs.getBoolean(Constants.KEY_AUTO_SYNC, false))
-    val autoSyncEnabled: StateFlow<Boolean> = _autoSyncEnabled.asStateFlow()
-
     private val _syncInterval = MutableStateFlow(
         prefs.getLong(Constants.PREF_SYNC_INTERVAL_MINUTES, Constants.DEFAULT_SYNC_INTERVAL_MINUTES)
     )
@@ -1121,23 +1118,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // Sync Settings Actions
     // ═══════════════════════════════════════════════════════════════════════
 
-    fun setAutoSync(enabled: Boolean) {
-        prefs.edit { putBoolean(Constants.KEY_AUTO_SYNC, enabled) }
-        _autoSyncEnabled.value = enabled
-
-        viewModelScope.launch {
-            if (enabled) {
-                // v2.0.0: Battery optimization dialog — only prompt when not already exempt
-                checkAndPromptBatteryOptimization()
-                _events.emit(SettingsEvent.RestartNetworkMonitor)
-                emitToast(getString(R.string.toast_auto_sync_enabled))
-            } else {
-                _events.emit(SettingsEvent.RestartNetworkMonitor)
-                emitToast(getString(R.string.toast_auto_sync_disabled))
-            }
-        }
-    }
-
     fun setSyncInterval(minutes: Long) {
         prefs.edit { putLong(Constants.PREF_SYNC_INTERVAL_MINUTES, minutes) }
         _syncInterval.value = minutes
@@ -1488,7 +1468,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             Constants.DEFAULT_MAX_PARALLEL_CONNECTIONS
         ).coerceIn(Constants.MIN_PARALLEL_CONNECTIONS, Constants.MAX_PARALLEL_CONNECTIONS)
         _offlineMode.value = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
-        _autoSyncEnabled.value = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
         _wifiOnlySync.value = prefs.getBoolean(Constants.KEY_WIFI_ONLY_SYNC, Constants.DEFAULT_WIFI_ONLY_SYNC)
         _markdownAutoSync.value = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false) &&
             prefs.getBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)

@@ -570,7 +570,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 android.content.Context.MODE_PRIVATE
             )
 
-            // 🆕 v2.17.0: Kein Gate mehr auf KEY_AUTO_SYNC. Der Schalter hat seit v1.6.0 keine
+            // 🆕 v2.17.0: Kein Gate mehr auf auto_sync_enabled. Der Schalter hat seit v1.6.0 keine
             // Oberfläche, die Warnung kam deshalb auf keiner neueren Installation. Läuft dieser
             // Worker, hat ihn ohnehin ein aktiver Trigger gestartet.
 
