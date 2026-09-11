@@ -228,7 +228,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // 🔐 v1.7.0: AndroidX Security Crypto für Backup-Verschlüsselung
+    // 🔐 v1.7.0: AndroidX Security Crypto. Seit v2.17.0 (WP-3) nur noch Migrationspfad —
+    // CredentialStore liest den alten Tink-Store, verschlüsselt selbst per JCA (AES/GCM).
+    // Raus in v2.20.0 (deprecated 2025). EncryptionManager nutzt ohnehin reines JCA, nicht diese Lib.
     implementation(libs.androidx.security.crypto)
 
     // ═══════════════════════════════════════════════════════════════════════
