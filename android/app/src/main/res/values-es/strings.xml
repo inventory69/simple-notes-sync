@@ -546,7 +546,6 @@
     <string name="contributors_role_code">Código</string>
     <string name="contributors_role_testing">Pruebas</string>
     <string name="test_connection_success_first_sync">✅ Servidor accesible. Las carpetas /%1$s/ y /%1$s-md/ se van a crear en la primera sincronización.</string>
-    <string name="toast_auto_sync_enabled">✅ Sincronización automática activada</string>
     <string name="toast_file_logging_enabled">📝 Registro en archivos habilitado</string>
     <string name="toast_file_logging_disabled">📝 Registro en archivos deshabilitado</string>
     <string name="error_invalid_backup_file">Archivo de respaldo inválido</string>
