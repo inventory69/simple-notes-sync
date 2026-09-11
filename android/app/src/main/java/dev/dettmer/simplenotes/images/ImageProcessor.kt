@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.webkit.MimeTypeMap
-import androidx.core.graphics.scale
 import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -46,7 +45,7 @@ class ImageProcessor(private val context: Context) {
         } ?: throw IOException("Cannot decode image: $uri")
 
         val oriented = applyExifOrientation(uri, sampled)
-        val bitmap = downscaleIfNeeded(oriented, MAX_DIMENSION)
+        val bitmap = oriented.downscaleIfNeeded(MAX_DIMENSION)
 
         val format = webpFormat(lossless = mode == ImageCompressionMode.LOSSLESS)
         val quality = if (mode == ImageCompressionMode.LOSSLESS) QUALITY_LOSSLESS else QUALITY_COMPRESSED
@@ -67,36 +66,11 @@ class ImageProcessor(private val context: Context) {
         return mime?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) } ?: FALLBACK_EXT
     }
 
-    /** Standard-Android-Doku-Rezept: kleinste Power-of-2-`inSampleSize`, die auf ≤ [maxDimension] bringt. */
-    private fun calculateInSampleSize(width: Int, height: Int, maxDimension: Int): Int {
-        var inSampleSize = 1
-        if (height > maxDimension || width > maxDimension) {
-            var halfHeight = height / 2
-            var halfWidth = width / 2
-            while (halfHeight / inSampleSize >= maxDimension && halfWidth / inSampleSize >= maxDimension) {
-                inSampleSize *= 2
-            }
-        }
-        return inSampleSize
-    }
-
     private fun applyExifOrientation(uri: Uri, bitmap: Bitmap): Bitmap {
         val orientation = openStream(uri).use {
             ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
         }
         return applyExifOrientation(bitmap, orientation)
-    }
-
-    /** inSampleSize rastert nur in Zweierpotenzen — ein Rest-Downscale bringt exakt auf [maxDimension]. */
-    private fun downscaleIfNeeded(bitmap: Bitmap, maxDimension: Int): Bitmap {
-        val largestSide = maxOf(bitmap.width, bitmap.height)
-        if (largestSide <= maxDimension) return bitmap
-        val scale = maxDimension.toFloat() / largestSide
-        val newWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
-        val newHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
-        val scaled = bitmap.scale(newWidth, newHeight)
-        if (scaled !== bitmap) bitmap.recycle()
-        return scaled
     }
 
     @Suppress("DEPRECATION")
