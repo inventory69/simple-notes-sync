@@ -8,6 +8,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.17.0] - 2026-09-11
+
+### ✨ New Features
+
+**Edit a Note Straight From the Home Screen Widget** ([41b4a5c](https://github.com/inventory69/simple-notes-sync/commit/41b4a5c))
+- Tapping a text note in the widget opens a small edit card over the home screen and saves the change in place - no detour through the app
+- Checklist widgets get a "+" button that appends a new item the same way
+- The full editor stays reachable through the widget's options bar
+- Android widgets cannot hold a text field, so the card is a transparent screen of the app itself. It needs no "display over other apps" permission
+
+**Images Side by Side** ([6982982](https://github.com/inventory69/simple-notes-sync/commit/6982982), [808ec94](https://github.com/inventory69/simple-notes-sync/commit/808ec94))
+- Images that follow each other without a blank line now share one row instead of stacking. A blank line, text in between, or sizes adding up to more than 100% start a new row
+- The same rule applies in the editor preview, the note cards, the PDF export and both widgets, so a note looks the same everywhere
+- Widgets are no longer capped at three images: pictures are scaled down precisely, and a size budget replaces the fixed limit
+
+### 🐛 Bug Fixes
+
+**"Automatically Every X Minutes" Never Synced** ([df1fd9e](https://github.com/inventory69/simple-notes-sync/commit/df1fd9e), [227b0ec](https://github.com/inventory69/simple-notes-sync/commit/227b0ec))
+- The option could be switched on, but periodic syncs also required an old auto-sync switch that lost its place in the settings back in 1.6.0. On every install that had not carried the old value over, nothing was ever scheduled
+- If you enabled the option, background syncs now run at the chosen interval - for many of you, for the first time
+- The 24-hour "not synced" warning checked the same switch and stayed silent as well. The retired switch is gone; backups that still contain it restore unchanged
+
+**After a Phone Switch, Sync Stopped Without a Word** ([d751e49](https://github.com/inventory69/simple-notes-sync/commit/d751e49), [2ebb992](https://github.com/inventory69/simple-notes-sync/commit/2ebb992))
+- Credentials are not carried over to a new device. A server without them counted as "nothing to sync", so the sync reported success while nothing happened
+- It now ends in the error banner, and background syncs show the error notification. The 24-hour warning names the missing credentials instead of blaming an unreachable server
+- The server settings show a hint while a server is configured but the username or password is empty
+
+**Your Password Could End Up in a Backup** ([fe39a52](https://github.com/inventory69/simple-notes-sync/commit/fe39a52), [c633ce7](https://github.com/inventory69/simple-notes-sync/commit/c633ce7))
+- When the device's key store was unusable, username and password were written unencrypted into the settings file - the same file that goes into cloud backups and device transfers
+- The unencrypted fallback now lives in its own file, and both credential files are excluded from backups and transfers
+- If credentials can only be stored unencrypted, the server settings say so with a snackbar and a warning card that stays until encryption works again. A backup restore goes through the same check
+
+### 🔧 Technical Improvements
+
+**Credentials Encrypted With the Android Keystore Directly** ([0bd4632](https://github.com/inventory69/simple-notes-sync/commit/0bd4632))
+- `androidx.security:security-crypto` has been deprecated since 2025. Credentials are now encrypted with an AES-256-GCM key that never leaves the device's key store
+- Existing credentials move over automatically; nothing is deleted while the key store is unavailable
+- The old library stays only as a migration source and goes away in 2.20.0
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43) - the word counter settings from 2.16.1
+- **Russian** (94%): [@disfated](https://github.com/disfated) / Yury Pavlovsky - the conflict resolution and note stats strings from 2.16.0, plus revised sync legend texts
+
+---
+
 ## [2.16.1] - 2026-09-09
 
 ### 🐛 Bug Fixes

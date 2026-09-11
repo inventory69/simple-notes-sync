@@ -1,0 +1,10 @@
+🪺 v2.17.0 - Daheim
+
+• Neu: Notizen direkt im Widget bearbeiten - Text antippen oder + für einen neuen Eintrag
+• Neu: Bilder ohne Leerzeile dazwischen stehen nebeneinander
+• Fix: "Automatisch alle X Minuten" synchronisiert jetzt wirklich
+• Fix: Fehlende Zugangsdaten nach Gerätewechsel melden einen Fehler statt "synchronisiert"
+• Passwörter per Android-Keystore verschlüsselt, nicht mehr in Backups
+• Übersetzungsupdate: Chinesisch, Russisch
+
+Danke an @heretic43 und @disfated!
