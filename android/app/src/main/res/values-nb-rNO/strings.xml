@@ -369,7 +369,6 @@
     <string name="toast_already_synced">✅ Allerede synket</string>
     <string name="toast_sync_success">✅ %d notater synket</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Auto-synk aktivert</string>
     <string name="toast_auto_sync_disabled">Auto-synk deaktivert</string>
     <string name="toast_sync_interval">⏱️ Synkeintervall: %s</string>
     <string name="toast_sync_interval_15min">15 minutter</string>
