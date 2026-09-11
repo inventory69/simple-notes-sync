@@ -520,6 +520,7 @@
     <string name="backup_server_settings_encryption_hint">App settings include your server credentials in plain text. Enabling encryption is strongly recommended.</string>
     <string name="server_credentials_unencrypted_warning">This device\'s key store is unavailable, so your credentials are stored unencrypted. They are excluded from backups and will be encrypted automatically as soon as the key store works again.</string>
     <string name="server_credentials_unencrypted_snackbar">Key store unavailable — credentials stored unencrypted</string>
+    <string name="server_credentials_missing_warning">No credentials are stored for this server, so nothing will sync until you enter them. Credentials are not carried over to a new device.</string>
     <string name="backup_restore_server_settings_label">Restore app settings (if included in backup)</string>
     <string name="backup_encryption_password">Password</string>
     <string name="backup_encryption_password_hint">Enter password (min. 8 characters)</string>

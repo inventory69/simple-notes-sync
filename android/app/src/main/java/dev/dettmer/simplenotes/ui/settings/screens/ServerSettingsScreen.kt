@@ -59,6 +59,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RemoteChangeDialog
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 
@@ -90,6 +91,7 @@ fun ServerSettingsScreen(
     val folderChangePrompt by viewModel.folderChangePrompt.collectAsState() // 🆕 v2.11.0
     val folderChangeInProgress by viewModel.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
     val credentialsUnencrypted by viewModel.credentialsUnencrypted.collectAsState() // 🆕 v2.17.0
+    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
@@ -305,11 +307,19 @@ fun ServerSettingsScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
                 )
 
-                // 🆕 v2.17.0: Der KeyStore konnte die Zugangsdaten nicht verschlüsseln. Bleibt
-                // stehen, bis es wieder klappt — die Snackbar beim Tippen ist zu flüchtig für
-                // einen Zustand, der das Passwort im Klartext auf der Platte liegen lässt.
-                if (credentialsUnencrypted) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                // 🆕 v2.17.0: Dauerhafte Hinweise direkt unter den Feldern, in denen man sie behebt.
+                // Unverschlüsselt: der KeyStore konnte die Zugangsdaten nicht verschlüsseln — die
+                // Snackbar beim Tippen ist zu flüchtig für einen Zustand, der das Passwort im Klartext
+                // auf der Platte liegen lässt. Fehlend: Server eingerichtet, aber nichts gespeichert,
+                // typisch nach einem Gerätewechsel, weil Zugangsdaten nicht mitkommen.
+                val credentialsWarning = when {
+                    credentialsUnencrypted -> R.string.server_credentials_unencrypted_warning
+                    isServerConfigured && (username.isBlank() || password.isBlank()) ->
+                        R.string.server_credentials_missing_warning
+                    else -> null
+                }
+                if (credentialsWarning != null) {
+                    Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -317,7 +327,7 @@ fun ServerSettingsScreen(
                         )
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(Dimensions.SpacingMediumLarge),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -325,9 +335,9 @@ fun ServerSettingsScreen(
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onErrorContainer
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(Dimensions.SpacingMediumLarge))
                             Text(
-                                text = stringResource(R.string.server_credentials_unencrypted_warning),
+                                text = stringResource(credentialsWarning),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )

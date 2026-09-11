@@ -486,6 +486,7 @@
     <string name="backup_server_settings_encryption_hint">App-Einstellungen enthalten Server-Zugangsdaten im Klartext. Verschlüsselung wird dringend empfohlen.</string>
     <string name="server_credentials_unencrypted_warning">Der Schlüsselspeicher dieses Geräts ist nicht nutzbar, deine Zugangsdaten liegen deshalb unverschlüsselt. Sie sind von Backups ausgeschlossen und werden automatisch verschlüsselt, sobald der Schlüsselspeicher wieder funktioniert.</string>
     <string name="server_credentials_unencrypted_snackbar">Schlüsselspeicher nicht nutzbar — Zugangsdaten unverschlüsselt gespeichert</string>
+    <string name="server_credentials_missing_warning">Für diesen Server sind keine Zugangsdaten gespeichert — bis du sie einträgst, wird nichts synchronisiert. Auf ein neues Gerät werden Zugangsdaten nicht mitübertragen.</string>
     <string name="backup_restore_server_settings_label">App-Einstellungen wiederherstellen (wenn im Backup enthalten)</string>
     <string name="backup_encryption_password">Passwort</string>
     <string name="backup_encryption_password_hint">Passwort eingeben (min. 8 Zeichen)</string>
