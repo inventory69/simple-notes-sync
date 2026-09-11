@@ -362,7 +362,6 @@
     <string name="toast_already_synced">✅ Уже синхронизировано</string>
     <string name="toast_sync_success">✅ %d заметок синхронизировано</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_auto_sync_enabled">✅ Авто-синхронизация включена</string>
     <string name="toast_auto_sync_disabled">Авто-синхронизация отключена</string>
     <string name="toast_sync_interval">⏱️ Интервал синхронизации: %s</string>
     <string name="toast_sync_interval_15min">15 минут</string>
