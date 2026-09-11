@@ -21,4 +21,13 @@
          landet hier also eine Datei, die auf dem neuen Gerät dauerhaft unentschlüsselbar ist.
          Nicht sichern: die Credentials kommen ohnehin aus den regulären Prefs zurück. -->
     <exclude domain="sharedpref" path="simple_notes_secure_prefs.xml"/>
+
+    <!-- 🆕 v2.17.0 (WP-3): Klartext-Notnagel, wenn der AndroidKeyStore nicht nutzbar ist. Vorher
+         landeten die Credentials in diesem Fall in simple_notes_prefs.xml — also mitten in den
+         gesicherten Settings. Das Passwort konnte so im Klartext in ein Cloud-Backup wandern. -->
+    <exclude domain="sharedpref" path="simple_notes_credentials_fallback.xml"/>
+
+    <!-- Der AndroidKeyStore-Key ist nicht exportierbar und kommt nie mit. Restauriert wäre die
+         Datei auf dem neuen Gerät unentschlüsselbar. -->
+    <exclude domain="sharedpref" path="simple_notes_credentials.xml"/>
 </full-backup-content>
