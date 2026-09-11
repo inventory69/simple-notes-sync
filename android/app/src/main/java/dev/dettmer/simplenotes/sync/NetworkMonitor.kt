@@ -316,13 +316,12 @@ class NetworkMonitor(context: Context) {
      * Startet WorkManager mit Network Constraints + NetworkCallback
      *
      * 🆕 v1.7.0: Überarbeitete Logik - WiFi-Connect Trigger funktioniert UNABHÄNGIG von KEY_AUTO_SYNC
-     * - KEY_AUTO_SYNC + KEY_SYNC_TRIGGER_PERIODIC → Periodic Sync
+     * - KEY_SYNC_TRIGGER_PERIODIC → Periodic Sync (🆕 v2.17.0: nicht mehr zusätzlich an KEY_AUTO_SYNC)
      * - KEY_SYNC_TRIGGER_WIFI_CONNECT → WiFi-Connect Trigger (unabhängig!)
      */
     fun startMonitoring() {
         Logger.d(TAG, "🚀 NetworkMonitor.startMonitoring() called")
 
-        val autoSyncEnabled = prefs.getBoolean(Constants.KEY_AUTO_SYNC, false)
         val periodicEnabled = prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_PERIODIC, Constants.DEFAULT_TRIGGER_PERIODIC)
         val wifiConnectEnabled = prefs.getBoolean(
             Constants.KEY_SYNC_TRIGGER_WIFI_CONNECT,
@@ -331,16 +330,19 @@ class NetworkMonitor(context: Context) {
 
         Logger.d(
             TAG,
-            "    Settings: autoSync=$autoSyncEnabled, periodic=$periodicEnabled, wifiConnect=$wifiConnectEnabled"
+            "    Settings: periodic=$periodicEnabled, wifiConnect=$wifiConnectEnabled"
         )
 
-        // 1. Periodic Sync (nur wenn KEY_AUTO_SYNC UND KEY_SYNC_TRIGGER_PERIODIC aktiv)
-        if (autoSyncEnabled && periodicEnabled) {
+        // 1. Periodic Sync
+        // 🆕 v2.17.0: Hing zusätzlich an KEY_AUTO_SYNC — einem Schalter, den seit v1.6.0 keine
+        // Oberfläche mehr setzt. „Automatisch alle X Minuten“ blieb damit auf jeder neueren
+        // Installation wirkungslos.
+        if (periodicEnabled) {
             Logger.d(TAG, "📅 Starting periodic sync...")
             startPeriodicSync()
         } else {
             WorkManager.getInstance(context).cancelUniqueWork(AUTO_SYNC_WORK_NAME)
-            Logger.d(TAG, "⏭️ Periodic sync disabled (autoSync=$autoSyncEnabled, periodic=$periodicEnabled)")
+            Logger.d(TAG, "⏭️ Periodic sync disabled")
         }
 
         // 2. WiFi-Connect Trigger (🆕 UNABHÄNGIG von KEY_AUTO_SYNC!)
@@ -361,7 +363,7 @@ class NetworkMonitor(context: Context) {
         }
 
         // 4. Logging für Debug
-        if (!autoSyncEnabled && !wifiConnectEnabled) {
+        if (!periodicEnabled && !wifiConnectEnabled) {
             Logger.d(TAG, "🛑 No background triggers active")
         }
     }
