@@ -151,6 +151,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _password = MutableStateFlow(CredentialStore.getPassword(getApplication()).orEmpty())
     val password: StateFlow<String> = _password.asStateFlow()
 
+    /**
+     * 🆕 v2.17.0: Der KeyStore konnte die Zugangsdaten nicht verschlüsseln, sie liegen im Klartext
+     * in einer (backup-ausgeschlossenen) Datei. Treibt die dauerhafte Warnzeile im Server-Screen —
+     * der Zustand überlebt die Snackbar und muss sichtbar bleiben, bis er behoben ist.
+     */
+    private val _credentialsUnencrypted = MutableStateFlow(
+        CredentialStore.isStoredUnencrypted(getApplication())
+    )
+    val credentialsUnencrypted: StateFlow<Boolean> = _credentialsUnencrypted.asStateFlow()
+
     private val _serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Unknown)
     val serverStatus: StateFlow<ServerStatus> = _serverStatus.asStateFlow()
 
@@ -609,13 +619,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateUsername(value: String) {
         _username.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        CredentialStore.setCredentials(getApplication(), value, _password.value)
+        reportCredentialStorage(CredentialStore.setCredentials(getApplication(), value, _password.value))
     }
 
     fun updatePassword(value: String) {
         _password.value = value
         // 🔧 v1.7.0 Regression Fix: Restore immediate SharedPrefs write (for WebDavSyncService)
-        CredentialStore.setCredentials(getApplication(), _username.value, value)
+        reportCredentialStorage(CredentialStore.setCredentials(getApplication(), _username.value, value))
+    }
+
+    /**
+     * 🆕 v2.17.0: Klartext-Downgrade sichtbar machen. Der Nutzer tippt in diesem Moment gerade im
+     * Server-Screen — die Snackbar erreicht ihn dort, die Warnzeile bleibt danach stehen.
+     */
+    private fun reportCredentialStorage(encrypted: Boolean) {
+        if (_credentialsUnencrypted.value == !encrypted) return
+        _credentialsUnencrypted.value = !encrypted
+        if (!encrypted) showSnackbar(getString(R.string.server_credentials_unencrypted_snackbar))
     }
 
     // 🆕 v1.9.0: Update configurable sync folder name
@@ -1451,6 +1471,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _serverHost.value = extractHostFromUrl(url)
         _username.value = CredentialStore.getUsername(getApplication()).orEmpty()
         _password.value = CredentialStore.getPassword(getApplication()).orEmpty()
+        // 🆕 v2.17.0: Auch beim Restore kann der KeyStore scheitern — Warnzeile + Snackbar.
+        reportCredentialStorage(!CredentialStore.isStoredUnencrypted(getApplication()))
         confirmedServerUrl = url
         confirmedSyncFolderName = prefs.getString(
             Constants.KEY_SYNC_FOLDER_NAME,

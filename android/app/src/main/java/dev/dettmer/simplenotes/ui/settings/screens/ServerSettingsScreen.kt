@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -88,6 +89,7 @@ fun ServerSettingsScreen(
     val remoteTargetChangePending by viewModel.remoteTargetChangePending.collectAsState() // 🆕 v2.12.0
     val folderChangePrompt by viewModel.folderChangePrompt.collectAsState() // 🆕 v2.11.0
     val folderChangeInProgress by viewModel.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
+    val credentialsUnencrypted by viewModel.credentialsUnencrypted.collectAsState() // 🆕 v2.17.0
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
@@ -302,6 +304,36 @@ fun ServerSettingsScreen(
                     enabled = fieldsEnabled,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
                 )
+
+                // 🆕 v2.17.0: Der KeyStore konnte die Zugangsdaten nicht verschlüsseln. Bleibt
+                // stehen, bis es wieder klappt — die Snackbar beim Tippen ist zu flüchtig für
+                // einen Zustand, der das Passwort im Klartext auf der Platte liegen lässt.
+                if (credentialsUnencrypted) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.server_credentials_unencrypted_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
 
                 // 🆕 v1.9.0: Ausklappbarer "Erweitert"-Bereich
                 Spacer(modifier = Modifier.height(8.dp))

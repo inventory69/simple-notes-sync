@@ -344,7 +344,12 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     s.serverUrl?.let { putString(Constants.KEY_SERVER_URL, it) }
                     s.username?.let { username ->
                         val password = s.password.orEmpty()
-                        CredentialStore.setCredentials(context, username, password)
+                        // 🆕 v2.17.0: Beim Restore kann derselbe Klartext-Downgrade auftreten wie
+                        // bei der Eingabe im Server-Screen. Sichtbar wird er über
+                        // SettingsViewModel.reloadServerSettingsFromPrefs() — Warnzeile + Snackbar.
+                        if (!CredentialStore.setCredentials(context, username, password)) {
+                            Logger.w(TAG, "⚠️ Restored credentials could not be encrypted — fallback prefs")
+                        }
                     }
                     s.syncFolder?.let { putString(Constants.KEY_SYNC_FOLDER_NAME, it) }
                     s.connectionTimeoutSeconds?.let { putInt(Constants.KEY_CONNECTION_TIMEOUT_SECONDS, it) }
