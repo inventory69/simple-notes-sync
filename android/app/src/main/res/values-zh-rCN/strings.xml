@@ -1026,4 +1026,14 @@
     <string name="word_counter_preview_only">仅在阅读模式</string>
     <string name="word_counter_off">关闭</string>
     <string name="word_counter_description">在笔记编辑器中显示词语和字符。点击它切换到字符，再次点击来隐藏它。</string>
+    <string name="error_credentials_not_configured">未配置服务器凭证</string>
+    <string name="server_credentials_unencrypted_warning">这个设备的密钥存储不可用，所以你的凭证是未加密保存。它们排除在备份之外，并且密钥存储再次生效时尽快自动加密。</string>
+    <string name="server_credentials_unencrypted_snackbar">密钥存储不可用 — 凭证未加密保存</string>
+    <string name="server_credentials_missing_warning">这个服务器没有保存凭证，所以没有东西会同步直到你输入它们。凭证不会转移到新设备。</string>
+    <string name="notification_sync_warning_credentials_message">缺失服务器凭证</string>
+    <string name="notification_sync_warning_credentials_detail">因为缺失 WebDAV 凭证，已经 %d 小时没有同步。它们不会转移到新设备 — 请在服务器设置中重新输入它们。</string>
+    <string name="widget_quick_edit_title">编辑笔记</string>
+    <string name="widget_quick_edit_hint">笔记文本</string>
+    <string name="widget_quick_edit_add_item_title">添加项目</string>
+    <string name="widget_quick_edit_add_item_hint">新项目</string>
 </resources>
