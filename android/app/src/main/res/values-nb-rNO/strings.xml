@@ -31,7 +31,7 @@
     <string name="sync_legend_pending_label">Venter</string>
     <string name="sync_legend_pending_desc">Dette notatet har lokale endringer som venter på å bli synket.</string>
     <string name="sync_legend_conflict_label">Konflikt</string>
-    <string name="sync_legend_conflict_desc">Dette notatet ble endret på flere enheter samtidig. Den siste versjonen ble beholdt.</string>
+    <string name="sync_legend_conflict_desc">Dette notatet ble også endret på en annen enhet. Versjonen din er beholdt, men blir ikke synket før du åpner notatet og velger hvilken du vil ta vare på.</string>
     <string name="sync_legend_local_only_label">Kun lokal</string>
     <string name="sync_legend_local_only_desc">Dette notatet har ikke blitt synket til tjeneren ennå.</string>
     <string name="sync_legend_deleted_label">Slettet på tjener</string>
@@ -685,7 +685,7 @@
     <string name="notes_list_widget_section_folders">Mapper</string>
     <string name="notes_list_widget_config_visibility_label">Synlighet</string>
     <string name="notes_list_widget_config_hide_header">Skul widget-tittel</string>
-    <string name="notes_list_widget_config_hide_header_desc">Tannhjulikonet vil istedet sveve i det øverste hjørnet</string>
+    <string name="notes_list_widget_config_hide_header_desc">Frigjør den øverste raden, innstillingene forblir i plussmenyen</string>
     <string name="notes_list_widget_config_hide_pinned">Skjul festede notater</string>
     <string name="notes_list_widget_config_hide_pinned_desc">Festede notater vil ikke vises i widgeten</string>
     <string name="notes_list_widget_config_hide_folders">Skjul mappekort</string>
@@ -906,4 +906,47 @@
     <string name="share_image_placeholder">[🖼]</string>
     <string name="share_image_placeholder_alt">[🖼 %1$s]</string>
     <string name="language_polish">Polsk</string>
+    <plurals name="note_stats_words">
+        <item quantity="one">%1$d ord</item>
+        <item quantity="other">%1$d ord</item>
+    </plurals>
+    <plurals name="note_stats_characters">
+        <item quantity="one">%1$d tegn</item>
+        <item quantity="other">%1$d tegn</item>
+    </plurals>
+    <string name="note_stats_show">Vis ordteller</string>
+    <string name="conflict_banner_title">Endret på annen enhet</string>
+    <string name="conflict_banner_message">Dette notatet ble endret her og på et annet sted. Velg versjonen du vil ta vare på, fram til du gjør det blir den ikke synket.</string>
+    <string name="conflict_action_keep_local">Behold min</string>
+    <string name="conflict_action_use_server">Bruk versjonen på tjeneren</string>
+    <string name="conflict_action_compare">Sammenlign</string>
+    <string name="conflict_compare_title">Sammenlign versjoner</string>
+    <string name="conflict_compare_local">Din versjon</string>
+    <string name="conflict_compare_server">Versjon på tjener</string>
+    <string name="conflict_compare_empty">(ingen tekst)</string>
+    <string name="conflict_resolved_keep_local">Din versjon blir tatt vare på, og blir lastet opp.</string>
+    <string name="conflict_resolved_use_server">Versjon på tjener lastet.</string>
+    <string name="conflict_resolve_failed">Kunne ikke løse konflikten. Sjekk tilkoblingen til tjener.</string>
+    <plurals name="sync_conflict_count">
+        <item quantity="one">⚠️ %1$d konflikt trenger en avgjørelse</item>
+        <item quantity="other">⚠️ %1$d konflikter trenger en avgjørelse</item>
+    </plurals>
+    <string name="search_empty_state_title">Ingen notater funnet</string>
+    <string name="search_empty_state_message">Ingen søkeresultater funnet i denne eller andre mapper.</string>
+    <string name="note_card_in_folder">I mappe</string>
+    <string name="error_credentials_not_configured">Tjenerdetaljer ikke konfigurerte</string>
+    <string name="server_credentials_unencrypted_warning">Denne enhetens nøkkellager er utilgjengelig, så detaljene dine blir lagret uten kryptering. De blir utelatt fra sikkerhetskopier, og vil bli kryptert automatisk så snart nøkkellageret fungerer igjen.</string>
+    <string name="server_credentials_unencrypted_snackbar">Nøkkellager utilgjengelig — detaljer lagret uten kryptering</string>
+    <string name="server_credentials_missing_warning">Ingen detaljer er lagret for denne tjeneren, så ingenting vil synkes før du skriver de inn. Detaljer blir ikke flyttet til en ny enhet.</string>
+    <string name="word_counter_toggle">Ordteller</string>
+    <string name="word_counter_always">Alltid</string>
+    <string name="word_counter_preview_only">Kun i lesemodus</string>
+    <string name="word_counter_off">Av</string>
+    <string name="word_counter_description">Viser ord og tegn når du redigerer notater. Trykk på den for å bytte til tegn, trykk igjen for å skjule.</string>
+    <string name="notification_sync_warning_credentials_message">Tjenerdetaljer mangler</string>
+    <string name="notification_sync_warning_credentials_detail">Ingenting har blitt synket på %d timer, fordi WebDAV-detaljene mangler. De blir ikke flyttet til en ny enhet, vennligst skriv de inn på nytt i tjenerinnstillingene.</string>
+    <string name="widget_quick_edit_title">Rediger notat</string>
+    <string name="widget_quick_edit_hint">Notattekst</string>
+    <string name="widget_quick_edit_add_item_title">Legg til element</string>
+    <string name="widget_quick_edit_add_item_hint">Nytt element</string>
 </resources>
