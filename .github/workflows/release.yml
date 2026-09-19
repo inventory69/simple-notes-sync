@@ -169,7 +169,7 @@ jobs:
 
             All APKs are signed with the official release certificate.
 
-            **Recommended:** Verify with [AppVerifier](https://github.com/nicholson-lab/AppVerifier) (Android app)
+            **Recommended:** Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) (Android app)
 
             **Expected SHA-256:**
             ```
