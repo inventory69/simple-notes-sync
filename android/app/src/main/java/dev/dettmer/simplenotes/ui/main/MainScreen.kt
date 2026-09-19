@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteFilter
 import dev.dettmer.simplenotes.models.NoteType
@@ -406,14 +407,22 @@ fun MainScreen(
                         // Sortierung des neuen Ordners. Aktiver Ordner nutzt die reaktiven StateFlows
                         // (live-Update bei Sortierdialog); jeder andere Ordner liest seine eigene
                         // gespeicherte Einstellung.
-                        val sortAndPinForFolder: (List<Note>, String?) -> List<Note> = { list, folderKey ->
-                            val (option, direction) = if (folderKey == currentFolder) {
+                        val sortSettingsForPane: (String?) -> Pair<SortOption, SortDirection> = { folderKey ->
+                            if (folderKey == currentFolder) {
                                 sortOption to sortDirection
                             } else {
                                 viewModel.sortSettingsFor(folderKey)
                             }
+                        }
+                        val sortAndPinForFolder: (List<Note>, String?) -> List<Note> = { list, folderKey ->
+                            val (option, direction) = sortSettingsForPane(folderKey)
                             val sorted = viewModel.sortNotes(list, option, direction)
                             sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
+                        }
+                        // Ordner-Section folgt derselben Sortierung wie die Notizen der Pane.
+                        val sortFoldersForFolder: (List<Folder>, String?) -> List<Folder> = { list, folderKey ->
+                            val (option, direction) = sortSettingsForPane(folderKey)
+                            sortFolders(list, option, direction)
                         }
                         // 🔧 Fix Flash aufgeklappter Sections: analog sortAndPinForFolder — aktiver Ordner
                         // nutzt die reaktive StateFlow (Live-Toggle), jeder andere seinen eigenen
@@ -435,6 +444,7 @@ fun MainScreen(
                                 sortOption = sortOption,
                                 sortDirection = sortDirection,
                                 sortAndPin = sortAndPinForFolder,
+                                sortFoldersFn = sortFoldersForFolder,
                                 displayMode = displayMode,
                                 folders = folders,
                                 folderNoteCounts = folderNoteCounts,
@@ -841,8 +851,9 @@ private fun NotesPane(
     sortOption: SortOption, // 🔧 aktive Sortierung — nur Remember-Key, damit die aktive Pane sofort reagiert
     sortDirection: SortDirection, // 🔧 s.o.
     sortAndPin: (List<Note>, String?) -> List<Note>, // 🔧 sortiert+pinnt anhand des EIGENEN folderKey
+    sortFoldersFn: (List<Folder>, String?) -> List<Folder>, // 🔧 dito für die Ordner-Section
     displayMode: String,
-    folders: List<dev.dettmer.simplenotes.models.Folder>,
+    folders: List<Folder>,
     folderNoteCounts: Map<String, Int>,
     isServerConfigured: Boolean,
     selectedNotes: Set<String>,
@@ -883,8 +894,9 @@ private fun NotesPane(
     val listState = remember(folderKey) { LazyListState() }
     val gridState = remember(folderKey) { LazyStaggeredGridState() }
     // Ordner nur in der Root-Ansicht — und nicht während einer Suche, die ohnehin flach über alles geht
-    val foldersForPane =
-        if (folderKey == null && !showArchived && !searchActive) folders else emptyList()
+    val foldersForPane = remember(folders, folderKey, showArchived, searchActive, sortOption, sortDirection) {
+        if (folderKey == null && !showArchived && !searchActive) sortFoldersFn(folders, folderKey) else emptyList()
+    }
     // 🆕 v2.7.0 (Folders): Notizen dieses Slots — eigener folderKey, nicht der gerade aktive Ordner.
     // 🆕 v2.11.0 (Archive): Archiv-Ansicht ist eine flache Liste über alle Ordner.
     // 🆕 v2.16.0 (#141): Suche ebenso — sonst zeigt die Root-Ansicht nur Root-Treffer und
