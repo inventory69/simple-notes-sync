@@ -843,6 +843,10 @@
         <item quantity="one">%d Notiz gesichert</item>
         <item quantity="other">%d Notizen gesichert</item>
     </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="one">%d Notiz vom Server wiederhergestellt</item>
+        <item quantity="other">%d Notizen vom Server wiederhergestellt</item>
+    </plurals>
     <string name="error_backup_corrupt">Backup-Datei beschädigt oder ungültig: %s</string>
     <string name="error_restore_failed">Wiederherstellung fehlgeschlagen: %s</string>
     <string name="restore_merge_result">%1$d neue Notizen importiert, %2$d übersprungen</string>

@@ -849,6 +849,10 @@
         <item quantity="one">%d note saved</item>
         <item quantity="other">%d notes saved</item>
     </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="one">%d note restored from the server</item>
+        <item quantity="other">%d notes restored from the server</item>
+    </plurals>
     <string name="error_backup_corrupt">Backup file corrupt or invalid: %s</string>
     <string name="error_restore_failed">Restore failed: %s</string>
     <string name="restore_merge_result">%1$d new notes imported, %2$d skipped</string>

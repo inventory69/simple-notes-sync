@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -209,6 +213,59 @@ fun BackupProgressCard(statusText: String, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primaryContainer
             )
+        }
+    }
+}
+
+/**
+ * Ergebnis einer Backup-/Restore-Aktion.
+ *
+ * Bleibt stehen, bis der Screen verlassen wird — anders als der frühere Statustext, der nach
+ * 2–3 Sekunden verschwand. Bei Backup/Restore steht zu viel auf dem Spiel, um die Rückmeldung
+ * zu verpassen: wie viele Notizen zurückkamen, oder warum die Datei nicht gelesen werden konnte.
+ */
+@Composable
+fun BackupResultCard(isSuccess: Boolean, title: String, detail: String?, modifier: Modifier = Modifier) {
+    val container = if (isSuccess) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.errorContainer
+    }
+    val onContainer = if (isSuccess) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = container)
+    ) {
+        Row(modifier = Modifier.padding(16.dp)) {
+            Icon(
+                imageVector = if (isSuccess) Icons.Filled.CheckCircle else Icons.Filled.ErrorOutline,
+                contentDescription = null,
+                tint = onContainer,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = onContainer
+                )
+                if (!detail.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = detail,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onContainer
+                    )
+                }
+            }
         }
     }
 }
