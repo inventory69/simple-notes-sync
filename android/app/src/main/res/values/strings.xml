@@ -350,6 +350,7 @@
     <string name="import_summary_title">Import Result</string>
     <string name="import_dialog_complete">%1$d imported, %2$d skipped, %3$d failed</string>
     <string name="import_zero_notes_hint">No notes could be imported. The file may be corrupted or in an unsupported format.</string>
+    <string name="import_error_backup_file">This is a Simple Notes backup file. Restore it under Settings \u2192 Backup &amp; Restore \u2192 Restore from File.</string>
     <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
     <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
     <string name="import_conflict_label">Conflict strategy</string>
