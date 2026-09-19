@@ -76,8 +76,13 @@ object LogAnonymizer {
      * ein anderer String, also blieb die echte Domain des Nutzers im exportierten Log stehen und
      * landete in einem öffentlichen GitHub-Issue. Ein Host in einem Sync-Log ist immer der Server
      * des Nutzers; die Regel ist deshalb generisch und überlebt den nächsten URL-Bug.
+     *
+     * Bewusst auf `http(s)` begrenzt: ein generisches `://` würde auch die Authority von
+     * `content://`-URIs treffen (`📥 Restoring backup from: content://…`, Import-Picker) und aus
+     * dem Provider-Namen ein `<server>` machen — der sagt nichts über den Nutzer aus, ist aber
+     * genau die Information, mit der sich ein Import-/Restore-Bug zuordnen lässt.
      */
-    private val URL_HOST = Regex("""(?<=://)[A-Za-z0-9._-]+""")
+    private val URL_HOST = Regex("""(?<=\bhttps?://)[A-Za-z0-9._-]+""")
 
     /**
      * Wortgrenzen für Titel- und Ordner-Ersetzungen: links und rechts darf kein Buchstabe und
