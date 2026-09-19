@@ -745,6 +745,10 @@
     <string name="image_info_close">Close</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
+    <string name="md_toolbar_table">Table</string>
+    <!-- Placeholders written into the note when the toolbar inserts a table skeleton -->
+    <string name="md_table_header_placeholder">Header</string>
+    <string name="md_table_cell_placeholder">Cell</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
     <string name="md_toolbar_checklist">Checklist</string>
     <!-- ============================= -->

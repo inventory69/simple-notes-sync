@@ -418,8 +418,9 @@ private fun NoteCardBody(
         NoteType.TEXT -> {
             if (note.content.isNotBlank()) {
                 WidgetInlineText(
-                    // Bilder einer Reihe nebeneinander statt untereinander (s. joinImageRows)
-                    text = MarkdownEngine.joinImageRows(note.content),
+                    // Bilder einer Reihe nebeneinander statt untereinander (s. joinImageRows),
+                    // Tabellen als ` · `-Klartext statt roher Pipes (s. flattenTableRows).
+                    text = MarkdownEngine.joinImageRows(MarkdownEngine.flattenTableRows(note.content)),
                     fontSize = 12f * fontSizeScale,
                     maxLines = maxLines,
                     modifier = modifier

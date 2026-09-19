@@ -160,6 +160,12 @@ private fun flattenToRenderItems(
                     }
                 }
             }
+            // Glance kennt kein Grid: jede Tabellenzeile wird eine Textzeile mit ` · `-Zellen.
+            is MarkdownBlock.Table -> {
+                MarkdownEngine.plainLines(block).forEach { row ->
+                    if (result.size < maxItems) result.add(WidgetRenderItem.Paragraph(row))
+                }
+            }
             is MarkdownBlock.CodeBlock -> {
                 block.code.split("\n").take(CODE_BLOCK_MAX_LINES).forEach { line ->
                     if (result.size < maxItems) {

@@ -17,6 +17,8 @@ private const val BOLD_ITALIC_MARKER_LEN = 3
 private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
 private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
 private val mdHorizontalRuleRegex = Regex("""^\s*([-*_])\s*(?:\1\s*){2,}$""")
+/** Tabellenzeile im Roh-Editor: beginnt mit einer Pipe (führende Pipe ist im Editor Konvention). */
+private val mdTableRowRegex = Regex("""^\s*\|.*$""")
 
 class MarkdownOutputTransformation(
     private val linkColor: Color,
@@ -116,6 +118,24 @@ class MarkdownOutputTransformation(
                 if (bulletIdx >= 0) {
                     styles += StyleSpan(lineStart + bulletIdx, lineStart + bulletIdx + 1, marker)
                 }
+            }
+            mdTableRowRegex.matchEntire(line) != null -> tableStyles(line, lineStart, marker, styles)
+        }
+    }
+
+    /**
+     * Tabellenzeile: nur die `|` werden gedimmt, der Zellinhalt behält seine Inline-Formatierung.
+     * Die Trennzeile trägt keinen Inhalt und wird komplett gedimmt — auch eine halb zertippte
+     * (s. [MarkdownEngine.isTableDelimiterRow]), damit man sieht, dass dort nichts hingehört.
+     */
+    private fun tableStyles(line: String, lineStart: Int, marker: SpanStyle, styles: MutableList<StyleSpan>) {
+        if (MarkdownEngine.isTableDelimiterRow(line)) {
+            styles += StyleSpan(lineStart, lineStart + line.length, marker)
+            return
+        }
+        line.forEachIndexed { idx, c ->
+            if (c == '|' && (idx == 0 || line[idx - 1] != '\\')) {
+                styles += StyleSpan(lineStart + idx, lineStart + idx + 1, marker)
             }
         }
     }

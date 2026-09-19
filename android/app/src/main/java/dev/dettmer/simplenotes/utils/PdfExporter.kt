@@ -10,6 +10,7 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.os.Build
 import android.text.Html
+import android.text.Layout
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.StaticLayout
@@ -23,9 +24,11 @@ import dev.dettmer.simplenotes.images.applyExifOrientation
 import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.markdown.MarkdownEngine.ColumnAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
 import dev.dettmer.simplenotes.markdown.parseImageAlt
+import dev.dettmer.simplenotes.markdown.stripInlineFormatting
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
@@ -121,6 +124,9 @@ object PdfExporter {
     /** Abstand zwischen zwei Bildern derselben Reihe, in Punkten. */
     private const val IMAGE_ROW_GAP = 6f
 
+    /** Innenabstand einer Tabellenzelle, in Punkten. */
+    private const val TABLE_CELL_PADDING = 4f
+
     // ═══════════════════════════════════════════════════════════════════════
     // Paint Objects (reused across pages)
     // ═══════════════════════════════════════════════════════════════════════
@@ -192,6 +198,9 @@ object PdfExporter {
         color = android.graphics.Color.LTGRAY
         strokeWidth = 1f
     }
+
+    /** Kopfzeile einer Tabelle — [bodyPaint] in fett, wie die SemiBold-Kopfzeile der Preview. */
+    private val tableHeaderPaint = TextPaint(bodyPaint).apply { typeface = Typeface.DEFAULT_BOLD }
 
     /** Background panel behind code blocks — matches MarkdownRenderer.CodeBlockSurface's intent. */
     private val codeBackgroundPaint = Paint().apply {
@@ -291,6 +300,8 @@ object PdfExporter {
         return spanned
     }
 
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
+    @Suppress("CyclomaticComplexMethod")
     private fun renderTextNote(renderer: PageRenderer, content: String, context: Context) {
         if (content.isBlank()) return
 
@@ -322,6 +333,8 @@ object PdfExporter {
                 is MarkdownBlock.UnorderedList -> renderBulletList(renderer, block.items)
 
                 is MarkdownBlock.CodeBlock -> renderCodeBlock(renderer, block.code)
+
+                is MarkdownBlock.Table -> renderTable(renderer, block)
 
                 MarkdownBlock.HorizontalRule -> renderHorizontalRule(renderer)
 
@@ -512,6 +525,29 @@ object PdfExporter {
         renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER * PARAGRAPH_BREAK_MULTIPLIER)
     }
 
+    /**
+     * Spaltenbreiten aus dem gemessenen Zellinhalt, proportional auf die volle [TEXT_WIDTH]
+     * verteilt — im PDF wird nie gescrollt, die Tabelle füllt immer die Textbreite.
+     */
+    private fun renderTable(renderer: PageRenderer, table: MarkdownBlock.Table) {
+        if (table.header.isEmpty()) return
+        val rows = listOf(table.header) + table.rows
+        val natural = List(table.header.size) { col ->
+            rows.maxOf { bodyPaint.measureText(stripInlineFormatting(it.getOrElse(col) { "" })) } + 2 * TABLE_CELL_PADDING
+        }
+        val total = natural.sum()
+        renderer.drawTable(
+            header = table.header.map { toSpanned(it) },
+            rows = table.rows.map { row -> row.map { toSpanned(it) } },
+            alignments = table.alignments,
+            widths = natural.map { it / total * TEXT_WIDTH }
+        )
+        // Volle Zeilenhöhe, nicht der halbe Absatzabstand: [currentY] steht nach der Tabelle auf
+        // deren Unterkante, der nächste Absatz setzt dort aber seine GRUNDLINIE an und klebte
+        // sonst am Rahmen.
+        renderer.advanceY(BODY_FONT_SIZE * LINE_HEIGHT_MULTIPLIER)
+    }
+
     private fun renderHorizontalRule(renderer: PageRenderer) {
         renderer.ensureSpace(HORIZONTAL_RULE_HEIGHT)
         renderer.drawHorizontalLine(horizontalRulePaint)
@@ -666,6 +702,90 @@ object PdfExporter {
                 c.drawBitmap(printBitmap, 0f, 0f, null)
                 c.restore()
             }
+        }
+
+        /**
+         * Zeichnet eine komplette Tabelle. [widths] ist bereits auf [TEXT_WIDTH] verteilt.
+         *
+         * Bricht eine Zeile auf die Folgeseite um, wird die Kopfzeile dort wiederholt — sonst
+         * stünde eine kopflose Tabellenseite da.
+         */
+        fun drawTable(
+            header: List<CharSequence>,
+            rows: List<List<CharSequence>>,
+            alignments: List<ColumnAlign>,
+            widths: List<Float>
+        ) {
+            drawTableRow(header, alignments, widths, isHeader = true)
+            for (row in rows) {
+                val pageBefore = pageNumber
+                ensureSpace(tableRowHeight(row, alignments, widths, bodyPaint))
+                if (pageNumber != pageBefore) drawTableRow(header, alignments, widths, isHeader = true)
+                drawTableRow(row, alignments, widths, isHeader = false)
+            }
+        }
+
+        /** Höhe einer Tabellenzeile: höchste Zelle plus Innenabstand oben und unten. */
+        private fun tableRowHeight(
+            cells: List<CharSequence>,
+            alignments: List<ColumnAlign>,
+            widths: List<Float>,
+            paint: TextPaint
+        ): Float =
+            widths.indices.maxOf { col -> cellLayout(cells, alignments, widths, paint, col).height } + 2 * TABLE_CELL_PADDING
+
+        private fun cellLayout(
+            cells: List<CharSequence>,
+            alignments: List<ColumnAlign>,
+            widths: List<Float>,
+            paint: TextPaint,
+            col: Int
+        ): StaticLayout {
+            val text = cells.getOrElse(col) { "" }
+            val inner = (widths[col] - 2 * TABLE_CELL_PADDING).toInt().coerceAtLeast(1)
+            return StaticLayout.Builder.obtain(text, 0, text.length, paint, inner)
+                .setAlignment(
+                    when (alignments.getOrElse(col) { ColumnAlign.LEFT }) {
+                        ColumnAlign.LEFT -> Layout.Alignment.ALIGN_NORMAL
+                        ColumnAlign.CENTER -> Layout.Alignment.ALIGN_CENTER
+                        ColumnAlign.RIGHT -> Layout.Alignment.ALIGN_OPPOSITE
+                    }
+                )
+                .build()
+        }
+
+        /**
+         * Zeichnet eine Zeile als Block: erst der Kopf-Hintergrund, dann die Zellen, zuletzt das
+         * Gitter. [currentY] ist hier die OBERKANTE der Zeile (wie bei Bildern), nicht die
+         * Grundlinie — die Zellen kommen als [StaticLayout] und bringen ihre Grundlinie selbst mit.
+         */
+        private fun drawTableRow(
+            cells: List<CharSequence>,
+            alignments: List<ColumnAlign>,
+            widths: List<Float>,
+            isHeader: Boolean
+        ) {
+            val paint = if (isHeader) tableHeaderPaint else bodyPaint
+            val rowHeight = tableRowHeight(cells, alignments, widths, paint)
+            ensureSpace(rowHeight)
+            val top = currentY
+            val right = MARGIN_HORIZONTAL + widths.sum()
+            canvas?.let { c ->
+                if (isHeader) c.drawRect(MARGIN_HORIZONTAL, top, right, top + rowHeight, codeBackgroundPaint)
+                var x = MARGIN_HORIZONTAL
+                widths.indices.forEach { col ->
+                    c.save()
+                    c.translate(x + TABLE_CELL_PADDING, top + TABLE_CELL_PADDING)
+                    cellLayout(cells, alignments, widths, paint, col).draw(c)
+                    c.restore()
+                    c.drawLine(x, top, x, top + rowHeight, horizontalRulePaint)
+                    x += widths[col]
+                }
+                c.drawLine(right, top, right, top + rowHeight, horizontalRulePaint)
+                c.drawLine(MARGIN_HORIZONTAL, top, right, top, horizontalRulePaint)
+                c.drawLine(MARGIN_HORIZONTAL, top + rowHeight, right, top + rowHeight, horizontalRulePaint)
+            }
+            currentY += rowHeight
         }
 
         /**
