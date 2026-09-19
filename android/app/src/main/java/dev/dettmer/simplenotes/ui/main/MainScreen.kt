@@ -518,6 +518,7 @@ fun MainScreen(
                     onDirectionToggled = {
                         viewModel.toggleSortDirection()
                     },
+                    onResetToDefault = { viewModel.resetSortToDefault() },
                     onDismiss = { showSortDialog = false }
                 )
             }
