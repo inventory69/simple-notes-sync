@@ -1,0 +1,6 @@
+🚪 v2.17.1 - Right door
+
+• Fix: Markdown export and image attachments were sent to a made-up address when the server name starts with the sync folder name (e.g. notes.example.com). Nothing ever reached the server, and the sync still reported success
+• Fix: exported logs could still contain the real server domain
+
+Thanks to @mihanik78189482 for the report!
