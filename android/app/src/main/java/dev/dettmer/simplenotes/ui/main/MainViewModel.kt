@@ -1434,6 +1434,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue} (folder=${_currentFolder.value})")
     }
 
+    /** Setzt die Sortierung des AKTUELLEN Ordners auf die App-Defaults zurück. */
+    fun resetSortToDefault() {
+        setSortOption(SortOption.fromPrefsValue(Constants.DEFAULT_SORT_OPTION))
+        setSortDirection(SortDirection.fromPrefsValue(Constants.DEFAULT_SORT_DIRECTION))
+    }
+
     /**
      * 🆕 v1.9.0 (F06): Setzt den Notiz-Filter und speichert in SharedPreferences.
      */
