@@ -832,6 +832,17 @@
     <string name="error_backup_version_unsupported">Backup-Version nicht unterstützt (v%1$d benötigt v%2$d+)</string>
     <string name="error_backup_empty">Backup enthält keine Notizen</string>
     <string name="error_backup_invalid_notes">Backup enthält %d ungültige Notizen</string>
+    <string name="error_backup_unreadable">Backup-Datei konnte nicht gelesen werden</string>
+    <string name="error_backup_encrypted_password_required">Dieses Backup ist verschlüsselt. Bitte Passwort eingeben.</string>
+    <string name="error_backup_decryption_failed">Entschlüsselung fehlgeschlagen: %s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="one">%d Notiz im Backup konnte nicht gelesen werden und wurde übersprungen</item>
+        <item quantity="other">%d Notizen im Backup konnten nicht gelesen werden und wurden übersprungen</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="one">%d Notiz gesichert</item>
+        <item quantity="other">%d Notizen gesichert</item>
+    </plurals>
     <string name="error_backup_corrupt">Backup-Datei beschädigt oder ungültig: %s</string>
     <string name="error_restore_failed">Wiederherstellung fehlgeschlagen: %s</string>
     <string name="restore_merge_result">%1$d neue Notizen importiert, %2$d übersprungen</string>

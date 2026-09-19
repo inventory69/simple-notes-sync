@@ -43,6 +43,25 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
         private const val AUTO_BACKUP_DIR = "auto_backups"
         private const val AUTO_BACKUP_RETENTION_DAYS = 7
         private const val MAGIC_BYTES_LENGTH = 4 // v1.7.0: For encryption check
+
+        /**
+         * Ist diese Notiz aus dem Backup wiederherstellbar?
+         *
+         * Gson baut die Notizen per Reflection auf und umgeht dabei Kotlins Non-Null-Typen:
+         * fehlt ein Feld im JSON (Alt-Backups vor v1.4.0 haben z.B. kein `noteType`), steht dort
+         * `null`, obwohl der Typ das ausschließt. Ein `when (note.noteType)` warf deshalb eine NPE
+         * und ließ das komplette Backup als „beschädigt" durchfallen. Hier wird alles nullable
+         * gelesen; ein fehlendes `noteType` ist unkritisch, weil `Note.fromJson` es beim nächsten
+         * Laden wieder auf TEXT setzt.
+         */
+        @Suppress("USELESS_ELVIS")
+        internal fun isRestorable(note: Note): Boolean {
+            val id = note.id ?: return false
+            if (id.isBlank()) return false
+            val title = note.title ?: ""
+            val content = note.content ?: ""
+            return title.isNotBlank() || content.isNotBlank() || !note.checklistItems.isNullOrEmpty()
+        }
     }
 
     private val storage = NotesStorage(context)
@@ -217,13 +236,17 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 BackupResult(
                     success = true,
                     notesCount = allNotes.size,
-                    message = "Backup erstellt: ${allNotes.size} Notizen$encryptedSuffix"
+                    message = context.resources.getQuantityString(
+                        R.plurals.backup_created_notes,
+                        allNotes.size,
+                        allNotes.size
+                    )
                 )
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to create backup", e)
                 BackupResult(
                     success = false,
-                    error = "Backup fehlgeschlagen: ${e.message}"
+                    error = e.message
                 )
             }
         }
@@ -297,7 +320,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 inputStream.readBytes()
             } ?: return@withContext RestoreResult(
                 success = false,
-                error = "Datei konnte nicht gelesen werden"
+                error = context.getString(R.string.error_backup_unreadable)
             )
 
             // 🔐 v1.7.0: Check if encrypted and decrypt if needed
@@ -306,7 +329,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     if (password == null) {
                         return@withContext RestoreResult(
                             success = false,
-                            error = "Backup ist verschlüsselt. Bitte Passwort eingeben."
+                            error = context.getString(R.string.error_backup_encrypted_password_required)
                         )
                     }
                     val decrypted = encryptionManager.decrypt(fileData, password)
@@ -317,13 +340,14 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             } catch (e: EncryptionException) {
                 return@withContext RestoreResult(
                     success = false,
-                    error = "Entschlüsselung fehlgeschlagen: ${e.message}"
+                    error = context.getString(R.string.error_backup_decryption_failed, e.message.orEmpty())
                 )
             }
 
             // 2. Backup validieren & parsen
             val validationResult = validateBackup(jsonString)
             if (!validationResult.isValid) {
+                Logger.w(TAG, "⚠️ Backup rejected: ${validationResult.errorMessage}")
                 return@withContext RestoreResult(
                     success = false,
                     error = validationResult.errorMessage ?: context.getString(R.string.error_invalid_backup_file)
@@ -332,6 +356,23 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
 
             val backupData = gson.fromJson(jsonString, BackupData::class.java)
             Logger.d(TAG, "   Backup valid: ${backupData.notesCount} notes, version ${backupData.backupVersion}")
+
+            // 3. Lesbare Notizen bestimmen — VOR dem Settings-Restore. Bricht der Restore hier ab,
+            // dürfen Server-URL, Credentials und App-Einstellungen nicht bereits überschrieben
+            // sein: der User sieht „Restore failed" und hätte sonst trotzdem eine veränderte
+            // Konfiguration. Bis v2.17.1 lag die Prüfung in validateBackup() und damit vor
+            // diesem Block.
+            val notes = usableNotes(backupData.notes)
+            val unusable = backupData.notes.size - notes.size
+            if (unusable > 0) {
+                Logger.w(TAG, "⚠️ Skipping $unusable unreadable note(s) of ${backupData.notes.size}")
+            }
+            if (notes.isEmpty()) {
+                return@withContext RestoreResult(
+                    success = false,
+                    error = context.getString(R.string.error_backup_invalid_notes, backupData.notes.size)
+                )
+            }
 
             // v1.9.0: Optionally restore all app settings if present
             if (restoreServerSettings && backupData.appSettings != null) {
@@ -385,17 +426,17 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 Logger.d(TAG, "✅ App settings restored from backup")
             }
 
-            // 3. Auto-Backup erstellen (Sicherheitsnetz)
+            // 4. Auto-Backup erstellen (Sicherheitsnetz)
             val autoBackupUri = createAutoBackup()
             if (autoBackupUri == null) {
                 Logger.w(TAG, "⚠️ Auto-backup failed, but continuing with restore")
             }
 
-            // 4. Restore durchführen (je nach Modus)
+            // 5. Restore durchführen (je nach Modus) — nur die lesbaren Notizen.
             val result = when (mode) {
-                RestoreMode.MERGE -> restoreMerge(backupData.notes)
-                RestoreMode.REPLACE -> restoreReplace(backupData.notes)
-                RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(backupData.notes)
+                RestoreMode.MERGE -> restoreMerge(notes)
+                RestoreMode.REPLACE -> restoreReplace(notes)
+                RestoreMode.OVERWRITE_DUPLICATES -> restoreOverwriteDuplicates(notes)
             }
 
             // 🆕 Ordner wiederherstellen (oder aus Notizen ableiten bei Alt-Backups).
@@ -406,7 +447,16 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             restoreAssets(backupData.assets)
 
             Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
-            result
+            if (unusable > 0) {
+                val skipped = context.resources.getQuantityString(
+                    R.plurals.restore_partial_notes_skipped,
+                    unusable,
+                    unusable
+                )
+                result.copy(message = listOfNotNull(result.message, skipped).joinToString("\n"))
+            } else {
+                result
+            }
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to restore backup", e)
             RestoreResult(
@@ -480,29 +530,9 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 )
             }
 
-            // Alle Notizen haben mindestens eine ID und Inhalt?
-            // 🔧 v2.3.1: Leerer Titel ist erlaubt, solange Inhalt vorhanden ist
-            // (entspricht Editor-Logik in NoteEditorViewModel: Note nur dann leer,
-            //  wenn Titel UND Inhalt/Checklist-Items leer sind).
-            // Vorherige Regel `title.isBlank()` lehnte v2.2.0-Backups mit
-            // titellosen Checklisten ab.
-            val invalidNotes = backupData.notes.filter { note ->
-                val hasContent = when (note.noteType) {
-                    dev.dettmer.simplenotes.models.NoteType.CHECKLIST ->
-                        !note.checklistItems.isNullOrEmpty() || note.content.isNotBlank()
-                    dev.dettmer.simplenotes.models.NoteType.TEXT ->
-                        note.content.isNotBlank()
-                }
-                note.id.isBlank() || (note.title.isBlank() && !hasContent)
-            }
-
-            if (invalidNotes.isNotEmpty()) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = context.getString(R.string.error_backup_invalid_notes, invalidNotes.size)
-                )
-            }
-
+            // Einzelne unlesbare Notizen machen das Backup NICHT ungültig — sie werden beim
+            // Restore übersprungen (siehe usableNotes). Vorher lehnte eine einzige leere Notiz
+            // das komplette Backup ab, der User bekam 0 von N Notizen zurück.
             ValidationResult(isValid = true)
         } catch (e: Exception) {
             ValidationResult(
@@ -511,6 +541,15 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             )
         }
     }
+
+    /**
+     * Filtert die wiederherstellbaren Notizen aus einem Backup.
+     *
+     * Wiederherstellbar = hat eine ID und irgendeinen Inhalt (Titel, Text oder Checklist-Items).
+     * Entspricht der Editor-Logik in NoteEditorViewModel: leer ist eine Notiz nur dann, wenn
+     * Titel UND Inhalt/Items leer sind.
+     */
+    private fun usableNotes(notes: List<Note>): List<Note> = notes.filter(::isRestorable)
 
     /**
      * Restore-Modus: MERGE

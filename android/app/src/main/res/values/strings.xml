@@ -838,6 +838,17 @@
     <string name="error_backup_version_unsupported">Backup version not supported (v%1$d requires v%2$d+)</string>
     <string name="error_backup_empty">Backup contains no notes</string>
     <string name="error_backup_invalid_notes">Backup contains %d invalid notes</string>
+    <string name="error_backup_unreadable">Backup file could not be read</string>
+    <string name="error_backup_encrypted_password_required">This backup is encrypted. Please enter the password.</string>
+    <string name="error_backup_decryption_failed">Decryption failed: %s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="one">%d note in the backup could not be read and was skipped</item>
+        <item quantity="other">%d notes in the backup could not be read and were skipped</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="one">%d note saved</item>
+        <item quantity="other">%d notes saved</item>
+    </plurals>
     <string name="error_backup_corrupt">Backup file corrupt or invalid: %s</string>
     <string name="error_restore_failed">Restore failed: %s</string>
     <string name="restore_merge_result">%1$d new notes imported, %2$d skipped</string>
