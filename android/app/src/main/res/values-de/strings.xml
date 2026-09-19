@@ -738,6 +738,9 @@
     <string name="image_info_close">Schließen</string>
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>
+    <string name="md_toolbar_table">Tabelle</string>
+    <string name="md_table_header_placeholder">Spalte</string>
+    <string name="md_table_cell_placeholder">Zelle</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
     <string name="md_toolbar_checklist">Checkliste</string>
     <!-- ============================= -->

@@ -169,6 +169,11 @@ fun MarkdownPreview(
                         Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
 
+                    is MarkdownBlock.Table -> {
+                        TableBlock(block, bodyStyle)
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    }
+
                     MarkdownBlock.HorizontalRule -> {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = Dimensions.SpacingMediumLarge),
@@ -822,6 +827,13 @@ internal fun buildMarkdownCardPreview(
                 ) {
                     append(block.code)
                 }
+            }
+
+            // Karten zeigen 3-4 Zeilen: echtes Spaltenlayout lohnt nicht, Pipe-Salat erst recht
+            // nicht — jede Zeile wird zu ` · `-Klartext, die Trennzeile entfällt.
+            is MarkdownBlock.Table -> {
+                val text = MarkdownEngine.plainLines(block).joinToString("\n")
+                append(parseInlineFormattingWithColors(text, linkColor, codeBackground, codeColor))
             }
 
             MarkdownBlock.HorizontalRule -> Unit
