@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.noteimport
 
 import android.content.Context
 import android.net.Uri
+import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -14,6 +15,24 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
 import java.util.UUID
+
+/**
+ * Ist das eine Simple-Notes-Backup-Datei (Backup & Restore) statt einer einzelnen Notiz?
+ *
+ * Ohne diese Weiche landet ein Backup beim generischen JSON-Parser: der findet auf oberster Ebene
+ * weder "title" noch "content", nimmt den Dateinamen als Titel und verwirft das ganze
+ * `notes`-Array — ein Backup mit N Notizen wurde so zu genau einer leeren Notiz ("1 imported").
+ */
+internal fun isSimpleNotesBackup(content: String): Boolean {
+    // Billiger Vorfilter, damit nicht jede JSON-Datei zweimal geparst wird.
+    if (!content.contains("\"backup_version\"")) return false
+    return try {
+        val obj = com.google.gson.JsonParser.parseString(content).asJsonObject
+        obj.has("backup_version") && obj.get("notes")?.isJsonArray == true
+    } catch (_: Exception) {
+        false // kein gültiges JSON-Objekt → keine Backup-Datei
+    }
+}
 
 /**
  * Universeller Import-Wizard für Notizen aus externen Quellen.
@@ -30,6 +49,9 @@ import java.util.UUID
  *
  * v1.9.0: Issue #21
  */
+// Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet). Die Klasse lag
+// knapp unter dem LargeClass-Limit und hat es mit der Backup-Datei-Erkennung gerissen.
+@Suppress("LargeClass")
 class NotesImportWizard(private val storage: NotesStorage, private val context: Context) {
     companion object {
         private const val TAG = "NotesImportWizard"
@@ -191,7 +213,12 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
             }
 
             if (note == null) {
-                return ImportResult.Failed(candidate.name, "Could not parse file")
+                val reason = if (candidate.fileType == FileType.JSON && isSimpleNotesBackup(content)) {
+                    context.getString(R.string.import_error_backup_file)
+                } else {
+                    "Could not parse file"
+                }
+                return ImportResult.Failed(candidate.name, reason)
             }
 
             // Konflikt-Erkennung und SyncStatus je nach Importquelle
@@ -404,6 +431,10 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
      * JSON-Parser: Unterstützt Simple-Notes-JSON und generische Formate.
      */
     internal fun parseJson(content: String, candidate: ImportCandidate): Note? {
+        if (isSimpleNotesBackup(content)) {
+            Logger.w(TAG, "   ⚠️ ${candidate.name}: backup file, not a single note")
+            return null
+        }
         val jsonElement = try {
             com.google.gson.JsonParser.parseString(content)
         } catch (e: Exception) {

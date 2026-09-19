@@ -448,7 +448,9 @@ private fun ImportSummarySection(summary: NotesImportWizard.ImportSummary) {
                     MaterialTheme.colorScheme.onPrimaryContainer
                 }
             )
-            if (summary.imported == 0 && summary.totalScanned > 0) {
+            // Nur wenn kein konkreter Grund dabeisteht — sonst widerspricht das vage
+            // "möglicherweise beschädigt" der genauen Meldung direkt darunter.
+            if (summary.imported == 0 && summary.totalScanned > 0 && summary.failed == 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.import_zero_notes_hint),

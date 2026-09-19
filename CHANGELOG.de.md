@@ -8,6 +8,22 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.17.1] - 2026-09-19
+
+### 🐛 Bug-Fixes
+
+**Markdown-Dateien und Bilder kamen bei manchen Servern nie an** ([c276d4e](https://github.com/inventory69/simple-notes-sync/commit/c276d4e))
+- Der Markdown-Ordner und der Bilder-Ordner liegen neben dem Sync-Ordner. Ihre Adresse entstand, indem der Ordnername in der Sync-URL ersetzt wurde. Diese Ersetzung traf jedes Vorkommen, auch das im Hostnamen: Bei einem Server unter `notes.example.com` lief der Markdown-Sync gegen `notes-md.example.com`, eine Adresse, die nie konfiguriert war und meist gar nicht existiert
+- Betroffen waren alle, deren Servername mit dem Sync-Ordner beginnt oder deren Pfad ihn enthält (`/notes-archive/`). Markdown-Export, Markdown-Auto-Import und Bildanhänge scheiterten still, der Sync meldete trotzdem Erfolg
+- Beide Ordner entstehen jetzt, indem das Suffix an die Sync-Ordner-URL angehängt wird. Host und Pfad können damit nicht mehr verändert werden
+- Danke an [@mihanik78189482](https://github.com/mihanik78189482) für die Meldung und die ausführlichen Logs!
+
+**Exportierte Logs konnten die eigene Server-Domain enthalten** ([3d51325](https://github.com/inventory69/simple-notes-sync/commit/3d51325))
+- Der Log-Export ersetzte den Hostnamen aus den Einstellungen. Die erfundene Adresse aus dem Fehler oben war eine andere Zeichenkette, also blieb die echte Domain in der Datei und landete in einem öffentlichen Issue
+- Jetzt wird jeder Host in einer URL ersetzt, egal welche Adresse die App tatsächlich verwendet hat
+
+---
+
 ## [2.17.0] - 2026-09-11
 
 ### ✨ Neue Features
