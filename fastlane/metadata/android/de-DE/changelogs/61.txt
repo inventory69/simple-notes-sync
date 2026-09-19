@@ -1,0 +1,10 @@
+🧮 v2.18.0 - Zeilen und Spalten
+
+• Neu: Markdown-Tabellen als Raster - Vorschau, PDF, Widgets, Button
+• Neu: Sortierung mit einem Tipp auf den App-Standard zurücksetzen
+• Fix: Ordner folgen der Sortierung, nicht mehr nur dem Alphabet
+• Fix: Markdown-Dateien und Bilder gingen bei manchen Servern ins Leere
+• Fix: Restore überspringt kaputte Notizen, statt abzubrechen
+• Übersetzungsupdate: Norwegisch, Russisch, Chinesisch
+
+Danke an @MrsMinchen, @mihanik78189482, @xdpirate, @disfated, @heretic43!

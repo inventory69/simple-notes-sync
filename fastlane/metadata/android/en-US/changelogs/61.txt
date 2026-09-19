@@ -1,0 +1,10 @@
+🧮 v2.18.0 - Rows and columns
+
+• New: Markdown tables as a real grid - preview, PDF, widgets, toolbar button
+• New: reset the sort order to the app default in one tap
+• Fix: folders follow the sort order, not just the alphabet
+• Fix: Markdown files and images went nowhere on some servers
+• Fix: restore skips broken notes instead of failing, and reports why
+• Updated translations: Norwegian, Russian, Chinese
+
+Thanks to @MrsMinchen, @mihanik78189482, @xdpirate, @disfated, @heretic43!

@@ -8,7 +8,20 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.17.1] - 2026-09-19
+## [2.18.0] - 2026-09-20
+
+### ✨ Neue Features
+
+**Tabellen sehen aus wie Tabellen** ([39530d0](https://github.com/inventory69/simple-notes-sync/commit/39530d0))
+- Der Desktop-Client schreibt Markdown-Tabellen als Pipe-Zeilen, und Android kannte gar keinen Tabellen-Block. Dieselbe Notiz zeigte auf dem einen Gerät ein Raster und auf dem anderen eine Wand aus Strichen. Tabellen werden jetzt als eigener Block erkannt und in der Editor-Vorschau als echtes Raster gezeichnet: Spaltenbreiten aus dem Inhalt gemessen, Spaltenausrichtung, Formatierung innerhalb der Zellen und seitliches Scrollen, wenn die Tabelle breiter ist als der Bildschirm
+- Der PDF-Export zeichnet dasselbe Raster und wiederholt die Kopfzeile nach einem Seitenumbruch. Notizkarten und beide Widgets haben keinen Platz für ein Raster, dort wird jede Zeile zu ihren mit " · " verbundenen Zellen zusammengefasst, statt rohe Striche zu zeigen. Im Rohtext-Editor sind die Striche und die Trennzeile gedimmt, damit Struktur als Struktur lesbar bleibt
+- Die Werkzeugleiste hat einen Tabellen-Button: Er fügt ein Gerüst mit sichtbaren Platzhaltern ein und hängt eine Zeile an, wenn der Cursor schon in einer Tabelle steht
+- Drei bewusste Abweichungen von striktem GFM, alle nach derselben Regel - nie verschlucken, was jemand getippt hat: Eine Trennzeile zählt, sobald eine Zelle eine echte `---`-Zelle ist, Tippen darin zerlegt die Tabelle also nicht mehr in Rohtext; die Spaltenzahl richtet sich nach der breitesten Zeile, eine zusätzliche Zelle fügt damit eine Spalte hinzu statt wegzufallen; eine Zeile, die nur aus Trennern besteht, entfällt
+- Danke an [@MrsMinchen](https://github.com/MrsMinchen) für den Wunsch!
+
+**Mit einem Tipp zurück zur Standard-Sortierung** ([0b513c6](https://github.com/inventory69/simple-notes-sync/commit/0b513c6))
+- Zurück zum App-Standard hieß: sich merken, dass er „zuletzt geändert, absteigend" ist, und ihn Ordner für Ordner wieder zusammenklicken
+- Der Sortier-Dialog hat jetzt einen Standard-Button neben „Schließen". Er erscheint nur, wenn die aktuelle Einstellung vom Standard abweicht, ist also nie ein totes Bedienelement, und er setzt den Ordner zurück, der gerade offen ist
 
 ### 🐛 Bug-Fixes
 
@@ -21,6 +34,31 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 **Exportierte Logs konnten die eigene Server-Domain enthalten** ([3d51325](https://github.com/inventory69/simple-notes-sync/commit/3d51325))
 - Der Log-Export ersetzte den Hostnamen aus den Einstellungen. Die erfundene Adresse aus dem Fehler oben war eine andere Zeichenkette, also blieb die echte Domain in der Datei und landete in einem öffentlichen Issue
 - Jetzt wird jeder Host in einer URL ersetzt, egal welche Adresse die App tatsächlich verwendet hat
+- Die Ersetzung gilt nur noch für http- und https-Adressen ([812557f](https://github.com/inventory69/simple-notes-sync/commit/812557f)). Vorher verschluckte sie auch die Content-URIs aus Backup und Import, und eine Provider-Adresse identifiziert niemanden, unterscheidet aber genau einen Restore-Bericht von einem Sync-Bericht
+
+**Eine kaputte Notiz kippt nicht mehr den ganzen Restore** ([61c6ae3](https://github.com/inventory69/simple-notes-sync/commit/61c6ae3))
+- Eine einzige unbrauchbare Notiz ließ die Prüfung das komplette Backup ablehnen, ein Restore gab also null von N Notizen zurück. Am härtesten traf es alte Backups: Ein Feld, das es damals noch nicht gab, kam als null hinter einem nicht-nullbaren Typ an und die ganze Datei galt als beschädigt. Ins Log wurde nichts geschrieben, der Restore tat also nichts und es gab nichts zu melden
+- Unlesbare Notizen werden jetzt übersprungen und gezählt, ein Restore scheitert nur noch, wenn keine einzige Notiz übrig bleibt, und der Grund landet im Log
+- Diese Prüfung läuft vor dem Einspielen der App-Einstellungen, ein gescheiterter Restore kann Server-URL, Zugangsdaten und Sync-Ordner also nicht mehr ersetzt zurücklassen
+
+**Backup und Restore sagen jetzt, was passiert ist** ([bd0804d](https://github.com/inventory69/simple-notes-sync/commit/bd0804d))
+- Das Ergebnis stand in einer Statuszeile, die sich nach zwei bis drei Sekunden selbst löschte, und der Grund eines Fehlschlags erreichte die Oberfläche nie. Für die eine Operation, die darüber entscheidet, ob jemand seine Notizen zurückbekommt, ist das zu wenig Information für zu kurze Zeit
+- Das Ergebnis bleibt jetzt in einer Karte stehen, bis der Backup-Bildschirm verlassen wird: Anzahl der Notizen bei Erfolg, der Grund bei einem Fehlschlag. Ein Drehen des Geräts überlebt es
+- Die Dateiauswahl beim Restore akzeptiert zusätzlich octet-stream und text/plain, dieselbe Liste, die der Import-Bildschirm schon nutzt. Nicht jeder Anbieter meldet application/json für eine .json-Datei, und eine ausgegraute Backup-Datei ist von einer kaputten nicht zu unterscheiden
+
+**Eine Backup-Datei im Import-Assistenten wurde zu einer leeren Notiz** ([91f7948](https://github.com/inventory69/simple-notes-sync/commit/91f7948))
+- Eine Backup-Datei, die unter „Dateien vom Gerät auswählen" gewählt wurde, landete beim allgemeinen JSON-Parser. Der fand oben weder Titel noch Inhalt, nahm den Dateinamen als Titel und verwarf die Notizen-Liste: Ein Backup mit 19 Notizen wurde als eine einzige leere Notiz importiert und als „1 importiert, 0 fehlgeschlagen" gemeldet
+- Backup-Dateien werden jetzt erkannt und scheitern mit einem Hinweis auf Backup und Wiederherstellung. Der allgemeine Hinweis „die Datei ist möglicherweise beschädigt" wird ausgeblendet, wenn darunter ein konkreter Grund steht, weil er ihm widerspricht
+
+**Ordner ignorierten die Sortierung** ([c5d3b66](https://github.com/inventory69/simple-notes-sync/commit/c5d3b66))
+- Der Ordner-Bereich der Hauptansicht stand immer in fester alphabetischer Reihenfolge und ignorierte Sortieroption und Richtung komplett. Ein Umschalten der Richtung bewegte jede Notiz, ließ die Ordner aber unberührt
+- Ordner haben weder einen Zeitstempel noch einen Notiztyp, diese Optionen fallen deshalb auf den Namen zurück (wie in Dateimanagern), während Farbe der Palettenreihenfolge folgt. Die Richtung gilt immer, der Umschalter dreht damit sichtbar auch die Ordner
+
+### 🌍 Übersetzungen
+
+- **Norwegisch Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Russisch** (100%): [@disfated](https://github.com/disfated) / Yury Pavlovsky
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43)
 
 ---
 
