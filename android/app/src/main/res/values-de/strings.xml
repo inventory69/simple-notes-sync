@@ -126,6 +126,7 @@
     <string name="sort_by_name">Name</string>
     <string name="sort_by_type">Typ</string>
     <string name="sort_by_color">Farbe</string>
+    <string name="sort_reset_default">Standard</string>
     <string name="close">Schließen</string>
     <!-- 🔀 v1.8.0 (IMPL_020): Sortierung: Checkliste -->
     <string name="sort_checklist">Checkliste sortieren</string>
@@ -348,6 +349,7 @@
     <string name="import_summary_title">Import-Ergebnis</string>
     <string name="import_dialog_complete">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen</string>
     <string name="import_zero_notes_hint">Es konnten keine Notizen importiert werden. Die Datei ist möglicherweise beschädigt oder in einem nicht unterstützten Format.</string>
+    <string name="import_error_backup_file">Das ist eine Simple-Notes-Backup-Datei. Stelle sie unter Einstellungen \u2192 Backup &amp; Wiederherstellung \u2192 Aus Datei wiederherstellen wieder her.</string>
     <string name="import_server_info">Scannt deinen WebDAV-Server nach importierbaren Notiz-Dateien in allen Unterordnern. JSON-Dateien mit passenden IDs werden direkt synchronisiert.</string>
     <string name="import_local_info">Wähle .md-, .json- oder .txt-Dateien direkt aus dem Gerätespeicher aus.</string>
     <string name="import_conflict_label">Konfliktstrategie</string>
@@ -738,6 +740,9 @@
     <string name="image_info_close">Schließen</string>
     <string name="md_toolbar_list">Liste</string>
     <string name="md_toolbar_rule">Trennlinie</string>
+    <string name="md_toolbar_table">Tabelle</string>
+    <string name="md_table_header_placeholder">Spalte</string>
+    <string name="md_table_cell_placeholder">Zelle</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
     <string name="md_toolbar_checklist">Checkliste</string>
     <!-- ============================= -->
@@ -832,6 +837,21 @@
     <string name="error_backup_version_unsupported">Backup-Version nicht unterstützt (v%1$d benötigt v%2$d+)</string>
     <string name="error_backup_empty">Backup enthält keine Notizen</string>
     <string name="error_backup_invalid_notes">Backup enthält %d ungültige Notizen</string>
+    <string name="error_backup_unreadable">Backup-Datei konnte nicht gelesen werden</string>
+    <string name="error_backup_encrypted_password_required">Dieses Backup ist verschlüsselt. Bitte Passwort eingeben.</string>
+    <string name="error_backup_decryption_failed">Entschlüsselung fehlgeschlagen: %s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="one">%d Notiz im Backup konnte nicht gelesen werden und wurde übersprungen</item>
+        <item quantity="other">%d Notizen im Backup konnten nicht gelesen werden und wurden übersprungen</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="one">%d Notiz gesichert</item>
+        <item quantity="other">%d Notizen gesichert</item>
+    </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="one">%d Notiz vom Server wiederhergestellt</item>
+        <item quantity="other">%d Notizen vom Server wiederhergestellt</item>
+    </plurals>
     <string name="error_backup_corrupt">Backup-Datei beschädigt oder ungültig: %s</string>
     <string name="error_restore_failed">Wiederherstellung fehlgeschlagen: %s</string>
     <string name="restore_merge_result">%1$d neue Notizen importiert, %2$d übersprungen</string>

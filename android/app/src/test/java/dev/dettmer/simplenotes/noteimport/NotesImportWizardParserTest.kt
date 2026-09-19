@@ -160,4 +160,35 @@ type: checklist
         val millisTimestamp = 1700000000000L
         assertFalse(millisTimestamp < 1_000_000_000_000L)
     }
+
+    // ═══════════════════════════════════════════════
+    // Backup-Datei-Erkennung
+    // ═══════════════════════════════════════════════
+
+    @Test
+    fun `backup file is detected as backup`() {
+        val backup = """
+            {"backup_version":1,"created_at":1,"notes_count":2,"app_version":"2.17.1",
+             "notes":[{"id":"a","title":"A","content":"x"},{"id":"b","title":"B","content":"y"}]}
+        """.trimIndent()
+        assertTrue(isSimpleNotesBackup(backup))
+    }
+
+    @Test
+    fun `single note json is not a backup`() {
+        val note = """{"id":"a","title":"A","content":"x","noteType":"TEXT"}"""
+        assertFalse(isSimpleNotesBackup(note))
+    }
+
+    @Test
+    fun `note mentioning backup_version in its text is not a backup`() {
+        val note = """{"id":"a","title":"Notes on backups","content":"the \"backup_version\" field"}"""
+        assertFalse(isSimpleNotesBackup(note))
+    }
+
+    @Test
+    fun `broken json is not a backup`() {
+        assertFalse(isSimpleNotesBackup("""{"backup_version":1,"notes":"""))
+        assertFalse(isSimpleNotesBackup("# Just markdown"))
+    }
 }

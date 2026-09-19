@@ -124,6 +124,7 @@
     <string name="sort_by_name">Name</string>
     <string name="sort_by_type">Type</string>
     <string name="sort_by_color">Color</string>
+    <string name="sort_reset_default">Default</string>
     <string name="close">Close</string>
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Checklist -->
     <string name="sort_checklist">Sort checklist</string>
@@ -350,6 +351,7 @@
     <string name="import_summary_title">Import Result</string>
     <string name="import_dialog_complete">%1$d imported, %2$d skipped, %3$d failed</string>
     <string name="import_zero_notes_hint">No notes could be imported. The file may be corrupted or in an unsupported format.</string>
+    <string name="import_error_backup_file">This is a Simple Notes backup file. Restore it under Settings \u2192 Backup &amp; Restore \u2192 Restore from File.</string>
     <string name="import_server_info">Scans your WebDAV server for importable note files in all subfolders. JSON files with matching note IDs will be synced directly.</string>
     <string name="import_local_info">Select .md, .json, or .txt files directly from your device storage.</string>
     <string name="import_conflict_label">Conflict strategy</string>
@@ -744,6 +746,10 @@
     <string name="image_info_close">Close</string>
     <string name="md_toolbar_list">List</string>
     <string name="md_toolbar_rule">Horizontal rule</string>
+    <string name="md_toolbar_table">Table</string>
+    <!-- Placeholders written into the note when the toolbar inserts a table skeleton -->
+    <string name="md_table_header_placeholder">Header</string>
+    <string name="md_table_cell_placeholder">Cell</string>
     <!-- 🆕 v2.2.0: Markdown Checklist Button -->
     <string name="md_toolbar_checklist">Checklist</string>
     <!-- ============================= -->
@@ -838,6 +844,21 @@
     <string name="error_backup_version_unsupported">Backup version not supported (v%1$d requires v%2$d+)</string>
     <string name="error_backup_empty">Backup contains no notes</string>
     <string name="error_backup_invalid_notes">Backup contains %d invalid notes</string>
+    <string name="error_backup_unreadable">Backup file could not be read</string>
+    <string name="error_backup_encrypted_password_required">This backup is encrypted. Please enter the password.</string>
+    <string name="error_backup_decryption_failed">Decryption failed: %s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="one">%d note in the backup could not be read and was skipped</item>
+        <item quantity="other">%d notes in the backup could not be read and were skipped</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="one">%d note saved</item>
+        <item quantity="other">%d notes saved</item>
+    </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="one">%d note restored from the server</item>
+        <item quantity="other">%d notes restored from the server</item>
+    </plurals>
     <string name="error_backup_corrupt">Backup file corrupt or invalid: %s</string>
     <string name="error_restore_failed">Restore failed: %s</string>
     <string name="restore_merge_result">%1$d new notes imported, %2$d skipped</string>

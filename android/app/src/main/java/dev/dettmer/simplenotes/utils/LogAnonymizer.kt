@@ -10,7 +10,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * volle Information, und was in einem GitHub-Issue oder einer Mail landet, ist entschärft.
  *
  * Ersetzt wird:
- * - der Server-Host aus der konfigurierten Sync-URL → `<server>`
+ * - **jeder Host in einer URL** und der Host der konfigurierten Sync-URL → `<server>`
  * - der **Pfad-Anteil** der Sync-URL → `<path>`
  * - der WebDAV-Benutzername → `<user>` (steckt bei Nextcloud im Pfad `/dav/files/<user>/`)
  * - **die tatsächlichen Notiztitel** → `<note>`
@@ -69,6 +69,22 @@ object LogAnonymizer {
     private val MARKDOWN_PATH = Regex("""/[^/\\"'()<>]+\.md""")
 
     /**
+     * **Jeder** Host in einer URL → `<server>`, nicht nur der konfigurierte.
+     *
+     * 🐛 #150: Der Host-Vergleich unten ist ein exakter Stringtausch. Der MD-Sync lief wegen des
+     * URL-Bugs gegen `notes-md.example.com`, während in den Prefs `notes.example.com` stand —
+     * ein anderer String, also blieb die echte Domain des Nutzers im exportierten Log stehen und
+     * landete in einem öffentlichen GitHub-Issue. Ein Host in einem Sync-Log ist immer der Server
+     * des Nutzers; die Regel ist deshalb generisch und überlebt den nächsten URL-Bug.
+     *
+     * Bewusst auf `http(s)` begrenzt: ein generisches `://` würde auch die Authority von
+     * `content://`-URIs treffen (`📥 Restoring backup from: content://…`, Import-Picker) und aus
+     * dem Provider-Namen ein `<server>` machen — der sagt nichts über den Nutzer aus, ist aber
+     * genau die Information, mit der sich ein Import-/Restore-Bug zuordnen lässt.
+     */
+    private val URL_HOST = Regex("""(?<=\bhttps?://)[A-Za-z0-9._-]+""")
+
+    /**
      * Wortgrenzen für Titel- und Ordner-Ersetzungen: links und rechts darf kein Buchstabe und
      * keine Ziffer stehen. Ohne das zersägt ein Ordner „Auto" jedes „Automatischer Upload" im Log
      * zu „<folder>matischer Upload" — ein Beta-Log war voll davon.
@@ -95,8 +111,10 @@ object LogAnonymizer {
         noteTitles: Collection<String> = emptyList(),
         folderNames: Collection<String> = emptyList()
     ): String {
-        var result = text
+        var result = URL_HOST.replace(text, SERVER_PLACEHOLDER)
 
+        // Danach noch der konfigurierte Host als reiner String: er steht auch ohne Schema im Log
+        // („Checking server reachability: host:443").
         hostOf(serverUrl)?.let { host ->
             result = result.replace(host, SERVER_PLACEHOLDER, ignoreCase = true)
         }

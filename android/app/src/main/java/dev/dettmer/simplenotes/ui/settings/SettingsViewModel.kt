@@ -41,7 +41,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -73,8 +72,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     companion object {
         private const val TAG = "SettingsViewModel"
         private const val CONNECTION_TIMEOUT_MS = 3000
-        private const val STATUS_CLEAR_DELAY_SUCCESS_MS = 2000L // 2s for successful operations
-        private const val STATUS_CLEAR_DELAY_ERROR_MS = 3000L // 3s for errors (more important)
         private const val PROGRESS_CLEAR_DELAY_MS = 500L
 
         // 🆕 v1.10.0: Overhead-Timeout für Markdown-Export (Ordner-Erstellung, Listing etc.)
@@ -539,6 +536,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // v1.8.0: Descriptive backup status text
     private val _backupStatusText = MutableStateFlow("")
     val backupStatusText: StateFlow<String> = _backupStatusText.asStateFlow()
+
+    /**
+     * Ergebnis der letzten Backup-/Restore-Aktion. Bleibt gesetzt, bis der Backup-Screen
+     * verlassen wird (clearBackupOutcome) — der alte Statustext war nach 2–3 Sekunden weg,
+     * lange bevor man gelesen hatte, wie viele Notizen zurückkamen oder was schiefging.
+     */
+    private val _backupOutcome = MutableStateFlow<BackupOutcome?>(null)
+    val backupOutcome: StateFlow<BackupOutcome?> = _backupOutcome.asStateFlow()
 
     private val _showSnackbar = MutableSharedFlow<String>(
         extraBufferCapacity = 1,
@@ -1385,23 +1390,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun createBackup(uri: Uri, password: String? = null, includeServerSettings: Boolean = false) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
+            _backupOutcome.value = null
             _backupStatusText.value = getString(R.string.backup_progress_creating)
             try {
                 val result = backupManager.createBackup(uri, password, includeServerSettings)
-
-                // Phase 2: Show completion status
-                _backupStatusText.value = if (result.success) {
-                    getString(R.string.backup_progress_complete)
-                } else {
-                    getString(R.string.backup_progress_failed)
-                }
-
-                // Phase 3: Clear after delay
-                delay(if (result.success) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
+                _backupOutcome.value = BackupOutcome(
+                    isSuccess = result.success,
+                    title = getString(
+                        if (result.success) R.string.backup_progress_complete else R.string.backup_progress_failed
+                    ),
+                    detail = if (result.success) result.message else result.error
+                )
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to create backup", e)
-                _backupStatusText.value = getString(R.string.backup_progress_failed)
-                delay(STATUS_CLEAR_DELAY_ERROR_MS)
+                _backupOutcome.value = BackupOutcome(
+                    isSuccess = false,
+                    title = getString(R.string.backup_progress_failed),
+                    detail = e.message
+                )
             } finally {
                 _isBackupInProgress.value = false
                 _backupStatusText.value = ""
@@ -1412,6 +1418,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun restoreFromFile(uri: Uri, mode: RestoreMode, password: String? = null, restoreServerSettings: Boolean = false) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
+            _backupOutcome.value = null
             _backupStatusText.value = getString(R.string.backup_progress_restoring)
             try {
                 val result = backupManager.restoreBackup(uri, mode, password, restoreServerSettings)
@@ -1421,19 +1428,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     reloadServerSettingsFromPrefs()
                 }
 
-                // Phase 2: Show completion status
-                _backupStatusText.value = if (result.success) {
-                    getString(R.string.restore_progress_complete)
-                } else {
-                    getString(R.string.restore_progress_failed)
-                }
-
-                // Phase 3: Clear after delay
-                delay(if (result.success) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
+                // Grund mitgeben: er steckte bisher nur im RestoreResult und wurde verworfen —
+                // der User sah 3 Sekunden „Restore failed" ohne jeden Hinweis auf die Ursache.
+                _backupOutcome.value = BackupOutcome(
+                    isSuccess = result.success,
+                    title = getString(
+                        if (result.success) R.string.restore_progress_complete else R.string.restore_progress_failed
+                    ),
+                    detail = if (result.success) result.message else result.error
+                )
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to restore backup from file", e)
-                _backupStatusText.value = getString(R.string.restore_progress_failed)
-                delay(STATUS_CLEAR_DELAY_ERROR_MS)
+                _backupOutcome.value = BackupOutcome(
+                    isSuccess = false,
+                    title = getString(R.string.restore_progress_failed),
+                    detail = e.message
+                )
             } finally {
                 _isBackupInProgress.value = false
                 _backupStatusText.value = ""
@@ -1539,6 +1549,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun restoreFromServer(mode: RestoreMode) {
         viewModelScope.launch {
             _isBackupInProgress.value = true
+            _backupOutcome.value = null
             _backupStatusText.value = getString(R.string.backup_progress_restoring_server)
             try {
                 val syncService = WebDavSyncService(getApplication())
@@ -1546,19 +1557,32 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     syncService.restoreFromServer(mode)
                 }
 
-                // Phase 2: Show completion status
-                _backupStatusText.value = if (result.isSuccess) {
-                    getString(R.string.restore_server_progress_complete)
-                } else {
-                    getString(R.string.restore_server_progress_failed)
-                }
-
-                // Phase 3: Clear after delay
-                delay(if (result.isSuccess) STATUS_CLEAR_DELAY_SUCCESS_MS else STATUS_CLEAR_DELAY_ERROR_MS)
+                _backupOutcome.value = BackupOutcome(
+                    isSuccess = result.isSuccess,
+                    title = getString(
+                        if (result.isSuccess) {
+                            R.string.restore_server_progress_complete
+                        } else {
+                            R.string.restore_server_progress_failed
+                        }
+                    ),
+                    detail = if (result.isSuccess) {
+                        getApplication<android.app.Application>().resources.getQuantityString(
+                            R.plurals.restore_server_notes_restored,
+                            result.restoredCount,
+                            result.restoredCount
+                        )
+                    } else {
+                        result.errorMessage
+                    }
+                )
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to restore from server", e)
-                _backupStatusText.value = getString(R.string.restore_server_progress_failed)
-                delay(STATUS_CLEAR_DELAY_ERROR_MS)
+                _backupOutcome.value = BackupOutcome(
+                    isSuccess = false,
+                    title = getString(R.string.restore_server_progress_failed),
+                    detail = e.message
+                )
             } finally {
                 _isBackupInProgress.value = false
                 _backupStatusText.value = ""
@@ -1713,6 +1737,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         return context.getString(resId, *formatArgs)
     }
 
+    /** Verwirft das Backup-/Restore-Ergebnis — aufgerufen beim Verlassen des Backup-Screens. */
+    fun clearBackupOutcome() {
+        _backupOutcome.value = null
+    }
+
     /**
      * Zeigt eine Snackbar über den SettingsNavHost-Collector an.
      * Aufrufbar aus synchronen Click-Handlern (kein suspend).
@@ -1724,6 +1753,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private suspend fun emitToast(message: String) {
         _showSnackbar.emit(message)
     }
+
+    /** Ergebnis einer Backup-/Restore-Aktion für die persistente Ergebniskarte. */
+    data class BackupOutcome(val isSuccess: Boolean, val title: String, val detail: String?)
 
     /**
      * Server status states

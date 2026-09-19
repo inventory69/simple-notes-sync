@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
 import android.net.Uri
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,6 +38,7 @@ import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.BackupPasswordDialog
 import dev.dettmer.simplenotes.ui.settings.components.BackupProgressCard
+import dev.dettmer.simplenotes.ui.settings.components.BackupResultCard
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
 import dev.dettmer.simplenotes.ui.settings.components.SettingsButton
 import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
@@ -62,6 +65,21 @@ private const val DIALOG_CLOSE_DELAY_MS = 200L
 @Composable
 fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val isBackupInProgress by viewModel.isBackupInProgress.collectAsState()
+    val backupOutcome by viewModel.backupOutcome.collectAsState()
+
+    // Das Ergebnis bleibt stehen, solange der Screen offen ist, und wird erst beim Verlassen
+    // verworfen — bei Backup/Restore ist die Rückmeldung zu wichtig für eine Snackbar.
+    //
+    // `isChangingConfigurations` ist nicht optional: ComposeSettingsActivity fängt nur
+    // `locale|layoutDirection` ab, jede Drehung (und jeder Dark-Mode-/Schriftgrößen-Wechsel)
+    // recreated die Activity und disposed damit genau diesen Screen. Ohne die Abfrage wäre die
+    // Ergebniskarte nach einer Drehung weg — also genau der Fall, gegen den sie gebaut ist.
+    val activity = LocalActivity.current
+    DisposableEffect(activity) {
+        onDispose {
+            if (activity?.isChangingConfigurations != true) viewModel.clearBackupOutcome()
+        }
+    }
 
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
 
@@ -155,6 +173,14 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 )
             }
 
+            backupOutcome?.let { outcome ->
+                BackupResultCard(
+                    isSuccess = outcome.isSuccess,
+                    title = outcome.title,
+                    detail = outcome.detail
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             SettingsSectionCard(title = stringResource(R.string.backup_local_section)) {
@@ -200,7 +226,13 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 SettingsOutlinedButton(
                     text = stringResource(R.string.backup_restore_file),
                     onClick = {
-                        restoreFileLauncher.launch(arrayOf("application/json"))
+                        // Nicht jeder Provider meldet für .json "application/json" (Downloads,
+                        // Cloud-Provider, manche Dateimanager liefern octet-stream oder text/plain)
+                        // — mit dem engen Filter ist die eigene Backup-Datei dann ausgegraut.
+                        // Gleiche Liste wie im Import-Screen.
+                        restoreFileLauncher.launch(
+                            arrayOf("application/json", "application/octet-stream", "text/plain")
+                        )
                     },
                     isLoading = isBackupInProgress,
                     modifier = Modifier.padding(horizontal = 16.dp)

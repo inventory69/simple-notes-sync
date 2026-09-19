@@ -42,6 +42,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.NOTE_PREVIEW_CHAR_LIMIT
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -281,7 +282,8 @@ private fun NoteCardCompactPreviewContent(note: Note, showSyncIcon: Boolean, mod
 @Composable
 private fun notePreviewFullText(note: Note): String {
     return when (note.noteType) {
-        NoteType.TEXT -> note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT)
+        // flattenTableRows: die Kompaktkarte zeigt rohen Text — ohne das stünden dort Pipes.
+        NoteType.TEXT -> MarkdownEngine.flattenTableRows(note.content.truncate(NOTE_PREVIEW_CHAR_LIMIT))
         NoteType.CHECKLIST -> {
             note.checklistItems?.let { items ->
                 remember(items, note.checklistSortOption) {

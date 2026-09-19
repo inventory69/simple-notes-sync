@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
+import dev.dettmer.simplenotes.utils.Constants
 
 /**
  * 🔀 v1.8.0: Dialog zur Auswahl der Sortierung für die Notizliste.
@@ -45,8 +46,12 @@ import dev.dettmer.simplenotes.models.SortOption
  * │  ( ) Name                       │
  * │  ( ) Type                       │
  * ├─────────────────────────────────┤
- * │ [Close]  │
+ * │ [Default]              [Close]  │
  * └─────────────────────────────────┘
+ *
+ * "Default" erscheint nur, wenn die Sortierung vom App-Default abweicht — sonst ist der Knopf
+ * eine tote Fläche. Die Sortierung ist pro Ordner gespeichert, zurückgesetzt wird also der
+ * gerade sichtbare Ordner.
  */
 @Composable
 fun SortDialog(
@@ -54,8 +59,11 @@ fun SortDialog(
     currentDirection: SortDirection,
     onOptionSelected: (SortOption) -> Unit,
     onDirectionToggled: () -> Unit,
+    onResetToDefault: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isDefault = currentOption == SortOption.fromPrefsValue(Constants.DEFAULT_SORT_OPTION) &&
+        currentDirection == SortDirection.fromPrefsValue(Constants.DEFAULT_SORT_DIRECTION)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -121,6 +129,15 @@ fun SortDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.close))
+            }
+        },
+        dismissButton = if (isDefault) {
+            null
+        } else {
+            {
+                TextButton(onClick = onResetToDefault) {
+                    Text(stringResource(R.string.sort_reset_default))
+                }
             }
         }
     )

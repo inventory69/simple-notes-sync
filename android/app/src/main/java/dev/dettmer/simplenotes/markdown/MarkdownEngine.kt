@@ -49,6 +49,17 @@ object MarkdownEngine {
         data class TaskList(val items: List<TaskItem>) : MarkdownBlock()
 
         /**
+         * 🆕 GFM-Pipe-Tabelle (`| a | b |` + Trennzeile). [rows] enthält nur den Body; [header],
+         * [alignments] und jede Body-Zeile haben dieselbe Zellenzahl — die der breitesten Zeile,
+         * kürzere sind mit leeren Zellen aufgefüllt (s. `parse`).
+         */
+        data class Table(
+            val header: List<String>,
+            val alignments: List<ColumnAlign>,
+            val rows: List<List<String>>
+        ) : MarkdownBlock()
+
+        /**
          * 🆕 Bild-Attachments. Text vor/nach dem Bild-Link auf derselben Zeile wird als
          * eigener Paragraph abgetrennt, das Bild selbst immer als eigener Block gerendert.
          * [altText] ist bereits CLEAN (Größe/Ausrichtung-Tokens gestrippt, siehe [parseImageAlt]).
@@ -68,6 +79,9 @@ object MarkdownEngine {
 
     /** Einzelnes Task-List-Item mit Checked-Status und Text. */
     data class TaskItem(val text: String, val isChecked: Boolean)
+
+    /** Spalten-Ausrichtung einer [MarkdownBlock.Table] aus `:---` / `---:` / `:---:`. */
+    enum class ColumnAlign { LEFT, CENTER, RIGHT }
 
     /**
      * Parse raw Markdown [text] into a list of [MarkdownBlock]s.
@@ -157,6 +171,41 @@ object MarkdownEngine {
                     }
                 }
 
+                // ── GFM-Tabelle (Lookahead auf die Trennzeile, s. isTableStart) ──
+                isTableStart(lines, i) -> {
+                    val startIdx = i
+                    val header = splitCells(lines[i])
+                    val alignments = parseAlignments(lines[i + 1])
+                    i += 2
+                    val rows = mutableListOf<List<String>>()
+                    while (i < lines.size && hasUnescapedPipe(lines[i])) {
+                        // Eine reine Trennzeile mitten im Body (zweimal eingefügtes Gerüst,
+                        // kopierte Zeilen) trägt keinen Inhalt — überspringen statt "---" als
+                        // Zelltext zu zeigen. Nur wenn ALLE Zellen Trennzellen sind, sonst ginge
+                        // echter Inhalt wie `| --- | offen |` verloren.
+                        val cells = splitCells(lines[i])
+                        if (cells.isNotEmpty() && cells.all { DELIMITER_CELL_REGEX.matches(it) }) {
+                            i++
+                            continue
+                        }
+                        rows.add(cells)
+                        i++
+                    }
+                    // Spaltenzahl = breiteste Zeile. GFM würde überzählige Zellen abschneiden;
+                    // hier erweitert eine zusätzliche `| Zelle |` die Tabelle, statt still
+                    // verschluckt zu werden — im Editor ist genau das der Weg, eine Spalte
+                    // hinzuzufügen. Kürzere Zeilen werden mit leeren Zellen aufgefüllt.
+                    val width = maxOf(header.size, rows.maxOfOrNull { it.size } ?: 0)
+                    blocks.add(
+                        MarkdownBlock.Table(
+                            header = fitToWidth(header, width),
+                            alignments = fitAlignments(alignments, width),
+                            rows = rows.map { fitToWidth(it, width) }
+                        )
+                    )
+                    nextOrdinal += IMAGE_REGEX.findAll(lines.subList(startIdx, i).joinToString("\n")).count()
+                }
+
                 // ── Task list (muss VOR UnorderedList geprüft werden) ──
                 TASK_LIST_REGEX.matches(line) -> {
                     val taskItems = mutableListOf<TaskItem>()
@@ -203,7 +252,10 @@ object MarkdownEngine {
                 // ── Paragraph (collect consecutive non-blank, non-special lines) ──
                 else -> {
                     val paraLines = mutableListOf<String>()
-                    while (i < lines.size && isParagraphLine(lines[i])) {
+                    // !isTableStart ist zwingend: isParagraphLine ist zeilenlokal und kann den
+                    // Lookahead auf die Trennzeile nicht leisten — ohne den Guard frisst ein Absatz
+                    // direkt über der Tabelle deren Zeilen auf.
+                    while (i < lines.size && isParagraphLine(lines[i]) && !isTableStart(lines, i)) {
                         paraLines.add(lines[i])
                         i++
                     }
@@ -264,6 +316,159 @@ object MarkdownEngine {
      */
     fun joinImageRows(text: String): String = text.replace(IMAGE_ROW_JOIN_REGEX, "$1 ")
 
+    /**
+     * Quelltext-Variante für Oberflächen, die Markdown als **String** weiterreichen
+     * (Kompakt-Karte, Listen-Widget): Tabellenzeilen werden zu ` · `-Klartext, die Trennzeile
+     * fällt weg. Ohne das stünde dort roher Pipe-Salat.
+     *
+     * Erkennt Tabellen über dieselbe [isTableStart]-Regel wie [parse] — eine Prosa-Zeile mit
+     * `a | b` bleibt damit unangetastet.
+     */
+    fun flattenTableRows(text: String): String {
+        if (!text.contains('|')) return text
+        val lines = text.lines()
+        val out = mutableListOf<String>()
+        var i = 0
+        while (i < lines.size) {
+            if (!isTableStart(lines, i)) {
+                out.add(lines[i])
+                i++
+                continue
+            }
+            out.add(joinCells(lines[i]))
+            i += 2 // Kopfzeile übernommen, Trennzeile entfällt
+            while (i < lines.size && hasUnescapedPipe(lines[i])) {
+                out.add(joinCells(lines[i]))
+                i++
+            }
+        }
+        return out.joinToString("\n")
+    }
+
+    private fun joinCells(line: String): String = splitCells(line).joinToString(CELL_SEPARATOR)
+
+    /**
+     * Kopf- und Body-Zeilen einer Tabelle als ` · `-Klartext — für jede Oberfläche ohne echtes
+     * Spaltenlayout (Karten, Widgets). Die Trennzeile taucht hier nie auf, sie trägt keinen Inhalt.
+     */
+    fun plainLines(table: MarkdownBlock.Table): List<String> =
+        (listOf(table.header) + table.rows).map { row ->
+            // Aufgefüllte Endzellen weglassen, sonst endet die Zeile auf einem nackten " · ".
+            row.dropLastWhile { it.isEmpty() }.joinToString(CELL_SEPARATOR)
+        }
+
+    /** Letzte Zeile (Index in `text.lines()`) und Spaltenzahl einer Tabelle. */
+    data class TableSpan(val lastLine: Int, val columns: Int)
+
+    /**
+     * Die Tabelle, in der die Zeile [lineIndex] steht — `null`, wenn dort keine ist.
+     *
+     * Für die Toolbar: steht der Cursor schon in einer Tabelle, hängt der Tabellen-Button eine
+     * Zeile an, statt eine zweite Tabelle einzufügen.
+     */
+    fun tableAt(text: String, lineIndex: Int): TableSpan? {
+        val lines = text.lines()
+        if (lineIndex !in lines.indices || !hasUnescapedPipe(lines[lineIndex])) return null
+        var start = lineIndex
+        while (start > 0 && hasUnescapedPipe(lines[start - 1])) start--
+        if (!isTableStart(lines, start)) return null
+        var last = lineIndex
+        while (last + 1 < lines.size && hasUnescapedPipe(lines[last + 1])) last++
+        return TableSpan(lastLine = last, columns = (start..last).maxOf { splitCells(lines[it]).size })
+    }
+
+    /**
+     * Tabellenstart: Zeile mit nicht-escapter `|`, deren **Folgezeile** eine Trennzeile ist.
+     * Der Lookahead hält `a | b` im Fließtext draußen.
+     */
+    private fun isTableStart(lines: List<String>, index: Int): Boolean {
+        if (index + 1 >= lines.size) return false
+        if (!hasUnescapedPipe(lines[index])) return false
+        if (!isTableDelimiterRow(lines[index + 1])) return false
+        return splitCells(lines[index]).isNotEmpty()
+    }
+
+    /**
+     * Trennzeile: eine Zeile mit nicht-escapter `|`, in der **mindestens eine** Zelle ein echtes
+     * `---` / `:---` / `---:` / `:---:` ist.
+     *
+     * Bewusst toleranter als GFM, das ALLE Zellen als Trennzellen verlangt. Grund: die Trennzeile
+     * trägt keinen Inhalt, sieht im Editor aber aus wie eine normale Zeile — wer dort hineintippt
+     * (`| -lblblb-- | --- |`), verlor bei strenger Prüfung die komplette Tabelle und bekam
+     * Pipe-Salat statt einer Ansicht. Mit dieser Regel bleibt die Tabelle stehen, kaputte
+     * Trennzellen fallen auf [ColumnAlign.LEFT] zurück, und die Zellenzahl darf abweichen
+     * (Alignments werden auf die Kopfbreite aufgefüllt/gekürzt).
+     *
+     * Der False-Positive-Schutz bleibt: Fließtext wird nur dann zur Tabelle, wenn die Folgezeile
+     * eine Pipe UND eine exakte `---`-Zelle enthält.
+     *
+     * Single Source of Truth — [MarkdownOutputTransformation] dimmt genau die Zeilen, die hier
+     * als Trennzeile gelten, damit Roh-Editor und Vorschau dieselbe Zeile als Struktur behandeln.
+     *
+     * Desktop (`marked`) ist an dieser Stelle noch streng; die Toleranz wird dort nachgezogen.
+     */
+    fun isTableDelimiterRow(line: String): Boolean =
+        hasUnescapedPipe(line) && splitCells(line).any { DELIMITER_CELL_REGEX.matches(it) }
+
+    private fun hasUnescapedPipe(line: String): Boolean {
+        var i = 0
+        while (i < line.length) {
+            when (line[i]) {
+                '\\' -> i++ // das nächste Zeichen ist escaped
+                '|' -> return true
+            }
+            i++
+        }
+        return false
+    }
+
+    /**
+     * Zerlegt eine Tabellenzeile an nicht-escapten `|`. `\|` wird zur literalen Pipe, Zellen
+     * werden getrimmt, eine führende/abschließende `|` erzeugt keine leere Randzelle.
+     */
+    private fun splitCells(line: String): List<String> {
+        val cells = mutableListOf<String>()
+        val current = StringBuilder()
+        var i = 0
+        while (i < line.length) {
+            val c = line[i]
+            when {
+                c == '\\' && i + 1 < line.length && line[i + 1] == '|' -> {
+                    current.append('|')
+                    i++
+                }
+                c == '|' -> {
+                    cells.add(current.toString().trim())
+                    current.clear()
+                }
+                else -> current.append(c)
+            }
+            i++
+        }
+        cells.add(current.toString().trim())
+        val trimmed = line.trim()
+        if (cells.first().isEmpty() && trimmed.startsWith("|")) cells.removeAt(0)
+        if (cells.isNotEmpty() && cells.last().isEmpty() && trimmed.endsWith("|") && !trimmed.endsWith("\\|")) {
+            cells.removeAt(cells.lastIndex)
+        }
+        return cells
+    }
+
+    private fun parseAlignments(line: String): List<ColumnAlign> = splitCells(line).map { cell ->
+        when {
+            cell.startsWith(":") && cell.endsWith(":") -> ColumnAlign.CENTER
+            cell.endsWith(":") -> ColumnAlign.RIGHT
+            else -> ColumnAlign.LEFT
+        }
+    }
+
+    /** Zeile auf [width] Zellen bringen: fehlende werden leer ergänzt. */
+    private fun fitToWidth(cells: List<String>, width: Int): List<String> =
+        List(width) { cells.getOrElse(it) { "" } }
+
+    private fun fitAlignments(alignments: List<ColumnAlign>, width: Int): List<ColumnAlign> =
+        List(width) { alignments.getOrElse(it) { ColumnAlign.LEFT } }
+
     /** Returns true if [line] is a plain paragraph line (non-blank, non-structural). */
     private fun isParagraphLine(line: String): Boolean {
         if (line.isBlank()) return false
@@ -296,6 +501,10 @@ object MarkdownEngine {
     internal val IMAGE_REGEX = Regex("""!\[([^\]]*)]\(\.assets/([A-Za-z0-9][A-Za-z0-9._-]*)\)""")
     private val IMAGE_ROW_JOIN_REGEX =
         Regex("""(!\[[^\]]*]\(\.assets/[A-Za-z0-9][A-Za-z0-9._-]*\))\n(?=!\[)""")
+    private val DELIMITER_CELL_REGEX = Regex("""^:?-+:?$""")
+
+    /** Zellentrenner für alle Oberflächen, die eine Tabelle als Klartext zeigen. */
+    const val CELL_SEPARATOR = " · "
     private const val HORIZONTAL_RULE_MIN_CHARS = 3
     private const val MAX_ROW_PERCENT = 100
 

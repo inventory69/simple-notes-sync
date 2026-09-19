@@ -239,6 +239,18 @@ class LogAnonymizerTest {
         assertEquals("NoteUploader: put(/notes/<folder>/x.json), title='<note>' — done", result)
     }
 
+    /**
+     * Regression (#150): der MD-Sync lief gegen eine abgeleitete Subdomain, die so nie in den
+     * Prefs stand. Der exakte Host-Vergleich traf sie nicht — die echte Domain des Nutzers stand
+     * im Log, das er in ein öffentliches GitHub-Issue gehängt hat.
+     */
+    @Test
+    fun `redacts any host in a url, not only the configured one`() {
+        val result = anonymize("WebDavClient: list(https://notes-md.mihanik.example/notes-md/, depth=1)")
+
+        assertEquals("WebDavClient: list(https://<server>/notes-md/, depth=1)", result)
+    }
+
     /** Der Pfad darf den Nextcloud-Fall nicht schlechter machen: Rest der URL bleibt lesbar. */
     @Test
     fun `keeps the part below the sync base readable`() {

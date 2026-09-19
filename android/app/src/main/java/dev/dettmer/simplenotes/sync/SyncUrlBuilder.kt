@@ -49,8 +49,7 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
      * @return Notes folder URL (with trailing slash)
      */
     fun getNotesUrl(baseUrl: String): String {
-        val folderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
-            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+        val folderName = folderName()
         val normalized = baseUrl.trimEnd('/')
         return if (normalized.endsWith("/$folderName")) {
             "$normalized/"
@@ -70,13 +69,7 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
      * @param baseUrl Base server URL
      * @return Markdown folder URL (with trailing slash)
      */
-    fun getMarkdownUrl(baseUrl: String): String {
-        val folderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
-            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
-        val notesUrl = getNotesUrl(baseUrl)
-        val normalized = notesUrl.trimEnd('/')
-        return normalized.replace("/$folderName", "/$folderName$MARKDOWN_SUFFIX") + "/"
-    }
+    fun getMarkdownUrl(baseUrl: String): String = siblingUrl(baseUrl, MARKDOWN_SUFFIX)
 
     /**
      * 🆕 v2.7.0 (Folders): URL eines JSON-Ordners. folderName == null → identisch zu getNotesUrl.
@@ -104,17 +97,33 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
      * [getMarkdownUrl]. Bewusst NICHT `.assets/` im Notiz-Baum — jedes Unterverzeichnis
      * dort würde von bereits ausgelieferten Clients (Subdir-Scan) als Notiz-Ordner gelesen.
      */
-    fun getAssetsUrl(baseUrl: String): String {
-        val folderName = prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
-            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
-        val notesUrl = getNotesUrl(baseUrl)
-        val normalized = notesUrl.trimEnd('/')
-        return normalized.replace("/$folderName", "/$folderName$ASSETS_SUFFIX") + "/"
-    }
+    fun getAssetsUrl(baseUrl: String): String = siblingUrl(baseUrl, ASSETS_SUFFIX)
 
     /** URL einer einzelnen Asset-Datei im Geschwister-Ordner (flach, keine Unterordner). */
     fun getAssetUrl(baseUrl: String, assetName: String): String =
         getAssetsUrl(baseUrl) + encodeSegment(assetName)
+
+    /**
+     * Geschwister-Ordner der Notes-URL: `<base>/<folder>/` → `<base>/<folder><suffix>/`.
+     *
+     * 🐛 #150: Vorher `notesUrl.replace("/$folderName", "/$folderName$suffix")`. `replace` trifft
+     * **jedes** Vorkommen — bei `https://notes.example.com/notes/` also auch das `/notes` hinter
+     * `https:/`. Heraus kam `https://notes-md.example.com/notes-md/`: eine nie konfigurierte
+     * Subdomain. TLS scheiterte (fremdes Zertifikat), MD-Export und Assets blieben still leer,
+     * und die Basic-Auth-Credentials gingen an einen fremden Host. Derselbe Fehler traf jeden
+     * Basispfad, der den Ordnernamen enthält (`/notes-archive/` → `/notes-md-archive/`).
+     *
+     * [getNotesUrl] endet per Konstruktion auf dem Ordnernamen — das Suffix wird deshalb nur
+     * angehängt, nie irgendwo ersetzt.
+     */
+    private fun siblingUrl(baseUrl: String, suffix: String): String =
+        getNotesUrl(baseUrl).trimEnd('/') + suffix + "/"
+
+    /** Leerer Ordnername (z. B. aus einem alten Backup) fiele sonst auf `<base>-md/` zurück. */
+    private fun folderName(): String =
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
+            ?.takeIf { it.isNotEmpty() }
+            ?: Constants.DEFAULT_SYNC_FOLDER_NAME
 
     private fun encodeSegment(segment: String): String =
         java.net.URLEncoder.encode(segment, "UTF-8").replace("+", "%20")

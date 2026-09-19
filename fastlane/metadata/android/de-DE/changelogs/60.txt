@@ -1,0 +1,6 @@
+🚪 v2.17.1 - Die richtige Tür
+
+• Fix: Markdown-Export und Bildanhänge gingen an eine erfundene Adresse, wenn der Servername mit dem Sync-Ordner beginnt (z. B. notes.example.com). Am Server kam nie etwas an, der Sync meldete trotzdem Erfolg
+• Fix: Exportierte Logs konnten die echte Server-Domain noch enthalten
+
+Danke an @mihanik78189482 für den Hinweis!

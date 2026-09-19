@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.insert
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.InsertLink
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -36,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.markdown.MarkdownEngine
 
 private const val TOOLBAR_ICON_SIZE = 22
 private const val LINK_URL_PLACEHOLDER = "url"
@@ -55,6 +58,9 @@ fun MarkdownToolbar(
     onImageClick: () -> Unit = {},
     isAttachingImage: Boolean = false
 ) {
+    // Platzhalter landen im Notiztext, gehören also in die Sprache des Nutzers.
+    val tableHeader = stringResource(R.string.md_table_header_placeholder)
+    val tableCell = stringResource(R.string.md_table_cell_placeholder)
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
@@ -103,18 +109,7 @@ fun MarkdownToolbar(
                 contentDescription = stringResource(R.string.md_toolbar_link),
                 onClick = { insertLink(textFieldState) }
             )
-            if (isAttachingImage) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(TOOLBAR_ICON_SIZE.dp),
-                    strokeWidth = 2.dp
-                )
-            } else {
-                ToolbarButton(
-                    icon = Icons.Filled.AddPhotoAlternate,
-                    contentDescription = stringResource(R.string.md_toolbar_image),
-                    onClick = onImageClick
-                )
-            }
+            ImageToolbarButton(isAttachingImage, onImageClick)
             ToolbarButton(
                 icon = Icons.AutoMirrored.Filled.FormatListBulleted,
                 contentDescription = stringResource(R.string.md_toolbar_list),
@@ -130,7 +125,29 @@ fun MarkdownToolbar(
                 contentDescription = stringResource(R.string.md_toolbar_rule),
                 onClick = { insertHorizontalRule(textFieldState) }
             )
+            ToolbarButton(
+                icon = Icons.Filled.TableChart,
+                contentDescription = stringResource(R.string.md_toolbar_table),
+                onClick = { insertTable(textFieldState, tableHeader, tableCell) }
+            )
         }
+    }
+}
+
+/** Bild-Button; während des Anhängens steht an seiner Stelle der Fortschrittsring. */
+@Composable
+private fun ImageToolbarButton(isAttaching: Boolean, onClick: () -> Unit) {
+    if (isAttaching) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(TOOLBAR_ICON_SIZE.dp),
+            strokeWidth = 2.dp
+        )
+    } else {
+        ToolbarButton(
+            icon = Icons.Filled.AddPhotoAlternate,
+            contentDescription = stringResource(R.string.md_toolbar_image),
+            onClick = onClick
+        )
     }
 }
 
@@ -258,6 +275,61 @@ private fun insertHorizontalRule(state: TextFieldState) {
         insert(cursorPos, rule)
         selection = TextRange(cursorPos + rule.length)
     }
+}
+
+/**
+ * Tabellen-Button: steht der Cursor schon in einer Tabelle, wird an diese eine Zeile angehängt,
+ * sonst ein neues Gerüst eingefügt. Zweimal drücken = Tabelle plus zweite Zeile — das ist der
+ * Weg, eine Tabelle zu erweitern, ohne die Pipe-Syntax zu kennen.
+ */
+private fun insertTable(state: TextFieldState, headerPlaceholder: String, cellPlaceholder: String) {
+    state.edit {
+        val cursorPos = selection.min
+        val lineIndex = toString().take(cursorPos).count { it == '\n' }
+        val table = MarkdownEngine.tableAt(toString(), lineIndex)
+        if (table != null) appendTableRow(table, cellPlaceholder) else insertTableSkeleton(cursorPos, headerPlaceholder, cellPlaceholder)
+    }
+}
+
+/**
+ * Hängt eine Zeile mit [MarkdownEngine.TableSpan.columns] Platzhalterzellen ans **Ende** der
+ * Tabelle. Bewusst ans Ende und nicht hinter die Cursorzeile: zwischen Kopf- und Trennzeile
+ * eingefügt wäre die Tabelle kaputt, und ans Ende ist die Stelle, die man beim „erweitern" meint.
+ */
+private fun TextFieldBuffer.appendTableRow(table: MarkdownEngine.TableSpan, cellPlaceholder: String) {
+    val lines = toString().lines()
+    // +1 pro Zeile für das \n, minus das eine hinter der letzten Tabellenzeile.
+    val endOfTable = lines.take(table.lastLine + 1).sumOf { it.length + 1 } - 1
+    val row = (1..table.columns).joinToString(separator = " | ", prefix = "| ", postfix = " |") { cellPlaceholder }
+    insert(endOfTable, "\n$row")
+    val firstCell = endOfTable + "\n| ".length
+    selection = TextRange(firstCell, firstCell + cellPlaceholder.length)
+}
+
+/**
+ * Fügt ein GFM-Tabellengerüst nach einer Leerzeile ein. Der erste Platzhalter im Kopf ist
+ * markiert, damit Tippen ihn direkt ersetzt.
+ *
+ * Die Body-Zeile bekommt sichtbare Platzhalter statt leerer Zellen: sonst sieht man nicht, wohin
+ * der Inhalt gehört, und tippt in die Trennzeile (die trägt keinen Inhalt, s.
+ * [MarkdownEngine.isTableDelimiterRow]).
+ *
+ * Die Leerzeile davor ist Pflicht, nicht Kosmetik: steht direkt darüber schon eine Tabelle,
+ * schluckt die sonst Kopf- und Trennzeile als weitere Body-Zeilen (GFM-Regel).
+ */
+private fun TextFieldBuffer.insertTableSkeleton(cursorPos: Int, headerPlaceholder: String, cellPlaceholder: String) {
+    val before = toString().take(cursorPos)
+    val prefix = when {
+        before.isEmpty() || before.endsWith("\n\n") -> ""
+        before.endsWith("\n") -> "\n"
+        else -> "\n\n"
+    }
+    val skeleton = "| $headerPlaceholder | $headerPlaceholder |\n" +
+        "| --- | --- |\n" +
+        "| $cellPlaceholder | $cellPlaceholder |\n"
+    insert(cursorPos, prefix + skeleton)
+    val placeholderStart = cursorPos + prefix.length + "| ".length
+    selection = TextRange(placeholderStart, placeholderStart + headerPlaceholder.length)
 }
 
 /**

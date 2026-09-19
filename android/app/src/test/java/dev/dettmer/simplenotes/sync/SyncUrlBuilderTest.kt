@@ -38,6 +38,30 @@ class SyncUrlBuilderTest {
     }
 
     /**
+     * Regression (#150): `replace("/notes", ...)` traf **jedes** Vorkommen — auch das `/notes` in
+     * `https://notes.example.com`. Der MD-Sync lief damit gegen eine erfundene Subdomain
+     * `notes-md.example.com`, die der Nutzer nie konfiguriert hat: TLS-Fehler, MD-Export still
+     * kaputt, und Basic-Auth-Credentials an einen fremden Host.
+     */
+    @Test fun `markdownUrl keeps host that starts with the folder name`() {
+        assertEquals("https://notes.example.com/notes-md/", builder.getMarkdownUrl("https://notes.example.com/"))
+    }
+
+    @Test fun `assetsUrl keeps host that starts with the folder name`() {
+        assertEquals("https://notes.example.com/notes-assets/", builder.getAssetsUrl("https://notes.example.com/"))
+    }
+
+    /** Gleiche Wurzel: ein Basispfad, der den Ordnernamen enthält, wurde mitersetzt. */
+    @Test fun `markdownUrl keeps base path that contains the folder name`() {
+        assertEquals("http://s:8080/notes-archive/notes-md/", builder.getMarkdownUrl("http://s:8080/notes-archive/"))
+    }
+
+    @Test fun `markdownUrl is sibling of notesUrl for a plain base`() {
+        assertEquals("http://s:8080/notes-md/", builder.getMarkdownUrl("http://s:8080/"))
+        assertEquals("http://s:8080/notes-md/", builder.getMarkdownUrl("http://s:8080/notes/"))
+    }
+
+    /**
      * Regression: eine OX-App-Suite-URL mit Klarnamen im Pfad enthält ein rohes Leerzeichen.
      * Ungekodiert warf `URI(baseUrl)` in `groupByFolder` und riss den ganzen Sync mit
      * ("Illegal character in path at index 63").

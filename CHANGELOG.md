@@ -8,6 +8,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.18.0] - 2026-09-20
+
+### ✨ New Features
+
+**Tables Look Like Tables** ([39530d0](https://github.com/inventory69/simple-notes-sync/commit/39530d0))
+- The desktop client writes Markdown tables as pipe rows, and Android had no table block at all, so the same note showed a grid on one device and a wall of pipes on the other. Tables now parse into their own block and render as a real grid in the editor preview: column widths measured from the content, column alignment, inline formatting inside the cells, and horizontal scrolling when the table is wider than the screen
+- The PDF export draws the same grid and repeats the header row after a page break. Note cards and both widgets have no room for a grid, so each row is flattened to its cells joined by " · " instead of showing raw pipes. In the raw editor the pipes and the delimiter row are dimmed, so structure reads as structure
+- The toolbar has a table button: it inserts a skeleton with visible placeholders, and appends a row when the cursor is already inside a table
+- Three deliberate deviations from strict GFM, all following one rule - never swallow what you typed: a delimiter row counts as soon as one cell is a real `---` cell, so typing into it no longer collapses the table into raw text; the column count follows the widest row, so an extra cell adds a column instead of being cut off; a row whose cells are all delimiters is dropped
+- Thanks to [@MrsMinchen](https://github.com/MrsMinchen) for the request!
+
+**One Tap Back to the Default Sorting** ([0b513c6](https://github.com/inventory69/simple-notes-sync/commit/0b513c6))
+- Getting back to the app default meant remembering that it is "last modified, descending" and clicking it back together, folder by folder
+- The sort dialog now has a default button next to Close. It only shows up when the current setting differs from the default, so it is never a dead control, and it resets the folder you are looking at
+
+### 🐛 Bug Fixes
+
+**Markdown Files and Images Never Reached Some Servers** ([c276d4e](https://github.com/inventory69/simple-notes-sync/commit/c276d4e))
+- The Markdown folder and the image folder sit next to the sync folder, and their address was built by replacing the folder name inside the sync URL. That replacement hit every match, including the one inside the host name: with a server at `notes.example.com` the Markdown sync went to `notes-md.example.com`, an address that was never configured and usually does not exist
+- Everyone whose server name starts with the sync folder name, or whose path contains it (`/notes-archive/`), was affected. Markdown export, Markdown auto import and image attachments all failed silently while the sync still reported success
+- Both folders are now built by appending the suffix to the sync folder URL, so neither the host nor the path can be touched again
+- Thanks to [@mihanik78189482](https://github.com/mihanik78189482) for the report and the detailed logs!
+
+**Exported Logs Could Still Contain Your Server Domain** ([3d51325](https://github.com/inventory69/simple-notes-sync/commit/3d51325))
+- The log export replaced the host name from the settings. The made up address from the bug above was a different string, so the real domain stayed in the file and ended up in a public issue
+- Every host in a URL is replaced now, no matter which address the app actually used
+- The redaction is limited to http and https addresses ([812557f](https://github.com/inventory69/simple-notes-sync/commit/812557f)). It used to swallow the content URIs of the backup and import paths as well, and a provider authority identifies nobody while being exactly what tells a restore report apart from a sync one
+
+**A Single Broken Note No Longer Fails the Whole Restore** ([61c6ae3](https://github.com/inventory69/simple-notes-sync/commit/61c6ae3))
+- One unusable note made the validation reject the entire backup, so a restore gave back zero of N notes. Backups written before note types existed failed hardest: the missing field arrived as null behind a non-null type and the whole file was reported as corrupt. Nothing was written to the log either, so the restore did nothing and there was nothing to report
+- Unreadable notes are skipped and counted now, a restore only fails when no note survives at all, and the reason is logged
+- That check runs before the app settings block, so a failed restore can no longer leave your server URL, credentials and sync folder replaced
+
+**Backup and Restore Now Say What Happened** ([bd0804d](https://github.com/inventory69/simple-notes-sync/commit/bd0804d))
+- The outcome appeared in a status line that cleared itself after two to three seconds, and the reason for a failure never reached the screen at all. For the one operation that decides whether you get your notes back, that is too little information for too short a time
+- The result now stays in a card until you leave the backup screen: note counts on success, the reason on failure. It survives a rotation
+- The restore file picker accepts octet-stream and text/plain as well, the same list the import screen already uses. Not every provider reports application/json for a .json file, and a greyed out backup file is indistinguishable from a broken one
+
+**A Backup File in the Import Wizard Became One Empty Note** ([91f7948](https://github.com/inventory69/simple-notes-sync/commit/91f7948))
+- Picking a backup under "select files from device" sent it to the generic JSON parser. It found no title and no content at the top level, took the file name as the title and dropped the notes array: a backup holding 19 notes was imported as a single empty note and reported as "1 imported, 0 failed"
+- Backup files are recognised now and fail with a pointer to backup and restore. The generic "the file may be corrupted" hint is hidden when a concrete reason is shown below it, because it contradicts it
+
+**Folders Ignored the Sort Order** ([c5d3b66](https://github.com/inventory69/simple-notes-sync/commit/c5d3b66))
+- The folder section of the root view was always rendered in fixed alphabetical order, ignoring the sort option and the direction entirely, so flipping the direction moved every note but left the folders untouched
+- Folders carry neither a timestamp nor a note type, so those options fall back to the name (as file managers do) while colour follows the palette order. The direction always applies, so the toggle visibly turns the folders too
+
+### 🌍 Translations
+
+- **Norwegian Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Russian** (100%): [@disfated](https://github.com/disfated) / Yury Pavlovsky
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+
+---
+
 ## [2.17.0] - 2026-09-11
 
 ### ✨ New Features
