@@ -1036,4 +1036,21 @@
     <string name="widget_quick_edit_hint">笔记文本</string>
     <string name="widget_quick_edit_add_item_title">添加项目</string>
     <string name="widget_quick_edit_add_item_hint">新项目</string>
+    <string name="sort_reset_default">默认</string>
+    <string name="import_error_backup_file">这是一个简单笔记备份文件。恢复它在设置 → 备份和恢复 → 从文件恢复。</string>
+    <string name="md_toolbar_table">表格</string>
+    <string name="md_table_header_placeholder">头部</string>
+    <string name="md_table_cell_placeholder">单元格</string>
+    <string name="error_backup_unreadable">备份文件不能读取</string>
+    <string name="error_backup_encrypted_password_required">这个备份是加密的。请输入密码。</string>
+    <string name="error_backup_decryption_failed">解密失败：%s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="other">备份中的 %d 个笔记不能读取并已跳过</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="other">已保存 %d 个笔记</item>
+    </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="other">从服务器恢复了 %d 个笔记</item>
+    </plurals>
 </resources>
