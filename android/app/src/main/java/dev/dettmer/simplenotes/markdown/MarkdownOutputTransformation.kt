@@ -17,6 +17,7 @@ private const val BOLD_ITALIC_MARKER_LEN = 3
 private val mdHeadingRegex = Regex("""^(#{1,3})\s+(.+)$""")
 private val mdListRegex = Regex("""^\s*[-*+]\s+(.+)$""")
 private val mdHorizontalRuleRegex = Regex("""^\s*([-*_])\s*(?:\1\s*){2,}$""")
+
 /** Tabellenzeile im Roh-Editor: beginnt mit einer Pipe (führende Pipe ist im Editor Konvention). */
 private val mdTableRowRegex = Regex("""^\s*\|.*$""")
 

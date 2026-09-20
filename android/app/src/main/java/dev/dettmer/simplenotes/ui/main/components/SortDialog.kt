@@ -38,6 +38,7 @@ import dev.dettmer.simplenotes.utils.Constants
  *
  * Zeigt RadioButtons für die Sortieroption und einen Toggle für die Richtung.
  *
+ * ```
  * ┌─────────────────────────────────┐
  * │         Sort Notes              │
  * ├─────────────────────────────────┤
@@ -48,6 +49,7 @@ import dev.dettmer.simplenotes.utils.Constants
  * ├─────────────────────────────────┤
  * │ [Default]              [Close]  │
  * └─────────────────────────────────┘
+ * ```
  *
  * "Default" erscheint nur, wenn die Sortierung vom App-Default abweicht — sonst ist der Knopf
  * eine tote Fläche. Die Sortierung ist pro Ordner gespeichert, zurückgesetzt wird also der

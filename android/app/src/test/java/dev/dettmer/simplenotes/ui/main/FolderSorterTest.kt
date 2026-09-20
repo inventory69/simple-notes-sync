@@ -7,7 +7,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class FolderSorterTest {
-
     private val folders = listOf(
         Folder("banana", color = "#FBBC04"),
         Folder("Apple", color = null),
