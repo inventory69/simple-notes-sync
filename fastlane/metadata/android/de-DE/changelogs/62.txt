@@ -1,0 +1,9 @@
+📦 v2.18.1 - Passt ins Paket
+
+• Fix: eine lange Liste im Widget riss alle Widgets bis zum Neustart mit
+• Fix: alle Widgets teilen sich jetzt ein gemessenes Payload-Budget
+• Fix: bildlastige Notizen lassen das Widget nicht mehr veralten
+• Fix: Links aus Notizen öffnen in eigener Task, nicht in der der App
+• Übersetzungsupdate: Norwegisch, Chinesisch
+
+Danke an @i-gusarov, @xdpirate, @heretic43!

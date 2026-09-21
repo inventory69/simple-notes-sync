@@ -1,0 +1,9 @@
+📦 v2.18.1 - Fits in one parcel
+
+• Fix: a long list in a widget took every widget down until a reboot
+• Fix: all widgets now share one measured payload budget
+• Fix: image-heavy notes no longer leave a widget stale
+• Fix: links from notes open in their own task, not on the app's
+• Updated translations: Norwegian, Chinese
+
+Thanks to @i-gusarov, @xdpirate, @heretic43!

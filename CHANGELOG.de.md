@@ -8,6 +8,34 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.18.1] - 2026-09-21
+
+### 🐛 Bug-Fixes
+
+**Ein Widget mit langer Liste riss alle Widgets mit** ([3cf8fc6](https://github.com/inventory69/simple-notes-sync/commit/3cf8fc6), [e51b5fe](https://github.com/inventory69/simple-notes-sync/commit/e51b5fe), [9e9f25c](https://github.com/inventory69/simple-notes-sync/commit/9e9f25c), [c113ccc](https://github.com/inventory69/simple-notes-sync/commit/c113ccc))
+- Ein Widget, dessen RemoteViews den Binder-Puffer des Launchers sprengen, zeichnet nicht einfach nichts. AppWidgetService wirft eine TransactionTooLargeException, protokolliert "Widget host dead" und verwirft die Host-Callbacks: Danach aktualisiert sich kein einziges Widget auf dem Homescreen mehr, bis der Launcher neu startet - für die meisten heißt das Neustart des Geräts
+- Die Item-Limits lagen weit über diesem Budget. `SizeMode.Responsive` verschärfte das noch, weil es das Layout einmal pro Breakpoint übersetzt und alle sieben Varianten in eine einzige RemoteViews packt, jede Zeile also siebenfach bezahlt wurde. Die Ordnerzeilen über der Notizliste hatten gar kein Limit
+- Das Notiz-Widget rendert jetzt in seiner exakten Größe und rendert beim Skalieren neu, statt sechs ungenutzte Layouts mitzuschicken. Ordner und Notizen teilen sich im Listen-Widget ein Budget. Und weil AppWidgetService die RemoteViews aller Widgets eines Hosts in einem Rutsch durch denselben 1-MB-Puffer schickt, ist auch das Budget geteilt: `WidgetPayloadBudget` verteilt 400 KB auf die Zahl der platzierten Widgets und leitet die Zeilenzahl aus den gemessenen Kosten pro Zeile ab. Ein einzelnes Widget rendert damit 42 Listenzeilen, 85 Checklisten-Einträge oder 50 Markdown-Elemente - mehr als die alten festen Grenzen - während mehrere Widgets zusammen im Puffer bleiben
+- Die Zahlen stammen aus Messungen auf dem Gerät, nicht aus Schätzungen ([f38aebc](https://github.com/inventory69/simple-notes-sync/commit/f38aebc)): `GlanceAppWidget.compose()` baut exakt die RemoteViews, die `update()` verschickt, `Parcel.dataSize()` darauf liefert also genau den Wert, an dem die Exception hängt. Gegen drei echte Fehlschläge gegengeprüft liegt die Abweichung unter zwei Prozent
+- Danke an [@i-gusarov](https://github.com/i-gusarov) für die Meldung!
+
+**Eine bildlastige Notiz ließ ihr Widget still veralten** ([2a7857b](https://github.com/inventory69/simple-notes-sync/commit/2a7857b))
+- Das Bildbudget war als Schutz derselben 1-MB-Transaktion dokumentiert, war es aber nie: Bitmaps reisen durch Shared Memory, acht Bilder erzeugen also gar keine große Transaktion. Es greift das Limit von AppWidgetService selbst, sechsmal Bildschirmbreite mal Höhe, und wer es überschreitet bekommt eine IllegalArgumentException - das Widget zeigt weiter den alten Stand, ohne sichtbaren Fehler
+- Außerdem wurde das Budget vor dem Dekodieren geprüft, das letzte Bild konnte es also um einen ganzen Decode überschreiten. Geprüft wird jetzt danach, mit dem Alt-Text als Rückfall, und das tatsächlich geltende Limit steht daneben
+
+**Links aus einer Notiz landeten im Task der App** ([c52dae4](https://github.com/inventory69/simple-notes-sync/commit/c52dae4))
+- Der Standard-Link-Handler von Compose startet die Activity ohne Flags, eine über einen Notiz-Link geöffnete App landet damit im Task der Notizen-App, sofern sie den Standard-Launch-Mode nutzt. Der Launcher holt danach immer diesen Task nach vorn: Ein Tipp auf das Simple-Notes-Icon zeigte die fremde App statt der Notizen, bis man die Karte aus den Recents wischte
+- Links öffnen jetzt in einem eigenen Task, im Editor ebenso wie im Über- und im Mitwirkenden-Bildschirm. Ein Link mit unbekanntem Schema wie `foo://` legt die App außerdem nicht mehr lahm - der alte Handler warf dort, der neue fängt es ab
+- Danke an den Melder, der den Fall mit der ARTE-TV-App geschickt hat!
+
+### 🌍 Übersetzungen
+
+- **Norwegisch Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Chinesisch (vereinfacht)** (100%): [@heretic43](https://github.com/heretic43)
+- **Russisch**: [@disfated](https://github.com/disfated) / Yury Pavlovsky - der String für das Zurücksetzen der Sortierung
+
+---
+
 ## [2.18.0] - 2026-09-20
 
 ### ✨ Neue Features

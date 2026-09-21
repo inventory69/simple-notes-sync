@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.18.1] - 2026-09-21
+
+### 🐛 Bug Fixes
+
+**One Widget With a Long List Took Every Widget Down** ([3cf8fc6](https://github.com/inventory69/simple-notes-sync/commit/3cf8fc6), [e51b5fe](https://github.com/inventory69/simple-notes-sync/commit/e51b5fe), [9e9f25c](https://github.com/inventory69/simple-notes-sync/commit/9e9f25c), [c113ccc](https://github.com/inventory69/simple-notes-sync/commit/c113ccc))
+- A widget whose RemoteViews exceed the launcher's binder buffer does not merely fail to draw. AppWidgetService throws TransactionTooLargeException, logs "Widget host dead" and drops the host callbacks, so every widget on the home screen stops updating until the launcher restarts - for most users that means a reboot
+- The item limits sat far above that budget. `SizeMode.Responsive` made it worse by translating the layout once per breakpoint and packing all seven variants into a single RemoteViews, so every row was paid for seven times, and the folder rows above the notes list had no limit at all
+- The note widget now renders at its exact size and re-renders on resize instead of shipping six unused layouts. Folders and notes share one budget in the list widget. And because AppWidgetService delivers the RemoteViews of all widgets of a host in one go, through the same 1 MB buffer, the budget itself is shared: `WidgetPayloadBudget` divides 400 KB by the number of placed widgets and derives the row counts from the measured cost per row. A single widget now renders 42 list rows, 85 checklist items or 50 markdown items - more than the old fixed caps - while several widgets together stay inside the buffer
+- The numbers come from measurements on a device rather than estimates ([f38aebc](https://github.com/inventory69/simple-notes-sync/commit/f38aebc)): `GlanceAppWidget.compose()` builds the exact RemoteViews that `update()` sends, so `Parcel.dataSize()` on it gives the number the exception actually hangs on. Cross-checked against three real failures, the deviation stays under two percent
+- Thanks to [@i-gusarov](https://github.com/i-gusarov) for the report!
+
+**An Image-Heavy Note Could Leave Its Widget Silently Stale** ([2a7857b](https://github.com/inventory69/simple-notes-sync/commit/2a7857b))
+- The image budget was documented as protecting the same 1 MB transaction, which it never did: bitmaps travel through shared memory, so eight images produce no large transaction at all. The limit that does apply is AppWidgetService's own, six times screen width times height, and overshooting it throws an IllegalArgumentException that leaves the widget showing old content with no error in sight
+- The budget was also checked before decoding, so the last image could exceed it by a full decode. It is now checked after decoding, with the alt text as the fallback, and the limit that actually governs this is recorded next to it
+
+**Links From a Note Landed on the App's Own Task** ([c52dae4](https://github.com/inventory69/simple-notes-sync/commit/c52dae4))
+- Compose's default link handler starts the activity without flags, so an app opened from a note link joins the notes app's task whenever it uses the standard launch mode. The launcher then keeps bringing that task to the front: tapping the Simple Notes icon showed the foreign app instead of the notes, until the card was swiped out of Recents
+- Links now open in their own task, in the editor as well as in the About and Contributors screens. A link with an unknown scheme such as `foo://` no longer takes the app down either - the default handler threw where the new one falls back quietly
+- Thanks to the reporter who mailed in the ARTE TV case!
+
+### 🌍 Translations
+
+- **Norwegian Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+- **Russian**: [@disfated](https://github.com/disfated) / Yury Pavlovsky - the sort reset string
+
+---
+
 ## [2.18.0] - 2026-09-20
 
 ### ✨ New Features
