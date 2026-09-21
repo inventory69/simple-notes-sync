@@ -1,8 +1,6 @@
 package dev.dettmer.simplenotes.widget
 
 import android.content.Context
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
@@ -16,12 +14,9 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 /**
  * 🆕 v1.8.0: Homescreen Widget für Notizen und Checklisten
  *
- * Unterstützt fünf responsive Größen für breite und schmale Layouts:
- * - SMALL (110x80dp): Nur Titel
- * - NARROW_MEDIUM (110x110dp): Schmal + Vorschau / kompakte Checkliste
- * - NARROW_LARGE (110x250dp): Schmal + voller Inhalt
- * - WIDE_MEDIUM (250x110dp): Breit + Vorschau
- * - WIDE_LARGE (250x250dp): Breit + voller Inhalt / interaktive Checkliste
+ * Das Layout richtet sich nach der echten Widget-Größe (`DpSize.toSizeClass()` in
+ * [NoteWidgetContent]): nur Titel, Vorschau, scrollbare Liste oder voller Inhalt,
+ * je schmal und breit.
  *
  * Features:
  * - Material You Dynamic Colors
@@ -33,28 +28,16 @@ import dev.dettmer.simplenotes.storage.NotesStorage
  * - NoteType-differenzierte Icons
  */
 class NoteWidget : GlanceAppWidget() {
-    companion object {
-        // Responsive Breakpoints — schmale + breite Spalten
-        val SIZE_SMALL = DpSize(110.dp, 80.dp) // Schmal+kurz: nur Titel
-        val SIZE_NARROW_MEDIUM = DpSize(110.dp, 110.dp) // Schmal+mittel: Vorschau
-        val SIZE_NARROW_SCROLL = DpSize(110.dp, 150.dp) // 🆕 v1.8.1: Schmal+scroll (Standard 3x2)
-        val SIZE_NARROW_LARGE = DpSize(110.dp, 250.dp) // Schmal+groß: voller Inhalt
-        val SIZE_WIDE_MEDIUM = DpSize(250.dp, 110.dp) // Breit+mittel: Vorschau
-        val SIZE_WIDE_SCROLL = DpSize(250.dp, 150.dp) // 🆕 v1.8.1: Breit+scroll (Standard 3x2 breit)
-        val SIZE_WIDE_LARGE = DpSize(250.dp, 250.dp) // Breit+groß: voller Inhalt
-    }
-
-    override val sizeMode = SizeMode.Responsive(
-        setOf(
-            SIZE_SMALL,
-            SIZE_NARROW_MEDIUM,
-            SIZE_NARROW_SCROLL,
-            SIZE_NARROW_LARGE,
-            SIZE_WIDE_MEDIUM,
-            SIZE_WIDE_SCROLL,
-            SIZE_WIDE_LARGE
-        )
-    )
+    /**
+     * Issue #154: `SizeMode.Responsive` übersetzte die Komposition **einmal je Breakpoint** und
+     * packte alle sieben Varianten in eine RemoteViews. Das war der Multiplikator, der die
+     * Transaktion über den Binder-Puffer des Launchers trieb und dort den AppWidget-Host riss.
+     * `Exact` rendert genau die Größe, die das Widget gerade hat — dafür bei jeder
+     * Größenänderung neu, was billiger ist als der Vorrat für sechs ungenutzte Layouts.
+     * Bonus: `LocalSize` liefert jetzt die echte Breite statt des Breakpoints.
+     * Gleiches Verfahren wie in [NotesListWidget].
+     */
+    override val sizeMode = SizeMode.Exact
 
     override val stateDefinition = PreferencesGlanceStateDefinition
 
