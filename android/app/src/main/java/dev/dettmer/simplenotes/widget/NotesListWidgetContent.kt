@@ -51,15 +51,6 @@ import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 /** Vorschauzeilen bzw. Checklisten-Einträge pro Karte — 1 bei aktivem „Nur Titel" (Discussion #110). */
 private const val NOTE_CARD_BODY_MAX_LINES = 4
 
-/**
- * Zeilenbudget für die ganze Liste (Ordner **und** Notizen zusammen), Issue #154. Eine Zeile
- * kostet rund 8,6 KB in der RemoteViews-Transaktion. Bei 20 Zeilen waren das gemessene 217 KB,
- * und damit fiel der AppWidget-Host des Launchers reproduzierbar aus, sobald sein Binder-Puffer
- * unter Last stand (Stresstest: Launcher kalt, alle Widgets aktualisieren gleichzeitig — 2 von
- * 3 Läufen). Bei 15 und 12 Zeilen lief derselbe Test sauber durch; 12 lässt Luft.
- */
-private const val WIDGET_MAX_LIST_ROWS = 12
-
 private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL
 
@@ -101,7 +92,13 @@ fun NotesListWidgetContent(
     hideHeader: Boolean = false,
     hidePreview: Boolean = false,
     fontSizeScale: Float = 1.0f,
-    showTypeIcon: Boolean = true
+    showTypeIcon: Boolean = true,
+    /**
+     * Zeilenbudget für die ganze Liste, Ordner **und** Notizen zusammen (Issue #154). Eine Zeile
+     * kostet rund 9 KB in der RemoteViews-Transaktion; wie viele davon hineinpassen, entscheidet
+     * [WidgetPayloadBudget] anhand der Zahl der platzierten Widgets.
+     */
+    maxRows: Int = WidgetPayloadBudget.forWidgetCount(widgetCount = 3).listRows
 ) {
     val context = LocalContext.current
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
@@ -135,8 +132,8 @@ fun NotesListWidgetContent(
             } else {
                 // Issue #154: ein Budget für die ganze Liste, nicht je Sorte. Ordner gehen vor,
                 // Notizen füllen den Rest — sonst hängt die Transaktionsgröße an der Summe.
-                val visibleFolders = folders.take(WIDGET_MAX_LIST_ROWS)
-                val visibleNotes = notes.take(WIDGET_MAX_LIST_ROWS - visibleFolders.size)
+                val visibleFolders = folders.take(maxRows)
+                val visibleNotes = notes.take(maxRows - visibleFolders.size)
                 val pinned = visibleNotes.filter { it.isPinned == true }
                 val others = visibleNotes.filter { it.isPinned != true }
                 val showNotesHeader = others.isNotEmpty() && (pinned.isNotEmpty() || hasPinnedNotes)

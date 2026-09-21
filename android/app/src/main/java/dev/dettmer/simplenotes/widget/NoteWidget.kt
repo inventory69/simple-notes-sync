@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.widget
 
 import android.content.Context
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
@@ -43,6 +44,8 @@ class NoteWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val storage = NotesStorage(context)
+        // Vor provideContent: die Zahl der platzierten Widgets steht nur im Suspend-Kontext fest.
+        val itemCaps = WidgetPayloadBudget.forCurrentWidgets(context)
 
         provideContent {
             val prefs = currentState<Preferences>()
@@ -59,14 +62,16 @@ class NoteWidget : GlanceAppWidget() {
             val note = noteId?.let { storage.loadNoteSync(it) }?.takeIf { it.trashedAt == null }
 
             GlanceTheme {
-                NoteWidgetContent(
-                    note = note,
-                    isLocked = isLocked,
-                    showOptions = showOptions,
-                    bgOpacity = bgOpacity,
-                    fontSizeScale = fontSizeScale,
-                    glanceId = id
-                )
+                CompositionLocalProvider(LocalWidgetItemCaps provides itemCaps) {
+                    NoteWidgetContent(
+                        note = note,
+                        isLocked = isLocked,
+                        showOptions = showOptions,
+                        bgOpacity = bgOpacity,
+                        fontSizeScale = fontSizeScale,
+                        glanceId = id
+                    )
+                }
             }
         }
     }

@@ -41,6 +41,9 @@ class NotesListWidget : GlanceAppWidget() {
     // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
     @Suppress("CyclomaticComplexMethod")
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Vor provideContent: die Zahl der platzierten Widgets steht nur im Suspend-Kontext fest.
+        val maxRows = WidgetPayloadBudget.forCurrentWidgets(context).listRows
+
         provideContent {
             val prefs = currentState<Preferences>()
             // 🔧 Daten hier statt in provideGlance laden — update() rekomponiert nur diese Lambda,
@@ -103,7 +106,8 @@ class NotesListWidget : GlanceAppWidget() {
                     hideHeader = hideHeader,
                     hidePreview = hidePreview,
                     fontSizeScale = fontSizeScale,
-                    showTypeIcon = showTypeIcon
+                    showTypeIcon = showTypeIcon,
+                    maxRows = maxRows
                 )
             }
         }
@@ -137,7 +141,7 @@ fun applyFilterAndSort(
 
     val result = sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
 
-    // Gedeckelt wird erst beim Rendern — `WIDGET_MAX_LIST_ROWS` in [NotesListWidgetContent]
+    // Gedeckelt wird erst beim Rendern — der `maxRows`-Parameter von [NotesListWidgetContent]
     // teilt das Budget zwischen Ordnern und Notizen auf (Issue #154).
     return result
 }

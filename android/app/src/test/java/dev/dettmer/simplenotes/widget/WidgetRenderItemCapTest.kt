@@ -7,9 +7,10 @@ import org.junit.Test
 
 /**
  * Issue #154: Die Zeilenzahl im Widget ist ein Stabilitätslimit, kein Schönheitslimit — jedes Item
- * kostet ~9,8 KB in der RemoteViews-Transaktion, und ein zu großer Parcel tötet den AppWidget-Host
- * des Launchers. Der Test hält fest, dass `flattenToRenderItems` sein `maxItems` **nie**
- * überschreitet, auch nicht um das eine Item, das der Block-Spacer vor der Prüfung einschiebt.
+ * kostet ~3,2 KB in der RemoteViews-Transaktion, und ein zu großer Parcel tötet den AppWidget-Host
+ * des Launchers. Wie viele Items erlaubt sind, rechnet [WidgetPayloadBudget] aus; dieser Test hält
+ * fest, dass `flattenToRenderItems` das übergebene `maxItems` **nie** überschreitet, auch nicht um
+ * das eine Item, das der Block-Spacer vor der Prüfung einschiebt.
  */
 class WidgetRenderItemCapTest {
     private fun renderItems(content: String, maxItems: Int) =

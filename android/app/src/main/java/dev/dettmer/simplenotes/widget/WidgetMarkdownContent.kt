@@ -39,19 +39,6 @@ import java.io.File
 
 private const val TAG = "WidgetMarkdownContent"
 
-/**
- * Item-Budget pro Widget-Render (Issue #154). `SizeMode.Responsive` übersetzt die `LazyColumn`
- * einmal je Breakpoint — bei sieben Stück kostet ein Item rund 9,8 KB in der
- * RemoteViews-Transaktion. 50 Items waren gemessene ~540 KB und sprengen den 1-MB-Binder-Puffer
- * des Launchers: `AppWidgetService` wirft `TransactionTooLargeException`, meldet
- * `Widget host dead` und **alle** Widgets dieses Hosts bleiben bis zum Launcher-Neustart tot.
- * 20 Items landen bei ~250 KB.
- *
- * ponytail: fester Zähler statt Byte-Budget wie bei den Bildern — die Layout-Struktur dominiert
- * die Transaktionsgröße, der Text ist zweitrangig. Byte-Budget erst, wenn sehr lange Zeilen das
- * in der Praxis kippen. Mehr Inhalt gäbe es nur über weniger Breakpoints in [NoteWidget].
- */
-private const val WIDGET_MAX_MD_ITEMS = 20
 private const val CODE_BLOCK_MAX_LINES = 10
 
 /**
@@ -249,7 +236,9 @@ internal fun WidgetMarkdownView(
     val context = LocalContext.current
     val renderItems = flattenToRenderItems(
         blocks = MarkdownEngine.parse(content),
-        maxItems = WIDGET_MAX_MD_ITEMS,
+        // Zeilenbudget aus [WidgetPayloadBudget]: ein Item kostet rund 3,2 KB in der
+        // RemoteViews-Transaktion (Issue #154).
+        maxItems = LocalWidgetItemCaps.current.markdownItems,
         // provideContent läuft auf einem Glance-SessionWorker-Thread, nicht dem Main-Thread —
         // synchrones Datei-IO hier ist sicher (Precedent: NoteWidget.kt).
         loadImage = { AssetStore(context).getAssetFile(it).let(::decodeWidgetBitmap) }
