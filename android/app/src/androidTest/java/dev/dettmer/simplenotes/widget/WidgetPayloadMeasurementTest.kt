@@ -2,8 +2,8 @@ package dev.dettmer.simplenotes.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
-import android.os.Bundle
 import android.os.Build
+import android.os.Bundle
 import android.os.Parcel
 import android.util.Log
 import androidx.datastore.preferences.core.Preferences
@@ -47,7 +47,6 @@ import org.junit.runner.RunWith
 @OptIn(ExperimentalGlanceApi::class)
 @RunWith(AndroidJUnit4::class)
 class WidgetPayloadMeasurementTest {
-
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val storage = NotesStorage(context)
 

@@ -33,7 +33,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class WidgetStressSetupTest {
-
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     /**
@@ -50,14 +49,6 @@ class WidgetStressSetupTest {
     }
 
     /**
-     * Loest ein Update aller Widgets aus — der Auslöser des Stresstests.
-     *
-     * Nicht per `am broadcast APPWIDGET_UPDATE`: das ist ein geschuetzter Broadcast, den die
-     * adb-Shell nicht senden darf ("Permission Denial: ... from unknown caller"), sodass der
-     * Test stumm nichts misst. [WidgetUpdateHelper] ist ohnehin der Weg, den die App selbst
-     * geht (Skill `widget-glance`), also misst das hier den echten Pfad.
-     */
-    /**
      * Wie [seedWorstCase], laesst die Notiz-Widgets aber leer. Damit traegt praktisch nur das
      * Listen-Widget zur Transaktion bei — noetig, um zu pruefen, ob das Budget je Widget oder
      * fuer alle Widgets zusammen gilt.
@@ -70,6 +61,14 @@ class WidgetStressSetupTest {
         delay(COMPOSE_GRACE_MS)
     }
 
+    /**
+     * Loest ein Update aller Widgets aus — der Auslöser des Stresstests.
+     *
+     * Nicht per `am broadcast APPWIDGET_UPDATE`: das ist ein geschuetzter Broadcast, den die
+     * adb-Shell nicht senden darf ("Permission Denial: ... from unknown caller"), sodass der
+     * Test stumm nichts misst. [WidgetUpdateHelper] ist ohnehin der Weg, den die App selbst
+     * geht (Skill `widget-glance`), also misst das hier den echten Pfad.
+     */
     @Test
     fun refreshAll() {
         runBlocking {
@@ -162,12 +161,12 @@ class WidgetStressSetupTest {
                 )
             )
         }
-
     }
 
     private companion object {
         const val TAG = "WidgetStress"
         const val COMPOSE_GRACE_MS = 15_000L
+
         /** Ueber `-e pinProvider <FQCN>` von aussen gesetzt; Default ist das Notiz-Widget. */
         val PIN_PROVIDER: String = InstrumentationRegistry.getArguments()
             .getString("pinProvider", "dev.dettmer.simplenotes.widget.NoteWidgetReceiver")

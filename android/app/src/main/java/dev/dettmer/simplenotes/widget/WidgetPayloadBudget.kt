@@ -39,7 +39,6 @@ import dev.dettmer.simplenotes.utils.Logger
  * geräteabhängig.
  */
 internal object WidgetPayloadBudget {
-
     /** Gemeinsames Budget aller platzierten Widgets. ~20 % Abstand zur gemessenen Grenze. */
     private const val SHARED_BUDGET_BYTES = 400 * 1024
 
@@ -78,8 +77,11 @@ internal object WidgetPayloadBudget {
             0
         }
         return forWidgetCount(count).also {
-            Logger.d(TAG, "$count Widget(s) platziert → Liste ${it.listRows}, " +
-                "Checkliste ${it.checklistItems}, Markdown ${it.markdownItems}")
+            Logger.d(
+                TAG,
+                "$count Widget(s) platziert → Liste ${it.listRows}, " +
+                    "Checkliste ${it.checklistItems}, Markdown ${it.markdownItems}"
+            )
         }
     }
 

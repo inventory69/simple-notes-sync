@@ -12,7 +12,6 @@ import org.junit.Test
  * neuen Messwerten ändern dürfen.
  */
 class WidgetPayloadBudgetTest {
-
     @Test
     fun `more widgets means fewer rows each`() {
         val one = WidgetPayloadBudget.forWidgetCount(1)
