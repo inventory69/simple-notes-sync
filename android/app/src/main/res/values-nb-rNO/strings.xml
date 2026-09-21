@@ -949,4 +949,24 @@
     <string name="widget_quick_edit_hint">Notattekst</string>
     <string name="widget_quick_edit_add_item_title">Legg til element</string>
     <string name="widget_quick_edit_add_item_hint">Nytt element</string>
+    <string name="sort_reset_default">Standard</string>
+    <string name="import_error_backup_file">Dette er en Simple Notes-sikkerhetskopi. Gjenopprett den under Innstillinger → Sikkerhetskopi og gjenoppretting → Gjenopprett fra fil.</string>
+    <string name="md_toolbar_table">Tabell</string>
+    <string name="md_table_header_placeholder">Overskrift</string>
+    <string name="md_table_cell_placeholder">Celle</string>
+    <string name="error_backup_unreadable">Sikkerhetskopifil kunne ikke leses</string>
+    <string name="error_backup_encrypted_password_required">Denne sikkerhetskopien er kryptert. Vennligst fyll inn passordet.</string>
+    <string name="error_backup_decryption_failed">Dekryptering feilet: %s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="one">%d notat i sikkerhetskopien kunne ikke leses og ble hoppet over</item>
+        <item quantity="other">%d notater i sikkerhetskopien kunne ikke leses og ble hoppet over</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="one">%d notat lagret</item>
+        <item quantity="other">%d notater lagret</item>
+    </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="one">%d notat gjenopprettet fra tjeneren</item>
+        <item quantity="other">%d notater gjenopprettet fra tjeneren</item>
+    </plurals>
 </resources>

@@ -985,4 +985,5 @@
     <string name="widget_quick_edit_add_item_title">Добавить пункт</string>
     <string name="widget_quick_edit_add_item_hint">Новый пункт</string>
     <string name="toast_image_copied">Изображение скопировано в буфер обмена</string>
+    <string name="sort_reset_default">По-умолчанию</string>
 </resources>
