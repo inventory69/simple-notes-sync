@@ -54,10 +54,19 @@ private const val TAG = "WidgetMarkdownContent"
 private const val WIDGET_MAX_MD_ITEMS = 20
 private const val CODE_BLOCK_MAX_LINES = 10
 
-/** Bitmap-Budget pro Widget-Render. Binder-Limit ist ~1 MB für die gesamte
- *  RemoteViews-Transaktion — die Hälfte bleibt für Layout und Text. Ein fester Bildzähler
- *  träfe die Grenze nicht: der Speicher hängt am Seitenverhältnis (ein quadratisches Bild
- *  kostet bei gleicher längster Kante das Zweieinhalbfache eines 16:6-Bildes). */
+/**
+ * Bitmap-Budget pro Widget-Render. Bitmaps reisen **nicht** im Binder-Parcel (gemessen: eine
+ * Notiz mit acht Bildern erzeugt keine große Transaktion), sondern über Shared Memory. Die
+ * Grenze setzt `AppWidgetService`: `6 × Bildschirmbreite × Bildschirmhöhe`, also 2,2 MB auf
+ * einem 480×800-Gerät. Wer sie reißt, bekommt ein `IllegalArgumentException` und das Widget
+ * aktualisiert stumm nicht mehr. Glance rendert auch bei `SizeMode.Exact` mehrfach (Hoch- und
+ * Querformat), gemessen 1,0–1,5 MB je Widget bei vollem Budget — passt, aber ohne viel Luft.
+ *
+ * Ein fester Bildzähler träfe die Grenze nicht: der Speicher hängt am Seitenverhältnis (ein
+ * quadratisches Bild kostet bei gleicher längster Kante das Zweieinhalbfache eines 16:6-Bildes).
+ * Das Budget gilt hart — vor Issue #154 wurde es *vor* dem Decode geprüft, sodass das letzte
+ * Bild um bis zu [WIDGET_IMAGE_MAX_DIM]² überschießen durfte.
+ */
 private const val WIDGET_IMAGE_BUDGET_BYTES = 512 * 1024
 
 /** Decode-Ziel für Widget-Bilder (Mini-Canvas): längste Seite max. 256px, RGB_565. */
@@ -200,7 +209,12 @@ internal fun flattenToRenderItems(
             // als eigene Zeile darunter. Sichtbar nur noch im Decode-Fehler-Fall; erst zusammenlegen,
             // wenn das in der Praxis auffällt.
             is MarkdownBlock.Image -> {
-                val bitmap = if (bytesUsed < WIDGET_IMAGE_BUDGET_BYTES) loadImage(block.assetName) else null
+                val decoded = if (bytesUsed < WIDGET_IMAGE_BUDGET_BYTES) loadImage(block.assetName) else null
+                // Erst nach dem Decode ist die echte Größe bekannt — ein Bild, das das Budget
+                // sprengen würde, fällt auf den Alt-Text zurück statt es zu überschreiten.
+                val bitmap = decoded?.takeIf {
+                    bytesUsed + it.allocationByteCount <= WIDGET_IMAGE_BUDGET_BYTES
+                }
                 val previousRow = result.lastOrNull() as? WidgetRenderItem.ImageRow
                 if (bitmap != null) {
                     bytesUsed += bitmap.allocationByteCount
