@@ -51,6 +51,15 @@ import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 /** Vorschauzeilen bzw. Checklisten-Einträge pro Karte — 1 bei aktivem „Nur Titel" (Discussion #110). */
 private const val NOTE_CARD_BODY_MAX_LINES = 4
 
+/**
+ * Zeilenbudget für die ganze Liste (Ordner **und** Notizen zusammen), Issue #154. Eine Zeile
+ * kostet rund 8,6 KB in der RemoteViews-Transaktion. Bei 20 Zeilen waren das gemessene 217 KB,
+ * und damit fiel der AppWidget-Host des Launchers reproduzierbar aus, sobald sein Binder-Puffer
+ * unter Last stand (Stresstest: Launcher kalt, alle Widgets aktualisieren gleichzeitig — 2 von
+ * 3 Läufen). Bei 15 und 12 Zeilen lief derselbe Test sauber durch; 12 lässt Luft.
+ */
+private const val WIDGET_MAX_LIST_ROWS = 12
+
 private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL
 
@@ -124,8 +133,12 @@ fun NotesListWidgetContent(
             if (notes.isEmpty() && folders.isEmpty()) {
                 EmptyNotesState(modifier = GlanceModifier.fillMaxWidth().defaultWeight(), fontSizeScale = fontSizeScale)
             } else {
-                val pinned = notes.filter { it.isPinned == true }
-                val others = notes.filter { it.isPinned != true }
+                // Issue #154: ein Budget für die ganze Liste, nicht je Sorte. Ordner gehen vor,
+                // Notizen füllen den Rest — sonst hängt die Transaktionsgröße an der Summe.
+                val visibleFolders = folders.take(WIDGET_MAX_LIST_ROWS)
+                val visibleNotes = notes.take(WIDGET_MAX_LIST_ROWS - visibleFolders.size)
+                val pinned = visibleNotes.filter { it.isPinned == true }
+                val others = visibleNotes.filter { it.isPinned != true }
                 val showNotesHeader = others.isNotEmpty() && (pinned.isNotEmpty() || hasPinnedNotes)
 
                 LazyColumn(
@@ -147,13 +160,13 @@ fun NotesListWidgetContent(
                         )
                     }
 
-                    if (folders.isNotEmpty()) {
+                    if (visibleFolders.isNotEmpty()) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_folders), fontSizeScale) }
                     }
-                    items(folders.size) { i ->
+                    items(visibleFolders.size) { i ->
                         FolderCard(
-                            folder = folders[i],
-                            noteCount = folderNoteCounts[folders[i].name] ?: 0,
+                            folder = visibleFolders[i],
+                            noteCount = folderNoteCounts[visibleFolders[i].name] ?: 0,
                             bgOpacity = cardBgOpacity,
                             fontSizeScale = fontSizeScale
                         )
