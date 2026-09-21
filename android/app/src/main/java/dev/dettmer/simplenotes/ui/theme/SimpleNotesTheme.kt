@@ -17,9 +17,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import dev.dettmer.simplenotes.security.AppLock
+import dev.dettmer.simplenotes.utils.ExternalUriHandler
 
 /**
  * Shared Material 3 theme.
@@ -129,7 +131,15 @@ fun SimpleNotesTheme(
     // IMPORTANT: NavController and other persistent state must be created ABOVE
     // this composable (i.e. before SimpleNotesTheme is called) so they survive
     // the composition recreation that Crossfade triggers on key change.
-    CompositionLocalProvider(LocalFontSizeMultiplier provides (fontMultiplier ?: 1.0f)) {
+
+    // ExternalUriHandler statt Composes Default: Links müssen in einem eigenen Task landen,
+    // sonst bleibt die fremde App auf unserem Task-Stack liegen (siehe ExternalUriHandler).
+    val uriHandler = remember(view.context) { ExternalUriHandler(view.context) }
+
+    CompositionLocalProvider(
+        LocalFontSizeMultiplier provides (fontMultiplier ?: 1.0f),
+        LocalUriHandler provides uriHandler
+    ) {
         Crossfade(
             targetState = themeMode to colorTheme,
             animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),

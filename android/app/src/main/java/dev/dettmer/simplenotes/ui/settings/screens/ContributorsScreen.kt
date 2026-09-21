@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
-import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,8 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.core.net.toUri
 import com.google.gson.Gson
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Contributor
@@ -58,15 +57,11 @@ fun ContributorsScreen(onBack: () -> Unit) {
 
 @Composable
 private fun ContributorRow(contributor: Contributor) {
-    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, "https://github.com/${contributor.login}".toUri())
-                )
-            }
+            .clickable { uriHandler.openUri("https://github.com/${contributor.login}") }
             .padding(horizontal = Dimensions.SpacingLarge, vertical = Dimensions.SpacingMediumLarge),
         verticalAlignment = Alignment.CenterVertically
     ) {

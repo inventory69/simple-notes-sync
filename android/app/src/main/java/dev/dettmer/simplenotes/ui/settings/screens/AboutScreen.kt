@@ -1,6 +1,5 @@
 package dev.dettmer.simplenotes.ui.settings.screens
 
-import android.content.Intent
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -38,11 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
-import androidx.core.net.toUri
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsRoute
@@ -60,6 +59,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 @Composable
 fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
 
     // 🔧 v1.11.0: Easter-Egg-Tap-Counter für Entwickleroptionen
@@ -213,30 +213,21 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                     icon = Icons.Default.Code,
                     title = stringResource(R.string.about_github_title),
                     subtitle = stringResource(R.string.about_github_subtitle),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, githubRepoUrl.toUri())
-                        context.startActivity(intent)
-                    }
+                    onClick = { uriHandler.openUri(githubRepoUrl) }
                 )
 
                 AboutLinkItem(
                     icon = Icons.Default.Person,
                     title = stringResource(R.string.about_developer_title),
                     subtitle = stringResource(R.string.about_developer_subtitle),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, githubProfileUrl.toUri())
-                        context.startActivity(intent)
-                    }
+                    onClick = { uriHandler.openUri(githubProfileUrl) }
                 )
 
                 AboutLinkItem(
                     icon = Icons.Default.Policy,
                     title = stringResource(R.string.about_license_title),
                     subtitle = stringResource(R.string.about_license_subtitle),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, licenseUrl.toUri())
-                        context.startActivity(intent)
-                    }
+                    onClick = { uriHandler.openUri(licenseUrl) }
                 )
             }
 
