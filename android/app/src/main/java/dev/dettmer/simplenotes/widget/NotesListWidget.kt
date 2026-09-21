@@ -33,7 +33,17 @@ import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_DIRECTION
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_SORT_OPTION
 import kotlinx.coroutines.runBlocking
 
-private const val NOTES_LIST_WIDGET_MAX_NOTES = 50
+/**
+ * Gleiche Grenze wie `WIDGET_MAX_MD_ITEMS` in [WidgetMarkdownContent] (Issue #154), nur ohne
+ * Breakpoint-Faktor: `SizeMode.Exact` rendert einmal, eine `NoteCard` kostet aber allein ~8,6 KB.
+ * 50 Karten waren gemessene 505 KB — dieselbe Größenordnung, in der der AppWidget-Host des
+ * Launchers stirbt und danach **alle** Widgets dieses Hosts bis zum Neustart tot bleiben.
+ * 20 Karten landen bei ~250 KB.
+ *
+ * ponytail: die Ordnerliste darüber ist bewusst ungedeckelt — ihre Länge ist in der Praxis
+ * einstellig. Deckeln, falls jemand mit dreistelligen Ordnerzahlen auftaucht.
+ */
+private const val NOTES_LIST_WIDGET_MAX_NOTES = 20
 
 class NotesListWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact

@@ -54,9 +54,12 @@ import dev.dettmer.simplenotes.utils.Logger
 
 private const val TAG = "NoteWidgetContent"
 
-// Maximum checklist items to render in the widget to prevent
-// TransactionTooLargeException (1MB Binder limit for RemoteViews).
-private const val WIDGET_MAX_CHECKLIST_ITEMS = 100
+/**
+ * Siehe `WIDGET_MAX_MD_ITEMS` in [WidgetMarkdownContent]: eine interaktive Checkbox-Zeile kostet
+ * dasselbe (~9,5 KB je Item über alle Breakpoints). 100 Items waren gemessene 949 KB und haben den
+ * Widget-Host jedes Mal getötet (Issue #154).
+ */
+private const val WIDGET_MAX_CHECKLIST_ITEMS = 25
 
 /**
  * 🆕 v1.8.0: Glance Composable Content für das Notiz-Widget

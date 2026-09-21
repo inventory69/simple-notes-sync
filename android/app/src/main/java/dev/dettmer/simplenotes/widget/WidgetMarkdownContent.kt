@@ -38,7 +38,20 @@ import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
 
 private const val TAG = "WidgetMarkdownContent"
-private const val WIDGET_MAX_MD_ITEMS = 50
+
+/**
+ * Item-Budget pro Widget-Render (Issue #154). `SizeMode.Responsive` übersetzt die `LazyColumn`
+ * einmal je Breakpoint — bei sieben Stück kostet ein Item rund 9,8 KB in der
+ * RemoteViews-Transaktion. 50 Items waren gemessene ~540 KB und sprengen den 1-MB-Binder-Puffer
+ * des Launchers: `AppWidgetService` wirft `TransactionTooLargeException`, meldet
+ * `Widget host dead` und **alle** Widgets dieses Hosts bleiben bis zum Launcher-Neustart tot.
+ * 20 Items landen bei ~250 KB.
+ *
+ * ponytail: fester Zähler statt Byte-Budget wie bei den Bildern — die Layout-Struktur dominiert
+ * die Transaktionsgröße, der Text ist zweitrangig. Byte-Budget erst, wenn sehr lange Zeilen das
+ * in der Praxis kippen. Mehr Inhalt gäbe es nur über weniger Breakpoints in [NoteWidget].
+ */
+private const val WIDGET_MAX_MD_ITEMS = 20
 private const val CODE_BLOCK_MAX_LINES = 10
 
 /** Bitmap-Budget pro Widget-Render. Binder-Limit ist ~1 MB für die gesamte
@@ -65,9 +78,9 @@ internal fun widgetImageHeightDp(sizePercent: Int): Int =
     (WIDGET_IMAGE_FULL_HEIGHT_DP * sizePercent / 100)
         .coerceIn(WIDGET_IMAGE_MIN_HEIGHT_DP, WIDGET_IMAGE_FULL_HEIGHT_DP)
 
-private data class WidgetImage(val bitmap: Bitmap, val altText: String, val sizePercent: Int)
+internal data class WidgetImage(val bitmap: Bitmap, val altText: String, val sizePercent: Int)
 
-private sealed interface WidgetRenderItem {
+internal sealed interface WidgetRenderItem {
     data class Heading(val level: Int, val text: String) : WidgetRenderItem
 
     data class Paragraph(val text: String) : WidgetRenderItem
@@ -117,7 +130,7 @@ private fun decodeWidgetBitmap(file: File): Bitmap? {
 
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod")
-private fun flattenToRenderItems(
+internal fun flattenToRenderItems(
     blocks: List<MarkdownBlock>,
     maxItems: Int,
     loadImage: (String) -> Bitmap? = { null }
