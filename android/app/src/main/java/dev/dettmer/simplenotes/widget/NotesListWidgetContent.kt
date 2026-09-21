@@ -92,7 +92,13 @@ fun NotesListWidgetContent(
     hideHeader: Boolean = false,
     hidePreview: Boolean = false,
     fontSizeScale: Float = 1.0f,
-    showTypeIcon: Boolean = true
+    showTypeIcon: Boolean = true,
+    /**
+     * Zeilenbudget für die ganze Liste, Ordner **und** Notizen zusammen (Issue #154). Eine Zeile
+     * kostet rund 9 KB in der RemoteViews-Transaktion; wie viele davon hineinpassen, entscheidet
+     * [WidgetPayloadBudget] anhand der Zahl der platzierten Widgets.
+     */
+    maxRows: Int = WidgetPayloadBudget.forWidgetCount(widgetCount = 3).listRows
 ) {
     val context = LocalContext.current
     val bgModifier = resolveWidgetBackgroundModifier(bgOpacity)
@@ -124,8 +130,12 @@ fun NotesListWidgetContent(
             if (notes.isEmpty() && folders.isEmpty()) {
                 EmptyNotesState(modifier = GlanceModifier.fillMaxWidth().defaultWeight(), fontSizeScale = fontSizeScale)
             } else {
-                val pinned = notes.filter { it.isPinned == true }
-                val others = notes.filter { it.isPinned != true }
+                // Issue #154: ein Budget für die ganze Liste, nicht je Sorte. Ordner gehen vor,
+                // Notizen füllen den Rest — sonst hängt die Transaktionsgröße an der Summe.
+                val visibleFolders = folders.take(maxRows)
+                val visibleNotes = notes.take(maxRows - visibleFolders.size)
+                val pinned = visibleNotes.filter { it.isPinned == true }
+                val others = visibleNotes.filter { it.isPinned != true }
                 val showNotesHeader = others.isNotEmpty() && (pinned.isNotEmpty() || hasPinnedNotes)
 
                 LazyColumn(
@@ -147,13 +157,13 @@ fun NotesListWidgetContent(
                         )
                     }
 
-                    if (folders.isNotEmpty()) {
+                    if (visibleFolders.isNotEmpty()) {
                         item { SectionHeader(context.getString(R.string.notes_list_widget_section_folders), fontSizeScale) }
                     }
-                    items(folders.size) { i ->
+                    items(visibleFolders.size) { i ->
                         FolderCard(
-                            folder = folders[i],
-                            noteCount = folderNoteCounts[folders[i].name] ?: 0,
+                            folder = visibleFolders[i],
+                            noteCount = folderNoteCounts[visibleFolders[i].name] ?: 0,
                             bgOpacity = cardBgOpacity,
                             fontSizeScale = fontSizeScale
                         )

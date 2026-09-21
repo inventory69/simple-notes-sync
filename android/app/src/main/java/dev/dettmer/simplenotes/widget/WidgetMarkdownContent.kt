@@ -38,13 +38,22 @@ import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
 
 private const val TAG = "WidgetMarkdownContent"
-private const val WIDGET_MAX_MD_ITEMS = 50
+
 private const val CODE_BLOCK_MAX_LINES = 10
 
-/** Bitmap-Budget pro Widget-Render. Binder-Limit ist ~1 MB für die gesamte
- *  RemoteViews-Transaktion — die Hälfte bleibt für Layout und Text. Ein fester Bildzähler
- *  träfe die Grenze nicht: der Speicher hängt am Seitenverhältnis (ein quadratisches Bild
- *  kostet bei gleicher längster Kante das Zweieinhalbfache eines 16:6-Bildes). */
+/**
+ * Bitmap-Budget pro Widget-Render. Bitmaps reisen **nicht** im Binder-Parcel (gemessen: eine
+ * Notiz mit acht Bildern erzeugt keine große Transaktion), sondern über Shared Memory. Die
+ * Grenze setzt `AppWidgetService`: `6 × Bildschirmbreite × Bildschirmhöhe`, also 2,2 MB auf
+ * einem 480×800-Gerät. Wer sie reißt, bekommt ein `IllegalArgumentException` und das Widget
+ * aktualisiert stumm nicht mehr. Glance rendert auch bei `SizeMode.Exact` mehrfach (Hoch- und
+ * Querformat), gemessen 1,0–1,5 MB je Widget bei vollem Budget — passt, aber ohne viel Luft.
+ *
+ * Ein fester Bildzähler träfe die Grenze nicht: der Speicher hängt am Seitenverhältnis (ein
+ * quadratisches Bild kostet bei gleicher längster Kante das Zweieinhalbfache eines 16:6-Bildes).
+ * Das Budget gilt hart — vor Issue #154 wurde es *vor* dem Decode geprüft, sodass das letzte
+ * Bild um bis zu [WIDGET_IMAGE_MAX_DIM]² überschießen durfte.
+ */
 private const val WIDGET_IMAGE_BUDGET_BYTES = 512 * 1024
 
 /** Decode-Ziel für Widget-Bilder (Mini-Canvas): längste Seite max. 256px, RGB_565. */
@@ -65,9 +74,9 @@ internal fun widgetImageHeightDp(sizePercent: Int): Int =
     (WIDGET_IMAGE_FULL_HEIGHT_DP * sizePercent / 100)
         .coerceIn(WIDGET_IMAGE_MIN_HEIGHT_DP, WIDGET_IMAGE_FULL_HEIGHT_DP)
 
-private data class WidgetImage(val bitmap: Bitmap, val altText: String, val sizePercent: Int)
+internal data class WidgetImage(val bitmap: Bitmap, val altText: String, val sizePercent: Int)
 
-private sealed interface WidgetRenderItem {
+internal sealed interface WidgetRenderItem {
     data class Heading(val level: Int, val text: String) : WidgetRenderItem
 
     data class Paragraph(val text: String) : WidgetRenderItem
@@ -117,7 +126,7 @@ private fun decodeWidgetBitmap(file: File): Bitmap? {
 
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod")
-private fun flattenToRenderItems(
+internal fun flattenToRenderItems(
     blocks: List<MarkdownBlock>,
     maxItems: Int,
     loadImage: (String) -> Bitmap? = { null }
@@ -187,7 +196,12 @@ private fun flattenToRenderItems(
             // als eigene Zeile darunter. Sichtbar nur noch im Decode-Fehler-Fall; erst zusammenlegen,
             // wenn das in der Praxis auffällt.
             is MarkdownBlock.Image -> {
-                val bitmap = if (bytesUsed < WIDGET_IMAGE_BUDGET_BYTES) loadImage(block.assetName) else null
+                val decoded = if (bytesUsed < WIDGET_IMAGE_BUDGET_BYTES) loadImage(block.assetName) else null
+                // Erst nach dem Decode ist die echte Größe bekannt — ein Bild, das das Budget
+                // sprengen würde, fällt auf den Alt-Text zurück statt es zu überschreiten.
+                val bitmap = decoded?.takeIf {
+                    bytesUsed + it.allocationByteCount <= WIDGET_IMAGE_BUDGET_BYTES
+                }
                 val previousRow = result.lastOrNull() as? WidgetRenderItem.ImageRow
                 if (bitmap != null) {
                     bytesUsed += bitmap.allocationByteCount
@@ -222,7 +236,9 @@ internal fun WidgetMarkdownView(
     val context = LocalContext.current
     val renderItems = flattenToRenderItems(
         blocks = MarkdownEngine.parse(content),
-        maxItems = WIDGET_MAX_MD_ITEMS,
+        // Zeilenbudget aus [WidgetPayloadBudget]: ein Item kostet rund 3,2 KB in der
+        // RemoteViews-Transaktion (Issue #154).
+        maxItems = LocalWidgetItemCaps.current.markdownItems,
         // provideContent läuft auf einem Glance-SessionWorker-Thread, nicht dem Main-Thread —
         // synchrones Datei-IO hier ist sicher (Precedent: NoteWidget.kt).
         loadImage = { AssetStore(context).getAssetFile(it).let(::decodeWidgetBitmap) }

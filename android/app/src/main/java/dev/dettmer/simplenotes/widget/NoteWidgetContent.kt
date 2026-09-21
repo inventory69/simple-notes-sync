@@ -54,10 +54,6 @@ import dev.dettmer.simplenotes.utils.Logger
 
 private const val TAG = "NoteWidgetContent"
 
-// Maximum checklist items to render in the widget to prevent
-// TransactionTooLargeException (1MB Binder limit for RemoteViews).
-private const val WIDGET_MAX_CHECKLIST_ITEMS = 100
-
 /**
  * 🆕 v1.8.0: Glance Composable Content für das Notiz-Widget
  *
@@ -579,12 +575,15 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId, fontSizeScale: Float = 1.0f) {
+    // Zeilenbudget aus [WidgetPayloadBudget]: eine interaktive Checkbox-Zeile kostet rund 4,6 KB
+    // in der RemoteViews-Transaktion (Issue #154).
+    val maxItems = LocalWidgetItemCaps.current.checklistItems
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
     val items = note.checklistItems?.let { rawItems ->
         val sorted = sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
-        if (sorted.size > WIDGET_MAX_CHECKLIST_ITEMS) {
-            Logger.d(TAG, "Truncating checklist from ${sorted.size} to $WIDGET_MAX_CHECKLIST_ITEMS items")
-            sorted.take(WIDGET_MAX_CHECKLIST_ITEMS)
+        if (sorted.size > maxItems) {
+            Logger.d(TAG, "Truncating checklist from ${sorted.size} to $maxItems items")
+            sorted.take(maxItems)
         } else {
             sorted
         }
