@@ -66,6 +66,9 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
         // Upstream-Rollout-Flag, wird in einer künftigen Version entfernt
         // (b/493183465) → beim nächsten Compose-Bump prüfen; Details siehe
         // project-docs/simple-notes-sync/FIX-checklist-reorder-animation-compose-1.11.md
+        // Geprüft v2.19.0 (BOM 2026.09.00, Foundation 1.12.1): Flag existiert und wird in
+        // LazyListMeasureKt weiter gelesen, obwohl die Release-Notes es ab 1.12.0-alpha01
+        // als entfernt führen — Bytecode prüfen, nicht den Notes glauben.
         ComposeFoundationFlags.isSkipItemPlacementAnimationFixEnabled = false
 
         AppLock.init(this)
