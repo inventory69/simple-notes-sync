@@ -10,6 +10,7 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.sync.webdav.WebDavResource
+import dev.dettmer.simplenotes.sync.webdav.etagsMatch
 import dev.dettmer.simplenotes.sync.webdav.isWebDavNotFound
 import dev.dettmer.simplenotes.sync.webdav.listTreeOrNull
 import dev.dettmer.simplenotes.utils.ActivityLog
@@ -267,7 +268,10 @@ internal class MarkdownSyncManager(
                     val mdContent = rewriteAssetLinksForMdMirror(note.toMarkdown(), note.folderName).toByteArray()
 
                     // Upload (überschreibt falls vorhanden)
-                    webdav.put(noteUrl, mdContent, "text/markdown")
+                    // 🆕 v2.19.0: PUT-ETag merken — sonst erkennt importAll den eigenen Spiegel nicht.
+                    webdav.put(noteUrl, mdContent, "text/markdown")?.let { etag ->
+                        prefs.edit { putString("etag_md_${note.id}", etag) }
+                    }
 
                     exportedCount++
                     Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
@@ -529,8 +533,19 @@ internal class MarkdownSyncManager(
                         skippedCount++
                         Logger.d(
                             TAG,
-                            "   ⏭️ Skipping ${resource.path}: just exported in this sync cycle (ID=${mdNote.id})"
+                            "   ⏭️ Skipping ${resource.path}: excluded this cycle (just exported or JSON taken from server, " +
+                                "ID=${mdNote.id})"
                         )
+                        continue
+                    }
+
+                    // 🆕 v2.19.0: Unser eigener, seit dem Export unveränderter Spiegel trägt keine
+                    // externe Änderung. Der mtime-Filter oben vergleicht Server- mit Geräte-Uhr und
+                    // lässt ihn bei Uhrenversatz durch; ohne diese Prüfung überschrieb er eine
+                    // neuere Server-JSON (Force-Zweig + Re-Upload).
+                    if (etagsMatch(resource.etag, eTagCache.getMdETag(mdNote.id))) {
+                        skippedCount++
+                        Logger.d(TAG, "   ⏭️ Skipping ${resource.path}: own mirror, unchanged since export (E-Tag match)")
                         continue
                     }
 
@@ -634,7 +649,13 @@ internal class MarkdownSyncManager(
                         // 🆕 v2.9.0 (Trash): trashedAt == null guarden — sonst würde eine veraltete
                         // MD-Datei eine getrashte Notiz über diesen Force-Import-Pfad wiederbeleben.
                         // Ein echt neuerer MD-Import (nächster Branch, LWW) darf bewusst un-trashen.
-                        contentChanged && localNote.syncStatus == SyncStatus.SYNCED && localNote.trashedAt == null -> {
+                        // 🆕 v2.19.0: Ohne Sync-Basis (lastSync == 0 nach Restore/Cache-Räumung, dann
+                        // fehlt auch der MD-E-Tag) ist eine externe Änderung nicht von einem veralteten
+                        // Spiegel zu unterscheiden → nicht erzwingen, der LWW-Zweig entscheidet.
+                        contentChanged &&
+                            lastSyncTime > 0 &&
+                            localNote.syncStatus == SyncStatus.SYNCED &&
+                            localNote.trashedAt == null -> {
                             // 🔧 Force-import of changed MD content fires regardless of timestamp.
                             // When the MD timestamp is tied with (or older than) local, the JSON hash
                             // stays unchanged → the uploader skips the re-upload → endless import loop.

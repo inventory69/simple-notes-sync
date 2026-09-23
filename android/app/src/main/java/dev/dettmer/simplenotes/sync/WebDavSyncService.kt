@@ -746,8 +746,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
                         Logger.d(TAG, "📥 Auto-importing Markdown files...")
                         // 🆕 v1.11.0: Pass exported note IDs to prevent re-import of just-exported files.
-                        // 🆕 Also exclude IDs adopted from a server JSON edit at a tied timestamp so a
-                        // divergent MD mirror cannot override the authoritative JSON in the same cycle.
+                        // 🆕 Also exclude IDs whose JSON was just taken from the server (new, remote
+                        // newer, tied-timestamp edit) so a stale MD mirror cannot override it this cycle.
                         markdownImportedCount = importMarkdownFiles(
                             webdav,
                             serverUrl,

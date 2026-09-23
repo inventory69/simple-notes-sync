@@ -38,8 +38,9 @@ internal data class DownloadResult(
     val trashedDownloadedCount: Int = 0,
     val downloadFailed: Boolean = false,
     val downloadError: String? = null,
-    // 🆕 IDs whose JSON was adopted/confirmed this cycle (server edit at tied timestamp).
-    // The MD import phase must not override these so JSON stays authoritative.
+    // 🆕 IDs whose JSON was taken from the server this cycle (new, overwritten, remote newer or
+    // server edit at tied timestamp). The MD import phase must not override these with a mirror
+    // that predates the JSON, so JSON stays authoritative.
     val adoptedNoteIds: Set<String> = emptySet(),
     // 🆕 v2.14.0: ETag der folders.json aus dem Root-Listing — spart dem FolderSyncManager
     // den GET/PUT-Round-Trip, wenn er sich nicht geändert hat.
@@ -122,7 +123,7 @@ internal class NoteDownloader(
         // ohne dieses Flag landen sie im Papierkorb, obwohl sie auf dem Server unangetastet sind.
         var listingComplete = true
         val processedIds = mutableSetOf<String>() // 🆕 v1.2.2: Track already loaded notes
-        val adoptedNoteIds = mutableSetOf<String>() // 🆕 JSON adopted at tied timestamp (server wins)
+        val adoptedNoteIds = mutableSetOf<String>() // 🆕 JSON taken from server this cycle (server wins)
 
         Logger.d(TAG, "📥 downloadAll() called:")
         Logger.d(TAG, "   includeRootFallback: $includeRootFallback")
@@ -435,6 +436,7 @@ internal class NoteDownloader(
                                     localNote == null -> {
                                         // New note from server
                                         storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                                        adoptedNoteIds.add(result.noteId)
                                         if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(TAG, "   ✅ Downloaded from /$activeSyncFolderName/: ${remoteNote.id}")
                                         if (remoteNote.trashedAt == null) {
@@ -455,6 +457,7 @@ internal class NoteDownloader(
                                     forceOverwrite -> {
                                         // OVERWRITE mode: Always replace regardless of timestamps
                                         storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                                        adoptedNoteIds.add(result.noteId)
                                         if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                         Logger.d(
                                             TAG,
@@ -487,6 +490,9 @@ internal class NoteDownloader(
                                         } else {
                                             // Safe to overwrite
                                             storage.saveNote(remoteNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                                            // 🆕 v2.19.0: Der MD-Spiegel ist jetzt älter als die JSON —
+                                            // der Import darf ihn in diesem Zyklus nicht zurückschreiben.
+                                            adoptedNoteIds.add(result.noteId)
                                             if (remoteNote.trashedAt == null) downloadedCount++ else trashedDownloadedCount++
                                             Logger.d(TAG, "   ✅ Updated from /$activeSyncFolderName/: ${remoteNote.id}")
                                             if (remoteNote.trashedAt == null) {

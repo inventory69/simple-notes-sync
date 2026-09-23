@@ -155,4 +155,37 @@ class NoteDownloaderTieBreakTest {
         assertEquals("LOCAL", local.content)
         assertEquals(SyncStatus.PENDING, local.syncStatus)
     }
+
+    // 🆕 v2.19.0: Am Emulator belegter Datenverlust — ohne das Flag importierte der MD-Import
+    // danach den älteren Spiegel und schrieb ihn per Re-Upload über die neue Server-JSON.
+    @Test fun `newer server JSON is flagged as adopted so the MD import cannot revert it`() = runTest {
+        storage.saveNote(
+            Note(
+                id = noteId,
+                title = "T",
+                content = "LOCAL",
+                deviceId = "",
+                updatedAt = tiedTimestamp,
+                syncStatus = SyncStatus.SYNCED,
+                folderName = folder
+            )
+        )
+        val remoteJson = Note(
+            id = noteId,
+            title = "T",
+            content = "SERVER",
+            deviceId = "",
+            updatedAt = tiedTimestamp + 1_000L,
+            syncStatus = SyncStatus.SYNCED,
+            folderName = folder
+        ).toJson()
+
+        val result = downloader.downloadAll(mockWebDav(remoteJson), serverUrl)
+
+        assertEquals(1, result.downloadedCount)
+        assertTrue("note id must be flagged as adopted", noteId in result.adoptedNoteIds)
+        val updated = storage.loadNote(noteId)!!
+        assertEquals("SERVER", updated.content)
+        assertEquals(SyncStatus.SYNCED, updated.syncStatus)
+    }
 }
