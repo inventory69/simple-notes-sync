@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)  // v1.5.0: Jetpack Compose Compiler
     alias(libs.plugins.ktlint)  // ✅ v1.6.1: Reaktiviert nach Code-Cleanup
     alias(libs.plugins.detekt)
@@ -345,7 +344,7 @@ tasks.register<Copy>("copyChangelogsToAssets") {
     }
 }
 
-val copyContributorsToAssets by tasks.registering(Copy::class) {
+val copyContributorsToAssets = tasks.register<Copy>("copyContributorsToAssets") {
     from("$rootDir/contributors.json")
     into("$projectDir/src/main/assets")
 }
@@ -353,7 +352,7 @@ val copyContributorsToAssets by tasks.registering(Copy::class) {
 // ponytail: In-App nur die letzten N Versionen bündeln; volle Historie bleibt im
 // Repo-CHANGELOG.md und in den GitHub-Releases. Spart ~58 KB APK (40 → N Versionen).
 val changelogVersionsInApp = 15
-val copyFullChangelogToAssets by tasks.registering {
+val copyFullChangelogToAssets = tasks.register("copyFullChangelogToAssets") {
     description = "Copies the last $changelogVersionsInApp CHANGELOG versions to app assets for in-app display"
     doLast {
         listOf("CHANGELOG.md" to "changelog.md", "CHANGELOG.de.md" to "changelog.de.md")

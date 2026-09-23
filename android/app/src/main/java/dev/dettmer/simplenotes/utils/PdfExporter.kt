@@ -20,6 +20,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.TypefaceSpan
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
+import androidx.core.graphics.withTranslation
 import dev.dettmer.simplenotes.images.applyExifOrientation
 import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.ImageAlign
@@ -696,11 +697,10 @@ object PdfExporter {
             // printBitmap wird bewusst nicht recycled: gleiche Deferred-Rendering-Falle wie beim
             // Quell-Bitmap (s. renderImage) — Pixel werden erst bei writeTo() konsumiert.
             canvas?.let { c ->
-                c.save()
-                c.translate(x, y)
-                c.scale(destWidth / printBitmap.width, destHeight / printBitmap.height)
-                c.drawBitmap(printBitmap, 0f, 0f, null)
-                c.restore()
+                c.withTranslation(x, y) {
+                    scale(destWidth / printBitmap.width, destHeight / printBitmap.height)
+                    drawBitmap(printBitmap, 0f, 0f, null)
+                }
             }
         }
 
@@ -774,10 +774,9 @@ object PdfExporter {
                 if (isHeader) c.drawRect(MARGIN_HORIZONTAL, top, right, top + rowHeight, codeBackgroundPaint)
                 var x = MARGIN_HORIZONTAL
                 widths.indices.forEach { col ->
-                    c.save()
-                    c.translate(x + TABLE_CELL_PADDING, top + TABLE_CELL_PADDING)
-                    cellLayout(cells, alignments, widths, paint, col).draw(c)
-                    c.restore()
+                    c.withTranslation(x + TABLE_CELL_PADDING, top + TABLE_CELL_PADDING) {
+                        cellLayout(cells, alignments, widths, paint, col).draw(this)
+                    }
                     c.drawLine(x, top, x, top + rowHeight, horizontalRulePaint)
                     x += widths[col]
                 }
@@ -855,10 +854,7 @@ object PdfExporter {
                     }
 
                     val lineLayout = StaticLayout.Builder.obtain(lineText, 0, lineText.length, paint, width).build()
-                    c.save()
-                    c.translate(x, currentY - lineLayout.getLineBaseline(0))
-                    lineLayout.draw(c)
-                    c.restore()
+                    c.withTranslation(x, currentY - lineLayout.getLineBaseline(0)) { lineLayout.draw(this) }
                 }
                 currentY += lineHeight
             }

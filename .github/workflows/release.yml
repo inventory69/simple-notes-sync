@@ -65,7 +65,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: cd android && ./gradlew testFdroidReleaseUnitTest testStandardReleaseUnitTest
+        run: cd android && ./gradlew testFdroidDebugUnitTest testStandardDebugUnitTest
 
       - name: Copy APKs with version names
         run: |
