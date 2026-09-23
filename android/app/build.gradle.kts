@@ -13,7 +13,7 @@ import java.util.Locale
 
 android {
     namespace = "dev.dettmer.simplenotes"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "dev.dettmer.simplenotes"

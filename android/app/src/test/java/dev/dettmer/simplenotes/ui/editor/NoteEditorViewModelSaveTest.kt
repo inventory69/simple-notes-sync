@@ -6,8 +6,14 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
+import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.unmockkObject
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.Dispatchers
@@ -34,12 +40,17 @@ class NoteEditorViewModelSaveTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
+        // Seit Glance 1.2.0 suspendiert getGlanceIds() gegen den gemockten Context für immer
+        // (am Gerät läuft der Refresh normal durch) — für die Speicherlogik hier irrelevant.
+        mockkObject(WidgetUpdateHelper)
+        coEvery { WidgetUpdateHelper.refreshAllWidgets(any()) } just runs
         tmpDir = Files.createTempDirectory("note-editor-vm-save-test").toFile()
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkObject(WidgetUpdateHelper)
         tmpDir.deleteRecursively()
     }
 

@@ -22,7 +22,7 @@ private const val ALPHA_SHIFT = 24
 /**
  * Renders inline-formatted Markdown text in a Glance widget using [AndroidRemoteViews].
  *
- * WORKAROUND: Glance 1.1.1 [androidx.glance.text.Text] only accepts [String], not [AnnotatedString].
+ * WORKAROUND: Glance [androidx.glance.text.Text] only accepts [String], not [AnnotatedString] (still true in 1.2.0).
  * This composable bridges the gap by delegating to a system [android.widget.TextView] via [RemoteViews],
  * which supports [Html.fromHtml]-based spans (bold, italic, strikethrough, monospace).
  *
