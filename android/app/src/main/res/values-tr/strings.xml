@@ -44,7 +44,6 @@
     <string name="sync_status_deleted_on_server">Sunucuda silindi</string>
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
     <string name="sync_legend_button">Senkronizasyon durumu yardımı</string>
-    <string name="sync_legend_title">Senkronizasyon Durumu Simgeleri</string>
     <string name="sync_legend_description">Her not, senkronizasyon durumunu gösteren küçük bir simge içerir:</string>
     <string name="sync_legend_synced_label">Senkronize</string>
     <string name="sync_legend_synced_desc">Bu not tüm cihazlarda günceldir.</string>
