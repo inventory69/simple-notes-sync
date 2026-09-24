@@ -24,7 +24,6 @@
     <string name="sync_status_local_only">Belum tersinkronisasi</string>
     <string name="sync_status_deleted_on_server">Dihapus di server</string>
     <string name="sync_legend_button">Bantuan status sinkronisasi</string>
-    <string name="sync_legend_title">Ikon Status Sinkronisasi</string>
     <string name="sync_legend_description">Setiap catatan menampilkan ikon kecil yang menunjukkan status sinkronisasinya:</string>
     <string name="sync_legend_synced_label">Tersinkronisasi</string>
     <string name="sync_legend_synced_desc">Catatan ini sudah terkini di semua perangkat.</string>
