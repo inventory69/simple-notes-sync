@@ -425,7 +425,6 @@
     <plurals name="notification_sync_conflict_message">
         <item quantity="other">%d catatan memiliki konflik</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Peringatan Sinkronisasi</string>
     <string name="notification_sync_warning_message">Server tidak dapat dijangkau selama %d jam</string>
     <string name="notification_sync_warning_detail">Server WebDAV tidak dapat dijangkau selama %d jam. Harap periksa koneksi jaringan atau pengaturan server Anda.</string>
     <string name="notification_sync_in_progress_title">Sinkronisasi sedang berlangsung</string>
