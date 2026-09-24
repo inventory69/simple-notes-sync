@@ -899,7 +899,6 @@
         <item quantity="one">%d note has conflicts</item>
         <item quantity="other">%d notes have conflicts</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
     <string name="notification_sync_warning_message">Server unreachable for %dh</string>
     <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
     <string name="notification_sync_warning_credentials_message">Server credentials missing</string>
