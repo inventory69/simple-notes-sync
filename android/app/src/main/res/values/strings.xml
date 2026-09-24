@@ -53,7 +53,6 @@
     <string name="sync_status_deleted_on_server">Deleted on server</string>
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
     <string name="sync_legend_button">Sync status help</string>
-    <string name="sync_legend_title">Sync Status Icons</string>
     <string name="sync_legend_description">Each note shows a small icon indicating its sync status:</string>
     <string name="sync_legend_synced_label">Synced</string>
     <string name="sync_legend_synced_desc">This note is up to date on all devices.</string>
