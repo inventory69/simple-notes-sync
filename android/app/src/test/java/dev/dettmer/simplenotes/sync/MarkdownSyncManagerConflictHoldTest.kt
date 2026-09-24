@@ -108,6 +108,19 @@ class MarkdownSyncManagerConflictHoldTest {
 
         assertEquals(1, imported)
         assertEquals("SERVER-MD", savedNotes.single().content.trim())
+        // 🆕 v2.19.0: Nur PENDING bringt die Editor-Änderung per Re-Upload in die Server-JSON.
+        assertEquals(SyncStatus.PENDING, savedNotes.single().syncStatus)
+    }
+
+    @Test fun `a new note from a markdown file is saved PENDING`() = runTest {
+        coEvery { storage.loadNote(noteId) } returns null
+
+        val imported = manager.importAll(webdavWithNewerMarkdown(), SERVER)
+
+        assertEquals(1, imported)
+        assertEquals("SERVER-MD", savedNotes.single().content.trim())
+        // 🆕 v2.19.0: Mit SYNCED ging die JSON nie hoch und der nächste Sync trashte die Notiz.
+        assertEquals(SyncStatus.PENDING, savedNotes.single().syncStatus)
     }
 
     companion object {

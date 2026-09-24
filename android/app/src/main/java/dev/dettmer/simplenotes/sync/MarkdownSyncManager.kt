@@ -617,9 +617,12 @@ internal class MarkdownSyncManager(
                         currentFileName = resource.name
                     )
 
+                    // 🆕 v2.19.0: Neue und per LWW übernommene MD-Fassungen als PENDING speichern, nur
+                    // dann bringt der Re-Upload (Step 6) die JSON auf den Server. Mit SYNCED trashte der
+                    // nächste Sync eine neue Notiz bzw. die Editor-Änderung erreichte die JSON nie.
                     when {
                         localNote == null -> {
-                            storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                            storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.PENDING))
                             eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
                             importedCount++
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
@@ -683,7 +686,7 @@ internal class MarkdownSyncManager(
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {
-                                storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                                storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.PENDING))
                                 eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
                                 importedCount++
                                 Logger.d(TAG, "   ✅ Updated from Markdown (newer timestamp): ${mdNote.title}")
