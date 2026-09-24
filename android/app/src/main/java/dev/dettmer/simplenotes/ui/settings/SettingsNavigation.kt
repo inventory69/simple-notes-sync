@@ -99,6 +99,13 @@ fun SettingsNavHost(
             },
             popExitTransition = {
                 fadeOut(animationSpec = tween(NAV_ANIM_DURATION_MS))
+            },
+            // v2.19.0: Navigation 2.10 animiert die Zurück-Geste standardmäßig mit Scale; Fade beibehalten
+            predictivePopEnterTransition = {
+                fadeIn(animationSpec = tween(NAV_ANIM_DURATION_MS))
+            },
+            predictivePopExitTransition = {
+                fadeOut(animationSpec = tween(NAV_ANIM_DURATION_MS))
             }
         ) {
             // Main Settings Overview
