@@ -47,6 +47,9 @@ internal class MarkdownSyncManager(
 
         /** 404 = Parent fehlt, 409 = Conflict (Parent-Collection existiert nicht). */
         private val MISSING_DIR_STATUS_CODES = setOf(404, 409)
+
+        /** Bis v2.18 zwei Regexe; der aus resolveExportUrl übersah `id` in der ersten Zeile. */
+        private val FRONTMATTER_ID = Regex("""\A---\s*\n(?:.*?\n)?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
     }
 
     /**
@@ -112,6 +115,7 @@ internal class MarkdownSyncManager(
         // Upload
         val putETag = putMarkdown(webdav, noteUrl, mdContentBytes)
         exportedThisCycle.add(noteUrl)
+        replacePreviousCopy(webdav, serverUrl, note.id, noteUrl)
 
         // 🆕 v1.9.0 (Opt 6): MD-Hash und E-Tag nach erfolgreichem Upload cachen
         // 🆕 v2.14.0: ETag aus der PUT-Antwort bevorzugen — PROPFIND nur als Fallback.
@@ -145,10 +149,7 @@ internal class MarkdownSyncManager(
     ): String {
         val existingId = try {
             if (!webdav.exists(noteUrlByTitle)) return noteUrlByTitle
-            val existingContent = webdav.get(noteUrlByTitle).use { it.bufferedReader().readText() }
-            Regex("^---\\n.*?\\nid:\\s*([a-f0-9-]+)", RegexOption.DOT_MATCHES_ALL)
-                .find(existingContent)
-                ?.groupValues?.get(1)
+            frontmatterId(webdav.get(noteUrlByTitle).use { it.bufferedReader().readText() })
         } catch (e: Exception) {
             Logger.w(TAG, "⚠️ Could not check existing file: ${e.message}")
             return noteUrlByTitle
@@ -179,32 +180,65 @@ internal class MarkdownSyncManager(
     }
 
     /**
+     * 🆕 v2.19.0: Die Kopie folgt der Notiz. Lag sie vorher unter einem anderen Pfad (Umbenennen,
+     * Ordnerwechsel, Import einer Editor-Datei), wird die alte Datei gelöscht und der neue Pfad
+     * gemerkt. Fehler beim Löschen brechen den Export nicht ab.
+     *
+     * Gelöscht wird nur, wenn die alte Datei noch die ID der Notiz trägt (+1 GET, nur bei
+     * Pfadwechsel). Ein gemerkter Pfad kann aus [healStaleMirrors] stammen, und dort gehört die
+     * Titeldatei womöglich einer Editor-Notiz, die noch nicht importiert ist.
+     */
+    private fun replacePreviousCopy(webdav: WebDavClient, serverUrl: String, noteId: String, noteUrl: String) {
+        val previous = rememberedMdPath(noteId, serverUrl)
+        if (previous != null && previous != noteUrl && readFrontmatterId(webdav, previous) == noteId) {
+            try {
+                if (deleteIfPresent(webdav, previous)) Logger.d(TAG, "🗑️ Removed previous MD copy: $previous")
+            } catch (e: Exception) {
+                // ponytail: die alte Kopie ist danach vergessen; healStaleMirrors räumt sie beim
+                // nächsten Config-Wechsel, eine Retry-Liste lohnt sich erst bei Häufung.
+                Logger.w(TAG, "⚠️ Could not remove previous MD copy $previous: ${e.message}")
+            }
+        }
+        eTagCache.setMdPath(noteId, noteUrl)
+    }
+
+    /** Gemerkter Pfad der MD-Kopie, nur wenn er unter der MD-Wurzel des aktuellen Servers liegt. */
+    private fun rememberedMdPath(noteId: String, serverUrl: String): String? =
+        eTagCache.getMdPath(noteId)?.takeIf { it.startsWith(urlBuilder.getMarkdownUrl(serverUrl).trimEnd('/') + "/") }
+
+    /** DELETE, 404-tolerant. @return `false`, wenn die Datei schon fehlte. */
+    private fun deleteIfPresent(webdav: WebDavClient, url: String): Boolean = try {
+        webdav.delete(url)
+        true
+    } catch (e: java.io.IOException) {
+        if (!e.isWebDavNotFound()) throw e
+        false
+    }
+
+    /**
      * 🆕 v2.9.0 (Trash): Löscht den Server-Markdown-Spiegel einer Notiz, die soeben in den
      * Papierkorb verschoben wurde. Spiegelt den MD-Delete-Block aus
-     * [NoteDownloader.deleteFromServer], 404-tolerant. Die Notiz existiert noch lokal, daher wird
-     * der Dateiname aus dem Titel abgeleitet (Fast-Path wie beim Export).
+     * [NoteDownloader.deleteFromServer], 404-tolerant.
+     *
+     * 🆕 v2.19.0: Der gemerkte Pfad hat Vorrang vor dem Titelpfad. Der Titelpfad kann einer anderen
+     * Notiz gehören (`<titel>_<kurz-id>.md`) oder nach einer Umbenennung ins Leere zeigen.
      *
      * Invalidiert anschließend MD-Content-Hash + E-Tag, damit ein späteres Restore die Datei neu
      * exportiert (sonst würde der Skip-per-Hash den Re-Export verschlucken).
      */
     fun deleteSingle(webdav: WebDavClient, serverUrl: String, note: Note) {
-        val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName)
-        val filename = sanitizeFilename(note.title) + ".md"
-        val mdUrl = mdBaseUrl.trimEnd('/') + "/" + filename
-        try {
-            webdav.delete(mdUrl)
+        val mdUrl = rememberedMdPath(note.id, serverUrl)
+            ?: (urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName).trimEnd('/') + "/" + sanitizeFilename(note.title) + ".md")
+        if (deleteIfPresent(webdav, mdUrl)) {
             Logger.d(TAG, "🗑️ Deleted server MD (trashed): $mdUrl")
-        } catch (e: java.io.IOException) {
-            if (e.isWebDavNotFound()) {
-                Logger.d(TAG, "ℹ️ Server MD not found (already gone): $mdUrl")
-            } else {
-                throw e
-            }
+        } else {
+            Logger.d(TAG, "ℹ️ Server MD not found (already gone): $mdUrl")
         }
         prefs.edit {
             remove("content_hash_md_${note.id}")
             remove("etag_md_${note.id}")
         }
+        eTagCache.clearMdPath(note.id)
     }
 
     /**
@@ -272,6 +306,7 @@ internal class MarkdownSyncManager(
                     webdav.put(noteUrl, mdContent, "text/markdown")?.let { etag ->
                         prefs.edit { putString("etag_md_${note.id}", etag) }
                     }
+                    replacePreviousCopy(webdav, serverUrl, note.id, noteUrl)
 
                     exportedCount++
                     Logger.d(TAG, "   ✅ Exported [${index + 1}/$totalCount]: ${note.title} -> $filename")
@@ -409,47 +444,7 @@ internal class MarkdownSyncManager(
                 connectionManager.staleRootCleaned = true
             }
 
-            // 🆕 v2.7.0 (Folders): Root-md + alle Subdirs einsammeln.
-            data class MdItem(
-                val resource: WebDavResource,
-                val fileUrl: String,
-                val folder: String?
-            )
-            val mdItems = mutableListOf<MdItem>()
-            // 🆕 v2.14.0: Deep-PROPFIND statt 1+N (siehe [listTreeOrNull]); `null` → wie bisher.
-            val deepTree = if (connectionManager.deepPropfindRefused) {
-                null
-            } else {
-                webdav.listTreeOrNull(mdUrl) { connectionManager.deepPropfindRefused = true }
-            }
-            val rootList = deepTree?.get(null) ?: webdav.list(mdUrl)
-            rootList.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
-                mdItems.add(MdItem(it, mdUrl.trimEnd('/') + "/" + it.name, null))
-            }
-            val mdSubDirs = rootList.filter { res ->
-                res.isDirectory &&
-                    res.name.isNotBlank() &&
-                    res.name != "/" &&
-                    !mdUrl.trimEnd('/').endsWith("/" + res.name)
-            }
-            val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
-            for (dir in mdSubDirs) {
-                val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
-                if (folder.lowercase() in localOnlyFolders) {
-                    Logger.d(TAG, "   ⏭️ Skipping local-only folder (MD import): $folder")
-                    continue
-                }
-                val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
-                val sub = deepTree?.get(dir.name) ?: try {
-                    webdav.list(folderUrl)
-                } catch (e: Exception) {
-                    Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}")
-                    continue
-                }
-                sub.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
-                    mdItems.add(MdItem(it, folderUrl.trimEnd('/') + "/" + it.name, folder))
-                }
-            }
+            val mdItems = collectMdItems(webdav, serverUrl)
             val mdResources = mdItems.map { it.resource } // für bestehende Logs/Counts
 
             var importedCount = 0
@@ -625,6 +620,7 @@ internal class MarkdownSyncManager(
                     when {
                         localNote == null -> {
                             storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                            eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
                             importedCount++
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
                             ActivityLog.log(
@@ -674,6 +670,7 @@ internal class MarkdownSyncManager(
                                 archivedAt = mdNote.archivedAt ?: localNote.archivedAt // 🆕 v2.11.0 (Archive)
                             )
                             storage.saveNote(merged)
+                            eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
                             importedCount++
                             Logger.d(
                                 TAG,
@@ -687,6 +684,7 @@ internal class MarkdownSyncManager(
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {
                                 storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.SYNCED))
+                                eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
                                 importedCount++
                                 Logger.d(TAG, "   ✅ Updated from Markdown (newer timestamp): ${mdNote.title}")
                             }
@@ -714,6 +712,161 @@ internal class MarkdownSyncManager(
         }
     }
 
+    private data class MdItem(
+        val resource: WebDavResource,
+        val fileUrl: String,
+        val folder: String?
+    )
+
+    /**
+     * 🆕 v2.7.0 (Folders): Root-md + alle Subdirs einsammeln, Local-only-Ordner ausgenommen.
+     * 🆕 v2.14.0: Deep-PROPFIND statt 1+N (siehe [listTreeOrNull]); `null` → klassisch pro Ordner.
+     * Ein Fehler beim Root-Listing wirft, ein Fehler in einem Unterordner überspringt nur ihn.
+     */
+    // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand aus importAll, v2.19.0 nur herausgelöst)
+    @Suppress("CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
+    private fun collectMdItems(webdav: WebDavClient, serverUrl: String): List<MdItem> {
+        val mdUrl = urlBuilder.getMarkdownUrl(serverUrl)
+        val mdItems = mutableListOf<MdItem>()
+        val deepTree = if (connectionManager.deepPropfindRefused) {
+            null
+        } else {
+            webdav.listTreeOrNull(mdUrl) { connectionManager.deepPropfindRefused = true }
+        }
+        val rootList = deepTree?.get(null) ?: webdav.list(mdUrl)
+        rootList.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
+            mdItems.add(MdItem(it, mdUrl.trimEnd('/') + "/" + it.name, null))
+        }
+        val mdSubDirs = rootList.filter { res ->
+            res.isDirectory &&
+                res.name.isNotBlank() &&
+                res.name != "/" &&
+                !mdUrl.trimEnd('/').endsWith("/" + res.name)
+        }
+        val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
+        for (dir in mdSubDirs) {
+            val folder = dev.dettmer.simplenotes.utils.FolderNameValidator.sanitize(dir.name) ?: continue
+            if (folder.lowercase() in localOnlyFolders) {
+                Logger.d(TAG, "   ⏭️ Skipping local-only folder (MD): $folder")
+                continue
+            }
+            val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folder)
+            val sub = deepTree?.get(dir.name) ?: try {
+                webdav.list(folderUrl)
+            } catch (e: Exception) {
+                Logger.w(TAG, "   ⚠️ list($folderUrl) failed: ${e.message}")
+                continue
+            }
+            sub.filter { !it.isDirectory && it.name.endsWith(".md") }.forEach {
+                mdItems.add(MdItem(it, folderUrl.trimEnd('/') + "/" + it.name, folder))
+            }
+        }
+        return mdItems
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Einmaliger Aufräumlauf (v2.19.0)
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * 🆕 v2.19.0: Räumt MD-Kopien weg, die ältere Versionen beim Umbenennen oder Löschen haben
+     * liegen lassen. Läuft einmal pro Server-Config ([ConnectionManager.mdMirrorsHealed]),
+     * danach 0 Requests.
+     *
+     * Gelöscht wird nur eindeutig:
+     * - ein älterer Zwilling einer lokalen Notiz, deren erwartete Datei nachweislich ihr gehört
+     *   und nicht älter ist (`modified`). Ein Gerät mit alter App kann nach einer Umbenennung,
+     *   die hier noch nicht angekommen ist, die neuere Datei schreiben, die bleibt deshalb stehen.
+     * - die Kopie einer lokal unbekannten Notiz, die im Deletion-Tracker steht.
+     *
+     * Alles andere bleibt. Liegt die einzige Kopie einer Notiz unter einem alten Namen, wird sie
+     * als Pfad gemerkt, der nächste Export zieht sie dann über [replacePreviousCopy] um.
+     */
+    // ponytail: ein GET je nicht erwarteter Datei, einmal pro Config. Bei sehr vielen Editor-Dateien
+    // teuer, dann nur Dateien mit `modified` vor dem Upgrade prüfen.
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "NestedBlockDepth")
+    suspend fun healStaleMirrors(webdav: WebDavClient, serverUrl: String) {
+        if (connectionManager.mdMirrorsHealed) return
+        val items = try {
+            collectMdItems(webdav, serverUrl)
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ MD mirror heal: listing failed, retrying next sync: ${e.message}")
+            return
+        }
+        val byUrl = items.associateBy { it.fileUrl }
+        val allNotes = storage.loadAllNotes()
+        val knownIds = allNotes.mapTo(mutableSetOf()) { it.id }
+        val active = allNotes.filter { it.trashedAt == null }
+        val activeIds = active.mapTo(mutableSetOf()) { it.id }
+
+        // Erwartete Datei je Notiz: gemerkter Pfad, sonst `<titel>_<kurz-id>.md` (eindeutig), sonst
+        // Titelpfad. Beanspruchen zwei Notizen dieselbe Datei, gilt sie für keine als erwartet.
+        val claimed = active.mapNotNull { note ->
+            val folderUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, note.folderName).trimEnd('/')
+            val title = sanitizeFilename(note.title)
+            listOfNotNull(
+                rememberedMdPath(note.id, serverUrl),
+                "$folderUrl/${title}_${note.id.take(SHORT_ID_LENGTH)}.md",
+                "$folderUrl/$title.md"
+            ).firstOrNull { it in byUrl }?.let { note.id to it }
+        }
+        val claimCount = claimed.groupingBy { it.second }.eachCount()
+        val expected = claimed.filter { claimCount[it.second] == 1 }.toMap()
+        expected.forEach { (id, url) ->
+            if (eTagCache.getMdPath(id) != url) eTagCache.setMdPath(id, url)
+        }
+
+        val expectedUrls = expected.values.toSet()
+        val candidatesById = items.filter { it.fileUrl !in expectedUrls }
+            .mapNotNull { item -> readFrontmatterId(webdav, item.fileUrl)?.let { it to item } }
+            .groupBy({ it.first }, { it.second })
+
+        val tracker = storage.loadDeletionTracker()
+        var removed = 0
+        for ((id, candidates) in candidatesById) {
+            val expectedItem = expected[id]?.let { byUrl[it] }
+            val stale = when {
+                expectedItem != null -> {
+                    val expectedModified = expectedItem.resource.modified?.time
+                    val older = candidates.filter { c ->
+                        val m = c.resource.modified?.time
+                        expectedModified != null && m != null && m <= expectedModified
+                    }
+                    // Erst jetzt die erwartete Datei prüfen: nur sie belegt, dass die Notiz woanders liegt.
+                    if (older.isNotEmpty() && readFrontmatterId(webdav, expectedItem.fileUrl) == id) older else emptyList()
+                }
+                id !in knownIds && tracker.isDeleted(id) -> candidates
+                else -> {
+                    if (id in activeIds && candidates.size == 1) {
+                        eTagCache.setMdPath(id, candidates.single().fileUrl)
+                        Logger.d(TAG, "   📌 Only MD copy under an old name, remembered: ${candidates.single().fileUrl}")
+                    }
+                    emptyList()
+                }
+            }
+            for (item in stale) {
+                try {
+                    if (deleteIfPresent(webdav, item.fileUrl)) {
+                        removed++
+                        Logger.d(TAG, "   🗑️ Removed stale MD copy: ${item.fileUrl}")
+                    }
+                } catch (e: Exception) {
+                    Logger.w(TAG, "   ⚠️ Could not remove stale MD copy ${item.fileUrl}: ${e.message}")
+                }
+            }
+        }
+        connectionManager.mdMirrorsHealed = true
+        Logger.i(TAG, "🧹 MD mirror heal: ${items.size} files, ${candidatesById.values.sumOf { it.size }} checked, $removed removed")
+    }
+
+    /** `id` aus dem Frontmatter der Datei, `null` bei fehlender ID oder Fehler. */
+    private fun readFrontmatterId(webdav: WebDavClient, url: String): String? = try {
+        frontmatterId(webdav.get(url).use { it.bufferedReader().readText() })
+    } catch (e: Exception) {
+        Logger.w(TAG, "   ⚠️ Could not read $url: ${e.message}")
+        null
+    }
+
     // ─────────────────────────────────────────────────────────────
     // Utilities
     // ─────────────────────────────────────────────────────────────
@@ -731,6 +884,10 @@ internal class MarkdownSyncManager(
         val depthPrefix = if (folderName != null) "../../" else "../"
         return content.replace("](.assets/", "]($depthPrefix$syncFolderName${SyncUrlBuilder.ASSETS_SUFFIX}/")
     }
+
+    /** `id:` aus dem YAML-Frontmatter; `id` darf die erste Zeile sein. */
+    internal fun frontmatterId(content: String): String? =
+        FRONTMATTER_ID.find(content)?.groupValues?.get(1)
 
     /**
      * Sanitize Filename für sichere Dateinamen.
@@ -763,40 +920,22 @@ internal class MarkdownSyncManager(
     }
 
     /**
-     * Finds a Markdown file by scanning YAML frontmatter for note ID.
+     * Finds all Markdown files in [mdUrl] whose YAML frontmatter carries [noteId].
      * Used when local note is deleted and title is unavailable.
+     *
+     * 🆕 v2.19.0: alle Treffer statt nur des ersten, ältere Versionen hinterließen Zwillinge.
      */
-    suspend fun findByNoteId(webdav: WebDavClient, mdUrl: String, noteId: String): String? = withContext(ioDispatcher) {
+    suspend fun findAllByNoteId(webdav: WebDavClient, mdUrl: String, noteId: String): List<String> = withContext(ioDispatcher) {
         return@withContext try {
             Logger.d(TAG, "🔍 Scanning MD files for ID: $noteId")
-            val resources = webdav.list(mdUrl)
-
-            for (resource in resources) {
-                if (resource.isDirectory || !resource.name.endsWith(".md")) {
-                    continue
-                }
-
-                try {
-                    val mdFileUrl = mdUrl.trimEnd('/') + "/" + resource.name
-                    val mdContent = webdav.get(mdFileUrl).use { it.bufferedReader().readText() }
-
-                    val idMatch = Regex("""^---\s*\n.*?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
-                        .find(mdContent)
-
-                    if (idMatch?.groupValues?.get(1) == noteId) {
-                        Logger.d(TAG, "   ✅ Found MD file: ${resource.path}")
-                        return@withContext resource.name
-                    }
-                } catch (e: Exception) {
-                    Logger.w(TAG, "   ⚠️ Failed to parse ${resource.path}: ${e.message}")
-                }
-            }
-
-            Logger.w(TAG, "   ❌ No MD file found for ID: $noteId")
-            null
+            webdav.list(mdUrl)
+                .filter { !it.isDirectory && it.name.endsWith(".md") }
+                .filter { readFrontmatterId(webdav, mdUrl.trimEnd('/') + "/" + it.name) == noteId }
+                .map { it.name }
+                .also { Logger.d(TAG, "   Found ${it.size} MD file(s) for ID: $noteId") }
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to scan MD files: ${e.message}")
-            null
+            emptyList()
         }
     }
 

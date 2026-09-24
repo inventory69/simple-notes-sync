@@ -1051,27 +1051,13 @@ internal class NoteDownloader(
             }
 
             // 🆕 v2.14.0: MD-Spiegel nur anfassen, wenn ein MD-Feature aktiv ist — sonst kostet
-            // jede Löschung einen findByNoteId-PROPFIND + DELETE für Dateien, die es nie gab.
+            // jede Löschung einen findAllByNoteId-PROPFIND + DELETE für Dateien, die es nie gab.
             // Trade-off (bewusst): in Mixed-Setups (anderes Gerät exportiert MD) bleiben hier
             // stale Mirrors liegen; das exportierende Gerät räumt sie bei seiner Löschung auf.
             if (markdownFeaturesEnabled()) {
                 // Delete Markdown (v1.3.0: YAML-scan based approach)
-                val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folderName)
-                val note = storage.loadNote(noteId)
-                var mdFilenameToDelete: String? = null
-
-                if (note != null) {
-                    // Fast path: Note still exists locally, use title
-                    mdFilenameToDelete = markdownSyncManager.sanitizeFilename(note.title) + ".md"
-                    Logger.d(TAG, "🔍 MD deletion: Using title from local note")
-                } else {
-                    // Fallback: Note deleted locally, scan YAML frontmatter
-                    Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
-                    mdFilenameToDelete = markdownSyncManager.findByNoteId(webdav, mdBaseUrl, noteId)
-                }
-
-                if (mdFilenameToDelete != null) {
-                    val mdUrl = mdBaseUrl.trimEnd('/') + "/" + mdFilenameToDelete
+                val mdUrls = mdMirrorUrls(webdav, serverUrl, folderName, noteId)
+                for (mdUrl in mdUrls) {
                     // 🔧 v2.0.0 (Issue #44): try/delete instead of exists()+delete()
                     try {
                         webdav.delete(mdUrl)
@@ -1084,8 +1070,6 @@ internal class NoteDownloader(
                             throw e
                         }
                     }
-                } else {
-                    Logger.w(TAG, "⚠️ Could not determine MD filename for note $noteId")
                 }
             }
 
@@ -1110,6 +1094,7 @@ internal class NoteDownloader(
             // ein überflüssiger GET pro Notiz).
             if (!isMove) {
                 eTagCache.clearForNote(noteId)
+                eTagCache.clearMdPath(noteId)
                 prefs.edit {
                     remove("content_hash_$noteId")
                     remove("content_hash_md_$noteId")
@@ -1122,6 +1107,35 @@ internal class NoteDownloader(
             Logger.e(TAG, "Failed to delete note from server: $noteId", e)
             false
         }
+    }
+
+    /**
+     * MD-Kopien einer Notiz in [folderName], die [deleteFromServer] löschen soll.
+     *
+     * 🆕 v2.19.0: Ist ein Pfad gemerkt, ist er die einzige Kopie. Gelöscht wird er nur, wenn er in
+     * genau diesem Ordner liegt: Bei einem Move hat der Export in den neuen Ordner ihn schon
+     * umgesetzt und die alte Datei dabei gelöscht (Step 4). Ohne Pfad: Titel der lokalen Notiz,
+     * sonst YAML-Scan nach allen Dateien mit der ID.
+     */
+    private suspend fun mdMirrorUrls(webdav: WebDavClient, serverUrl: String, folderName: String?, noteId: String): List<String> {
+        val mdBaseUrl = urlBuilder.getMarkdownFolderUrl(serverUrl, folderName).trimEnd('/')
+        val mdRoot = urlBuilder.getMarkdownUrl(serverUrl).trimEnd('/') + "/"
+        val remembered = eTagCache.getMdPath(noteId)?.takeIf { it.startsWith(mdRoot) }
+        if (remembered != null) return listOfNotNull(remembered.takeIf { it.substringBeforeLast('/') == mdBaseUrl })
+
+        val note = storage.loadNote(noteId)
+        if (note != null) {
+            // Fast path: Note still exists locally, use title
+            Logger.d(TAG, "🔍 MD deletion: Using title from local note")
+            return listOf("$mdBaseUrl/" + markdownSyncManager.sanitizeFilename(note.title) + ".md")
+        }
+        // Fallback: Note deleted locally, scan YAML frontmatter (alle Zwillinge)
+        Logger.d(TAG, "⚠️ MD deletion: Note not found locally, scanning YAML...")
+        return markdownSyncManager.findAllByNoteId(webdav, "$mdBaseUrl/", noteId).map { "$mdBaseUrl/$it" }
+            .ifEmpty {
+                Logger.w(TAG, "⚠️ Could not determine MD filename for note $noteId")
+                emptyList()
+            }
     }
 
     /**

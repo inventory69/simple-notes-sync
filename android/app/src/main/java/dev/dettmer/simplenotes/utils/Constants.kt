@@ -121,6 +121,9 @@ object Constants {
     const val KEY_STALE_ROOT_CLEANED = "dirs_ensured_stale_root"
     const val KEY_DEEP_PROPFIND_REFUSED = "dirs_ensured_deep_propfind_refused"
 
+    // 🆕 v2.19.0: Einmaliger Aufräumlauf doppelter MD-Kopien (MarkdownSyncManager.healStaleMirrors).
+    const val KEY_MD_MIRRORS_HEALED = "dirs_ensured_md_mirrors_healed"
+
     // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
     const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8 // 8s default, good for mobile

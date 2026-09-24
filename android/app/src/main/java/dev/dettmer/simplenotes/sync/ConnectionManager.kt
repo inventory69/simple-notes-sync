@@ -181,6 +181,14 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
         set(value) = setDirEnsured(Constants.KEY_STALE_ROOT_CLEANED, value)
 
     /**
+     * 🆕 v2.19.0: Der Aufräumlauf für doppelte MD-Kopien ([MarkdownSyncManager.healStaleMirrors])
+     * lief für diese Server-Config. Ein Wechsel von Server, Ordner oder Benutzer lässt ihn erneut zu.
+     */
+    var mdMirrorsHealed: Boolean
+        get() = dirEnsured(Constants.KEY_MD_MIRRORS_HEALED)
+        set(value) = setDirEnsured(Constants.KEY_MD_MIRRORS_HEALED, value)
+
+    /**
      * 🆕 v2.14.0: `true`, sobald der Server ein `Depth: infinity`-PROPFIND abgelehnt hat
      * (403/400/507). Ohne dieses Flag zahlte jeder Sync gegen so einen Server einen
      * Fehlversuch. Ein Server-/Config-Wechsel lässt es über den Fingerprint verfallen,

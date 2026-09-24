@@ -811,6 +811,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     allowSkip = !newFoldersDiscovered
                 )
 
+                // 🆕 v2.19.0: Step 5.7: einmal pro Server-Config alte MD-Kopien räumen. Nach den
+                // Downloads (lokale Notizen + Ledger vollständig), vor dem Import (keine Zwillinge
+                // als Änderung übernehmen).
+                if (mdExport) markdownSyncManager.healStaleMirrors(webdav, serverUrl)
+
                 Logger.d(TAG, "📍 Step 6: Auto-import Markdown (if enabled)")
 
                 // Auto-import Markdown files from server
