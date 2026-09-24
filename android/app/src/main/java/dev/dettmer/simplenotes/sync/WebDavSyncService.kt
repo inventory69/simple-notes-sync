@@ -1392,12 +1392,6 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     }
 
     /**
-     * Manueller Markdown-Sync — delegiert an MarkdownSyncManager.
-     */
-    suspend fun syncMarkdownFiles(serverUrl: String, username: String, password: String): Int =
-        markdownSyncManager.syncAll(serverUrl, username, password)
-
-    /**
      * Auto-Import Markdown files during regular sync — delegiert an MarkdownSyncManager.
      */
     private suspend fun importMarkdownFiles(webdav: WebDavClient, serverUrl: String, excludeNoteIds: Set<String> = emptySet()): Int =
