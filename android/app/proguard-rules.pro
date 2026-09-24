@@ -104,6 +104,8 @@
 -keep,allowobfuscation class dev.dettmer.simplenotes.backup.AppSettings { <init>(...); }
 -keepclassmembers class dev.dettmer.simplenotes.backup.BackupData { <fields>; }
 -keepclassmembers class dev.dettmer.simplenotes.backup.AppSettings { <fields>; }
+-keep,allowobfuscation class dev.dettmer.simplenotes.backup.BackupAsset { <init>(...); }
+-keepclassmembers class dev.dettmer.simplenotes.backup.BackupAsset { <fields>; }
 
 # ═══════════════════════════════════════════════════════════════════════
 # Weitere Gson-Datenklassen (v2.7.0 Folders + Pending-Deletions-Queue)

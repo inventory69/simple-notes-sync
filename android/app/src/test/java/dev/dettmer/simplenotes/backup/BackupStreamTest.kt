@@ -65,4 +65,15 @@ class BackupStreamTest {
 
         assertEquals(assets, received)
     }
+
+    @Test
+    fun `release backups up to v2_18 keep their image names`() = runTest {
+        // Ausschnitt aus einem echten v2.18.1-Release-Backup: R8 hatte BackupAsset.name in "a" umbenannt.
+        val release = """{"app_version":"2.18.1","assets":[{"a":"9eda08509df34f14.webp","data_base64":"aGVsbG8="}],
+            |"backup_version":1,"created_at":1,"notes":[],"notes_count":0}""".trimMargin().toByteArray()
+
+        val (_, received) = read(release)
+
+        assertEquals(listOf(BackupAsset("9eda08509df34f14.webp", "aGVsbG8=")), received)
+    }
 }

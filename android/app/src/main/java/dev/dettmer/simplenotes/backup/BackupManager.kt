@@ -761,6 +761,9 @@ data class BackupData(
 
 /** 🆕 Bild-Attachments: ein Asset-Dateiname + Base64-Inhalt im Backup-JSON. */
 data class BackupAsset(
+    // "a": Bis v2.18.x fehlten Annotation und Keep-Regel, R8 benannte das Feld um und
+    // Release-Backups schrieben den Namen unter "a" (Debug-Builds unter "name").
+    @com.google.gson.annotations.SerializedName(value = "name", alternate = ["a"])
     val name: String,
     @com.google.gson.annotations.SerializedName("data_base64")
     val dataBase64: String
