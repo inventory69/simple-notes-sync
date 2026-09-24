@@ -720,7 +720,6 @@
         <item quantity="many">%d notatek ma konflikty</item>
         <item quantity="other">%d notatek ma konflikty</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Ostrzeżenie synchronizacji</string>
     <string name="notification_sync_warning_message">Serwer nieosiągalny przez %dh</string>
     <string name="notification_sync_warning_detail">Serwer WebDAV był nieosiągalny przez %d godzin. Sprawdź połączenie sieciowe lub ustawienia serwera.</string>
     <string name="notification_sync_in_progress_title">Synchronizacja w toku</string>
