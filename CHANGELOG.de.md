@@ -8,6 +8,85 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.19.0] - 2026-09-25
+
+### ⚠️ Gut zu wissen
+
+- **Verschlüsselte Backups nutzen ein neues Format.** Ein mit Passwort erstelltes Backup aus 2.19.0 lässt sich nur mit 2.19.0 oder neuer wiederherstellen. Unverschlüsselte Backups aus 2.19.0 lassen sich in älteren Versionen weiter einspielen, dann aber ohne Bilder. Alle älteren Backups lassen sich weiterhin wiederherstellen
+- **Markdown-Dateien mit eigenem Namen werden umbenannt.** Eine im Markdown-Editor unter eigenem Dateinamen angelegte Datei heißt nach dem ersten Sync wie der Titel der Notiz. Links in Obsidian oder ähnlichen Programmen, die auf den alten Namen zeigen, brechen dabei
+
+### ✨ Neue Features
+
+**Ein Sync-Status-Dialog, der sagt, was zu tun ist** ([decdf93](https://github.com/inventory69/simple-notes-sync/commit/decdf93), [af73f00](https://github.com/inventory69/simple-notes-sync/commit/af73f00), [d94557b](https://github.com/inventory69/simple-notes-sync/commit/d94557b))
+- Das Hilfe-Symbol neben dem Sync-Status zeigte nur einen Zähler und eine Symbol-Legende. Konflikte und gescheiterte Syncs tauchten dort nicht auf, und nichts schlug einen nächsten Schritt vor
+- Jetzt öffnet es einen Sync-Status-Dialog: wann der letzte Sync geklappt hat, Karten für einen gescheiterten Sync, Konflikte und fehlende Dateien mit antippbaren Notiztiteln, ein Button zum erneuten Versuchen und Sprünge in die Server- und Sync-Einstellungen und ins Aktivitätsprotokoll. Die Symbol-Legende bleibt als einklappbarer Abschnitt
+- Ein kurzer Netzaussetzer wirkt nicht mehr wie ein Notfall. Der Dialog sagt „Sync gerade nicht möglich" und weist darauf hin, dass die Notizen auf dem Gerät bleiben. Erst wenn ein Sync scheitert und seit über einem Tag keiner durchgekommen ist, erscheint eine rote Karte „Länger nicht synchronisiert", nach derselben Regel wie die Warnung im Hintergrund
+- Das Badge am Symbol zählt jetzt auch Konflikte und einen Sync, der seit über einem Tag scheitert, und jede Problem-Benachrichtigung öffnet direkt den Dialog
+
+### 🐛 Bug-Fixes
+
+**Backups mit vielen Bildern ließen die App abstürzen** ([b1bbaee](https://github.com/inventory69/simple-notes-sync/commit/b1bbaee))
+- Jedes Bild steht im Backup als Base64, und die ganze Datei entstand mehrfach im Speicher. Auf einem Gerät mit kleinem Heap reichten 40 Bilder für einen Absturz wegen Speichermangels, zurück blieb eine leere Datei. Die Wiederherstellung las die ganze Datei genauso in den Speicher
+- Backups werden jetzt als Stream geschrieben und gelesen, ein Bild nach dem anderen. Unverschlüsselte Backups behalten ihr JSON-Format. Verschlüsselte Backups nutzen ein neues Format in Blöcken (SNE2: AES-256-GCM über 64-KiB-Blöcke, 600.000 PBKDF2-Iterationen), weil AES-GCM unter Android beim Verschlüsseln den ganzen Klartext puffert
+- Scheitert ein Backup trotzdem, zeigt die App eine Meldung statt abzustürzen und löscht die leere Datei
+- Danke an die Person, die den Absturz in einer Google-Play-Rezension gemeldet hat!
+
+**Drehen des Bildschirms machte aus einem verschlüsselten Backup ein unverschlüsseltes** ([d6a7388](https://github.com/inventory69/simple-notes-sync/commit/d6a7388))
+- Wurde das Gerät gedreht oder der Dunkelmodus umgeschaltet, während der Speichern-Dialog offen war, vergaß der Backup-Bildschirm, dass „Backup verschlüsseln" an war, und schrieb ein unverschlüsseltes Backup, ohne nach einem Passwort zu fragen
+- Die Wahl bleibt jetzt erhalten, und ein Abbruch im Passwort-Dialog löscht die Datei, die der Speichern-Dialog schon angelegt hatte
+
+**Backup-Bilder verloren in Release-Builds ihren Namen** ([2bd6efb](https://github.com/inventory69/simple-notes-sync/commit/2bd6efb))
+- Seit 2.12.0 benannte R8 in Release-Builds ein Feld um, der Bildname stand deshalb unter „a" statt „name". Ein solches Backup brachte in einem Build mit anderem Mapping die Notiz ohne ihr Bild zurück
+- Der Name wird jetzt als „name" geschrieben und „a" weiter gelesen, ältere Backups behalten ihre Bilder
+
+**Wiederherstellung überspringt unsichere Bildnamen** ([fa216a5](https://github.com/inventory69/simple-notes-sync/commit/fa216a5))
+- Ein manipuliertes Backup konnte einen Bildnamen wie `../../shared_prefs/x.xml` verwenden und die App Dateien außerhalb ihres Bilderordners anlegen lassen (vorhandene Dateien wurden nie überschrieben). Solche Namen werden jetzt mit einer Warnung übersprungen
+
+**Am Server fehlende Notizen leeren nicht mehr die App** ([fa2d207](https://github.com/inventory69/simple-notes-sync/commit/fa2d207))
+- Die Löscherkennung stoppte nur, wenn alle synchronisierten Notizen am Server fehlten. Fehlten 49 von 50, landeten 49 im Papierkorb, und Notizen, die schon im Papierkorb lagen, wurden endgültig gelöscht
+- Der Sync löscht jetzt nichts mehr, sobald mehr als die Hälfte der synchronisierten Notizen fehlt (ab zehn Notizen), und schreibt den Grund ins Aktivitätsprotokoll. Wer weniger Notizen hat, kann sie weiter alle über die Weboberfläche löschen
+- Sync-Ordner wechseln und Wiederherstellen vom Server setzen die Server-Caches jetzt auf dieselbe Weise zurück. Die Wiederherstellung behielt bisher die alte Zeit des letzten erfolgreichen Syncs
+- Das ist die Vorarbeit für die Ende-zu-Ende-Verschlüsselung ([#9](https://github.com/inventory69/simple-notes-sync/issues/9))
+
+**Eine alte Markdown-Kopie überschrieb neuere Notizen** ([0a2ec08](https://github.com/inventory69/simple-notes-sync/commit/0a2ec08))
+- Mit Markdown-Auto-Sync wurde eine Notiz, die sich nur am Server geändert hatte, etwa am Desktop, zurückgedreht: Der Download holte die neue Fassung, danach übernahm der Markdown-Import die ältere eigene Kopie der App und lud sie wieder hoch. Eine Geräteuhr, die ein paar Sekunden hinter dem Server lag, reichte dafür
+- Selbst geschriebene Kopien erkennt die App jetzt an ihrem E-Tag, und ein erzwungener Import setzt einen vorherigen Sync voraus
+
+**Notizen aus einem Markdown-Editor landeten im Papierkorb** ([6488a04](https://github.com/inventory69/simple-notes-sync/commit/6488a04), [660cfb8](https://github.com/inventory69/simple-notes-sync/commit/660cfb8), [1e891b1](https://github.com/inventory69/simple-notes-sync/commit/1e891b1))
+- Eine neue .md-Datei aus einem Editor wie Obsidian wurde in der App zur Notiz, ihre JSON kam aber nie am Server an, und der nächste Sync schob sie in den Papierkorb. Änderungen im Editor erreichten andere Geräte ebenfalls nie
+- Dateien ohne Notiz-ID bekamen bei jedem Import eine neue ID, jede Bearbeitung, jede Wiederherstellung und jedes weitere Gerät erzeugte so eine Dublette. Der erste Import schreibt die ID jetzt ins Frontmatter der Datei
+- Eine solche Datei heißt nach dem nächsten Export wie der Titel der Notiz, siehe „Gut zu wissen" oben
+
+**Jede Umbenennung ließ eine weitere Markdown-Kopie zurück** ([9f58828](https://github.com/inventory69/simple-notes-sync/commit/9f58828))
+- Der Markdown-Export benannte die Datei nach dem aktuellen Titel und merkte sich den alten nie. Umbenennungen, Ordnerwechsel und importierte Editor-Dateien hinterließen Kopien derselben Notiz, Markdown-Editoren zeigten Notizen doppelt oder dreifach, und eine Änderung an einer veralteten Kopie wurde als Änderung importiert
+- Der Export merkt sich jetzt die Datei jeder Notiz und löscht die alte, nachdem er geprüft hat, dass sie wirklich zur Notiz gehört. Ein einmaliger Aufräumlauf entfernt vorhandene Reste, aber nur in eindeutigen Fällen: Dateien ohne ID, fremde IDs und die einzige Kopie einer Notiz bleiben liegen
+
+**Gescheiterte Markdown- und Bild-Exporte blieben unsichtbar** ([be1e08c](https://github.com/inventory69/simple-notes-sync/commit/be1e08c), [51e8072](https://github.com/inventory69/simple-notes-sync/commit/51e8072))
+- Eine Markdown-Kopie oder ein Bild, dessen Upload scheiterte, landete nur im Log. Die Notizen waren synchron, jeder weitere Sync sah sauber aus, während die Datei am Server fehlte
+- Offene Export-Probleme stehen jetzt mit lesbarem Grund im Sync-Banner und im Sync-Status-Dialog (auch 409, 413 und 507), und der nächste Sync versucht genau diese Dateien erneut, ohne auf eine Bearbeitung zu warten
+- Ein Sync im Hintergrund zeigt beim ersten Auftreten eine leise Warnung, und ein erneuter Versuch, der nur fehlende Dateien überträgt, meldet „Fehlende Dateien übertragen" statt „Nichts zu syncen"
+
+### 🎨 UI-Verbesserungen
+
+**Abwählen scrollt zum Eintrag statt nach oben** ([49a08df](https://github.com/inventory69/simple-notes-sync/commit/49a08df))
+- Das Abwählen eines Eintrags scrollte die Checkliste immer an den Anfang, auch wenn der Eintrag weit unten landete, und man sah nie, wo er hinging
+- Die Liste scrollt jetzt mit derselben Schnitt-und-Gleit-Bewegung zur neuen Position des Eintrags. Ziele nahe am Anfang landen weiter ganz oben, ein Eintrag, der schon sichtbar ist, wächst einfach an seinem Platz wieder auf. Die Einstellung heißt jetzt „Zum abgewählten Eintrag scrollen"
+
+**Benachrichtigungen standardmäßig nur bei Problemen** ([3523e48](https://github.com/inventory69/simple-notes-sync/commit/3523e48))
+- „Nur Fehler und Warnungen" ist jetzt standardmäßig an, ein Sync im Hintergrund meldet keinen Erfolg mehr. Fehler, Warnungen und Konflikte melden sich weiterhin
+- Das gilt für jede Installation, in der der Schalter nie angefasst wurde, auch für bestehende. Eine getroffene Wahl, auch eine aus einem Backup, bleibt erhalten
+
+**Die Zurück-Geste in den Einstellungen blendet wieder** ([3e90d23](https://github.com/inventory69/simple-notes-sync/commit/3e90d23))
+- Navigation 2.10 animiert die vorausschauende Zurück-Geste mit einer Skalierung, die nicht zum Überblenden im Rest der Einstellungen passte
+
+### 🔧 Technische Verbesserungen
+
+**Toolchain und Bibliotheken auf aktuellem Stand** ([7589dcf](https://github.com/inventory69/simple-notes-sync/commit/7589dcf), [3397cf1](https://github.com/inventory69/simple-notes-sync/commit/3397cf1), [c2f7b80](https://github.com/inventory69/simple-notes-sync/commit/c2f7b80), [b904296](https://github.com/inventory69/simple-notes-sync/commit/b904296), [d6cda9c](https://github.com/inventory69/simple-notes-sync/commit/d6cda9c))
+- Gradle 9.7.1, Android Gradle Plugin 9.4.1 mit eingebautem Kotlin, Kotlin 2.4.20, Compose BOM 2026.09.00, OkHttp 5.5.0, Glance 1.2.0, Coil 3.6.3 und kleinere AndroidX-Bumps. compileSdk ist 37, targetSdk bleibt 36
+- Die Release-APK ist 3,8 % kleiner als in 2.18.1, und ein Sync braucht weiterhin gleich viele Requests
+
+---
+
 ## [2.18.1] - 2026-09-21
 
 ### 🐛 Bug-Fixes

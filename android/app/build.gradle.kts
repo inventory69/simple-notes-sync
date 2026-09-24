@@ -19,8 +19,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 62  // 🆕 v2.18.1 - widget payload budget, link task
-        versionName = "2.18.1"  // 🆕 v2.18.1 - widget payload budget, link task
+        versionCode = 63  // 🆕 v2.19.0 - toolchain bumps, sync status dialog, streamed backups
+        versionName = "2.19.0"  // 🆕 v2.19.0 - toolchain bumps, sync status dialog, streamed backups
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

@@ -1,0 +1,9 @@
+🩺 v2.19.0 - Sync-Sprechstunde
+
+• Neu: Sync-Status-Dialog erklärt Probleme, hilft weiter
+• Fix: Backups mit vielen Bildern stürzen nicht mehr ab
+• Fix: Sync stoppt, wenn am Server über die Hälfte fehlt
+• Fix: Notizen aus MD-Editoren erreichen den Server, eine Datei je Notiz
+• Fix: Abwählen scrollt zum Eintrag statt nach oben
+• Standard: Benachrichtigung nur bei Problemen
+• Verschlüsselte Backups: neues Format, ältere Versionen lesen es nicht

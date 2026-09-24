@@ -8,6 +8,85 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.19.0] - 2026-09-25
+
+### ⚠️ Good to Know
+
+- **Encrypted backups use a new format.** A backup created with a password in 2.19.0 can only be restored by 2.19.0 or newer. Unencrypted backups from 2.19.0 still restore in older versions, but without their images. Every older backup can still be restored
+- **Markdown files with a name of their own get renamed.** A file you created in a Markdown editor under your own file name is renamed to the note's title after the first sync. Links in Obsidian or similar tools that point to the old name break
+
+### ✨ New Features
+
+**A Sync Status Dialog That Tells You What to Do** ([decdf93](https://github.com/inventory69/simple-notes-sync/commit/decdf93), [af73f00](https://github.com/inventory69/simple-notes-sync/commit/af73f00), [d94557b](https://github.com/inventory69/simple-notes-sync/commit/d94557b))
+- The help icon next to the sync status only showed a counter and an icon legend. Conflicts and failed syncs did not appear there, and nothing suggested a next step
+- It now opens a sync status dialog: when the last sync succeeded, cards for a failed sync, conflicts and missing files with tappable note titles, a retry button and shortcuts to the server settings, sync settings and activity log. The icon legend stays as a collapsible section
+- A short network hiccup no longer looks like an emergency. The dialog says "Can't sync right now" and points out that your notes stay on the device. Only when a sync is failing and none has gone through for more than a day does it switch to a red "Not synced for a while" card, the same rule as the background warning
+- The badge on the icon also counts conflicts and a sync that has been failing for more than a day, and every problem notification opens the dialog directly
+
+### 🐛 Bug Fixes
+
+**Backups With Many Images Crashed the App** ([b1bbaee](https://github.com/inventory69/simple-notes-sync/commit/b1bbaee))
+- Every image is stored in the backup as Base64, and the whole file was built in memory several times over. On a device with a small heap, 40 images were enough for an out of memory crash that left an empty file behind. Restoring read the whole file into memory the same way
+- Backups are now written and read as a stream, one image at a time. Plain backups keep their JSON format. Encrypted backups use a new chunked format (SNE2: AES-256-GCM over 64 KiB chunks, 600,000 PBKDF2 iterations), because AES-GCM on Android buffers the whole plaintext while encrypting
+- If a backup still fails, the app shows a message instead of crashing and deletes the empty file
+- Thanks to the Google Play reviewer who reported the crash!
+
+**Rotating the Screen Could Turn an Encrypted Backup Into a Plain One** ([d6a7388](https://github.com/inventory69/simple-notes-sync/commit/d6a7388))
+- If the device was rotated or dark mode switched while the save dialog was open, the backup screen forgot that "Encrypt Backup" was on and wrote an unencrypted backup without asking for a password
+- The choice now survives, and cancelling the password dialog deletes the file the save dialog had already created
+
+**Backup Images Lost Their Names in Release Builds** ([2bd6efb](https://github.com/inventory69/simple-notes-sync/commit/2bd6efb))
+- Since 2.12.0, R8 renamed a field in release builds, so the image name was stored under "a" instead of "name". Restoring such a backup in a build with a different mapping brought the note back without its image
+- The name is now written as "name" and "a" is still read, so older backups keep their images
+
+**Restore Skips Unsafe Image Names** ([fa216a5](https://github.com/inventory69/simple-notes-sync/commit/fa216a5))
+- A crafted backup could use an image name like `../../shared_prefs/x.xml` and make the app create files outside its image folder (existing files were never overwritten). Such names are now skipped with a warning
+
+**Notes Missing on the Server No Longer Empty the App** ([fa2d207](https://github.com/inventory69/simple-notes-sync/commit/fa2d207))
+- Deletion detection only stopped when every synced note was missing on the server. With 49 of 50 notes gone, 49 went to the trash and notes already in the trash were deleted for good
+- Sync now stops deleting as soon as more than half of the synced notes are missing (from ten notes up) and writes the reason to the activity log. With fewer notes you can still delete them all from the web interface
+- Changing the sync folder and restoring from the server now reset the server caches the same way. Restore used to keep the old "last successful sync" time
+- This is the groundwork for end-to-end encryption ([#9](https://github.com/inventory69/simple-notes-sync/issues/9))
+
+**An Old Markdown Copy Overwrote Newer Notes** ([0a2ec08](https://github.com/inventory69/simple-notes-sync/commit/0a2ec08))
+- With Markdown auto sync on, a note changed only on the server, for example on the desktop, was reverted: the download took the new version, then the Markdown import took the app's own older copy and uploaded it again. A device clock a few seconds behind the server was enough
+- Copies the app wrote itself are now recognised by their E-Tag, and a forced import needs a previous sync
+
+**Notes From a Markdown Editor Ended Up in the Trash** ([6488a04](https://github.com/inventory69/simple-notes-sync/commit/6488a04), [660cfb8](https://github.com/inventory69/simple-notes-sync/commit/660cfb8), [1e891b1](https://github.com/inventory69/simple-notes-sync/commit/1e891b1))
+- A new .md file created in an editor such as Obsidian became a note in the app, but its JSON never reached the server, so the next sync moved it to the trash. Edits made in the editor never reached other devices either
+- Files without a note id got a new id on every import, so each edit, a restore and every further device created a duplicate. The first import now writes the id into the file's frontmatter
+- Such a file is renamed to the note's title on the next export, see "Good to Know" above
+
+**Every Rename Left Another Markdown Copy Behind** ([9f58828](https://github.com/inventory69/simple-notes-sync/commit/9f58828))
+- The Markdown export named the file after the current title and never remembered the old one. Renames, folder changes and imported editor files left copies of the same note behind, so Markdown editors showed notes two or three times, and editing a stale copy was imported as a change
+- The export now remembers each note's file and removes the old one after checking that it really belongs to the note. A one-time cleanup removes existing leftovers, but only in clear cases: files without an id, foreign ids and a note's only copy stay
+
+**Failed Markdown and Image Exports Stayed Invisible** ([be1e08c](https://github.com/inventory69/simple-notes-sync/commit/be1e08c), [51e8072](https://github.com/inventory69/simple-notes-sync/commit/51e8072))
+- A Markdown copy or image that failed to upload was only written to the log. The notes were in sync, so every following sync looked clean while the file on the server stayed missing
+- Open export problems now show up in the sync banner and the sync status dialog with a readable reason (409, 413 and 507 included), and the next sync retries exactly those files without waiting for an edit
+- A background sync shows one quiet warning when problems first appear, and a retry that only transfers missing files says "Missing files transferred" instead of "Nothing to sync"
+
+### 🎨 UI Improvements
+
+**Unchecking Scrolls to the Item, Not to the Top** ([49a08df](https://github.com/inventory69/simple-notes-sync/commit/49a08df))
+- Unchecking an item always scrolled the checklist back to the top, even when the item landed far below, so you never saw where it went
+- The list now scrolls to the item's new position with the same cut and glide motion. Items near the start still land at the top, and an item already on screen simply grows back in place. The setting is now called "Scroll to unchecked item"
+
+**Notifications Only for Problems by Default** ([3523e48](https://github.com/inventory69/simple-notes-sync/commit/3523e48))
+- "Errors and warnings only" is now on by default, so a background sync no longer posts a success notification. Failures, warnings and conflicts still notify
+- This applies to every install that never touched the toggle, existing ones included. A choice you made, also one restored from a backup, is kept
+
+**The Back Gesture in Settings Fades Again** ([3e90d23](https://github.com/inventory69/simple-notes-sync/commit/3e90d23))
+- Navigation 2.10 animates the predictive back gesture with a scale, which clashed with the fade used everywhere else in settings
+
+### 🔧 Technical Improvements
+
+**Toolchain and Libraries Up to Date** ([7589dcf](https://github.com/inventory69/simple-notes-sync/commit/7589dcf), [3397cf1](https://github.com/inventory69/simple-notes-sync/commit/3397cf1), [c2f7b80](https://github.com/inventory69/simple-notes-sync/commit/c2f7b80), [b904296](https://github.com/inventory69/simple-notes-sync/commit/b904296), [d6cda9c](https://github.com/inventory69/simple-notes-sync/commit/d6cda9c))
+- Gradle 9.7.1, Android Gradle Plugin 9.4.1 with built-in Kotlin, Kotlin 2.4.20, Compose BOM 2026.09.00, OkHttp 5.5.0, Glance 1.2.0, Coil 3.6.3 and smaller AndroidX bumps. compileSdk is 37, targetSdk stays 36
+- The release APK is 3.8 % smaller than in 2.18.1, and a sync still needs the same number of requests
+
+---
+
 ## [2.18.1] - 2026-09-21
 
 ### 🐛 Bug Fixes
