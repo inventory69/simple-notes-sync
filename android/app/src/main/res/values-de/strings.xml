@@ -126,6 +126,7 @@
         <item quantity="other">%1$d Bilder nicht übertragen</item>
     </plurals>
     <string name="sync_markdown_import_failed">Markdown-Import fehlgeschlagen</string>
+    <string name="sync_export_resolved">Fehlende Dateien übertragen</string>
     <plurals name="sync_notes_synced_count">
         <item quantity="one">%1$d Notiz synchronisiert</item>
         <item quantity="other">%1$d Notizen synchronisiert</item>

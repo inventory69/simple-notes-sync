@@ -22,6 +22,7 @@ data class SyncResult(
     val markdownFailedCount: Int = 0,
     val markdownImportFailed: Boolean = false, // 🆕 v2.19.0: MD-Auto-Import abgebrochen
     val assetFailedCount: Int = 0, // 🆕 v2.19.0: Bilder nicht übertragen
+    val exportProblemsResolved: Boolean = false, // 🆕 v2.19.0: offene Export-Probleme sind mit diesem Lauf behoben
     val errorMessage: String? = null,
     val infoMessage: String? = null // 🆕 v1.9.0 Issue #21: Non-error status info
 ) {

@@ -27,6 +27,7 @@ class SyncBannerHelperTest {
             resources.getQuantityString(R.plurals.sync_notes_synced_count, any(), any())
         } answers { "${thirdArg<Array<Any>>()[0]} synced" }
         every { context.getString(R.string.sync_markdown_import_failed) } returns "import failed"
+        every { context.getString(R.string.sync_export_resolved) } returns "files transferred"
         every {
             resources.getQuantityString(R.plurals.sync_conflict_count, any(), any())
         } answers { "${thirdArg<Array<Any>>()[0]} conflicts" }
@@ -48,6 +49,12 @@ class SyncBannerHelperTest {
         val result = SyncResult(isSuccess = true, syncedCount = 3, conflictCount = 2)
 
         assertEquals("2 conflicts · 3 synced", buildSyncResultBanner(context, result))
+    }
+
+    @Test fun `a retry that only transferred missing files says so`() {
+        val result = SyncResult(isSuccess = true, exportProblemsResolved = true)
+
+        assertEquals("files transferred", buildSyncResultBanner(context, result))
     }
 
     @Test fun `a quiet sync still reports nothing`() {

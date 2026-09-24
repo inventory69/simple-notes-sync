@@ -926,7 +926,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     deletionDetectionSkipped = deletionDetectionSkipped, // 🆕 Issue #128
                     markdownFailedCount = mdFailedIds.size,
                     markdownImportFailed = markdownImportFailed,
-                    assetFailedCount = assetFailedCount
+                    assetFailedCount = assetFailedCount,
+                    // Sonst meldete ein Retry, der nur Kopien nachholt, „Nichts zu synchronisieren".
+                    exportProblemsResolved = storedExportProblems != null && exportProblems.isEmpty
                 )
 
                 // 🆕 v1.8.0: Phase 6 - Completed

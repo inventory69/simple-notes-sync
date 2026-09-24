@@ -44,6 +44,7 @@ fun buildSyncResultBanner(context: Context, result: SyncResult): String? {
         }
         // 🆕 v2.19.0: Die Notizen sind synchron, nur ihre Spiegel/Bilder nicht.
         addAll(exportProblemParts(context, result))
+        if (result.exportProblemsResolved) add(context.getString(R.string.sync_export_resolved))
     }
     return if (parts.isEmpty()) null else parts.joinToString(" · ")
 }
