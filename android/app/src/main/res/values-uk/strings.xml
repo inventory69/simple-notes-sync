@@ -385,7 +385,6 @@
         <item quantity="many">%d нотаток мають конфлікт</item>
         <item quantity="other">%d нотаток мають конфлікт</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Попередження щодо Синхронізації</string>
     <string name="notification_sync_warning_message">Сервер недосяжний для %dh</string>
     <string name="notification_sync_warning_detail">Сервер WebDAV недосяжний уже протягом %d год. Будь ласка, перевірте ваше мережеве з\'єднання чи налаштування сервера.</string>
     <string name="notification_sync_in_progress_title">Синхронізація у процесі</string>
