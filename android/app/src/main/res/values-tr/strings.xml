@@ -475,7 +475,6 @@
         <item quantity="one">%d notta çakışma var</item>
         <item quantity="other">%d notlarda çakışma var</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Senkronizasyon Uyarısı</string>
     <string name="notification_sync_warning_message">%dh boyunca sunucuya ulaşılamıyor</string>
     <string name="notification_sync_warning_detail">WebDAV sunucusuna %d saat boyunca ulaşılamadı. Lütfen ağ bağlantınızı veya sunucu ayarlarını kontrol edin.</string>
     <string name="notification_sync_in_progress_title">Senkronizasyon devam ediyor</string>
