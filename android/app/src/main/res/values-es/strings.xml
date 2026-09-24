@@ -385,7 +385,6 @@
         <item quantity="many">%d notas tienen conflictos</item>
         <item quantity="other">%d notas tienen conflictos</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Aviso de sincronización</string>
     <string name="notification_sync_in_progress_title">Sincronización en progreso</string>
     <string name="notification_sync_in_progress_message">Las notas se están sincronizando…</string>
     <string name="notification_sync_error_title">Error de sincronización</string>
