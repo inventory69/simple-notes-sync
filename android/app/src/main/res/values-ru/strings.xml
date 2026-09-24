@@ -402,7 +402,6 @@
     <string name="notification_sync_progress_title">Синхронизация…</string>
     <string name="notification_sync_progress_message">Выполняется синхронизация заметок</string>
     <string name="notification_sync_conflict_title">Обнаружен конфликт синхронизации</string>
-    <string name="notification_sync_warning_title">⚠️ Предупреждение синхронизации</string>
     <string name="notification_sync_warning_message">Сервер недоступен в течение %d ч</string>
     <string name="notification_sync_warning_detail">WebDAV сервер недоступен в течение %d часов. Пожалуйста, проверьте ваше сетевое подключение или настройки сервера.</string>
     <string name="notification_sync_in_progress_title">Выполняется синхронизация</string>
