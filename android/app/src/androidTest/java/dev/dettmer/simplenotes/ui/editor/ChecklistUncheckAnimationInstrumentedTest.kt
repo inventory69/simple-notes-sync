@@ -16,6 +16,7 @@ import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -32,7 +33,7 @@ import org.junit.runner.RunWith
  *
  * Hintergrund: `LazyLayoutItemAnimator` ist für die Aufwärts-Richtung nicht robust. Ein Ziel
  * **außerhalb** des Viewports parkt das Item für die Animationsdauer unbewegt am Viewport-Rand
- * („Geist"); bei sichtbarem Ziel und parallel zum ScrollToTop entstanden Einschiebe-Artefakte.
+ * („Geist"); bei sichtbarem Ziel und parallel zum Scroll-to-Top entstanden Einschiebe-Artefakte.
  * Der Fix lässt die Row die Exit-Animation bei **jedem** Uncheck mit Separator-Reorder selbst
  * besitzen: Collapse an Ort und Stelle, Commit danach, an sichtbarem Ziel wächst sie wieder auf.
  *
@@ -104,7 +105,8 @@ class ChecklistUncheckAnimationInstrumentedTest {
      * [NoteEditorViewModel.updateChecklistItemChecked] für MANUAL nach: Flip **und** Sort im
      * selben State-Snapshot (die v2.5.0-Invariante).
      */
-    private fun setContent(scrollTopOnUncheck: Boolean = false) {
+    private fun setContent(scrollTopOnUncheck: Boolean = false, extraChecked: Set<Int> = emptySet()) {
+        // Sortiert wie das ViewModel beim Laden: extraChecked landen unter dem Separator.
         itemsState.value = (0 until ITEM_COUNT).map { i ->
             ChecklistItemState(
                 id = "id-$i",
@@ -114,11 +116,11 @@ class ChecklistUncheckAnimationInstrumentedTest {
                 } else {
                     "Item $i"
                 },
-                isChecked = i >= UNCHECKED_COUNT,
+                isChecked = i >= UNCHECKED_COUNT || i in extraChecked,
                 order = i,
                 originalOrder = i
             )
-        }
+        }.let { sortChecklistStates(it, ChecklistSortOption.MANUAL) }
         rule.setContent {
             var items by itemsState
             MaterialTheme {
@@ -140,16 +142,15 @@ class ChecklistUncheckAnimationInstrumentedTest {
                                 val flipped = items.map {
                                     if (it.id == id) it.copy(isChecked = checked) else it
                                 }
-                                items = (
-                                    flipped.filter { !it.isChecked }.sortedBy { it.originalOrder } +
-                                        flipped.filter { it.isChecked }.sortedBy { it.originalOrder }
-                                    ).mapIndexed { index, item -> item.copy(order = index) }
-                                // Wie NoteEditorViewModel.updateChecklistItemChecked: ScrollToTop
+                                items = sortChecklistStates(flipped, ChecklistSortOption.MANUAL)
+                                // Wie NoteEditorViewModel.updateChecklistItemChecked: ScrollToItem
                                 // feuert beim Commit — beim aufgeschobenen Uncheck also erst
                                 // nach dem Collapse.
                                 if (!checked && scrollTopOnUncheck) {
                                     scrollActions.tryEmit(
-                                        NoteEditorViewModel.ChecklistScrollAction.ScrollToTop
+                                        NoteEditorViewModel.ChecklistScrollAction.ScrollToItem(
+                                            items.indexOfFirst { it.id == id }
+                                        )
                                     )
                                 }
                             },
@@ -189,12 +190,13 @@ class ChecklistUncheckAnimationInstrumentedTest {
      */
     private fun boundsOf(itemText: String): androidx.compose.ui.geometry.Rect? {
         val list = listBounds()
-        return rule.onAllNodes(hasText(itemText)).fetchSemanticsNodes().firstOrNull()
-            ?.boundsInRoot
+        // Die LazyList kann eine Zeile doppelt im Semantics-Baum führen, der erste sichtbare zählt.
+        return rule.onAllNodes(hasText(itemText)).fetchSemanticsNodes()
+            .map { it.boundsInRoot }
             // Höhe 0 = weggeclippt. Ein Rect oberhalb des Listenanfangs stammt von einem kurz
             // abgelösten LayoutNode (boundsInRoot fällt dann auf den Ursprung zurück) und ist
             // keine echte Position — ein geparkter Geist läge am Listenanfang, nicht darüber.
-            ?.takeIf { it.height > 0f && it.top >= list.top }
+            .firstOrNull { it.height > 0f && it.top >= list.top }
     }
 
     /** Bounds der LazyColumn selbst — Bezugsrahmen für „sichtbar" und für den Viewport-Anfang. */
@@ -212,7 +214,9 @@ class ChecklistUncheckAnimationInstrumentedTest {
             val center = node.boundsInRoot.center.y
             center > row.top && center < row.bottom
         }
-        rule.onNode(isToggleable() and sameRow).performClick()
+        // Die LazyList kann dieselbe Zeile doppelt im Semantics-Baum führen (zwei Knoten, identische
+        // Bounds). performClick tippt auf Koordinaten, der echte Hit-Test trifft so oder so die Zeile.
+        rule.onAllNodes(isToggleable() and sameRow).onFirst().performClick()
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -391,17 +395,18 @@ class ChecklistUncheckAnimationInstrumentedTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 5. Scroll-to-Top an — Commit direkt nach dem Collapse, dann Scroll
+    // 5. Scroll-to-Top an, Ziel oberhalb des Viewports: Commit direkt nach dem Collapse,
+    //    dann Scroll zum Ziel
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Bei aktivem Scroll-to-Top wird der Commit **nicht** um den Spring-Nachlauf verzögert
-     * (der direkt folgende Scroll übernimmt und maskiert die Bewegung) und die Row wächst am
-     * Ziel nicht auf (kein Layout-Pumpen unter dem laufenden `animateScrollToItem`). Gemessen:
-     * Reorder im Model direkt nach dem Collapse, danach steht die Liste oben.
+     * Liegt das Ziel oberhalb des Viewports, wird der Commit **nicht** um den Spring-Nachlauf
+     * verzögert (der direkt folgende Scroll übernimmt und maskiert die Bewegung) und die Row
+     * wächst am Ziel nicht auf (kein Layout-Pumpen unter dem laufenden Scroll). Gemessen:
+     * Reorder im Model direkt nach dem Collapse, danach steht das Item oben im Bild.
      */
     @Test
-    fun scrollTopOnUncheckCommittetDirektNachCollapseUndScrolltNachOben() {
+    fun scrollTopOnUncheckCommittetDirektNachCollapseUndScrolltZumZiel() {
         setContent(scrollTopOnUncheck = true)
         scrollToIndex(SCROLL_DEST_OFFSCREEN)
         // Erst jetzt die Uhr anhalten — sonst bliebe der Scroll unfertig stehen
@@ -420,9 +425,76 @@ class ChecklistUncheckAnimationInstrumentedTest {
             itemsState.value.indexOfFirst { it.id == toggledId }
         )
 
-        // Der beim Commit gefeuerte ScrollToTop muss die Liste nach oben bringen.
+        // Der beim Commit gefeuerte Scroll muss das Item (Index 20) an die Oberkante bringen,
+        // nicht an den Listenanfang.
         rule.mainClock.advanceTimeBy(SCROLL_TO_TOP_SETTLE_MS)
-        requireNotNull(boundsOf("Item 1")) { "Nach ScrollToTop muss der Listenanfang sichtbar sein" }
+        val landed = requireNotNull(boundsOf(TARGET)) { "$TARGET muss nach dem Scroll sichtbar sein" }
+        val listTop = listBounds().top
+        assertTrue(
+            "$TARGET muss an der Oberkante stehen (top=${landed.top}, Listenanfang=$listTop)",
+            landed.top < listTop + ROW_PITCH_PX
+        )
+        assertTrue("Die Liste darf nicht an den Anfang scrollen", boundsOf("Item 1") == null)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 6. Scroll-to-Top an, Ziel im Bild: kein Scroll, Pfad wie ohne Scroll-to-Top
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Landet das Item sichtbar, läuft exakt der Scroll-off-Pfad: Commit erst nach dem
+     * Spring-Nachlauf (450 ms), Aufwachsen am Ziel, der Viewport bleibt pixelstabil.
+     */
+    @Test
+    fun scrollTopOnUncheckMitSichtbaremZielScrolltNicht() {
+        setContent(scrollTopOnUncheck = true)
+        scrollToIndex(SCROLL_DEST_VISIBLE)
+        rule.mainClock.autoAdvance = false
+
+        val firstVisible = "Item $SCROLL_DEST_VISIBLE"
+        val before = requireNotNull(boundsOf(firstVisible)) { "Testaufbau: $firstVisible muss sichtbar sein" }
+        val toggledId = "id-21"
+        tapCheckbox(TARGET_VISIBLE)
+
+        rule.mainClock.advanceTimeBy(EARLY_COMMIT_MS)
+        assertTrue(
+            "Mit Ziel im Bild darf der Commit nicht vor dem Spring-Nachlauf kommen",
+            itemsState.value.indexOfFirst { it.id == toggledId } > UNCHECKED_COUNT
+        )
+        rule.mainClock.advanceTimeBy(UNCHECK_COLLAPSE_TOTAL_MS - EARLY_COMMIT_MS + 2 * SAMPLE_STEP_MS)
+        assertEquals(
+            "Commit muss nach dem Spring-Nachlauf erfolgt sein",
+            UNCHECKED_COUNT,
+            itemsState.value.indexOfFirst { it.id == toggledId }
+        )
+
+        rule.mainClock.advanceTimeBy(SCROLL_TO_TOP_SETTLE_MS)
+        assertEquals(
+            "Viewport verschoben: mit Ziel im Bild darf nicht gescrollt werden",
+            before.top,
+            requireNotNull(boundsOf(firstVisible)).top,
+            ANCHOR_TOLERANCE_PX
+        )
+        requireNotNull(boundsOf(TARGET_VISIBLE)) { "$TARGET_VISIBLE muss am sichtbaren Ziel stehen" }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 7. Scroll-to-Top an, Ziel nahe am Anfang: ganz nach oben
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /** Landet das Item auf Index ≤ 3, scrollt die Liste an den Anfang, nicht nur zum Item. */
+    @Test
+    fun scrollTopOnUncheckMitZielAmAnfangScrolltGanzNachOben() {
+        setContent(scrollTopOnUncheck = true, extraChecked = setOf(2))
+        scrollToIndex(SCROLL_DEST_VISIBLE)
+        rule.mainClock.autoAdvance = false
+
+        tapCheckbox("Item 2")
+        rule.mainClock.advanceTimeBy(EARLY_COMMIT_MS + SCROLL_TO_TOP_SETTLE_MS)
+
+        assertEquals(2, itemsState.value.indexOfFirst { it.id == "id-2" })
+        requireNotNull(boundsOf("Item 1")) { "Nach dem Scroll muss der Listenanfang sichtbar sein" }
+        requireNotNull(boundsOf("Item 2")) { "Item 2 muss nach dem Scroll sichtbar sein" }
     }
 }
 
@@ -460,7 +532,7 @@ private const val COMMIT_SETTLE_MS = 400L
  */
 private const val EARLY_COMMIT_MS = 350L
 
-/** `animateScrollToItem` über ~26 teils mehrzeilige Items braucht Zeit zum Auslaufen. */
+/** Reicht für Cut + Glide (350 ms) samt Commit-Pass, mit reichlich Puffer. */
 private const val SCROLL_TO_TOP_SETTLE_MS = 2_000L
 
 /** Collapse (250 ms) + Spring-Nachlauf (200 ms) — danach committet die Row. */

@@ -688,8 +688,8 @@
     <string name="editor_new_note_focus_content_toggle">Start cursor in content</string>
     <string name="editor_new_note_focus_content_description">New notes focus the content field instead of the title. Checklists focus the first item.</string>
     <!-- 🆕 Issue #112: Checklist scroll behaviour on un-check -->
-    <string name="checklist_scroll_top_on_uncheck_toggle">Scroll to top when unchecking</string>
-    <string name="checklist_scroll_top_on_uncheck_description">Unchecking an item scrolls the checklist back to the top. Turn off to keep the current position.</string>
+    <string name="checklist_scroll_top_on_uncheck_toggle">Scroll to unchecked item</string>
+    <string name="checklist_scroll_top_on_uncheck_description">Unchecking an item scrolls the checklist to where it lands. Turn off to keep the current position.</string>
     <!-- (#126 follow-up): word counter visibility -->
     <string name="word_counter_toggle">Word counter</string>
     <string name="word_counter_always">Always</string>

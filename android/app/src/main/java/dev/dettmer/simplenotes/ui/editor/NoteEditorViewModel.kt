@@ -182,12 +182,12 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     /**
      * Sealed class for scroll actions after checking/un-checking a checklist item.
-     * - [ScrollToTop]: Scroll the LazyColumn to index 0 (used on un-check).
+     * - [ScrollToItem]: Scroll the LazyColumn to where the un-checked item landed.
      * - [NoScroll]: Explicitly do nothing — keeps scroll position stable (used on check).
      */
     sealed class ChecklistScrollAction {
-        /** Un-check: scroll list to the very top. */
-        object ScrollToTop : ChecklistScrollAction()
+        /** Un-check: [index] is the item's position after the sort (visual = data index, the separator follows the unchecked items). */
+        data class ScrollToItem(val index: Int) : ChecklistScrollAction()
 
         /** Check: do not scroll — keep viewport exactly where it is. */
         object NoScroll : ChecklistScrollAction()
@@ -199,7 +199,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     // 🆕 Issue #112: Wenn aus, bleibt der Viewport beim Un-Check stehen (→ NoScroll).
     // Wie autosaveEnabled beim VM-Bau gelesen — der Editor-VM wird pro geöffneter Notiz neu erstellt.
     // 🔧 v2.13.0: Auch von der UI gelesen — der Collapse-Pfad committet dann ohne Settle-Delay
-    // und ohne Expand am Ziel, damit der ScrollToTop früh und über ruhigem Layout läuft.
+    // und ohne Expand am Ziel, damit der Scroll zum Ziel früh und über ruhigem Layout läuft.
     val scrollTopOnUncheck = prefs.getBoolean(
         Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK,
         Constants.DEFAULT_CHECKLIST_SCROLL_TOP_ON_UNCHECK
@@ -617,33 +617,12 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * anstatt immer unchecked-first zu sortieren.
      * 🆕 v1.9.0 (F04): Unchecked items werden nach originalOrder sortiert für Position-Restore.
      */
-    private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> {
-        val asChecklistItems = items.map { s ->
-            ChecklistItem(
-                id = s.id,
-                text = s.text,
-                isChecked = s.isChecked,
-                order = s.order,
-                originalOrder = s.originalOrder,
-                createdAt = s.createdAt
-            )
-        }
-        val sorted = ChecklistSorter.sort(asChecklistItems, _lastChecklistSortOption.value)
-        return sorted.map { item ->
-            ChecklistItemState(
-                id = item.id,
-                text = item.text,
-                isChecked = item.isChecked,
-                order = item.order,
-                originalOrder = item.originalOrder,
-                createdAt = item.createdAt
-            )
-        }
-    }
+    private fun sortChecklistItems(items: List<ChecklistItemState>): List<ChecklistItemState> =
+        sortChecklistStates(items, _lastChecklistSortOption.value)
 
     /**
      * 🆕 v1.9.0 (F14): Toggles the checked state of a checklist item and emits a scroll action.
-     * - Un-check → emits [ChecklistScrollAction.ScrollToTop]: scroll to the top of the list.
+     * - Un-check → emits [ChecklistScrollAction.ScrollToItem] with the item's new index.
      * - Check → emits [ChecklistScrollAction.NoScroll]: keep scroll position exactly as-is.
      *
      * 🆕 Issue #112: Ist [Constants.KEY_CHECKLIST_SCROLL_TOP_ON_UNCHECK] aus, emittiert auch
@@ -689,7 +668,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
         // 🆕 v1.9.0 (F14): Emit scroll action — outside update{} to ensure state is committed first
         if (!isChecked && scrollTopOnUncheck) {
-            _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToTop)
+            val index = _checklistItems.value.indexOfFirst { it.id == itemId }
+            _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToItem(index))
         } else {
             _checklistScrollAction.tryEmit(ChecklistScrollAction.NoScroll)
         }
@@ -1917,4 +1897,34 @@ sealed interface NoteEditorEvent {
     data object ActivatePreviewMode : NoteEditorEvent
 
     data object RequestContentFocus : NoteEditorEvent
+}
+
+/**
+ * Sortiert Editor-States über [ChecklistSorter]. Top-level, weil der Editor dieselbe Sortierung
+ * braucht, um vorherzusagen, wo ein aufgehakter Eintrag landet (Scroll oder Aufwachsen am Ort).
+ */
+internal fun sortChecklistStates(
+    items: List<ChecklistItemState>,
+    option: ChecklistSortOption
+): List<ChecklistItemState> {
+    val asChecklistItems = items.map { s ->
+        ChecklistItem(
+            id = s.id,
+            text = s.text,
+            isChecked = s.isChecked,
+            order = s.order,
+            originalOrder = s.originalOrder,
+            createdAt = s.createdAt
+        )
+    }
+    return ChecklistSorter.sort(asChecklistItems, option).map { item ->
+        ChecklistItemState(
+            id = item.id,
+            text = item.text,
+            isChecked = item.isChecked,
+            order = item.order,
+            originalOrder = item.originalOrder,
+            createdAt = item.createdAt
+        )
+    }
 }

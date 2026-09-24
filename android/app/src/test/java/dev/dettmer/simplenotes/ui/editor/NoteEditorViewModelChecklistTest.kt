@@ -134,14 +134,14 @@ class NoteEditorViewModelChecklistTest {
     }
 
     @Test
-    fun `Uncheck emittiert ScrollToTop wenn die Pref an ist`() = runTest {
+    fun `Uncheck emittiert ScrollToItem mit der Landeposition wenn die Pref an ist`() = runTest {
         val vm = viewModel(scrollTopOnUncheck = true)
         val ids = vm.seedItems(3)
-        vm.updateChecklistItemChecked(ids[0], true)
+        vm.updateChecklistItemChecked(ids[1], true) // wandert ans Ende
 
         vm.checklistScrollAction.test {
-            vm.updateChecklistItemChecked(ids[0], false)
-            assertEquals(NoteEditorViewModel.ChecklistScrollAction.ScrollToTop, awaitItem())
+            vm.updateChecklistItemChecked(ids[1], false) // zurück auf originalOrder 1
+            assertEquals(NoteEditorViewModel.ChecklistScrollAction.ScrollToItem(1), awaitItem())
         }
     }
 
