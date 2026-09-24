@@ -30,7 +30,6 @@
     <string name="sync_status_local_only">Pas encore synchronisé</string>
     <string name="sync_status_deleted_on_server">Supprimé sur le serveur</string>
     <string name="sync_legend_button">Aide statut synchro</string>
-    <string name="sync_legend_title">Icônes de synchronisation</string>
     <string name="sync_legend_description">Chaque note affiche une petite icône indiquant son statut de synchronisation :</string>
     <string name="sync_legend_synced_label">Synchronisé</string>
     <string name="sync_legend_synced_desc">Cette note est à jour sur tous les appareils.</string>
@@ -590,7 +589,6 @@
         <item quantity="many">%d notes présentent des conflits</item>
         <item quantity="other">%d notes présentent des conflits</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Avertissement de synchronisation</string>
     <string name="notification_sync_warning_message">Serveur inaccessible depuis %dh</string>
     <string name="notification_sync_warning_detail">Le serveur WebDAV est inaccessible depuis %d heures. Veuillez vérifier votre connexion réseau ou les paramètres du serveur.</string>
     <string name="notification_sync_in_progress_title">Synchronisation en cours</string>

@@ -24,7 +24,6 @@
     <string name="sync_status_local_only">Поки не синхронізовано</string>
     <string name="sync_status_deleted_on_server">Видалено на сервері</string>
     <string name="sync_legend_button">Довідка щодо статусу синхронізації</string>
-    <string name="sync_legend_title">Піктограми статусу синхронізації</string>
     <string name="sync_legend_description">Кожна нотатка показує дрібну піктограму, що позначає свій стан синхронізації:</string>
     <string name="sync_legend_synced_label">Синхронізовано</string>
     <string name="sync_legend_synced_desc">Ця нотатка оновлена на усіх пристроях.</string>
@@ -386,7 +385,6 @@
         <item quantity="many">%d нотаток мають конфлікт</item>
         <item quantity="other">%d нотаток мають конфлікт</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Попередження щодо Синхронізації</string>
     <string name="notification_sync_warning_message">Сервер недосяжний для %dh</string>
     <string name="notification_sync_warning_detail">Сервер WebDAV недосяжний уже протягом %d год. Будь ласка, перевірте ваше мережеве з\'єднання чи налаштування сервера.</string>
     <string name="notification_sync_in_progress_title">Синхронізація у процесі</string>

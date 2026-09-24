@@ -33,7 +33,6 @@
     <string name="sync_status_local_only">Ainda não sincronizado</string>
     <string name="sync_status_deleted_on_server">Excluído no servidor</string>
     <string name="sync_legend_button">Ajuda sobre o status da sincronização</string>
-    <string name="sync_legend_title">Ícones de status de sincronização</string>
     <string name="sync_legend_description">Cada nota exibe um pequeno ícone que indica seu status de sincronização:</string>
     <string name="sync_legend_synced_label">Sincronizado</string>
     <string name="sync_legend_synced_desc">Esta nota está atualizada em todos os dispositivos.</string>

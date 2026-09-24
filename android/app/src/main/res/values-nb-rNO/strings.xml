@@ -24,7 +24,6 @@
     <string name="sync_status_local_only">Ikke ennå synket</string>
     <string name="sync_status_deleted_on_server">Slettet på tjener</string>
     <string name="sync_legend_button">Hjelp for synkestatus</string>
-    <string name="sync_legend_title">Statusikoner for synk</string>
     <string name="sync_legend_description">Hvert notat viser et lite ikon tilsvarende synkestatusen:</string>
     <string name="sync_legend_synced_label">Synket</string>
     <string name="sync_legend_synced_desc">Dette notatet er oppdatert på alle enheter.</string>
@@ -432,7 +431,6 @@
         <item quantity="one">%d notat har konflikter</item>
         <item quantity="other">%d notater har konflikter</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Synkeadvarsel</string>
     <string name="notification_sync_warning_message">Tjener kunne ikke nås på %dt</string>
     <string name="notification_sync_warning_detail">WebDAV-tjeneren har vært umulig å nå på %d timer. Vennligst sjekk nettverkstilkoblingen din eller tjenerinnstillingene.</string>
     <string name="notification_sync_in_progress_title">Synkronisering kjører</string>

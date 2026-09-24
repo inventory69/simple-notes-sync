@@ -26,7 +26,6 @@
     <string name="sort_checklist_alpha_desc">Я → А</string>
     <string name="sync_status_deleted_on_server">Удалено на сервере</string>
     <string name="sync_legend_button">Помощь по статусу синхронизации</string>
-    <string name="sync_legend_title">Значки статуса синхронизации</string>
     <string name="sync_legend_description">Рядом с каждой заметкой отображается небольшой значок состояния синхронизации:</string>
     <string name="sync_legend_synced_label">Синхронизировано</string>
     <string name="sync_legend_synced_desc">Эта заметка актуальна на всех устройствах.</string>
@@ -403,7 +402,6 @@
     <string name="notification_sync_progress_title">Синхронизация…</string>
     <string name="notification_sync_progress_message">Выполняется синхронизация заметок</string>
     <string name="notification_sync_conflict_title">Обнаружен конфликт синхронизации</string>
-    <string name="notification_sync_warning_title">⚠️ Предупреждение синхронизации</string>
     <string name="notification_sync_warning_message">Сервер недоступен в течение %d ч</string>
     <string name="notification_sync_warning_detail">WebDAV сервер недоступен в течение %d часов. Пожалуйста, проверьте ваше сетевое подключение или настройки сервера.</string>
     <string name="notification_sync_in_progress_title">Выполняется синхронизация</string>

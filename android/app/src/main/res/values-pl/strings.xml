@@ -33,7 +33,6 @@
     <string name="sync_status_local_only">Jeszcze nie zsynchronizowano</string>
     <string name="sync_status_deleted_on_server">Usunięto na serwerze</string>
     <string name="sync_legend_button">Pomoc statusu synchronizacji</string>
-    <string name="sync_legend_title">Ikony statusu synchronizacji</string>
     <string name="sync_legend_description">Każda notatka pokazuje małą ikonę wskazującą jej status synchronizacji:</string>
     <string name="sync_legend_synced_label">Zsynchronizowano</string>
     <string name="sync_legend_synced_desc">Ta notatka jest aktualna na wszystkich urządzeniach.</string>
@@ -721,7 +720,6 @@
         <item quantity="many">%d notatek ma konflikty</item>
         <item quantity="other">%d notatek ma konflikty</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Ostrzeżenie synchronizacji</string>
     <string name="notification_sync_warning_message">Serwer nieosiągalny przez %dh</string>
     <string name="notification_sync_warning_detail">Serwer WebDAV był nieosiągalny przez %d godzin. Sprawdź połączenie sieciowe lub ustawienia serwera.</string>
     <string name="notification_sync_in_progress_title">Synchronizacja w toku</string>
