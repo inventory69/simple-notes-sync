@@ -44,7 +44,6 @@
     <string name="sync_status_deleted_on_server">已在服务器上删除</string>
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
     <string name="sync_legend_button">同步状态帮助</string>
-    <string name="sync_legend_title">同步状态图标</string>
     <string name="sync_legend_description">每个笔记显示一个小图标，指示它的同步状态：</string>
     <string name="sync_legend_synced_label">已同步</string>
     <string name="sync_legend_synced_desc">这个笔记在所有设备上已是最新。</string>
