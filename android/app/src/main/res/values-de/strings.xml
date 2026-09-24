@@ -78,6 +78,8 @@
     <string name="sync_status_syncing">Synchronisiere…</string>
     <string name="sync_status_cannot_sync">Sync gerade nicht möglich</string>
     <string name="sync_status_notes_safe">Deine Notizen bleiben auf dem Gerät und werden beim nächsten Sync übertragen.</string>
+    <string name="sync_status_stale">Länger nicht synchronisiert</string>
+    <string name="sync_status_stale_hint">Seit über einem Tag kommt kein Sync durch. Prüfe die Verbindung und die Server-Einstellungen.</string>
     <string name="sync_legend_expand">Symbole erklären</string>
     <string name="sync_status_notes_in_sync">Deine Notizen selbst sind synchron.</string>
     <string name="sync_status_reason">Grund: %1$s</string>
@@ -942,8 +944,8 @@
     <string name="notification_warnings_channel_name">Sync-Warnungen</string>
     <string name="notification_warnings_channel_desc">Leise Hinweise, wenn Markdown-Dateien oder Bilder nicht übertragen werden konnten</string>
     <string name="notification_sync_warning_title">⚠️ Sync-Warnung</string>
-    <string name="notification_sync_warning_message">Server seit %dh nicht erreichbar</string>
-    <string name="notification_sync_warning_detail">Der WebDAV-Server ist seit %d Stunden nicht erreichbar. Bitte prüfe deine Netzwerkverbindung oder Server-Einstellungen.</string>
+    <string name="notification_sync_warning_message">Keine Verbindung zum Server seit %d Std.</string>
+    <string name="notification_sync_warning_detail">Seit %d Stunden kommt keine Verbindung zum Server zustande. Prüfe die Netzwerkverbindung oder die Server-Einstellungen.</string>
     <string name="notification_sync_warning_credentials_message">Server-Zugangsdaten fehlen</string>
     <string name="notification_sync_warning_credentials_detail">Seit %d Stunden wurde nichts synchronisiert, weil die WebDAV-Zugangsdaten fehlen. Sie werden nicht auf ein neues Gerät übertragen — bitte in den Server-Einstellungen neu eingeben.</string>
     <string name="notification_sync_in_progress_title">Synchronisierung läuft</string>

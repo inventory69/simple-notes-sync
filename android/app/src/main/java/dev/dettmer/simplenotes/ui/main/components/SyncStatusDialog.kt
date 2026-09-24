@@ -102,7 +102,7 @@ fun SyncStatusDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMediumLarge)
             ) {
-                summary.lastError?.let { ErrorCard(it) }
+                summary.lastError?.let { ErrorCard(it, stale = summary.state == SyncStatusSummary.State.STALE) }
                 if (summary.conflicts.isNotEmpty()) ConflictCard(summary.conflicts, onOpenNote)
                 summary.exportProblems?.let { ExportCard(it, summary.markdownNotes, onOpenNote) }
                 Actions(summary, isSyncing, onRetry, onOpenSettings)
@@ -123,6 +123,11 @@ fun SyncStatusDialog(
 /** Icon, Farbe und Titel des Dialogkopfs. Der Zustand selbst ist die Überschrift. */
 @Composable
 private fun statusVisuals(summary: SyncStatusSummary): Triple<ImageVector, Color, String> = when (summary.state) {
+    SyncStatusSummary.State.STALE -> Triple(
+        Icons.Outlined.SyncProblem,
+        MaterialTheme.colorScheme.error,
+        stringResource(R.string.sync_status_stale)
+    )
     SyncStatusSummary.State.FAILED -> Triple(
         Icons.Outlined.SyncProblem,
         MaterialTheme.colorScheme.tertiary,
@@ -145,14 +150,24 @@ private fun statusVisuals(summary: SyncStatusSummary): Triple<ImageVector, Color
     )
 }
 
-/** Der ganze Sync ist gescheitert. Der Titel ist die Fehlermeldung selbst, sie ist schon übersetzt. */
+/**
+ * Der ganze Sync ist gescheitert. Der Titel ist die Fehlermeldung selbst, sie ist schon übersetzt.
+ * Seit über einem Tag ohne Erfolg ([stale]) wird die Karte rötlich, der Text erbt dann onErrorContainer.
+ */
 @Composable
-private fun ErrorCard(error: String) {
-    ProblemCard(title = error.ifBlank { stringResource(R.string.sync_error_unknown) }) {
+private fun ErrorCard(error: String, stale: Boolean) {
+    ProblemCard(
+        title = error.ifBlank { stringResource(R.string.sync_error_unknown) },
+        container = if (stale) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        }
+    ) {
         Text(
-            text = stringResource(R.string.sync_status_notes_safe),
+            text = stringResource(if (stale) R.string.sync_status_stale_hint else R.string.sync_status_notes_safe),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (stale) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Dimensions.SpacingSmall)
         )
     }
@@ -204,7 +219,7 @@ private fun Actions(
     onOpenSettings: (String) -> Unit
 ) {
     val export = summary.exportProblems
-    val canRetry = summary.state == SyncStatusSummary.State.FAILED || export != null
+    val canRetry = summary.lastError != null || export != null
     if (!canRetry && summary.lastError == null) return
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)) {
         if (canRetry) RetryButton(isSyncing, onRetry)
@@ -242,13 +257,14 @@ private fun ProblemCard(
     title: String,
     icon: ImageVector? = null,
     iconTint: Color = Color.Unspecified,
+    // Eine Stufe über surfaceContainerHigh, dem Dialog-Hintergrund, sonst verschwände die Karte darin.
+    container: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     body: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimensions.SpacingMediumLarge),
-        // Eine Stufe über surfaceContainerHigh, dem Dialog-Hintergrund, sonst verschwände die Karte darin.
-        color = MaterialTheme.colorScheme.surfaceContainerHighest
+        color = container
     ) {
         Column(modifier = Modifier.padding(Dimensions.SpacingLarge)) {
             Row(

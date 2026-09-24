@@ -78,6 +78,8 @@
     <string name="sync_status_syncing">Syncing…</string>
     <string name="sync_status_cannot_sync">Can\'t sync right now</string>
     <string name="sync_status_notes_safe">Your notes stay on this device and will be uploaded with the next sync.</string>
+    <string name="sync_status_stale">Not synced for a while</string>
+    <string name="sync_status_stale_hint">No sync has gone through for over a day. Check your connection and server settings.</string>
     <string name="sync_legend_expand">Explain icons</string>
     <string name="sync_status_notes_in_sync">Your notes themselves are in sync.</string>
     <string name="sync_status_reason">Reason: %1$s</string>
@@ -949,8 +951,8 @@
     <string name="notification_warnings_channel_name">Sync warnings</string>
     <string name="notification_warnings_channel_desc">Quiet notices when Markdown files or images could not be transferred</string>
     <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
-    <string name="notification_sync_warning_message">Server unreachable for %dh</string>
-    <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>
+    <string name="notification_sync_warning_message">No connection to the server for %dh</string>
+    <string name="notification_sync_warning_detail">Couldn\'t connect to the server for %d hours. Check your network connection or server settings.</string>
     <string name="notification_sync_warning_credentials_message">Server credentials missing</string>
     <string name="notification_sync_warning_credentials_detail">Nothing has been synced for %d hours because the WebDAV credentials are missing. They are not carried over to a new device — please re-enter them in the server settings.</string>
     <string name="notification_sync_in_progress_title">Synchronization in progress</string>

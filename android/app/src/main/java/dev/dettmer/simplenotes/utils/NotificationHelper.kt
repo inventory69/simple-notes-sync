@@ -456,7 +456,7 @@ object NotificationHelper {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle(context.getString(R.string.notification_sync_warning_title))
+            .setContentTitle(context.getString(R.string.sync_status_stale)) // gleicher Text wie der Dialogkopf
             .setContentText(
                 if (credentialsMissing) {
                     context.getString(R.string.notification_sync_warning_credentials_message)

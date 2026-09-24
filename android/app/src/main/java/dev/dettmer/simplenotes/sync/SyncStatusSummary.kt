@@ -22,8 +22,12 @@ data class SyncStatusSummary(
     val markdownNotes: List<NoteRef>,
     val badgeCount: Int
 ) {
-    /** Priorität von oben nach unten: der schwerste Zustand gewinnt. */
-    enum class State { FAILED, ATTENTION, PENDING, OK }
+    /**
+     * Priorität von oben nach unten: der schwerste Zustand gewinnt.
+     * STALE = Fehler und über [Constants.SYNC_WARNING_THRESHOLD_MS] ohne Erfolg, gleiche Regel wie
+     * `SyncWorker.checkAndShowSyncWarning`. Nie am Alter allein, sonst Fehlalarm, wenn einfach niemand synct.
+     */
+    enum class State { STALE, FAILED, ATTENTION, PENDING, OK }
 
     companion object {
         val EMPTY = SyncStatusSummary(State.OK, 0L, null, emptyList(), 0, null, emptyList(), 0)
@@ -53,14 +57,16 @@ data class SyncStatusSummary(
                 .mapNotNull { byId[it] }
                 .filterNot { it.isTrashed }
                 .map { it.toRef() }
+            // Ein gescheiterter Sync zählt erst, wenn der letzte Erfolg wirklich einen Tag her ist.
+            val staleFailure = error != null && now - lastSuccessAt > Constants.SYNC_WARNING_THRESHOLD_MS
             val state = when {
+                // „Noch nie" passt nicht zu „länger nicht", wie bei der Benachrichtigung.
+                staleFailure && lastSuccessAt > 0 -> State.STALE
                 error != null -> State.FAILED
                 conflicts.isNotEmpty() || exportProblems != null -> State.ATTENTION
                 pendingCount > 0 -> State.PENDING
                 else -> State.OK
             }
-            // Ein gescheiterter Sync zählt erst, wenn der letzte Erfolg wirklich einen Tag her ist.
-            val staleFailure = state == State.FAILED && now - lastSuccessAt > Constants.SYNC_WARNING_THRESHOLD_MS
             val badge = conflicts.size +
                 (exportProblems?.let { it.markdownFailedCount + it.assetsFailed } ?: 0) +
                 if (staleFailure) 1 else 0

@@ -37,7 +37,7 @@ class SyncStatusSummaryTest {
     ) = SyncStatusSummary.from(notes, localOnly, export, lastSuccessAt, lastError, lastErrorAt, now)
 
     @Test
-    fun `state priority is FAILED over ATTENTION over PENDING over OK`() {
+    fun `state priority is STALE over FAILED over ATTENTION over PENDING over OK`() {
         val conflict = note("c", SyncStatus.CONFLICT)
         val pending = note("p", SyncStatus.PENDING)
         assertEquals(State.OK, summary(listOf(note("s"))).state)
@@ -51,6 +51,22 @@ class SyncStatusSummaryTest {
             State.FAILED,
             summary(listOf(pending, conflict), lastError = "boom", lastErrorAt = now).state
         )
+        assertEquals(
+            State.STALE,
+            summary(listOf(pending, conflict), lastSuccessAt = 1L, lastError = "boom", lastErrorAt = now).state
+        )
+    }
+
+    @Test
+    fun `failed sync turns STALE only after 24 hours and only after a first success`() {
+        val threshold = Constants.SYNC_WARNING_THRESHOLD_MS
+        assertEquals(State.STALE, summary(lastSuccessAt = now - threshold - 1, lastError = "x", lastErrorAt = now).state)
+        assertEquals(State.FAILED, summary(lastSuccessAt = now - threshold + 1, lastError = "x", lastErrorAt = now).state)
+        val never = summary(lastSuccessAt = 0L, lastError = "x", lastErrorAt = now)
+        assertEquals(State.FAILED, never.state)
+        assertEquals(1, never.badgeCount)
+        // Alter allein reicht nicht
+        assertEquals(State.OK, summary(lastSuccessAt = now - threshold - 1).state)
     }
 
     @Test
