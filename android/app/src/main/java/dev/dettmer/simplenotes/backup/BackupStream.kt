@@ -6,6 +6,8 @@ import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
+import dev.dettmer.simplenotes.utils.AssetReferences
+import dev.dettmer.simplenotes.utils.Logger
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
@@ -20,6 +22,7 @@ import java.io.OutputStreamWriter
  * Das Format bleibt dasselbe JSON wie bisher, ältere App-Versionen lesen es weiter.
  */
 internal object BackupStream {
+    private const val TAG = "BackupStream"
     private const val KEY_ASSETS = "assets"
 
     /**
@@ -62,7 +65,12 @@ internal object BackupStream {
                     reader.skipValue()
                     continue
                 }
-                onAsset(gson.fromJson(reader, BackupAsset::class.java))
+                val asset: BackupAsset = gson.fromJson(reader, BackupAsset::class.java)
+                if (AssetReferences.isValidName(asset.name)) {
+                    onAsset(asset)
+                } else {
+                    Logger.w(TAG, "⚠️ Skipping asset with unsafe name: ${asset.name}")
+                }
             }
             reader.endArray()
         }

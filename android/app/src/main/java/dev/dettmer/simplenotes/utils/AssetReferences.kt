@@ -7,7 +7,9 @@ import dev.dettmer.simplenotes.models.Note
  * Pure Funktionen — kein I/O, dient als Basis für GC (Mark-and-Sweep) und Sync-Diffs.
  */
 object AssetReferences {
-    private val ASSET_LINK_REGEX = Regex("""!\[[^\]]*]\(\.assets/([A-Za-z0-9][A-Za-z0-9._-]*)\)""")
+    private const val NAME_PATTERN = "[A-Za-z0-9][A-Za-z0-9._-]*"
+    private val ASSET_LINK_REGEX = Regex("""!\[[^\]]*]\(\.assets/($NAME_PATTERN)\)""")
+    private val NAME_REGEX = Regex(NAME_PATTERN)
 
     fun extractAssetNames(content: String): Set<String> =
         ASSET_LINK_REGEX.findAll(content).map { it.groupValues[1] }.toSet()
@@ -15,4 +17,10 @@ object AssetReferences {
     /** Über alle Notizen inkl. Trash + Archiv — GC darf referenzierte Assets nie fälschlich löschen. */
     fun extractAllReferenced(notes: List<Note>): Set<String> =
         notes.flatMapTo(mutableSetOf()) { extractAssetNames(it.content) }
+
+    /**
+     * Taugt [name] als Dateiname im Asset-Ordner? Schließt Pfade wie `../x` aus.
+     * Nullable, weil Gson Non-Null-Typen umgeht (Namen aus Backup-Dateien).
+     */
+    fun isValidName(name: String?): Boolean = name != null && NAME_REGEX.matches(name)
 }

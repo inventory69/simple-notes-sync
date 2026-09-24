@@ -55,4 +55,14 @@ class BackupStreamTest {
         assertEquals(backup, head)
         assertTrue(received.isEmpty())
     }
+
+    @Test
+    fun `asset with a path in its name is skipped`() = runTest {
+        val evil = BackupAsset("../../shared_prefs/x.xml", "aGVsbG8=")
+        val file = gson.toJson(backup.copy(assets = listOf(evil) + assets)).toByteArray()
+
+        val (_, received) = read(file)
+
+        assertEquals(assets, received)
+    }
 }
