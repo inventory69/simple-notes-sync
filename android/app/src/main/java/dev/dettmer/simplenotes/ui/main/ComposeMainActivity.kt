@@ -286,6 +286,7 @@ class ComposeMainActivity : FragmentActivity() {
         // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
         // This ensures UI reflects current offline mode when returning from Settings
         viewModel.refreshOfflineModeState()
+        viewModel.refreshExportProblems() // 🆕 v2.19.0
 
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
@@ -374,6 +375,7 @@ class ComposeMainActivity : FragmentActivity() {
             viewModel.syncProgress.collect { progress ->
                 when (progress.phase) {
                     dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED,
+                    dev.dettmer.simplenotes.sync.SyncPhase.WARNING,
                     dev.dettmer.simplenotes.sync.SyncPhase.INFO,
                     dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> {
                         bannerAutoHideJob?.cancel()
@@ -381,6 +383,7 @@ class ComposeMainActivity : FragmentActivity() {
                             dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED -> Constants.BANNER_DELAY_COMPLETED_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.INFO -> Constants.BANNER_DELAY_INFO_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.ERROR -> Constants.BANNER_DELAY_ERROR_MS
+                            dev.dettmer.simplenotes.sync.SyncPhase.WARNING -> Constants.BANNER_DELAY_WARNING_MS
                             dev.dettmer.simplenotes.sync.SyncPhase.PREPARING,
                             dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING,
                             dev.dettmer.simplenotes.sync.SyncPhase.UPLOADING_EXPORTING_MARKDOWN,

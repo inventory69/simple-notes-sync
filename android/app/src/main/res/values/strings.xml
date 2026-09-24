@@ -61,6 +61,10 @@
     <string name="sync_legend_pending_desc">This note has local changes waiting to be synced.</string>
     <string name="sync_legend_conflict_label">Conflict</string>
     <string name="sync_legend_conflict_desc">This note was changed on another device too. Your version is kept and no longer synced until you open the note and choose which one to keep.</string>
+    <!-- 🆕 v2.19.0: export problems of the last sync -->
+    <string name="sync_legend_last_sync_title">Last sync</string>
+    <string name="sync_status_notes_in_sync">Your notes themselves are in sync.</string>
+    <string name="sync_status_reason">Reason: %1$s</string>
     <!-- v2.16.0 (#126): word / character counter in the editor -->
     <plurals name="note_stats_words">
         <item quantity="one">%1$d word</item>
@@ -99,6 +103,20 @@
     <plurals name="sync_conflict_count">
         <item quantity="one">⚠️ %1$d conflict needs your decision</item>
         <item quantity="other">⚠️ %1$d conflicts need your decision</item>
+    </plurals>
+    <!-- 🆕 v2.19.0: export problems (notes themselves are in sync) -->
+    <plurals name="sync_markdown_failed_count">
+        <item quantity="one">%1$d Markdown file not exported</item>
+        <item quantity="other">%1$d Markdown files not exported</item>
+    </plurals>
+    <plurals name="sync_assets_failed_count">
+        <item quantity="one">%1$d image not transferred</item>
+        <item quantity="other">%1$d images not transferred</item>
+    </plurals>
+    <string name="sync_markdown_import_failed">Markdown import failed</string>
+    <plurals name="sync_notes_synced_count">
+        <item quantity="one">%1$d note synced</item>
+        <item quantity="other">%1$d notes synced</item>
     </plurals>
     <!-- 🆕 v2.9.x (Trash): notes purged from server via „Empty trash" -->
     <string name="sync_deleted_from_server_count">%1$d deleted from server</string>
@@ -277,6 +295,10 @@
     <string name="sync_error_path_not_found">Server path not found</string>
     <string name="sync_error_server">Server error</string>
     <string name="sync_error_http">HTTP error: %d</string>
+    <!-- 🆕 v2.19.0: readable reasons for failed Markdown/image transfers -->
+    <string name="sync_error_conflict_path">The folder on the server is missing or blocked by a file.</string>
+    <string name="sync_error_too_large">The file is too large for the server.</string>
+    <string name="sync_error_storage_full">The server storage is full.</string>
     <string name="sync_error_unknown">Unknown error</string>
     <!-- 🔧 v2.3.0 (Issue #55): Better error messages for MKCOL/WebDAV failures -->
     <string name="sync_error_mkcol_failed">Cannot create sync folder. Please verify your WebDAV URL includes the full path (e.g. /remote.php/dav/files/USERNAME/).</string>
@@ -900,6 +922,10 @@
         <item quantity="one">%d note has conflicts</item>
         <item quantity="other">%d notes have conflicts</item>
     </plurals>
+    <!-- 🆕 v2.19.0: quiet notice after background syncs -->
+    <string name="notification_sync_export_title">Some files were not transferred</string>
+    <string name="notification_warnings_channel_name">Sync warnings</string>
+    <string name="notification_warnings_channel_desc">Quiet notices when Markdown files or images could not be transferred</string>
     <string name="notification_sync_warning_title">⚠️ Sync Warning</string>
     <string name="notification_sync_warning_message">Server unreachable for %dh</string>
     <string name="notification_sync_warning_detail">The WebDAV server has been unreachable for %d hours. Please check your network connection or server settings.</string>

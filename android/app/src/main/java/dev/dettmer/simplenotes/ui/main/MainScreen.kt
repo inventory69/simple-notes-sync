@@ -42,6 +42,8 @@ import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.SyncDisabled
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Unarchive
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -176,6 +178,7 @@ fun MainScreen(
     }
 
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val exportProblems by viewModel.exportProblems.collectAsState() // 🆕 v2.19.0
 
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
@@ -322,8 +325,8 @@ fun MainScreen(
                             folderName = currentFolder!!,
                             onBack = { viewModel.goToRoot() },
                             syncEnabled = canSync,
-                            showSyncLegend = isSyncAvailable,
-                            onSyncLegendClick = { showSyncLegend = true },
+                            onSyncLegendClick = if (isSyncAvailable) ({ showSyncLegend = true }) else null,
+                            syncLegendBadgeCount = exportProblems?.let { it.markdownFailedCount + it.assetsFailed } ?: 0, // 🆕 v2.19.0
                             showFilterRow = showFilterRow,
                             onFilterToggle = { showFilterRow = !showFilterRow },
                             onSyncClick = { viewModel.triggerManualSync(ActivityLog.Trigger.TOOLBAR) },
@@ -333,8 +336,8 @@ fun MainScreen(
                         MainTopBar(
                             customTitle = customAppTitle, // 🆕 v1.9.0 (F05)
                             syncEnabled = canSync,
-                            showSyncLegend = isSyncAvailable,
-                            onSyncLegendClick = { showSyncLegend = true },
+                            onSyncLegendClick = if (isSyncAvailable) ({ showSyncLegend = true }) else null,
+                            syncLegendBadgeCount = exportProblems?.let { it.markdownFailedCount + it.assetsFailed } ?: 0, // 🆕 v2.19.0
                             // 🆕 v1.9.0 (F11): Sort button replaced by filter row toggle
                             showFilterRow = showFilterRow,
                             onFilterToggle = { showFilterRow = !showFilterRow },
@@ -503,6 +506,7 @@ fun MainScreen(
             // 🆕 v1.8.0: Sync Status Legend Dialog
             if (showSyncLegend) {
                 SyncStatusLegendDialog(
+                    exportProblems = exportProblems,
                     onDismiss = { showSyncLegend = false }
                 )
             }
@@ -630,8 +634,8 @@ fun MainScreen(
 private fun MainTopBar(
     customTitle: String, // 🆕 v1.9.0 (F05): Custom app title (empty = default)
     syncEnabled: Boolean,
-    showSyncLegend: Boolean, // 🆕 v1.8.0: Ob der Hilfe-Button sichtbar sein soll
-    onSyncLegendClick: () -> Unit, // 🆕 v1.8.0
+    onSyncLegendClick: (() -> Unit)?, // 🆕 v1.8.0: null blendet den Hilfe-Button aus
+    syncLegendBadgeCount: Int, // 🆕 v2.19.0: Export-Probleme des letzten Syncs (0 = keine)
     showFilterRow: Boolean, // 🆕 v1.9.0 (F11): Filter row toggle state
     onFilterToggle: () -> Unit, // 🆕 v1.9.0 (F11): Toggle filter row visibility
     onSyncClick: () -> Unit,
@@ -650,8 +654,8 @@ private fun MainTopBar(
         actions = {
             TopBarActions(
                 syncEnabled = syncEnabled,
-                showSyncLegend = showSyncLegend,
                 onSyncLegendClick = onSyncLegendClick,
+                syncLegendBadgeCount = syncLegendBadgeCount,
                 showFilterRow = showFilterRow,
                 onFilterToggle = onFilterToggle,
                 onSyncClick = onSyncClick,
@@ -669,8 +673,8 @@ private fun MainTopBar(
 @Composable
 private fun TopBarActions(
     syncEnabled: Boolean,
-    showSyncLegend: Boolean,
-    onSyncLegendClick: () -> Unit,
+    onSyncLegendClick: (() -> Unit)?,
+    syncLegendBadgeCount: Int,
     showFilterRow: Boolean,
     onFilterToggle: () -> Unit,
     onSyncClick: () -> Unit,
@@ -683,12 +687,26 @@ private fun TopBarActions(
             tint = if (showFilterRow) MaterialTheme.colorScheme.primary else LocalContentColor.current
         )
     }
-    if (showSyncLegend) {
+    if (onSyncLegendClick != null) {
         IconButton(onClick = onSyncLegendClick) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                contentDescription = stringResource(R.string.sync_legend_button)
-            )
+            // 🆕 v2.19.0: Zähler-Badge + getöntes Icon, solange der letzte Sync Export-Probleme hatte
+            val hasProblems = syncLegendBadgeCount > 0
+            BadgedBox(
+                badge = {
+                    if (hasProblems) {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.onTertiary
+                        ) { Text(syncLegendBadgeCount.toString()) }
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                    contentDescription = stringResource(R.string.sync_legend_button),
+                    tint = if (hasProblems) MaterialTheme.colorScheme.tertiary else LocalContentColor.current
+                )
+            }
         }
     }
     IconButton(onClick = onSyncClick, enabled = syncEnabled) {
@@ -772,8 +790,8 @@ private fun FolderTopBar(
     folderName: String,
     onBack: () -> Unit,
     syncEnabled: Boolean,
-    showSyncLegend: Boolean,
-    onSyncLegendClick: () -> Unit,
+    onSyncLegendClick: (() -> Unit)?,
+    syncLegendBadgeCount: Int,
     showFilterRow: Boolean,
     onFilterToggle: () -> Unit,
     onSyncClick: () -> Unit,
@@ -799,8 +817,8 @@ private fun FolderTopBar(
         actions = {
             TopBarActions(
                 syncEnabled = syncEnabled,
-                showSyncLegend = showSyncLegend,
                 onSyncLegendClick = onSyncLegendClick,
+                syncLegendBadgeCount = syncLegendBadgeCount,
                 showFilterRow = showFilterRow,
                 onFilterToggle = onFilterToggle,
                 onSyncClick = onSyncClick,

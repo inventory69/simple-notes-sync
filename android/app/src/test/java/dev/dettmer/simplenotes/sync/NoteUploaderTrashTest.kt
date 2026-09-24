@@ -206,4 +206,31 @@ class NoteUploaderTrashTest {
 
         verify(exactly = 1) { webdav.exists(match { it.endsWith("notes-md/") }) }
     }
+
+    /** 🆕 v2.19.0: Ein gescheiterter MD-Spiegel wird mit seiner ID gemerkt, die JSON geht trotzdem hoch. */
+    @Test fun `a throwing markdown exporter is counted but the JSON still uploads`() = runTest {
+        storage.saveNote(
+            Note(id = "n1", title = "A", content = "x", deviceId = "dev", syncStatus = SyncStatus.PENDING)
+        )
+        val webdav = mockk<WebDavClient>(relaxed = true) {
+            every { exists(any()) } returns true
+            every { list(any(), any()) } returns emptyList()
+        }
+        val uploader = NoteUploader(
+            prefs = prefs,
+            storage = storage,
+            eTagCache = ETagCache(prefs),
+            urlBuilder = SyncUrlBuilder(prefs),
+            ioDispatcher = Dispatchers.Unconfined,
+            folderStore = FolderStore(mockk(relaxed = true)),
+            markdownExporter = { _, _, _, _ -> throw java.io.IOException("409") },
+            markdownDeleter = { _, _, _ -> }
+        )
+
+        val result = uploader.uploadAll(webdav, serverUrl)
+
+        assertEquals(setOf("n1"), result.markdownFailed.keys)
+        assertEquals(1, result.uploadedCount)
+        verify(exactly = 1) { webdav.put(match { it.endsWith("n1.json") }, any<ByteArray>(), any()) }
+    }
 }

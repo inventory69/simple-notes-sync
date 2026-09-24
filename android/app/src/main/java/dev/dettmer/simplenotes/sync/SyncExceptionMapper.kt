@@ -16,7 +16,10 @@ class SyncExceptionMapper(private val context: Context) {
         private const val HTTP_UNAUTHORIZED = 401
         private const val HTTP_FORBIDDEN = 403
         private const val HTTP_NOT_FOUND = 404
+        private const val HTTP_CONFLICT = 409
+        private const val HTTP_PAYLOAD_TOO_LARGE = 413
         private const val HTTP_INTERNAL_SERVER_ERROR = 500
+        private const val HTTP_INSUFFICIENT_STORAGE = 507
     }
 
     /**
@@ -71,7 +74,11 @@ class SyncExceptionMapper(private val context: Context) {
             HTTP_UNAUTHORIZED -> context.getString(R.string.sync_error_auth_failed)
             HTTP_FORBIDDEN -> context.getString(R.string.sync_error_access_denied)
             HTTP_NOT_FOUND -> context.getString(R.string.sync_error_path_not_found)
+            // 🆕 v2.19.0: die drei häufigsten Gründe, warum eine MD-Kopie oder ein Bild nicht hochgeht
+            HTTP_CONFLICT -> context.getString(R.string.sync_error_conflict_path)
+            HTTP_PAYLOAD_TOO_LARGE -> context.getString(R.string.sync_error_too_large)
             HTTP_INTERNAL_SERVER_ERROR -> context.getString(R.string.sync_error_server)
+            HTTP_INSUFFICIENT_STORAGE -> context.getString(R.string.sync_error_storage_full)
             else -> context.getString(R.string.sync_error_http, e.statusCode)
         }
     }

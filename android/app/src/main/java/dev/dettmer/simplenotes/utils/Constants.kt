@@ -16,6 +16,13 @@ object Constants {
     const val KEY_LAST_SYNC_WARNING_SHOWN = "last_sync_warning_shown_time"
     const val SYNC_WARNING_THRESHOLD_MS = 24 * 60 * 60 * 1000L // 24h
 
+    // 🆕 v2.19.0: offene Export-Probleme (Badge, Legende, Benachrichtigung) — siehe ExportProblems
+    const val KEY_EXPORT_MD_FAILED_IDS = "export_md_failed_ids"
+    const val KEY_EXPORT_MD_IMPORT_FAILED = "export_md_import_failed"
+    const val KEY_EXPORT_ASSETS_FAILED = "export_assets_failed"
+    const val KEY_EXPORT_MD_REASON = "export_md_reason"
+    const val KEY_EXPORT_ASSETS_REASON = "export_assets_reason"
+
     // 🆕 v1.11.0: Notification preferences
     const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
     const val DEFAULT_NOTIFICATIONS_ENABLED = true
@@ -138,6 +145,7 @@ object Constants {
     const val BANNER_DELAY_COMPLETED_MS = 2_000L
     const val BANNER_DELAY_INFO_MS = 2_500L
     const val BANNER_DELAY_ERROR_MS = 4_000L
+    const val BANNER_DELAY_WARNING_MS = 4_000L
 
     // Minimum display duration for active sync phases (PREPARING/UPLOADING/…) — prevents too-brief flashes
     const val BANNER_PHASE_MIN_MS = 400L

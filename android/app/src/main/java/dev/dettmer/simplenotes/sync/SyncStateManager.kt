@@ -126,7 +126,7 @@ object SyncStateManager {
      * Bei Silent-Sync: direkt auf IDLE (kein Banner)
      * Bei normalem Sync: COMPLETED mit Nachricht (auto-hide durch UI)
      */
-    fun markCompleted(message: String? = null) {
+    fun markCompleted(message: String? = null, isWarning: Boolean = false) {
         synchronized(lock) {
             val current = _syncStatus.value
             val wasSilent = current.silent
@@ -146,7 +146,7 @@ object SyncStateManager {
                 // Normaler Sync: COMPLETED mit Nachricht anzeigen
                 _syncStatus.value = SyncStatus(state = SyncState.COMPLETED, message = message, source = currentSource)
                 _syncProgress.value = SyncProgress(
-                    phase = SyncPhase.COMPLETED,
+                    phase = if (isWarning) SyncPhase.WARNING else SyncPhase.COMPLETED,
                     resultMessage = message
                 )
             }

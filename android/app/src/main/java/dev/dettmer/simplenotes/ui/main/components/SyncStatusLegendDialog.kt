@@ -9,16 +9,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,9 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.sync.ExportProblems
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.Constants
 
 /**
@@ -38,7 +44,7 @@ import dev.dettmer.simplenotes.utils.Constants
  * and descriptions, plus a trash hint footnote.
  */
 @Composable
-fun SyncStatusLegendDialog(onDismiss: () -> Unit) {
+fun SyncStatusLegendDialog(exportProblems: ExportProblems?, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -52,6 +58,9 @@ fun SyncStatusLegendDialog(onDismiss: () -> Unit) {
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // 🆕 v2.19.0: verschwindet nach dem nächsten fehlerfreien Sync von selbst
+                exportProblems?.let { LastSyncCard(it) }
+
                 // Optional: Kurze Einleitung
                 Text(
                     text = stringResource(R.string.sync_legend_description),
@@ -108,6 +117,58 @@ fun SyncStatusLegendDialog(onDismiss: () -> Unit) {
             }
         }
     )
+}
+
+/** 🆕 v2.19.0: Export-Probleme des letzten Syncs, Muster wie [dev.dettmer.simplenotes.ui.editor.ConflictBanner]. */
+@Composable
+private fun LastSyncCard(problems: ExportProblems) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimensions.SpacingMediumLarge),
+        // Nicht surfaceContainerHigh — das ist der Dialog-Hintergrund, die Karte verschwände darin.
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+    ) {
+        Column(modifier = Modifier.padding(Dimensions.SpacingLarge)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.WarningAmber,
+                    contentDescription = null, // Titel daneben sagt dasselbe
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.sync_legend_last_sync_title),
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            val lines = buildList {
+                val mdCount = problems.markdownFailedIds.size
+                if (mdCount > 0) add(pluralStringResource(R.plurals.sync_markdown_failed_count, mdCount, mdCount))
+                if (problems.markdownImportFailed) add(stringResource(R.string.sync_markdown_import_failed))
+                val assets = problems.assetsFailed
+                if (assets > 0) add(pluralStringResource(R.plurals.sync_assets_failed_count, assets, assets))
+                // Gleicher Grund für MD und Bilder (z. B. beide 409) steht nur einmal da.
+                listOfNotNull(problems.markdownReason, problems.assetsReason).distinct().forEach {
+                    add(stringResource(R.string.sync_status_reason, it))
+                }
+            }
+            lines.forEach {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = Dimensions.SpacingSmall)
+                )
+            }
+            Text(
+                text = stringResource(R.string.sync_status_notes_in_sync),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = Dimensions.SpacingSmall)
+            )
+        }
+    }
 }
 
 /**

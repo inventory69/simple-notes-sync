@@ -14,6 +14,7 @@ import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
@@ -29,7 +30,8 @@ import kotlinx.coroutines.sync.withPermit
  * 🆕 v2.0.0: Extrahiert Upload-Logik aus WebDavSyncService.
  * Verantwortlich für Batch- und Einzel-Uploads von Notizen auf den WebDAV-Server.
  */
-@Suppress("LongParameterList") // Parameter spiegeln NoteDownloader — beide benötigen folderStore für Local-Only-Filter
+// Abbau: TECH_DEBT_ROADMAP.md §4 — LargeClass seit v2.19.0 (MD-Retry teilt syncMarkdownMirror mit dem Upload)
+@Suppress("LongParameterList", "LargeClass") // Parameter spiegeln NoteDownloader — beide benötigen folderStore für Local-Only-Filter
 internal class NoteUploader(
     private val prefs: SharedPreferences,
     private val storage: NotesStorage,
@@ -151,6 +153,8 @@ internal class NoteUploader(
         // Verhindert Race Condition wenn 2+ Notizen denselben Titel haben:
         // Ohne Mutex: beide prüfen exists() → false → beide schreiben → Überschreibung
         val mdExportMutex = Mutex()
+        // 🆕 v2.19.0: id → letzter Fehler. Scheitert schon notes-md/, landet hier jeder Einzel-Export.
+        val mdFailed = ConcurrentHashMap<String, Exception>()
 
         val results: List<UploadTaskResult> = coroutineScope {
             val jobs = pendingNotes.map { note ->
@@ -164,6 +168,7 @@ internal class NoteUploader(
                             markdownDirExists = markdownDirExists,
                             storageMutex = storageMutex,
                             mdExportMutex = mdExportMutex,
+                            mdFailed = mdFailed,
                             serverSnapshot = serverSnapshot // 🆕 v2.16.0
                         )
 
@@ -276,8 +281,42 @@ internal class NoteUploader(
         return UploadBatchResult(
             uploadedCount = successCount,
             markdownExportedNoteIds = mdExportedIds,
-            conflictCount = conflictCount // 🆕 v2.16.0
+            conflictCount = conflictCount, // 🆕 v2.16.0
+            markdownFailed = mdFailed.toMap()
         )
+    }
+
+    /**
+     * 🆕 v2.19.0: MD-Kopien nachziehen, deren Export in einem früheren Sync scheiterte.
+     *
+     * Ohne das exportierte erst die nächste Änderung an der Notiz wieder — bis dahin fehlte die
+     * Kopie auf dem Server. Kein Request für IDs, die dieser Zyklus ohnehin anders erledigt:
+     * - Notiz weg, in einem Local-only-Ordner oder serverseitig gelöscht → fällt raus.
+     * - Lokale Fassung noch nicht oben (PENDING/CONFLICT/LOCAL_ONLY) → bleibt stehen. Der nächste
+     *   Upload exportiert sie; ein Export jetzt gäbe eine MD-Kopie, die der Server-JSON vorausläuft.
+     */
+    suspend fun retryMarkdownMirrors(webdav: WebDavClient, serverUrl: String, ids: Set<String>): MarkdownRetryResult {
+        if (ids.isEmpty()) return MarkdownRetryResult()
+        val notes = storage.loadAllNotes().associateBy { it.id }
+        val localOnlyFolders = folderStore.getLocalOnlyFolderNames().map { it.lowercase() }.toSet()
+        val markdownDirExists = connectionManager?.markdownDirEnsured == true
+        val mutex = Mutex()
+        val exported = mutableSetOf<String>()
+        val failed = mutableMapOf<String, Exception>()
+        val carriedOver = mutableSetOf<String>()
+
+        for (id in ids) {
+            val note = notes[id]?.takeIf { it.folderName?.lowercase() !in localOnlyFolders } ?: continue
+            when (note.syncStatus) {
+                SyncStatus.DELETED_ON_SERVER -> Unit
+                SyncStatus.PENDING, SyncStatus.CONFLICT, SyncStatus.LOCAL_ONLY -> carriedOver += id
+                SyncStatus.SYNCED -> if (syncMarkdownMirror(webdav, serverUrl, note, markdownDirExists, mutex, failed)) {
+                    exported += id
+                }
+            }
+        }
+        Logger.d(TAG, "🔁 MD retry: ${exported.size} exported, ${failed.size} failed, ${carriedOver.size} carried over")
+        return MarkdownRetryResult(exported, failed, carriedOver)
     }
 
     /**
@@ -305,6 +344,7 @@ internal class NoteUploader(
         markdownDirExists: Boolean,
         storageMutex: Mutex,
         mdExportMutex: Mutex,
+        mdFailed: MutableMap<String, Exception>,
         serverSnapshot: ServerSnapshot
     ): UploadTaskResult {
         val maxRetries = 2
@@ -347,7 +387,7 @@ internal class NoteUploader(
                 logUpload(noteToUpload)
 
                 val didExportMarkdown = if (markdownExportEnabled) {
-                    syncMarkdownMirror(webdav, serverUrl, noteToUpload, markdownDirExists, mdExportMutex)
+                    syncMarkdownMirror(webdav, serverUrl, noteToUpload, markdownDirExists, mdExportMutex, mdFailed)
                 } else {
                     false
                 }
@@ -508,7 +548,8 @@ internal class NoteUploader(
         serverUrl: String,
         note: Note,
         markdownDirExists: Boolean,
-        mdExportMutex: Mutex
+        mdExportMutex: Mutex,
+        mdFailed: MutableMap<String, Exception>
     ): Boolean = mdExportMutex.withLock {
         try {
             if (note.isTrashed) {
@@ -523,6 +564,7 @@ internal class NoteUploader(
             }
         } catch (e: Exception) {
             Logger.e(TAG, "MD-Export/-Delete failed for ${note.id}: ${e.message}")
+            mdFailed[note.id] = e
             false
         }
     }

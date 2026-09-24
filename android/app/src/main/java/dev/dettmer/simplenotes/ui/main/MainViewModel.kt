@@ -15,6 +15,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.ExportProblems
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
@@ -1101,6 +1102,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateSyncState(status: SyncStateManager.SyncStatus) {
         _syncState.value = status.state
+        // Jeder Sync-Abschluss (UI oder Worker) läuft über SyncStateManager — die Prefs sind dann frisch.
+        refreshExportProblems()
+    }
+
+    /** 🆕 v2.19.0: Export-Probleme des letzten Syncs — Badge am Hilfe-Icon und Karte in der Legende. */
+    private val _exportProblems = MutableStateFlow(ExportProblems.load(prefs))
+    val exportProblems: StateFlow<ExportProblems?> = _exportProblems.asStateFlow()
+
+    fun refreshExportProblems() {
+        _exportProblems.value = ExportProblems.load(prefs)
     }
 
     /**
@@ -1164,7 +1175,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Check for unsynced changes (Banner zeigt bereits PREPARING)
                 if (!syncService.hasUnsyncedChanges()) {
                     Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
-                    SyncStateManager.markCompleted(alreadySyncedBanner())
+                    // 🆕 v2.19.0: offene Konflikte im Warn-Stil, wie nach einem echten Sync
+                    SyncStateManager.markCompleted(alreadySyncedBanner(), isWarning = unresolvedConflictCount() > 0)
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
                     // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
@@ -1189,7 +1201,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (result.isSuccess) {
-                    SyncStateManager.markCompleted(completionBanner(result))
+                    SyncStateManager.markCompleted(completionBanner(result), result.isWarning)
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
                     // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
@@ -1317,13 +1329,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // 🆕 v1.8.1 (IMPL_11): Kein Toast bei Silent-Sync
                     // Das Banner-System respektiert silent=true korrekt (markCompleted → IDLE)
                     // Toast wurde fälschlicherweise trotzdem angezeigt
-                    SyncStateManager.markCompleted(getString(R.string.toast_sync_success, result.syncedCount))
+                    // 🆕 v2.19.0: completionBanner enthält toast_sync_success plus Konflikte/Export-Probleme
+                    SyncStateManager.markCompleted(completionBanner(result), result.isWarning)
                     loadNotes(forceReload = true)
                     refreshFolders() // 🆕 v2.7.0 (Folders)
                 } else if (result.isSuccess && result.purgedFromServerCount > 0) {
                     Logger.d(TAG, "✅ Auto-sync ($source): ${result.purgedFromServerCount} purged from server")
                     SyncStateManager.promoteToVisible()
-                    SyncStateManager.markCompleted(buildSyncResultBanner(getApplication(), result))
+                    SyncStateManager.markCompleted(buildSyncResultBanner(getApplication(), result), result.isWarning)
                     loadNotes(forceReload = true)
                 } else if (result.isSuccess) {
                     Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
@@ -1331,7 +1344,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // Toolbar/Pull sichtbar gemacht hat, endete sonst mit dem generischen
                     // „Sync abgeschlossen", auch wenn gerade eine Notiz in den Konflikt lief.
                     // Bleibt der Sync still, geht er ohnehin direkt auf IDLE.
-                    SyncStateManager.markCompleted(completionBanner(result))
+                    SyncStateManager.markCompleted(completionBanner(result), result.isWarning)
                     // 🆕 v2.7.2: Ordner-Zuordnung wurde lokal geheilt → Notenliste neu laden
                     // 🆕 Issue #128: dito, wenn ein falsches DELETED_ON_SERVER zurückgenommen wurde —
                     // sonst bleibt die zurückgeholte Notiz bis zum nächsten Reload unsichtbar.

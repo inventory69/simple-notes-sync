@@ -325,6 +325,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
                 runAttempt = runAttemptCount
             )
+            // 🆕 v2.19.0: Stand VOR dem Sync — benachrichtigt wird nur beim Übergang zu Problemen.
+            val hadExportProblems = ExportProblems.load(prefs) != null
             // Try-catch um syncNotes
             val result = try {
                 if (BuildConfig.DEBUG) {
@@ -365,17 +367,31 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // 🆕 v1.8.1 (IMPL_08): SyncStateManager aktualisieren
                 if (result.purgedFromServerCount > 0) {
                     SyncStateManager.promoteToVisible()
-                    SyncStateManager.markCompleted(buildSyncResultBanner(applicationContext, result))
+                    SyncStateManager.markCompleted(buildSyncResultBanner(applicationContext, result), result.isWarning)
                 } else {
-                    SyncStateManager.markCompleted()
+                    // 🆕 v2.19.0: Nur ein promoteter Sync zeigt das — sonst geht es still auf IDLE.
+                    SyncStateManager.markCompleted(
+                        buildSyncResultBanner(applicationContext, result).takeIf { result.isWarning },
+                        result.isWarning
+                    )
+                }
+
+                // 🆕 v2.19.0: Leiser Hinweis nur im Hintergrund und nur beim ersten Auftreten —
+                // ein bestehender Fehler meldet sich nicht bei jedem periodischen Sync neu.
+                // Er ERSETZT die Erfolgsmeldung: zwei Meldungen, die sich widersprechen, halfen niemandem.
+                val appInForeground = isAppInForeground()
+                val showExportWarning = result.hasExportProblems && !hadExportProblems && !appInForeground
+                if (showExportWarning) {
+                    NotificationHelper.showExportProblemNotification(applicationContext, result)
                 }
 
                 // Nur Notification zeigen wenn tatsächlich etwas gesynct wurde
                 // UND die App nicht im Vordergrund ist (sonst sieht User die Änderungen direkt)
                 if (result.syncedCount > 0) {
-                    val appInForeground = isAppInForeground()
                     if (appInForeground) {
                         Logger.d(TAG, "ℹ️ App in foreground - skipping notification (UI shows changes)")
+                    } else if (showExportWarning) {
+                        Logger.d(TAG, "ℹ️ Export warning shown instead of success notification")
                     } else {
                         if (BuildConfig.DEBUG) {
                             Logger.d(TAG, "    Showing success notification...")

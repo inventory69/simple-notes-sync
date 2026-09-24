@@ -23,12 +23,19 @@ class SyncBannerHelperTest {
     }
 
     init {
-        every { context.getString(R.string.toast_sync_success, any()) } answers {
-            "${secondArg<Array<Any>>()[0]} synced"
-        }
+        every {
+            resources.getQuantityString(R.plurals.sync_notes_synced_count, any(), any())
+        } answers { "${thirdArg<Array<Any>>()[0]} synced" }
+        every { context.getString(R.string.sync_markdown_import_failed) } returns "import failed"
         every {
             resources.getQuantityString(R.plurals.sync_conflict_count, any(), any())
         } answers { "${thirdArg<Array<Any>>()[0]} conflicts" }
+        every {
+            resources.getQuantityString(R.plurals.sync_markdown_failed_count, any(), any())
+        } answers { "${thirdArg<Array<Any>>()[0]} md failed" }
+        every {
+            resources.getQuantityString(R.plurals.sync_assets_failed_count, any(), any())
+        } answers { "${thirdArg<Array<Any>>()[0]} images failed" }
     }
 
     @Test fun `a conflict is reported even when nothing was transferred`() {
@@ -45,5 +52,17 @@ class SyncBannerHelperTest {
 
     @Test fun `a quiet sync still reports nothing`() {
         assertNull(buildSyncResultBanner(context, SyncResult(isSuccess = true)))
+    }
+
+    @Test fun `export problems are reported after the conflict`() {
+        val result = SyncResult(isSuccess = true, conflictCount = 1, markdownFailedCount = 2, assetFailedCount = 1)
+
+        assertEquals("1 conflicts · 2 md failed · 1 images failed", buildSyncResultBanner(context, result))
+    }
+
+    @Test fun `a failed markdown import gets its own part, not a file count`() {
+        val result = SyncResult(isSuccess = true, markdownImportFailed = true)
+
+        assertEquals("import failed", buildSyncResultBanner(context, result))
     }
 }

@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
@@ -109,16 +110,12 @@ internal class AssetSyncManager(
         serverUrl: String,
         referenced: Set<String>,
         serverAssets: Map<String, WebDavResource>
-    ): Int {
+    ): AssetTransferCount {
         val toUpload = referenced.filter { it !in serverAssets && assetStore.getAssetFile(it).exists() }
-        if (toUpload.isEmpty()) return 0
+        if (toUpload.isEmpty()) return AssetTransferCount(0, 0)
         Logger.d(TAG, "🚀 Uploading ${toUpload.size} asset(s)")
 
-        val successCount = AtomicInteger(0)
-        runParallel(toUpload) { name ->
-            if (putWithRetry(webdav, serverUrl, name)) successCount.incrementAndGet()
-        }
-        return successCount.get()
+        return transfer(toUpload) { name -> putWithRetry(webdav, serverUrl, name) }
     }
 
     /** Referenzierte Assets herunterladen, die lokal fehlen, aber auf dem Server liegen. */
@@ -127,16 +124,12 @@ internal class AssetSyncManager(
         serverUrl: String,
         referenced: Set<String>,
         serverAssets: Map<String, WebDavResource>
-    ): Int {
+    ): AssetTransferCount {
         val toDownload = referenced.filter { it in serverAssets && !assetStore.getAssetFile(it).exists() }
-        if (toDownload.isEmpty()) return 0
+        if (toDownload.isEmpty()) return AssetTransferCount(0, 0)
         Logger.d(TAG, "🚀 Downloading ${toDownload.size} asset(s)")
 
-        val successCount = AtomicInteger(0)
-        runParallel(toDownload) { name ->
-            if (getWithRetry(webdav, serverUrl, name)) successCount.incrementAndGet()
-        }
-        return successCount.get()
+        return transfer(toDownload) { name -> getWithRetry(webdav, serverUrl, name) }
     }
 
     /**
@@ -174,6 +167,17 @@ internal class AssetSyncManager(
         }
     }
 
+    /** Zählt parallele Einzel-Transfers aus; `null` heißt Erfolg, sonst der letzte Fehler. */
+    private suspend fun transfer(names: List<String>, action: suspend (String) -> Exception?): AssetTransferCount {
+        val successCount = AtomicInteger(0)
+        val lastError = AtomicReference<Exception?>(null)
+        runParallel(names) { name ->
+            val error = action(name)
+            if (error == null) successCount.incrementAndGet() else lastError.set(error)
+        }
+        return AssetTransferCount(successCount.get(), names.size - successCount.get(), lastError.get())
+    }
+
     private suspend fun runParallel(names: List<String>, action: suspend (String) -> Unit) {
         val maxParallel = prefs.getInt(
             Constants.KEY_MAX_PARALLEL_CONNECTIONS,
@@ -189,46 +193,54 @@ internal class AssetSyncManager(
         }
     }
 
-    private suspend fun putWithRetry(webdav: WebDavClient, serverUrl: String, name: String): Boolean {
+    /** @return `null` bei Erfolg, sonst der Fehler des letzten Versuchs. */
+    private suspend fun putWithRetry(webdav: WebDavClient, serverUrl: String, name: String): Exception? {
         val file = assetStore.getAssetFile(name)
         val url = urlBuilder.getAssetUrl(serverUrl, name)
         val mime = mimeForExtension(file.extension) ?: FALLBACK_MIME
+        var lastError: Exception? = null
 
         repeat(RETRY_COUNT + 1) { attempt ->
             try {
                 webdav.put(url, file.readBytes(), mime)
                 Logger.d(TAG, "📤 Uploaded asset: $name")
-                return true
+                return null
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                lastError = e
                 Logger.w(TAG, "⚠️ Asset upload failed $name (attempt ${attempt + 1}): ${e.message}")
                 if (attempt < RETRY_COUNT) delay(RETRY_DELAY_MS * (attempt + 1))
             }
         }
         Logger.e(TAG, "❌ Asset upload failed after retries: $name")
-        return false
+        return lastError
     }
 
     /** Binärer Download-Zwilling zu [dev.dettmer.simplenotes.sync.parallel.ParallelDownloader] —
      * dessen `readText()` würde Bilddaten korrumpieren. */
-    private suspend fun getWithRetry(webdav: WebDavClient, serverUrl: String, name: String): Boolean {
+    private suspend fun getWithRetry(webdav: WebDavClient, serverUrl: String, name: String): Exception? {
         val url = urlBuilder.getAssetUrl(serverUrl, name)
+        var lastError: Exception? = null
 
         repeat(RETRY_COUNT + 1) { attempt ->
             try {
                 val bytes = webdav.get(url).use { it.readBytes() }
                 assetStore.saveAssetAs(bytes, name)
                 Logger.d(TAG, "📥 Downloaded asset: $name")
-                return true
+                return null
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                lastError = e
                 Logger.w(TAG, "⚠️ Asset download failed $name (attempt ${attempt + 1}): ${e.message}")
                 if (attempt < RETRY_COUNT) delay(RETRY_DELAY_MS * (attempt + 1))
             }
         }
         Logger.e(TAG, "❌ Asset download failed after retries: $name")
-        return false
+        return lastError
     }
 }
+
+/** 🆕 v2.19.0: Ergebnis eines Asset-Transfers; [failed] = alle Retries erschöpft, [lastError] für den Grund. */
+internal data class AssetTransferCount(val succeeded: Int, val failed: Int, val lastError: Exception? = null)

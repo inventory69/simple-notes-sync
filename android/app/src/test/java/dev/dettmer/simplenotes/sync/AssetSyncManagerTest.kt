@@ -80,8 +80,22 @@ class AssetSyncManagerTest {
             serverAssets = mapOf("b.webp" to davResource("b.webp")) // b already on server
         )
 
-        assertEquals(1, uploaded)
+        assertEquals(1, uploaded.succeeded)
+        assertEquals(0, uploaded.failed)
         assertTrue(uploadedUrl.captured.endsWith("a.webp"))
+    }
+
+    /** 🆕 v2.19.0: ein PUT, der alle Retries lang wirft, zählt als nicht übertragen — mit Grund. */
+    @Test fun `uploadMissing counts an asset whose PUT keeps failing`() = runBlocking {
+        assetStore.saveAssetAs("bytes-a".toByteArray(), "a.webp")
+        val webdav = mockk<WebDavClient>(relaxed = true)
+        every { webdav.put(any(), any<ByteArray>(), any()) } throws java.io.IOException("409")
+
+        val count = manager.uploadMissing(webdav, "http://server/notes", setOf("a.webp"), emptyMap())
+
+        assertEquals(0, count.succeeded)
+        assertEquals(1, count.failed)
+        assertEquals("409", count.lastError?.message) // Grund für die Legenden-Karte
     }
 
     @Test fun `downloadMissing only downloads referenced assets on server but missing locally`() = runBlocking {
@@ -100,7 +114,7 @@ class AssetSyncManagerTest {
             )
         )
 
-        assertEquals(1, downloaded)
+        assertEquals(1, downloaded.succeeded)
         assertTrue(assetStore.getAssetFile("missing.webp").exists())
         assertEquals("downloaded content", assetStore.getAssetFile("missing.webp").readText())
         assertEquals("already here", assetStore.getAssetFile("have.webp").readText()) // untouched

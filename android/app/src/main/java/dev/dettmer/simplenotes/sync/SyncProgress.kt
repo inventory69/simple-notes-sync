@@ -110,6 +110,9 @@ enum class SyncPhase {
     /** Sync erfolgreich abgeschlossen */
     COMPLETED,
 
+    /** 🆕 v2.19.0: Notizen synchron, aber Konflikte oder Export-Probleme (MD/Bilder) */
+    WARNING,
+
     /** Sync mit Fehler abgebrochen */
     ERROR,
 

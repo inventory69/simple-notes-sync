@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -50,6 +51,7 @@ import dev.dettmer.simplenotes.sync.SyncProgress
  * - UPLOADING / DOWNLOADING / IMPORTING_MARKDOWN: Nur bei echten Aktionen
  * - COMPLETED: Erfolgsmeldung mit Checkmark-Icon (auto-hide durch ComposeMainActivity)
  * - ERROR: Fehlermeldung mit Error-Icon (auto-hide durch ComposeMainActivity)
+ * - WARNING (v2.19.0): Notizen synchron, aber Konflikte/Export-Probleme — tertiär, nicht errorContainer
  *
  * Silent Syncs (onResume) zeigen kein Banner (progress.isVisible == false)
  */
@@ -66,13 +68,16 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
         lastVisibleProgress = progress
         val isError = progress.phase == SyncPhase.ERROR
         val isInfo = progress.phase == SyncPhase.INFO
+        val isWarning = progress.phase == SyncPhase.WARNING
         lastVisibleBackgroundColor = when {
             isError -> MaterialTheme.colorScheme.errorContainer
+            isWarning -> MaterialTheme.colorScheme.tertiaryContainer
             isInfo -> MaterialTheme.colorScheme.secondaryContainer
             else -> MaterialTheme.colorScheme.primaryContainer
         }
         lastVisibleContentColor = when {
             isError -> MaterialTheme.colorScheme.onErrorContainer
+            isWarning -> MaterialTheme.colorScheme.onTertiaryContainer
             isInfo -> MaterialTheme.colorScheme.onSecondaryContainer
             else -> MaterialTheme.colorScheme.onPrimaryContainer
         }
@@ -119,7 +124,8 @@ private fun BannerContent(p: SyncProgress, contentColor: Color) {
     val pIsError = p.phase == SyncPhase.ERROR
     val pIsCompleted = p.phase == SyncPhase.COMPLETED
     val pIsInfo = p.phase == SyncPhase.INFO
-    val pIsResult = pIsError || pIsCompleted || pIsInfo
+    val pIsWarning = p.phase == SyncPhase.WARNING
+    val pIsResult = pIsError || pIsCompleted || pIsInfo || pIsWarning
 
     Column(
         modifier = Modifier
@@ -141,6 +147,12 @@ private fun BannerContent(p: SyncProgress, contentColor: Color) {
                 )
                 pIsInfo -> Icon(
                     imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = contentColor
+                )
+                pIsWarning -> Icon(
+                    imageVector = Icons.Outlined.WarningAmber,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     tint = contentColor
@@ -223,7 +235,7 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.DOWNLOADING -> stringResource(R.string.sync_phase_downloading)
         SyncPhase.DELETING -> stringResource(R.string.sync_phase_deleting)
         SyncPhase.IMPORTING_MARKDOWN -> stringResource(R.string.sync_phase_importing_markdown)
-        SyncPhase.COMPLETED -> stringResource(R.string.sync_phase_completed)
+        SyncPhase.COMPLETED, SyncPhase.WARNING -> stringResource(R.string.sync_phase_completed)
         SyncPhase.ERROR -> stringResource(R.string.sync_phase_error)
         SyncPhase.INFO -> "" // 🆕 v1.8.1 (IMPL_12): INFO nutzt immer resultMessage
     }

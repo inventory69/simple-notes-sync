@@ -43,7 +43,19 @@ data class UploadBatchResult(
     val uploadedCount: Int,
     val markdownExportedNoteIds: Set<String>,
     // 🆕 v2.16.0: Uploads, die der Server per If-Match abgelehnt hat (412) — fremde Änderung.
-    val conflictCount: Int = 0
+    val conflictCount: Int = 0,
+    // 🆕 v2.19.0: MD-Spiegel, deren Export/Löschung scheiterte (id → Fehler) — die JSON ist trotzdem oben.
+    val markdownFailed: Map<String, Exception> = emptyMap()
+)
+
+/**
+ * 🆕 v2.19.0: Ergebnis von [NoteUploader.retryMarkdownMirrors].
+ * @param carriedOver ohne Request stehen gelassen — der nächste Upload erledigt sie.
+ */
+data class MarkdownRetryResult(
+    val exportedIds: Set<String> = emptySet(),
+    val failed: Map<String, Exception> = emptyMap(),
+    val carriedOver: Set<String> = emptySet()
 )
 
 // Abbau: TECH_DEBT_ROADMAP.md Slice 4
@@ -357,6 +369,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 return@withContext true
             }
 
+            // 🆕 v2.19.0: offene Export-Probleme — sonst täte ein manueller Sync bei ausgeschaltetem
+            // „Server immer prüfen" nichts, und der Retry bliebe wirkungslos. Kostet nur, solange
+            // ein Fehler offen ist.
+            if (ExportProblems.load(prefs) != null) {
+                Logger.d(TAG, "⚠️ Export problems pending - has changes: true")
+                return@withContext true
+            }
+
             // Check 2: Local changes (Timestamp ODER SyncStatus)
             // 🛡️ v1.8.2 (IMPL_19a): Klassen-Feld nutzen statt neue Instanz
             val allNotes = storage.loadAllNotes()
@@ -588,6 +608,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 var syncedCount = 0
                 var conflictCount = 0
                 var purgedFromServerCount = 0
+                // 🆕 v2.19.0: Export-Probleme — die Notizen selbst sind trotzdem synchron.
+                val mdFailedIds = mutableSetOf<String>()
+                var mdLastError: Exception? = null
+                var markdownImportFailed = false
+                var assetFailedCount = 0
+                var assetLastError: Exception? = null
 
                 Logger.d(TAG, "📍 Step 3: Checking server directory")
                 // ⚡ v1.3.1: Verwende gecachte Directory-Checks
@@ -607,7 +633,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 val serverAssets =
                     assetSyncManager.listServerAssetsIfNeeded(webdav, serverUrl, referencedAssets)
 
-                uploadReferencedAssets(webdav, serverUrl, referencedAssets, serverAssets)
+                uploadReferencedAssets(webdav, serverUrl, referencedAssets, serverAssets).let {
+                    assetFailedCount += it.failed
+                    assetLastError = it.lastError ?: assetLastError
+                }
 
                 Logger.d(TAG, "📍 Step 4: Uploading local notes")
                 // Upload local notes
@@ -633,6 +662,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     )
                     syncedCount += uploadResult.uploadedCount
                     conflictCount += uploadResult.conflictCount // 🆕 v2.16.0 (If-Match → 412)
+                    mdFailedIds += uploadResult.markdownFailed.keys
+                    mdLastError = uploadResult.markdownFailed.values.lastOrNull() ?: mdLastError
                     markdownExportedNoteIds = uploadResult.markdownExportedNoteIds
                     Logger.d(
                         TAG,
@@ -643,6 +674,22 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     Logger.e(TAG, "💥 CRASH in uploadLocalNotes()!", e)
                     e.printStackTrace()
                     throw e
+                }
+
+                // 🆕 v2.19.0: Step 4.1 — gescheiterte MD-Kopien früherer Syncs nachziehen. Vor dem
+                // Import, damit der die frisch geschriebenen Dateien ausschließt.
+                val storedExportProblems = ExportProblems.load(prefs)
+                if (mdExport) {
+                    // ponytail: Hat der Upload eben eine getrashte Notiz aus dem Set gelöscht, löscht
+                    // der Retry sie ein zweites Mal — ein DELETE, 404 toleriert, nur im Fehlerfall.
+                    val retry = noteUploader.retryMarkdownMirrors(
+                        webdav,
+                        serverUrl,
+                        storedExportProblems?.markdownFailedIds.orEmpty() - markdownExportedNoteIds - mdFailedIds
+                    )
+                    mdFailedIds += retry.carriedOver + retry.failed.keys
+                    mdLastError = retry.failed.values.lastOrNull() ?: mdLastError
+                    markdownExportedNoteIds = markdownExportedNoteIds + retry.exportedIds
                 }
 
                 // Step 4.5: Process pending server deletions (queued from offline deletes)
@@ -716,7 +763,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     throw e
                 }
 
-                downloadAndGcAssets(webdav, serverUrl, serverAssets)
+                downloadAndGcAssets(webdav, serverUrl, serverAssets).let {
+                    assetFailedCount += it.failed
+                    assetLastError = it.lastError ?: assetLastError
+                }
 
                 // 🆕 v2.7.0 (Folders): Step 5.6 — Ordner-Metadaten syncen (Namen + Farben + Tombstones).
                 // 🆕 v2.14.0: Skip nur, wenn der Download sauber lief UND keine reinen
@@ -759,6 +809,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         if (markdownImportedCount > 0) {
                             Logger.d(TAG, "📤 Re-uploading notes updated from Markdown (JSON sync)...")
                             val reUploadResult = uploadLocalNotes(webdav, serverUrl)
+                            mdFailedIds -= reUploadResult.markdownExportedNoteIds
+                            mdFailedIds += reUploadResult.markdownFailed.keys
+                            mdLastError = reUploadResult.markdownFailed.values.lastOrNull() ?: mdLastError
                             Logger.d(
                                 TAG,
                                 "✅ Re-uploaded: ${reUploadResult.uploadedCount} notes (JSON updated on server)"
@@ -781,7 +834,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     }
                 } catch (e: Exception) {
                     Logger.e(TAG, "⚠️ Markdown auto-import failed (non-fatal)", e)
-                    // Non-fatal, continue
+                    // Non-fatal, continue — aber sichtbar machen (v2.19.0)
+                    markdownImportFailed = true
+                    mdLastError = e
                 }
 
                 Logger.d(TAG, "📍 Step 7: Saving sync timestamp")
@@ -816,14 +871,17 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 }
                 Logger.d(TAG, "═══════════════════════════════════════")
 
-                // 🆕 v1.8.0: Phase 6 - Completed
-                SyncStateManager.updateProgress(
-                    phase = SyncPhase.COMPLETED,
-                    current = effectiveSyncedCount,
-                    total = effectiveSyncedCount
+                // Ohne neuen Versuch (nur stehen gelassene IDs) bleibt der gespeicherte Grund.
+                val exportProblems = ExportProblems(
+                    markdownFailedIds = mdFailedIds,
+                    markdownImportFailed = markdownImportFailed,
+                    assetsFailed = assetFailedCount,
+                    markdownReason = mdLastError?.let(::mapSyncExceptionToMessage) ?: storedExportProblems?.markdownReason,
+                    assetsReason = assetLastError?.let(::mapSyncExceptionToMessage)
                 )
+                ExportProblems.save(prefs, exportProblems)
 
-                SyncResult(
+                val result = SyncResult(
                     isSuccess = true,
                     syncedCount = effectiveSyncedCount,
                     conflictCount = unresolvedConflicts(conflictCount),
@@ -833,8 +891,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     foldersChanged = foldersChanged, // 🆕 v2.7.0 (Folders)
                     foldersReconciled = folderReconciledCount > 0, // 🆕 v2.7.2
                     restoredCount = restoredCount, // 🆕 Issue #128
-                    deletionDetectionSkipped = deletionDetectionSkipped // 🆕 Issue #128
+                    deletionDetectionSkipped = deletionDetectionSkipped, // 🆕 Issue #128
+                    markdownFailedCount = mdFailedIds.size,
+                    markdownImportFailed = markdownImportFailed,
+                    assetFailedCount = assetFailedCount
                 )
+
+                // 🆕 v1.8.0: Phase 6 - Completed
+                // 🆕 v2.19.0: gleich WARNING — sonst blitzt vor dem Warn-Banner kurz der Erfolgs-Haken auf
+                SyncStateManager.updateProgress(
+                    phase = if (result.isWarning) SyncPhase.WARNING else SyncPhase.COMPLETED,
+                    current = effectiveSyncedCount,
+                    total = effectiveSyncedCount
+                )
+                result
             } catch (e: Exception) {
                 Logger.e(TAG, "═══════════════════════════════════════")
                 Logger.e(TAG, "💥💥💥 FATAL EXCEPTION in syncNotes() 💥💥💥")
@@ -989,19 +1059,23 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * 🆕 Bild-Attachments: Assets-first (E1) — kein Gerät sieht eine Notiz ohne deren Bilder.
      * Best-effort: ein einzelner fehlgeschlagener Upload blockiert den Notiz-Upload nicht,
      * der Markdown-Renderer zeigt bis zum nächsten Sync einen Platzhalter.
+     *
+     * @return nicht übertragene Assets samt letztem Fehler (🆕 v2.19.0; Abbruch des Schritts zählt als 1).
      */
     private suspend fun uploadReferencedAssets(
         webdav: WebDavClient,
         serverUrl: String,
         referenced: Set<String>,
         serverAssets: Map<String, WebDavResource>?
-    ) {
-        if (serverAssets == null) return
-        try {
-            val uploadedCount = assetSyncManager.uploadMissing(webdav, serverUrl, referenced, serverAssets)
-            Logger.d(TAG, "✅ Assets uploaded: $uploadedCount")
+    ): AssetTransferCount {
+        if (serverAssets == null) return AssetTransferCount(0, 0)
+        return try {
+            assetSyncManager.uploadMissing(webdav, serverUrl, referenced, serverAssets).also {
+                Logger.d(TAG, "✅ Assets uploaded: ${it.succeeded}, failed: ${it.failed}")
+            }
         } catch (e: Exception) {
             Logger.e(TAG, "⚠️ Asset upload failed (non-fatal)", e)
+            AssetTransferCount(0, 1, e)
         }
     }
 
@@ -1009,13 +1083,15 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * 🆕 Bild-Attachments: Download referenzierter, lokal fehlender Assets — Referenzen aus dem
      * frisch aktualisierten Korpus (inkl. der soeben heruntergeladenen Notizen). Danach
      * Mark-and-Sweep-GC. Best-effort, wie [uploadReferencedAssets].
+     *
+     * @return nicht übertragene Assets, wie [uploadReferencedAssets].
      */
     private suspend fun downloadAndGcAssets(
         webdav: WebDavClient,
         serverUrl: String,
         serverAssets: Map<String, WebDavResource>?
-    ) {
-        try {
+    ): AssetTransferCount {
+        return try {
             val freshNotes = storage.loadAllNotes(forceReload = true)
             val referenced = AssetReferences.extractAllReferenced(freshNotes)
             // Late-List-Pflicht: der Skip oben galt für den Stand VOR dem Download. Bringen die
@@ -1023,9 +1099,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // zeigt der Renderer bis zum nächsten Sync Platzhalter statt Bilder.
             val assets = serverAssets
                 ?: assetSyncManager.listServerAssetsIfNeeded(webdav, serverUrl, referenced)
-                ?: return
-            val downloadedCount = assetSyncManager.downloadMissing(webdav, serverUrl, referenced, assets)
-            Logger.d(TAG, "✅ Assets downloaded: $downloadedCount")
+                ?: return AssetTransferCount(0, 0)
+            val count = assetSyncManager.downloadMissing(webdav, serverUrl, referenced, assets)
+            Logger.d(TAG, "✅ Assets downloaded: ${count.succeeded}, failed: ${count.failed}")
 
             // Guard analog ALL_DELETED_GUARD_THRESHOLD: eine leere Notizliste deutet auf einen
             // fehlgeschlagenen Load hin, nicht auf "alle Assets sind Waisen" — Remote-GC würde
@@ -1037,8 +1113,10 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 assets,
                 allowRemoteSweep = freshNotes.isNotEmpty()
             )
+            count
         } catch (e: Exception) {
             Logger.e(TAG, "⚠️ Asset download/GC failed (non-fatal)", e)
+            AssetTransferCount(0, 1, e)
         }
     }
 

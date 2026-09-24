@@ -23,7 +23,8 @@ fun buildSyncResultBanner(context: Context, result: SyncResult): String? {
             )
         }
         if (result.syncedCount > 0) {
-            add(context.getString(R.string.toast_sync_success, result.syncedCount))
+            // 🆕 v2.19.0: Plural ohne ✅ — das Banner hat sein eigenes Icon, und „1 notes" ist falsch.
+            add(context.resources.getQuantityString(R.plurals.sync_notes_synced_count, result.syncedCount, result.syncedCount))
         }
         if (result.deletedOnServerCount > 0) {
             add(context.getString(R.string.sync_moved_to_trash_count, result.deletedOnServerCount))
@@ -41,6 +42,20 @@ fun buildSyncResultBanner(context: Context, result: SyncResult): String? {
         if (result.deletionDetectionSkipped) {
             add(context.getString(R.string.sync_deletion_check_skipped))
         }
+        // 🆕 v2.19.0: Die Notizen sind synchron, nur ihre Spiegel/Bilder nicht.
+        addAll(exportProblemParts(context, result))
     }
     return if (parts.isEmpty()) null else parts.joinToString(" · ")
+}
+
+/** 🆕 v2.19.0: Banner-Teile für Export-Probleme — auch Text der Hintergrund-Benachrichtigung. */
+fun exportProblemParts(context: Context, result: SyncResult): List<String> = buildList {
+    val res = context.resources
+    if (result.markdownFailedCount > 0) {
+        add(res.getQuantityString(R.plurals.sync_markdown_failed_count, result.markdownFailedCount, result.markdownFailedCount))
+    }
+    if (result.markdownImportFailed) add(context.getString(R.string.sync_markdown_import_failed))
+    if (result.assetFailedCount > 0) {
+        add(res.getQuantityString(R.plurals.sync_assets_failed_count, result.assetFailedCount, result.assetFailedCount))
+    }
 }

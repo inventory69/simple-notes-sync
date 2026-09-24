@@ -11,6 +11,8 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.sync.SyncResult
+import dev.dettmer.simplenotes.sync.exportProblemParts
 import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
 
 object NotificationHelper {
@@ -20,6 +22,10 @@ object NotificationHelper {
 
     // 🆕 v2.16.0: eigener Slot für die Konflikt-Notification (vorher inline NOTIFICATION_ID + 1).
     private const val CONFLICT_NOTIFICATION_ID = 1002
+
+    // 🆕 v2.19.0: leiser Kanal — PRIORITY_LOW allein wirkt ab Android 8 nicht mehr.
+    private const val WARNINGS_CHANNEL_ID = "sync_warnings_channel"
+    private const val EXPORT_PROBLEM_NOTIFICATION_ID = 1004
     private const val SYNC_NOTIFICATION_ID = 2
     const val SYNC_PROGRESS_NOTIFICATION_ID = 1003 // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
@@ -70,9 +76,18 @@ object NotificationHelper {
                 enableLights(true)
             }
 
+            val warningsChannel = NotificationChannel(
+                WARNINGS_CHANNEL_ID,
+                context.getString(R.string.notification_warnings_channel_name),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = context.getString(R.string.notification_warnings_channel_desc)
+            }
+
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE)
                 as NotificationManager
             notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(warningsChannel)
         }
     }
 
@@ -266,6 +281,52 @@ object NotificationHelper {
             }
         }
         Logger.d(TAG, "⚠️ Conflict notification shown for $conflictCount note(s)")
+    }
+
+    /**
+     * 🆕 v2.19.0: Leiser Hinweis nach einem Hintergrund-Sync, dessen Markdown-Spiegel oder Bilder
+     * nicht übertragen wurden. Wie die Konflikt-Notification auch im „nur Fehler"-Modus.
+     */
+    fun showExportProblemNotification(context: Context, result: SyncResult) {
+        if (!areNotificationsEnabled(context)) return
+
+        val parts = exportProblemParts(context, result)
+        val hint = context.getString(R.string.sync_status_notes_in_sync)
+
+        val intent = Intent(context, ComposeMainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(context, WARNINGS_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle(context.getString(R.string.notification_sync_export_title))
+            .setContentText(parts.joinToString(" · "))
+            .setStyle(NotificationCompat.BigTextStyle().bigText((parts + hint).joinToString("\n")))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .build()
+
+        with(NotificationManagerCompat.from(context)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (androidx.core.app.ActivityCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    notify(EXPORT_PROBLEM_NOTIFICATION_ID, notification)
+                }
+            } else {
+                notify(EXPORT_PROBLEM_NOTIFICATION_ID, notification)
+            }
+        }
+        Logger.d(TAG, "⚠️ Export problem notification shown (md=${result.markdownFailedCount}, assets=${result.assetFailedCount})")
     }
 
     /**

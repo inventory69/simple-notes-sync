@@ -16,6 +16,7 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.ExportProblems
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
@@ -1358,6 +1359,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 putBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
                 putBoolean(Constants.KEY_MARKDOWN_AUTO_IMPORT, false)
             }
+            // 🆕 v2.19.0: Badge verschwindet beim Zurückkehren (refreshExportProblems im Resume).
+            ExportProblems.clearMarkdown(prefs)
             viewModelScope.launch {
                 emitToast(getString(R.string.toast_markdown_disabled))
             }
