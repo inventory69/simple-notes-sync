@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.backup
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.Gson
@@ -19,6 +20,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.CoroutineDispatcher
@@ -203,8 +205,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                 // 🆕 Bild-Attachments (E9): Ohne das würde ein Restore die Notizen zurückbringen,
                 // aber alle Bilder als Platzhalter zeigen. Base64 im Backup-JSON ist hier ok —
                 // das "kein Base64 im Content"-Verbot gilt nur für den Notiz-Text selbst.
-                val backupAssets = collectBackupAssets(allNotes)
-                Logger.d(TAG, "   Found ${backupAssets.size} referenced asset(s) to backup")
+                val assetNames = AssetReferences.extractAllReferenced(allNotes)
+                Logger.d(TAG, "   Found ${assetNames.size} referenced asset(s) to backup")
 
                 val backupData = BackupData(
                     backupVersion = BACKUP_VERSION,
@@ -215,23 +217,19 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     appSettings = appSettings,
                     folders = folderMeta,
                     localOnlyFolders = folderStore.getLocalOnlyFolderNames().toList(),
-                    localOnlyServerRemoval = folderStore.getServerRemovalQueue().toList(),
-                    assets = backupAssets
+                    localOnlyServerRemoval = folderStore.getServerRemovalQueue().toList()
                 )
 
-                val jsonString = gson.toJson(backupData)
-
-                // 🔐 v1.7.0: Encrypt if password is provided
-                val dataToWrite = if (password != null) {
-                    encryptionManager.encrypt(jsonString.toByteArray(), password)
-                } else {
-                    jsonString.toByteArray()
+                // Gestreamt: ein Bild nach dem anderen, bei Passwort blockweise verschlüsselt (SNE2).
+                // Bis v2.18.x lag das ganze Backup mehrfach im Speicher und stürzte mit vielen
+                // Bildern per OutOfMemoryError ab.
+                val output = context.contentResolver.openOutputStream(uri)
+                    ?: throw IOException("Cannot open backup file for writing")
+                output.use { raw ->
+                    val out = if (password != null) encryptionManager.encryptingStream(raw, password) else raw
+                    BackupStream.write(out, gson, backupData, backupAssets(assetNames))
                 }
-
-                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(dataToWrite)
-                    Logger.d(TAG, "✅ Backup created successfully$encryptedSuffix")
-                }
+                Logger.d(TAG, "✅ Backup created successfully$encryptedSuffix")
 
                 BackupResult(
                     success = true,
@@ -242,14 +240,32 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                         allNotes.size
                     )
                 )
+            } catch (e: OutOfMemoryError) {
+                Logger.e(TAG, "Out of memory while creating backup", e)
+                deleteIncompleteBackup(uri)
+                BackupResult(success = false, error = context.getString(R.string.error_backup_out_of_memory))
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to create backup", e)
+                deleteIncompleteBackup(uri)
                 BackupResult(
                     success = false,
                     error = e.message
                 )
             }
         }
+
+    /**
+     * Die Datei hat der Speichern-Dialog schon angelegt. Scheitert das Backup, bliebe sie leer oder
+     * halb geschrieben liegen und sähe aus wie eine gültige Sicherung.
+     */
+    private fun deleteIncompleteBackup(uri: Uri) {
+        try {
+            DocumentsContract.deleteDocument(context.contentResolver, uri)
+            Logger.d(TAG, "🗑️ Deleted incomplete backup file")
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ Could not delete incomplete backup file: ${e.message}")
+        }
+    }
 
     /**
      * Erstellt automatisches Backup (vor Restore)
@@ -315,37 +331,41 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
         return@withContext try {
             Logger.d(TAG, "📥 Restoring backup from: $uri (mode: $mode)")
 
-            // 1. Backup-Datei lesen
-            val fileData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.readBytes()
-            } ?: return@withContext RestoreResult(
-                success = false,
-                error = context.getString(R.string.error_backup_unreadable)
-            )
-
-            // 🔐 v1.7.0: Check if encrypted and decrypt if needed
-            val jsonString = try {
-                if (encryptionManager.isEncrypted(fileData)) {
-                    if (password == null) {
-                        return@withContext RestoreResult(
-                            success = false,
-                            error = context.getString(R.string.error_backup_encrypted_password_required)
-                        )
-                    }
-                    val decrypted = encryptionManager.decrypt(fileData, password)
-                    String(decrypted)
-                } else {
-                    String(fileData)
-                }
+            // 1. Backup in einem Durchlauf lesen: Bilder gehen einzeln direkt in den AssetStore,
+            // der Rest wird BackupData. Bricht der Restore danach ab, bleiben die Bilder verwaist.
+            // Das ist harmlos (inhaltsadressiert), AssetSyncManager.garbageCollect räumt sie weg.
+            val encrypted = isBackupEncrypted(uri)
+            if (encrypted && password == null) {
+                return@withContext RestoreResult(
+                    success = false,
+                    error = context.getString(R.string.error_backup_encrypted_password_required)
+                )
+            }
+            var restoredAssets = 0
+            val backupData = try {
+                context.contentResolver.openInputStream(uri)?.use { raw ->
+                    val input = if (encrypted && password != null) encryptionManager.decryptingStream(raw, password) else raw
+                    BackupStream.read(input, gson) { asset -> if (restoreAsset(asset)) restoredAssets++ }
+                } ?: return@withContext RestoreResult(
+                    success = false,
+                    error = context.getString(R.string.error_backup_unreadable)
+                )
             } catch (e: EncryptionException) {
                 return@withContext RestoreResult(
                     success = false,
                     error = context.getString(R.string.error_backup_decryption_failed, e.message.orEmpty())
                 )
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ Backup unreadable: ${e.message}")
+                return@withContext RestoreResult(
+                    success = false,
+                    error = context.getString(R.string.error_backup_corrupt, e.message.orEmpty())
+                )
             }
+            if (restoredAssets > 0) Logger.d(TAG, "🖼️ Restored $restoredAssets asset(s) from backup")
 
-            // 2. Backup validieren & parsen
-            val validationResult = validateBackup(jsonString)
+            // 2. Backup validieren
+            val validationResult = validateBackup(backupData)
             if (!validationResult.isValid) {
                 Logger.w(TAG, "⚠️ Backup rejected: ${validationResult.errorMessage}")
                 return@withContext RestoreResult(
@@ -353,8 +373,6 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     error = validationResult.errorMessage ?: context.getString(R.string.error_invalid_backup_file)
                 )
             }
-
-            val backupData = gson.fromJson(jsonString, BackupData::class.java)
             Logger.d(TAG, "   Backup valid: ${backupData.notesCount} notes, version ${backupData.backupVersion}")
 
             // 3. Lesbare Notizen bestimmen — VOR dem Settings-Restore. Bricht der Restore hier ab,
@@ -442,10 +460,6 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             // 🆕 Ordner wiederherstellen (oder aus Notizen ableiten bei Alt-Backups).
             restoreFolders(backupData, mode)
 
-            // 🆕 Bild-Attachments (E9): Assets wiederherstellen — unabhängig vom Restore-Modus,
-            // da Assets content-adressiert/immutable sind (kein Konflikt möglich).
-            restoreAssets(backupData.assets)
-
             Logger.d(TAG, "✅ Restore completed: ${result.importedNotes} imported, ${result.skippedNotes} skipped")
             if (unusable > 0) {
                 val skipped = context.resources.getQuantityString(
@@ -457,6 +471,9 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             } else {
                 result
             }
+        } catch (e: OutOfMemoryError) {
+            Logger.e(TAG, "Out of memory while restoring backup", e)
+            RestoreResult(success = false, error = context.getString(R.string.error_backup_out_of_memory))
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to restore backup", e)
             RestoreResult(
@@ -487,16 +504,12 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
      */
     suspend fun backupContainsAppSettings(uri: Uri, password: String? = null): Boolean = withContext(ioDispatcher) {
         return@withContext try {
-            val fileData = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                ?: return@withContext false
-            val jsonString = if (encryptionManager.isEncrypted(fileData)) {
-                if (password == null) return@withContext false
-                String(encryptionManager.decrypt(fileData, password))
-            } else {
-                String(fileData)
-            }
-            val backupData = gson.fromJson(jsonString, BackupData::class.java)
-            backupData.appSettings != null
+            val encrypted = isBackupEncrypted(uri)
+            if (encrypted && password == null) return@withContext false
+            context.contentResolver.openInputStream(uri)?.use { raw ->
+                val input = if (encrypted && password != null) encryptionManager.decryptingStream(raw, password) else raw
+                BackupStream.read(input, gson, onAsset = null).appSettings != null
+            } ?: false
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to check app settings in backup", e)
             false
@@ -506,10 +519,8 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
     /**
      * Validiert Backup-Datei
      */
-    private fun validateBackup(jsonString: String): ValidationResult {
+    private fun validateBackup(backupData: BackupData): ValidationResult {
         return try {
-            val backupData = gson.fromJson(jsonString, BackupData::class.java)
-
             // Version kompatibel?
             if (backupData.backupVersion > BACKUP_VERSION) {
                 return ValidationResult(
@@ -668,40 +679,31 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
     }
 
     /**
-     * 🆕 Bild-Attachments: Sammelt alle im Notiz-Korpus referenzierten Assets, die lokal
-     * vorhanden sind, Base64-kodiert fürs Backup-JSON.
+     * 🆕 Bild-Attachments: die lokal vorhandenen Assets unter [names], Base64-kodiert fürs
+     * Backup-JSON. Lazy, damit beim Schreiben immer nur ein Bild im Speicher liegt.
      */
-    private fun collectBackupAssets(notes: List<Note>): List<BackupAsset> {
-        val referenced = AssetReferences.extractAllReferenced(notes)
-        return referenced.mapNotNull { name ->
-            val file = assetStore.getAssetFile(name)
-            if (!file.exists()) return@mapNotNull null
-            try {
-                BackupAsset(name, Base64.encodeToString(file.readBytes(), Base64.NO_WRAP))
-            } catch (e: Exception) {
-                Logger.w(TAG, "⚠️ Failed to read asset for backup: $name (${e.message})")
-                null
-            }
+    private fun backupAssets(names: Set<String>): Sequence<BackupAsset> = names.asSequence().mapNotNull { name ->
+        val file = assetStore.getAssetFile(name)
+        if (!file.exists()) return@mapNotNull null
+        try {
+            BackupAsset(name, Base64.encodeToString(file.readBytes(), Base64.NO_WRAP))
+        } catch (e: Exception) {
+            Logger.w(TAG, "⚠️ Failed to read asset for backup: $name (${e.message})")
+            null
         }
     }
 
     /**
-     * 🆕 Bild-Attachments (E9): Schreibt Backup-Assets zurück in den AssetStore. Unabhängig vom
+     * 🆕 Bild-Attachments (E9): Schreibt ein Backup-Asset zurück in den AssetStore. Unabhängig vom
      * Restore-Modus — Assets sind content-adressiert/immutable, `saveAssetAs` ist ein No-op
      * wenn die Datei bereits existiert.
      */
-    private suspend fun restoreAssets(assets: List<BackupAsset>?) {
-        if (assets.isNullOrEmpty()) return
-        var restoredCount = 0
-        for (asset in assets) {
-            try {
-                assetStore.saveAssetAs(Base64.decode(asset.dataBase64, Base64.NO_WRAP), asset.name)
-                restoredCount++
-            } catch (e: Exception) {
-                Logger.w(TAG, "⚠️ Failed to restore asset: ${asset.name} (${e.message})")
-            }
-        }
-        Logger.d(TAG, "🖼️ Restored $restoredCount/${assets.size} asset(s) from backup")
+    private suspend fun restoreAsset(asset: BackupAsset): Boolean = try {
+        assetStore.saveAssetAs(Base64.decode(asset.dataBase64, Base64.NO_WRAP), asset.name)
+        true
+    } catch (e: Exception) {
+        Logger.w(TAG, "⚠️ Failed to restore asset: ${asset.name} (${e.message})")
+        false
     }
 
     /**

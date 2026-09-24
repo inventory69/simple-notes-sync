@@ -893,6 +893,7 @@
         <item quantity="other">%d Notizen vom Server wiederhergestellt</item>
     </plurals>
     <string name="error_backup_corrupt">Backup-Datei beschädigt oder ungültig: %s</string>
+    <string name="error_backup_out_of_memory">Nicht genug Arbeitsspeicher, um dieses Backup zu verarbeiten.</string>
     <string name="error_restore_failed">Wiederherstellung fehlgeschlagen: %s</string>
     <string name="restore_merge_result">%1$d neue Notizen importiert, %2$d übersprungen</string>
     <string name="restore_overwrite_result">%1$d neu, %2$d überschrieben</string>
