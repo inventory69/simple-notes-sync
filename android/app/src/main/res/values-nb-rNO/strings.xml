@@ -24,7 +24,6 @@
     <string name="sync_status_local_only">Ikke ennå synket</string>
     <string name="sync_status_deleted_on_server">Slettet på tjener</string>
     <string name="sync_legend_button">Hjelp for synkestatus</string>
-    <string name="sync_legend_title">Statusikoner for synk</string>
     <string name="sync_legend_description">Hvert notat viser et lite ikon tilsvarende synkestatusen:</string>
     <string name="sync_legend_synced_label">Synket</string>
     <string name="sync_legend_synced_desc">Dette notatet er oppdatert på alle enheter.</string>
