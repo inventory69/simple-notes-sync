@@ -26,7 +26,6 @@
     <string name="sort_checklist_alpha_desc">Я → А</string>
     <string name="sync_status_deleted_on_server">Удалено на сервере</string>
     <string name="sync_legend_button">Помощь по статусу синхронизации</string>
-    <string name="sync_legend_title">Значки статуса синхронизации</string>
     <string name="sync_legend_description">Рядом с каждой заметкой отображается небольшой значок состояния синхронизации:</string>
     <string name="sync_legend_synced_label">Синхронизировано</string>
     <string name="sync_legend_synced_desc">Эта заметка актуальна на всех устройствах.</string>
