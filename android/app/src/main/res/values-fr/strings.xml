@@ -589,7 +589,6 @@
         <item quantity="many">%d notes présentent des conflits</item>
         <item quantity="other">%d notes présentent des conflits</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Avertissement de synchronisation</string>
     <string name="notification_sync_warning_message">Serveur inaccessible depuis %dh</string>
     <string name="notification_sync_warning_detail">Le serveur WebDAV est inaccessible depuis %d heures. Veuillez vérifier votre connexion réseau ou les paramètres du serveur.</string>
     <string name="notification_sync_in_progress_title">Synchronisation en cours</string>
