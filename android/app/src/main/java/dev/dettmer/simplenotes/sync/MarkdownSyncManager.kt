@@ -50,6 +50,7 @@ internal class MarkdownSyncManager(
 
         /** Bis v2.18 zwei Regexe; der aus resolveExportUrl übersah `id` in der ersten Zeile. */
         private val FRONTMATTER_ID = Regex("""\A---\s*\n(?:.*?\n)?id:\s*([a-f0-9-]+)""", RegexOption.DOT_MATCHES_ALL)
+        private val FRONTMATTER_OPEN = Regex("""\A---(\r?\n)""")
     }
 
     /**
@@ -545,6 +546,7 @@ internal class MarkdownSyncManager(
                         localNote == null -> {
                             storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.PENDING))
                             eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
+                            writeBackId(webdav, mdItem.fileUrl, mdContent, mdNote.id)
                             importedCount++
                             Logger.d(TAG, "   ✅ Imported new from Markdown: ${mdNote.title}")
                             ActivityLog.log(
@@ -781,6 +783,34 @@ internal class MarkdownSyncManager(
         }
         connectionManager.mdMirrorsHealed = true
         Logger.i(TAG, "🧹 MD mirror heal: ${items.size} files, ${candidatesById.values.sumOf { it.size }} checked, $removed removed")
+    }
+
+    /**
+     * 🆕 v2.19.0: Eine Editor-Datei ohne `id` bekäme bei jedem Einlesen eine neue Zufalls-ID. Jede
+     * Bearbeitung, jeder Restore und jedes weitere Gerät legte dann eine Dublette an. Deshalb wird
+     * die ID beim Erstimport zurückgeschrieben (+1 PUT, nur für solche Dateien). Danach erkennt
+     * [replacePreviousCopy] die Datei als eigene Kopie. Ein Fehler lässt den Import stehen.
+     */
+    private fun writeBackId(webdav: WebDavClient, url: String, content: String, id: String) {
+        val withId = withFrontmatterId(content, id) ?: return
+        try {
+            webdav.put(url, withId.toByteArray(), "text/markdown")
+            Logger.d(TAG, "   🆔 Wrote id back to $url")
+        } catch (e: Exception) {
+            Logger.w(TAG, "   ⚠️ Could not write id back to $url: ${e.message}")
+        }
+    }
+
+    /**
+     * Setzt `id: <id>` als erste Frontmatter-Zeile, Zeilenende wie in der Datei. `null`, wenn das
+     * Frontmatter schon einen `id`-Schlüssel hat (gleiche Schlüssellogik wie [Note.fromMarkdown]).
+     */
+    internal fun withFrontmatterId(content: String, id: String): String? {
+        val open = FRONTMATTER_OPEN.find(content) ?: return null
+        val yaml = content.substring(open.range.last + 1).substringBefore("\n---")
+        if (yaml.lineSequence().any { it.substringBefore(":", "").trim() == "id" }) return null
+        return content.substring(0, open.range.last + 1) + "id: $id" + open.groupValues[1] +
+            content.substring(open.range.last + 1)
     }
 
     /** `id` aus dem Frontmatter der Datei, `null` bei fehlender ID oder Fehler. */

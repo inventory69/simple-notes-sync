@@ -9,6 +9,7 @@ import dev.dettmer.simplenotes.utils.Constants
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import java.net.URI
 import java.util.Date
@@ -160,6 +161,31 @@ class MarkdownSyncManagerMirrorPathTest {
 
         verify { webdav.put("${md}Einkaufsliste.md", any(), any()) }
         verify(exactly = 1) { webdav.delete("${md}einkauf.md") }
+        verify(exactly = 0) { webdav.put("${md}einkauf.md", any(), any()) }
+    }
+
+    @Test fun `an editor file without id gets its id written back and is then replaced`() = runTest {
+        val withoutId = "---\r\ncreated: 2026-09-24T10:00:00Z\r\n---\r\n\r\n# Einkaufsliste\r\n\r\nMilch\r\n"
+        val written = slot<ByteArray>()
+        val saved = slot<Note>()
+        every { webdav.list(md) } returns listOf(mdResource("/notes-md/einkauf.md"))
+        every { webdav.get("${md}einkauf.md") } answers { withoutId.byteInputStream() }
+        every { webdav.put("${md}einkauf.md", capture(written), any()) } answers {
+            every { webdav.get("${md}einkauf.md") } answers { written.captured.inputStream() }
+            "\"written\""
+        }
+        coEvery { storage.loadNote(any()) } returns null
+        coEvery { storage.saveNote(capture(saved)) } returns Unit
+
+        manager.importAll(webdav, SERVER)
+
+        val id = saved.captured.id
+        assertEquals(withoutId.replaceFirst("---\r\n", "---\r\nid: $id\r\n"), String(written.captured))
+
+        manager.exportSingle(webdav, SERVER, saved.captured)
+
+        verify { webdav.put("${md}Einkaufsliste.md", any(), any()) }
+        verify(exactly = 1) { webdav.delete("${md}einkauf.md") }
     }
 
     @Test fun `frontmatter id is found in the first line and ignores lookalike keys`() {
@@ -167,6 +193,8 @@ class MarkdownSyncManagerMirrorPathTest {
         assertEquals("abc-2", manager.frontmatterId("---\r\ncreated: 1\r\nid: abc-2\r\n---"))
         assertEquals(null, manager.frontmatterId("---\nnoteid: abc-3\n---"))
         assertEquals(null, manager.frontmatterId("# no frontmatter\nid: abc-4"))
+        assertEquals(null, manager.withFrontmatterId("---\ntitle: x\n id : abc-5\n---\n", "new"))
+        assertEquals(null, manager.withFrontmatterId("# no frontmatter", "new"))
     }
 
     companion object {
