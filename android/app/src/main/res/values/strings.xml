@@ -52,8 +52,8 @@
     <string name="sync_status_local_only">Not yet synced</string>
     <string name="sync_status_deleted_on_server">Deleted on server</string>
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
-    <string name="sync_legend_button">Sync status help</string>
-    <string name="sync_legend_title">Sync Status Icons</string>
+    <string name="sync_legend_button">Sync status</string>
+    <string name="sync_legend_title">Sync status</string>
     <string name="sync_legend_description">Each note shows a small icon indicating its sync status:</string>
     <string name="sync_legend_synced_label">Synced</string>
     <string name="sync_legend_synced_desc">This note is up to date on all devices.</string>
@@ -62,7 +62,20 @@
     <string name="sync_legend_conflict_label">Conflict</string>
     <string name="sync_legend_conflict_desc">This note was changed on another device too. Your version is kept and no longer synced until you open the note and choose which one to keep.</string>
     <!-- 🆕 v2.19.0: export problems of the last sync -->
-    <string name="sync_legend_last_sync_title">Last sync</string>
+    <!-- 🆕 v2.19.0: sync status dialog -->
+    <string name="sync_status_attention">Needs your attention</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="one">%1$d change waiting</item>
+        <item quantity="other">%1$d changes waiting</item>
+    </plurals>
+    <string name="sync_status_last_sync">Last synced: %1$s</string>
+    <string name="sync_status_never">never</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="one">%1$d note needs your decision</item>
+        <item quantity="other">%1$d notes need your decision</item>
+    </plurals>
+    <string name="sync_status_retry">Try again</string>
+    <string name="sync_legend_expand">Explain icons</string>
     <string name="sync_status_notes_in_sync">Your notes themselves are in sync.</string>
     <string name="sync_status_reason">Reason: %1$s</string>
     <!-- v2.16.0 (#126): word / character counter in the editor -->
@@ -255,6 +268,9 @@
     <string name="activity_op_folder_delete">Folder deleted: %1$s</string>
     <string name="activity_op_sync_ok">Sync completed</string>
     <string name="activity_op_sync_fail">Sync failed: %1$s</string>
+    <string name="activity_op_export_fail_markdown">Markdown file not exported: %1$s</string>
+    <string name="activity_op_export_fail_assets">Images not transferred: %1$s</string>
+    <string name="activity_op_export_fail_import">Markdown import aborted: %1$s</string>
     <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manual</string>

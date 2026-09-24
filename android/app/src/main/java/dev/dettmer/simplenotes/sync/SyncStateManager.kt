@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.sync
 
+import android.content.SharedPreferences
 import androidx.core.content.edit
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +55,27 @@ object SyncStateManager {
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
 
     private val lock = Any()
+
+    // 🆕 v2.19.0: hält den letzten Fehler für den Sync-Status-Dialog fest (auch bei stillen Syncs).
+    private var prefs: SharedPreferences? = null
+
+    /** Aufruf in `SimpleNotesApplication.onCreate`. Tests setzen im `@After` wieder `null`. */
+    fun init(prefs: SharedPreferences?) {
+        this.prefs = prefs
+    }
+
+    /** `null` löscht den gespeicherten Fehler, ein Text schreibt ihn samt Zeitpunkt. */
+    private fun persistError(message: String?) {
+        prefs?.edit {
+            if (message == null) {
+                remove(Constants.KEY_LAST_SYNC_ERROR)
+                remove(Constants.KEY_LAST_SYNC_ERROR_AT)
+            } else {
+                putString(Constants.KEY_LAST_SYNC_ERROR, message)
+                putLong(Constants.KEY_LAST_SYNC_ERROR_AT, System.currentTimeMillis())
+            }
+        }
+    }
 
     /**
      * Prüft ob gerade ein Sync läuft (inkl. Silent-Sync)
@@ -133,6 +156,7 @@ object SyncStateManager {
             val currentSource = current.source
 
             Logger.d(TAG, "✅ Sync completed from: $currentSource (silent=$wasSilent)")
+            persistError(null)
 
             if (wasSilent) {
                 // Silent-Sync: Direkt auf IDLE — aber nicht wenn ein sichtbarer nicht-aktiver
@@ -194,6 +218,8 @@ object SyncStateManager {
     fun errorIfVisible(errorMessage: String?) {
         synchronized(lock) {
             val current = _syncStatus.value
+            // null kommt vom Gate (Offline-Modus, kein Server). Das ist kein Fehler, den man festhalten müsste.
+            errorMessage?.let { persistError(it) }
 
             if (current.silent) {
                 // Still silent — reset without user-facing feedback
@@ -230,6 +256,7 @@ object SyncStateManager {
             val currentSource = current.source
 
             Logger.e(TAG, "❌ Sync failed from: $currentSource - $errorMessage")
+            persistError(errorMessage.orEmpty())
 
             _syncStatus.value = SyncStatus(state = SyncState.ERROR, message = errorMessage, source = currentSource)
 

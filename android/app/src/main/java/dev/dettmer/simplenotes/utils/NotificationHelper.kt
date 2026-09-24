@@ -14,6 +14,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.sync.SyncResult
 import dev.dettmer.simplenotes.sync.exportProblemParts
 import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
+import dev.dettmer.simplenotes.ui.main.MainViewModel
 
 object NotificationHelper {
     private const val TAG = "NotificationHelper"
@@ -229,6 +230,24 @@ object NotificationHelper {
     }
 
     /**
+     * 🆕 v2.19.0: Problem-Benachrichtigungen öffnen direkt den Sync-Status-Dialog.
+     * Die eigene Action ist wichtig: sonst gälte der PendingIntent der Erfolgsmeldung laut
+     * `filterEquals` als derselbe und überschriebe diesen (requestCode 0 bei beiden).
+     */
+    private fun syncStatusPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, ComposeMainActivity::class.java).apply {
+            action = MainViewModel.ACTION_SHOW_SYNC_STATUS
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        return PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+    /**
      * Zeigt Notification bei erkanntem Konflikt.
      *
      * 🆕 v2.16.0: Endlich angeschlossen — die Funktion stand seit v1.4.0 samt Titel- und
@@ -243,13 +262,7 @@ object NotificationHelper {
     fun showConflictNotification(context: Context, conflictCount: Int) {
         if (!areNotificationsEnabled(context)) return
 
-        val intent = Intent(context, ComposeMainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pendingIntent = syncStatusPendingIntent(context) // 🆕 v2.19.0: öffnet den Sync-Status-Dialog
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -293,13 +306,7 @@ object NotificationHelper {
         val parts = exportProblemParts(context, result)
         val hint = context.getString(R.string.sync_status_notes_in_sync)
 
-        val intent = Intent(context, ComposeMainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pendingIntent = syncStatusPendingIntent(context) // 🆕 v2.19.0: öffnet den Sync-Status-Dialog
 
         val notification = NotificationCompat.Builder(context, WARNINGS_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
@@ -413,16 +420,7 @@ object NotificationHelper {
         // 🆕 v1.11.0: Notification preferences check
         if (!areNotificationsEnabled(context)) return
 
-        // PendingIntent für App-Öffnung
-        val intent = Intent(context, ComposeMainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pendingIntent = syncStatusPendingIntent(context) // 🆕 v2.19.0: öffnet den Sync-Status-Dialog
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
@@ -454,16 +452,7 @@ object NotificationHelper {
         if (!areNotificationsEnabled(context)) return
         if (!isServerWarningEnabled(context)) return
 
-        // PendingIntent für App-Öffnung
-        val intent = Intent(context, ComposeMainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pendingIntent = syncStatusPendingIntent(context) // 🆕 v2.19.0: öffnet den Sync-Status-Dialog
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)

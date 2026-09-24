@@ -36,7 +36,8 @@ object ActivityLog {
         FOLDER_DELETE,
         SYNC_OK,
         SYNC_FAIL,
-        DELETION_SKIPPED
+        DELETION_SKIPPED,
+        EXPORT_FAIL // 🆕 v2.19.0: MD-Kopie, Bilder oder MD-Import nicht übertragen (why = markdown|assets|markdown_import)
     }
 
     enum class Src { LOCAL, REMOTE }

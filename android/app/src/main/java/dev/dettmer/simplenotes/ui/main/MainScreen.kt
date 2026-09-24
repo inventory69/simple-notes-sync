@@ -102,7 +102,7 @@ import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.RenameFolderDialog
 import dev.dettmer.simplenotes.ui.main.components.SortDialog
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
-import dev.dettmer.simplenotes.ui.main.components.SyncStatusLegendDialog
+import dev.dettmer.simplenotes.ui.main.components.SyncStatusDialog
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.ActivityLog
 import kotlinx.coroutines.launch
@@ -145,7 +145,7 @@ private const val SELECTION_TITLE_RESERVE_DP = 160
 fun MainScreen(
     viewModel: MainViewModel,
     onOpenNote: (String?) -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenSettings: (String?) -> Unit, // 🆕 v2.19.0: Startseite der Einstellungen (null = Übersicht)
     onCreateNote: (NoteType, String?) -> Unit
 ) {
     // 🆕 v2.7.0 (Folders): ordner-unabhängige Liste; jede Pane filtert selbst nach ihrem folderKey.
@@ -178,7 +178,8 @@ fun MainScreen(
     }
 
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
-    val exportProblems by viewModel.exportProblems.collectAsState() // 🆕 v2.19.0
+    val syncStatusSummary by viewModel.syncStatusSummary.collectAsState() // 🆕 v2.19.0
+    val showSyncStatus by viewModel.showSyncStatus.collectAsState() // 🆕 v2.19.0
 
     // 🎨 v1.7.0: Display mode (list or grid)
     val displayMode by viewModel.displayMode.collectAsState()
@@ -207,9 +208,6 @@ fun MainScreen(
     var showRenameDialog by remember { mutableStateOf(false) }
     // 🆕 v2.8.0 (Local-Only Folders): Auswahl "Server behalten / entfernen" beim Ausschließen
     var showExcludeSyncSheet by remember { mutableStateOf(false) }
-
-    // 🆕 v1.8.0: Sync status legend dialog
-    var showSyncLegend by remember { mutableStateOf(false) }
 
     // 🔀 v1.8.0: Sort dialog state
     var showSortDialog by remember { mutableStateOf(false) }
@@ -325,24 +323,24 @@ fun MainScreen(
                             folderName = currentFolder!!,
                             onBack = { viewModel.goToRoot() },
                             syncEnabled = canSync,
-                            onSyncLegendClick = if (isSyncAvailable) ({ showSyncLegend = true }) else null,
-                            syncLegendBadgeCount = exportProblems?.let { it.markdownFailedCount + it.assetsFailed } ?: 0, // 🆕 v2.19.0
+                            onSyncLegendClick = if (isSyncAvailable) ({ viewModel.openSyncStatus() }) else null,
+                            syncLegendBadgeCount = syncStatusSummary.badgeCount, // 🆕 v2.19.0
                             showFilterRow = showFilterRow,
                             onFilterToggle = { showFilterRow = !showFilterRow },
                             onSyncClick = { viewModel.triggerManualSync(ActivityLog.Trigger.TOOLBAR) },
-                            onSettingsClick = onOpenSettings
+                            onSettingsClick = { onOpenSettings(null) }
                         )
                     } else {
                         MainTopBar(
                             customTitle = customAppTitle, // 🆕 v1.9.0 (F05)
                             syncEnabled = canSync,
-                            onSyncLegendClick = if (isSyncAvailable) ({ showSyncLegend = true }) else null,
-                            syncLegendBadgeCount = exportProblems?.let { it.markdownFailedCount + it.assetsFailed } ?: 0, // 🆕 v2.19.0
+                            onSyncLegendClick = if (isSyncAvailable) ({ viewModel.openSyncStatus() }) else null,
+                            syncLegendBadgeCount = syncStatusSummary.badgeCount, // 🆕 v2.19.0
                             // 🆕 v1.9.0 (F11): Sort button replaced by filter row toggle
                             showFilterRow = showFilterRow,
                             onFilterToggle = { showFilterRow = !showFilterRow },
                             onSyncClick = { viewModel.triggerManualSync(ActivityLog.Trigger.TOOLBAR) },
-                            onSettingsClick = onOpenSettings
+                            onSettingsClick = { onOpenSettings(null) }
                         )
                     }
                 }
@@ -503,11 +501,24 @@ fun MainScreen(
                 )
             }
 
-            // 🆕 v1.8.0: Sync Status Legend Dialog
-            if (showSyncLegend) {
-                SyncStatusLegendDialog(
-                    exportProblems = exportProblems,
-                    onDismiss = { showSyncLegend = false }
+            // 🆕 v2.19.0: Sync-Status-Dialog (vorher nur Symbol-Legende)
+            if (showSyncStatus) {
+                SyncStatusDialog(
+                    summary = syncStatusSummary,
+                    // Auch still: ein Retry während eines stillen Syncs promotet ihn nur.
+                    isSyncing = syncState == SyncStateManager.SyncState.SYNCING ||
+                        syncState == SyncStateManager.SyncState.SYNCING_SILENT,
+                    // ponytail: zählt als Toolbar-Sync (beides „vom Nutzer"); eigener Trigger, falls die Rohdaten das trennen müssen
+                    onRetry = { viewModel.triggerManualSync(ActivityLog.Trigger.TOOLBAR) },
+                    onOpenNote = { id ->
+                        viewModel.closeSyncStatus()
+                        onOpenNote(id)
+                    },
+                    onOpenSettings = { route ->
+                        viewModel.closeSyncStatus()
+                        onOpenSettings(route)
+                    },
+                    onDismiss = { viewModel.closeSyncStatus() }
                 )
             }
 

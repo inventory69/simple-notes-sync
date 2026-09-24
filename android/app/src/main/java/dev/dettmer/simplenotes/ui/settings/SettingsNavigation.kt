@@ -82,6 +82,8 @@ fun SettingsNavHost(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
+        // 🆕 v2.19.0: Startseiten (Changelog, Sync, Server, ActivityLog) haben keinen Vorgänger, Zurück schließt dann.
+        val popOrFinish: () -> Unit = { if (!navController.popBackStack()) onFinish() }
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -119,7 +121,7 @@ fun SettingsNavHost(
             composable(SettingsRoute.Server.route) {
                 ServerSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = popOrFinish
                 )
             }
 
@@ -127,7 +129,7 @@ fun SettingsNavHost(
             composable(SettingsRoute.Sync.route) {
                 SyncSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = popOrFinish,
                     onNavigateToServerSettings = {
                         navController.navigate(SettingsRoute.Server.route) {
                             // Avoid multiple copies of server settings in back stack
@@ -155,9 +157,7 @@ fun SettingsNavHost(
             }
 
             composable(SettingsRoute.Changelog.route) {
-                ChangelogScreen(onBack = {
-                    if (!navController.popBackStack()) onFinish()
-                })
+                ChangelogScreen(onBack = popOrFinish)
             }
 
             composable(SettingsRoute.Contributors.route) {
@@ -204,7 +204,7 @@ fun SettingsNavHost(
 
             // 🆕 Issue #128 Teil 3: Aktivitätsprotokoll
             composable(SettingsRoute.ActivityLog.route) {
-                ActivityLogScreen(onBack = { navController.popBackStack() })
+                ActivityLogScreen(onBack = popOrFinish)
             }
 
             // v2.10.0: Security Settings

@@ -52,8 +52,8 @@
     <string name="sync_status_local_only">Noch nicht synchronisiert</string>
     <string name="sync_status_deleted_on_server">Auf Server gelöscht</string>
     <!-- 🆕 v1.8.0: Sync-Status Legende Dialog -->
-    <string name="sync_legend_button">Sync-Status Hilfe</string>
-    <string name="sync_legend_title">Sync-Status Icons</string>
+    <string name="sync_legend_button">Sync-Status</string>
+    <string name="sync_legend_title">Sync-Status</string>
     <string name="sync_legend_description">Jede Notiz zeigt ein kleines Icon, das den Sync-Status anzeigt:</string>
     <string name="sync_legend_synced_label">Synchronisiert</string>
     <string name="sync_legend_synced_desc">Diese Notiz ist auf allen Geräten aktuell.</string>
@@ -62,7 +62,20 @@
     <string name="sync_legend_conflict_label">Konflikt</string>
     <string name="sync_legend_conflict_desc">Diese Notiz wurde auch auf einem anderen Gerät geändert. Deine Fassung bleibt erhalten und wird nicht mehr synchronisiert, bis du die Notiz öffnest und entscheidest, welche gilt.</string>
     <!-- 🆕 v2.19.0: Export-Probleme des letzten Syncs -->
-    <string name="sync_legend_last_sync_title">Letzter Sync</string>
+    <!-- 🆕 v2.19.0: Sync-Status-Dialog -->
+    <string name="sync_status_attention">Braucht deine Aufmerksamkeit</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="one">%1$d Änderung wartet</item>
+        <item quantity="other">%1$d Änderungen warten</item>
+    </plurals>
+    <string name="sync_status_last_sync">Zuletzt synchronisiert: %1$s</string>
+    <string name="sync_status_never">noch nie</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="one">%1$d Notiz braucht deine Entscheidung</item>
+        <item quantity="other">%1$d Notizen brauchen deine Entscheidung</item>
+    </plurals>
+    <string name="sync_status_retry">Erneut versuchen</string>
+    <string name="sync_legend_expand">Symbole erklären</string>
     <string name="sync_status_notes_in_sync">Deine Notizen selbst sind synchron.</string>
     <string name="sync_status_reason">Grund: %1$s</string>
     <!-- v2.16.0 (#126): Wort-/Zeichenzähler im Editor -->
@@ -253,6 +266,9 @@
     <string name="activity_op_folder_delete">Ordner gelöscht: %1$s</string>
     <string name="activity_op_sync_ok">Sync abgeschlossen</string>
     <string name="activity_op_sync_fail">Sync fehlgeschlagen: %1$s</string>
+    <string name="activity_op_export_fail_markdown">Markdown-Datei nicht exportiert: %1$s</string>
+    <string name="activity_op_export_fail_assets">Bilder nicht übertragen: %1$s</string>
+    <string name="activity_op_export_fail_import">Markdown-Import abgebrochen: %1$s</string>
     <string name="activity_op_deletion_skipped">Löscherkennung übersprungen — Server-Listing war unvollständig</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manuell</string>

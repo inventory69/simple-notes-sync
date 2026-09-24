@@ -99,6 +99,9 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
         // 🆕 Issue #128 Teil 3: Aktivitätsprotokoll — immer aktiv, kein Opt-in
         ActivityLog.init(this)
 
+        // 🆕 v2.19.0: letzter Sync-Fehler für den Sync-Status-Dialog
+        SyncStateManager.init(prefs)
+
         Logger.d(TAG, "🚀 Application onCreate()")
 
         // Initialize notification channel

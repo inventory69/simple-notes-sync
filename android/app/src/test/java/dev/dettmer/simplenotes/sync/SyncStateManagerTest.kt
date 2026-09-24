@@ -1,6 +1,11 @@
 package dev.dettmer.simplenotes.sync
 
+import android.content.SharedPreferences
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import dev.dettmer.simplenotes.utils.Constants
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -26,6 +31,7 @@ class SyncStateManagerTest {
     @After
     fun teardown() {
         SyncStateManager.reset()
+        SyncStateManager.init(null) // sonst schleppt sich der Prefs-Mock in andere Tests
     }
 
     // ═══════════════════════════════════════════════
@@ -328,5 +334,56 @@ class SyncStateManagerTest {
         SyncStateManager.markCompleted("Already synced")
 
         assertEquals(SyncPhase.IDLE, SyncStateManager.syncProgress.value.phase)
+    }
+
+    // ═══════════════════════════════════════════════
+    // 🆕 v2.19.0: letzter Fehler für den Sync-Status-Dialog
+    // ═══════════════════════════════════════════════
+
+    private fun mockPrefs(): SharedPreferences.Editor {
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { editor.putString(any(), any()) } returns editor
+        every { editor.putLong(any(), any()) } returns editor
+        every { editor.remove(any()) } returns editor
+        val prefs = mockk<SharedPreferences>()
+        every { prefs.edit() } returns editor
+        SyncStateManager.init(prefs)
+        return editor
+    }
+
+    @Test
+    fun `markError persists the error with timestamp`() {
+        val editor = mockPrefs()
+        SyncStateManager.tryStartSync("test", silent = true)
+        SyncStateManager.markError("Server unreachable")
+        verify { editor.putString(Constants.KEY_LAST_SYNC_ERROR, "Server unreachable") }
+        verify { editor.putLong(Constants.KEY_LAST_SYNC_ERROR_AT, any()) }
+    }
+
+    @Test
+    fun `silent soft error is persisted too`() {
+        val editor = mockPrefs()
+        SyncStateManager.tryStartSync("test", silent = true)
+        SyncStateManager.errorIfVisible("Timeout")
+        verify { editor.putString(Constants.KEY_LAST_SYNC_ERROR, "Timeout") }
+    }
+
+    @Test
+    fun `errorIfVisible with null writes nothing`() {
+        val editor = mockPrefs()
+        SyncStateManager.tryStartSync("test")
+        SyncStateManager.errorIfVisible(null)
+        verify(exactly = 0) { editor.putString(any(), any()) }
+        verify(exactly = 0) { editor.remove(any()) }
+    }
+
+    @Test
+    fun `markCompleted clears the stored error`() {
+        val editor = mockPrefs()
+        SyncStateManager.tryStartSync("test")
+        SyncStateManager.markCompleted("ok")
+        verify { editor.remove(Constants.KEY_LAST_SYNC_ERROR) }
+        verify { editor.remove(Constants.KEY_LAST_SYNC_ERROR_AT) }
+        verify(exactly = 0) { editor.putString(any(), any()) }
     }
 }

@@ -22,6 +22,7 @@ import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncResult
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
+import dev.dettmer.simplenotes.sync.SyncStatusSummary
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.sync.buildSyncResultBanner
 import dev.dettmer.simplenotes.ui.main.components.SECTION_FOLDERS
@@ -76,10 +77,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val SNACKBAR_UNDO_DELAY_MS = 3500L
         private const val SEARCH_DEBOUNCE_MS = 300L
         const val EXTRA_FOLDER = "extra_folder"
+
+        /** 🆕 v2.19.0: Problem-Benachrichtigungen öffnen den Sync-Status-Dialog. */
+        const val ACTION_SHOW_SYNC_STATUS = "dev.dettmer.simplenotes.action.SHOW_SYNC_STATUS"
     }
 
     fun handleIncomingIntent(intent: Intent) {
         intent.getStringExtra(EXTRA_FOLDER)?.let { enterFolder(it) }
+        if (intent.action == ACTION_SHOW_SYNC_STATUS) openSyncStatus()
     }
 
     private val storage = NotesStorage(application)
@@ -1103,15 +1108,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateSyncState(status: SyncStateManager.SyncStatus) {
         _syncState.value = status.state
         // Jeder Sync-Abschluss (UI oder Worker) läuft über SyncStateManager — die Prefs sind dann frisch.
-        refreshExportProblems()
+        refreshSyncStatus()
     }
 
-    /** 🆕 v2.19.0: Export-Probleme des letzten Syncs — Badge am Hilfe-Icon und Karte in der Legende. */
-    private val _exportProblems = MutableStateFlow(ExportProblems.load(prefs))
-    val exportProblems: StateFlow<ExportProblems?> = _exportProblems.asStateFlow()
+    /** 🆕 v2.19.0: Inhalt des Sync-Status-Dialogs und Badge am Hilfe-Icon. */
+    private val _syncStatusSummary = MutableStateFlow(SyncStatusSummary.EMPTY)
+    val syncStatusSummary: StateFlow<SyncStatusSummary> = _syncStatusSummary.asStateFlow()
 
-    fun refreshExportProblems() {
-        _exportProblems.value = ExportProblems.load(prefs)
+    fun refreshSyncStatus() {
+        viewModelScope.launch(ioDispatcher) {
+            _syncStatusSummary.value = SyncStatusSummary.from(
+                // Ungefiltert wie unresolvedConflictCount: Ein Ordner- oder Suchfilter darf nichts verstecken.
+                notes = storage.loadAllNotes(),
+                localOnlyFolders = folderStore.getLocalOnlyFolderNames(),
+                exportProblems = ExportProblems.load(prefs),
+                lastSuccessAt = prefs.getLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, 0L),
+                lastError = prefs.getString(Constants.KEY_LAST_SYNC_ERROR, null),
+                lastErrorAt = prefs.getLong(Constants.KEY_LAST_SYNC_ERROR_AT, 0L),
+                now = System.currentTimeMillis()
+            )
+        }
+    }
+
+    private val _showSyncStatus = MutableStateFlow(false)
+    val showSyncStatus: StateFlow<Boolean> = _showSyncStatus.asStateFlow()
+
+    fun openSyncStatus() {
+        refreshSyncStatus()
+        _showSyncStatus.value = true
+    }
+
+    fun closeSyncStatus() {
+        _showSyncStatus.value = false
     }
 
     /**

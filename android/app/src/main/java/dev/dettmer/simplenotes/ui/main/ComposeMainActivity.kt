@@ -247,13 +247,13 @@ class ComposeMainActivity : FragmentActivity() {
                     MainScreen(
                         viewModel = viewModel,
                         onOpenNote = { noteId -> openNoteEditor(noteId) },
-                        onOpenSettings = { openSettings() },
+                        onOpenSettings = { route -> openSettings(route) },
                         onCreateNote = { noteType, folder -> createNote(noteType, folder) }
                     )
 
                     // v1.8.0: Post-Update Changelog (shows once after update)
                     UpdateChangelogSheet(
-                        onViewChangelog = { openSettingsChangelog() },
+                        onViewChangelog = { openSettings(SettingsRoute.Changelog.route) },
                         onDismissed = { viewModel.onChangelogDismissed() } // 🆕 unlocks the section-reorder hint gate
                     )
                 } // AppLockGate
@@ -286,7 +286,7 @@ class ComposeMainActivity : FragmentActivity() {
         // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
         // This ensures UI reflects current offline mode when returning from Settings
         viewModel.refreshOfflineModeState()
-        viewModel.refreshExportProblems() // 🆕 v2.19.0
+        viewModel.refreshSyncStatus() // 🆕 v2.19.0
 
         // 🎨 v1.7.0: Refresh display mode when returning from Settings
         viewModel.refreshDisplayMode()
@@ -439,21 +439,11 @@ class ComposeMainActivity : FragmentActivity() {
         editorLauncher.launch(intent, options)
     }
 
-    private fun openSettings() {
+    /** 🆕 v2.19.0: [route] öffnet direkt eine Unterseite (Changelog, Sync-Status-Dialog → Sync/Server). */
+    private fun openSettings(route: String? = null) {
         cameFromSettings = true
         val intent = Intent(this, ComposeSettingsActivity::class.java)
-        val options = ActivityOptionsCompat.makeCustomAnimation(
-            this,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
-        )
-        settingsLauncher.launch(intent, options)
-    }
-
-    private fun openSettingsChangelog() {
-        cameFromSettings = true
-        val intent = Intent(this, ComposeSettingsActivity::class.java)
-            .putExtra(ComposeSettingsActivity.EXTRA_INITIAL_ROUTE, SettingsRoute.Changelog.route)
+        route?.let { intent.putExtra(ComposeSettingsActivity.EXTRA_INITIAL_ROUTE, it) }
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,

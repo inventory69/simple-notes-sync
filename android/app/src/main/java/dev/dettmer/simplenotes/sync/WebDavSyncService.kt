@@ -546,6 +546,37 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         }
     }
 
+    /**
+     * 🆕 v2.19.0: Protokolliert Export-Probleme nur beim Übergang, nicht bei jedem Sync, der sie
+     * stehen lässt. Sonst verdrängt ein offener Fehler das restliche Protokoll.
+     */
+    private suspend fun logExportFailTransitions(before: ExportProblems?, after: ExportProblems) {
+        val known = before?.markdownFailedIds.orEmpty()
+        (after.markdownFailedIds - known).forEach { id ->
+            val note = storage.loadNote(id)
+            ActivityLog.log(
+                ActivityLog.Op.EXPORT_FAIL,
+                ActivityLog.Src.LOCAL,
+                id = id,
+                title = note?.title,
+                folder = note?.folderName,
+                why = "markdown",
+                err = after.markdownReason
+            )
+        }
+        if (after.assetsFailed > 0 && (before?.assetsFailed ?: 0) == 0) {
+            ActivityLog.log(ActivityLog.Op.EXPORT_FAIL, ActivityLog.Src.LOCAL, why = "assets", err = after.assetsReason)
+        }
+        if (after.markdownImportFailed && before?.markdownImportFailed != true) {
+            ActivityLog.log(
+                ActivityLog.Op.EXPORT_FAIL,
+                ActivityLog.Src.LOCAL,
+                why = "markdown_import",
+                err = after.markdownReason
+            )
+        }
+    }
+
     // Abbau: TECH_DEBT_ROADMAP.md Slice 4
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun syncNotesInternal(): SyncResult = withContext(ioDispatcher) {
@@ -879,6 +910,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     markdownReason = mdLastError?.let(::mapSyncExceptionToMessage) ?: storedExportProblems?.markdownReason,
                     assetsReason = assetLastError?.let(::mapSyncExceptionToMessage)
                 )
+                logExportFailTransitions(storedExportProblems, exportProblems)
                 ExportProblems.save(prefs, exportProblems)
 
                 val result = SyncResult(

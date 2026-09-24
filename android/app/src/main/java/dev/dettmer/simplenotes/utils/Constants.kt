@@ -16,6 +16,10 @@ object Constants {
     const val KEY_LAST_SYNC_WARNING_SHOWN = "last_sync_warning_shown_time"
     const val SYNC_WARNING_THRESHOLD_MS = 24 * 60 * 60 * 1000L // 24h
 
+    // 🆕 v2.19.0: letzter Sync-Fehler für den Sync-Status-Dialog (siehe SyncStateManager)
+    const val KEY_LAST_SYNC_ERROR = "last_sync_error"
+    const val KEY_LAST_SYNC_ERROR_AT = "last_sync_error_at"
+
     // 🆕 v2.19.0: offene Export-Probleme (Badge, Legende, Benachrichtigung) — siehe ExportProblems
     const val KEY_EXPORT_MD_FAILED_IDS = "export_md_failed_ids"
     const val KEY_EXPORT_MD_IMPORT_FAILED = "export_md_import_failed"

@@ -320,7 +320,9 @@ private fun OriginIndicator(entry: ActivityLog.Entry) {
     // Sync-Zeilen selbst sind immer Src.LOCAL (dieses Gerät führt den Sync-Lauf aus) —
     // src beschreibt hier nichts über die Notiz, das Sync-Symbol passt trotzdem besser
     // als das Geräte-Symbol, das sonst "lokale Aktion" bedeutet.
-    val isSyncOutcome = entry.op == ActivityLog.Op.SYNC_OK || entry.op == ActivityLog.Op.SYNC_FAIL
+    val isSyncOutcome = entry.op == ActivityLog.Op.SYNC_OK ||
+        entry.op == ActivityLog.Op.SYNC_FAIL ||
+        entry.op == ActivityLog.Op.EXPORT_FAIL
     val isRemoteOrigin = isSyncOutcome || entry.src == ActivityLog.Src.REMOTE
     // Text trägt jetzt die Bedeutung fürs Auge und für TalkBack — das Icon ist daneben
     // rein dekorativ, sonst kündigt ein Screenreader dieselbe Aussage doppelt an.
@@ -370,6 +372,11 @@ private fun opLabel(entry: ActivityLog.Entry): String = when (entry.op) {
     ActivityLog.Op.SYNC_OK -> stringResource(R.string.activity_op_sync_ok)
     ActivityLog.Op.SYNC_FAIL -> stringResource(R.string.activity_op_sync_fail, entry.err ?: "?")
     ActivityLog.Op.DELETION_SKIPPED -> stringResource(R.string.activity_op_deletion_skipped)
+    ActivityLog.Op.EXPORT_FAIL -> when (entry.why) { // 🆕 v2.19.0
+        "assets" -> stringResource(R.string.activity_op_export_fail_assets, entry.err ?: "?")
+        "markdown_import" -> stringResource(R.string.activity_op_export_fail_import, entry.err ?: "?")
+        else -> stringResource(R.string.activity_op_export_fail_markdown, entry.err ?: "?")
+    }
 }
 
 @Composable
