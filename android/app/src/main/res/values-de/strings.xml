@@ -892,7 +892,6 @@
         <item quantity="one">%d Notiz hat Konflikte</item>
         <item quantity="other">%d Notizen haben Konflikte</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ Sync-Warnung</string>
     <string name="notification_sync_warning_message">Server seit %dh nicht erreichbar</string>
     <string name="notification_sync_warning_detail">Der WebDAV-Server ist seit %d Stunden nicht erreichbar. Bitte prüfe deine Netzwerkverbindung oder Server-Einstellungen.</string>
     <string name="notification_sync_warning_credentials_message">Server-Zugangsdaten fehlen</string>
