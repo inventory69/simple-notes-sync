@@ -20,10 +20,13 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.CloudSync
-import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +34,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +50,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -71,26 +76,36 @@ fun SyncStatusDialog(
     onOpenSettings: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val (icon, tint, title) = statusVisuals(summary)
+    val lastSync = if (summary.lastSuccessAt > 0) {
+        summary.lastSuccessAt.toReadableTime(LocalContext.current)
+    } else {
+        stringResource(R.string.sync_status_never)
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
+        icon = { Icon(imageVector = icon, contentDescription = null, tint = tint) },
         title = {
-            Text(
-                text = stringResource(R.string.sync_legend_title),
-                style = MaterialTheme.typography.headlineSmall
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = title, textAlign = TextAlign.Center)
+                Text(
+                    text = stringResource(R.string.sync_status_last_sync, lastSync),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = Dimensions.SpacingSmall)
+                )
+            }
         },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMediumLarge)
             ) {
-                StatusHeader(summary)
-                summary.lastError?.let { ErrorCard(it, onOpenSettings) }
+                summary.lastError?.let { ErrorCard(it) }
                 if (summary.conflicts.isNotEmpty()) ConflictCard(summary.conflicts, onOpenNote)
-                summary.exportProblems?.let { ExportCard(it, summary.markdownNotes, onOpenNote, onOpenSettings) }
-                if (summary.state == SyncStatusSummary.State.FAILED || summary.exportProblems != null) {
-                    RetryButton(isSyncing, onRetry)
-                }
+                summary.exportProblems?.let { ExportCard(it, summary.markdownNotes, onOpenNote) }
+                Actions(summary, isSyncing, onRetry, onOpenSettings)
                 LegendSection(
                     initiallyExpanded = summary.state == SyncStatusSummary.State.OK ||
                         summary.state == SyncStatusSummary.State.PENDING
@@ -105,62 +120,41 @@ fun SyncStatusDialog(
     )
 }
 
-/** Eine Zeile Zustand, darunter der letzte erfolgreiche Sync. */
+/** Icon, Farbe und Titel des Dialogkopfs. Der Zustand selbst ist die Überschrift. */
 @Composable
-private fun StatusHeader(summary: SyncStatusSummary) {
-    val (icon, tint, text) = when (summary.state) {
-        SyncStatusSummary.State.FAILED -> Triple(
-            Icons.Outlined.ErrorOutline,
-            MaterialTheme.colorScheme.error,
-            stringResource(R.string.sync_status_error)
-        )
-        SyncStatusSummary.State.ATTENTION -> Triple(
-            Icons.Outlined.WarningAmber,
-            MaterialTheme.colorScheme.tertiary,
-            stringResource(R.string.sync_status_attention)
-        )
-        SyncStatusSummary.State.PENDING -> Triple(
-            Icons.Outlined.CloudSync,
-            MaterialTheme.colorScheme.outline,
-            pluralStringResource(R.plurals.sync_status_pending_changes, summary.pendingCount, summary.pendingCount)
-        )
-        SyncStatusSummary.State.OK -> Triple(
-            Icons.Outlined.CloudDone,
-            MaterialTheme.colorScheme.primary,
-            stringResource(R.string.sync_status_synced)
-        )
-    }
-    val lastSync = if (summary.lastSuccessAt > 0) {
-        summary.lastSuccessAt.toReadableTime(LocalContext.current)
-    } else {
-        stringResource(R.string.sync_status_never)
-    }
-    Row(verticalAlignment = Alignment.Top) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-        Spacer(modifier = Modifier.width(Dimensions.SpacingMediumLarge))
-        Column {
-            Text(text = text, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = stringResource(R.string.sync_status_last_sync, lastSync),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+private fun statusVisuals(summary: SyncStatusSummary): Triple<ImageVector, Color, String> = when (summary.state) {
+    SyncStatusSummary.State.FAILED -> Triple(
+        Icons.Outlined.SyncProblem,
+        MaterialTheme.colorScheme.tertiary,
+        stringResource(R.string.sync_status_cannot_sync)
+    )
+    SyncStatusSummary.State.ATTENTION -> Triple(
+        Icons.Outlined.WarningAmber,
+        MaterialTheme.colorScheme.tertiary,
+        stringResource(R.string.sync_status_attention)
+    )
+    SyncStatusSummary.State.PENDING -> Triple(
+        Icons.Outlined.CloudSync,
+        MaterialTheme.colorScheme.outline,
+        pluralStringResource(R.plurals.sync_status_pending_changes, summary.pendingCount, summary.pendingCount)
+    )
+    SyncStatusSummary.State.OK -> Triple(
+        Icons.Outlined.CloudDone,
+        MaterialTheme.colorScheme.primary,
+        stringResource(R.string.sync_status_synced)
+    )
 }
 
 /** Der ganze Sync ist gescheitert. Der Titel ist die Fehlermeldung selbst, sie ist schon übersetzt. */
 @Composable
-private fun ErrorCard(error: String, onOpenSettings: (String) -> Unit) {
-    ProblemCard(
-        icon = Icons.Outlined.ErrorOutline,
-        title = error.ifBlank { stringResource(R.string.sync_status_error) },
-        container = MaterialTheme.colorScheme.errorContainer,
-        content = MaterialTheme.colorScheme.onErrorContainer
-    ) {
-        TextButton(onClick = { onOpenSettings(SettingsRoute.Server.route) }) {
-            Text(stringResource(R.string.settings_title))
-        }
+private fun ErrorCard(error: String) {
+    ProblemCard(title = error.ifBlank { stringResource(R.string.sync_error_unknown) }) {
+        Text(
+            text = stringResource(R.string.sync_status_notes_safe),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Dimensions.SpacingSmall)
+        )
     }
 }
 
@@ -168,6 +162,7 @@ private fun ErrorCard(error: String, onOpenSettings: (String) -> Unit) {
 private fun ConflictCard(conflicts: List<NoteRef>, onOpenNote: (String) -> Unit) {
     ProblemCard(
         icon = Icons.Default.Warning,
+        iconTint = MaterialTheme.colorScheme.error,
         title = pluralStringResource(R.plurals.sync_status_conflicts, conflicts.size, conflicts.size)
     ) {
         conflicts.forEach { NoteLinkRow(it, onOpenNote) }
@@ -176,13 +171,12 @@ private fun ConflictCard(conflicts: List<NoteRef>, onOpenNote: (String) -> Unit)
 
 /** Notizen sind synchron, aber MD-Kopien oder Bilder fehlen auf dem Server. */
 @Composable
-private fun ExportCard(
-    problems: ExportProblems,
-    markdownNotes: List<NoteRef>,
-    onOpenNote: (String) -> Unit,
-    onOpenSettings: (String) -> Unit
-) {
-    ProblemCard(icon = Icons.Outlined.WarningAmber, title = stringResource(R.string.notification_sync_export_title)) {
+private fun ExportCard(problems: ExportProblems, markdownNotes: List<NoteRef>, onOpenNote: (String) -> Unit) {
+    ProblemCard(
+        icon = Icons.Outlined.WarningAmber,
+        iconTint = MaterialTheme.colorScheme.tertiary,
+        title = stringResource(R.string.notification_sync_export_title)
+    ) {
         val mdCount = problems.markdownFailedIds.size
         if (mdCount > 0) CardLine(pluralStringResource(R.plurals.sync_markdown_failed_count, mdCount, mdCount))
         markdownNotes.forEach { NoteLinkRow(it, onOpenNote) }
@@ -198,46 +192,77 @@ private fun ExportCard(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Dimensions.SpacingSmall)
         )
-        Row {
-            TextButton(onClick = { onOpenSettings(SettingsRoute.ActivityLog.route) }) {
-                Text(stringResource(R.string.activity_log_title))
+    }
+}
+
+/** Karten informieren, hier wird gehandelt: Retry oben, Sprünge in die Einstellungen darunter. */
+@Composable
+private fun Actions(
+    summary: SyncStatusSummary,
+    isSyncing: Boolean,
+    onRetry: () -> Unit,
+    onOpenSettings: (String) -> Unit
+) {
+    val export = summary.exportProblems
+    val canRetry = summary.state == SyncStatusSummary.State.FAILED || export != null
+    if (!canRetry && summary.lastError == null) return
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)) {
+        if (canRetry) RetryButton(isSyncing, onRetry)
+        if (summary.lastError != null) {
+            ActionButton(Icons.Outlined.Settings, stringResource(R.string.server_settings_title)) {
+                onOpenSettings(SettingsRoute.Server.route)
             }
-            // Die MD-Schalter liegen in den Sync-Einstellungen; für Bilder gibt es dort nichts zu tun.
-            if (problems.markdownFailedCount > 0) {
-                TextButton(onClick = { onOpenSettings(SettingsRoute.Sync.route) }) {
-                    Text(stringResource(R.string.settings_title))
-                }
+        }
+        // Die MD-Schalter liegen in den Sync-Einstellungen; für Bilder gibt es dort nichts zu tun.
+        if ((export?.markdownFailedCount ?: 0) > 0) {
+            ActionButton(Icons.Outlined.Sync, stringResource(R.string.settings_sync)) {
+                onOpenSettings(SettingsRoute.Sync.route)
+            }
+        }
+        if (export != null) {
+            ActionButton(Icons.Outlined.History, stringResource(R.string.activity_log_title)) {
+                onOpenSettings(SettingsRoute.ActivityLog.route)
             }
         }
     }
 }
 
-/** Karte im Muster von [dev.dettmer.simplenotes.ui.editor.ConflictBanner]. */
+@Composable
+private fun ActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
+        Text(label)
+    }
+}
+
+/** Ruhige Karte im Muster von [dev.dettmer.simplenotes.ui.editor.ConflictBanner]; nur das Icon trägt Farbe. */
 @Composable
 private fun ProblemCard(
-    icon: ImageVector,
     title: String,
-    // Nicht surfaceContainerHigh, das ist der Dialog-Hintergrund, die Karte verschwände darin.
-    container: Color = MaterialTheme.colorScheme.tertiaryContainer,
-    content: Color = MaterialTheme.colorScheme.onTertiaryContainer,
+    icon: ImageVector? = null,
+    iconTint: Color = Color.Unspecified,
     body: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimensions.SpacingMediumLarge),
-        color = container,
-        contentColor = content
+        // Eine Stufe über surfaceContainerHigh, dem Dialog-Hintergrund, sonst verschwände die Karte darin.
+        color = MaterialTheme.colorScheme.surfaceContainerHighest
     ) {
         Column(modifier = Modifier.padding(Dimensions.SpacingLarge)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null, // Titel daneben sagt dasselbe
-                    modifier = Modifier.size(20.dp)
-                )
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null, // Titel daneben sagt dasselbe
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
                 Text(text = title, style = MaterialTheme.typography.titleSmall)
             }
             body()
@@ -285,7 +310,7 @@ private fun RetryButton(isSyncing: Boolean, onRetry: () -> Unit) {
             Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
         }
         Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
-        Text(stringResource(R.string.sync_status_retry))
+        Text(stringResource(if (isSyncing) R.string.sync_status_syncing else R.string.sync_status_retry))
     }
 }
 

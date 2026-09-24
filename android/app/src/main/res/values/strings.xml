@@ -75,6 +75,9 @@
         <item quantity="other">%1$d notes need your decision</item>
     </plurals>
     <string name="sync_status_retry">Try again</string>
+    <string name="sync_status_syncing">Syncing…</string>
+    <string name="sync_status_cannot_sync">Can\'t sync right now</string>
+    <string name="sync_status_notes_safe">Your notes stay on this device and will be uploaded with the next sync.</string>
     <string name="sync_legend_expand">Explain icons</string>
     <string name="sync_status_notes_in_sync">Your notes themselves are in sync.</string>
     <string name="sync_status_reason">Reason: %1$s</string>
@@ -195,8 +198,8 @@
     <string name="snackbar_folder_removed_from_server">Folder removed from server</string>
     <string name="snackbar_folder_sync_queued">Folder will sync when reconnected</string>
     <string name="snackbar_server_error">Server error: %s</string>
-    <string name="snackbar_server_unreachable">Server not reachable</string>
-    <string name="snackbar_connection_timeout">Connection timeout</string>
+    <string name="snackbar_server_unreachable">Couldn\'t connect to the server</string>
+    <string name="snackbar_connection_timeout">The server took too long to respond</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nothing to sync</string>
     <!-- ============================= -->
     <!-- TRASH (v2.9.0)                -->

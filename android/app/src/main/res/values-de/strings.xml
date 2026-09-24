@@ -75,6 +75,9 @@
         <item quantity="other">%1$d Notizen brauchen deine Entscheidung</item>
     </plurals>
     <string name="sync_status_retry">Erneut versuchen</string>
+    <string name="sync_status_syncing">Synchronisiere…</string>
+    <string name="sync_status_cannot_sync">Sync gerade nicht möglich</string>
+    <string name="sync_status_notes_safe">Deine Notizen bleiben auf dem Gerät und werden beim nächsten Sync übertragen.</string>
     <string name="sync_legend_expand">Symbole erklären</string>
     <string name="sync_status_notes_in_sync">Deine Notizen selbst sind synchron.</string>
     <string name="sync_status_reason">Grund: %1$s</string>
@@ -193,8 +196,8 @@
     <string name="snackbar_server_delete_failed">Server-Löschung fehlgeschlagen</string>
     <string name="snackbar_delete_queued_for_sync">Server nicht erreichbar – Löschung wird beim nächsten Sync ausgeführt</string>
     <string name="snackbar_server_error">Server-Fehler: %s</string>
-    <string name="snackbar_server_unreachable">Server nicht erreichbar</string>
-    <string name="snackbar_connection_timeout">Verbindungs-Timeout</string>
+    <string name="snackbar_server_unreachable">Keine Verbindung zum Server</string>
+    <string name="snackbar_connection_timeout">Der Server hat zu lange nicht geantwortet</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
     <!-- ============================= -->
     <!-- TRASH (v2.9.0)                -->
