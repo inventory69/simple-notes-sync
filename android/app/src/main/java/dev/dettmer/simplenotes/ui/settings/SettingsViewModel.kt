@@ -1493,6 +1493,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         Logger.d(TAG, "🔄 App settings reloaded from prefs after backup restore")
     }
 
+    /** Löscht eine vom Speichern-Dialog angelegte Backup-Datei, wenn das Backup abgebrochen wurde. */
+    fun discardBackupFile(uri: Uri) {
+        viewModelScope.launch { backupManager.deleteIncompleteBackup(uri) }
+    }
+
     fun checkBackupContainsAppSettings(uri: Uri, password: String? = null, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val result = backupManager.backupContainsAppSettings(uri, password)

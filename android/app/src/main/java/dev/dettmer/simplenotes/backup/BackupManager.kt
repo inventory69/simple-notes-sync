@@ -255,15 +255,17 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
         }
 
     /**
-     * Die Datei hat der Speichern-Dialog schon angelegt. Scheitert das Backup, bliebe sie leer oder
-     * halb geschrieben liegen und sähe aus wie eine gültige Sicherung.
+     * Die Datei hat der Speichern-Dialog schon angelegt. Scheitert oder endet das Backup vorzeitig,
+     * bliebe sie leer oder halb geschrieben liegen und sähe aus wie eine gültige Sicherung.
      */
-    private fun deleteIncompleteBackup(uri: Uri) {
-        try {
-            DocumentsContract.deleteDocument(context.contentResolver, uri)
-            Logger.d(TAG, "🗑️ Deleted incomplete backup file")
-        } catch (e: Exception) {
-            Logger.w(TAG, "⚠️ Could not delete incomplete backup file: ${e.message}")
+    suspend fun deleteIncompleteBackup(uri: Uri) {
+        withContext(ioDispatcher) {
+            try {
+                DocumentsContract.deleteDocument(context.contentResolver, uri)
+                Logger.d(TAG, "🗑️ Deleted incomplete backup file")
+            } catch (e: Exception) {
+                Logger.w(TAG, "⚠️ Could not delete incomplete backup file: ${e.message}")
+            }
         }
     }
 

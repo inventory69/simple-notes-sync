@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -93,15 +94,17 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     var triggerRestore by remember { mutableIntStateOf(0) }
     var pendingRestoreAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    // 🔐 v1.7.0: Encryption state
-    var encryptBackup by remember { mutableStateOf(false) }
-    var showEncryptionPasswordDialog by remember { mutableStateOf(false) }
+    // 🔐 v1.7.0: Encryption state. Saveable, weil die Activity hinter dem Speichern-Dialog neu
+    // entstehen kann (Drehen, Dark Mode, Prozess-Tod). Mit remember kam danach ohne Nachfrage ein
+    // unverschlüsseltes Backup heraus bzw. blieb die angelegte Datei leer liegen.
+    var encryptBackup by rememberSaveable { mutableStateOf(false) }
+    var showEncryptionPasswordDialog by rememberSaveable { mutableStateOf(false) }
     var showDecryptionPasswordDialog by remember { mutableStateOf(false) }
-    var pendingBackupUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingBackupUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     // v1.9.0: Include server settings in backup
-    var includeServerSettings by remember { mutableStateOf(false) }
-    var pendingIncludeServerSettings by remember { mutableStateOf(false) }
+    var includeServerSettings by rememberSaveable { mutableStateOf(false) }
+    var pendingIncludeServerSettings by rememberSaveable { mutableStateOf(false) }
     // Whether the restore target (file) contains server settings
     var backupHasServerSettings by remember { mutableStateOf(false) }
     var restoreServerSettings by remember { mutableStateOf(false) }
@@ -268,6 +271,8 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             title = stringResource(R.string.backup_encryption_title),
             onDismiss = {
                 showEncryptionPasswordDialog = false
+                // Die Datei hat der Speichern-Dialog schon angelegt, ohne Passwort bliebe sie leer liegen.
+                pendingBackupUri?.let(viewModel::discardBackupFile)
                 pendingBackupUri = null
             },
             onConfirm = { password ->
