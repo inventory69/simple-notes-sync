@@ -462,7 +462,6 @@
     <plurals name="notification_sync_conflict_message">
         <item quantity="other">%d 笔记有冲突</item>
     </plurals>
-    <string name="notification_sync_warning_title">⚠️ 同步警告</string>
     <string name="notification_sync_warning_message">服务器连不上 %d 小时</string>
     <string name="notification_sync_warning_detail">WebDAV 服务器连不上 %d 小时。请检查网络连接或服务器设置。</string>
     <string name="notification_sync_in_progress_title">同步进行中</string>
