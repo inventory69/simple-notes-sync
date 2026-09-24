@@ -31,7 +31,7 @@ object Constants {
     const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
     const val DEFAULT_NOTIFICATIONS_ENABLED = true
     const val KEY_NOTIFICATIONS_ERRORS_ONLY = "notifications_errors_only"
-    const val DEFAULT_NOTIFICATIONS_ERRORS_ONLY = false
+    const val DEFAULT_NOTIFICATIONS_ERRORS_ONLY = true
     const val KEY_NOTIFICATIONS_SERVER_WARNING = "notifications_server_warning"
     const val DEFAULT_NOTIFICATIONS_SERVER_WARNING = true
 
