@@ -149,9 +149,13 @@ class EncryptionManager(private val iterations: Int = DEFAULT_ITERATIONS) {
             return cipher.doFinal(plain, 0, length)
         }
 
-        fun open(sealed: ByteArray, last: Boolean): ByteArray = authenticated {
-            init(Cipher.DECRYPT_MODE, last)
-            cipher.doFinal(sealed)
+        fun open(sealed: ByteArray, last: Boolean): ByteArray {
+            // Kürzer als der Tag: JDK 17 wirft sonst eine ProviderException statt AEADBadTagException.
+            if (sealed.size < GCM_TAG_LENGTH) throw EncryptionException("File truncated: incomplete chunk")
+            return authenticated {
+                init(Cipher.DECRYPT_MODE, last)
+                cipher.doFinal(sealed)
+            }
         }
 
         private fun init(mode: Int, last: Boolean) {
