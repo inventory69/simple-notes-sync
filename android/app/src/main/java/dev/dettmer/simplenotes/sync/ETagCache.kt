@@ -11,7 +11,7 @@ import dev.dettmer.simplenotes.utils.Logger
  * Key conventions:
  * - JSON notes: "etag_json_<noteId>"
  * - Markdown files: "etag_md_<noteId>"
- * - Markdown file URL: "etag_md_path_<noteId>" (Präfix `etag_md_`, damit [clearAll] ihn mitnimmt)
+ * - Markdown file URL: "etag_md_path_<noteId>" (Präfix `etag_md_`, damit `WebDavSyncService.clearServerCaches` ihn mitnimmt)
  */
 class ETagCache(private val prefs: SharedPreferences) {
     companion object {
@@ -58,19 +58,6 @@ class ETagCache(private val prefs: SharedPreferences) {
             Logger.d(TAG, "⚡ Batch-updated E-Tags: $putCount saved, $removeCount removed")
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to batch-update E-Tags", e)
-        }
-    }
-
-    /** Removes all cached E-Tags (json + markdown). Used before a full restore. */
-    fun clearAll() {
-        try {
-            prefs.edit {
-                prefs.all.keys.filter { it.startsWith(PREFIX_JSON) }.forEach { remove(it) }
-                prefs.all.keys.filter { it.startsWith(PREFIX_MD) }.forEach { remove(it) }
-            }
-            Logger.d(TAG, "🔄 Cleared all E-Tag caches")
-        } catch (e: Exception) {
-            Logger.e(TAG, "Failed to clear E-Tag caches", e)
         }
     }
 

@@ -79,6 +79,7 @@ internal class NoteDownloader(
         private const val ETAG_PREVIEW_LENGTH = 8
         private const val FOLDERS_FILE_NAME = "folders.json" // 🆕 v2.7.0 (Folders): von serverNoteIds ausschließen
         private const val ALL_DELETED_GUARD_THRESHOLD = 10
+        private const val MASS_DELETION_GUARD_PERCENT = 50
         private val UUID_REGEX = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     }
 
@@ -983,13 +984,24 @@ internal class NoteDownloader(
         // 🆕 v2.8.0: Schwellenwert bewusst auf die GEFILTERTE Menge (ohne local-only-Ordner) —
         // nur sie kann markiert werden. Ein Gesamt-Count würde z. B. bei 1 fehlenden Notiz +
         // vielen local-only-Notizen legitime Einzellöschungen dauerhaft blockieren.
+        // 🆕 v2.19.0: Blockt schon, sobald MEHR ALS die Hälfte fehlt, nicht erst bei allen. Vorher
+        // wanderten bei 49 von 50 fehlenden Notizen 49 in den Papierkorb, bereits getrashte wurden
+        // endgültig gelöscht. Die Untergrenze von 10 bleibt, damit der v1.9.0-Fix für 2 bis 5
+        // Notizen intakt ist.
         val potentialDeletions = syncedNotes.count { it.id !in serverNoteIds }
-        if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD && potentialDeletions == syncedNotes.size) {
+        if (syncedNotes.size >= ALL_DELETED_GUARD_THRESHOLD &&
+            potentialDeletions * 100 > syncedNotes.size * MASS_DELETION_GUARD_PERCENT
+        ) {
             Logger.e(
                 TAG,
-                "🚨 detectDeletions: ALL ${syncedNotes.size} synced notes " +
+                "🚨 detectDeletions: $potentialDeletions of ${syncedNotes.size} synced notes " +
                     "would be marked as deleted! This is almost certainly a bug. " +
                     "serverNoteIds=${serverNoteIds.size}. ABORTING deletion detection."
+            )
+            ActivityLog.log(
+                ActivityLog.Op.DELETION_SKIPPED,
+                ActivityLog.Src.LOCAL,
+                why = "mass_deletion_guard"
             )
             return true
         }

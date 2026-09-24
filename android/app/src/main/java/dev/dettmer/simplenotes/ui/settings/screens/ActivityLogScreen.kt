@@ -371,7 +371,11 @@ private fun opLabel(entry: ActivityLog.Entry): String = when (entry.op) {
     ActivityLog.Op.FOLDER_DELETE -> stringResource(R.string.activity_op_folder_delete, entry.folder ?: "")
     ActivityLog.Op.SYNC_OK -> stringResource(R.string.activity_op_sync_ok)
     ActivityLog.Op.SYNC_FAIL -> stringResource(R.string.activity_op_sync_fail, entry.err ?: "?")
-    ActivityLog.Op.DELETION_SKIPPED -> stringResource(R.string.activity_op_deletion_skipped)
+    ActivityLog.Op.DELETION_SKIPPED -> if (entry.why == "mass_deletion_guard") { // 🆕 v2.19.0
+        stringResource(R.string.activity_op_deletion_skipped_mass)
+    } else {
+        stringResource(R.string.activity_op_deletion_skipped)
+    }
     ActivityLog.Op.EXPORT_FAIL -> when (entry.why) { // 🆕 v2.19.0
         "assets" -> stringResource(R.string.activity_op_export_fail_assets, entry.err ?: "?")
         "markdown_import" -> stringResource(R.string.activity_op_export_fail_import, entry.err ?: "?")

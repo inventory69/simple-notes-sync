@@ -104,8 +104,8 @@ object Constants {
 
     // 🆕 v2.14.0: ETag der zuletzt gesehenen folders.json — erlaubt es dem FolderSyncManager,
     // den GET/PUT-Round-Trip zu überspringen.
-    // Das Präfix `etag_json_` ist ABSICHTLICH: ETagCache.clearAll() (restoreFromServer) und die
-    // Prefix-Filter in clearServerCaches()/clearETagCache() räumen den Key dadurch automatisch mit.
+    // Das Präfix `etag_json_` ist ABSICHTLICH: die Prefix-Filter in WebDavSyncService.clearServerCaches()
+    // (Server-Wechsel, Restore) und clearETagCache() räumen den Key dadurch automatisch mit.
     const val KEY_FOLDERS_JSON_ETAG = "etag_json_folders.json"
 
     // 🆕 v2.14.0: Server-Verzeichnisse bleiben über App-Starts hinweg als "verifiziert" bekannt.

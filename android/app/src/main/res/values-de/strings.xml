@@ -271,6 +271,7 @@
     <string name="activity_op_export_fail_assets">Bilder nicht übertragen: %1$s</string>
     <string name="activity_op_export_fail_import">Markdown-Import abgebrochen: %1$s</string>
     <string name="activity_op_deletion_skipped">Löscherkennung übersprungen — Server-Listing war unvollständig</string>
+    <string name="activity_op_deletion_skipped_mass">Löscherkennung übersprungen: mehr als die Hälfte der Notizen fehlt auf dem Server</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manuell</string>
     <string name="activity_trigger_resume">App geöffnet</string>

@@ -273,6 +273,7 @@
     <string name="activity_op_export_fail_assets">Images not transferred: %1$s</string>
     <string name="activity_op_export_fail_import">Markdown import aborted: %1$s</string>
     <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
+    <string name="activity_op_deletion_skipped_mass">Deletion check skipped: more than half of the notes are missing on the server</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manual</string>
     <string name="activity_trigger_resume">App opened</string>

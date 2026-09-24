@@ -149,4 +149,34 @@ class NoteDownloaderDeletionTest {
         assertEquals(0, count)
         notes.forEach { assertNotNull(storage.loadNote(it.id)) }
     }
+
+    @Test fun `mass-deletion guard aborts when more than half of the synced notes are missing`() = runTest {
+        val notes = (1..50).map { note("mass-$it") }
+        notes.forEach { storage.saveNote(it) }
+
+        val count = downloader.detectDeletions(serverNoteIds = setOf("mass-1"), localNotes = notes)
+
+        assertEquals(0, count)
+        notes.forEach { assertEquals(SyncStatus.SYNCED, storage.loadNote(it.id)!!.syncStatus) }
+    }
+
+    @Test fun `mass-deletion guard lets exactly half of the synced notes through`() = runTest {
+        val notes = (1..50).map { note("half-$it") }
+        notes.forEach { storage.saveNote(it) }
+        val onServer = notes.take(25).map { it.id }.toSet()
+
+        val count = downloader.detectDeletions(serverNoteIds = onServer, localNotes = notes)
+
+        assertEquals(25, count)
+        notes.drop(25).forEach { assertEquals(SyncStatus.DELETED_ON_SERVER, storage.loadNote(it.id)!!.syncStatus) }
+    }
+
+    @Test fun `few synced notes all missing are still moved to trash (v1_9_0 fix)`() = runTest {
+        val notes = (1..3).map { note("few-$it") }
+        notes.forEach { storage.saveNote(it) }
+
+        val count = downloader.detectDeletions(serverNoteIds = setOf("unrelated"), localNotes = notes)
+
+        assertEquals(3, count)
+    }
 }

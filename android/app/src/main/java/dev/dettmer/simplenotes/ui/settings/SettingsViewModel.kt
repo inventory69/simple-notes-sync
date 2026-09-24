@@ -807,7 +807,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _folderChangeInProgress.value = true
         viewModelScope.launch {
             try {
-                clearServerCaches()
+                WebDavSyncService.clearServerCaches(prefs, notesStorage)
                 val count = notesStorage.resetAllSyncStatusToPending()
                 confirmedSyncFolderName = newFolder
                 confirmedServerUrl = newServerUrl
@@ -901,36 +901,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isHttps.value = confirmedUrl.startsWith("https://")
         _serverHost.value = extractHostFromUrl(confirmedUrl)
         prefs.edit { putString(Constants.KEY_SERVER_URL, confirmedUrl) }
-    }
-
-    /**
-     * 🔧 v1.9.0: Löscht alle server-spezifischen Caches beim Server-Wechsel.
-     *
-     * Ohne diesen Clear greift die Content-Hash-Skip-Logik in uploadSingleNoteParallel():
-     * Hash matcht (Inhalt gleich) + E-Tag vom alten Server noch vorhanden → Upload übersprungen,
-     * Note auf SYNCED gesetzt ohne je auf neuen Server hochgeladen zu werden.
-     *
-     * Gelöscht werden:
-     * - etag_json_*       (JSON-Datei E-Tags)
-     * - etag_md_*         (Markdown-Datei E-Tags)
-     * - content_hash_*    (JSON-Content-Hashes)
-     * - content_hash_md_* (Markdown-Content-Hashes)
-     * - lastSyncTimestamp (damit hasUnsyncedChanges() korrekt funktioniert)
-     * - DeletionTracker   (alte Lösch-Historie ist für neuen Server irrelevant)
-     */
-    private fun clearServerCaches() {
-        prefs.edit {
-            prefs.all.keys.filter {
-                it.startsWith("etag_json_") ||
-                    it.startsWith("etag_md_") ||
-                    it.startsWith("content_hash_") ||
-                    it.startsWith("content_hash_md_")
-            }.forEach { key -> remove(key) }
-            remove(Constants.KEY_LAST_SYNC)
-            remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
-        }
-        notesStorage.clearDeletionTracker()
-        Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamp, deletion tracker)")
     }
 
     fun clearETagCache() {

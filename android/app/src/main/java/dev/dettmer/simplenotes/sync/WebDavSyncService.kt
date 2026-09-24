@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.sync
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
@@ -102,6 +103,33 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             if (entries == null) return false
             val dirPath = java.net.URI(url).path.trimEnd('/')
             return entries.none { it.href.path.trimEnd('/') != dirPath }
+        }
+
+        /**
+         * 🔧 v1.9.0 / 🆕 v2.19.0: Löscht alle server-spezifischen Caches. Einzige Räumstelle für
+         * Server-/Ordner-Wechsel, Restore und ab E2EE-Slice 4 die Migration.
+         *
+         * Ohne diesen Clear greift die Content-Hash-Skip-Logik in uploadSingleNoteParallel():
+         * Hash matcht (Inhalt gleich) + E-Tag vom alten Server noch vorhanden → Upload übersprungen,
+         * Note auf SYNCED gesetzt ohne je auf neuen Server hochgeladen zu werden.
+         *
+         * Gelöscht werden:
+         * - etag_json_*    (JSON-Datei E-Tags, inkl. [Constants.KEY_FOLDERS_JSON_ETAG])
+         * - etag_md_*      (Markdown-Datei E-Tags, inkl. etag_md_path_*)
+         * - content_hash_* (JSON- und Markdown-Content-Hashes)
+         * - lastSyncTimestamp + lastSuccessfulSync (damit hasUnsyncedChanges() korrekt funktioniert)
+         * - DeletionTracker (alte Lösch-Historie ist für den neuen Server irrelevant)
+         */
+        fun clearServerCaches(prefs: SharedPreferences, storage: NotesStorage) {
+            prefs.edit {
+                prefs.all.keys.filter {
+                    it.startsWith("etag_json_") || it.startsWith("etag_md_") || it.startsWith("content_hash_")
+                }.forEach { key -> remove(key) }
+                remove(Constants.KEY_LAST_SYNC)
+                remove(Constants.KEY_LAST_SUCCESSFUL_SYNC)
+            }
+            storage.clearDeletionTracker()
+            Logger.d(TAG, "🧹 Cleared server caches (E-Tags, content hashes, sync timestamps, deletion tracker)")
         }
     }
 
@@ -1248,27 +1276,9 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             Logger.d(TAG, "Mode: $mode")
             Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
 
-            // ✅ v1.3.0 FIX: WICHTIG - Deletion Tracker bei ALLEN Modi clearen!
-            // Restore bedeutet: "Server ist die Quelle der Wahrheit"
-            // → Lokale Deletion-History ist irrelevant
-            Logger.d(TAG, "🗑️ Clearing deletion tracker (restore mode)")
-            storage.clearDeletionTracker()
-
-            // ⚡ v1.3.1 FIX: Clear lastSyncTimestamp to force download ALL files
-            // Restore = "Server ist die Quelle" → Ignore lokale Sync-History
-            val previousSyncTime = getLastSyncTimestamp()
-            prefs.edit { putLong("last_sync_timestamp", 0) }
-            Logger.d(TAG, "🔄 Cleared lastSyncTimestamp (was: $previousSyncTime) - will download all files")
-
-            // ⚡ v1.3.1 FIX: Clear E-Tag caches to force re-download
-            eTagCache.clearAll()
-            // 🆕 v1.9.0: Auch Content-Hashes löschen (damit alle Notizen neu hochgeladen werden)
-            prefs.edit {
-                prefs.all.keys.filter { it.startsWith("content_hash_") }.forEach { key ->
-                    remove(key)
-                }
-            }
-            Logger.d(TAG, "🔄 Cleared E-Tag + content hash caches - will re-download all files")
+            // Restore bedeutet: "Server ist die Quelle der Wahrheit" → Deletion-Tracker, Sync-Timestamps,
+            // E-Tags und Content-Hashes weg, damit alles neu geladen (und neu hochgeladen) wird.
+            clearServerCaches(prefs, storage)
 
             // Determine forceOverwrite flag
             val forceOverwrite = (mode == dev.dettmer.simplenotes.backup.RestoreMode.OVERWRITE_DUPLICATES)
