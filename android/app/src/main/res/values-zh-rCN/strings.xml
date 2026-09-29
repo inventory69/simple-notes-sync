@@ -43,7 +43,7 @@
     <string name="sync_status_local_only">还未同步</string>
     <string name="sync_status_deleted_on_server">已在服务器上删除</string>
     <!-- 🆕 v1.8.0: Sync Status Legend Dialog -->
-    <string name="sync_legend_button">同步状态帮助</string>
+    <string name="sync_legend_button">同步状态</string>
     <string name="sync_legend_description">每个笔记显示一个小图标，指示它的同步状态：</string>
     <string name="sync_legend_synced_label">已同步</string>
     <string name="sync_legend_synced_desc">这个笔记在所有设备上已是最新。</string>
@@ -98,8 +98,8 @@
     <string name="snackbar_notes_deleted_from_server_partial">已经从服务器删除 %1$d 个笔记总数 %2$d</string>
     <string name="snackbar_server_delete_failed">服务器删除失败</string>
     <string name="snackbar_server_error">服务器错误：%s</string>
-    <string name="snackbar_server_unreachable">连不上服务器</string>
-    <string name="snackbar_connection_timeout">连接超时</string>
+    <string name="snackbar_server_unreachable">不能连接到服务器</string>
+    <string name="snackbar_connection_timeout">服务器花了太长时间来响应</string>
     <string name="snackbar_nothing_to_sync">ℹ️ 没有东西要同步</string>
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
@@ -462,8 +462,8 @@
     <plurals name="notification_sync_conflict_message">
         <item quantity="other">%d 笔记有冲突</item>
     </plurals>
-    <string name="notification_sync_warning_message">服务器连不上 %d 小时</string>
-    <string name="notification_sync_warning_detail">WebDAV 服务器连不上 %d 小时。请检查网络连接或服务器设置。</string>
+    <string name="notification_sync_warning_message">无连接到服务器 %d 小时</string>
+    <string name="notification_sync_warning_detail">不能连接到服务器 %d 小时。检查网络连接或服务器设置。</string>
     <string name="notification_sync_in_progress_title">同步进行中</string>
     <string name="notification_sync_in_progress_message">正在同步笔记……</string>
     <string name="notification_sync_error_title">同步错误</string>
@@ -936,8 +936,8 @@
     <string name="settings_group_info">信息</string>
     <string name="settings_section_note_list">笔记清单</string>
     <string name="note_preview_length_title_only">仅标题</string>
-    <string name="checklist_scroll_top_on_uncheck_toggle">取消勾选时滚动到顶部</string>
-    <string name="checklist_scroll_top_on_uncheck_description">取消勾选一个项目，滚动清单回到顶部。关闭以保持当前位置。</string>
+    <string name="checklist_scroll_top_on_uncheck_toggle">滚动到取消勾选的项目</string>
+    <string name="checklist_scroll_top_on_uncheck_description">取消勾选一个项目，滚动清单到它所处位置。关闭以保持当前位置。</string>
     <string name="note_card_show_timestamp_toggle">显示时间戳</string>
     <string name="note_card_show_timestamp_description">在笔记卡片上显示最后编辑时间戳。</string>
     <string name="note_card_show_icon_toggle">显示笔记图标</string>
@@ -1013,7 +1013,7 @@
     <string name="conflict_resolved_use_server">服务器版本已载入。</string>
     <string name="conflict_resolve_failed">不能解决冲突。检查服务器连接。</string>
     <plurals name="sync_conflict_count">
-        <item quantity="other">%1$d 个冲突需要你的决定</item>
+        <item quantity="other">⚠️ %1$d 个冲突需要你的决定</item>
     </plurals>
     <string name="search_empty_state_title">未找到笔记</string>
     <string name="search_empty_state_message">没有东西匹配你的搜索 — 在这个文件夹或任何其他。</string>
@@ -1051,4 +1051,44 @@
     <plurals name="restore_server_notes_restored">
         <item quantity="other">从服务器恢复了 %d 个笔记</item>
     </plurals>
+    <string name="sync_status_attention">需要你的注意</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="other">%1$d 个更改正在等待</item>
+    </plurals>
+    <string name="sync_status_last_sync">最后同步：%1$s</string>
+    <string name="sync_status_never">从不</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="other">%1$d 个笔记需要你的决定</item>
+    </plurals>
+    <string name="sync_status_retry">再次尝试</string>
+    <string name="sync_status_syncing">正在同步……</string>
+    <string name="sync_status_cannot_sync">现在不能同步</string>
+    <string name="sync_status_notes_safe">你的笔记保留在这个设备并且会在下一次同步时上传。</string>
+    <string name="sync_status_stale">一段时间未同步</string>
+    <string name="sync_status_stale_hint">超过一天没有进行同步。检查你的连接和服务器设置。</string>
+    <string name="sync_legend_expand">解释图标</string>
+    <string name="sync_status_notes_in_sync">你的笔记本身是同步的。</string>
+    <string name="sync_status_reason">理由：%1$s</string>
+    <plurals name="sync_markdown_failed_count">
+        <item quantity="other">%1$d 个 Markdown 文件未导出</item>
+    </plurals>
+    <plurals name="sync_assets_failed_count">
+        <item quantity="other">%1$d 个图片未传输</item>
+    </plurals>
+    <string name="sync_markdown_import_failed">Markdown 导入失败</string>
+    <string name="sync_export_resolved">缺失的文件已传输</string>
+    <plurals name="sync_notes_synced_count">
+        <item quantity="other">%1$d 个笔记已同步</item>
+    </plurals>
+    <string name="activity_op_export_fail_markdown">Markdown 文件未导出：%1$s</string>
+    <string name="activity_op_export_fail_assets">图片未传输：%1$s</string>
+    <string name="activity_op_export_fail_import">Markdown 导入中止：%1$s</string>
+    <string name="activity_op_deletion_skipped_mass">已跳过删除检查：服务器上的笔记超过一半缺失</string>
+    <string name="sync_error_conflict_path">服务器上的文件夹缺失或者被一个文件阻挡。</string>
+    <string name="sync_error_too_large">这文件对于服务器来说太大了。</string>
+    <string name="sync_error_storage_full">服务器存储满了。</string>
+    <string name="error_backup_out_of_memory">没有足够的内存处理这个备份。</string>
+    <string name="notification_sync_export_title">某些文件未传输</string>
+    <string name="notification_warnings_channel_name">同步警告</string>
+    <string name="notification_warnings_channel_desc">静默通知当 Markdown 文件或图片不能传输时</string>
 </resources>

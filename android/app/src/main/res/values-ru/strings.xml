@@ -2,7 +2,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Simple Notes</string>
     <string name="main_title">Simple Notes</string>
-    <string name="action_sync">Синхронизация</string>
+    <string name="action_sync">Синхронизировать</string>
     <string name="action_settings">Настройки</string>
     <string name="action_close_selection">Снять выделение</string>
     <string name="action_select_all">Выделить всё</string>
@@ -25,7 +25,7 @@
     <string name="sort_checklist_alpha_asc">А → Я</string>
     <string name="sort_checklist_alpha_desc">Я → А</string>
     <string name="sync_status_deleted_on_server">Удалено на сервере</string>
-    <string name="sync_legend_button">Помощь по статусу синхронизации</string>
+    <string name="sync_legend_button">Статус синхронизации</string>
     <string name="sync_legend_description">Рядом с каждой заметкой отображается небольшой значок состояния синхронизации:</string>
     <string name="sync_legend_synced_label">Синхронизировано</string>
     <string name="sync_legend_synced_desc">Эта заметка актуальна на всех устройствах.</string>
@@ -121,7 +121,7 @@
     <string name="settings_backup">Резервное копирование и восстановление</string>
     <string name="settings_backup_subtitle">Локальное или серверное резервное копирование</string>
     <string name="settings_import_title">Импорт заметок</string>
-    <string name="settings_import_subtitle">Импорт заметок из файлов или с сервера</string>
+    <string name="settings_import_subtitle">Импорт заметок из файлов, с сервера или с Google Keep</string>
     <string name="import_section_server">С WebDAV сервера</string>
     <string name="import_section_local">С устройства</string>
     <string name="import_info_text">Импортируйте файлы .md, .json или .txt как Simple Notes. Импортированные заметки будут синхронизированы при следующей синхронизации. Исходные файлы остаются без изменений.</string>
@@ -403,7 +403,7 @@
     <string name="notification_sync_progress_message">Выполняется синхронизация заметок</string>
     <string name="notification_sync_conflict_title">Обнаружен конфликт синхронизации</string>
     <string name="notification_sync_warning_message">Сервер недоступен в течение %d ч</string>
-    <string name="notification_sync_warning_detail">WebDAV сервер недоступен в течение %d часов. Пожалуйста, проверьте ваше сетевое подключение или настройки сервера.</string>
+    <string name="notification_sync_warning_detail">Не удаётся установить соединение с сервером в течение %d часов. Проверьте подключение к сети или настройки сервера.</string>
     <string name="notification_sync_in_progress_title">Выполняется синхронизация</string>
     <string name="notification_sync_in_progress_message">Выполняется синхронизация заметок…</string>
     <string name="notification_sync_error_title">Ошибка синхронизации</string>
@@ -521,7 +521,7 @@
     <string name="snackbar_folder_removed_from_server">Папка удалена с сервера</string>
     <string name="snackbar_folder_sync_queued">Папка будет синхронизирована при восстановлении подключения</string>
     <string name="trash_title">Корзина</string>
-    <string name="settings_trash_subtitle">Восстановите заметки или удалите их навсегда</string>
+    <string name="settings_trash_subtitle">Восстановите удалённые заметки или удалите их навсегда</string>
     <string name="trash_empty_state">Корзина пуста</string>
     <string name="trash_retention_duration_title">Удалять заметки в корзине через</string>
     <string name="trash_retention_settings_cd">Настройки хранения в корзине</string>
@@ -601,13 +601,13 @@
     <string name="import_select_all">Выбрать всё</string>
     <string name="import_deselect_all">Снять выделение со всего</string>
     <string name="folder_change_dialog_title">Изменить папку синхронизации?</string>
-    <string name="folder_change_dialog_message">Вы переключаете папку синхронизации с \"%1$s\" на \"%2$s\". Что должно произойти с вашими текущими заметками?</string>
+    <string name="folder_change_dialog_message">Вы меняете папку синхронизации с \"%1$s\" на \"%2$s\". Как поступить с вашими текущими заметками?</string>
     <string name="folder_change_dialog_data_loss_warning">Предупреждение: %1$d заметок ещё не загружены. Если вы не перенесёте их, они будут потеряны.</string>
     <string name="folder_change_action_migrate">Перенести заметки</string>
     <string name="folder_change_action_switch">Не переносить</string>
     <string name="folder_change_local_only_confirm_title">Удалить только локальные заметки?</string>
-    <string name="folder_change_local_only_confirm_message">%1$d заметок существуют только на этом устройстве и никогда не загружались. Смена папки удаляет их безвозвратно. Важные заметки? Сначала создайте резервную копию через \"Резервное копирование и восстановление\".</string>
-    <string name="folder_change_local_only_confirm_button">Удалить и переключиться</string>
+    <string name="folder_change_local_only_confirm_message">%1$d заметок существуют только на этом устройстве и никогда не загружались на сервер. Смена папки удалит их безвозвратно. Если это важные заметки, сначала создайте резервную копию через \"Резервное копирование и восстановление\".</string>
+    <string name="folder_change_local_only_confirm_button">Удалить и сменить</string>
     <string name="folder_change_in_progress">Применение изменения папки…</string>
     <string name="server_change_dialog_title">Изменить сервер?</string>
     <string name="server_change_dialog_message">Вы переключаете сервер с \"%1$s\" на \"%2$s\". Что должно произойти с вашими текущими заметками?</string>
@@ -984,4 +984,84 @@
     <string name="widget_quick_edit_add_item_hint">Новый пункт</string>
     <string name="toast_image_copied">Изображение скопировано в буфер обмена</string>
     <string name="sort_reset_default">По-умолчанию</string>
+    <string name="sync_status_attention">Требует вашего внимания</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="one">%1$d изменение в очереди</item>
+        <item quantity="few">%1$d изменения в очереди</item>
+        <item quantity="many">%1$d изменений в очереди</item>
+        <item quantity="other">%1$d изменений в очереди</item>
+    </plurals>
+    <string name="sync_status_last_sync">Последняя синхронизация: %1$s</string>
+    <string name="sync_status_never">никогда</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="one">%1$d заметка требует вашего решения</item>
+        <item quantity="few">%1$d заметки требуют вашего решения</item>
+        <item quantity="many">%1$d заметок требуют вашего решения</item>
+        <item quantity="other">%1$d заметок требуют вашего решения</item>
+    </plurals>
+    <string name="sync_status_retry">Повторить попытку</string>
+    <string name="sync_status_syncing">Синхронизация…</string>
+    <string name="sync_status_cannot_sync">Не удаётся выполнить синхронизацию</string>
+    <string name="sync_status_notes_safe">Ваши заметки останутся на этом устройстве и будут загружены при следующей синхронизации.</string>
+    <string name="sync_status_stale">Давно не синхронизировалось</string>
+    <string name="sync_status_stale_hint">Синхронизация не выполнялась уже больше суток. Проверьте подключение и настройки сервера.</string>
+    <string name="sync_legend_expand">Объяснить значки</string>
+    <string name="sync_status_notes_in_sync">Сами заметки синхронизированы.</string>
+    <string name="sync_status_reason">Причина: %1$s</string>
+    <plurals name="sync_markdown_failed_count">
+        <item quantity="one">%1$d файл Markdown не экспортирован</item>
+        <item quantity="few">%1$d файла Markdown не экспортированы</item>
+        <item quantity="many">%1$d файлов Markdown не экспортировано</item>
+        <item quantity="other">%1$d файлов Markdown не экспортировано</item>
+    </plurals>
+    <plurals name="sync_assets_failed_count">
+        <item quantity="one">%1$d изображение не передано</item>
+        <item quantity="few">%1$d изображения не переданы</item>
+        <item quantity="many">%1$d изображений не передано</item>
+        <item quantity="other">%1$d изображений не передано</item>
+    </plurals>
+    <string name="sync_markdown_import_failed">Не удалось импортировать Markdown</string>
+    <string name="sync_export_resolved">Недостающие файлы успешно переданы</string>
+    <plurals name="sync_notes_synced_count">
+        <item quantity="one">%1$d заметка синхронизирована</item>
+        <item quantity="few">%1$d заметки синхронизированы</item>
+        <item quantity="many">%1$d заметок синхронизировано</item>
+        <item quantity="other">%1$d заметок синхронизировано</item>
+    </plurals>
+    <string name="activity_op_export_fail_markdown">Файл Markdown не экспортирован: %1$s</string>
+    <string name="activity_op_export_fail_assets">Изображения не переданы: %1$s</string>
+    <string name="activity_op_export_fail_import">Импорт Markdown прерван: %1$s</string>
+    <string name="activity_op_deletion_skipped_mass">Проверка удаления пропущена: на сервере отсутствует больше половины заметок</string>
+    <string name="sync_error_conflict_path">Папка на сервере отсутствует или заблокирована файлом.</string>
+    <string name="sync_error_too_large">Файл слишком велик для сервера.</string>
+    <string name="sync_error_storage_full">Хранилище сервера заполнено.</string>
+    <string name="import_error_backup_file">Это файл резервной копии Simple Notes. Восстановите его в разделе «Настройки → Резервное копирование и восстановление → Восстановить из файла».</string>
+    <string name="md_toolbar_table">Таблица</string>
+    <string name="md_table_header_placeholder">Заголовок</string>
+    <string name="md_table_cell_placeholder">Ячейка</string>
+    <string name="error_backup_unreadable">Не удалось прочитать файл резервной копии</string>
+    <string name="error_backup_encrypted_password_required">Эта резервная копия зашифрована. Введите пароль.</string>
+    <string name="error_backup_decryption_failed">Не удалось расшифровать: %s</string>
+    <plurals name="restore_partial_notes_skipped">
+        <item quantity="one">%d заметка из резервной копии не прочитана и пропущена</item>
+        <item quantity="few">%d заметки из резервной копии не прочитаны и пропущены</item>
+        <item quantity="many">%d заметок из резервной копии не прочитано и пропущено</item>
+        <item quantity="other">%d заметок из резервной копии не прочитано и пропущено</item>
+    </plurals>
+    <plurals name="backup_created_notes">
+        <item quantity="one">Сохранена %d заметка</item>
+        <item quantity="few">Сохранены %d заметки</item>
+        <item quantity="many">Сохранено %d заметок</item>
+        <item quantity="other">Сохранено %d заметок</item>
+    </plurals>
+    <plurals name="restore_server_notes_restored">
+        <item quantity="one">%d заметка восстановлена с сервера</item>
+        <item quantity="few">%d заметки восстановлены с сервера</item>
+        <item quantity="many">%d заметок восстановлено с сервера</item>
+        <item quantity="other">%d заметок восстановлено с сервера</item>
+    </plurals>
+    <string name="error_backup_out_of_memory">Недостаточно памяти для обработки этой резервной копии.</string>
+    <string name="notification_sync_export_title">Не удалось передать некоторые файлы</string>
+    <string name="notification_warnings_channel_desc">Ненавязчивые уведомления о файлах Markdown или изображениях, которые не удалось передать</string>
+    <string name="notification_warnings_channel_name">Предупреждения при синхронизации</string>
 </resources>
