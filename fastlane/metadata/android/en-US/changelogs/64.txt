@@ -1,0 +1,12 @@
+🩺 v2.19.0 - Sync check-up
+
+• New: sync status dialog explains problems and offers fixes
+• Fix: crash on backups with many images
+• Fix: sync stops if over half the notes vanish on the server
+• Fix: notes from Markdown editors reach the server, one file per note
+• Fix: unchecking scrolls to the item, not to the top
+• Notifications only for problems by default
+• Encrypted backups use a new format older versions can't read
+• Updated translations: ZH, RU
+
+Thanks to @heretic43 and @disfated!

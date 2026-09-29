@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.19.0] - 2026-09-25
+## [2.19.0] - 2026-09-29
 
 ### ⚠️ Good to Know
 
@@ -84,6 +84,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 **Toolchain and Libraries Up to Date** ([7589dcf](https://github.com/inventory69/simple-notes-sync/commit/7589dcf), [3397cf1](https://github.com/inventory69/simple-notes-sync/commit/3397cf1), [c2f7b80](https://github.com/inventory69/simple-notes-sync/commit/c2f7b80), [b904296](https://github.com/inventory69/simple-notes-sync/commit/b904296), [d6cda9c](https://github.com/inventory69/simple-notes-sync/commit/d6cda9c))
 - Gradle 9.7.1, Android Gradle Plugin 9.4.1 with built-in Kotlin, Kotlin 2.4.20, Compose BOM 2026.09.00, OkHttp 5.5.0, Glance 1.2.0, Coil 3.6.3 and smaller AndroidX bumps. compileSdk is 37, targetSdk stays 36
 - The release APK is 3.8 % smaller than in 2.18.1, and a sync still needs the same number of requests
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+- **Russian** (100%): [@disfated](https://github.com/disfated) / Yury Pavlovsky
 
 ---
 
