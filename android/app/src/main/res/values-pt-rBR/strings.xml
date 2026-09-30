@@ -318,4 +318,92 @@
     <string name="sync_manual_hint_disabled">A sincronização não está disponível no modo offline.</string>
     <string name="sync_offline_mode_message">Você está usando o aplicativo no modo offline. Configure um servidor para sincronizar as anotações.</string>
     <string name="sync_no_server_message">Nenhum servidor foi configurado. Configure um servidor para sincronizar as notas.</string>
+    <string name="sync_status_attention">Precisa da sua atenção</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="one">%1$d alteração pendente</item>
+        <item quantity="many">%1$d alterações pendentes</item>
+        <item quantity="other">%1$d alterações pendentes</item>
+    </plurals>
+    <string name="sync_status_last_sync">Última sincronização: %1$s</string>
+    <string name="sync_status_never">nunca</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="one">%1$d nota aguardando sua decisão</item>
+        <item quantity="many">%1$d notas aguardando sua decisão</item>
+        <item quantity="other">%1$d notas aguardando sua decisão</item>
+    </plurals>
+    <string name="sync_status_retry">Tente novamente</string>
+    <string name="sync_status_syncing">Sincronizando…</string>
+    <string name="sync_status_cannot_sync">Não é possível sincronizar no momento</string>
+    <string name="sync_status_notes_safe">Suas anotações permanecem neste dispositivo e serão enviadas na próxima sincronização.</string>
+    <string name="sync_status_stale">Não sincronizado há algum tempo</string>
+    <string name="sync_status_stale_hint">Não houve nenhuma sincronização há mais de um dia. Verifique sua conexão e as configurações do servidor.</string>
+    <string name="sync_legend_expand">Explicar os ícones</string>
+    <string name="sync_status_notes_in_sync">Suas anotações já estão sincronizadas.</string>
+    <string name="sync_status_reason">Motivo: %1$s</string>
+    <plurals name="note_stats_words">
+        <item quantity="one">%1$d palavra</item>
+        <item quantity="many">%1$d palavras</item>
+        <item quantity="other">%1$d palavras</item>
+    </plurals>
+    <plurals name="note_stats_characters">
+        <item quantity="one">%1$d caractere</item>
+        <item quantity="many">%1$d caracteres</item>
+        <item quantity="other">%1$d caracteres</item>
+    </plurals>
+    <string name="note_stats_show">Mostrar contador de palavras</string>
+    <string name="conflict_banner_title">Alterado em outro dispositivo</string>
+    <string name="conflict_banner_message">Esta nota foi editada aqui e em outro lugar. Escolha a versão que deseja manter — até lá, ela não estará sincronizada.</string>
+    <string name="conflict_action_keep_local">Fica com o meu</string>
+    <string name="conflict_action_use_server">Usar versão do servidor</string>
+    <string name="conflict_action_compare">Comparar</string>
+    <string name="conflict_compare_title">Comparar versões</string>
+    <string name="conflict_compare_local">Sua versão</string>
+    <string name="conflict_compare_server">Versão do servidor</string>
+    <string name="conflict_compare_empty">(sem texto)</string>
+    <string name="conflict_resolved_keep_local">Sua versão foi salva e será enviada.</string>
+    <string name="conflict_resolved_use_server">Versão do servidor carregada.</string>
+    <string name="conflict_resolve_failed">Não foi possível resolver o conflito. Verifique a conexão com o servidor.</string>
+    <plurals name="sync_conflict_count">
+        <item quantity="one">⚠️ O conflito %1$d precisa de sua decisão</item>
+        <item quantity="many">⚠️ O conflito %1$d precisa de sua decisão</item>
+        <item quantity="other">⚠️ O conflito %1$d precisa de sua decisão</item>
+    </plurals>
+    <plurals name="sync_markdown_failed_count">
+        <item quantity="one">%1$d Arquivo Markdown não exportado</item>
+        <item quantity="many">%1$d Arquivos Markdown não exportados</item>
+        <item quantity="other">%1$d Arquivos Markdown não exportados</item>
+    </plurals>
+    <plurals name="sync_assets_failed_count">
+        <item quantity="one">%1$d imagem não foi transferida</item>
+        <item quantity="many">%1$d imagens não foram transferidas</item>
+        <item quantity="other">%1$d imagens não foram transferidas</item>
+    </plurals>
+    <string name="sync_markdown_import_failed">A importação do Markdown falhou</string>
+    <string name="sync_export_resolved">Arquivos ausentes foram transferidos</string>
+    <plurals name="sync_notes_synced_count">
+        <item quantity="one">%1$d nota sincronizada</item>
+        <item quantity="many">%1$d notas sincronizadas</item>
+        <item quantity="other">%1$d notas sincronizadas</item>
+    </plurals>
+    <string name="sync_restored_count">%1$d restaurado</string>
+    <string name="sync_deletion_check_skipped">Verificação de exclusão ignorada (lista do servidor incompleta)</string>
+    <string name="sort_reset_default">Padrão</string>
+    <string name="activity_log_title">Registro de atividades</string>
+    <string name="settings_activity_log_subtitle">Veja o que aconteceu com suas anotações e quando</string>
+    <string name="activity_log_empty_state">Ainda não há atividades</string>
+    <string name="activity_log_share_cd">Registro de compartilhamento</string>
+    <string name="activity_log_share_empty">Ainda não há nada para compartilhar</string>
+    <string name="activity_log_clear_cd">Limpar registro</string>
+    <string name="activity_log_clear_confirm_title">Limpar o registro de atividades?</string>
+    <string name="activity_log_clear_confirm_message">Isso apenas exclui o registro deste dispositivo. Não afeta suas anotações.</string>
+    <string name="activity_log_today">Hoje</string>
+    <string name="activity_log_yesterday">Ontem</string>
+    <string name="activity_log_note_gone_cd">A nota não existe mais</string>
+    <string name="activity_log_origin_local">Dispositivo</string>
+    <string name="activity_log_origin_remote">Servidor</string>
+    <string name="activity_op_create">Criado</string>
+    <string name="activity_op_edit">Editado</string>
+    <string name="activity_op_trash">Movido para a lixeira</string>
+    <string name="activity_op_restore">Restaurado</string>
+    <string name="activity_op_restore_self_heal">Restaurado (havia sido marcado erroneamente como excluído)</string>
 </resources>
