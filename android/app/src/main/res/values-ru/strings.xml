@@ -70,8 +70,8 @@
     <string name="snackbar_server_delete_failed">Не удалось удалить с сервера</string>
     <string name="snackbar_delete_queued_for_sync">Сервер недоступен – удаление поставлено в очередь для следующей синхронизации</string>
     <string name="snackbar_server_error">Ошибка сервера: %s</string>
-    <string name="snackbar_server_unreachable">Сервер недоступен</string>
-    <string name="snackbar_connection_timeout">Тайм-аут соединения</string>
+    <string name="snackbar_server_unreachable">Не удалось установить соединение с сервером</string>
+    <string name="snackbar_connection_timeout">Время ожидания ответа от сервера истекло</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Нет данных для синхронизации</string>
     <string name="sync_error_ssl">Ошибка SSL</string>
     <string name="sync_error_auth_failed">Ошибка аутентификации</string>
@@ -554,7 +554,7 @@
         <item quantity="many">%d заметок будут безвозвратно удалено. Это действие нельзя отменить.</item>
         <item quantity="other">%d заметок будут безвозвратно удалено. Это действие нельзя отменить.</item>
     </plurals>
-    <string name="trash_empty_confirm_server_hint">Синхронизированные заметки также удаляются с сервера.</string>
+    <string name="trash_empty_confirm_server_hint">Синхронизированные заметки будут также удалены с сервера.</string>
     <string name="snackbar_note_trashed">\"%s\" перемещена в корзину</string>
     <string name="snackbar_note_deleted_permanently">\"%1$s\" безвозвратно удалена</string>
     <plurals name="snackbar_notes_deleted_permanently">
