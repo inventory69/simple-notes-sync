@@ -676,6 +676,9 @@
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
     <string name="editor_default_preview_mode_toggle">In Vorschau öffnen</string>
     <string name="editor_default_preview_mode_description">Textnotizen öffnen standardmäßig in der Leseansicht. Deaktivieren, um im Bearbeitungsmodus zu starten.</string>
+    <!-- 🆕 Issue #156: Checklist read mode -->
+    <string name="editor_checklist_read_mode_toggle">Checklisten in der Leseansicht öffnen</string>
+    <string name="editor_checklist_read_mode_description">Checklisten öffnen schreibgeschützt. Ein Tipp irgendwo auf einen Eintrag hakt ihn ab, zum Bearbeiten das Stift-Symbol nutzen.</string>
     <!-- 🆕 v2.11.0: Standard-Notizfarbe -->
     <string name="settings_default_note_color_title">Standard-Notizfarbe</string>
     <string name="settings_default_note_color_subtitle">Wird auf neue Notizen angewendet</string>
@@ -749,6 +752,7 @@
     <string name="toggle_filter_row">Filterleiste ein-/ausblenden</string>
     <!-- 🆕 v1.9.0 (F07): Markdown-Vorschau -->
     <string name="editor_toggle_preview">Markdown-Vorschau umschalten</string>
+    <string name="editor_toggle_read_mode">Leseansicht umschalten</string> <!-- 🆕 Issue #156 -->
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
     <string name="md_toolbar_bold">Fett</string>
     <string name="md_toolbar_italic">Kursiv</string>

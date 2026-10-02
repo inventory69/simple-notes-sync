@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -33,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -60,6 +62,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -108,6 +111,9 @@ fun ChecklistItemRow(
     // 🔧 v2.13.0: Optimistischer Checkbox-Zustand, während der Parent den Uncheck aufschiebt
     // und die Row selbst kollabieren lässt. null = Model-Zustand anzeigen.
     checkedOverride: Boolean? = null,
+    // 🆕 Issue #156: Lesemodus. Text nicht editierbar, kein Griff/Menü/Löschen,
+    // ein Tipp irgendwo auf die Zeile hakt ab.
+    readOnly: Boolean = false,
     requestFocus: Boolean = false,
     isDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Drag state
     isAnyItemDragging: Boolean = false, // 🆕 v1.8.0: IMPL_023 - Hide gradient during any drag
@@ -282,6 +288,20 @@ fun ChecklistItemRow(
     val alpha = if (item.isChecked) 0.6f else 1.0f
     val textDecoration = if (item.isChecked) TextDecoration.LineThrough else TextDecoration.None
 
+    // 🆕 v2.5.0: onCheckboxTap notifies parent (DraggableChecklistItem) to set
+    // isCheckAnimating = true, which elevates zIndex and drives Scale + Glow animations.
+    // onCheckedChange wird synchron danach aufgerufen — das ViewModel sortiert sofort,
+    // die LazyColumn animiert die resultierende Reorder via animateItem (placement-only,
+    // kein Fade). Es gibt keinen State-Delay mehr; Animation und Reorder laufen parallel
+    // und konsistent.
+    // DnD: dragModifier ist der einzige DnD-Entry-Point; onCheckboxTap feuert nie
+    // während eines Drags.
+    // 🆕 Issue #156: Im Lesemodus ruft der Zeilen-Tap denselben Pfad auf.
+    val onToggle: (Boolean) -> Unit = { checked ->
+        onCheckboxTap() // 🆕 v2.5.0: Trigger Z-Index + Animation im Parent
+        onCheckedChange(checked)
+    }
+
     @Suppress("MagicNumber") // UI padding values are self-explanatory
     Row(
         modifier = modifier
@@ -307,60 +327,67 @@ fun ChecklistItemRow(
                     )
                 }
             }
+            .then(
+                if (readOnly) {
+                    // 🆕 Issue #156: ganze Zeile als ein Toggle (TalkBack liest Checkbox + Text zusammen)
+                    Modifier.toggleable(
+                        value = checkedOverride ?: item.isChecked,
+                        role = Role.Checkbox,
+                        onValueChange = onToggle
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .padding(end = 8.dp, top = 4.dp, bottom = 4.dp), // 🆕 v1.8.0: IMPL_023 - links kein Padding (Handle hat eigene Fläche)
         verticalAlignment = if (hasOverflow) Alignment.Top else Alignment.CenterVertically // 🆕 v1.8.0: Dynamisch
     ) {
         // 🆕 v1.8.0: IMPL_023 - Vergrößerter Drag Handle (48dp Touch-Target)
-        Box(
-            modifier = dragModifier
-                .size(48.dp) // Material Design minimum touch target
-                .alpha(if (isDragging) 1.0f else 0.6f) // Visual feedback beim Drag
-                // 🆕 v2.2.0: Fokus beim ersten Antippen des Handles clearen.
-                // detectDragGesturesAfterLongPress erfasst draggingItemSize erst NACH dem
-                // Long-Press-Timeout (~500ms). Durch clearFocus() hier hat der Layout-Pass
-                // genug Zeit, die Item-Höhe auf collapsed zu aktualisieren, BEVOR
-                // DragDropListState.onDragStart() die Größe für Swap-Berechnungen erfasst.
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            if (event.type == PointerEventType.Press && isFocused) {
-                                focusManager.clearFocus()
+        if (!readOnly) { // 🆕 Issue #156: kein Umsortieren im Lesemodus
+            Box(
+                modifier = dragModifier
+                    .size(48.dp) // Material Design minimum touch target
+                    .alpha(if (isDragging) 1.0f else 0.6f) // Visual feedback beim Drag
+                    // 🆕 v2.2.0: Fokus beim ersten Antippen des Handles clearen.
+                    // detectDragGesturesAfterLongPress erfasst draggingItemSize erst NACH dem
+                    // Long-Press-Timeout (~500ms). Durch clearFocus() hier hat der Layout-Pass
+                    // genug Zeit, die Item-Höhe auf collapsed zu aktualisieren, BEVOR
+                    // DragDropListState.onDragStart() die Größe für Swap-Berechnungen erfasst.
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.type == PointerEventType.Press && isFocused) {
+                                    focusManager.clearFocus()
+                                }
                             }
                         }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = stringResource(R.string.drag_to_reorder),
+                    modifier = Modifier.size(28.dp), // Icon größer als vorher (24dp → 28dp)
+                    tint = if (isDragging) {
+                        MaterialTheme.colorScheme.primary // Primary color während Drag
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.DragHandle,
-                contentDescription = stringResource(R.string.drag_to_reorder),
-                modifier = Modifier.size(28.dp), // Icon größer als vorher (24dp → 28dp)
-                tint = if (isDragging) {
-                    MaterialTheme.colorScheme.primary // Primary color während Drag
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
+                )
+            }
         }
 
-        // 🆕 v2.5.0: onCheckboxTap notifies parent (DraggableChecklistItem) to set
-        // isCheckAnimating = true, which elevates zIndex and drives Scale + Glow animations.
-        // onCheckedChange wird synchron danach aufgerufen — das ViewModel sortiert sofort,
-        // die LazyColumn animiert die resultierende Reorder via animateItem (placement-only,
-        // kein Fade). Es gibt keinen State-Delay mehr; Animation und Reorder laufen parallel
-        // und konsistent.
-        // DnD: dragModifier ist der einzige DnD-Entry-Point; onCheckboxTap feuert nie
-        // während eines Drags.
         Checkbox(
             checked = checkedOverride ?: item.isChecked,
-            onCheckedChange = { checked ->
-                onCheckboxTap() // 🆕 v2.5.0: Trigger Z-Index + Animation im Parent
-                onCheckedChange(checked)
-            },
+            // 🆕 Issue #156: im Lesemodus übernimmt die Zeile den Tap (siehe toggleable oben)
+            onCheckedChange = if (readOnly) null else onToggle,
             modifier = Modifier
                 .scale(checkScale) // 🆕 v2.5.0: Scale-pop animation
                 .alpha(alpha)
+                // Ohne onCheckedChange lässt Checkbox die 48 dp weg, die Zeile würde schrumpfen.
+                // Im Bearbeitungsmodus ist das ein No-op.
+                .minimumInteractiveComponentSize()
         )
 
         Spacer(modifier = Modifier.width(4.dp))
@@ -413,6 +440,8 @@ fun ChecklistItemRow(
                             isFocused = focusState.isFocused
                         }
                         .alpha(alpha),
+                    // 🆕 Issue #156: nicht fokussierbar, Taps gehen an die Zeile
+                    enabled = !readOnly,
                     textStyle = LocalTextStyle.current.copy(
                         color = MaterialTheme.colorScheme.onSurface,
                         textDecoration = textDecoration
@@ -509,101 +538,103 @@ fun ChecklistItemRow(
 
         Spacer(modifier = Modifier.width(4.dp))
 
-        // 🆕 v2.2.0: MoreVert-Button — sichtbar nur bei Fokus, immer allokiert (kein Layout-Sprung)
-        Box {
+        if (!readOnly) { // 🆕 Issue #156: Menü und Löschen nur beim Bearbeiten
+            // 🆕 v2.2.0: MoreVert-Button — sichtbar nur bei Fokus, immer allokiert (kein Layout-Sprung)
+            Box {
+                IconButton(
+                    onClick = { showContextMenu = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .alpha(if (isFocused && !isAnyItemDragging) 1f else 0f),
+                    enabled = isFocused && !isAnyItemDragging
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.checklist_item_menu),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = showContextMenu,
+                    onDismissRequest = { showContextMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.checklist_copy_text)) },
+                        onClick = {
+                            onCopyText()
+                            showContextMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.checklist_duplicate_item)) },
+                        onClick = {
+                            onDuplicate()
+                            showContextMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.CopyAll,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.checklist_copy_to_checklist)) },
+                        onClick = {
+                            onCopyToChecklist()
+                            showContextMenu = false
+                        },
+                        enabled = item.text.isNotBlank(),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.share_to_calendar)) },
+                        onClick = {
+                            onAddToCalendar()
+                            showContextMenu = false
+                        },
+                        enabled = item.text.isNotBlank(),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+                }
+            }
+
+            // Delete Button
             IconButton(
-                onClick = { showContextMenu = true },
+                onClick = onDelete,
                 modifier = Modifier
                     .size(36.dp)
-                    .alpha(if (isFocused && !isAnyItemDragging) 1f else 0f),
-                enabled = isFocused && !isAnyItemDragging
+                    .padding(top = 4.dp) // 🆕 v1.8.0: Ausrichtung mit Top-aligned Text
             ) {
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.checklist_item_menu),
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.delete_item),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
-
-            DropdownMenu(
-                expanded = showContextMenu,
-                onDismissRequest = { showContextMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.checklist_copy_text)) },
-                    onClick = {
-                        onCopyText()
-                        showContextMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.checklist_duplicate_item)) },
-                    onClick = {
-                        onDuplicate()
-                        showContextMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.CopyAll,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.checklist_copy_to_checklist)) },
-                    onClick = {
-                        onCopyToChecklist()
-                        showContextMenu = false
-                    },
-                    enabled = item.text.isNotBlank(),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.share_to_calendar)) },
-                    onClick = {
-                        onAddToCalendar()
-                        showContextMenu = false
-                    },
-                    enabled = item.text.isNotBlank(),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                )
-            }
-        }
-
-        // Delete Button
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier
-                .size(36.dp)
-                .padding(top = 4.dp) // 🆕 v1.8.0: Ausrichtung mit Top-aligned Text
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = stringResource(R.string.delete_item),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }

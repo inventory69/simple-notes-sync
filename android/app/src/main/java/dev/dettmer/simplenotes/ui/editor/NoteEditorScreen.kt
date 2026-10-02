@@ -531,13 +531,18 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // can restore the exact mode the user was in before the conversion — not just the
     // global default. Initialized from the user preference so first open is correct.
     var savedPreviewMode by remember { mutableStateOf(uiState.defaultStartInPreviewMode) }
+    // 🆕 Issue #156: Gegenstück für Checklisten. Nur eine als Checkliste geöffnete Notiz startet
+    // im Lesemodus; nach TEXT→CHECKLIST-Konvertierung bleibt es beim Bearbeiten.
+    var savedChecklistReadMode by remember {
+        mutableStateOf(uiState.noteType == NoteType.CHECKLIST && uiState.checklistStartInReadMode)
+    }
     // Both isNewNote and noteType are keys so the value is recomputed synchronously
     // (in the same frame) whenever the type changes — avoids a one-frame flash.
     var isPreviewMode by remember(uiState.isNewNote, uiState.noteType) {
         mutableStateOf(
             when {
                 uiState.isNewNote -> false
-                uiState.noteType == NoteType.CHECKLIST -> false
+                uiState.noteType == NoteType.CHECKLIST -> savedChecklistReadMode
                 else -> savedPreviewMode // TEXT: restore saved value (covers Undo)
             }
         )
@@ -623,6 +628,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     LaunchedEffect(isPreviewMode) {
         if (uiState.noteType == NoteType.TEXT && !uiState.isNewNote) {
             savedPreviewMode = isPreviewMode
+        }
+        if (uiState.noteType == NoteType.CHECKLIST && !uiState.isNewNote) {
+            savedChecklistReadMode = isPreviewMode
         }
         if (!isPreviewMode && uiState.noteType == NoteType.TEXT && !uiState.isNewNote) {
             delay(LAYOUT_DELAY_MS)
@@ -748,18 +756,23 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     }
                 },
                 actions = {
-                    // 🆕 v1.9.0 (F07): Markdown Preview Toggle (only for TEXT notes)
-                    if (uiState.noteType == NoteType.TEXT) {
-                        IconButton(onClick = { isPreviewMode = !isPreviewMode }) {
-                            Icon(
-                                imageVector = if (isPreviewMode) {
-                                    Icons.Outlined.Edit
+                    // 🆕 v1.9.0 (F07): Markdown Preview Toggle
+                    // 🆕 Issue #156: auch für Checklisten (Lesemodus)
+                    IconButton(onClick = { isPreviewMode = !isPreviewMode }) {
+                        Icon(
+                            imageVector = if (isPreviewMode) {
+                                Icons.Outlined.Edit
+                            } else {
+                                Icons.Outlined.Visibility
+                            },
+                            contentDescription = stringResource(
+                                if (uiState.noteType == NoteType.TEXT) {
+                                    R.string.editor_toggle_preview
                                 } else {
-                                    Icons.Outlined.Visibility
-                                },
-                                contentDescription = stringResource(R.string.editor_toggle_preview)
+                                    R.string.editor_toggle_read_mode
+                                }
                             )
-                        }
+                        )
                     }
 
                     // v2.0.1: Undo/Redo in toolbar for wide displays, overflow for narrow (Issue #48)
@@ -1220,6 +1233,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                             onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
                             onFocusHandled = { focusNewItemId = null },
                             onSortClick = { showChecklistSortDialog = true }, // 🔀 v1.8.0
+                            readOnly = isPreviewMode, // 🆕 Issue #156
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f)
@@ -1510,7 +1524,8 @@ private fun LazyItemScope.DraggableChecklistItem(
     scrollsAfterUncheck: (String) -> Boolean, // 🆕 Issue #112: true → Commit ohne Settle + ohne Expand (Scroll übernimmt)
     onUncheckCommit: (id: String, scroll: Boolean) -> Unit, // 🔧 v2.13.0: Commit nach abgeschlossenem Collapse
     topHighlightId: String?, // 🔧 Issue #112: Highlight-Pop nach Scroll-Ankunft
-    onTopHighlightShown: () -> Unit // 🔧 Issue #112: konsumiert topHighlightId
+    onTopHighlightShown: () -> Unit, // 🔧 Issue #112: konsumiert topHighlightId
+    readOnly: Boolean // 🆕 Issue #156
 ) {
     // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
     // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
@@ -1662,6 +1677,7 @@ private fun LazyItemScope.DraggableChecklistItem(
         // 🔧 v2.13.0: Solange der Uncheck aufgeschoben ist, zeigt die Checkbox optimistisch
         // ungecheckt — das Model folgt erst beim Commit.
         checkedOverride = if (isPendingUncheck) false else null,
+        readOnly = readOnly, // 🆕 Issue #156
         requestFocus = shouldFocus,
         isDragging = isDragging,
         isAnyItemDragging = dragDropState.isAnyItemDragging,
@@ -1763,7 +1779,8 @@ internal fun ChecklistEditor(
     onMove: (Int, Int) -> Unit,
     onFocusHandled: () -> Unit,
     onSortClick: () -> Unit, // 🔀 v1.8.0
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    readOnly: Boolean = false // 🆕 Issue #156: Lesemodus, nur Abhaken
 ) {
     // IMPL_29q Q1: LazyLayoutCacheWindow ersetzt beyondBoundsItemCount (entfernt in Compose 1.10+).
     // Hält 0.55 × Viewport auf jeder Seite composiert → 865px Buffer (3 große Items à 271px).
@@ -2058,10 +2075,11 @@ internal fun ChecklistEditor(
                             // Ziel oberhalb des Viewports (oder an der ersten sichtbaren Zeile: ein
                             // Einfügen vor dem ersten sichtbaren Key landet oberhalb) → Scroll.
                             // Sonst wächst die Row am Ziel auf wie ohne Scroll-to-Top.
-                            scrollTopOnUncheck && sortChecklistStates(
-                                items.map { if (it.id == id) it.copy(isChecked = false) else it },
-                                currentSortOption
-                            ).indexOfFirst { it.id == id } <= listState.firstVisibleItemIndex
+                            scrollTopOnUncheck &&
+                                sortChecklistStates(
+                                    items.map { if (it.id == id) it.copy(isChecked = false) else it },
+                                    currentSortOption
+                                ).indexOfFirst { it.id == id } <= listState.firstVisibleItemIndex
                         },
                         onUncheckCommit = { id, scroll ->
                             if (scroll) scrollTopUncheckId = id
@@ -2074,35 +2092,39 @@ internal fun ChecklistEditor(
                             pendingUncheckId = null
                         },
                         topHighlightId = topHighlightId,
-                        onTopHighlightShown = { topHighlightId = null }
+                        onTopHighlightShown = { topHighlightId = null },
+                        readOnly = readOnly
                     )
                 }
             }
         }
 
         // 🔀 v1.8.0: Add Item Button + Sort Button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onAddItemAtEnd) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(stringResource(R.string.add_item))
-            }
+        // 🆕 Issue #156: im Lesemodus ausgeblendet, die Liste nutzt die volle Höhe
+        if (!readOnly) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onAddItemAtEnd) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(stringResource(R.string.add_item))
+                }
 
-            IconButton(onClick = onSortClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Sort,
-                    contentDescription = stringResource(R.string.sort_checklist),
-                    modifier = androidx.compose.ui.Modifier.padding(4.dp)
-                )
+                IconButton(onClick = onSortClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Sort,
+                        contentDescription = stringResource(R.string.sort_checklist),
+                        modifier = androidx.compose.ui.Modifier.padding(4.dp)
+                    )
+                }
             }
         }
     }

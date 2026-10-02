@@ -682,6 +682,9 @@
     <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
     <string name="editor_default_preview_mode_toggle">Open in preview mode</string>
     <string name="editor_default_preview_mode_description">Text notes open in read mode by default. Disable to start in edit mode.</string>
+    <!-- 🆕 Issue #156: Checklist read mode -->
+    <string name="editor_checklist_read_mode_toggle">Open checklists in read mode</string>
+    <string name="editor_checklist_read_mode_description">Checklists open read-only. Tap anywhere on an item to check it off, use the pencil icon to edit.</string>
     <!-- 🆕 v2.11.0: Default note color -->
     <string name="settings_default_note_color_title">Default note color</string>
     <string name="settings_default_note_color_subtitle">Applied to new notes</string>
@@ -755,6 +758,7 @@
     <string name="toggle_filter_row">Toggle filter bar</string>
     <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
     <string name="editor_toggle_preview">Toggle Markdown preview</string>
+    <string name="editor_toggle_read_mode">Toggle read mode</string> <!-- 🆕 Issue #156 -->
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
     <string name="md_toolbar_bold">Bold</string>
     <string name="md_toolbar_italic">Italic</string>

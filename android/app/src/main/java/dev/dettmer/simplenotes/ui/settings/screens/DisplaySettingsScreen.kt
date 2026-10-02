@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.Icon
@@ -267,6 +268,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
 private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String?, onDefaultColorClick: () -> Unit) {
     val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
     val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
+    val checklistStartInReadMode by viewModel.checklistStartInReadMode.collectAsState()
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
     val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
     val wordCounterVisibility by viewModel.wordCounterVisibility.collectAsState()
@@ -288,6 +290,15 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             checked = defaultStartInPreviewMode,
             onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) },
             icon = Icons.Default.Visibility
+        )
+
+        // 🆕 Issue #156
+        SettingsSwitch(
+            title = stringResource(R.string.editor_checklist_read_mode_toggle),
+            subtitle = stringResource(R.string.editor_checklist_read_mode_description),
+            checked = checklistStartInReadMode,
+            onCheckedChange = { viewModel.setChecklistStartInReadMode(it) },
+            icon = Icons.Default.TouchApp
         )
 
         // 🆕 v2.11.0: Cursor-Start für neue Notizen
