@@ -1,6 +1,6 @@
 # Upcoming Features 🚀
 
-**🌍 Languages:** [Deutsch](UPCOMING.de.md) · **English**
+**🌍 Languages:** [Deutsch](UPCOMING.de.md) · [Italiano](UPCOMING.it.md) · **English**
 
 > What's next? Here you'll find our plans for future versions.
 

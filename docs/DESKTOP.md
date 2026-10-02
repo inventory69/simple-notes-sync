@@ -1,6 +1,6 @@
 # Desktop Integration 🖥️
 
-**🌍 Languages:** [Deutsch](DESKTOP.de.md) · **English**
+**🌍 Languages:** [Deutsch](DESKTOP.de.md) · [Italiano](DESKTOP.it.md) · **English**
 
 > Edit your notes with any Markdown editor on desktop
 

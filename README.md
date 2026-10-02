@@ -45,7 +45,7 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 <div align="center">
 
 <br />[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)<br />
-**🌍** [Deutsch](README.de.md) · **English**
+**🌍** [Deutsch](README.de.md) · [Italiano](README.it.md) · **English**
 
 </div>
 

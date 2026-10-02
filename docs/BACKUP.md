@@ -1,6 +1,6 @@
 # Backup & Restore 💾
 
-**🌍 Languages:** [Deutsch](BACKUP.de.md) · **English**
+**🌍 Languages:** [Deutsch](BACKUP.de.md) · [Italiano](BACKUP.it.md) · **English**
 
 > Secure your notes locally - independent from the server
 

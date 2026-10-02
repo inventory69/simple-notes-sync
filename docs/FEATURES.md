@@ -1,6 +1,6 @@
 # Complete Feature List 📋
 
-**🌍 Languages:** [Deutsch](FEATURES.de.md) · **English**
+**🌍 Languages:** [Deutsch](FEATURES.de.md) · [Italiano](FEATURES.it.md) · **English**
 
 > All features of Simple Notes Sync in detail
 
