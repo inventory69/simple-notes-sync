@@ -9,7 +9,7 @@
 ## Voraussetzungen
 
 - ✅ Android 7.0+ Smartphone/Tablet
-- ✅ WLAN-Verbindung
+- ✅ Netzwerkverbindung zum Server (automatischer Hintergrund-Sync wartet auf WLAN)
 - ✅ Eigener Server mit Docker (optional - für Self-Hosting)
 
 ---
