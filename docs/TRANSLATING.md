@@ -1,6 +1,6 @@
 # Contributing Translations 🌍
 
-**🌍 Languages:** [Deutsch](TRANSLATING.de.md) · **English**
+**🌍 Languages:** [Deutsch](TRANSLATING.de.md) · [Italiano](TRANSLATING.it.md) · **English**
 
 > How to translate Simple Notes Sync into your language!
 

@@ -2,7 +2,7 @@
 
 This file contains detailed technical information about implementation, architecture, and advanced features.
 
-**🌍 Languages:** [Deutsch](DOCS.de.md) · **English**
+**🌍 Languages:** [Deutsch](DOCS.de.md) · [Italiano](DOCS.it.md) · **English**
 
 ---
 
