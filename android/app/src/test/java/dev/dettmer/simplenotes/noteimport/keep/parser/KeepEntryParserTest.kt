@@ -76,6 +76,42 @@ class KeepEntryParserTest {
         assertEquals("Hallo\nWelt", keep!!.textContent)
     }
 
+    // ───── #162: geteilte Notiz, Kollaboratoren stehen als <ul> im HTML ─────
+    private val shareesHtml = """
+        <div class="sharees"><h2>Collaborators</h2>
+        <ul><li class="sharee user" title="someone@example.com (owner)">someone@example.com</li></ul></div>
+    """.trimIndent()
+
+    @Test
+    fun `parse_sharedTextNote_keepsJsonTextAndIgnoresHtmlLists`() {
+        val json = """{"title":"T","textContent":"Echter Inhalt","sharees":[{"email":"someone@example.com"}]}"""
+        val html = """<body><div class="content">Echter Inhalt</div>$shareesHtml</body>"""
+        val keep = parser.parse(jsonEntry("a.json", json), htmlEntry("a.html", html))
+        assertNotNull(keep)
+        assertEquals("Echter Inhalt", keep!!.textContent)
+        assertTrue(keep.checklist.isEmpty())
+    }
+
+    @Test
+    fun `parse_sharedEmptyChecklist_doesNotTurnShareesIntoItems`() {
+        val json = """{"title":"T","listContent":[],"sharees":[{"email":"someone@example.com"}]}"""
+        val html = """<body><div class="content"><ul class="list"></ul></div>$shareesHtml</body>"""
+        val keep = parser.parse(jsonEntry("a.json", json), htmlEntry("a.html", html))
+        assertNotNull(keep)
+        assertTrue(keep!!.checklist.isEmpty())
+        assertNull(keep.textContent)
+    }
+
+    @Test
+    fun `parse_jsonWithoutContent_usesHtmlChecklistOnly`() {
+        val json = """{"title":"T","sharees":[{"email":"someone@example.com"}]}"""
+        val html = """<body><div class="content"><ul class="list"><li class="listitem">Eier</li></ul></div>$shareesHtml</body>"""
+        val keep = parser.parse(jsonEntry("a.json", json), htmlEntry("a.html", html))
+        assertNotNull(keep)
+        assertEquals(listOf("Eier"), keep!!.checklist.map { it.text })
+        assertNull(keep.textContent)
+    }
+
     // ───── #4 ────────────────────────────────────────────────────────
     @Test
     fun `parse_checklistJson_returnsKeepChecklistItems`() {
