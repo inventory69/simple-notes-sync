@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.IOException
 import java.io.InputStream
 
 /**
@@ -64,6 +65,17 @@ internal object E2eeGate {
         }
         Logger.d(TAG, "e2ee marker probe: $probe")
         return probe == Probe.ACTIVE
+    }
+
+    /**
+     * Direktpfade außerhalb des Syncs: frisch prüfen, **fail-closed** (Prüffehler = gesperrt),
+     * weil dort kein nächster Lauf nachfasst. Schreibt keinen Zustand.
+     */
+    fun isLocked(webdav: WebDavClient, markerUrl: String): Boolean = try {
+        isActive(webdav, markerUrl)
+    } catch (e: IOException) {
+        Logger.w(TAG, "e2ee marker probe failed, treating server as locked: ${e.message}")
+        true
     }
 
     /** Gesperrt, solange die gespeicherte Marker-URL die der aktuellen Konfiguration ist. Kein Request. */

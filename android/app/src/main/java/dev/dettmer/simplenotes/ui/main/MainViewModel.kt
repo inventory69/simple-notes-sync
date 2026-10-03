@@ -999,21 +999,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Attempts to delete notes from the server.
      * If the server is not reachable, queues the deletions for the next sync.
+     *
+     * @return false, wenn eingereiht statt gelöscht wurde. Dann auch keine Ordner räumen.
      */
-    private suspend fun attemptServerDeletion(deletions: List<PendingServerDeletions.PendingDeletion>) {
+    private suspend fun attemptServerDeletion(deletions: List<PendingServerDeletions.PendingDeletion>): Boolean {
         val webdavService = WebDavSyncService(getApplication())
-        val isReachable = try {
-            withContext(ioDispatcher) { webdavService.isServerReachable() }
-        } catch (e: Exception) {
-            Logger.d(TAG, "isServerReachable check failed during attemptServerDeletion: ${e.message}")
-            false
-        }
-        if (!isReachable) {
-            // Queue for next sync — server not reachable right now
+        queueReason(webdavService)?.let { reason ->
+            // Queue for next sync: server not reachable or locked right now
             pendingServerDeletions.add(deletions)
             deletions.forEach { finalizeDeletion(it.id) }
-            SyncStateManager.showInfo(getString(R.string.snackbar_delete_queued_for_sync))
-            return
+            SyncStateManager.showInfo(getString(reason))
+            return false
         }
         // Server reachable → delete immediately (folderName korrekt übergeben)
         val total = deletions.size
@@ -1055,6 +1051,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         if (failCount == 0) SyncStateManager.showInfo(message) else SyncStateManager.showError(message)
+        return true
+    }
+
+    /** Warum Server-Löschungen jetzt nicht gehen (Hinweistext), oder null, wenn sie gehen. */
+    private suspend fun queueReason(service: WebDavSyncService): Int? = withContext(ioDispatcher) {
+        val isReachable = try {
+            service.isServerReachable()
+        } catch (e: Exception) {
+            Logger.d(TAG, "isServerReachable check failed during attemptServerDeletion: ${e.message}")
+            false
+        }
+        when {
+            !isReachable -> R.string.snackbar_delete_queued_for_sync
+            // 🆕 v2.20.0 (E2EE-Slice 1): verschlüsselter Ordner, erreichbar, aber gesperrt
+            service.isServerLocked() -> R.string.snackbar_delete_queued_e2ee
+            else -> null
+        }
     }
 
     /**
@@ -1596,12 +1609,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             loadNotesAsync(forceReload = true)
             if (removeFromServer) {
                 if (deletions.isNotEmpty()) {
-                    attemptServerDeletion(deletions)
-                    val webdavService = WebDavSyncService(getApplication())
-                    for (folder in folderNames) {
-                        try {
-                            webdavService.deleteServerFolderIfEmpty(folder)
-                        } catch (_: Exception) {
+                    // Eingereiht statt gelöscht → die Ordner räumt der Sync nach den Löschungen.
+                    if (attemptServerDeletion(deletions)) {
+                        val webdavService = WebDavSyncService(getApplication())
+                        for (folder in folderNames) {
+                            try {
+                                webdavService.deleteServerFolderIfEmpty(folder)
+                            } catch (_: Exception) {
+                            }
                         }
                     }
                 } else {
@@ -1801,7 +1816,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Leere Ordner-Verzeichnisse vom Server löschen.
             if (folderNames.isNotEmpty() && hasServerConfig() && !isOfflineMode.value) {
                 val service = WebDavSyncService(getApplication())
-                folderNames.filter { it !in localOnlyDeleted }.forEach { folderName ->
+                // 🆕 v2.20.0 (E2EE-Slice 1): ein Marker-GET für alle Ordner, gesperrt → nichts räumen.
+                // ponytail: ein leeres Server-Verzeichnis bleibt dann liegen, der Tombstone in folders.json gilt trotzdem.
+                val folders = if (service.isServerLocked()) emptyList() else folderNames.filter { it !in localOnlyDeleted }
+                folders.forEach { folderName ->
                     try {
                         withContext(ioDispatcher) { service.deleteServerFolderIfEmpty(folderName) }
                     } catch (e: Exception) {
@@ -1901,7 +1919,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (!stillHasNotes && hasServerConfig() && !isOfflineMode.value) {
                     try {
                         val service = WebDavSyncService(getApplication())
-                        service.deleteServerFolderIfEmpty(name)
+                        if (!service.isServerLocked()) service.deleteServerFolderIfEmpty(name) // 🆕 v2.20.0
                     } catch (e: Exception) {
                         Logger.w(TAG, "deleteServerFolderIfEmpty failed: ${e.message}")
                     }

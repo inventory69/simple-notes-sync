@@ -97,8 +97,14 @@ class SyncConflictResolver(
 
         val noteUrl = urlBuilder.getNotesFolderUrl(serverUrl, local.folderName) + "$noteId.json"
         val remote = try {
-            val json = webdav.get(noteUrl).use { it.bufferedReader().readText() }
-            Note.fromJson(json)
+            // 🆕 v2.20.0 (E2EE-Slice 1): Ordner verschlüsselt → die Klartext-Datei ist veraltet und
+            // darf die lokale Änderung nicht ersetzen. Fail-closed, „Meine behalten" bleibt.
+            if (E2eeGate.isLocked(webdav, urlBuilder.getE2eeMarkerUrl(serverUrl))) {
+                Logger.w(TAG, "🔒 Server version not fetched: sync folder is end-to-end encrypted")
+                null
+            } else {
+                Note.fromJson(webdav.get(noteUrl).use { it.bufferedReader().readText() })
+            }
         } catch (e: java.io.IOException) {
             Logger.e(TAG, "❌ Failed to fetch server version of $noteId: ${e.message}")
             null

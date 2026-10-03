@@ -4,8 +4,10 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.noteimport.NotesImportWizard
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.SyncException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -13,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -142,6 +145,65 @@ class WebDavSyncServiceE2eeGateTest {
         assertEquals(note, h.storage.loadNote(note.id))
         assertNull(storedMarker())
         assertTrue(ops().isEmpty())
+    }
+
+    // ── Direktpfade außerhalb des Syncs: frisch, ein GET pro Aktion, fail-closed, kein Zustand ──
+
+    @Test fun `isServerLocked fails closed`() = runTest {
+        val service = service()
+        assertFalse(service.isServerLocked())
+        h.dav.respond(MARKER, 500)
+        assertTrue(service.isServerLocked())
+        h.dav.respond(MARKER, 200, """{"format":"simple-notes-e2ee"}""")
+        assertTrue(service.isServerLocked())
+        assertEquals(List(3) { "GET $MARKER" }, h.dav.requests)
+        assertNull(storedMarker())
+    }
+
+    @Test fun `markdown export and manual markdown sync refuse before writing`() = runTest {
+        lockServer()
+        val service = service()
+
+        val export = runCatching { service.exportAllNotesToMarkdown(h.server.url("/").toString(), "user", "pw") }
+        val manual = runCatching { service.manualMarkdownSync() }
+
+        assertTrue(export.exceptionOrNull() is SyncException)
+        assertTrue(manual.exceptionOrNull() is SyncException)
+        assertEquals(List(2) { "GET $MARKER" }, h.dav.requests)
+    }
+
+    @Test fun `connection test reports the block without writing`() = runTest {
+        lockServer()
+
+        val result = service().testConnection()
+
+        assertTrue(result.isSuccess)
+        assertEquals(h.context.getString(R.string.test_connection_e2ee_blocked), result.infoMessage)
+        assertTrue(h.dav.writes().isEmpty())
+        assertNull(storedMarker())
+    }
+
+    @Test fun `conflict resolver does not hand out the stale plaintext version`() = runTest {
+        h.dav.putFile("/notes/${note.id}.json", note.copy(content = "Server").toJson())
+        val resolver = SyncConflictResolver(h.context, h.storage, UnconfinedTestDispatcher(testScheduler))
+        assertNotNull(resolver.fetchServerVersion(note.id))
+
+        lockServer()
+
+        assertNull(resolver.fetchServerVersion(note.id))
+        assertFalse(resolver.useServer(note.id))
+        assertEquals("geändert", h.storage.loadNote(note.id)?.content)
+    }
+
+    @Test fun `import wizard never offers the e2ee folder`() = runTest {
+        lockServer()
+        h.dav.putFile("/other/a.json", """{"title":"Fremd","content":"x"}""")
+        val webdav = service().getOrCreateWebDavClient()!!
+
+        val names = NotesImportWizard(h.storage, h.context).scanWebDavFolder(webdav, h.server.url("/").toString()).map { it.name }
+
+        assertTrue("other/a.json" in names)
+        assertTrue(names.none { it.startsWith("notes-e2ee/") })
     }
 
     private companion object {

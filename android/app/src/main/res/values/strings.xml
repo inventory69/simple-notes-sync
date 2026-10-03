@@ -196,6 +196,7 @@
     <string name="snackbar_notes_deleted_from_server_partial">%1$d of %2$d notes deleted from server</string>
     <string name="snackbar_server_delete_failed">Server deletion failed</string>
     <string name="snackbar_delete_queued_for_sync">Server not reachable – deletion queued for next sync</string>
+    <string name="snackbar_delete_queued_e2ee">Sync paused: deletion queued until syncing resumes</string>
     <string name="snackbar_folder_removed_from_server">Folder removed from server</string>
     <string name="snackbar_folder_sync_queued">Folder will sync when reconnected</string>
     <string name="snackbar_server_error">Server error: %s</string>
@@ -852,6 +853,7 @@
     <string name="test_connection_success_with_notes">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
     <string name="test_connection_success_md_exists">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ already exists and will be used).</string>
     <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
+    <string name="test_connection_e2ee_blocked">✅ Server reachable, but /%1$s/ was encrypted on another device. Sync is paused.</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Error: %s</string>

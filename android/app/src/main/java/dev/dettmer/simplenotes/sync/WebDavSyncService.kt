@@ -480,6 +480,17 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     /** 🆕 v2.20.0 (E2EE-Slice 1): Letzter Sync fand den Ordner verschlüsselt. Kein Request. */
     fun isE2eeBlocked(): Boolean = E2eeGate.isBlocked(prefs, urlBuilder)
 
+    /**
+     * 🆕 v2.20.0 (E2EE-Slice 1): Für Direktpfade außerhalb des Syncs (Löschen, Ordner räumen,
+     * Markdown). Ein GET pro Nutzeraktion, fail-closed, schreibt keinen Zustand. Ohne
+     * Zugangsdaten oder URL erreicht der Aufrufer den Server ohnehin nicht.
+     */
+    suspend fun isServerLocked(): Boolean = withContext(ioDispatcher) {
+        val webdav = getOrCreateWebDavClient() ?: return@withContext false
+        val serverUrl = getServerUrl() ?: return@withContext false
+        E2eeGate.isLocked(webdav, urlBuilder.getE2eeMarkerUrl(serverUrl))
+    }
+
     fun isOnWiFi(): Boolean = gateChecker.isOnWiFi()
 
     fun canSync(): SyncGateResult = gateChecker.canSync()
@@ -523,6 +534,21 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 Constants.KEY_SYNC_FOLDER_NAME,
                 Constants.DEFAULT_SYNC_FOLDER_NAME
             ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
+            // 🆕 v2.20.0 (E2EE-Slice 1): verbunden, aber der Ordner ist verschlüsselt → kein
+            // „bereit für den ersten Sync". Schreibt keinen Zustand; Prüffehler → normaler Text.
+            val e2eeActive = try {
+                E2eeGate.isActive(webdav, urlBuilder.getE2eeMarkerUrl(serverUrl))
+            } catch (e: IOException) {
+                Logger.d(TAG, "e2ee probe failed during testConnection: ${e.message}")
+                false
+            }
+            if (e2eeActive) {
+                return@withContext SyncResult(
+                    isSuccess = true,
+                    infoMessage = context.getString(R.string.test_connection_e2ee_blocked, activeSyncFolderName)
+                )
+            }
 
             // 🆕 Issue #21: Sync-Ordner prüfen und Status mit Ordnernamen kommunizieren
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
@@ -1239,7 +1265,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         username: String,
         password: String,
         onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
-    ): Int = markdownSyncManager.exportAll(serverUrl, username, password, onProgress)
+    ): Int {
+        // 🆕 v2.20.0 (E2EE-Slice 1): vor dem ersten Request. Deckt auch manualMarkdownSync ab,
+        // das zuerst hierher exportiert.
+        if (isServerLocked()) throw SyncException(context.getString(R.string.sync_e2ee_blocked_short))
+        return markdownSyncManager.exportAll(serverUrl, username, password, onProgress)
+    }
 
     /**
      * Delegiert an NoteDownloader (v2.0.0 Commit 21).

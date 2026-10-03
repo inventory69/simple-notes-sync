@@ -196,6 +196,7 @@
     <string name="snackbar_notes_deleted_from_server_partial">%1$d von %2$d Notizen vom Server gelöscht</string>
     <string name="snackbar_server_delete_failed">Server-Löschung fehlgeschlagen</string>
     <string name="snackbar_delete_queued_for_sync">Server nicht erreichbar – Löschung wird beim nächsten Sync ausgeführt</string>
+    <string name="snackbar_delete_queued_e2ee">Sync pausiert: Löschung vorgemerkt, bis der Sync wieder läuft</string>
     <string name="snackbar_server_error">Server-Fehler: %s</string>
     <string name="snackbar_server_unreachable">Keine Verbindung zum Server</string>
     <string name="snackbar_connection_timeout">Der Server hat zu lange nicht geantwortet</string>
@@ -845,6 +846,7 @@
     <string name="test_connection_success_with_notes">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ wird automatisch erstellt).</string>
     <string name="test_connection_success_md_exists">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ existiert bereits und wird verwendet).</string>
     <string name="test_connection_success_first_sync">✅ Server erreichbar. Ordner /%1$s/ und /%1$s-md/ werden beim ersten Sync erstellt.</string>
+    <string name="test_connection_e2ee_blocked">✅ Server erreichbar, aber /%1$s/ wurde auf einem anderen Gerät verschlüsselt. Der Sync ist pausiert.</string>
     <string name="toast_connection_success">✅ Verbindung erfolgreich!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Fehler: %s</string>
