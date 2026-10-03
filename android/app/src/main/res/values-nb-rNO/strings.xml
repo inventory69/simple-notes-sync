@@ -23,7 +23,7 @@
     <string name="sync_status_conflict">Synkekonflikt oppdaget</string>
     <string name="sync_status_local_only">Ikke ennå synket</string>
     <string name="sync_status_deleted_on_server">Slettet på tjener</string>
-    <string name="sync_legend_button">Hjelp for synkestatus</string>
+    <string name="sync_legend_button">Synkestatus</string>
     <string name="sync_legend_description">Hvert notat viser et lite ikon tilsvarende synkestatusen:</string>
     <string name="sync_legend_synced_label">Synket</string>
     <string name="sync_legend_synced_desc">Dette notatet er oppdatert på alle enheter.</string>
@@ -74,8 +74,8 @@
     <string name="snackbar_server_delete_failed">Sletting fra tjener mislykket</string>
     <string name="snackbar_delete_queued_for_sync">Kan ikke nå tjener – sletting satt i kø for neste synk</string>
     <string name="snackbar_server_error">Tjenerfeil: %s</string>
-    <string name="snackbar_server_unreachable">Kan ikke nå tjener</string>
-    <string name="snackbar_connection_timeout">Tilkoblingen ble tidsavbrutt</string>
+    <string name="snackbar_server_unreachable">Kan ikke koble til tjeneren</string>
+    <string name="snackbar_connection_timeout">Tjeneren brukte for lang tid på å svare</string>
     <string name="snackbar_nothing_to_sync">ℹ️ Ingenting å synke</string>
     <string name="sync_error_ssl">SSL-feil</string>
     <string name="sync_error_auth_failed">Autentisering mislykket</string>
@@ -431,8 +431,8 @@
         <item quantity="one">%d notat har konflikter</item>
         <item quantity="other">%d notater har konflikter</item>
     </plurals>
-    <string name="notification_sync_warning_message">Tjener kunne ikke nås på %dt</string>
-    <string name="notification_sync_warning_detail">WebDAV-tjeneren har vært umulig å nå på %d timer. Vennligst sjekk nettverkstilkoblingen din eller tjenerinnstillingene.</string>
+    <string name="notification_sync_warning_message">Ingen tilkobling til tjener for %dh</string>
+    <string name="notification_sync_warning_detail">Kunne ikke koble til tjeneren på %d timer. Sjekk nettverkstilkoblingen din eller tjenerinnstillingene.</string>
     <string name="notification_sync_in_progress_title">Synkronisering kjører</string>
     <string name="notification_sync_in_progress_message">Notater blir synkronisert…</string>
     <string name="notification_sync_error_title">Synkefeil</string>
@@ -793,8 +793,8 @@
     <string name="settings_default_note_color_subtitle">Brukes for nye notater</string>
     <string name="editor_new_note_focus_content_toggle">Start med markøren i innholdet</string>
     <string name="editor_new_note_focus_content_description">Nye notater fokuserer på innholdsfeltet istedet for tittelen. Sjekklister fokuserer på det første elementet.</string>
-    <string name="checklist_scroll_top_on_uncheck_toggle">Skroll til toppen ved avsjekking</string>
-    <string name="checklist_scroll_top_on_uncheck_description">Avsjekking av et element skroller sjekklisten tilbake til toppen. Skru av for å beholde samme posisjon.</string>
+    <string name="checklist_scroll_top_on_uncheck_toggle">Skroll til avsjekket element</string>
+    <string name="checklist_scroll_top_on_uncheck_description">Avsjekking av et element skroller sjekklisten til der den lander. Skru av for å beholde samme posisjon.</string>
     <string name="note_card_show_timestamp_toggle">Vis tidsstempel</string>
     <string name="note_card_show_timestamp_description">Vis tidsstempel for siste endring på notatkort.</string>
     <string name="note_card_show_icon_toggle">Vis notatikon</string>
@@ -967,4 +967,49 @@
         <item quantity="one">%d notat gjenopprettet fra tjeneren</item>
         <item quantity="other">%d notater gjenopprettet fra tjeneren</item>
     </plurals>
+    <string name="sync_status_attention">Trenger oppmerksomhet</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="one">%1$d endring venter</item>
+        <item quantity="other">%1$d endringer venter</item>
+    </plurals>
+    <string name="sync_status_last_sync">Siste synk: %1$s</string>
+    <string name="sync_status_never">aldri</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="one">%1$d notat trenger en avgjørelse</item>
+        <item quantity="other">%1$d notater trenger en avgjørelse</item>
+    </plurals>
+    <string name="sync_status_retry">Prøv igjen</string>
+    <string name="sync_status_syncing">Synker…</string>
+    <string name="sync_status_cannot_sync">Kan ikke synke akkurat nå</string>
+    <string name="sync_status_notes_safe">Dine notater forblir på denne enheten, og blir lastet opp ved neste synk.</string>
+    <string name="sync_status_stale">Ikke synket på en stund</string>
+    <string name="sync_status_stale_hint">Ingen synk har gått gjennom på over et døgn. Sjekk tilkoblingen og tjenerinnstillingene.</string>
+    <string name="sync_legend_expand">Forklar ikoner</string>
+    <string name="sync_status_notes_in_sync">Notatene dine er synket.</string>
+    <string name="sync_status_reason">Grunn: %1$s</string>
+    <plurals name="sync_markdown_failed_count">
+        <item quantity="one">%1$d Markdown-fil ikke eksportert</item>
+        <item quantity="other">%1$d Markdown-filer ikke eksporterte</item>
+    </plurals>
+    <plurals name="sync_assets_failed_count">
+        <item quantity="one">%1$d bilde ikke overført</item>
+        <item quantity="other">%1$d bilder ikke overførte</item>
+    </plurals>
+    <string name="sync_markdown_import_failed">Markdown-import mislykket</string>
+    <string name="sync_export_resolved">Manglende filer overført</string>
+    <plurals name="sync_notes_synced_count">
+        <item quantity="one">%1$d notat synket</item>
+        <item quantity="other">%1$d notater synket</item>
+    </plurals>
+    <string name="activity_op_export_fail_markdown">Markdown-fil ikke eksportert: %1$s</string>
+    <string name="activity_op_export_fail_assets">Bilder ikke overførte: %1$s</string>
+    <string name="activity_op_export_fail_import">Markdown-import avbrutt: %1$s</string>
+    <string name="activity_op_deletion_skipped_mass">Slettingssjekk hoppet over: mer enn halvparten av notatene mangler fra tjeneren</string>
+    <string name="sync_error_conflict_path">Mappen på tjeneren mangler, eller er blokkert av en fil.</string>
+    <string name="sync_error_too_large">Filen er for stor for tjeneren.</string>
+    <string name="sync_error_storage_full">Tjeneren har ikke mer lagringsplass tilgjengelig.</string>
+    <string name="error_backup_out_of_memory">Ikke nok minne til å behandle denne sikkerhetskopien.</string>
+    <string name="notification_sync_export_title">Noen filer ble ikke overført</string>
+    <string name="notification_warnings_channel_name">Synkeadvarsler</string>
+    <string name="notification_warnings_channel_desc">Stille varsler når Markdown-filer eller bilder ikke kunne overføres</string>
 </resources>
