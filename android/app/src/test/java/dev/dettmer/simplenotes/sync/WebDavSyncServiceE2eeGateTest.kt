@@ -7,7 +7,9 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.noteimport.NotesImportWizard
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
+import dev.dettmer.simplenotes.utils.NotificationHelper
 import dev.dettmer.simplenotes.utils.SyncException
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -66,6 +68,7 @@ class WebDavSyncServiceE2eeGateTest {
         assertTrue(service.syncNotes(trigger = null).e2eeBlocked)
         assertEquals(listOf("GET $MARKER"), h.dav.requests)
         assertEquals(listOf(ActivityLog.Op.SYNC_BLOCKED), ops())
+        verify(exactly = 1) { NotificationHelper.showE2eeBlockedNotification(any()) }
     }
 
     @Test fun `missing marker - GET first, then the normal sync`() = runTest {
@@ -107,6 +110,7 @@ class WebDavSyncServiceE2eeGateTest {
         assertNull(storedMarker())
         assertEquals(listOf(ActivityLog.Op.SYNC_BLOCKED, ActivityLog.Op.SYNC_UNBLOCKED), ops().take(2))
         assertTrue(h.dav.exists("/notes/${note.id}.json"))
+        verify(exactly = 1) { NotificationHelper.dismissNotification(any(), NotificationHelper.E2EE_BLOCKED_NOTIFICATION_ID) }
     }
 
     @Test fun `switching away from a blocked folder clears the state without an unblocked entry`() = runTest {
@@ -120,6 +124,8 @@ class WebDavSyncServiceE2eeGateTest {
 
         assertNull(storedMarker())
         assertFalse(ActivityLog.Op.SYNC_UNBLOCKED in ops())
+        // Die Benachrichtigung des alten Ordners stimmt nicht mehr, sie geht still weg.
+        verify(exactly = 1) { NotificationHelper.dismissNotification(any(), NotificationHelper.E2EE_BLOCKED_NOTIFICATION_ID) }
     }
 
     @Test fun `blocked counts as unsynced change even without server check`() = runTest {
@@ -145,6 +151,7 @@ class WebDavSyncServiceE2eeGateTest {
         assertEquals(note, h.storage.loadNote(note.id))
         assertNull(storedMarker())
         assertTrue(ops().isEmpty())
+        verify(exactly = 0) { NotificationHelper.showE2eeBlockedNotification(any()) }
     }
 
     // ── Direktpfade außerhalb des Syncs: frisch, ein GET pro Aktion, fail-closed, kein Zustand ──

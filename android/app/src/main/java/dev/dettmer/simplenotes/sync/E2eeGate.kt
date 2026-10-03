@@ -1,5 +1,6 @@
 package dev.dettmer.simplenotes.sync
 
+import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
@@ -7,6 +8,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.NotificationHelper
 import java.io.IOException
 import java.io.InputStream
 
@@ -90,17 +92,19 @@ internal object E2eeGate {
      * Konfigurationen, die gleich wieder verworfen werden können. Protokoll nur beim Übergang,
      * sonst füllte jeder periodische Lauf das Aktivitätsprotokoll.
      */
-    fun record(prefs: SharedPreferences, markerUrl: String, active: Boolean) {
+    fun record(context: Context, prefs: SharedPreferences, markerUrl: String, active: Boolean) {
         val stored = prefs.getString(Constants.KEY_E2EE_BLOCKED_MARKER, null)
         if (active && stored != markerUrl) {
             prefs.edit { putString(Constants.KEY_E2EE_BLOCKED_MARKER, markerUrl) }
             Logger.w(TAG, "🔒 Sync folder is end-to-end encrypted - sync paused")
             ActivityLog.log(ActivityLog.Op.SYNC_BLOCKED, ActivityLog.Src.LOCAL, why = "e2ee_active")
+            NotificationHelper.showE2eeBlockedNotification(context)
         } else if (!active && stored != null) {
             prefs.edit { remove(Constants.KEY_E2EE_BLOCKED_MARKER) }
             Logger.i(TAG, "🔓 Sync resumed (marker gone or another folder)")
             // Nach einem Ordnerwechsel weg vom gesperrten Ordner ist nichts „aufgehoben" worden.
             if (stored == markerUrl) ActivityLog.log(ActivityLog.Op.SYNC_UNBLOCKED, ActivityLog.Src.LOCAL)
+            NotificationHelper.dismissNotification(context, NotificationHelper.E2EE_BLOCKED_NOTIFICATION_ID)
         }
     }
 }

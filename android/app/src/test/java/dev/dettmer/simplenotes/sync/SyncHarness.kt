@@ -6,7 +6,9 @@ import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
 import dev.dettmer.simplenotes.utils.FakeSharedPreferences
+import dev.dettmer.simplenotes.utils.NotificationHelper
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
@@ -28,7 +30,8 @@ import okio.Buffer
  * Mini-WebDAV im Speicher. Gebaut für E2EE-Slice 1, wiederverwendbar für Slice 3 und 4.
  *
  * Statt Android: ein relaxter [Context]-Mock mit Temp-`filesDir`, je Prefs-Name eine
- * [FakeSharedPreferences], `getString` liefert `R:<id>`. Zugangsdaten über `mockkObject`.
+ * [FakeSharedPreferences], `getString` liefert `R:<id>`. Zugangsdaten über `mockkObject`, die
+ * E2EE-Benachrichtigung ist gestubbt (kein NotificationManager im JVM-Test, Aufrufe per `verify`).
  *
  * Aufrufer: `@After` muss [close] rufen (Server, Mocks, Auth-Cache, [SyncStateManager]).
  */
@@ -58,6 +61,9 @@ internal class SyncHarness {
         every { CredentialStore.getUsername(any()) } returns "user"
         every { CredentialStore.getPassword(any()) } returns "pw"
         every { CredentialStore.hasCredentials(any()) } returns true
+        mockkObject(NotificationHelper)
+        justRun { NotificationHelper.showE2eeBlockedNotification(any()) }
+        justRun { NotificationHelper.dismissNotification(any(), any()) }
         ActivityLog.init(context)
         prefs.edit()
             .putString(Constants.KEY_SERVER_URL, server.url("/").toString())

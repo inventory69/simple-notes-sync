@@ -5,7 +5,12 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.FakeSharedPreferences
+import android.content.Context
+import dev.dettmer.simplenotes.utils.NotificationHelper
 import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.mockk
 import java.net.SocketTimeoutException
 import org.junit.Assert.assertEquals
@@ -75,7 +80,10 @@ class E2eeGateTest {
         val urls = SyncUrlBuilder(prefs)
         assertFalse(E2eeGate.isBlocked(prefs, urls))
 
-        E2eeGate.record(prefs, "http://s/notes-e2ee/e2ee.json", active = true)
+        mockkObject(NotificationHelper)
+        justRun { NotificationHelper.showE2eeBlockedNotification(any()) }
+        E2eeGate.record(mockk<Context>(), prefs, "http://s/notes-e2ee/e2ee.json", active = true)
+        unmockkObject(NotificationHelper)
         assertTrue(E2eeGate.isBlocked(prefs, urls))
 
         // Ordnerwechsel hebt die Anzeige auf, ohne Reset-Hook

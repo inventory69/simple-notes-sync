@@ -24,10 +24,11 @@ data class SyncStatusSummary(
 ) {
     /**
      * Priorität von oben nach unten: der schwerste Zustand gewinnt.
+     * BLOCKED (🆕 v2.20.0) = Sync-Ordner auf einem anderen Gerät verschlüsselt, kein Server-Zugriff.
      * STALE = Fehler und über [Constants.SYNC_WARNING_THRESHOLD_MS] ohne Erfolg, gleiche Regel wie
      * `SyncWorker.checkAndShowSyncWarning`. Nie am Alter allein, sonst Fehlalarm, wenn einfach niemand synct.
      */
-    enum class State { STALE, FAILED, ATTENTION, PENDING, OK }
+    enum class State { BLOCKED, STALE, FAILED, ATTENTION, PENDING, OK }
 
     companion object {
         val EMPTY = SyncStatusSummary(State.OK, 0L, null, emptyList(), 0, null, emptyList(), 0)
@@ -40,7 +41,8 @@ data class SyncStatusSummary(
             lastSuccessAt: Long,
             lastError: String?,
             lastErrorAt: Long,
-            now: Long
+            now: Long,
+            e2eeBlocked: Boolean = false // 🆕 v2.20.0: E2eeGate.isBlocked, ohne Request
         ): SyncStatusSummary {
             // Settings-Sync umgeht den SyncStateManager und löscht den Fehler nicht. Der Zeitvergleich fängt das ab.
             val error = lastError?.takeIf { lastErrorAt > lastSuccessAt }
@@ -60,6 +62,7 @@ data class SyncStatusSummary(
             // Ein gescheiterter Sync zählt erst, wenn der letzte Erfolg wirklich einen Tag her ist.
             val staleFailure = error != null && now - lastSuccessAt > Constants.SYNC_WARNING_THRESHOLD_MS
             val state = when {
+                e2eeBlocked -> State.BLOCKED
                 // „Noch nie" passt nicht zu „länger nicht", wie bei der Benachrichtigung.
                 staleFailure && lastSuccessAt > 0 -> State.STALE
                 error != null -> State.FAILED
@@ -69,7 +72,7 @@ data class SyncStatusSummary(
             }
             val badge = conflicts.size +
                 (exportProblems?.let { it.markdownFailedCount + it.assetsFailed } ?: 0) +
-                if (staleFailure) 1 else 0
+                listOf(staleFailure, e2eeBlocked).count { it }
             return SyncStatusSummary(
                 state,
                 lastSuccessAt,

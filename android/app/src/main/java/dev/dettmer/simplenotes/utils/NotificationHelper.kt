@@ -27,6 +27,7 @@ object NotificationHelper {
     // 🆕 v2.19.0: leiser Kanal — PRIORITY_LOW allein wirkt ab Android 8 nicht mehr.
     private const val WARNINGS_CHANNEL_ID = "sync_warnings_channel"
     private const val EXPORT_PROBLEM_NOTIFICATION_ID = 1004
+    const val E2EE_BLOCKED_NOTIFICATION_ID = 1005 // 🆕 v2.20.0 (E2EE-Slice 1), Aufheben über dismissNotification
     private const val SYNC_NOTIFICATION_ID = 2
     const val SYNC_PROGRESS_NOTIFICATION_ID = 1003 // v1.7.2: For expedited work foreground notification
     private const val AUTO_CANCEL_TIMEOUT_MS = 30_000L
@@ -334,6 +335,41 @@ object NotificationHelper {
             }
         }
         Logger.d(TAG, "⚠️ Export problem notification shown (md=${result.markdownFailedCount}, assets=${result.assetFailedCount})")
+    }
+
+    /**
+     * 🆕 v2.20.0 (E2EE-Slice 1): Sync pausiert, weil ein anderes Gerät den Ordner verschlüsselt hat.
+     * Nur beim Übergang (E2eeGate.record), auch im Vordergrund. Ohne Berechtigung bleiben Karte und Badge.
+     */
+    fun showE2eeBlockedNotification(context: Context) {
+        if (!areNotificationsEnabled(context)) return
+
+        val notification = NotificationCompat.Builder(context, WARNINGS_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle(context.getString(R.string.sync_status_paused))
+            .setContentText(context.getString(R.string.sync_e2ee_blocked_long))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.sync_e2ee_blocked_long)))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(syncStatusPendingIntent(context))
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .build()
+
+        with(NotificationManagerCompat.from(context)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (androidx.core.app.ActivityCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    notify(E2EE_BLOCKED_NOTIFICATION_ID, notification)
+                }
+            } else {
+                notify(E2EE_BLOCKED_NOTIFICATION_ID, notification)
+            }
+        }
+        Logger.d(TAG, "🔒 E2EE block notification shown")
     }
 
     /**

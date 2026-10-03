@@ -15,6 +15,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.E2eeGate
 import dev.dettmer.simplenotes.sync.ExportProblems
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncPhase
@@ -23,6 +24,7 @@ import dev.dettmer.simplenotes.sync.SyncResult
 import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.sync.SyncStatusSummary
+import dev.dettmer.simplenotes.sync.SyncUrlBuilder
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.sync.buildSyncResultBanner
 import dev.dettmer.simplenotes.ui.main.components.SECTION_FOLDERS
@@ -1138,7 +1140,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 lastSuccessAt = prefs.getLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, 0L),
                 lastError = prefs.getString(Constants.KEY_LAST_SYNC_ERROR, null),
                 lastErrorAt = prefs.getLong(Constants.KEY_LAST_SYNC_ERROR_AT, 0L),
-                now = System.currentTimeMillis()
+                now = System.currentTimeMillis(),
+                e2eeBlocked = E2eeGate.isBlocked(prefs, SyncUrlBuilder(prefs))
             )
         }
     }

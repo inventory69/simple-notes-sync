@@ -709,7 +709,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 // Prüffehler werfen → normaler Fehlerpfad unten, nichts geschrieben.
                 val markerUrl = urlBuilder.getE2eeMarkerUrl(serverUrl)
                 val e2eeActive = E2eeGate.isActive(webdav, markerUrl)
-                E2eeGate.record(prefs, markerUrl, e2eeActive)
+                E2eeGate.record(context, prefs, markerUrl, e2eeActive)
                 if (e2eeActive) {
                     return@withContext SyncResult(
                         isSuccess = false,

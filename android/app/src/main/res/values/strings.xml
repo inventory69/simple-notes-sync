@@ -329,6 +329,8 @@
     <string name="sync_error_not_webdav">URL is not a WebDAV endpoint. Please verify the full WebDAV path (e.g. /remote.php/dav/files/USERNAME/).</string>
     <string name="sync_e2ee_blocked_short">Sync paused: this folder was encrypted on another device</string>
     <string name="restore_e2ee_blocked">This sync folder was end-to-end encrypted on another device. This version can\'t read encrypted notes, so nothing was restored. Your local notes were not changed.</string>
+    <string name="sync_e2ee_blocked_long">Another device turned on end-to-end encryption for this sync folder. This version can\'t read encrypted notes, so syncing is paused and nothing on the server is changed. Your notes stay on this device and your changes are kept. Update the app, or turn encryption off on the other device.</string>
+    <string name="sync_status_paused">Sync paused</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->

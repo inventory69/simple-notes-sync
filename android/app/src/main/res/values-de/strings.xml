@@ -327,6 +327,8 @@
     <string name="sync_error_not_webdav">URL ist kein WebDAV-Endpunkt. Bitte überprüfe den vollständigen WebDAV-Pfad (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
     <string name="sync_e2ee_blocked_short">Sync pausiert: Der Ordner wurde auf einem anderen Gerät verschlüsselt</string>
     <string name="restore_e2ee_blocked">Dieser Sync-Ordner wurde auf einem anderen Gerät Ende-zu-Ende verschlüsselt. Diese Version kann verschlüsselte Notizen nicht lesen, deshalb wurde nichts wiederhergestellt. Deine lokalen Notizen wurden nicht verändert.</string>
+    <string name="sync_e2ee_blocked_long">Ein anderes Gerät hat die Ende-zu-Ende-Verschlüsselung für diesen Sync-Ordner eingeschaltet. Diese Version kann verschlüsselte Notizen nicht lesen, deshalb ist der Sync pausiert und auf dem Server wird nichts verändert. Deine Notizen bleiben auf diesem Gerät, deine Änderungen werden aufbewahrt. Aktualisiere die App oder schalte die Verschlüsselung auf dem anderen Gerät aus.</string>
+    <string name="sync_status_paused">Sync pausiert</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
