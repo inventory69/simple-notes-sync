@@ -276,6 +276,7 @@
     <string name="activity_op_export_fail_import">Markdown-Import abgebrochen: %1$s</string>
     <string name="activity_op_deletion_skipped">Löscherkennung übersprungen — Server-Listing war unvollständig</string>
     <string name="activity_op_deletion_skipped_mass">Löscherkennung übersprungen: mehr als die Hälfte der Notizen fehlt auf dem Server</string>
+    <string name="activity_op_sync_unblocked">Sync läuft wieder: Der Ordner ist nicht mehr verschlüsselt</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manuell</string>
     <string name="activity_trigger_resume">App geöffnet</string>
@@ -323,6 +324,8 @@
     <!-- 🔧 v2.3.0 (Issue #55): Bessere Fehlermeldungen für MKCOL/WebDAV-Fehler -->
     <string name="sync_error_mkcol_failed">Sync-Ordner kann nicht erstellt werden. Bitte überprüfe, ob die WebDAV-URL den vollständigen Pfad enthält (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
     <string name="sync_error_not_webdav">URL ist kein WebDAV-Endpunkt. Bitte überprüfe den vollständigen WebDAV-Pfad (z. B. /remote.php/dav/files/BENUTZERNAME/).</string>
+    <string name="sync_e2ee_blocked_short">Sync pausiert: Der Ordner wurde auf einem anderen Gerät verschlüsselt</string>
+    <string name="restore_e2ee_blocked">Dieser Sync-Ordner wurde auf einem anderen Gerät Ende-zu-Ende verschlüsselt. Diese Version kann verschlüsselte Notizen nicht lesen, deshalb wurde nichts wiederhergestellt. Deine lokalen Notizen wurden nicht verändert.</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->

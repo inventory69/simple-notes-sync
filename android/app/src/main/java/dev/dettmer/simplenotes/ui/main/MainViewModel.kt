@@ -1236,6 +1236,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
                         _syncCompletedScrollToTop.value = true
                     }
+                } else if (result.e2eeBlocked) {
+                    SyncStateManager.markCompleted(result.errorMessage, isWarning = true) // 🆕 v2.20.0
                 } else {
                     SyncStateManager.markError(result.errorMessage)
                 }
@@ -1379,6 +1381,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     if (result.foldersReconciled || result.restoredCount > 0) loadNotes(forceReload = true)
                     // 🆕 v2.7.0 (Folders): Farbe leerer Ordner auch ohne Note-Sync ins UI laden
                     if (result.foldersChanged || result.foldersReconciled) refreshFolders()
+                } else if (result.e2eeBlocked) {
+                    // 🆕 v2.20.0: still → IDLE, kein Fehler-Banner bei jedem App-Start
+                    SyncStateManager.markCompleted(result.errorMessage, isWarning = true)
                 } else {
                     Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
                     // Fehler werden IMMER angezeigt (auch bei Silent-Sync)

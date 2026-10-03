@@ -39,9 +39,10 @@ class WebDavSyncServiceSyncCycleTest {
 
         assertTrue(second.isSuccess)
         assertEquals(0, second.syncedCount)
-        // Request-Ökonomie: der Leerlauf-Sync kostet genau diese drei (Stand v2.19.0).
+        // Request-Ökonomie: der Leerlauf-Sync kostet genau diese vier. Der Marker-GET kam mit
+        // v2.20.0 (E2EE-Slice 1) dazu und bleibt immer der erste.
         assertEquals(
-            listOf("GET /notes/deletions.json", "PROPFIND /notes/", "GET /notes/folders.json"),
+            listOf("GET /notes-e2ee/e2ee.json", "GET /notes/deletions.json", "PROPFIND /notes/", "GET /notes/folders.json"),
             h.dav.requests
         )
     }

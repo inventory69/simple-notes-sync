@@ -1087,6 +1087,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = syncService.syncNotes(ActivityLog.Trigger.SETTINGS)
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
+                } else if (result.e2eeBlocked) {
+                    emitToast(result.errorMessage.orEmpty()) // 🆕 v2.20.0: Sperre, kein Fehler
                 } else {
                     emitToast(getString(R.string.toast_sync_failed, result.errorMessage.orEmpty()))
                 }

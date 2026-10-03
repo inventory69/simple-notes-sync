@@ -124,6 +124,11 @@ object Constants {
     // 🆕 v2.19.0: Einmaliger Aufräumlauf doppelter MD-Kopien (MarkdownSyncManager.healStaleMirrors).
     const val KEY_MD_MIRRORS_HEALED = "dirs_ensured_md_mirrors_healed"
 
+    // 🆕 v2.20.0 (E2EE-Slice 1): Marker-URL, unter der der Sync zuletzt einen verschlüsselten Ordner
+    // fand. Gesperrt nur, solange sie zur aktuellen Konfiguration passt (E2eeGate.isBlocked).
+    // Bewusst ohne `etag_`-Präfix: clearServerCaches() soll ihn nicht räumen.
+    const val KEY_E2EE_BLOCKED_MARKER = "e2ee_blocked_marker"
+
     // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
     const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8 // 8s default, good for mobile

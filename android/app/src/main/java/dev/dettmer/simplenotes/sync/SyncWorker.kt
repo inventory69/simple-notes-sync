@@ -352,6 +352,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 )
             }
 
+            // 🆕 v2.20.0 (E2EE-Slice 1): Ordner verschlüsselt. Kein markError, keine Fehler-
+            // Benachrichtigung, kein Backoff: Die Sperre meldet sich beim Übergang selbst, und
+            // der nächste Lauf prüft ohnehin neu. Still → IDLE, sichtbar → Warn-Banner.
+            if (result.e2eeBlocked) {
+                SyncDebugLogger.logTrigger(
+                    triggerType = tagOrUnknown(),
+                    outcome = SyncDebugLogger.Outcome.SKIPPED,
+                    reason = "e2ee blocked",
+                    networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
+                    runAttempt = runAttemptCount
+                )
+                SyncStateManager.markCompleted(result.errorMessage, isWarning = true)
+                SyncEventBus.emit(SyncEvent.SyncCompleted(success = false, count = 0))
+                return@withContext Result.success()
+            }
+
             if (result.isSuccess) {
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "📍 Step 8: Success path")
@@ -589,6 +605,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // 🆕 v2.17.0: Kein Gate mehr auf auto_sync_enabled. Der Schalter hat seit v1.6.0 keine
             // Oberfläche, die Warnung kam deshalb auf keiner neueren Installation. Läuft dieser
             // Worker, hat ihn ohnehin ein aktiver Trigger gestartet.
+
+            // 🆕 v2.20.0: Gesperrt heißt erreichbar, nur verschlüsselt. „Seit 24 h nicht erreichbar" wäre falsch.
+            if (syncService.isE2eeBlocked()) {
+                Logger.d(TAG, "⏭️ Sync paused by encryption marker - no unreachable warning")
+                return
+            }
 
             // Check 1: Schon mal erfolgreich gesynct?
             val lastSuccessfulSync = syncService.getLastSuccessfulSyncTimestamp()

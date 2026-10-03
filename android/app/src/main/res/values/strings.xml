@@ -278,6 +278,7 @@
     <string name="activity_op_export_fail_import">Markdown import aborted: %1$s</string>
     <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
     <string name="activity_op_deletion_skipped_mass">Deletion check skipped: more than half of the notes are missing on the server</string>
+    <string name="activity_op_sync_unblocked">Sync resumed: the folder is no longer encrypted</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manual</string>
     <string name="activity_trigger_resume">App opened</string>
@@ -325,6 +326,8 @@
     <!-- 🔧 v2.3.0 (Issue #55): Better error messages for MKCOL/WebDAV failures -->
     <string name="sync_error_mkcol_failed">Cannot create sync folder. Please verify your WebDAV URL includes the full path (e.g. /remote.php/dav/files/USERNAME/).</string>
     <string name="sync_error_not_webdav">URL is not a WebDAV endpoint. Please verify the full WebDAV path (e.g. /remote.php/dav/files/USERNAME/).</string>
+    <string name="sync_e2ee_blocked_short">Sync paused: this folder was encrypted on another device</string>
+    <string name="restore_e2ee_blocked">This sync folder was end-to-end encrypted on another device. This version can\'t read encrypted notes, so nothing was restored. Your local notes were not changed.</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->

@@ -56,6 +56,13 @@ class SyncUrlBuilderTest {
         assertEquals("http://s:8080/notes-archive/notes-md/", builder.getMarkdownUrl("http://s:8080/notes-archive/"))
     }
 
+    /** E2EE-Slice 1: Geschwister von `<sf>/`, auch wenn die Basis-URL schon auf `/<sf>` endet. */
+    @Test fun `e2eeMarkerUrl is a file in the sibling folder`() {
+        assertEquals("http://s:8080/notes-e2ee/e2ee.json", builder.getE2eeMarkerUrl("http://s:8080/"))
+        assertEquals("http://s:8080/notes-e2ee/e2ee.json", builder.getE2eeMarkerUrl("http://s:8080/notes"))
+        assertEquals("https://notes.example.com/notes-e2ee/e2ee.json", builder.getE2eeMarkerUrl("https://notes.example.com/"))
+    }
+
     @Test fun `markdownUrl is sibling of notesUrl for a plain base`() {
         assertEquals("http://s:8080/notes-md/", builder.getMarkdownUrl("http://s:8080/"))
         assertEquals("http://s:8080/notes-md/", builder.getMarkdownUrl("http://s:8080/notes/"))
