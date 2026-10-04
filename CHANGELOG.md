@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.0] - 2026-10-04
+
+### ✨ New Features
+
+**Sync Pauses When the Folder Was Encrypted on Another Device** ([6ffc8f5](https://github.com/inventory69/simple-notes-sync/commit/6ffc8f5), [86da522](https://github.com/inventory69/simple-notes-sync/commit/86da522), [ef67630](https://github.com/inventory69/simple-notes-sync/commit/ef67630))
+- This prepares for the upcoming optional end-to-end encryption ([#9](https://github.com/inventory69/simple-notes-sync/issues/9)). This version does not encrypt anything yet
+- A later version will let a device encrypt the sync folder. A version that cannot read it would keep writing unencrypted notes into the abandoned folder while reporting "synced", and a restore from the server would remove your local notes before finding anything it can read. Updating now means your device stops safely instead
+- Every sync now first checks whether the sync folder was encrypted on another device. If so, syncing pauses and nothing on the server is changed: no uploads, downloads or deletions, Markdown files and images included. Your notes stay on the device and your changes are kept. The pause lifts by itself once encryption is turned off again, or when you switch to another folder or server
+- Actions that reach the server outside a sync check the same way: restoring from the server, removing a folder from the server, the Markdown sync, "Compare" and "Use server version" on a conflict, the connection test and the import wizard
+- The sync status dialog shows "Sync paused" with an explanation and a "Try again" button, the badge counts it, and a single notification tells you when it starts
+- The desktop app does the same since v0.15.0. An idle sync now sends one request more (four instead of three)
+
+**Read Mode for Checklists** ([062b8f8](https://github.com/inventory69/simple-notes-sync/commit/062b8f8))
+- Checklists can be switched into a read mode with the eye/pencil icon in the toolbar, like text notes. The item texts can't be edited there, drag handles, item menu and the add bar are hidden, and tapping anywhere on a row checks it off
+- A new display setting opens existing checklists in read mode (off by default)
+- Thanks to [@oliyoup](https://github.com/oliyoup) for the request! ([#156](https://github.com/inventory69/simple-notes-sync/issues/156))
+
+### 🐛 Bug Fixes
+
+**Keep Import Turned Shared Notes Into a List of Email Addresses** ([ed32e5b](https://github.com/inventory69/simple-notes-sync/commit/ed32e5b))
+- Google Takeout lists a note's collaborators in its HTML file. When the JSON had no checklist, the import read that list as checklist items, even for text notes. Shared text notes came in as a checklist of the collaborators' email addresses and their text was lost
+- The text now comes from the JSON whenever it is there. Imported checklists also drop Keep's bullet character and decode entities like `&auml;`
+- Thanks to [@jpsnyder](https://github.com/jpsnyder) for the report! ([#162](https://github.com/inventory69/simple-notes-sync/issues/162))
+
+### 🌍 Translations
+
+- **Norwegian Bokmål** (99%): [@xdpirate](https://github.com/xdpirate)
+- **Russian** (99%): [@disfated](https://github.com/disfated) / Yury Pavlovsky
+- **Brazilian Portuguese** grew to 36% thanks to Rafael. It joins the app at 40%
+
+---
+
 ## [2.19.0] - 2026-09-29
 
 ### ⚠️ Good to Know

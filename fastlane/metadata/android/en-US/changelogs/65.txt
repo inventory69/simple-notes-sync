@@ -1,0 +1,8 @@
+🪧 v2.20.0 - Encryption groundwork
+
+• Prepares for upcoming optional end-to-end encryption: if another device encrypted the sync folder, sync pauses instead of overwriting data
+• New: checklist read mode, tap a row to check it off
+• Fix: Keep import lost the text of shared notes
+• Updated translations: NB, RU
+
+Thanks to @oliyoup, @jpsnyder, @xdpirate and @disfated!
