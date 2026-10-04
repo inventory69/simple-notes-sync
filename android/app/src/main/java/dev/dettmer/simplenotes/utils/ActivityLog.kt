@@ -37,7 +37,9 @@ object ActivityLog {
         SYNC_OK,
         SYNC_FAIL,
         DELETION_SKIPPED,
-        EXPORT_FAIL // 🆕 v2.19.0: MD-Kopie, Bilder oder MD-Import nicht übertragen (why = markdown|assets|markdown_import)
+        EXPORT_FAIL, // 🆕 v2.19.0: MD-Kopie, Bilder oder MD-Import nicht übertragen (why = markdown|assets|markdown_import)
+        SYNC_BLOCKED, // 🆕 v2.20.0: Sync-Ordner verschlüsselt, Sync pausiert (why = e2ee_active), nur beim Übergang
+        SYNC_UNBLOCKED // 🆕 v2.20.0: Sperre aufgehoben
     }
 
     enum class Src { LOCAL, REMOTE }

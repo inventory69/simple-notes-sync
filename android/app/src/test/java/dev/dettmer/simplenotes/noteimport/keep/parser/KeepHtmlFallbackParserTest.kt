@@ -40,13 +40,13 @@ class KeepHtmlFallbackParserTest {
     @Test
     fun `extractChecklist_handlesUlListitem`() {
         val html = """
-            <html><body>
+            <html><body><div class="content">
               <ul class="list">
                 <li>Milch</li>
                 <li>Brot</li>
                 <li class="checked">Kaffee</li>
               </ul>
-            </body></html>
+            </div></body></html>
         """.trimIndent()
         val items = parser.extractChecklist(html)
         assertEquals(3, items.size)
@@ -61,14 +61,14 @@ class KeepHtmlFallbackParserTest {
     @Test
     fun `extractChecklist_handlesIndentation`() {
         val html = """
-            <ul>
+            <div class="content"><ul>
               <li>Obst</li>
               <ul>
                 <li>Äpfel</li>
                 <li>Birnen</li>
               </ul>
               <li>Brot</li>
-            </ul>
+            </ul></div>
         """.trimIndent()
         val items = parser.extractChecklist(html)
         assertEquals(4, items.size)
@@ -94,21 +94,51 @@ class KeepHtmlFallbackParserTest {
         assertTrue(parser.extractChecklist("").isEmpty())
     }
 
-    // ───── Defensiv: HTML ohne <div class="content"> → Body-Fallback ─────
+    // ───── Ohne <div class="content"> gibt es keinen Inhalt, der Rest sind Metadaten (#162) ─────
     @Test
-    fun `extractPlainText_noContentDiv_fallsBackToBody`() {
-        val html = "<html><body>Just text</body></html>"
-        assertEquals("Just text", parser.extractPlainText(html))
+    fun `noContentDiv_returnsNothing`() {
+        val html = "<html><body><div class=\"title\">T</div><ul><li>x@y.z</li></ul></body></html>"
+        assertEquals("", parser.extractPlainText(html))
+        assertTrue(parser.extractChecklist(html).isEmpty())
+    }
+
+    // ───── #162: Kollaboratoren-Liste neben dem Inhalt wird keine Checkliste ─────
+    @Test
+    fun `extractChecklist_ignoresShareesOutsideContent`() {
+        val html = """
+            <body><div class="note"><div class="title">T</div>
+            <div class="content"><ul class="list"><li class="listitem">Milch</li></ul></div>
+            <div class="sharees"><h2>Collaborators</h2>
+            <ul><li class="sharee user" title="someone@example.com (owner)">someone@example.com</li></ul></div>
+            </div></body>
+        """.trimIndent()
+        val items = parser.extractChecklist(html)
+        assertEquals(listOf("Milch"), items.map { it.text })
+    }
+
+    // ───── Echtes Keep-Markup: Bullet-Glyphe gehört nicht zum Text ─────
+    @Test
+    fun `extractChecklist_realKeepMarkup_dropsBulletGlyph`() {
+        val html = """
+            <div class="content"><ul class="list"><li class="listitem"><span class="bullet">&#9744;</span>
+            <span class="text">K&auml;se</span>
+            </li> <li class="listitem checked"><span class="bullet">&#9745;</span>
+            <span class="text">Brot</span>
+            </li></ul></div>
+        """.trimIndent()
+        val items = parser.extractChecklist(html)
+        assertEquals(listOf("Käse", "Brot"), items.map { it.text })
+        assertEquals(listOf(false, true), items.map { it.isChecked })
     }
 
     // ───── Defensiv: Checkbox mit checked-Attribut ─────
     @Test
     fun `extractChecklist_checkboxInputChecked_isDetected`() {
         val html = """
-            <ul>
+            <div class="content"><ul>
               <li><input type="checkbox" checked> Done thing</li>
               <li><input type="checkbox"> Pending thing</li>
-            </ul>
+            </ul></div>
         """.trimIndent()
         val items = parser.extractChecklist(html)
         assertEquals(2, items.size)
@@ -120,7 +150,7 @@ class KeepHtmlFallbackParserTest {
     // ───── Defensiv: HTML mit broken <li> ohne </li> → kein Crash ─────
     @Test
     fun `extractChecklist_unclosedLi_doesNotCrash`() {
-        val html = "<ul><li>Broken<li>Next</li></ul>"
+        val html = """<div class="content"><ul><li>Broken<li>Next</li></ul></div>"""
         val items = parser.extractChecklist(html)
         // First <li> ohne </li> wird per indexOf("</li>") an das nächste </li>
         // gebunden → enthält "Broken<li>Next" als roh, getrimmt.
@@ -132,7 +162,7 @@ class KeepHtmlFallbackParserTest {
     @Test
     fun `extractChecklist_deepNesting_capsAtMaxIndent`() {
         val html = """
-            <ul><li>L0
+            <div class="content"><ul><li>L0
               <ul><li>L1
                 <ul><li>L2
                   <ul><li>L3
@@ -140,7 +170,7 @@ class KeepHtmlFallbackParserTest {
                   </li></ul>
                 </li></ul>
               </li></ul>
-            </li></ul>
+            </li></ul></div>
         """.trimIndent()
         val items = parser.extractChecklist(html)
         // alle indentationLevel müssen ≤ 3 sein

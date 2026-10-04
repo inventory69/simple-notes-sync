@@ -124,6 +124,11 @@ object Constants {
     // 🆕 v2.19.0: Einmaliger Aufräumlauf doppelter MD-Kopien (MarkdownSyncManager.healStaleMirrors).
     const val KEY_MD_MIRRORS_HEALED = "dirs_ensured_md_mirrors_healed"
 
+    // 🆕 v2.20.0 (E2EE-Slice 1): Marker-URL, unter der der Sync zuletzt einen verschlüsselten Ordner
+    // fand. Gesperrt nur, solange sie zur aktuellen Konfiguration passt (E2eeGate.isBlocked).
+    // Bewusst ohne `etag_`-Präfix: clearServerCaches() soll ihn nicht räumen.
+    const val KEY_E2EE_BLOCKED_MARKER = "e2ee_blocked_marker"
+
     // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
     const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8 // 8s default, good for mobile
@@ -138,6 +143,10 @@ object Constants {
     // 🔄 v2.12.0: Default auf true (Vorschau) — Beta-Feedback: Lesen ist der häufigere Einstieg
     const val KEY_DEFAULT_START_IN_PREVIEW_MODE = "default_start_in_preview_mode"
     const val DEFAULT_START_IN_PREVIEW_MODE = true
+
+    // 🆕 Issue #156: Checklisten im Lesemodus öffnen (Antippen der Zeile hakt ab)
+    const val KEY_CHECKLIST_START_IN_READ_MODE = "checklist_start_in_read_mode"
+    const val DEFAULT_CHECKLIST_START_IN_READ_MODE = false
     const val AUTOSAVE_DEBOUNCE_MS = 3_000L // 3 seconds after last edit
     const val AUTOSAVE_INDICATOR_DURATION_MS = 2_000L // indicator visible duration
     const val AUTOSAVE_INDICATOR_FADE_MS = 400 // fade animation duration (ms)

@@ -13,7 +13,7 @@ import dev.dettmer.simplenotes.noteimport.keep.zip.KeepZipEntry
 import dev.dettmer.simplenotes.utils.Logger
 
 /**
- * v2.5.0 — Gson-basierte Implementierung. Nutzt [KeepHtmlFallbackParser],
+ * v2.5.0 — Gson-basierte Implementierung. Nutzt [KeepHtmlFallbackParser] nur,
  * wenn `textContent` blank UND keine Checkliste vorhanden ist.
  *
  * Indent-Heuristik für Checklisten aus JSON:
@@ -39,24 +39,17 @@ internal class KeepEntryParserImpl(
             ?.mapNotNull { mapListItem(it) }
             ?: emptyList()
 
-        // Plaintext: bevorzugt JSON, sonst HTML-Fallback (nur wenn keine Checkliste vorliegt).
+        // HTML nur, wenn das JSON weder Text noch Liste liefert: daneben stehen dort
+        // Kollaboratoren und Anhänge als eigene Listen (#162).
+        val html = htmlEntry
+            ?.takeIf { dto.textContent.isNullOrBlank() && checklistFromJson.isEmpty() }
+            ?.let { readUtf8Stripped(it.bytes) }
+        val checklist: List<KeepChecklistItem> =
+            checklistFromJson.ifEmpty { html?.let(htmlFallback::extractChecklist).orEmpty() }
         val textContent: String? = when {
             !dto.textContent.isNullOrBlank() -> dto.textContent
-            checklistFromJson.isEmpty() && htmlEntry != null -> {
-                val html = readUtf8Stripped(htmlEntry.bytes)
-                htmlFallback.extractPlainText(html).ifBlank { null }
-            }
+            html != null && checklist.isEmpty() -> htmlFallback.extractPlainText(html).ifBlank { null }
             else -> dto.textContent
-        }
-
-        // Falls JSON keine Checkliste lieferte, HTML als zweite Quelle versuchen.
-        val checklist: List<KeepChecklistItem> = when {
-            checklistFromJson.isNotEmpty() -> checklistFromJson
-            htmlEntry != null -> {
-                val html = readUtf8Stripped(htmlEntry.bytes)
-                htmlFallback.extractChecklist(html)
-            }
-            else -> emptyList()
         }
 
         val state = when {

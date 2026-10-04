@@ -449,11 +449,12 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
     }
 
     // 🆕 v1.9.0: Check if folder name matches configured sync folder (or its markdown sibling)
+    // 🆕 v2.20.0 (E2EE-Slice 1): `<sf>-e2ee` immer, auch ohne Sperre. Dort liegt nichts Importierbares.
     private fun isSyncFolder(folderName: String): Boolean {
         val syncFolder = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             .getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME)
             ?: Constants.DEFAULT_SYNC_FOLDER_NAME
-        return folderName == syncFolder || folderName == "$syncFolder-md"
+        return folderName == syncFolder || folderName == "$syncFolder-md" || folderName == "$syncFolder-e2ee"
     }
 
     private fun parseJsonObject(obj: com.google.gson.JsonObject, candidate: ImportCandidate): Note? {

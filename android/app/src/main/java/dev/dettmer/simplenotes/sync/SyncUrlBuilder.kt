@@ -15,6 +15,7 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
     companion object {
         internal const val MARKDOWN_SUFFIX = "-md"
         internal const val ASSETS_SUFFIX = "-assets"
+        internal const val E2EE_SUFFIX = "-e2ee"
     }
 
     /**
@@ -98,6 +99,9 @@ class SyncUrlBuilder(private val prefs: SharedPreferences) {
      * dort würde von bereits ausgelieferten Clients (Subdir-Scan) als Notiz-Ordner gelesen.
      */
     fun getAssetsUrl(baseUrl: String): String = siblingUrl(baseUrl, ASSETS_SUFFIX)
+
+    /** 🆕 v2.20.0 (E2EE-Slice 1): Markierungsdatei eines verschlüsselten Sync-Ordners, siehe [E2eeGate]. */
+    fun getE2eeMarkerUrl(baseUrl: String): String = siblingUrl(baseUrl, E2EE_SUFFIX) + "e2ee.json"
 
     /** URL einer einzelnen Asset-Datei im Geschwister-Ordner (flach, keine Unterordner). */
     fun getAssetUrl(baseUrl: String, assetName: String): String =

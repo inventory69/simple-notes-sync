@@ -196,6 +196,7 @@
     <string name="snackbar_notes_deleted_from_server_partial">%1$d of %2$d notes deleted from server</string>
     <string name="snackbar_server_delete_failed">Server deletion failed</string>
     <string name="snackbar_delete_queued_for_sync">Server not reachable – deletion queued for next sync</string>
+    <string name="snackbar_delete_queued_e2ee">Sync paused: deletion queued until syncing resumes</string>
     <string name="snackbar_folder_removed_from_server">Folder removed from server</string>
     <string name="snackbar_folder_sync_queued">Folder will sync when reconnected</string>
     <string name="snackbar_server_error">Server error: %s</string>
@@ -278,6 +279,7 @@
     <string name="activity_op_export_fail_import">Markdown import aborted: %1$s</string>
     <string name="activity_op_deletion_skipped">Deletion check skipped — server listing was incomplete</string>
     <string name="activity_op_deletion_skipped_mass">Deletion check skipped: more than half of the notes are missing on the server</string>
+    <string name="activity_op_sync_unblocked">Sync resumed: the folder is no longer encrypted</string>
     <string name="activity_folder_suffix">" · %1$s"</string>
     <string name="activity_trigger_manual">Manual</string>
     <string name="activity_trigger_resume">App opened</string>
@@ -325,6 +327,10 @@
     <!-- 🔧 v2.3.0 (Issue #55): Better error messages for MKCOL/WebDAV failures -->
     <string name="sync_error_mkcol_failed">Cannot create sync folder. Please verify your WebDAV URL includes the full path (e.g. /remote.php/dav/files/USERNAME/).</string>
     <string name="sync_error_not_webdav">URL is not a WebDAV endpoint. Please verify the full WebDAV path (e.g. /remote.php/dav/files/USERNAME/).</string>
+    <string name="sync_e2ee_blocked_short">Sync paused: this folder was encrypted on another device</string>
+    <string name="restore_e2ee_blocked">This sync folder was end-to-end encrypted on another device. This version can\'t read encrypted notes, so nothing was restored. Your local notes were not changed.</string>
+    <string name="sync_e2ee_blocked_long">Another device turned on end-to-end encryption for this sync folder. This version can\'t read encrypted notes, so syncing is paused and nothing on the server is changed. Your notes stay on this device and your changes are kept. Update the app, or turn encryption off on the other device.</string>
+    <string name="sync_status_paused">Sync paused</string>
     <!-- ============================= -->
     <!-- URL VALIDATION ERRORS         -->
     <!-- ============================= -->
@@ -682,6 +688,9 @@
     <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
     <string name="editor_default_preview_mode_toggle">Open in preview mode</string>
     <string name="editor_default_preview_mode_description">Text notes open in read mode by default. Disable to start in edit mode.</string>
+    <!-- 🆕 Issue #156: Checklist read mode -->
+    <string name="editor_checklist_read_mode_toggle">Open checklists in read mode</string>
+    <string name="editor_checklist_read_mode_description">Checklists open read-only. Tap anywhere on an item to check it off, use the pencil icon to edit.</string>
     <!-- 🆕 v2.11.0: Default note color -->
     <string name="settings_default_note_color_title">Default note color</string>
     <string name="settings_default_note_color_subtitle">Applied to new notes</string>
@@ -755,6 +764,7 @@
     <string name="toggle_filter_row">Toggle filter bar</string>
     <!-- 🆕 v1.9.0 (F07): Markdown Preview -->
     <string name="editor_toggle_preview">Toggle Markdown preview</string>
+    <string name="editor_toggle_read_mode">Toggle read mode</string> <!-- 🆕 Issue #156 -->
     <!-- 🆕 v1.9.0 (F07): Markdown Toolbar -->
     <string name="md_toolbar_bold">Bold</string>
     <string name="md_toolbar_italic">Italic</string>
@@ -845,6 +855,7 @@
     <string name="test_connection_success_with_notes">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
     <string name="test_connection_success_md_exists">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ already exists and will be used).</string>
     <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
+    <string name="test_connection_e2ee_blocked">✅ Server reachable, but /%1$s/ was encrypted on another device. Sync is paused.</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>
     <string name="toast_error">❌ Error: %s</string>

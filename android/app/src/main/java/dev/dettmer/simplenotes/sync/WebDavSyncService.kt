@@ -358,6 +358,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      *
      * @return true wenn unsynced changes vorhanden, false sonst
      */
+    // Abbau: TECH_DEBT_ROADMAP.md Slice 4
+    @Suppress("CyclomaticComplexMethod")
     suspend fun hasUnsyncedChanges(): Boolean = withContext(ioDispatcher) {
         return@withContext try {
             // 🆕 v2.17.0: Fehlende Zugangsdaten bei konfiguriertem Server sind ein Fehler, kein
@@ -368,6 +370,13 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // als Banner und Notification hochkommt.
             if (getServerUrl() != null && !CredentialStore.hasCredentials(context)) {
                 Logger.w(TAG, "⚠️ Server configured but credentials missing - surfacing as sync error")
+                return@withContext true
+            }
+
+            // 🆕 v2.20.0 (E2EE-Slice 1): Solange gesperrt, muss jeder Lauf neu prüfen, sonst hebt
+            // sich die Sperre bei „Server immer prüfen = aus" ohne lokale Änderung nie auf.
+            if (isE2eeBlocked()) {
+                Logger.d(TAG, "🔒 Sync paused by encryption marker - re-checking: true")
                 return@withContext true
             }
 
@@ -468,6 +477,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      */
     suspend fun isServerReachable(): Boolean = gateChecker.isServerReachable()
 
+    /** 🆕 v2.20.0 (E2EE-Slice 1): Letzter Sync fand den Ordner verschlüsselt. Kein Request. */
+    fun isE2eeBlocked(): Boolean = E2eeGate.isBlocked(prefs, urlBuilder)
+
+    /**
+     * 🆕 v2.20.0 (E2EE-Slice 1): Für Direktpfade außerhalb des Syncs (Löschen, Ordner räumen,
+     * Markdown). Ein GET pro Nutzeraktion, fail-closed, schreibt keinen Zustand. Ohne
+     * Zugangsdaten oder URL erreicht der Aufrufer den Server ohnehin nicht.
+     */
+    suspend fun isServerLocked(): Boolean = withContext(ioDispatcher) {
+        val webdav = getOrCreateWebDavClient() ?: return@withContext false
+        val serverUrl = getServerUrl() ?: return@withContext false
+        E2eeGate.isLocked(webdav, urlBuilder.getE2eeMarkerUrl(serverUrl))
+    }
+
     fun isOnWiFi(): Boolean = gateChecker.isOnWiFi()
 
     fun canSync(): SyncGateResult = gateChecker.canSync()
@@ -511,6 +534,21 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 Constants.KEY_SYNC_FOLDER_NAME,
                 Constants.DEFAULT_SYNC_FOLDER_NAME
             ) ?: Constants.DEFAULT_SYNC_FOLDER_NAME
+
+            // 🆕 v2.20.0 (E2EE-Slice 1): verbunden, aber der Ordner ist verschlüsselt → kein
+            // „bereit für den ersten Sync". Schreibt keinen Zustand; Prüffehler → normaler Text.
+            val e2eeActive = try {
+                E2eeGate.isActive(webdav, urlBuilder.getE2eeMarkerUrl(serverUrl))
+            } catch (e: IOException) {
+                Logger.d(TAG, "e2ee probe failed during testConnection: ${e.message}")
+                false
+            }
+            if (e2eeActive) {
+                return@withContext SyncResult(
+                    isSuccess = true,
+                    infoMessage = context.getString(R.string.test_connection_e2ee_blocked, activeSyncFolderName)
+                )
+            }
 
             // 🆕 Issue #21: Sync-Ordner prüfen und Status mit Ordnernamen kommunizieren
             val notesUrl = urlBuilder.getNotesUrl(serverUrl)
@@ -558,6 +596,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     // vorher schrieb nur der Worker, ein manueller Sync blieb unsichtbar.
     private fun logSyncOutcome(result: SyncResult, trigger: ActivityLog.Trigger?) {
         when {
+            // Die Sperre protokolliert E2eeGate.record beim Übergang, nicht jeder Lauf.
+            result.e2eeBlocked -> Unit
             !result.isSuccess -> ActivityLog.log(
                 ActivityLog.Op.SYNC_FAIL,
                 ActivityLog.Src.LOCAL,
@@ -663,6 +703,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                         ?: Constants.DEFAULT_SYNC_FOLDER_NAME
                 Logger.d(TAG, "📁 Sync folder: $activeSyncFolderName")
                 Logger.d(TAG, "🔐 Credentials configured: ${CredentialStore.getUsername(context) != null}")
+
+                // 🆕 v2.20.0 (E2EE-Slice 1): allererster Server-Zugriff, vor jedem MKCOL/PROPFIND/PUT.
+                // Bewusst ohne Cache: ein einziger Lauf reicht, um in einen toten Ordner zu schreiben.
+                // Prüffehler werfen → normaler Fehlerpfad unten, nichts geschrieben.
+                val markerUrl = urlBuilder.getE2eeMarkerUrl(serverUrl)
+                val e2eeActive = E2eeGate.isActive(webdav, markerUrl)
+                E2eeGate.record(context, prefs, markerUrl, e2eeActive)
+                if (e2eeActive) {
+                    return@withContext SyncResult(
+                        isSuccess = false,
+                        e2eeBlocked = true,
+                        errorMessage = context.getString(R.string.sync_e2ee_blocked_short)
+                    )
+                }
 
                 var syncedCount = 0
                 var conflictCount = 0
@@ -1211,7 +1265,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         username: String,
         password: String,
         onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
-    ): Int = markdownSyncManager.exportAll(serverUrl, username, password, onProgress)
+    ): Int {
+        // 🆕 v2.20.0 (E2EE-Slice 1): vor dem ersten Request. Deckt auch manualMarkdownSync ab,
+        // das zuerst hierher exportiert.
+        if (isServerLocked()) throw SyncException(context.getString(R.string.sync_e2ee_blocked_short))
+        return markdownSyncManager.exportAll(serverUrl, username, password, onProgress)
+    }
 
     /**
      * Delegiert an NoteDownloader (v2.0.0 Commit 21).
@@ -1275,6 +1334,19 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             Logger.d(TAG, "🔄 restoreFromServer() ENTRY")
             Logger.d(TAG, "Mode: $mode")
             Logger.d(TAG, "Thread: ${Thread.currentThread().name}")
+
+            // 🆕 v2.20.0 (E2EE-Slice 1, Gefahr 4): vor jedem Löschen. Ohne Schlüssel fände der
+            // Download nichts und meldete das erst, nachdem REPLACE alles gelöscht hat. Kein
+            // record: Der Ordnerwechsel-Restore prüft ein Ziel, das bei Ablehnung verworfen wird.
+            // Prüffehler werfen → catch unten, ebenfalls vor dem Löschen.
+            if (E2eeGate.isActive(webdav, urlBuilder.getE2eeMarkerUrl(serverUrl))) {
+                Logger.w(TAG, "🔒 Restore refused: sync folder is end-to-end encrypted")
+                return@withContext RestoreResult(
+                    isSuccess = false,
+                    errorMessage = context.getString(R.string.restore_e2ee_blocked),
+                    restoredCount = 0
+                )
+            }
 
             // Restore bedeutet: "Server ist die Quelle der Wahrheit" → Deletion-Tracker, Sync-Timestamps,
             // E-Tags und Content-Hashes weg, damit alles neu geladen (und neu hochgeladen) wird.

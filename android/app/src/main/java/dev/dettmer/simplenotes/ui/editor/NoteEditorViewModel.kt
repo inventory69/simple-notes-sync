@@ -86,6 +86,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE,
                 Constants.DEFAULT_START_IN_PREVIEW_MODE
             ),
+            // 🆕 Issue #156
+            checklistStartInReadMode = prefs.getBoolean(
+                Constants.KEY_CHECKLIST_START_IN_READ_MODE,
+                Constants.DEFAULT_CHECKLIST_START_IN_READ_MODE
+            ),
             // 🆕 v2.11.0: Cursor-Start für neue Notizen
             newNoteFocusContent = prefs.getBoolean(
                 Constants.KEY_NEW_NOTE_FOCUS_CONTENT,
@@ -1766,6 +1771,7 @@ data class NoteEditorUiState(
     val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
     val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
     val defaultStartInPreviewMode: Boolean = false,
+    val checklistStartInReadMode: Boolean = false, // 🆕 Issue #156
     val newNoteFocusContent: Boolean = false, // 🆕 v2.11.0
     // 🆕 (#126-Nachgang): aus / immer / nur im Lesemodus
     val wordCounterVisibility: WordCounterVisibility = WordCounterVisibility.ALWAYS,

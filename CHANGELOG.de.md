@@ -8,6 +8,38 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.0] - 2026-10-04
+
+### ✨ Neue Funktionen
+
+**Sync pausiert, wenn ein anderes Gerät den Ordner verschlüsselt hat** ([6ffc8f5](https://github.com/inventory69/simple-notes-sync/commit/6ffc8f5), [86da522](https://github.com/inventory69/simple-notes-sync/commit/86da522), [ef67630](https://github.com/inventory69/simple-notes-sync/commit/ef67630))
+- Vorbereitung auf die kommende optionale Ende-zu-Ende-Verschlüsselung ([#9](https://github.com/inventory69/simple-notes-sync/issues/9)). Diese Version verschlüsselt selbst noch nichts
+- Eine spätere Version wird den Sync-Ordner auf einem Gerät verschlüsseln können. Eine Version, die ihn nicht lesen kann, würde weiter unverschlüsselte Notizen in den verlassenen Ordner schreiben und dabei „synchronisiert“ melden, und eine Wiederherstellung vom Server würde die lokalen Notizen entfernen, bevor sie irgendetwas Lesbares findet. Wer jetzt aktualisiert, dessen Gerät hält dann sicher an
+- Jeder Sync prüft jetzt zuerst, ob der Sync-Ordner auf einem anderen Gerät verschlüsselt wurde. Wenn ja, pausiert der Sync und am Server ändert sich nichts: kein Hochladen, Herunterladen oder Löschen, auch keine Markdown-Dateien und Bilder. Die Notizen bleiben auf dem Gerät, Änderungen bleiben erhalten. Die Pause hebt sich selbst auf, sobald die Verschlüsselung wieder ausgeschaltet ist oder du zu einem anderen Ordner oder Server wechselst
+- Aktionen, die außerhalb eines Syncs auf den Server zugreifen, prüfen genauso: Wiederherstellen vom Server, Ordner vom Server entfernen, der Markdown-Sync, „Vergleichen“ und „Server-Fassung nehmen“ bei einem Konflikt, der Verbindungstest und der Import-Assistent
+- Der Sync-Status-Dialog zeigt „Sync pausiert“ mit Erklärung und „Erneut versuchen“, das Badge zählt mit, und eine einzelne Benachrichtigung meldet den Beginn
+- Die Desktop-App macht es seit v0.15.0 genauso. Ein Sync ohne Änderungen braucht jetzt eine Anfrage mehr (vier statt drei)
+
+**Lesemodus für Checklisten** ([062b8f8](https://github.com/inventory69/simple-notes-sync/commit/062b8f8))
+- Checklisten lassen sich wie Textnotizen mit dem Augen-/Stift-Symbol in der Toolbar in einen Lesemodus schalten. Dort sind die Texte nicht bearbeitbar, Ziehgriffe, Eintragsmenü und die Hinzufügen-Leiste ausgeblendet, und ein Tipp irgendwo auf eine Zeile hakt sie ab
+- Eine neue Anzeige-Einstellung öffnet vorhandene Checklisten im Lesemodus (standardmäßig aus)
+- Danke an [@oliyoup](https://github.com/oliyoup) für den Wunsch! ([#156](https://github.com/inventory69/simple-notes-sync/issues/156))
+
+### 🐛 Bug-Fixes
+
+**Keep-Import machte aus geteilten Notizen eine Liste von E-Mail-Adressen** ([ed32e5b](https://github.com/inventory69/simple-notes-sync/commit/ed32e5b))
+- Google Takeout listet die Mitwirkenden einer Notiz in deren HTML-Datei. Hatte das JSON keine Checkliste, las der Import diese Liste als Checklisten-Einträge, auch bei Textnotizen. Geteilte Textnotizen kamen als Checkliste mit den E-Mail-Adressen der Mitwirkenden an, ihr Text ging verloren
+- Der Text kommt jetzt aus dem JSON, wann immer er dort steht. Importierte Checklisten verlieren außerdem Keeps Aufzählungszeichen und dekodieren Entities wie `&auml;`
+- Danke an [@jpsnyder](https://github.com/jpsnyder) für den Bericht! ([#162](https://github.com/inventory69/simple-notes-sync/issues/162))
+
+### 🌍 Übersetzungen
+
+- **Norwegisch Bokmål** (99%): [@xdpirate](https://github.com/xdpirate)
+- **Russisch** (99%): [@disfated](https://github.com/disfated) / Yury Pavlovsky
+- **Brasilianisches Portugiesisch** ist dank Rafael auf 36% gewachsen. Ab 40% kommt es in die App
+
+---
+
 ## [2.19.0] - 2026-09-29
 
 ### ⚠️ Gut zu wissen

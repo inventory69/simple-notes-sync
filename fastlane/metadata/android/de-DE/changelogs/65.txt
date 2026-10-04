@@ -1,0 +1,8 @@
+🪧 v2.20.0 - Vorarbeit Verschlüsselung
+
+• Vorbereitung auf die kommende optionale Ende-zu-Ende-Verschlüsselung: Hat ein anderes Gerät den Sync-Ordner verschlüsselt, pausiert der Sync, statt Daten zu überschreiben
+• Neu: Lesemodus für Checklisten, Tippen auf eine Zeile hakt ab
+• Fix: Keep-Import verlor den Text geteilter Notizen
+• Übersetzungsupdate: NB, RU
+
+Danke an @oliyoup, @jpsnyder, @xdpirate und @disfated!

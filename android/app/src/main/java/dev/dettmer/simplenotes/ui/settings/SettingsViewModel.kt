@@ -456,6 +456,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val defaultStartInPreviewMode: StateFlow<Boolean> = _defaultStartInPreviewMode.asStateFlow()
 
+    // 🆕 Issue #156: Checklisten im Lesemodus öffnen
+    private val _checklistStartInReadMode = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_CHECKLIST_START_IN_READ_MODE, Constants.DEFAULT_CHECKLIST_START_IN_READ_MODE)
+    )
+    val checklistStartInReadMode: StateFlow<Boolean> = _checklistStartInReadMode.asStateFlow()
+
     // 🆕 v2.11.0: Standard-Notizfarbe für neue Notizen (null = keine)
     private val _defaultNoteColor = MutableStateFlow(
         prefs.getString(Constants.KEY_DEFAULT_NOTE_COLOR, Constants.DEFAULT_NOTE_COLOR)
@@ -670,6 +676,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setDefaultStartInPreviewMode(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE, enabled) }
         _defaultStartInPreviewMode.value = enabled
+    }
+
+    /** 🆕 Issue #156: Bestehende Checklisten im Lesemodus öffnen. */
+    fun setChecklistStartInReadMode(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_CHECKLIST_START_IN_READ_MODE, enabled) }
+        _checklistStartInReadMode.value = enabled
     }
 
     /**
@@ -1075,6 +1087,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = syncService.syncNotes(ActivityLog.Trigger.SETTINGS)
                 if (result.isSuccess) {
                     emitToast(getString(R.string.toast_sync_success, result.syncedCount))
+                } else if (result.e2eeBlocked) {
+                    emitToast(result.errorMessage.orEmpty()) // 🆕 v2.20.0: Sperre, kein Fehler
                 } else {
                     emitToast(getString(R.string.toast_sync_failed, result.errorMessage.orEmpty()))
                 }

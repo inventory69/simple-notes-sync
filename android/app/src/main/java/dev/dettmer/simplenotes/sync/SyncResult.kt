@@ -23,6 +23,9 @@ data class SyncResult(
     val markdownImportFailed: Boolean = false, // 🆕 v2.19.0: MD-Auto-Import abgebrochen
     val assetFailedCount: Int = 0, // 🆕 v2.19.0: Bilder nicht übertragen
     val exportProblemsResolved: Boolean = false, // 🆕 v2.19.0: offene Export-Probleme sind mit diesem Lauf behoben
+    // 🆕 v2.20.0 (E2EE-Slice 1): Ordner verschlüsselt, kein Server-Zugriff. isSuccess = false, aber
+    // kein Fehler: Aufrufer schließen mit Warnung ab, nicht mit markError/Fehler-Benachrichtigung.
+    val e2eeBlocked: Boolean = false,
     val errorMessage: String? = null,
     val infoMessage: String? = null // 🆕 v1.9.0 Issue #21: Non-error status info
 ) {

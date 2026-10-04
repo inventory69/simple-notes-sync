@@ -33,8 +33,22 @@ class SyncStatusSummaryTest {
         export: ExportProblems? = null,
         lastSuccessAt: Long = now - 1000,
         lastError: String? = null,
-        lastErrorAt: Long = 0L
-    ) = SyncStatusSummary.from(notes, localOnly, export, lastSuccessAt, lastError, lastErrorAt, now)
+        lastErrorAt: Long = 0L,
+        e2eeBlocked: Boolean = false
+    ) = SyncStatusSummary.from(notes, localOnly, export, lastSuccessAt, lastError, lastErrorAt, now, e2eeBlocked)
+
+    @Test
+    fun `BLOCKED beats every other state and adds one to the badge`() {
+        val conflict = note("c", SyncStatus.CONFLICT)
+        val stale = summary(listOf(conflict), lastSuccessAt = 1L, lastError = "boom", lastErrorAt = now)
+        val blocked = summary(listOf(conflict), lastSuccessAt = 1L, lastError = "boom", lastErrorAt = now, e2eeBlocked = true)
+
+        assertEquals(State.STALE, stale.state)
+        assertEquals(State.BLOCKED, blocked.state)
+        assertEquals(stale.badgeCount + 1, blocked.badgeCount)
+        assertEquals(State.BLOCKED, summary(e2eeBlocked = true).state)
+        assertEquals(1, summary(e2eeBlocked = true).badgeCount)
+    }
 
     @Test
     fun `state priority is STALE over FAILED over ATTENTION over PENDING over OK`() {

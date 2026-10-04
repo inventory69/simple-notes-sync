@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Sync
@@ -102,14 +103,18 @@ fun SyncStatusDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMediumLarge)
             ) {
+                if (summary.state == SyncStatusSummary.State.BLOCKED) BlockedCard()
                 summary.lastError?.let { ErrorCard(it, stale = summary.state == SyncStatusSummary.State.STALE) }
                 if (summary.conflicts.isNotEmpty()) ConflictCard(summary.conflicts, onOpenNote)
                 summary.exportProblems?.let { ExportCard(it, summary.markdownNotes, onOpenNote) }
                 Actions(summary, isSyncing, onRetry, onOpenSettings)
-                LegendSection(
-                    initiallyExpanded = summary.state == SyncStatusSummary.State.OK ||
-                        summary.state == SyncStatusSummary.State.PENDING
-                )
+                // 🆕 v2.20.0: Gesperrt erklären die Notiz-Symbole nichts, die Karte sagt alles.
+                if (summary.state != SyncStatusSummary.State.BLOCKED) {
+                    LegendSection(
+                        initiallyExpanded = summary.state == SyncStatusSummary.State.OK ||
+                            summary.state == SyncStatusSummary.State.PENDING
+                    )
+                }
             }
         },
         confirmButton = {
@@ -123,6 +128,11 @@ fun SyncStatusDialog(
 /** Icon, Farbe und Titel des Dialogkopfs. Der Zustand selbst ist die Überschrift. */
 @Composable
 private fun statusVisuals(summary: SyncStatusSummary): Triple<ImageVector, Color, String> = when (summary.state) {
+    SyncStatusSummary.State.BLOCKED -> Triple(
+        Icons.Outlined.Lock,
+        MaterialTheme.colorScheme.tertiary,
+        stringResource(R.string.sync_status_paused)
+    )
     SyncStatusSummary.State.STALE -> Triple(
         Icons.Outlined.SyncProblem,
         MaterialTheme.colorScheme.error,
@@ -173,6 +183,18 @@ private fun ErrorCard(error: String, stale: Boolean) {
     }
 }
 
+/** 🆕 v2.20.0 (E2EE-Slice 1): Ordner auf einem anderen Gerät verschlüsselt, der Sync fasst den Server nicht an. */
+@Composable
+private fun BlockedCard() {
+    ProblemCard(
+        icon = Icons.Outlined.Lock,
+        iconTint = MaterialTheme.colorScheme.tertiary,
+        title = stringResource(R.string.sync_e2ee_blocked_short)
+    ) {
+        CardLine(stringResource(R.string.sync_e2ee_blocked_long))
+    }
+}
+
 @Composable
 private fun ConflictCard(conflicts: List<NoteRef>, onOpenNote: (String) -> Unit) {
     ProblemCard(
@@ -219,7 +241,8 @@ private fun Actions(
     onOpenSettings: (String) -> Unit
 ) {
     val export = summary.exportProblems
-    val canRetry = summary.lastError != null || export != null
+    // BLOCKED: „Erneut versuchen" prüft den Marker neu, die Sperre zählt als ungesyncte Änderung.
+    val canRetry = summary.lastError != null || export != null || summary.state == SyncStatusSummary.State.BLOCKED
     if (!canRetry && summary.lastError == null) return
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)) {
         if (canRetry) RetryButton(isSyncing, onRetry)

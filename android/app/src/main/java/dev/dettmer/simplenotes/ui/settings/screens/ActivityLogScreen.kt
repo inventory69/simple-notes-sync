@@ -322,7 +322,9 @@ private fun OriginIndicator(entry: ActivityLog.Entry) {
     // als das Geräte-Symbol, das sonst "lokale Aktion" bedeutet.
     val isSyncOutcome = entry.op == ActivityLog.Op.SYNC_OK ||
         entry.op == ActivityLog.Op.SYNC_FAIL ||
-        entry.op == ActivityLog.Op.EXPORT_FAIL
+        entry.op == ActivityLog.Op.EXPORT_FAIL ||
+        entry.op == ActivityLog.Op.SYNC_BLOCKED ||
+        entry.op == ActivityLog.Op.SYNC_UNBLOCKED
     val isRemoteOrigin = isSyncOutcome || entry.src == ActivityLog.Src.REMOTE
     // Text trägt jetzt die Bedeutung fürs Auge und für TalkBack — das Icon ist daneben
     // rein dekorativ, sonst kündigt ein Screenreader dieselbe Aussage doppelt an.
@@ -381,6 +383,8 @@ private fun opLabel(entry: ActivityLog.Entry): String = when (entry.op) {
         "markdown_import" -> stringResource(R.string.activity_op_export_fail_import, entry.err ?: "?")
         else -> stringResource(R.string.activity_op_export_fail_markdown, entry.err ?: "?")
     }
+    ActivityLog.Op.SYNC_BLOCKED -> stringResource(R.string.sync_e2ee_blocked_short) // 🆕 v2.20.0
+    ActivityLog.Op.SYNC_UNBLOCKED -> stringResource(R.string.activity_op_sync_unblocked)
 }
 
 @Composable

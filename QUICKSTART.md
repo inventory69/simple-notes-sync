@@ -9,7 +9,7 @@
 ## Prerequisites
 
 - ✅ Android 7.0+ smartphone/tablet
-- ✅ WiFi connection
+- ✅ Network connection to your server (automatic background sync waits for WiFi)
 - ✅ Own server with Docker (optional - for self-hosting)
 
 ---
