@@ -101,8 +101,8 @@ alt="Get it on Google Play" align="center" height="80" /></a>
 ```bash
 git clone https://github.com/inventory69/simple-notes-sync.git
 cd simple-notes-sync/server
-cp .env.example .env
-# Set password in .env
+cp config.yml.example config.yml
+# Set the password under users: in config.yml
 docker compose up -d
 ```
 
@@ -115,8 +115,7 @@ docker compose up -d
 3. ⚙️ Settings → Configure server:
    - **URL:** `http://YOUR-SERVER-IP:8080/` _(base URL only!)_
    - **User:** `noteuser`
-   - **Password:** _(from .env)_
-   - **WiFi:** _(your network name)_
+   - **Password:** _(from config.yml)_
 4. **Test connection** → Enable auto-sync
 5. Done! 🎉
 

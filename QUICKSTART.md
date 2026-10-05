@@ -25,14 +25,16 @@ On your server (e.g. Raspberry Pi, NAS, VPS):
 git clone https://github.com/inventory69/simple-notes-sync.git
 cd simple-notes-sync/server
 
-# Configure environment variables
-cp .env.example .env
-nano .env
+# Create the config and set your password
+cp config.yml.example config.yml
+nano config.yml
 ```
 
-**Adjust in `.env`:**
-```env
-WEBDAV_PASSWORD=your-secure-password-here
+**Adjust in `config.yml`:**
+```yaml
+users:
+  - username: noteuser
+    password: your-secure-password-here
 ```
 
 **Start server:**
@@ -73,7 +75,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
    |------|------|
    | **WebDAV Server URL** | `http://YOUR-SERVER-IP:8080/` |
    | **Username** | `noteuser` |
-   | **Password** | (your password from `.env`) |
+   | **Password** | (your password from `config.yml`) |
 
    > **💡 Note:** Enter only the base URL (without `/notes`). The app automatically creates `/notes/` for JSON files and `/notes-md/` for Markdown export.
 
@@ -226,7 +228,7 @@ For reliable auto-sync:
 
 1. **"401 Unauthorized"** → Wrong password
    - Check password in app settings
-   - Compare with `.env` on server
+   - Compare with `config.yml` on server
 
 2. **"404 Not Found"** → Wrong URL
    - Should end with `/` (e.g. `http://192.168.1.100:8080/`)
