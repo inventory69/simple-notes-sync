@@ -7,7 +7,7 @@ contact_links:
     url: https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md
     about: Step-by-step setup guide
   - name: "🐛 Troubleshooting"
-    url: https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#-troubleshooting
+    url: https://github.com/inventory69/simple-notes-sync/blob/main/docs/TROUBLESHOOTING.md
     about: Common issues and solutions
   - name: "✨ Feature Requests & Ideas"
     url: https://github.com/inventory69/simple-notes-sync/discussions/categories/ideas
