@@ -1012,4 +1012,14 @@
     <string name="notification_sync_export_title">Noen filer ble ikke overført</string>
     <string name="notification_warnings_channel_name">Synkeadvarsler</string>
     <string name="notification_warnings_channel_desc">Stille varsler når Markdown-filer eller bilder ikke kunne overføres</string>
+    <string name="snackbar_delete_queued_e2ee">Synk pauset: sletting satt i kø til synken fortsetter</string>
+    <string name="activity_op_sync_unblocked">Synk fortsatt: mappen er ikke lengre kryptert</string>
+    <string name="sync_e2ee_blocked_short">Synk pauset: denne mappen ble kryptert på en annen enhet</string>
+    <string name="restore_e2ee_blocked">Denne synkemappen var ende-til-ende-kryptert på en annen enhet. Denne versjonen kan ikke lese krypterte notater, så ingenting ble gjenopprettet. Dine lokale notater ble ikke endret.</string>
+    <string name="sync_e2ee_blocked_long">En annen enhet skrudde på ende-til-ende-kryptering for denne synkemappen. Denne versjonen kan ikke lese krypterte notater, så synking er pauset og ingenting på serveren er endret. Notatene dine forblir på denne enheten og endringene dine er beholdt. Oppdater appen, eller skru av kryptering på den andre enheten.</string>
+    <string name="sync_status_paused">Synk pauset</string>
+    <string name="editor_checklist_read_mode_toggle">Åpne sjekklister i lesemodus</string>
+    <string name="editor_checklist_read_mode_description">Sjekklister åpnes i lesemodus. Trykk hvor som helst på et element for å sjekke det, bruk blyantikonet for å redigere.</string>
+    <string name="editor_toggle_read_mode">Skru lesemodus av/på</string>
+    <string name="test_connection_e2ee_blocked">✅ Tjener kan nås, men /%1$s/ ble kryptert på en annen enhet. Synk er pauset.</string>
 </resources>
