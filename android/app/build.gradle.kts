@@ -19,7 +19,7 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 65  // 🆕 v2.20.0 - E2EE gate (slice 1), checklist read mode, Keep import fix
+        versionCode = 66  // 🆕 v2.20.0 - E2EE gate (slice 1), checklist read mode, Keep import fix
         versionName = "2.20.0"  // 🆕 v2.20.0 - E2EE gate (slice 1), checklist read mode, Keep import fix
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/

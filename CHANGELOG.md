@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.20.0] - 2026-10-04
+## [2.20.0] - 2026-10-11
 
 ### ✨ New Features
 
@@ -32,9 +32,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The text now comes from the JSON whenever it is there. Imported checklists also drop Keep's bullet character and decode entities like `&auml;`
 - Thanks to [@jpsnyder](https://github.com/jpsnyder) for the report! ([#162](https://github.com/inventory69/simple-notes-sync/issues/162))
 
+### 📚 Documentation
+
+- The docs were rewritten against the current app and are English only now: README, quick start, and four guides for features, sync, backup and troubleshooting. The German README is a short entry point
+- The server setup in README and quick start now uses `config.yml`. The old `.env` steps no longer worked
+
 ### 🌍 Translations
 
-- **Norwegian Bokmål** (99%): [@xdpirate](https://github.com/xdpirate)
+- **Italian** (100%): [@redenfire](https://github.com/redenfire)
+- **Chinese (Simplified)** (100%): [@heretic43](https://github.com/heretic43)
+- **Norwegian Bokmål** (100%): [@xdpirate](https://github.com/xdpirate)
 - **Russian** (99%): [@disfated](https://github.com/disfated) / Yury Pavlovsky
 - **Brazilian Portuguese** grew to 36% thanks to Rafael. It joins the app at 40%
 
