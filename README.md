@@ -55,13 +55,15 @@ I built this so my notes would sync with the WebDAV server at home on their own,
 
 ## Highlights
 
-- **Offline first.** Notes live on your phone. A server is optional, and there is no account.
-- **Any WebDAV server.** Nextcloud, ownCloud, a NAS or the small Docker server in this repo. If a note changed on two devices, you pick which version stays.
-- **Markdown** with live highlighting in the editor, tables and images.
-- **Checklists** with drag and drop, plus folders, an archive and a trash.
-- **Widgets** for the home screen. Tap a note in a widget to edit it right there.
-- **Markdown files on the server** for Obsidian or any other editor, and [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop) for Windows and Linux.
-- **App lock, encrypted backups** and 12 languages.
+- **Your server, no account.** Notes live on your phone and sync with any WebDAV server: Nextcloud, ownCloud, a NAS or the small Docker server in this repo. Without a server the app works just as well.
+- **No silent overwrites.** If a note changed on two devices, you compare both versions side by side and pick the one that stays.
+- **Markdown that pastes well.** Live highlighting, tables and a preview. Pasting from a web page, Word or Google Docs keeps headings, lists, links and tables. Share a note as a PDF with formatting and images.
+- **Images in notes.** Paste or pick them, resize them, place several side by side.
+- **Fast checklists.** Drag an item across the divider to check it, unchecking puts it back where it was, and a read mode turns a list into tap to check.
+- **Widgets you can write in.** Edit a note in a small card over the home screen and check items right in the widget.
+- **Obsidian and desktop.** Optional Markdown copies of every note on the server, edits made there come back into the app. [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop) for Windows and Linux uses the same folder.
+- **Coming from Google Keep?** Import a Takeout export, checklists and colors included.
+- **Private by design.** Local only folders that never leave the phone, app lock, encrypted backups, no analytics and no Google services. 12 languages.
 
 All features: [docs/FEATURES.md](docs/FEATURES.md)
 
