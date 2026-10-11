@@ -1,287 +1,60 @@
-# Contributing to Simple Notes Sync 🤝
+# Contributing
 
-> Beiträge sind willkommen! / Contributions are welcome!
+Thanks for helping. Bug fixes, tests and documentation improvements are always welcome. For a new feature, please start a thread in [Discussions](https://github.com/inventory69/simple-notes-sync/discussions/categories/ideas) first. The app is meant to stay simple, so not every good idea makes it in, and it is better to find that out before you write the code.
 
-**🌍 Languages:** [Deutsch](#deutsch) · [English](#english)
+## Build
 
----
+You need JDK 17 or newer and the Android SDK (compile and target SDK 36, minimum SDK 24).
 
-## Deutsch
-
-Danke, dass du zu Simple Notes Sync beitragen möchtest! 
-
-### 🚀 Schnellstart
-
-1. **Fork & Clone**
-   ```bash
-   git clone https://github.com/inventory69/simple-notes-sync.git
-   cd simple-notes-sync
-   ```
-
-2. **Branch erstellen**
-   ```bash
-   git checkout -b feature/mein-feature
-   # oder
-   git checkout -b fix/mein-bugfix
-   ```
-
-3. **Änderungen machen**
-   - Code schreiben
-   - Testen
-   - Committen mit aussagekräftiger Message
-
-4. **Pull Request erstellen**
-   - Push deinen Branch: `git push origin feature/mein-feature`
-   - Gehe zu GitHub und erstelle einen Pull Request
-   - Beschreibe deine Änderungen
-
-### 🧪 Automatische Tests
-
-Wenn du einen Pull Request erstellst, läuft automatisch ein **Build Check**:
-
-- ✅ Debug APKs werden gebaut (Standard + F-Droid)
-- ✅ Unit Tests werden ausgeführt
-- ✅ APKs werden als Artefakte hochgeladen (zum Testen)
-- ✅ Build-Status wird als Kommentar im PR gepostet
-
-**Wichtig:** Der Build muss erfolgreich sein (grüner Haken ✅) bevor der PR gemerged werden kann.
-
-### 📱 Android App Development
-
-**Build lokal testen:**
 ```bash
-cd android
-
-# Debug Build
-./gradlew assembleStandardDebug
-
-# Tests ausführen
-./gradlew test
-
-# Lint Check
-./gradlew lint
+git clone https://github.com/inventory69/simple-notes-sync.git
+cd simple-notes-sync/android
+./gradlew detekt lint assembleFdroidDebug   # what has to pass before a PR
+./gradlew test                              # unit tests
 ```
 
-**Anforderungen:**
-- Android SDK 36 (Target)
-- Android SDK 24 (Minimum)
-- JDK 17
-- Kotlin 1.9+
+The debug APK lands in `app/build/outputs/apk/fdroid/debug/` and installs next to a release version (package `dev.dettmer.simplenotes.debug`).
 
-### 📝 Code Style
+There are two flavors: `fdroid` and `standard`. Both are fully FOSS and currently identical. Keep it that way: no Google Play Services, no Firebase, no proprietary libraries.
 
-- **Kotlin:** Folge den [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html)
-- **Formatierung:** Android Studio Default Formatter
-- **Kommentare:** Deutsch oder Englisch (bevorzugt Englisch für Code)
+## Pull requests
 
-### 🐛 Bug Reports
+- One topic per PR, branched from `main` (`fix/...`, `feature/...`).
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `fix(sync): ...`, `feat(editor): ...`, `docs: ...`.
+- Every PR runs detekt, ktlint, a debug build of both flavors and the unit tests. It must be green before it can be merged.
+- New UI text goes into `values/strings.xml` (English) only. The other languages come through Weblate.
+- Say how you tested it, ideally on a real device.
 
-Nutze die [Bug Report Template](https://github.com/inventory69/simple-notes-sync/issues/new/choose) mit:
-- Android Version
-- App Version
-- Schritte zum Reproduzieren
-- Erwartetes vs. tatsächliches Verhalten
+## Translations
 
-### 💡 Feature Requests
+Translations happen on [Weblate](https://hosted.weblate.org/engage/simple-notes-sync/) only, please do not send pull requests that edit `values-*/strings.xml` directly. Weblate opens its own pull requests, and they go through the same build check.
 
-Nutze die [Feature Request Template](https://github.com/inventory69/simple-notes-sync/issues/new/choose) und beschreibe:
-- Was soll hinzugefügt werden
-- Warum ist es nützlich
-- Wie könnte es funktionieren
+A new language ships once it reaches 40 percent. Below that the app would still be mostly English. Languages below the threshold stay on Weblate and ship as soon as they pass.
 
-### 📚 Dokumentation
+## Documentation
 
-Dokumentations-Verbesserungen sind auch Contributions! 
+The docs are English only, the German README is a short entry point. Keep them short and task oriented, and do not add version markers like "new in v2.x", the changelog has that.
 
-**Dateien:**
-- `README.de.md` / `README.md` - Übersicht
-- `QUICKSTART.de.md` / `QUICKSTART.md` - Schritt-für-Schritt Anleitung
-- `docs/DOCS.de.md` / `docs/DOCS.md` - Technische Details
-- `server/README.de.md` / `server/README.md` - Server Setup
+`CHANGELOG.md` and `CHANGELOG.de.md` feed the in-app changelog, so both are kept.
 
-**Bitte:** Halte beide Sprachen (DE/EN) synchron!
+## Where things are
 
-### 🌍 Übersetzungen
+All code lives in `android/app/src/main/java/dev/dettmer/simplenotes/`:
 
-Hilf mit, Simple Notes Sync in neue Sprachen zu übersetzen!
+| Package | What |
+|---|---|
+| `models` | `Note`, checklist items, sync status |
+| `storage` | Notes as JSON files on the device, folders, trash |
+| `sync` | Sync logic, triggers, conflict handling, `sync/webdav/` is the WebDAV client (OkHttp) |
+| `ui` | Jetpack Compose screens: `main`, `editor`, `settings`, `theme` |
+| `widget` | Home screen widgets (Glance) |
+| `markdown`, `images` | Markdown rendering, HTML paste, image handling |
+| `backup` | Backup and restore, backup encryption |
+| `noteimport` | Google Keep and file import |
+| `security` | App lock |
 
-**Empfohlen: Über Weblate** (kein Programmieren nötig):
-👉 [Auf Weblate übersetzen](https://hosted.weblate.org/projects/simple-notes-sync/)
+The architecture is plain MVVM with `StateFlow`, no dependency injection framework and no database.
 
-**Alternativ: Manuelle Übersetzung** (Pull Request):
-Siehe [docs/TRANSLATING.de.md](docs/TRANSLATING.de.md) für Details.
+## License
 
-Weblate-Übersetzungen werden automatisch als Pull Requests eingereicht und nach erfolgreichem Build gemerged.
-
-### ✅ Pull Request Checklist
-
-- [ ] Code kompiliert lokal (`./gradlew assembleStandardDebug`)
-- [ ] Tests laufen durch (`./gradlew test`)
-- [ ] Keine neuen Lint-Warnungen
-- [ ] Commit-Messages sind aussagekräftig
-- [ ] Dokumentation aktualisiert (falls nötig)
-- [ ] Beide Sprachen aktualisiert (bei Doku-Änderungen)
-
-### 🎯 Was wird akzeptiert?
-
-**✅ Gerne:**
-- Bug Fixes
-- Performance-Verbesserungen
-- Neue Features (nach Diskussion in einem Issue)
-- Dokumentations-Verbesserungen
-- Tests
-- UI/UX Verbesserungen
-
-**❌ Schwierig:**
-- Breaking Changes (bitte erst als Issue diskutieren)
-- Komplett neue Architektur
-- Dependencies mit fragwürdigen Lizenzen
-
-### 📄 Lizenz
-
-Indem du contributest, stimmst du zu dass dein Code unter der [AGPL v3 License](LICENSE) veröffentlicht wird.
-
----
-
-## English
-
-Thanks for wanting to contribute to Simple Notes Sync!
-
-### 🚀 Quick Start
-
-1. **Fork & Clone**
-   ```bash
-   git clone https://github.com/inventory69/simple-notes-sync.git
-   cd simple-notes-sync
-   ```
-
-2. **Create Branch**
-   ```bash
-   git checkout -b feature/my-feature
-   # or
-   git checkout -b fix/my-bugfix
-   ```
-
-3. **Make Changes**
-   - Write code
-   - Test
-   - Commit with meaningful message
-
-4. **Create Pull Request**
-   - Push your branch: `git push origin feature/my-feature`
-   - Go to GitHub and create a Pull Request
-   - Describe your changes
-
-### 🧪 Automated Tests
-
-When you create a Pull Request, an automatic **Build Check** runs:
-
-- ✅ Debug APKs are built (Standard + F-Droid)
-- ✅ Unit tests are executed
-- ✅ APKs are uploaded as artifacts (for testing)
-- ✅ Build status is posted as comment in PR
-
-**Important:** The build must succeed (green checkmark ✅) before the PR can be merged.
-
-### 📱 Android App Development
-
-**Test build locally:**
-```bash
-cd android
-
-# Debug Build
-./gradlew assembleStandardDebug
-
-# Run tests
-./gradlew test
-
-# Lint Check
-./gradlew lint
-```
-
-**Requirements:**
-- Android SDK 36 (Target)
-- Android SDK 24 (Minimum)
-- JDK 17
-- Kotlin 1.9+
-
-### 📝 Code Style
-
-- **Kotlin:** Follow [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html)
-- **Formatting:** Android Studio Default Formatter
-- **Comments:** German or English (preferably English for code)
-
-### 🐛 Bug Reports
-
-Use the [Bug Report Template](https://github.com/inventory69/simple-notes-sync/issues/new/choose) with:
-- Android version
-- App version
-- Steps to reproduce
-- Expected vs. actual behavior
-
-### 💡 Feature Requests
-
-Use the [Feature Request Template](https://github.com/inventory69/simple-notes-sync/issues/new/choose) and describe:
-- What should be added
-- Why is it useful
-- How could it work
-
-### 📚 Documentation
-
-Documentation improvements are also contributions!
-
-**Files:**
-- `README.de.md` / `README.md` - Overview
-- `QUICKSTART.de.md` / `QUICKSTART.md` - Step-by-step guide
-- `docs/DOCS.de.md` / `docs/DOCS.md` - Technical details
-- `server/README.de.md` / `server/README.md` - Server setup
-
-**Please:** Keep both languages (DE/EN) in sync!
-
-### 🌍 Translations
-
-Help translate Simple Notes Sync into new languages!
-
-**Recommended: Via Weblate** (no coding required):
-👉 [Translate on Weblate](https://hosted.weblate.org/projects/simple-notes-sync/)
-
-**Alternative: Manual translation** (Pull Request):
-See [docs/TRANSLATING.md](docs/TRANSLATING.md) for details.
-
-Weblate translations are automatically submitted as pull requests and merged after a successful build.
-
-### ✅ Pull Request Checklist
-
-- [ ] Code compiles locally (`./gradlew assembleStandardDebug`)
-- [ ] Tests pass (`./gradlew test`)
-- [ ] No new lint warnings
-- [ ] Commit messages are meaningful
-- [ ] Documentation updated (if needed)
-- [ ] Both languages updated (for doc changes)
-
-### 🎯 What Gets Accepted?
-
-**✅ Welcome:**
-- Bug fixes
-- Performance improvements
-- New features (after discussion in an issue)
-- Documentation improvements
-- Tests
-- UI/UX improvements
-
-**❌ Difficult:**
-- Breaking changes (please discuss in issue first)
-- Completely new architecture
-- Dependencies with questionable licenses
-
-### 📄 License
-
-By contributing, you agree that your code will be published under the [AGPL v3 License](LICENSE).
-
----
-
-## 🆘 Fragen? / Questions?
-
-Öffne ein [Issue](https://github.com/inventory69/simple-notes-sync/issues) oder nutze die [Question Template](https://github.com/inventory69/simple-notes-sync/issues/new/choose).
-
-**Happy Coding! 🚀**
+By contributing you agree that your code is published under the [AGPL v3](LICENSE).

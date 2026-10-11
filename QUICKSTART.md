@@ -1,269 +1,93 @@
-# Quick Start Guide - Simple Notes Sync 📝
+# Quick start
 
-> Step-by-step installation and setup guide
+This guide gets a server running, connects the app and explains when the app syncs. The app also works without any server: just install it and start writing.
 
-**🌍 Languages:** [Deutsch](QUICKSTART.de.md) · **English**
+## 1. Server
 
----
+You need a WebDAV server. If you already have one (Nextcloud, ownCloud, a NAS), skip to [Other WebDAV servers](#other-webdav-servers).
 
-## Prerequisites
-
-- ✅ Android 7.0+ smartphone/tablet
-- ✅ Network connection to your server (automatic background sync waits for WiFi)
-- ✅ Own server with Docker (optional - for self-hosting)
-
----
-
-## Option 1: With own server (Self-Hosted) 🏠
-
-### Step 1: Setup WebDAV Server
-
-On your server (e.g. Raspberry Pi, NAS, VPS):
+Otherwise, this repository contains a small Docker setup based on [hacdias/webdav](https://github.com/hacdias/webdav). On any machine with Docker:
 
 ```bash
-# Clone repository
 git clone https://github.com/inventory69/simple-notes-sync.git
 cd simple-notes-sync/server
-
-# Configure environment variables
-cp .env.example .env
-nano .env
+cp config.yml.example config.yml
 ```
 
-**Adjust in `.env`:**
-```env
-WEBDAV_PASSWORD=your-secure-password-here
-```
+Open `config.yml` and set a password under `users:`. The username `noteuser` can stay. Then start the server:
 
-**Start server:**
 ```bash
 docker compose up -d
 ```
 
-**Find IP address:**
-```bash
-ip addr show | grep "inet " | grep -v 127.0.0.1
-```
+The server listens on port 8080. To use another port, create a file `.env` next to `docker-compose.yml` with `WEBDAV_PORT=9090`. Updates, logs and backups of the server are in [server/README.md](server/README.md).
 
-➡️ **Note down:** `http://YOUR-SERVER-IP:8080/`
+Find the IP address of the machine, for example with `ip addr` on Linux. You need it in the next step.
 
----
+### Other WebDAV servers
 
-### Step 2: Install App
+Enter the WebDAV address of your account. The app creates a folder `notes/` below it and keeps everything in there. Examples:
 
-1. **Download APK:** [Latest version](https://github.com/inventory69/simple-notes-sync/releases/latest)
-   - Choose: `simple-notes-sync-vX.X.X-standard.apk`
-   
-2. **Allow installation:**
-   - Android: Settings → Security → Enable "Unknown sources" for your browser
-   
-3. **Open and install APK**
+| Server | URL |
+|---|---|
+| Nextcloud | `https://cloud.example.com/remote.php/dav/files/USERNAME/` |
+| ownCloud | `https://cloud.example.com/remote.php/webdav/` |
+| Docker server from this repo | `http://192.168.1.10:8080/` |
 
----
+Basic and Digest authentication are both detected automatically.
 
-### Step 3: Configure App
+### HTTP or HTTPS
 
-1. **Open app**
+Plain `http://` is only allowed for addresses in your home network: `192.168.x.x`, `10.x.x.x`, `172.16.x.x` to `172.31.x.x`, `localhost` and names ending in `.local`. Everything else needs `https://`, because your password would otherwise travel unencrypted through the internet.
 
-2. **Open settings** (⚙️ icon top right)
+## 2. App
 
-3. **Configure server settings:**
-   
-   | Field | Value |
-   |------|------|
-   | **WebDAV Server URL** | `http://YOUR-SERVER-IP:8080/` |
-   | **Username** | `noteuser` |
-   | **Password** | (your password from `.env`) |
+1. Install the app from [F-Droid](https://f-droid.org/packages/dev.dettmer.simplenotes), [IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/dev.dettmer.simplenotes), [Google Play](https://play.google.com/store/apps/details?id=dev.dettmer.simplenotes) or [GitHub Releases](https://github.com/inventory69/simple-notes-sync/releases/latest).
+2. Open **Settings → Server Settings** and switch off **Offline Mode**. The fields below are locked until you do.
+3. Enter the server URL, username and password. Enter the base URL only, without `notes/`.
+4. Tap **Test Connection**.
 
-   > **💡 Note:** Enter only the base URL (without `/notes`). The app automatically creates `/notes/` for JSON files and `/notes-md/` for Markdown export.
+That's it. Notes you already wrote are uploaded with the next sync, and notes that are already on the server are downloaded.
 
-4. **Press "Test connection"**
-   - ✅ Success? → Continue to step 4
-   - ❌ Error? → See [Troubleshooting](#-troubleshooting)
+## 3. When the app syncs
 
-5. **Enable auto-sync** (toggle switch)
+You can change all of this in **Settings → Sync & Notifications**.
 
-6. **Choose sync interval:**
-   - **15 min** - Maximum currency (~0.8% battery/day)
-   - **30 min** - Recommended (~0.4% battery/day) ⭐
-   - **60 min** - Maximum battery life (~0.2% battery/day)
+| Trigger | Default | Needs Wi-Fi |
+|---|---|---|
+| After Saving | on | no |
+| On App Start | on | no |
+| On WiFi Connection | on | yes |
+| Automatically every 15, 30 or 60 minutes | off | yes |
+| After Device Restart (restarts the background sync) | off | yes |
+| Sync now, pull to refresh | always | no |
 
----
+**After Saving** fires when you tap the save button. Autosave alone does not start a sync, the next trigger picks the change up.
 
-### Step 4: Create First Note
+The background triggers wait for Wi-Fi to save battery and mobile data. The others use any connection. If you turn on **WiFi-only sync**, every sync waits for Wi-Fi.
 
-1. Back to main view (← arrow)
+The app does not need to know your Wi-Fi name. If the server is not reachable (you are on another network), a background sync simply ends without changing anything.
 
-2. **"Add note"** (+ icon)
+### Battery optimization
 
-3. Enter title and text
+Android delays or skips background work for apps under battery optimization. If the background triggers should fire reliably, set the app to **Unrestricted** (or **Not optimized**) in the Android settings under Apps → Simple Notes → Battery. The app offers to open that screen when you switch off Offline Mode.
 
-4. **Save** (💾 icon)
+Even then Android may hold back a periodic sync for a while when the phone sleeps. Syncing after saving and on app start is not affected.
 
-5. **Wait for auto-sync** (or manually: ⚙️ → "Sync now")
+## 4. Self-signed certificates
 
-🎉 **Done!** Your notes will be automatically synchronized!
+If your server uses HTTPS with a certificate from your own CA, install that CA certificate on the phone:
 
----
+1. Copy the CA certificate (`.crt` or `.pem`) to the phone.
+2. Android settings → Security → Encryption & credentials → Install a certificate → **CA certificate**. The menu names differ between manufacturers.
+3. Enter the `https://` URL in the app as usual.
 
-## Option 2: Local notes only (no server) 📱
+The app trusts CA certificates installed by the user, many apps do not. It does not accept certificates that fail validation in any other way, so the host name in the URL must match the certificate. A certificate from Let's Encrypt needs none of this.
 
-You can also use Simple Notes **without a server**:
+## 5. Updates
 
-1. **Install app** (see step 2 above)
+F-Droid, IzzyOnDroid and Google Play update the app on their own. For APKs from GitHub, [Obtainium](https://github.com/ImranR98/Obtainium) can watch the releases for you. An update never touches your notes.
 
-2. **Use without server configuration:**
-   - Notes are only stored locally
-   - No auto-sync
-   - Perfect for offline-only use
+## Something not working?
 
----
-
-## 🔋 Disable Battery Optimization
-
-For reliable auto-sync:
-
-1. **Settings** → **Apps** → **Simple Notes Sync**
-
-2. **Battery** → **Battery usage**
-
-3. Select: **"Don't optimize"** or **"Unrestricted"**
-
-💡 **Note:** Android Doze Mode may still delay sync in standby (~60 min). This is normal and affects all apps.
-
----
-
-## 📊 Sync Intervals in Detail
-
-| Interval | Syncs/day | Battery/day | Battery/sync | Use case |
-|-----------|-----------|----------|-----------|----------------|
-| **15 min** | ~96 | ~0.8% (~23 mAh) | ~0.008% | ⚡ Maximum currency (multiple devices) |
-| **30 min** | ~48 | ~0.4% (~12 mAh) | ~0.008% | ✓ **Recommended** - balanced |
-| **60 min** | ~24 | ~0.2% (~6 mAh) | ~0.008% | 🔋 Maximum battery life |
-
----
-
-## 🐛 Troubleshooting
-
-### Connection test fails
-
-**Problem:** "Connection failed" during test
-
-**Solutions:**
-
-1. **Server running?**
-   ```bash
-   docker compose ps
-   # Should show "Up"
-   ```
-
-2. **Same network?**
-   - Smartphone and server must be on same network
-
-3. **IP address correct?**
-   ```bash
-   ip addr show | grep "inet "
-   # Check if IP in URL matches
-   ```
-
-4. **Firewall?**
-   ```bash
-   # Open port 8080 (if firewall active)
-   sudo ufw allow 8080/tcp
-   ```
-
-5. **Check server logs:**
-   ```bash
-   docker compose logs -f
-   ```
-
----
-
-### Auto-sync not working
-
-**Problem:** Notes are not automatically synchronized
-
-**Solutions:**
-
-1. **Auto-sync enabled?**
-   - ⚙️ Settings → Toggle "Auto-sync" must be **ON**
-
-2. **Battery optimization disabled?**
-   - See [Disable Battery Optimization](#-disable-battery-optimization)
-
-3. **Connected to WiFi?**
-   - Auto-sync triggers on any WiFi connection
-   - Check if you're connected to a WiFi network
-
-4. **Test manually:**
-   - ⚙️ Settings → "Sync now"
-   - Works? → Auto-sync should work too
-
----
-
-### Notes not showing up
-
-**Problem:** After installation, no notes visible even though they exist on server
-
-**Solution:**
-
-1. **Manually sync once:**
-   - ⚙️ Settings → "Sync now"
-
-2. **Check server data:**
-   ```bash
-   docker compose exec webdav ls -la /data/
-   # Should show .json files
-   ```
-
----
-
-### Sync errors
-
-**Problem:** Error message during sync
-
-**Solutions:**
-
-1. **"401 Unauthorized"** → Wrong password
-   - Check password in app settings
-   - Compare with `.env` on server
-
-2. **"404 Not Found"** → Wrong URL
-   - Should end with `/` (e.g. `http://192.168.1.100:8080/`)
-
-3. **"Network error"** → No connection
-   - See [Connection test fails](#connection-test-fails)
-
----
-
-## 📱 Updates
-
-### Automatic with Obtainium (recommended)
-
-1. **[Install Obtainium](https://github.com/ImranR98/Obtainium/releases/latest)**
-
-2. **Add app:**
-   - URL: `https://github.com/inventory69/simple-notes-sync`
-   - Enable auto-update
-
-3. **Done!** Obtainium notifies you of new versions
-
-### Manual
-
-1. Download new APK from [Releases](https://github.com/inventory69/simple-notes-sync/releases/latest)
-
-2. Install (overwrites old version)
-
-3. All data remains intact!
-
----
-
-## 🆘 Further Help
-
-- **GitHub Issues:** [Report problem](https://github.com/inventory69/simple-notes-sync/issues)
-- **Complete docs:** [DOCS.md](docs/DOCS.md)
-- **Server setup details:** [server/README.md](server/README.md)
-
----
-
-**Version:** 1.1.0 · **Created:** December 2025
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).

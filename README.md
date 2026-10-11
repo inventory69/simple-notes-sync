@@ -4,14 +4,10 @@
 
 <h1 align="center">Simple Notes Sync</h1>
 
-<h4 align="center">Clean, offline-first notes with intelligent sync - simplicity meets smart synchronization.</h4>
-
 <div align="center">
-  
+
+[![Release](https://img.shields.io/github/v/release/inventory69/simple-notes-sync?style=for-the-badge&label=Release)](https://github.com/inventory69/simple-notes-sync/releases/latest)
 [![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
-[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose/)
-[![Material 3](https://img.shields.io/badge/Material_3-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu)](LICENSE)
 [![Donate](https://img.shields.io/liberapay/receives/inventory?style=for-the-badge&logo=liberapay&logoColor=white&label=Donate)](https://liberapay.com/inventory/)
 
@@ -35,21 +31,18 @@ alt="Get it on F-Droid" align="center" height="80" /></a>
 <a href="https://play.google.com/store/apps/details?id=dev.dettmer.simplenotes">
 <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
 alt="Get it on Google Play" align="center" height="80" /></a>
-  
+
 </div>
 
 <div align="center">
 <strong>SHA-256 hash of the signing certificate:</strong><br />42:A1:C6:13:BB:C6:73:04:5A:F3:DC:81:91:BF:9C:B6:45:6E:E4:4C:7D:CE:40:C7:CF:B5:66:FA:CB:69:F1:6A
+<br /><br />
+<strong>English</strong> · <a href="README.de.md">Deutsch</a>
 </div>
 
-<div align="center">
+Notes for Android that work offline and sync with your own WebDAV server. No account, no cloud, no tracking.
 
-<br />[📱 APK Download](https://github.com/inventory69/simple-notes-sync/releases/latest) · [📖 Documentation](docs/DOCS.md) · [🚀 Quick Start](QUICKSTART.md)<br />
-**🌍** [Deutsch](README.de.md) · **English**
-
-</div>
-
-## 📱 Screenshots
+I built this so my notes would sync with the WebDAV server at home on their own, as soon as I get home. That is still the core idea. Everything else grew around it, and the app works just as well without any server.
 
 <p align="center">
   <img src="docs/screenshots/en/1-overview.png" width="250" alt="Notes overview">
@@ -60,131 +53,71 @@ alt="Get it on Google Play" align="center" height="80" /></a>
   <img src="docs/screenshots/en/6-themes.png" width="250" alt="Themes and AMOLED">
 </p>
 
-<div align="center">
+## Highlights
 
-  📝 Offline-first &nbsp;•&nbsp; 🔄 Smart Sync &nbsp;•&nbsp; 🔒 Self-hosted &nbsp;•&nbsp; 🔋 Battery-friendly
+- **Your server, no account.** Notes live on your phone and sync with any WebDAV server: Nextcloud, ownCloud, a NAS or the small Docker server in this repo. Without a server the app works just as well.
+- **No silent overwrites.** If a note changed on two devices, you compare both versions side by side and pick the one that stays.
+- **Markdown that pastes well.** Live highlighting, tables and a preview. Pasting from a web page, Word or Google Docs keeps headings, lists, links and tables. Share a note as a PDF with formatting and images.
+- **Images in notes.** Paste or pick them, resize them, place several side by side.
+- **Fast checklists.** Drag an item across the divider to check it, unchecking puts it back where it was, and a read mode turns a list into tap to check.
+- **Widgets you can write in.** Edit a note in a small card over the home screen and check items right in the widget.
+- **Obsidian and desktop.** Optional Markdown copies of every note on the server, edits made there come back into the app. [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop) for Windows and Linux uses the same folder.
+- **Coming from Google Keep?** Import a Takeout export, checklists and colors included.
+- **Private by design.** Local only folders that never leave the phone, app lock, encrypted backups, no analytics and no Google services. 12 languages.
 
-</div>
+All features: [docs/FEATURES.md](docs/FEATURES.md)
 
-## ✨ Highlights
+## Quick start
 
-- 📝 **Offline-first** - Works without internet
-- 📁 **Folders** - Organize notes into folders, with optional local-only folders that never sync
-- 📌 **Pinned notes** - Keep important notes at the top
-- 🗑️ **Trash** - Deleted notes move to a recycle bin with configurable retention (0–90 days)
-- 🗄️ **Archive** - Move notes out of the way without deleting them, restore anytime
-- ✅ **Checklists** - Tap-to-check, drag & drop, convert text ↔ checklist
-- ✍️ **Live Markdown** - Live highlighting in the editor and rendered list/grid previews
-- 📋 **Rich clipboard paste** - HTML paste from Telegram, Word, Google Docs & browsers converts to Markdown
-- 🎨 **Note colors** - Color-code notes, then filter and sort by color
-- 📥 **Google Keep import** - Bring your notes over from a Keep export
-- 📊 **Flexible views** - List or grid layout, 1–5 column scaling, adjustable font size, collapsible & reorderable sections
-- 🧩 **Widgets** - Single-note, scrollable note-list, and quick-new-note home screen widgets
-- 🔄 **Configurable sync triggers** - onSave, onResume, WiFi-connect, periodic (15/30/60 min), boot
-- ⚡ **Parallel sync** - Uploads/downloads up to 5 notes simultaneously
-- 🔒 **Self-hosted** - Your data stays with you (WebDAV, encrypted credentials)
-- 🔐 **App lock** - Optional biometric/PIN unlock with screenshot protection
-- 💾 **Local backup** - Export/Import as JSON file
-- 🖥️ **Desktop integration** - Markdown export for Obsidian, VS Code, Typora
-- 💻 **Desktop editor** _(beta)_ - Edit your notes on Windows & Linux with [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop), the WebDAV-synced companion app
-- 📤 **Share & export** - Receive shared text, share as text or PDF, export to calendar
-- ↩️ **Undo/Redo** - Full undo/redo history in the note editor
-- 🌍 **Multilingual** - 12 languages with in-app language selector
-- 🎨 **Material Design 3** - 7 color schemes incl. AMOLED & Dynamic Color, animated theme transitions
+**Server** (any machine with Docker):
 
-➡️ **Complete feature list:** [FEATURES.md](docs/FEATURES.md)
+1. Get the server files:
+   ```bash
+   git clone https://github.com/inventory69/simple-notes-sync.git
+   cd simple-notes-sync/server
+   ```
+2. Create the config and set a password under `users:`:
+   ```bash
+   cp config.yml.example config.yml
+   ```
+3. Start it:
+   ```bash
+   docker compose up -d
+   ```
 
-## 🚀 Quick Start
+**App:**
 
-### 1. Server Setup (5 minutes)
+1. Install it from one of the stores above.
+2. Open Settings → Server Settings, switch off Offline Mode and enter
+   URL `http://SERVER-IP:8080/`, username `noteuser` and the password from `config.yml`.
+3. Tap **Test Connection**. From now on your notes sync on their own.
 
-```bash
-git clone https://github.com/inventory69/simple-notes-sync.git
-cd simple-notes-sync/server
-cp .env.example .env
-# Set password in .env
-docker compose up -d
-```
+Already running Nextcloud or another WebDAV server? Skip the server part. The [quick start guide](QUICKSTART.md) covers that, HTTPS and when the app syncs in the background.
 
-➡️ **Details:** [Server Setup Guide](server/README.md)
+## What's next
 
-### 2. App Installation (2 minutes)
+Optional end-to-end encryption for the sync folder is in the works ([#9](https://github.com/inventory69/simple-notes-sync/issues/9)). There is no release date yet. Ideas and votes on what comes after that live in [Discussions](https://github.com/inventory69/simple-notes-sync/discussions/categories/ideas).
 
-1. [Download APK](https://github.com/inventory69/simple-notes-sync/releases/latest)
-2. Install & open
-3. ⚙️ Settings → Configure server:
-   - **URL:** `http://YOUR-SERVER-IP:8080/` _(base URL only!)_
-   - **User:** `noteuser`
-   - **Password:** _(from .env)_
-   - **WiFi:** _(your network name)_
-4. **Test connection** → Enable auto-sync
-5. Done! 🎉
+## Documentation
 
-➡️ **Detailed guide:** [QUICKSTART.md](QUICKSTART.md)
+- [Quick start](QUICKSTART.md): server, app, background sync, self-signed certificates, updates
+- [Features](docs/FEATURES.md): everything the app does, and the permissions it asks for
+- [Sync](docs/SYNC.md): what lands on the server, conflicts, deletions, Markdown files and the desktop app
+- [Backup](docs/BACKUP.md): backup files, encryption and restore modes
+- [Troubleshooting](docs/TROUBLESHOOTING.md): ordered checks for the common problems
+- [Server](server/README.md): the Docker server in detail
+- [Changelog](CHANGELOG.md)
 
-## 📚 Documentation
+## Contributing
 
-| Document | Content |
-|----------|---------|
-| **[QUICKSTART.md](QUICKSTART.md)** | Step-by-step installation |
-| **[FEATURES.md](docs/FEATURES.md)** | Complete feature list |
-| **[BACKUP.md](docs/BACKUP.md)** | Backup & restore guide |
-| **[DESKTOP.md](docs/DESKTOP.md)** | Desktop integration (Markdown) |
-| **[Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop)** | Desktop editor for Windows & Linux _(beta)_ 💻 |
-| **[SELF_SIGNED_SSL.md](docs/SELF_SIGNED_SSL.md)** | Self-signed SSL certificate setup |
-| **[DOCS.md](docs/DOCS.md)** | Technical details & troubleshooting |
-| **[CHANGELOG.md](CHANGELOG.md)** | Version history |
-| **[UPCOMING.md](docs/UPCOMING.md)** | Upcoming features 🚀 |
-| **[TRANSLATING.md](docs/TRANSLATING.md)** | Translation guide 🌍 |
+Bug reports and pull requests are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Feature ideas go to [Discussions](https://github.com/inventory69/simple-notes-sync/discussions/categories/ideas).
 
-## 🛠️ Development
-
-```bash
-cd android
-./gradlew assembleStandardRelease
-```
-
-➡️ **Build guide:** [DOCS.md](docs/DOCS.md#-build--deployment)
-
-## 💡 Feature Requests & Ideas
-
-Have an idea for a new feature or improvement? We'd love to hear it!
-
-➡️ **How to suggest features:**
-
-1. Check [existing discussions](https://github.com/inventory69/simple-notes-sync/discussions) to see if someone already suggested it
-2. If not, start a new discussion in the "Feature Requests / Ideas" category
-3. Upvote (👍) features you'd like to see
-
-Features with enough community support will be considered for implementation. Please keep in mind that this app is designed to stay simple and user-friendly.
-
-## 🌍 Translations
-
-Translation hosting generously provided by [Weblate](https://hosted.weblate.org/projects/simple-notes-sync/) - thank you for sponsoring open-source projects! 🙏
+Translations happen on [Weblate](https://hosted.weblate.org/engage/simple-notes-sync/), which hosts this project for free. Thank you!
 
 [![Translation status](https://hosted.weblate.org/widget/simple-notes-sync/android-app/svg-badge.svg)](https://hosted.weblate.org/engage/simple-notes-sync/)
 
-<a href="https://hosted.weblate.org/engage/simple-notes-sync/">
-<img src="https://hosted.weblate.org/widget/simple-notes-sync/android-app/horizontal-auto.svg" alt="Translation status" />
-</a>
+If the app is useful to you, you can support it on [Liberapay](https://liberapay.com/inventory/).
 
-## 🤝 Contributing
+## License
 
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-If you find this app useful, you can support its development:
-
-<a href="https://liberapay.com/inventory/">
-<img src="https://liberapay.com/assets/widgets/donate.svg" alt="Donate via Liberapay" height="35" />
-</a>
-
-## 📄 License
-
-GNU Affero General Public License v3.0 - see [LICENSE](LICENSE)
-
-<div align="center">
-<br /><br />
-
-**v2.20.0** · Built with ❤️ using Kotlin + Jetpack Compose + Material Design 3
-
-</div>
+GNU Affero General Public License v3.0, see [LICENSE](LICENSE).

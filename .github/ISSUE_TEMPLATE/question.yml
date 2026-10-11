@@ -26,7 +26,7 @@ body:
           required: false
         - label: I have read the [Quick Start Guide](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md)
           required: false
-        - label: I have checked the [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/QUICKSTART.md#-troubleshooting) section
+        - label: I have checked the [Troubleshooting](https://github.com/inventory69/simple-notes-sync/blob/main/docs/TROUBLESHOOTING.md) section
           required: false
 
   - type: textarea
