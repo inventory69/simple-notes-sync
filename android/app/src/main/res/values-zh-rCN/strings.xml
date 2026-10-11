@@ -1091,4 +1091,14 @@
     <string name="notification_sync_export_title">某些文件未传输</string>
     <string name="notification_warnings_channel_name">同步警告</string>
     <string name="notification_warnings_channel_desc">静默通知当 Markdown 文件或图片不能传输时</string>
+    <string name="snackbar_delete_queued_e2ee">同步已暂停：删除已排队，直到同步恢复</string>
+    <string name="activity_op_sync_unblocked">同步已恢复：文件夹不再加密</string>
+    <string name="sync_e2ee_blocked_short">同步已暂停：这个文件夹在另一个设备上是加密的</string>
+    <string name="restore_e2ee_blocked">这个同步文件夹在另一个设备上是端到端加密。这个版本不能读取加密的笔记，所以没有东西是恢复的。你的本地笔记未更改。</string>
+    <string name="sync_e2ee_blocked_long">另一个设备为这个同步文件夹打开了端到端加密。这个版本不能读取加密的笔记，所以同步已暂停并且服务器上的东西未更改。你的笔记保存在这个设备并且保留你的更改。更新本应用，或在其他设备上关闭加密。</string>
+    <string name="sync_status_paused">同步已暂停</string>
+    <string name="editor_checklist_read_mode_toggle">在阅读模式中打开清单</string>
+    <string name="editor_checklist_read_mode_description">以只读打开清单。在一个项目上点击任意地方来勾选它，使用铅笔图标来编辑。</string>
+    <string name="editor_toggle_read_mode">切换阅读模式</string>
+    <string name="test_connection_e2ee_blocked">✅ 可连上服务器，但 /%1$s/ 在另一个设备上是加密的。同步已暂停。</string>
 </resources>
