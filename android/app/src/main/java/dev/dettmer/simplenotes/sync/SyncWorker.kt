@@ -221,7 +221,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
 
             // ⭐ KRITISCH: Server-Erreichbarkeits-Check VOR Sync
-            // 🔥 v2.4.0: Vor hasUnsyncedChanges() — spart PROPFIND bei unerreichbarem Server.
             // Verhindert Fehler-Notifications in fremden WiFi-Netzen.
             // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway).
             if (!syncService.isServerReachable()) {
@@ -288,8 +287,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
             // 🔥 v1.1.2: Performance-Optimierung - Skip Sync wenn keine lokalen Änderungen
             // Spart Batterie + Netzwerk-Traffic + Server-Last.
-            // 🔥 v2.4.0: Nach isServerReachable() — PROPFIND in hasUnsyncedChanges() wäre sonst
-            // bei unerreichbarem Server fehlgeschlagen und hätte fälschlich true zurückgegeben.
             if (!syncService.hasUnsyncedChanges()) {
                 Logger.d(TAG, "⏭️ No local changes - skipping sync (performance optimization)")
                 Logger.d(TAG, "   Saves battery, network traffic, and server load")
@@ -546,6 +543,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 Logger.d(TAG, "═══════════════════════════════════════")
             }
             Result.failure()
+        } finally {
+            // 🆕 v2.20.1: Keine Leerlauf-Verbindung in den Tiefschlaf mitnehmen (siehe ConnectionManager.sharedPool)
+            ConnectionManager.closeIdleConnections()
         }
     }
 

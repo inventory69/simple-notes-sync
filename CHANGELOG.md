@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.1] - 2026-10-12
+
+### ⚡ Performance Improvements
+
+**Lower Battery Use While the Phone Sleeps** ([f70be44](https://github.com/inventory69/simple-notes-sync/commit/f70be44))
+- The app now closes idle server connections at the end of every sync and when it goes to the background, instead of leaving them to time out
+- This helps most with servers that send keepalives, like the recommended hacdias/webdav, and when battery optimization is off for the app: Wi-Fi no longer wakes up for an open connection
+- Requests that are still running are not affected, and syncing needs no extra requests
+
+---
+
 ## [2.20.0] - 2026-10-11
 
 ### ✨ New Features

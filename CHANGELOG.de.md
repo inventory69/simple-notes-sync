@@ -8,6 +8,17 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.1] - 2026-10-12
+
+### ⚡ Performance-Verbesserungen
+
+**Weniger Akkuverbrauch, während das Handy schläft** ([f70be44](https://github.com/inventory69/simple-notes-sync/commit/f70be44))
+- Die App schließt ungenutzte Serververbindungen jetzt am Ende jedes Syncs und beim Wechsel in den Hintergrund, statt sie auslaufen zu lassen
+- Das hilft vor allem bei Servern, die Keepalives senden, wie dem empfohlenen hacdias/webdav, und wenn die Akkuoptimierung für die App aus ist: Das WLAN wacht nicht mehr wegen einer offenen Verbindung auf
+- Laufende Requests bleiben unberührt, und der Sync braucht keine zusätzlichen Requests
+
+---
+
 ## [2.20.0] - 2026-10-11
 
 ### ✨ Neue Funktionen

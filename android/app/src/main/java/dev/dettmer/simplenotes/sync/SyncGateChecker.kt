@@ -59,6 +59,7 @@ class SyncGateChecker(
             // Uses OkHttp instead of HttpURLConnection so SSL config and
             // trust management are consistent with the rest of the app.
             val httpClient = OkHttpClient.Builder()
+                .connectionPool(ConnectionManager.sharedPool)
                 .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .build()

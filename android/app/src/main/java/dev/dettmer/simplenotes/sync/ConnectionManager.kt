@@ -19,6 +19,7 @@ import dev.dettmer.simplenotes.utils.Logger
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 
 /**
@@ -65,6 +66,22 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
         private var sharedAuthCacheKey: String? = null
 
         /**
+         * 🆕 v2.20.1: Ein Pool für alle Clients der App, damit [closeIdleConnections] jede
+         * Leerlauf-Verbindung erreicht. OkHttp räumt sie selbst erst nach 5 min auf der
+         * monotonen Uhr ab, und die steht im Tiefschlaf still. Sendet der Server TCP-Keepalives
+         * (hacdias/webdav: alle 15 s), weckt jede davon das Gerät. Mit Akku-Ausnahme hält sich
+         * eine einzige liegengebliebene Verbindung so stundenlang am Leben.
+         */
+        internal val sharedPool = ConnectionPool()
+
+        /**
+         * Schließt nur Leerlauf-Verbindungen, laufende Requests bleiben unberührt. Aufrufer: Ende
+         * jedes [SyncWorker]-Laufs und App im Hintergrund, über den gemeinsamen Pool auch
+         * [WebDavClient.close]. Nicht auf dem Main-Thread (TLS-Close).
+         */
+        fun closeIdleConnections() = sharedPool.evictAll()
+
+        /**
          * 🆕 v2.14.0: Baut den OkHttpClient für WebDAV-Requests.
          *
          * Auth läuft über `okhttp-digest`: [DispatchingAuthenticator] wählt anhand der
@@ -93,6 +110,7 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
             }
 
             return OkHttpClient.Builder()
+                .connectionPool(sharedPool)
                 .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
