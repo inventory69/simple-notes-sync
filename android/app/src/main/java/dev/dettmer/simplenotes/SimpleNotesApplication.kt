@@ -5,12 +5,16 @@ import android.content.Context
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.core.content.edit
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.size.Precision
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.ConnectionManager
 import dev.dettmer.simplenotes.sync.NetworkMonitor
 import dev.dettmer.simplenotes.sync.SyncStateManager
 import dev.dettmer.simplenotes.utils.ActivityLog
@@ -72,6 +76,13 @@ class SimpleNotesApplication : Application(), SingletonImageLoader.Factory {
         ComposeFoundationFlags.isSkipItemPlacementAnimationFixEnabled = false
 
         AppLock.init(this)
+
+        // 🆕 v2.20.1: App im Hintergrund → Leerlauf-Verbindungen schließen (siehe ConnectionManager.sharedPool)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) {
+                applicationScope.launch(Dispatchers.IO) { ConnectionManager.closeIdleConnections() }
+            }
+        })
 
         val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
 

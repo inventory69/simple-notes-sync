@@ -546,6 +546,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 Logger.d(TAG, "═══════════════════════════════════════")
             }
             Result.failure()
+        } finally {
+            // 🆕 v2.20.1: Keine Leerlauf-Verbindung in den Tiefschlaf mitnehmen (siehe ConnectionManager.sharedPool)
+            ConnectionManager.closeIdleConnections()
         }
     }
 
