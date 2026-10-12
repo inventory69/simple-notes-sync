@@ -1,0 +1,3 @@
+🌙 v2.20.1 - Ruhige Nächte
+
+• Weniger Akkuverbrauch: Ungenutzte Serververbindungen werden jetzt nach jedem Sync und beim Wechsel in den Hintergrund geschlossen, damit das WLAN nachts schlafen kann
