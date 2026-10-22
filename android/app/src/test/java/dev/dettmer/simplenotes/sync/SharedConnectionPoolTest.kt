@@ -20,16 +20,17 @@ class SharedConnectionPoolTest {
         h.close()
     }
 
-    @Test fun `gate check and session client share one pool, closeIdleConnections empties it`() = runTest {
+    @Test fun `gate HEAD stays out of the pool, closeIdleConnections empties it`() = runTest {
         ConnectionManager.closeIdleConnections()
         val service = h.service(UnconfinedTestDispatcher(testScheduler))
 
         assertTrue(service.isServerReachable())
         service.isServerLocked()
 
-        // Der GET des Session-Clients läuft über die Verbindung des HEAD → derselbe Pool
+        // Der HEAD schließt seine Verbindung (v2.20.2), der GET öffnet eine neue und lässt sie im
+        // geteilten Pool liegen
         assertEquals(0, h.server.takeRequest().sequenceNumber)
-        assertEquals(1, h.server.takeRequest().sequenceNumber)
+        assertEquals(0, h.server.takeRequest().sequenceNumber)
         assertEquals(1, ConnectionManager.sharedPool.idleConnectionCount())
 
         ConnectionManager.closeIdleConnections()

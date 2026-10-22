@@ -20,6 +20,7 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import okhttp3.ConnectionPool
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 
 /**
@@ -116,7 +117,22 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
                 .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .authenticator(CachingAuthenticatorDecorator(authenticator, authCache))
                 .addInterceptor(AuthenticationCacheInterceptor(authCache))
+                .addNetworkInterceptor(closeAfterHead)
                 .build()
+        }
+
+        /**
+         * 🔧 v2.20.2: HEAD-Verbindungen nie in den Pool. Manche Server hängen an die Antwort
+         * (meist die 401) trotzdem einen Body. OkHttp liest ihn nicht, der nächste Request auf der
+         * Verbindung bekommt ihn als Statuszeile (`ProtocolException`, kein Retry). Seit dem
+         * geteilten Pool (v2.20.1) traf das jeden Sync. Netzwerk-Interceptor, damit auch der
+         * Auth-Folge-HEAD den Header trägt.
+         */
+        internal val closeAfterHead = Interceptor { chain ->
+            val request = chain.request()
+            chain.proceed(
+                if (request.method == "HEAD") request.newBuilder().header("Connection", "close").build() else request
+            )
         }
 
         /** SHA-256 über `user:pass` — der Klartext darf nirgends gehalten oder geloggt werden. */
