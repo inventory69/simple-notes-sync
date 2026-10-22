@@ -1,0 +1,5 @@
+🚪 v2.20.2 - Sync ist zurück
+
+• Fix: Der Sync funktioniert wieder mit Baïkal und anderen WebDAV-Servern, die auf manche Anfragen ungewöhnlich antworten (Fehler „Unexpected status line“)
+
+Danke an Dirk für die Meldung und fürs Testen!
