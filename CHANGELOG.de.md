@@ -8,6 +8,17 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.20.2] - 2026-10-22
+
+### 🐛 Bug-Fixes
+
+**Sync funktioniert wieder mit Baïkal und ähnlichen Servern** ([38d89a4](https://github.com/inventory69/simple-notes-sync/commit/38d89a4))
+- Manche WebDAV-Server, darunter Baïkal, schicken auf eine kurze Statusanfrage Daten mit, wo keine erlaubt sind. Die App las dann die nächste Antwort auf derselben Verbindung falsch, und der Sync brach mit „Unexpected status line“ ab
+- Statusanfragen bekommen jetzt eine eigene Verbindung, die direkt nach der Antwort geschlossen wird. Der Sync braucht keine zusätzlichen Requests, und es bleibt keine ungenutzte Verbindung offen
+- Danke an Dirk für die Meldung und fürs Testen!
+
+---
+
 ## [2.20.1] - 2026-10-12
 
 ### ⚡ Performance-Verbesserungen

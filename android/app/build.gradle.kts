@@ -19,8 +19,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 67  // 🆕 v2.20.1 - close idle WebDAV connections (Wi-Fi wakeups)
-        versionName = "2.20.1"  // 🆕 v2.20.1 - close idle WebDAV connections (Wi-Fi wakeups)
+        versionCode = 68  // 🆕 v2.20.2 - keep HEAD connections out of the pool (Baïkal sync)
+        versionName = "2.20.2"  // 🆕 v2.20.2 - keep HEAD connections out of the pool (Baïkal sync)
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

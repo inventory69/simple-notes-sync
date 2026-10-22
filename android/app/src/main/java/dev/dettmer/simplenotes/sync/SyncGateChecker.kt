@@ -62,6 +62,7 @@ class SyncGateChecker(
                 .connectionPool(ConnectionManager.sharedPool)
                 .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .addNetworkInterceptor(ConnectionManager.closeAfterHead)
                 .build()
             val request = Request.Builder().url(serverUrl).head().build()
             val response = httpClient.newCall(request).execute()

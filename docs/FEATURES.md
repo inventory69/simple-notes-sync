@@ -1,6 +1,6 @@
 # Features
 
-Everything Simple Notes Sync does, as of v2.20.1. What changed in which version is in the [changelog](../CHANGELOG.md).
+Everything Simple Notes Sync does, as of v2.20.2. What changed in which version is in the [changelog](../CHANGELOG.md).
 
 ## Writing
 
