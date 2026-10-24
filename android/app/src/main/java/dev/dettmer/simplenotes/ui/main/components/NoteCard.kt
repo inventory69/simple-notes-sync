@@ -269,7 +269,7 @@ private fun NoteCardMeta(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = note.updatedAt.toReadableTime(context),
+                text = note.editedAt.toReadableTime(context),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.weight(1f)

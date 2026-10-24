@@ -124,7 +124,7 @@ class WidgetQuickEditViewModel(
                 content = text.trim(),
                 updatedAt = System.currentTimeMillis(),
                 syncStatus = syncStatus
-            )
+            ).withContentTouched(current)
         }
 
         val itemText = text.trim()
@@ -141,7 +141,7 @@ class WidgetQuickEditViewModel(
             checklistItems = ChecklistSorter.sort(items + newItem, sortOptionOf(current)),
             updatedAt = System.currentTimeMillis(),
             syncStatus = syncStatus
-        )
+        ).withContentTouched(current)
     }
 
     private fun sortOptionOf(note: Note): ChecklistSortOption = try {

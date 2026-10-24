@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
-import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.models.holdsLocalEdit
 import dev.dettmer.simplenotes.storage.FolderStore
@@ -1216,8 +1215,6 @@ internal class NoteDownloader(
      * fields a user can read or interact with are compared.
      */
     private fun noteContentDiffers(a: Note, b: Note): Boolean {
-        if (a.noteType != b.noteType) return true
-        if (a.title != b.title) return true
         if (a.isPinned != b.isPinned) return true
         if (a.color != b.color) return true
         if (a.folderName != b.folderName) return true
@@ -1228,16 +1225,7 @@ internal class NoteDownloader(
         // gleiche Begründung wie trashedAt (ETag-Refresh darf den Zustandswechsel nicht schlucken).
         if (a.archivedAt != b.archivedAt) return true
 
-        return when (a.noteType) {
-            NoteType.CHECKLIST -> {
-                val aItems = a.checklistItems.orEmpty()
-                val bItems = b.checklistItems.orEmpty()
-                if (aItems.size != bItems.size) return true
-                aItems.zip(bItems).any { (ai, bi) ->
-                    ai.text != bi.text || ai.isChecked != bi.isChecked || ai.order != bi.order
-                }
-            }
-            else -> a.content.trim() != b.content.trim()
-        }
+        // 🔧 v2.21.0: Inhalt wie überall sonst (Typ, Titel, Text bzw. Items nach `order`)
+        return a.contentDiffers(b)
     }
 }

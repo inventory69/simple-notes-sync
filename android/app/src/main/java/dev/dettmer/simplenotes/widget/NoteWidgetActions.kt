@@ -78,7 +78,7 @@ class ToggleChecklistItemAction : ActionCallback {
             checklistItems = sortedItems,
             updatedAt = System.currentTimeMillis(),
             syncStatus = SyncStatus.PENDING
-        )
+        ).withContentTouched(note)
 
         storage.saveNote(updatedNote)
         Logger.d(TAG, "Toggled + auto-sorted checklist item '$itemId' in widget")

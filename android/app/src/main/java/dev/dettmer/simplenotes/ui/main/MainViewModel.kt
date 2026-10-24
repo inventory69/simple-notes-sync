@@ -1465,16 +1465,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun sortNotes(notes: List<Note>, option: SortOption, direction: SortDirection): List<Note> {
         val comparator: Comparator<Note> = when (option) {
-            SortOption.UPDATED_AT -> compareBy { it.updatedAt }
+            SortOption.UPDATED_AT -> compareBy { it.editedAt }
             SortOption.CREATED_AT -> compareBy { it.createdAt }
             SortOption.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
             SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }
-                .thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Typen
+                .thenByDescending { it.editedAt } // Sekundär: Datum innerhalb gleicher Typen
             SortOption.COLOR -> {
                 // 🔧 Perf: Index-Map einmal vorab bauen statt pro Notiz die Palette zu durchsuchen
                 val hexToIndex = NoteColorPalette.slots.withIndex().associate { (i, slot) -> slot.hex to i }
                 compareBy<Note> { note -> hexToIndex[note.color] ?: Int.MAX_VALUE }
-                    .thenByDescending { it.updatedAt } // Sekundär: Datum innerhalb gleicher Farbe
+                    .thenByDescending { it.editedAt } // Sekundär: Datum innerhalb gleicher Farbe
             }
         }
 

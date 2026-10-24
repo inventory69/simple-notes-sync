@@ -83,7 +83,7 @@ private fun VersionBlock(label: String, note: Note) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = note.updatedAt.toReadableTime(context),
+                text = note.editedAt.toReadableTime(context),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

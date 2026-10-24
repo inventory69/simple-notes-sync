@@ -230,7 +230,7 @@ fun NoteCardGrid(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = note.updatedAt.toReadableTime(context),
+                            text = note.editedAt.toReadableTime(context),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.weight(1f)

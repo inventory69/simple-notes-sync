@@ -127,10 +127,10 @@ fun applyFilterAndSort(
 
     // SortOption.COLOR is skipped — no color palette reference in widget; falls back to UPDATED_AT.
     val comparator: Comparator<Note> = when (sortOption) {
-        SortOption.UPDATED_AT, SortOption.COLOR -> compareBy { it.updatedAt }
+        SortOption.UPDATED_AT, SortOption.COLOR -> compareBy { it.editedAt }
         SortOption.CREATED_AT -> compareBy { it.createdAt }
         SortOption.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
-        SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }.thenByDescending { it.updatedAt }
+        SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }.thenByDescending { it.editedAt }
     }
 
     val sorted = when (sortDirection) {

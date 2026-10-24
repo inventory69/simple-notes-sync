@@ -596,6 +596,7 @@ internal class MarkdownSyncManager(
                             val merged = mdNoteFoldered.copy(
                                 syncStatus = SyncStatus.PENDING,
                                 updatedAt = mergedUpdatedAt,
+                                contentUpdatedAt = mergedUpdatedAt, // 🆕 v2.21.0: Inhalt hat sich geändert
                                 isPinned = mdNote.isPinned ?: localNote.isPinned,
                                 color = mdNote.color ?: localNote.color,
                                 archivedAt = mdNote.archivedAt ?: localNote.archivedAt // 🆕 v2.11.0 (Archive)
@@ -614,7 +615,13 @@ internal class MarkdownSyncManager(
                                 storage.saveNote(localNote.copy(syncStatus = SyncStatus.CONFLICT))
                                 Logger.w(TAG, "   ⚠️ Conflict: Markdown vs local pending: ${mdNote.id}")
                             } else {
-                                storage.saveNote(mdNoteFoldered.copy(syncStatus = SyncStatus.PENDING))
+                                // 🆕 v2.21.0: Neuer kann die MD-Fassung auch nur durch Verschieben/Pin am
+                                // Desktop sein. Dann bleibt die Inhaltszeit, sonst überschriebe der
+                                // PENDING-Re-Upload sie am Server für alle Clients.
+                                val contentUpdatedAt = if (contentChanged) mdNote.updatedAt else localNote.editedAt
+                                storage.saveNote(
+                                    mdNoteFoldered.copy(syncStatus = SyncStatus.PENDING, contentUpdatedAt = contentUpdatedAt)
+                                )
                                 eTagCache.setMdPath(mdNote.id, mdItem.fileUrl)
                                 importedCount++
                                 Logger.d(TAG, "   ✅ Updated from Markdown (newer timestamp): ${mdNote.title}")
