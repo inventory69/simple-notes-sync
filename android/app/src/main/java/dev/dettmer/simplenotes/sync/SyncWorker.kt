@@ -223,13 +223,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // ⭐ KRITISCH: Server-Erreichbarkeits-Check VOR Sync
             // Verhindert Fehler-Notifications in fremden WiFi-Netzen.
             // Wartet bis Netzwerk bereit ist (DHCP, Routing, Gateway).
-            if (!syncService.isServerReachable()) {
+            val reachability = syncService.reachability()
+            val tlsError = reachability as? Reachability.TlsError
+            if (reachability != Reachability.Reachable) {
                 Logger.d(TAG, "⏭️ Server not reachable - skipping sync (no error)")
                 Logger.d(TAG, "   Reason: Server offline/wrong network/network not ready/not configured")
                 Logger.d(TAG, "   This is normal in foreign WiFi or during network initialization")
 
                 // 🔥 v1.1.2: Check if we should show warning (server unreachable for >24h)
-                checkAndShowSyncWarning(syncService)
+                checkAndShowSyncWarning(syncService, certificateProblem = tlsError != null)
 
                 // 🆕 v2.2.0: Retry for WiFi-connect and WiFi-fallback triggers on transient
                 // unreachability (e.g. DHCP still settling, DNS not yet resolved).
@@ -251,9 +253,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 SyncDebugLogger.logTrigger(
                     triggerType = tagOrUnknown(),
                     outcome = outcome,
-                    reason = "server unreachable (attempt=${runAttemptCount + 1}/$totalRuns)",
+                    reason = "${tlsError?.let { "tls ${it.kind}" } ?: "server unreachable"} " +
+                        "(attempt=${runAttemptCount + 1}/$totalRuns)",
                     networkState = SyncDebugLogger.snapshotNetwork(applicationContext),
                     runAttempt = runAttemptCount
+                )
+                // 🆕 v2.21.0: Zertifikatsfehler mit eigener Meldung, persistiert auch still im Sync-Status
+                val skipMessage = applicationContext.getString(
+                    tlsError?.let { SyncExceptionMapper.sslMessage(it.kind) } ?: R.string.snackbar_server_unreachable
                 )
                 if (canRetry) {
                     Logger.d(
@@ -261,6 +268,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                         "🔁 Server unreachable — scheduling retry " +
                             "(attempt ${runAttemptCount + 1}/$totalRuns)"
                     )
+                    // Ein TLS-Fehler ist eine echte Diagnose (Netz steht, etwas antwortet): sofort in den
+                    // Sync-Status statt erst nach dem letzten Retry. Der Retry bleibt für Captive Portals.
+                    if (tlsError != null) SyncStateManager.persistError(skipMessage)
                     SyncStateManager.reset()
                     return@withContext Result.retry()
                 }
@@ -268,9 +278,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // 🆕 v2.4.0 (FIX-SSBE-004): Visibility-aware Termination
                 // Wenn der Sync promoted wurde (User hat Pull-to-Refresh gemacht),
                 // zeige den Fehler im Banner. Sonst: silent reset.
-                SyncStateManager.errorIfVisible(
-                    applicationContext.getString(R.string.snackbar_server_unreachable)
-                )
+                SyncStateManager.errorIfVisible(skipMessage)
 
                 if (BuildConfig.DEBUG) {
                     Logger.d(TAG, "✅ SyncWorker.doWork() SUCCESS (silent skip)")
@@ -595,7 +603,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
      * - Nur wenn >24h seit letztem erfolgreichen Sync
      * - Throttling: Max. 1 Warnung pro 24h
      */
-    private fun checkAndShowSyncWarning(syncService: WebDavSyncService) {
+    private fun checkAndShowSyncWarning(syncService: WebDavSyncService, certificateProblem: Boolean) {
         try {
             val prefs = applicationContext.getSharedPreferences(
                 dev.dettmer.simplenotes.utils.Constants.PREFS_NAME,
@@ -643,16 +651,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // einem Gerätewechsel auf, weil die Credentials dort nicht mitkommen.
             val credentialsMissing = !CredentialStore.hasCredentials(applicationContext)
             val hoursSinceLastSync = timeSinceLastSync / (1000 * 60 * 60)
-            NotificationHelper.showSyncWarning(applicationContext, hoursSinceLastSync, credentialsMissing)
+            NotificationHelper.showSyncWarning(
+                applicationContext,
+                hoursSinceLastSync,
+                credentialsMissing,
+                certificateProblem
+            )
 
             // Speichere Zeitpunkt der Warnung
             prefs.edit { putLong(dev.dettmer.simplenotes.utils.Constants.KEY_LAST_SYNC_WARNING_SHOWN, now) }
 
-            Logger.d(
-                TAG,
-                "⚠️ Sync warning shown after ${hoursSinceLastSync}h " +
-                    "(${if (credentialsMissing) "credentials missing" else "server unreachable"})"
-            )
+            val cause = when {
+                credentialsMissing -> "credentials missing"
+                certificateProblem -> "certificate"
+                else -> "server unreachable"
+            }
+            Logger.d(TAG, "⚠️ Sync warning shown after ${hoursSinceLastSync}h ($cause)")
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to check/show sync warning", e)
         }

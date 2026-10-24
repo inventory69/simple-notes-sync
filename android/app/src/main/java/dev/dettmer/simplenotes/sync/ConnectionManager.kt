@@ -93,8 +93,9 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
          * nur einen 401 pro App-Start statt einen pro Sync.
          *
          * Single source of truth für Timeouts: [getTimeoutMs].
+         * 🆕 v2.21.0: [pinSha256] aus [TrustedCertificate.pin], null lässt TLS unverändert.
          */
-        fun buildHttpClient(timeoutMs: Long, username: String, password: String): OkHttpClient {
+        fun buildHttpClient(timeoutMs: Long, username: String, password: String, pinSha256: String?): OkHttpClient {
             val credentials = Credentials(username, password)
             val authenticator = DispatchingAuthenticator.Builder()
                 .with("digest", DigestAuthenticator(credentials))
@@ -110,7 +111,7 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
                 }
             }
 
-            return OkHttpClient.Builder()
+            val builder = OkHttpClient.Builder()
                 .connectionPool(sharedPool)
                 .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                 .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -118,7 +119,7 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
                 .authenticator(CachingAuthenticatorDecorator(authenticator, authCache))
                 .addInterceptor(AuthenticationCacheInterceptor(authCache))
                 .addNetworkInterceptor(closeAfterHead)
-                .build()
+            return TrustedCertificate.apply(builder, pinSha256).build()
         }
 
         /**
@@ -260,7 +261,8 @@ class ConnectionManager(private val context: Context, private val prefs: SharedP
 
         Logger.d(TAG, "🔧 Creating WebDavClient")
 
-        return WebDavClient(buildHttpClient(getTimeoutMs(), username, password))
+        val pin = TrustedCertificate.pin(prefs, prefs.getString(Constants.KEY_SERVER_URL, null))
+        return WebDavClient(buildHttpClient(getTimeoutMs(), username, password, pin))
     }
 
     /**

@@ -175,7 +175,7 @@ fun SettingsMainScreen(
                 SettingsCard(
                     icon = Icons.Default.Cloud,
                     title = stringResource(R.string.settings_server),
-                    subtitle = if (!offlineMode && isConfigured) "$serverUrl/$syncFolderName" else null,
+                    subtitle = if (!offlineMode && isConfigured) "${serverUrl.trimEnd('/')}/$syncFolderName" else null,
                     statusText = when {
                         offlineMode ->
                             stringResource(R.string.settings_server_status_offline_mode)
@@ -185,6 +185,8 @@ fun SettingsMainScreen(
                             stringResource(R.string.settings_server_status_reachable)
                         serverStatus is SettingsViewModel.ServerStatus.Unreachable ->
                             stringResource(R.string.settings_server_status_unreachable)
+                        serverStatus is SettingsViewModel.ServerStatus.CertificateProblem ->
+                            stringResource(R.string.server_status_certificate)
                         serverStatus is SettingsViewModel.ServerStatus.Checking ->
                             stringResource(R.string.settings_server_status_checking)
                         serverStatus is SettingsViewModel.ServerStatus.NotConfigured ->
@@ -198,6 +200,8 @@ fun SettingsMainScreen(
                         serverStatus is SettingsViewModel.ServerStatus.Reachable ->
                             ServerReachableColor
                         serverStatus is SettingsViewModel.ServerStatus.Unreachable ->
+                            ServerUnreachableColor
+                        serverStatus is SettingsViewModel.ServerStatus.CertificateProblem ->
                             ServerUnreachableColor
                         serverStatus is SettingsViewModel.ServerStatus.NotConfigured ->
                             MaterialTheme.colorScheme.tertiary

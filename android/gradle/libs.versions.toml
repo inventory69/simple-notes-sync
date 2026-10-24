@@ -67,6 +67,7 @@ androidx-security-crypto = { group = "androidx.security", name = "security-crypt
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-digest = { group = "io.github.rburgst", name = "okhttp-digest", version.ref = "okhttpDigest" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+okhttp-tls = { group = "com.squareup.okhttp3", name = "okhttp-tls", version.ref = "okhttp" }
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }

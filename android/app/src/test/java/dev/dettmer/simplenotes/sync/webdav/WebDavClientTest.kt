@@ -43,7 +43,7 @@ class WebDavClientTest {
         ConnectionManager.clearSharedAuthCacheForTest()
         server = MockWebServer()
         server.start()
-        client = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw"))
+        client = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw", null))
     }
 
     @After fun tearDown() {
@@ -355,7 +355,7 @@ class WebDavClientTest {
         client.exists(url())
         client.close()
 
-        val second = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw"))
+        val second = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw", null))
         second.exists(url())
         second.close()
 
@@ -373,7 +373,7 @@ class WebDavClientTest {
         client.exists(url())
         client.close()
 
-        val other = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "other-pw"))
+        val other = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "other-pw", null))
         other.exists(url())
         other.close()
 

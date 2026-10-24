@@ -183,7 +183,7 @@ class WebDavTreeTest {
         ConnectionManager.clearSharedAuthCacheForTest()
         val server = MockWebServer()
         server.start()
-        val client = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw"))
+        val client = WebDavClient(ConnectionManager.buildHttpClient(5_000L, "user", "pw", null))
         try {
             server.enqueue(MockResponse().setResponseCode(207).setBody(CLAMPED_MULTISTATUS))
 

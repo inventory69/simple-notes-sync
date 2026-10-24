@@ -16,7 +16,10 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.CertificateInfo
 import dev.dettmer.simplenotes.sync.ExportProblems
+import dev.dettmer.simplenotes.sync.SyncExceptionMapper
+import dev.dettmer.simplenotes.sync.TrustedCertificate
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
@@ -33,8 +36,6 @@ import dev.dettmer.simplenotes.utils.SyncDebugLogger
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,6 +55,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import okhttp3.Request
 
 /**
  * ViewModel for Settings screens
@@ -72,7 +74,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     companion object {
         private const val TAG = "SettingsViewModel"
-        private const val CONNECTION_TIMEOUT_MS = 3000
+        private const val HTTP_UNAUTHORIZED = 401
+        private const val HTTP_METHOD_NOT_ALLOWED = 405
         private const val PROGRESS_CLEAR_DELAY_MS = 500L
 
         // 🆕 v1.10.0: Overhead-Timeout für Markdown-Export (Ordner-Erstellung, Listing etc.)
@@ -419,6 +422,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _folderChangePrompt = MutableStateFlow<FolderChangePrompt?>(null)
     val folderChangePrompt: StateFlow<FolderChangePrompt?> = _folderChangePrompt.asStateFlow()
+
+    /** 🆕 v2.21.0: Zertifikat aus dem Verbindungstest. [replacesTrusted] = dieser Host hatte schon einen Pin. */
+    data class CertificatePrompt(val certificate: CertificateInfo, val replacesTrusted: Boolean)
+
+    private val _certificatePrompt = MutableStateFlow<CertificatePrompt?>(null)
+    val certificatePrompt: StateFlow<CertificatePrompt?> = _certificatePrompt.asStateFlow()
 
     // 🆕 v2.11.0: Ordnerwechsel läuft noch — Dialog bleibt offen, Navigation wartet auf Completion
     private val _folderChangeInProgress = MutableStateFlow(false)
@@ -865,7 +874,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 val syncService = WebDavSyncService(getApplication())
-                val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
+                val reachable = withContext(ioDispatcher) { syncService.isServerReachable(userAction = true) }
                 if (!reachable) {
                     revertRemoteTargetToConfirmed()
                     emitToast(getString(R.string.snackbar_server_unreachable))
@@ -990,10 +999,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 val syncService = WebDavSyncService(getApplication())
                 val result = syncService.testConnection()
-                _serverStatus.value = if (result.isSuccess) {
-                    ServerStatus.Reachable
-                } else {
-                    ServerStatus.Unreachable(result.errorMessage)
+                _serverStatus.value = when {
+                    result.isSuccess -> ServerStatus.Reachable
+                    result.untrustedCertificate != null -> ServerStatus.CertificateProblem
+                    else -> ServerStatus.Unreachable(result.errorMessage)
+                }
+                // 🆕 v2.21.0: Der Dialog ersetzt den Fehler-Toast
+                result.untrustedCertificate?.let { certificate ->
+                    val replacesTrusted = TrustedCertificate.pin(prefs, certificate.url) != null // nur gleicher Host
+                    _certificatePrompt.value = CertificatePrompt(certificate, replacesTrusted)
+                    return@launch
                 }
                 val message = if (result.isSuccess) {
                     // 🆕 Issue #21: infoMessage anzeigen wenn vorhanden (z.B. /notes/-Status)
@@ -1007,6 +1022,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 emitToast(getString(R.string.toast_error, e.message.orEmpty()))
             }
         }
+    }
+
+    /** 🆕 v2.21.0: Pin für den getesteten Host speichern und gleich erneut testen. */
+    fun trustCertificate() {
+        val prompt = _certificatePrompt.value ?: return
+        TrustedCertificate.trust(prefs, prompt.certificate.url, prompt.certificate.sha256)
+        Logger.i(TAG, "Trusted server certificate updated")
+        _certificatePrompt.value = null
+        testConnection()
+    }
+
+    fun dismissCertificatePrompt() {
+        _certificatePrompt.value = null
     }
 
     fun checkServerStatus() {
@@ -1029,24 +1057,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             _serverStatus.value = ServerStatus.Checking
-            val isReachable = withContext(ioDispatcher) {
+            val status = withContext(ioDispatcher) {
                 try {
-                    val url = URL(serverUrl)
-                    val connection = url.openConnection() as HttpURLConnection
-                    try {
-                        connection.connectTimeout = CONNECTION_TIMEOUT_MS
-                        connection.readTimeout = CONNECTION_TIMEOUT_MS
-                        val code = connection.responseCode
-                        code in 200..299 || code == 401
-                    } finally {
-                        connection.disconnect()
-                    }
+                    // 🔧 v2.21.0: OkHttp statt HttpURLConnection, mit Pin, Timeout aus den Einstellungen
+                    // und Connection: close (HEAD, v2.20.2). 405 = HEAD verboten (bewCloud), Server antwortet.
+                    val request = Request.Builder().url(serverUrl).head().build()
+                    val code = TrustedCertificate.probeClient(prefs, serverUrl).newCall(request).execute().use { it.code }
+                    val reachable = code in 200..299 || code == HTTP_UNAUTHORIZED || code == HTTP_METHOD_NOT_ALLOWED
+                    if (reachable) ServerStatus.Reachable else ServerStatus.Unreachable(null)
                 } catch (e: Exception) {
                     Logger.e(TAG, "Server check failed: ${e.message}")
-                    false
+                    // 🆕 v2.21.0: Server antwortet, das Zertifikat scheitert. „Nicht erreichbar" wäre falsch.
+                    if (SyncExceptionMapper.sslKind(e) != null) ServerStatus.CertificateProblem else ServerStatus.Unreachable(null)
                 }
             }
-            _serverStatus.value = if (isReachable) ServerStatus.Reachable else ServerStatus.Unreachable(null)
+            _serverStatus.value = status
         }
     }
 
@@ -1077,7 +1102,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 // 🆕 FIX-015: HTTP reachability check before sync
                 val isReachable = withContext(ioDispatcher) {
-                    syncService.isServerReachable()
+                    syncService.isServerReachable(userAction = true)
                 }
                 if (!isReachable) {
                     emitToast(getString(R.string.snackbar_server_unreachable))
@@ -1258,7 +1283,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         // 🔧 v1.10.0 Fix: Schnell-Fail — Server-Erreichbarkeit VOR dem Export prüfen.
                         // Verhindert N×timeout (z.B. 21×3s=63s) wenn der Server schlicht nicht
                         // erreichbar ist. Ein einzelner Socket-Check reicht (1×timeout).
-                        val reachable = withContext(ioDispatcher) { syncService.isServerReachable() }
+                        val reachable = withContext(ioDispatcher) { syncService.isServerReachable(userAction = true) }
                         if (!reachable) {
                             // 🔧 v2.2.1: Prefs bleiben auf true — on-save Export funktioniert
                             // beim nächsten erfolgreichen Sync. Nur Toast als Warnung.
@@ -1765,6 +1790,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         data object Reachable : ServerStatus()
 
         data class Unreachable(val error: String?) : ServerStatus()
+
+        data object CertificateProblem : ServerStatus() // 🆕 v2.21.0: antwortet, Zertifikat scheitert
     }
 
     /**

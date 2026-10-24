@@ -64,8 +64,11 @@ object SyncStateManager {
         this.prefs = prefs
     }
 
-    /** `null` löscht den gespeicherten Fehler, ein Text schreibt ihn samt Zeitpunkt. */
-    private fun persistError(message: String?) {
+    /**
+     * `null` löscht den gespeicherten Fehler, ein Text schreibt ihn samt Zeitpunkt.
+     * 🆕 v2.21.0: internal, der SyncWorker hält einen Zertifikatsfehler schon vor dem Retry fest.
+     */
+    internal fun persistError(message: String?) {
         prefs?.edit {
             if (message == null) {
                 remove(Constants.KEY_LAST_SYNC_ERROR)

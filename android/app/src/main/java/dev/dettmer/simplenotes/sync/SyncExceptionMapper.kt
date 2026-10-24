@@ -3,6 +3,15 @@ package dev.dettmer.simplenotes.sync
 import android.content.Context
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
+import java.security.cert.CertPathValidatorException
+import java.security.cert.CertificateException
+import java.security.cert.CertificateExpiredException
+import java.security.cert.CertificateNotYetValidException
+import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLPeerUnverifiedException
+
+/** 🆕 v2.21.0: Art des TLS-Fehlers, unabhängig vom (übersetzten) Meldungstext. */
+enum class SslKind { HOSTNAME, EXPIRED, UNTRUSTED, OTHER }
 
 /**
  * Maps sync exceptions to user-friendly error messages.
@@ -20,6 +29,41 @@ class SyncExceptionMapper(private val context: Context) {
         private const val HTTP_PAYLOAD_TOO_LARGE = 413
         private const val HTTP_INTERNAL_SERVER_ERROR = 500
         private const val HTTP_INSUFFICIENT_STORAGE = 507
+        private const val MAX_CAUSE_DEPTH = 10
+
+        /**
+         * 🆕 v2.21.0: Sucht die ganze Ursachenkette ab, OkHttp und Aufrufer hüllen die
+         * `SSLException` mitunter in eine `IOException`. Auch `suppressed`: OkHttp 5 probiert IPv6
+         * und IPv4 parallel, scheitert eine Adresse am Connect, steckt der TLS-Fehler der anderen
+         * dort. `null` = kein TLS-Fehler, auch bei blanker `SSLException` (Verbindungsabbruch,
+         * Captive Portal mitten im Transfer): Das ist ein Netzfehler, kein Zertifikatsproblem.
+         */
+        fun sslKind(e: Throwable): SslKind? {
+            val chain = related(e, 0).toList()
+            val certificate = chain.any { it is CertificateException || it is CertPathValidatorException }
+            return when {
+                chain.any { it is SSLPeerUnverifiedException } -> SslKind.HOSTNAME
+                chain.any { it is CertificateExpiredException || it is CertificateNotYetValidException } ->
+                    SslKind.EXPIRED
+                certificate -> SslKind.UNTRUSTED
+                chain.any { it is SSLHandshakeException } -> SslKind.OTHER // Protokoll/Cipher
+                else -> null
+            }
+        }
+
+        fun sslMessage(kind: SslKind): Int = when (kind) {
+            SslKind.HOSTNAME -> R.string.sync_error_ssl_hostname
+            SslKind.EXPIRED -> R.string.sync_error_ssl_expired
+            SslKind.UNTRUSTED -> R.string.sync_error_ssl_untrusted
+            SslKind.OTHER -> R.string.sync_error_ssl
+        }
+
+        private fun related(e: Throwable, depth: Int): Sequence<Throwable> = sequence {
+            yield(e)
+            if (depth >= MAX_CAUSE_DEPTH) return@sequence
+            e.cause?.let { yieldAll(related(it, depth + 1)) }
+            e.suppressed.forEach { yieldAll(related(it, depth + 1)) }
+        }
     }
 
     /**
@@ -28,7 +72,11 @@ class SyncExceptionMapper(private val context: Context) {
      * @param e The exception that occurred during sync
      * @return A localised, user-readable error message
      */
-    fun mapToUserMessage(e: Exception): String {
+    // 🔧 v2.21.0: TLS vor allem anderen, SSLException erbt von IOException (der alte Zweig war tot).
+    fun mapToUserMessage(e: Exception): String =
+        sslKind(e)?.let { context.getString(sslMessage(it)) } ?: mapNonSsl(e)
+
+    private fun mapNonSsl(e: Exception): String {
         return when (e) {
             is java.net.ConnectException ->
                 context.getString(R.string.snackbar_server_unreachable)
@@ -56,8 +104,6 @@ class SyncExceptionMapper(private val context: Context) {
                     else -> "${context.getString(R.string.sync_error_unknown)}: ${e.message}"
                 }
             }
-            is javax.net.ssl.SSLException ->
-                context.getString(R.string.sync_error_ssl)
             else -> e.message ?: context.getString(R.string.sync_error_unknown)
         }
     }

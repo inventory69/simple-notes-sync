@@ -18,6 +18,8 @@ import dev.dettmer.simplenotes.storage.NotesStorage
 import dev.dettmer.simplenotes.sync.E2eeGate
 import dev.dettmer.simplenotes.sync.ExportProblems
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
+import dev.dettmer.simplenotes.sync.Reachability
+import dev.dettmer.simplenotes.sync.SyncExceptionMapper
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
 import dev.dettmer.simplenotes.sync.SyncResult
@@ -1230,7 +1232,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Check server reachability
                 val isReachable = withContext(ioDispatcher) {
-                    syncService.isServerReachable()
+                    syncService.isServerReachable(userAction = true)
                 }
 
                 if (!isReachable) {
@@ -1352,16 +1354,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 // Check server reachability
-                val isReachable = withContext(ioDispatcher) {
-                    syncService.isServerReachable()
+                val reachability = withContext(ioDispatcher) {
+                    syncService.reachability()
                 }
 
-                if (!isReachable) {
+                if (reachability != Reachability.Reachable) {
                     Logger.d(TAG, "⏭️ Auto-sync ($source): Server not reachable - skipping silently")
                     // 🔧 v2.4.0 (FIX-SSBE-002): Visibility-aware Termination statt reset()
                     // Wenn promoted (silent=false): Fehler im Banner anzeigen
                     // Wenn noch silent: IDLE (kein Banner, wie bisher)
-                    SyncStateManager.errorIfVisible(getString(R.string.snackbar_server_unreachable))
+                    // 🆕 v2.21.0: Zertifikatsfehler mit eigener Meldung, landet im Sync-Status
+                    val skipMessage = (reachability as? Reachability.TlsError)
+                        ?.let { SyncExceptionMapper.sslMessage(it.kind) }
+                        ?: R.string.snackbar_server_unreachable
+                    SyncStateManager.errorIfVisible(getString(skipMessage))
                     return@launch
                 }
 
@@ -1660,7 +1666,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             loadNotesAsync(forceReload = true)
             val webdavService = WebDavSyncService(getApplication())
             val isReachable = try {
-                webdavService.isServerReachable()
+                webdavService.isServerReachable(userAction = true)
             } catch (_: Exception) {
                 false
             }

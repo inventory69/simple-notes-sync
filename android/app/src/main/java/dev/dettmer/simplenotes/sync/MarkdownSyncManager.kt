@@ -259,7 +259,12 @@ internal class MarkdownSyncManager(
         Logger.d(TAG, "🔄 Starting initial Markdown export for all notes...")
 
         val webdav = WebDavClient(
-            ConnectionManager.buildHttpClient(connectionManager.getTimeoutMs(), username, password)
+            ConnectionManager.buildHttpClient(
+                connectionManager.getTimeoutMs(),
+                username,
+                password,
+                TrustedCertificate.pin(prefs, serverUrl)
+            )
         )
 
         try {

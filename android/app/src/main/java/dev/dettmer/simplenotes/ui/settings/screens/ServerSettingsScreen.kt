@@ -57,6 +57,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
+import dev.dettmer.simplenotes.ui.settings.components.CertificateTrustDialog
 import dev.dettmer.simplenotes.ui.settings.components.RemoteChangeDialog
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.theme.Dimensions
@@ -92,6 +93,7 @@ fun ServerSettingsScreen(
     val folderChangeInProgress by viewModel.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
     val credentialsUnencrypted by viewModel.credentialsUnencrypted.collectAsState() // 🆕 v2.17.0
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val certificatePrompt by viewModel.certificatePrompt.collectAsState() // 🆕 v2.21.0
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
@@ -128,6 +130,14 @@ fun ServerSettingsScreen(
             onMigrate = { viewModel.onFolderChangeConfirmedMigrate() },
             onSwitch = { viewModel.onFolderChangeConfirmedSwitch() },
             onCancel = { viewModel.onFolderChangeCancelled() }
+        )
+    }
+
+    certificatePrompt?.let { prompt ->
+        CertificateTrustDialog(
+            prompt = prompt,
+            onTrust = { viewModel.trustCertificate() },
+            onCancel = { viewModel.dismissCertificatePrompt() }
         )
     }
 
@@ -465,6 +475,9 @@ fun ServerSettingsScreen(
                             is SettingsViewModel.ServerStatus.Unreachable -> stringResource(
                                 R.string.server_status_unreachable
                             )
+                            is SettingsViewModel.ServerStatus.CertificateProblem -> stringResource(
+                                R.string.server_status_certificate
+                            )
                             is SettingsViewModel.ServerStatus.Checking -> stringResource(
                                 R.string.server_status_checking
                             )
@@ -477,6 +490,7 @@ fun ServerSettingsScreen(
                             is SettingsViewModel.ServerStatus.OfflineMode -> MaterialTheme.colorScheme.tertiary
                             is SettingsViewModel.ServerStatus.Reachable -> ServerReachableColor
                             is SettingsViewModel.ServerStatus.Unreachable -> ServerUnreachableColor
+                            is SettingsViewModel.ServerStatus.CertificateProblem -> ServerUnreachableColor
                             is SettingsViewModel.ServerStatus.NotConfigured -> MaterialTheme.colorScheme.tertiary
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }

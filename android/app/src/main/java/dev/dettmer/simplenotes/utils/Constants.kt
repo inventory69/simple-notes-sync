@@ -129,6 +129,11 @@ object Constants {
     // Bewusst ohne `etag_`-Präfix: clearServerCaches() soll ihn nicht räumen.
     const val KEY_E2EE_BLOCKED_MARKER = "e2ee_blocked_marker"
 
+    // 🆕 v2.21.0: SHA-256 des Server-Zertifikats, dem der Nutzer im Verbindungstest vertraut hat
+    // (`AB:CD:…`), ein Key je `host:port`. Öffentlicher Wert, deshalb nicht im CredentialStore.
+    // Ohne `etag_`-Präfix.
+    const val KEY_TRUSTED_CERT_PREFIX = "trusted_cert_sha256_"
+
     // 🆕 v1.10.0: Configurable connection timeout
     const val KEY_CONNECTION_TIMEOUT_SECONDS = "connection_timeout_seconds"
     const val DEFAULT_CONNECTION_TIMEOUT_SECONDS = 8 // 8s default, good for mobile

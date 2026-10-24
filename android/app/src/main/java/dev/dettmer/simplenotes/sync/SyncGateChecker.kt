@@ -9,11 +9,9 @@ import dev.dettmer.simplenotes.utils.Logger
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
@@ -33,12 +31,12 @@ class SyncGateChecker(
      * Prüft ob WebDAV-Server erreichbar ist (ohne Sync zu starten)
      * Verwendet Socket-Check für schnelle Erreichbarkeitsprüfung
      */
-    suspend fun isServerReachable(): Boolean = withContext(ioDispatcher) {
+    suspend fun checkReachability(): Reachability = withContext(ioDispatcher) {
         return@withContext try {
             val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
             if (serverUrl == null) {
                 Logger.d(TAG, "❌ Server URL not configured")
-                return@withContext false
+                return@withContext Reachability.Unreachable
             }
 
             val url = URL(serverUrl)
@@ -56,29 +54,26 @@ class SyncGateChecker(
             }
 
             // Phase 2: HTTP HEAD check via OkHttp to verify the server speaks HTTP.
-            // Uses OkHttp instead of HttpURLConnection so SSL config and
-            // trust management are consistent with the rest of the app.
-            val httpClient = OkHttpClient.Builder()
-                .connectionPool(ConnectionManager.sharedPool)
-                .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-                .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-                .addNetworkInterceptor(ConnectionManager.closeAfterHead)
-                .build()
+            // 🆕 v2.21.0: probeClient trägt Pin und Connection: close, wie Statuskarte und Zertifikatsabruf.
             val request = Request.Builder().url(serverUrl).head().build()
-            val response = httpClient.newCall(request).execute()
-            val code = response.code
-            response.close()
+            val code = TrustedCertificate.probeClient(prefs, serverUrl).newCall(request).execute().use { it.code }
             // Any HTTP response code (incl. 401, 403) proves HTTP capability
-            val reachable = code > 0
-            if (reachable) {
+            if (code > 0) {
                 Logger.d(TAG, "✅ Server is reachable (HTTP $code)")
+                Reachability.Reachable
             } else {
                 Logger.d(TAG, "❌ Server TCP reachable but HTTP check returned $code")
+                Reachability.Unreachable
             }
-            reachable
         } catch (e: Exception) {
-            Logger.d(TAG, "❌ Server not reachable: ${e.message}")
-            false
+            val kind = SyncExceptionMapper.sslKind(e)
+            if (kind != null) {
+                Logger.d(TAG, "⚠️ Server answered, TLS failed ($kind): ${e.message}")
+                Reachability.TlsError(kind)
+            } else {
+                Logger.d(TAG, "❌ Server not reachable: ${e.message}")
+                Reachability.Unreachable
+            }
         }
     }
 
@@ -125,6 +120,20 @@ class SyncGateChecker(
 
         return SyncGateResult(canSync = true, blockReason = null)
     }
+}
+
+/**
+ * 🆕 v2.21.0: [TlsError] = Server antwortet, aber das Zertifikat (oder TLS) scheitert. Nutzeraktionen
+ * zählen das als erreichbar und zeigen den echten Fehler. Der Hintergrund-Sync überspringt (in
+ * fremdem WLAN oder hinter einem Captive Portal scheitert TLS genauso), hält die Meldung aber im
+ * Sync-Status fest, damit ein erneuertes Zertifikat nicht unbemerkt den Sync stoppt.
+ */
+sealed interface Reachability {
+    data object Reachable : Reachability
+
+    data object Unreachable : Reachability
+
+    data class TlsError(val kind: SslKind) : Reachability
 }
 
 /**

@@ -482,40 +482,36 @@ object NotificationHelper {
     /**
      * Zeigt Warnung wenn Server längere Zeit nicht erreichbar (v1.1.2)
      * Throttling: Max. 1 Warnung pro 24h
+     * 🆕 v2.21.0: [certificateProblem] = Server antwortet, das Zertifikat scheitert (z. B. erneuert).
      */
-    fun showSyncWarning(context: Context, hoursSinceLastSync: Long, credentialsMissing: Boolean = false) {
+    fun showSyncWarning(
+        context: Context,
+        hoursSinceLastSync: Long,
+        credentialsMissing: Boolean = false,
+        certificateProblem: Boolean = false
+    ) {
         // 🆕 v1.11.0: Notification preferences check
         if (!areNotificationsEnabled(context)) return
         if (!isServerWarningEnabled(context)) return
 
         val pendingIntent = syncStatusPendingIntent(context) // 🆕 v2.19.0: öffnet den Sync-Status-Dialog
 
+        val (message, detail) = when {
+            credentialsMissing ->
+                R.string.notification_sync_warning_credentials_message to
+                    R.string.notification_sync_warning_credentials_detail
+            certificateProblem ->
+                R.string.notification_sync_warning_certificate_message to
+                    R.string.notification_sync_warning_certificate_detail
+            else -> R.string.notification_sync_warning_message to R.string.notification_sync_warning_detail
+        }
+        val hours = hoursSinceLastSync.toInt()
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
             .setContentTitle(context.getString(R.string.sync_status_stale)) // gleicher Text wie der Dialogkopf
-            .setContentText(
-                if (credentialsMissing) {
-                    context.getString(R.string.notification_sync_warning_credentials_message)
-                } else {
-                    context.getString(R.string.notification_sync_warning_message, hoursSinceLastSync.toInt())
-                }
-            )
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText(
-                        if (credentialsMissing) {
-                            context.getString(
-                                R.string.notification_sync_warning_credentials_detail,
-                                hoursSinceLastSync.toInt()
-                            )
-                        } else {
-                            context.getString(
-                                R.string.notification_sync_warning_detail,
-                                hoursSinceLastSync.toInt()
-                            )
-                        }
-                    )
-            )
+            .setContentText(context.getString(message, hours)) // überzählige Argumente ignoriert getString
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(detail, hours)))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pendingIntent)

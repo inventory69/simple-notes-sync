@@ -26,6 +26,8 @@ data class SyncResult(
     // 🆕 v2.20.0 (E2EE-Slice 1): Ordner verschlüsselt, kein Server-Zugriff. isSuccess = false, aber
     // kein Fehler: Aufrufer schließen mit Warnung ab, nicht mit markError/Fehler-Benachrichtigung.
     val e2eeBlocked: Boolean = false,
+    // 🆕 v2.21.0: nur aus testConnection(), Zertifikat zum Vertrauen anbieten
+    val untrustedCertificate: CertificateInfo? = null,
     val errorMessage: String? = null,
     val infoMessage: String? = null // 🆕 v1.9.0 Issue #21: Non-error status info
 ) {

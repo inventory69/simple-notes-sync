@@ -267,6 +267,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     // org.json ist im android.jar der Unit-Tests nur gestubbt (jede Methode wirft).
     // Die echte Implementierung auf dem Test-Classpath macht DeletionTracker-JSON testbar.
     testImplementation(libs.org.json)
