@@ -8,6 +8,36 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.21.0] - 2026-10-24
+
+### ✨ Neue Funktionen
+
+**Selbstsignierte Zertifikate** ([0ce8894](https://github.com/inventory69/simple-notes-sync/commit/0ce8894))
+- Lehnt Android das Server-Zertifikat ab, zeigt **Verbindung testen** in den Server-Einstellungen es mit Aussteller, Gültigkeit und SHA-256-Fingerabdruck des Zertifikats an, einer Prüfsumme, die das Zertifikat eindeutig kennzeichnet. Stimmt sie mit der auf dem Server überein, akzeptiert **Vertrauen** genau dieses Zertifikat für diesen Server, auch wenn der Hostname nicht passt
+- Android prüft jedes Zertifikat zuerst. Zertifikate von Let's Encrypt oder einer installierten CA funktionieren wie bisher
+- Jeder Server behält sein eigenes akzeptiertes Zertifikat. Ändert es sich, zeigt der nächste Verbindungstest das neue an und weist auf die Änderung hin
+- Zertifikatsfehler haben eigene Meldungen. Der Server-Status zeigt „Zertifikat nicht vertrauenswürdig“, und Hintergrund-Syncs führen den Fehler im Sync-Status-Dialog auf
+- Der [Schnellstart](QUICKSTART.md#4-self-signed-certificates) beschreibt beide Möglichkeiten: das Zertifikat in der App akzeptieren oder die eigene CA auf dem Handy installieren. Für eine CA, die Zertifikate automatisch erneuert, etwa Caddy oder step-ca, ist die CA die bessere Wahl
+
+**Bearbeitungsdatum ändert sich nur mit dem Inhalt** ([85ec47c](https://github.com/inventory69/simple-notes-sync/commit/85ec47c))
+- Verschieben in einen anderen Ordner, Anheften, Einfärben oder Archivieren ändert nicht mehr das Datum auf der Karte oder die Position beim Sortieren nach Datum
+- Als Bearbeitung zählen Änderungen an Titel, Text oder Checklisten-Einträgen, im Editor, in Widgets und aus Markdown-Dateien
+- Notizen aus früheren Versionen behalten ihr bisheriges Datum. Die Desktop-App zeigt mit ihrem nächsten Update dasselbe Datum
+- Danke an Ludo für die Meldung!
+
+**Checkbox-Symbole in Notizkarten und Widgets** ([30e73ca](https://github.com/inventory69/simple-notes-sync/commit/30e73ca))
+- Checklisten-Vorschauen in der Notizliste zeigen Checkbox-Symbole statt des ☑️-Emojis, erledigte Einträge sind gedimmt
+- Das Listen-Widget und das gesperrte Notiz-Widget zeigen Checkbox-Zeichen mit gedimmten erledigten Einträgen, im Listen-Widget zusätzlich durchgestrichen
+- Danke an [@lincomax](https://github.com/lincomax) für den Wunsch! ([#118](https://github.com/inventory69/simple-notes-sync/issues/118))
+
+### 🐛 Bug-Fixes
+
+**Editor-Menü bei offener Tastatur** ([5468d15](https://github.com/inventory69/simple-notes-sync/commit/5468d15))
+- Bei offener Tastatur war das Editor-Menü abgeschnitten, Archivieren und Löschen fehlten. Die Tastatur schließt sich jetzt, bevor das Menü öffnet
+- Danke an [@lincomax](https://github.com/lincomax) für die Meldung! ([#114](https://github.com/inventory69/simple-notes-sync/issues/114))
+
+---
+
 ## [2.20.2] - 2026-10-22
 
 ### 🐛 Bug-Fixes

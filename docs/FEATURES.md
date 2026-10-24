@@ -1,6 +1,6 @@
 # Features
 
-Everything Simple Notes Sync does, as of v2.20.2. What changed in which version is in the [changelog](../CHANGELOG.md).
+Everything Simple Notes Sync does, as of v2.21.0. What changed in which version is in the [changelog](../CHANGELOG.md).
 
 ## Writing
 
@@ -29,7 +29,7 @@ Everything Simple Notes Sync does, as of v2.20.2. What changed in which version 
 - Folders. A folder can be marked local only, then its notes never leave the device.
 - Pinned notes stay on top in their own section. The Pinned, Folders and Notes sections can be collapsed and reordered.
 - Colors for notes, a default color for new notes, and filtering and sorting by color.
-- Sort by last change, creation date, title, type or color. Each folder remembers its own sort order, one tap resets it.
+- Sort by last edit, creation date, title, type or color. Moving, pinning or coloring a note does not count as an edit. Each folder remembers its own sort order, one tap resets it.
 - Filter by text notes or checklists, and search across all folders.
 - Archive notes you want out of the way without deleting them.
 - Trash. Deleted notes stay there for 30 days by default (configurable from immediately up to 90 days) and can be restored. Every delete has an undo snackbar.
@@ -57,7 +57,8 @@ Everything Simple Notes Sync does, as of v2.20.2. What changed in which version 
 - Optional Markdown copies of every note on the server, for Obsidian or any other editor. Changes made there come back into the app.
 - [Simple Notes Desktop](https://github.com/inventory69/simple-notes-desktop) for Windows and Linux uses the same server folder.
 - Sync pauses safely when another device encrypted the sync folder. See [SYNC.md](SYNC.md#sync-paused).
-- A configurable sync folder name, self-signed certificates, VPNs, and a Wi-Fi only option.
+- A configurable sync folder name, VPNs, and a Wi-Fi only option.
+- Self-signed certificates: trust one by its SHA-256 fingerprint in the connection test, or install your own CA on the phone. See [self-signed certificates](../QUICKSTART.md#4-self-signed-certificates).
 
 ## Backup
 

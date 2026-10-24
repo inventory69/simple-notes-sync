@@ -1,0 +1,9 @@
+🪪 v2.21.0 - Self-signed certificates
+
+• New: check and accept a self-signed server certificate in the connection test
+• Certificate errors get their own messages, also in the sync status
+• Moving, pinning or coloring a note keeps its edit date
+• Checkbox icons instead of emoji in note cards and widgets
+• Fix: editor menu was cut off with the keyboard open
+
+Thanks to Ludo and @lincomax!
