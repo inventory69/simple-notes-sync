@@ -395,8 +395,9 @@ private fun notePreviewFullText(note: Note): AnnotatedString {
         noteCardMarkdownPreview(note.content)
     } else {
         val items = note.checklistItems.orEmpty()
-        remember(items, note.checklistSortOption) {
-            AnnotatedString(generateChecklistPreview(items, note.checklistSortOption))
+        val checkedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = CHECKED_ITEM_ALPHA)
+        remember(items, note.checklistSortOption, checkedColor) {
+            generateChecklistPreview(items, note.checklistSortOption, checkedColor)
         }
     }
 }

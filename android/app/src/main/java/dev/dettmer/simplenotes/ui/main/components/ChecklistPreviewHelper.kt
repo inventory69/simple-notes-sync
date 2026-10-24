@@ -2,14 +2,20 @@ package dev.dettmer.simplenotes.ui.main.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,11 +31,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
@@ -39,6 +51,43 @@ import kotlin.math.roundToInt
 
 /** Kleiner fixer Abstand zwischen Textende und dem rechtsbündigen Trailing-Icon. */
 private val TRAILING_ICON_GAP = 4.dp
+
+private const val CHECKBOX_CHECKED_ID = "checkbox_checked"
+private const val CHECKBOX_UNCHECKED_ID = "checkbox_unchecked"
+internal const val CHECKED_ITEM_ALPHA = 0.6f
+
+/**
+ * Issue #118: echte Checkbox-Icons statt ☑️/☐ in den Karten, das farbige Emoji ließ ausgerechnet
+ * erledigte Einträge am stärksten hervorstechen. Platzhalter-IDs stammen aus [checklistItemLine].
+ */
+private val checkboxInlineContent = mapOf(
+    CHECKBOX_CHECKED_ID to checkboxIcon(Icons.Outlined.CheckBox, CHECKED_ITEM_ALPHA),
+    CHECKBOX_UNCHECKED_ID to checkboxIcon(Icons.Outlined.CheckBoxOutlineBlank, 1f)
+)
+
+private fun checkboxIcon(icon: ImageVector, alpha: Float) = InlineTextContent(
+    Placeholder(width = 1.2.em, height = 1.2.em, placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter)
+) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha),
+        modifier = Modifier.fillMaxSize()
+    )
+}
+
+/** Eine Vorschauzeile: Checkbox-Icon + Text, erledigt gedimmt und durchgestrichen wie im Editor. */
+private fun AnnotatedString.Builder.checklistItemLine(item: ChecklistItem, checkedColor: Color) {
+    if (item.isChecked) appendInlineContent(CHECKBOX_CHECKED_ID, "☑") else appendInlineContent(CHECKBOX_UNCHECKED_ID, "☐")
+    append(" ")
+    if (item.isChecked) {
+        pushStyle(SpanStyle(color = checkedColor, textDecoration = TextDecoration.LineThrough))
+        append(item.text)
+        pop()
+    } else {
+        append(item.text)
+    }
+}
 
 /** Icon für den Sync-Status einer Notiz — gemeinsam genutzt von allen Card-Varianten. */
 @Composable
@@ -97,6 +146,7 @@ fun TrailingIconText(
             color = color,
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
+            inlineContent = checkboxInlineContent,
             modifier = modifier
         )
         return
@@ -116,6 +166,7 @@ fun TrailingIconText(
             color = color,
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
+            inlineContent = checkboxInlineContent,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = iconSize + TRAILING_ICON_GAP),
@@ -145,7 +196,7 @@ fun TrailingIconText(
  * 🆕 v1.8.1 (IMPL_03): Helper-Funktionen für die Checklisten-Vorschau in Main Activity.
  *
  * Stellt sicher, dass die Sortierung aus dem Editor konsistent
- * in allen Preview-Components (NoteCard, NoteCardCompact, NoteCardGrid)
+ * in allen Preview-Components (NoteCard, NoteCardGrid)
  * angezeigt wird.
  */
 
@@ -187,20 +238,20 @@ fun sortChecklistItemsForPreview(items: List<ChecklistItem>, sortOptionName: Str
 }
 
 /**
- * Generiert den Vorschau-Text für eine Checkliste mit korrekter
- * Sortierung und passenden Emojis.
+ * Generiert den Vorschau-Text für eine Checkliste mit korrekter Sortierung, eine Zeile je Item.
+ * Die Checkboxen sind Inline-Platzhalter, [TrailingIconText] rendert sie als Icons.
  *
  * @param items Die Checklisten-Items
  * @param sortOptionName Der Name der ChecklistSortOption (oder null für MANUAL)
- * @return Formatierter Preview-String mit Emojis und Zeilenumbrüchen
- *
- * 🆕 v1.8.1 (IMPL_06): Emoji-Änderung (☑️ statt ✅ für checked items)
+ * @param checkedColor Textfarbe erledigter Einträge
  */
-fun generateChecklistPreview(items: List<ChecklistItem>, sortOptionName: String?): String {
+fun generateChecklistPreview(items: List<ChecklistItem>, sortOptionName: String?, checkedColor: Color): AnnotatedString {
     val sorted = sortChecklistItemsForPreview(items, sortOptionName)
-    return sorted.joinToString("\n") { item ->
-        val prefix = if (item.isChecked) "☑️" else "☐"
-        "$prefix ${item.text}"
+    return buildAnnotatedString {
+        sorted.forEachIndexed { index, item ->
+            if (index > 0) append("\n")
+            checklistItemLine(item, checkedColor)
+        }
     }
 }
 
@@ -218,6 +269,7 @@ fun ChecklistItemsPreview(
     trailingIconSize: Dp = 0.dp
 ) {
     val sorted = remember(items, sortOptionName) { sortChecklistItemsForPreview(items, sortOptionName) }
+    val checkedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = CHECKED_ITEM_ALPHA)
     val remaining = (sorted.size - maxItems).coerceAtLeast(0)
     // If only 1 item would be hidden, showing "+1 more" wastes a line vs. just showing the item
     val effectiveMax = if (remaining == 1) maxItems + 1 else maxItems
@@ -238,10 +290,9 @@ fun ChecklistItemsPreview(
             )
         }
         visible.forEachIndexed { index, item ->
-            val prefix = if (item.isChecked) "☑️" else "☐"
             val isLastLine = index == visible.lastIndex && finalRemaining == 0
             TrailingIconText(
-                text = AnnotatedString("$prefix ${item.text}"),
+                text = buildAnnotatedString { checklistItemLine(item, checkedColor) },
                 style = style,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = itemMaxLines,

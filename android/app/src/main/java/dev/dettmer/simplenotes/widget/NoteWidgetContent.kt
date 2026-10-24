@@ -510,8 +510,12 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (item.isChecked) "☑️" else "☐", // 🆕 v1.8.1 (IMPL_06)
-                        style = TextStyle(fontSize = (14 * fontSizeScale).sp)
+                        // Issue #118: Textglyph statt farbigem ☑️-Emoji, erledigt gedimmt wie der Text
+                        text = if (item.isChecked) "☑" else "☐",
+                        style = TextStyle(
+                            color = if (item.isChecked) GlanceTheme.colors.outline else GlanceTheme.colors.onSurface,
+                            fontSize = (14 * fontSizeScale).sp
+                        )
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     WidgetInlineText(
@@ -635,8 +639,12 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (item.isChecked) "☑️" else "☐", // 🆕 v1.8.1 (IMPL_06)
-                        style = TextStyle(fontSize = (16 * fontSizeScale).sp)
+                        // Issue #118: Textglyph statt farbigem ☑️-Emoji, erledigt gedimmt wie der Text
+                        text = if (item.isChecked) "☑" else "☐",
+                        style = TextStyle(
+                            color = if (item.isChecked) GlanceTheme.colors.outline else GlanceTheme.colors.onSurface,
+                            fontSize = (16 * fontSizeScale).sp
+                        )
                     )
                     Spacer(modifier = GlanceModifier.width(8.dp))
                     WidgetInlineText(
