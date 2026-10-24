@@ -1,17 +1,17 @@
 package dev.dettmer.simplenotes.sync
 
+import android.content.Context
 import dev.dettmer.simplenotes.sync.E2eeGate.Probe
 import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.FakeSharedPreferences
-import android.content.Context
 import dev.dettmer.simplenotes.utils.NotificationHelper
 import io.mockk.every
 import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
-import io.mockk.mockk
 import java.net.SocketTimeoutException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

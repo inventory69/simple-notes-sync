@@ -1,0 +1,9 @@
+🪪 v2.21.0 - Selbstsignierte Zertifikate
+
+• Neu: selbstsigniertes Server-Zertifikat im Verbindungstest prüfen und akzeptieren
+• Eigene Meldungen für Zertifikatsfehler, auch im Sync-Status
+• Verschieben, Anheften oder Einfärben ändert das Bearbeitungsdatum nicht
+• Checkbox-Symbole statt Emojis in Notizkarten und Widgets
+• Fix: Editor-Menü war bei offener Tastatur abgeschnitten
+
+Danke an Ludo und @lincomax!

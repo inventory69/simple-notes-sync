@@ -76,13 +76,23 @@ Even then Android may hold back a periodic sync for a while when the phone sleep
 
 ## 4. Self-signed certificates
 
-If your server uses HTTPS with a certificate from your own CA, install that CA certificate on the phone:
+A certificate from Let's Encrypt needs none of this. For a self-signed certificate or your own CA there are two ways.
+
+**Trust the certificate in the app.** Enter the `https://` URL and tap **Test Connection** in the server settings. The app shows the certificate with its SHA-256 fingerprint. Compare it with the one on the server and tap **Trust**:
+
+```sh
+openssl x509 -noout -fingerprint -sha256 -in /path/to/server.crt
+```
+
+The app then trusts exactly this certificate, also when the host name does not match. If you replace the certificate on the server, the test shows the new one and warns that it has changed. A certificate that renews itself, for example from Caddy's internal CA or step-ca, gets a new fingerprint each time: install the root certificate on the phone instead.
+
+**Or install your CA on the phone.** This also covers other apps and certificates you renew later:
 
 1. Copy the CA certificate (`.crt` or `.pem`) to the phone.
 2. Android settings → Security → Encryption & credentials → Install a certificate → **CA certificate**. The menu names differ between manufacturers.
 3. Enter the `https://` URL in the app as usual.
 
-The app trusts CA certificates installed by the user, many apps do not. It does not accept certificates that fail validation in any other way, so the host name in the URL must match the certificate. A certificate from Let's Encrypt needs none of this.
+The app trusts CA certificates installed by the user, many apps do not. With an installed CA, the host name in the URL must match the certificate.
 
 ## 5. Updates
 

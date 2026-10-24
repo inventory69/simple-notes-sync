@@ -57,10 +57,43 @@ data class Note(
     // null = nicht archiviert. Synct als normale Notiz-Änderung (LWW). Anders als trashedAt
     // WIRD das Feld in toMarkdown()/fromMarkdown() gespiegelt (`archived:`), weil der
     // MD-Spiegel archivierter Notizen auf dem Server bestehen bleibt (archiviert ≠ gelöscht).
-    val archivedAt: Long? = null
+    val archivedAt: Long? = null,
+    // 🆕 v2.21.0: Zeitpunkt der letzten Inhaltsänderung (Titel, Text, Checkliste), nur für Anzeige und
+    // Sortierung. `updatedAt` bleibt die LWW-Sync-Uhr und steigt auch bei Ordner, Pin, Farbe, Archiv.
+    // Default = updatedAt: Sonst trüge copy() bei Bestandsnotizen null weiter, und [editedAt] fiele auf
+    // das gerade erhöhte updatedAt zurück. Alte Clients verwerfen das Feld, dann greift der Fallback.
+    // Bewusst nullable: Backups (`BackupData`) deserialisiert Gson, das Kotlin-Defaults ignoriert. Ein
+    // Long bekäme dort 0 (Anzeige 1970), null fällt über [editedAt] auf updatedAt zurück.
+    val contentUpdatedAt: Long? = updatedAt
 ) {
     /** v2.9.0 (Trash): true, wenn die Notiz im Papierkorb liegt. */
     val isTrashed: Boolean get() = trashedAt != null
+
+    /** 🆕 v2.21.0: Angezeigte Bearbeitungszeit. Ohne Backing-Field, Gson schreibt sie nicht. */
+    val editedAt: Long get() = contentUpdatedAt ?: updatedAt
+
+    /**
+     * 🆕 v2.21.0: Hat sich der Inhalt geändert? Typabhängig wie `MarkdownSyncManager`: Bei Checklisten
+     * nur die Items (Text, Haken, Reihenfolge). Deren `content` ist gespeichert der Fallback-Text aus
+     * [toJson], im Editor `""`, ein Vergleich zählte also jedes Speichern als Inhalt.
+     */
+    fun contentDiffers(other: Note): Boolean {
+        if (noteType != other.noteType || title != other.title) return true
+        if (noteType != NoteType.CHECKLIST) return content.trim() != other.content.trim()
+        val mine = checklistItems.orEmpty().sortedBy { it.order }
+        val theirs = other.checklistItems.orEmpty().sortedBy { it.order }
+        return mine.size != theirs.size ||
+            mine.zip(theirs).any { (a, b) ->
+                a.text != b.text || a.isChecked != b.isChecked || a.order != b.order
+            }
+    }
+
+    /**
+     * 🆕 v2.21.0: Inhaltszeit dieser neuen Fassung: ihr [updatedAt] bei neuer Notiz oder neuem Inhalt,
+     * sonst die von [previous]. Aufrufer setzen vorher `updatedAt`.
+     */
+    fun withContentTouched(previous: Note?): Note =
+        copy(contentUpdatedAt = if (previous == null || contentDiffers(previous)) updatedAt else previous.editedAt)
 
     /** 🆕 v2.11.0 (Archive): true, wenn die Notiz archiviert ist. */
     val isArchived: Boolean get() = archivedAt != null
@@ -251,7 +284,9 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                     folderName = fields.folderName,
                     // 🆕 v2.9.0 (Trash) — fehlendes Feld → null (= aktive Notiz)
                     trashedAt = fields.trashedAt,
-                    archivedAt = fields.archivedAt // 🆕 v2.11.0 (Archive) — fehlendes Feld → null
+                    archivedAt = fields.archivedAt, // 🆕 v2.11.0 (Archive) — fehlendes Feld → null
+                    // 🆕 v2.21.0: fehlt bei alten Notizen und alten Clients → updatedAt
+                    contentUpdatedAt = fields.contentUpdatedAt ?: fields.updatedAt
                 )
             } catch (e: Exception) {
                 Logger.w(TAG, "Failed to parse JSON: ${e.message}")
@@ -325,6 +360,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
             var folderName: String? = null
             var trashedAt: Long? = null
             var archivedAt: Long? = null
+            var contentUpdatedAt: Long? = null
             var checklistItems: MutableList<ChecklistItem>? = null
         }
 
@@ -361,6 +397,7 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 "folderName" -> fields.folderName = nextStringOrNull()
                 "trashedAt" -> fields.trashedAt = nextLongOrNull()
                 "archivedAt" -> fields.archivedAt = nextLongOrNull()
+                "contentUpdatedAt" -> fields.contentUpdatedAt = nextLongOrNull()
                 "checklistItems" -> fields.checklistItems = nextChecklistItemsOrNull()
                 else -> skipValue()
             }

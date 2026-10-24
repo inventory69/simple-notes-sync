@@ -560,7 +560,7 @@ private fun ShareNotePickerDialog(
     val allNotes by produceState<List<Note>>(initialValue = emptyList()) {
         // 🆕 v2.9.0 (Trash): getrashte Notizen nicht im Share-Picker anbieten.
         value = withContext(Dispatchers.IO) { storage.loadActiveNotes() }
-            .sortedByDescending { it.updatedAt }
+            .sortedByDescending { it.editedAt }
     }
     AlertDialog(
         onDismissRequest = onDismiss,

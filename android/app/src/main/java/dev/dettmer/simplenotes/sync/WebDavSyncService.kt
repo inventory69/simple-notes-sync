@@ -473,9 +473,18 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      * Prüft ob WebDAV-Server erreichbar ist (ohne Sync zu starten)
      * Verwendet Socket-Check für schnelle Erreichbarkeitsprüfung
      *
+     * @param userAction 🆕 v2.21.0: true bei Nutzeraktionen, dann zählt ein TLS-Fehler als erreichbar
+     *   und der folgende Request zeigt die echte Zertifikatsmeldung ([Reachability.TlsError]).
      * @return true wenn Server erreichbar ist, false sonst
      */
-    suspend fun isServerReachable(): Boolean = gateChecker.isServerReachable()
+    suspend fun isServerReachable(userAction: Boolean = false): Boolean = when (reachability()) {
+        Reachability.Reachable -> true
+        is Reachability.TlsError -> userAction
+        Reachability.Unreachable -> false
+    }
+
+    /** 🆕 v2.21.0: Für Hintergrund-Syncs, die einen Zertifikatsfehler anders melden als „nicht erreichbar". */
+    suspend fun reachability(): Reachability = gateChecker.checkReachability()
 
     /** 🆕 v2.20.0 (E2EE-Slice 1): Letzter Sync fand den Ordner verschlüsselt. Kein Request. */
     fun isE2eeBlocked(): Boolean = E2eeGate.isBlocked(prefs, urlBuilder)
@@ -584,9 +593,20 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
         } catch (e: Exception) {
             SyncResult(
                 isSuccess = false,
-                errorMessage = mapSyncExceptionToMessage(e)
+                errorMessage = mapSyncExceptionToMessage(e),
+                untrustedCertificate = untrustedCertificateOf(e)
             )
         }
+    }
+
+    /**
+     * 🆕 v2.21.0: Zertifikat abgelehnt → Leaf auslesen, der Nutzer kann ihm vertrauen. Nur bei
+     * UNTRUSTED: Ein CA-gültiges Zertifikat mit falschem Hostnamen zu pinnen hebelte die
+     * Hostname-Prüfung aus. Self-signed ohne SAN scheitert zuerst am Trust und bleibt abgedeckt.
+     */
+    private fun untrustedCertificateOf(e: Exception): CertificateInfo? {
+        if (SyncExceptionMapper.sslKind(e) != SslKind.UNTRUSTED) return null
+        return getServerUrl()?.let { TrustedCertificate.fetchLeaf(it, prefs) }
     }
 
     suspend fun syncNotes(trigger: ActivityLog.Trigger?): SyncResult =

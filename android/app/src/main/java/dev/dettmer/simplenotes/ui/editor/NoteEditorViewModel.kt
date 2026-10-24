@@ -923,7 +923,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     checklistItems = existingItems + newItem,
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = pendingOrLocalOnly(targetNote.folderName)
-                )
+                ).withContentTouched(targetNote)
                 storage.saveNote(updatedNote)
                 true
             }
@@ -1181,7 +1181,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = pendingOrLocalOnly(existingNote?.folderName)
-                    ) ?: Note(
+                    )?.withContentTouched(existingNote) ?: Note(
                         title = title,
                         content = content,
                         noteType = NoteType.TEXT,
@@ -1247,7 +1247,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         color = state.color, // 🆕 v2.5.0
                         updatedAt = System.currentTimeMillis(),
                         syncStatus = pendingOrLocalOnly(existingNote?.folderName)
-                    ) ?: Note(
+                    )?.withContentTouched(existingNote) ?: Note(
                         title = title,
                         content = "",
                         noteType = NoteType.CHECKLIST,
@@ -1313,7 +1313,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = pendingOrLocalOnly(existingNote?.folderName)
-                ) ?: Note(
+                )?.withContentTouched(existingNote) ?: Note(
                     title = title,
                     content = content,
                     noteType = NoteType.TEXT,
@@ -1380,7 +1380,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     color = state.color, // 🆕 v2.5.0
                     updatedAt = System.currentTimeMillis(),
                     syncStatus = pendingOrLocalOnly(existingNote?.folderName)
-                ) ?: Note(
+                )?.withContentTouched(existingNote) ?: Note(
                     title = title,
                     content = "",
                     noteType = NoteType.CHECKLIST,

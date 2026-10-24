@@ -40,8 +40,8 @@ The note was changed on this device and somewhere else before the two could sync
 
 ## Certificate error with HTTPS
 
-1. **Self-signed or own CA?** Install the CA certificate on the phone, see [self-signed certificates](../QUICKSTART.md#4-self-signed-certificates). It has to be installed as a CA certificate, not as a VPN or Wi-Fi certificate. Check under Android settings → Security → Trusted credentials → User.
-2. **Host name matches?** The name or IP in the URL must be in the certificate.
+1. **Self-signed or own CA?** Tap **Test Connection** in the server settings, compare the fingerprint with the server and trust the certificate. Or install your CA certificate on the phone. Both ways are described in [self-signed certificates](../QUICKSTART.md#4-self-signed-certificates). A CA has to be installed as a CA certificate, not as a VPN or Wi-Fi certificate. Check under Android settings → Security → Trusted credentials → User.
+2. **Host name matches?** With a CA certificate, the name or IP in the URL must be in the certificate. A certificate trusted in the app does not need this.
 3. **Not expired?** Check the date on the certificate and on the phone.
 
 ## Reporting a bug

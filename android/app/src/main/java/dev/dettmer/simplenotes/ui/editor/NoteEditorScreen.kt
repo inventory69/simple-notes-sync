@@ -25,9 +25,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -89,6 +91,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -155,13 +158,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 // 🆕 v2.12.0: Obergrenze Multi-Bild-Picker (Beta-Feedback: mehrere Bilder auf einmal)
 private const val MAX_PICKER_IMAGES = 10
 
 private const val LAYOUT_DELAY_MS = 100L
+private const val IME_HIDE_TIMEOUT_MS = 600L
 private const val AUTO_SCROLL_DELAY_MS = 50L
 private const val ITEM_CORNER_RADIUS_DP = 8
 private const val DRAGGING_ITEM_Z_INDEX = 10f
@@ -589,6 +595,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
 
     // v1.5.0: Auto-keyboard support
     val keyboardController = LocalSoftwareKeyboardController.current
+    val imeInsets = WindowInsets.ime
+    val density = LocalDensity.current
+    val isImeVisible by remember { derivedStateOf { imeInsets.getBottom(density) > 0 } }
     val titleFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
     var isTitleFocused by remember { mutableStateOf(false) }
@@ -810,7 +819,19 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     // not to the full actions block (fixes position inconsistency
                     // between text and checklist note types)
                     Box {
-                        IconButton(onClick = { showOverflowMenu = true }) {
+                        IconButton(onClick = {
+                            if (isImeVisible) {
+                                // Issue #114: Das Menü-Popup misst sich nicht neu, wenn die Tastatur nach dem
+                                // Öffnen verschwindet; Archiv/Löschen wären abgeschnitten. Erst Tastatur zu, dann Menü.
+                                keyboardController?.hide()
+                                scope.launch {
+                                    withTimeoutOrNull(IME_HIDE_TIMEOUT_MS) { snapshotFlow { isImeVisible }.first { !it } }
+                                    showOverflowMenu = true
+                                }
+                            } else {
+                                showOverflowMenu = true
+                            }
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.share_overflow_menu)

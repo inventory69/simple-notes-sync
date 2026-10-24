@@ -8,6 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.21.0] - 2026-10-24
+
+### ✨ New Features
+
+**Self-Signed Certificates** ([0ce8894](https://github.com/inventory69/simple-notes-sync/commit/0ce8894))
+- When Android rejects the server certificate, **Test Connection** in the server settings shows it with issuer, validity and the certificate's SHA-256 fingerprint, a checksum that identifies the certificate. If it matches the one shown on the server, **Trust** accepts exactly this certificate for this server, also when the host name does not match
+- Android checks every certificate first. Certificates from Let's Encrypt or an installed CA work as before
+- Each server keeps its own accepted certificate. If it changes, the next connection test shows the new one and points out the change
+- Certificate errors now have their own messages. The server status shows "Certificate not trusted", and background syncs list the error in the sync status dialog
+- The [quick start](QUICKSTART.md#4-self-signed-certificates) describes both options: accepting the certificate in the app, or installing your own CA on the phone. For a CA that renews certificates automatically, such as Caddy or step-ca, the CA is the better option
+
+**Edit Date Only Changes With the Content** ([85ec47c](https://github.com/inventory69/simple-notes-sync/commit/85ec47c))
+- Moving a note to another folder, pinning, coloring or archiving it no longer changes the date on the card or its position when sorting by date
+- Changes to title, text or checklist items count as edits, in the editor, in widgets and from Markdown files
+- Notes from earlier versions keep their current date. The desktop app shows the same date with its next update
+- Thanks to Ludo for the report!
+
+**Checkbox Icons in Note Cards and Widgets** ([30e73ca](https://github.com/inventory69/simple-notes-sync/commit/30e73ca))
+- Checklist previews in the note list use checkbox icons instead of the ☑️ emoji, checked items are dimmed
+- The list widget and the locked note widget use checkbox symbols with dimmed checked items, the list widget also crosses them out
+- Thanks to [@lincomax](https://github.com/lincomax) for the request! ([#118](https://github.com/inventory69/simple-notes-sync/issues/118))
+
+### 🐛 Bug Fixes
+
+**Editor Menu With the Keyboard Open** ([5468d15](https://github.com/inventory69/simple-notes-sync/commit/5468d15))
+- With the keyboard open, the editor menu was cut off and Archive and Delete were missing. The keyboard now closes before the menu opens
+- Thanks to [@lincomax](https://github.com/lincomax) for the report! ([#114](https://github.com/inventory69/simple-notes-sync/issues/114))
+
+---
+
 ## [2.20.2] - 2026-10-22
 
 ### 🐛 Bug Fixes

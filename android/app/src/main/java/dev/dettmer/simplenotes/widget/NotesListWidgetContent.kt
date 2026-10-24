@@ -36,6 +36,7 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
+import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
@@ -456,12 +457,14 @@ private fun ChecklistCardPreview(
 
     Column(modifier = modifier) {
         visibleItems.forEach { item ->
-            val prefix = if (item.isChecked) "☑️" else "☐"
+            // Issue #118: Textglyph statt farbigem ☑️-Emoji, erledigte Einträge gedimmt und durchgestrichen
+            val prefix = if (item.isChecked) "☑" else "☐"
             Text(
                 text = "$prefix ${stripInlineFormatting(item.text)}",
                 style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = (12 * fontSizeScale).sp
+                    color = if (item.isChecked) GlanceTheme.colors.outline else GlanceTheme.colors.onSurface,
+                    fontSize = (12 * fontSizeScale).sp,
+                    textDecoration = if (item.isChecked) TextDecoration.LineThrough else TextDecoration.None
                 ),
                 maxLines = 1
             )

@@ -19,8 +19,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 68  // 🆕 v2.20.2 - keep HEAD connections out of the pool (Baïkal sync)
-        versionName = "2.20.2"  // 🆕 v2.20.2 - keep HEAD connections out of the pool (Baïkal sync)
+        versionCode = 69  // 🆕 v2.21.0 - trust self-signed certificates, content edit time, real checkboxes
+        versionName = "2.21.0"  // 🆕 v2.21.0 - trust self-signed certificates, content edit time, real checkboxes
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte
@@ -267,6 +267,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     // org.json ist im android.jar der Unit-Tests nur gestubbt (jede Methode wirft).
     // Die echte Implementierung auf dem Test-Classpath macht DeletionTracker-JSON testbar.
     testImplementation(libs.org.json)

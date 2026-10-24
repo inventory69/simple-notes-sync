@@ -269,7 +269,7 @@ private fun NoteCardMeta(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = note.updatedAt.toReadableTime(context),
+                text = note.editedAt.toReadableTime(context),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.weight(1f)
@@ -415,8 +415,9 @@ private fun notePreviewFullText(note: Note): AnnotatedString {
         noteCardMarkdownPreview(note.content)
     } else {
         val items = note.checklistItems.orEmpty()
-        remember(items, note.checklistSortOption) {
-            AnnotatedString(generateChecklistPreview(items, note.checklistSortOption))
+        val checkedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = CHECKED_ITEM_ALPHA)
+        remember(items, note.checklistSortOption, checkedColor) {
+            generateChecklistPreview(items, note.checklistSortOption, checkedColor)
         }
     }
 }
