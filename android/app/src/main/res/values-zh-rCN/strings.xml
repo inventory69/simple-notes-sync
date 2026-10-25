@@ -1101,4 +1101,18 @@
     <string name="editor_checklist_read_mode_description">以只读打开清单。在一个项目上点击任意地方来勾选它，使用铅笔图标来编辑。</string>
     <string name="editor_toggle_read_mode">切换阅读模式</string>
     <string name="test_connection_e2ee_blocked">✅ 可连上服务器，但 /%1$s/ 在另一个设备上是加密的。同步已暂停。</string>
+    <string name="sync_error_ssl_untrusted">证书未信任。在服务器设置中测试连接来信任它。</string>
+    <string name="sync_error_ssl_hostname">证书不匹配主机名。检查服务器地址或服务器上的证书。</string>
+    <string name="sync_error_ssl_expired">服务器证书已过期或未有效。检查服务器和这个设备的日期。</string>
+    <string name="server_status_certificate">❌ 证书未信任</string>
+    <string name="cert_dialog_title">信任这个证书？</string>
+    <string name="cert_dialog_message">服务器使用一个此设备不信任的证书，例如一个自签名证书。如果指纹匹配服务器上的指纹，你可以信任它。</string>
+    <string name="cert_dialog_changed">你上次信任这个证书后，它已经更改。如果你没有在服务器上替换它，不要继续。</string>
+    <string name="cert_dialog_issuer">由谁签发</string>
+    <string name="cert_dialog_valid">有效的</string>
+    <string name="cert_dialog_valid_range">%1$s 到 %2$s</string>
+    <string name="cert_dialog_fingerprint">SHA-256 指纹</string>
+    <string name="cert_dialog_trust">信任</string>
+    <string name="notification_sync_warning_certificate_message">服务器证书未信任</string>
+    <string name="notification_sync_warning_certificate_detail">因为服务器证书是未信任的，已经 %d 个小时未同步，例如在证书更新后。在服务器设置中测试连接。</string>
 </resources>
