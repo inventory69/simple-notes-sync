@@ -401,7 +401,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             }
 
             // 🆕 v2.9.x (Trash): ausstehende Server-Löschungen aus „Papierkorb leeren"
-            if (PendingServerDeletions(context).getAll().isNotEmpty()) {
+            if (PendingServerDeletions(context).getForCurrentTarget().isNotEmpty()) {
                 Logger.d(TAG, "🗑️ Pending server deletions - has changes: true")
                 return@withContext true
             }
@@ -1092,7 +1092,8 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
     ): PendingDeletionsOutcome {
         return try {
             val pendingDeletions = PendingServerDeletions(context)
-            val pendingIds = pendingDeletions.getAll()
+            // 🔧 v2.22.0: nur Löschungen, die für dieses Ziel eingereiht wurden
+            val pendingIds = pendingDeletions.getForCurrentTarget()
             if (pendingIds.isEmpty()) {
                 Logger.d(TAG, "    ✅ No pending deletions")
                 return PendingDeletionsOutcome(0, null)
@@ -1128,7 +1129,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 )
             }
             if (successIds.isNotEmpty()) {
-                pendingDeletions.remove(successIds)
+                pendingDeletions.remove(successIds, onlyCurrentTarget = true)
                 Logger.d(
                     TAG,
                     "✅ Processed ${successIds.size}/${pendingIds.size} pending " +
