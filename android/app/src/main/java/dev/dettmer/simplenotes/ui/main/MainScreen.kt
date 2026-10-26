@@ -191,6 +191,7 @@ fun MainScreen(
     // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
     val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
     val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
+    val hideCheckedInPreview by viewModel.hideCheckedInPreview.collectAsState()
     // 🆕 collapsible sections (Pinned / Folders / Notes)
     val collapsedSections by viewModel.collapsedSections.collectAsState()
     // 🆕 section reordering
@@ -460,6 +461,7 @@ fun MainScreen(
                                 notePreviewLength = notePreviewLength,
                                 showNoteTimestamp = showNoteTimestamp,
                                 showNoteTypeIcon = showNoteTypeIcon,
+                                hideCheckedInPreview = hideCheckedInPreview,
                                 collapsedSectionsForFolder = collapsedSectionsForFolder,
                                 sectionOrder = sectionOrder,
                                 scrollToTop = scrollToTop,
@@ -896,6 +898,7 @@ private fun NotesPane(
     notePreviewLength: NotePreviewLength,
     showNoteTimestamp: Boolean,
     showNoteTypeIcon: Boolean,
+    hideCheckedInPreview: Boolean,
     collapsedSectionsForFolder: (String?) -> Set<String>, // 🔧 aktiver Ordner: reaktiv, sonst gespeicherter Satz
     sectionOrder: List<String>, // 🆕 section reordering
     scrollToTop: Boolean,
@@ -1028,6 +1031,7 @@ private fun NotesPane(
             previewLength = notePreviewLength,
             showTimestamp = showNoteTimestamp,
             showTypeIcon = showNoteTypeIcon,
+            hideCheckedInPreview = hideCheckedInPreview,
             showFolderLabels = searchActive, // 🆕 v2.16.0 (#141)
             modifier = Modifier.fillMaxSize(),
             onNoteClick = { note ->
@@ -1060,6 +1064,7 @@ private fun NotesPane(
             previewLength = notePreviewLength,
             showTimestamp = showNoteTimestamp,
             showTypeIcon = showNoteTypeIcon,
+            hideCheckedInPreview = hideCheckedInPreview,
             showFolderLabels = searchActive, // 🆕 v2.16.0 (#141)
             listState = listState,
             modifier = Modifier.fillMaxSize(),

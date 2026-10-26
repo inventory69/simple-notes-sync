@@ -299,6 +299,10 @@ object Constants {
     const val KEY_SHOW_NOTE_TYPE_ICON = "show_note_type_icon"
     const val DEFAULT_SHOW_NOTE_TYPE_ICON = true
 
+    // 🆕 Issue #118: erledigte Checklisten-Einträge in Karten- und Widget-Vorschauen ausblenden
+    const val KEY_HIDE_CHECKED_IN_PREVIEW = "hide_checked_in_preview"
+    const val DEFAULT_HIDE_CHECKED_IN_PREVIEW = false
+
     // 🆕 v2.12.0: Persistierte Kalender-Parsing-Strategie (Debug-Settings-Experiment).
     const val KEY_CALENDAR_PARSING_STRATEGY = "calendar_parsing_strategy"
 

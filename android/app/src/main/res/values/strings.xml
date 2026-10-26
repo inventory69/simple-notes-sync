@@ -715,6 +715,8 @@
     <string name="note_card_show_timestamp_description">Show the last-edited timestamp on note cards.</string>
     <string name="note_card_show_icon_toggle">Show note icon</string>
     <string name="note_card_show_icon_description">Show the type icon and pin badge on note cards.</string>
+    <string name="note_card_hide_checked_toggle">Hide completed items in previews</string>
+    <string name="note_card_hide_checked_description">Checklist previews on note cards and widgets show only open items and how many are completed.</string>
     <!-- 🆕 Bild-Attachments: Image compression mode -->
     <string name="settings_image_compression_title">Image compression</string>
     <string name="settings_image_compression_info">Applies when you insert a new image into a note. Already-inserted images are not reprocessed.</string>

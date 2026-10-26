@@ -54,6 +54,7 @@ fun NotesStaggeredGrid(
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     showTimestamp: Boolean = true,
     showTypeIcon: Boolean = true,
+    hideCheckedInPreview: Boolean = false, // 🆕 Issue #118
     showFolderLabels: Boolean = false, // 🆕 v2.16.0 (#141): Suche zeigt Treffer aus allen Ordnern
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit,
@@ -141,6 +142,7 @@ fun NotesStaggeredGrid(
                                     previewLength = previewLength,
                                     showTimestamp = showTimestamp,
                                     showTypeIcon = showTypeIcon,
+                                    hideCheckedInPreview = hideCheckedInPreview,
                                     showFolderLabels = showFolderLabels,
                                     onNoteClick = onNoteClick,
                                     onNoteLongClick = onNoteLongClick
@@ -228,6 +230,7 @@ fun NotesStaggeredGrid(
                                 previewLength = previewLength,
                                 showTimestamp = showTimestamp,
                                 showTypeIcon = showTypeIcon,
+                                hideCheckedInPreview = hideCheckedInPreview,
                                 showFolderLabel = showFolderLabels,
                                 onClick = { onNoteClick(note) },
                                 onLongClick = { onNoteLongClick(note) }
@@ -253,6 +256,7 @@ private fun PinnedNotesGrid(
     previewLength: NotePreviewLength,
     showTimestamp: Boolean,
     showTypeIcon: Boolean,
+    hideCheckedInPreview: Boolean,
     showFolderLabels: Boolean,
     onNoteClick: (Note) -> Unit,
     onNoteLongClick: (Note) -> Unit
@@ -278,6 +282,7 @@ private fun PinnedNotesGrid(
                             previewLength = previewLength,
                             showTimestamp = showTimestamp,
                             showTypeIcon = showTypeIcon,
+                            hideCheckedInPreview = hideCheckedInPreview,
                             showFolderLabel = showFolderLabels,
                             onClick = { onNoteClick(note) },
                             onLongClick = { onNoteLongClick(note) }

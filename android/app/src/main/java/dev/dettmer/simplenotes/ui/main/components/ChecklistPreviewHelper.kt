@@ -1,5 +1,7 @@
 package dev.dettmer.simplenotes.ui.main.components
 
+import android.content.Context
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
@@ -46,6 +49,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import kotlin.math.roundToInt
 
@@ -238,19 +242,54 @@ fun sortChecklistItemsForPreview(items: List<ChecklistItem>, sortOptionName: Str
 }
 
 /**
+ * Issue #118: blendet erledigte Einträge aus (Einstellung `KEY_HIDE_CHECKED_IN_PREVIEW`).
+ * Liefert die offenen Einträge in der Reihenfolge von [sorted] und die Zahl der ausgeblendeten,
+ * unabhängig von der Sortierung. Bei `hideChecked == false` bleibt alles, wie es ist.
+ */
+fun hideCheckedForPreview(sorted: List<ChecklistItem>, hideChecked: Boolean): Pair<List<ChecklistItem>, Int> {
+    if (!hideChecked) return sorted to 0
+    val open = sorted.filterNot { it.isChecked }
+    return open to sorted.size - open.size
+}
+
+/** Widgets lesen den Schalter direkt, provideContent läuft bei jedem update() neu. */
+fun Context.isHideCheckedInPreview(): Boolean = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    .getBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, Constants.DEFAULT_HIDE_CHECKED_IN_PREVIEW)
+
+/** Fußzeile „+M weitere · +N erledigt“, leere Teile entfallen. `null` = keine Fußzeile. */
+fun checklistPreviewFooter(res: Resources, moreCount: Int, hiddenCheckedCount: Int): String? = listOfNotNull(
+    res.getString(R.string.checklist_items_more, moreCount).takeIf { moreCount > 0 },
+    "+${res.getQuantityString(R.plurals.checked_items_count, hiddenCheckedCount, hiddenCheckedCount)}"
+        .takeIf { hiddenCheckedCount > 0 }
+).joinToString(" · ").ifEmpty { null }
+
+/**
  * Generiert den Vorschau-Text für eine Checkliste mit korrekter Sortierung, eine Zeile je Item.
  * Die Checkboxen sind Inline-Platzhalter, [TrailingIconText] rendert sie als Icons.
  *
  * @param items Die Checklisten-Items
  * @param sortOptionName Der Name der ChecklistSortOption (oder null für MANUAL)
  * @param checkedColor Textfarbe erledigter Einträge
+ * @param hideChecked Issue #118: erledigte weglassen, stattdessen „+N erledigt“ als letzte Zeile
  */
-fun generateChecklistPreview(items: List<ChecklistItem>, sortOptionName: String?, checkedColor: Color): AnnotatedString {
-    val sorted = sortChecklistItemsForPreview(items, sortOptionName)
+fun generateChecklistPreview(
+    items: List<ChecklistItem>,
+    sortOptionName: String?,
+    checkedColor: Color,
+    hideChecked: Boolean,
+    res: Resources
+): AnnotatedString {
+    val (visible, hiddenChecked) = hideCheckedForPreview(sortChecklistItemsForPreview(items, sortOptionName), hideChecked)
     return buildAnnotatedString {
-        sorted.forEachIndexed { index, item ->
+        visible.forEachIndexed { index, item ->
             if (index > 0) append("\n")
             checklistItemLine(item, checkedColor)
+        }
+        checklistPreviewFooter(res, moreCount = 0, hiddenCheckedCount = hiddenChecked)?.let { footer ->
+            if (visible.isNotEmpty()) append("\n")
+            pushStyle(SpanStyle(color = checkedColor))
+            append(footer)
+            pop()
         }
     }
 }
@@ -263,23 +302,28 @@ fun ChecklistItemsPreview(
     style: TextStyle,
     modifier: Modifier = Modifier,
     itemMaxLines: Int = 1, // 🆕 v2.11.0: erlaubt mehrzeiliges Wrapping langer Items (Preset-gesteuert)
+    hideChecked: Boolean = false, // 🆕 Issue #118
     // 🆕 Issue #100: hängt (falls gesetzt) ein Inline-Icon ans Ende der TATSÄCHLICH letzten
     // gerenderten Zeile an ("+N mehr" falls vorhanden, sonst letztes sichtbares Item).
     trailingIcon: (@Composable () -> Unit)? = null,
     trailingIconSize: Dp = 0.dp
 ) {
-    val sorted = remember(items, sortOptionName) { sortChecklistItemsForPreview(items, sortOptionName) }
+    val (sorted, hiddenChecked) = remember(items, sortOptionName, hideChecked) {
+        hideCheckedForPreview(sortChecklistItemsForPreview(items, sortOptionName), hideChecked)
+    }
     val checkedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = CHECKED_ITEM_ALPHA)
     val remaining = (sorted.size - maxItems).coerceAtLeast(0)
     // If only 1 item would be hidden, showing "+1 more" wastes a line vs. just showing the item
-    val effectiveMax = if (remaining == 1) maxItems + 1 else maxItems
+    // (gilt nicht, wenn die Fußzeile wegen „+N erledigt“ ohnehin kommt)
+    val effectiveMax = if (remaining == 1 && hiddenChecked == 0) maxItems + 1 else maxItems
     val visible = sorted.take(effectiveMax)
     val finalRemaining = (sorted.size - visible.size).coerceAtLeast(0)
+    val footer = checklistPreviewFooter(LocalResources.current, finalRemaining, hiddenChecked)
 
     Column(modifier = modifier) {
         // 🆕 Issue #100 fix: eine leere Checkliste hat sonst keine Zeile, an die sich das
         // Sync-Icon hängen könnte — ohne Zeitstempel-Footer verschwindet der Status sonst komplett.
-        if (visible.isEmpty() && finalRemaining == 0 && trailingIcon != null) {
+        if (visible.isEmpty() && footer == null && trailingIcon != null) {
             TrailingIconText(
                 text = AnnotatedString(""),
                 style = style,
@@ -290,7 +334,7 @@ fun ChecklistItemsPreview(
             )
         }
         visible.forEachIndexed { index, item ->
-            val isLastLine = index == visible.lastIndex && finalRemaining == 0
+            val isLastLine = index == visible.lastIndex && footer == null
             TrailingIconText(
                 text = buildAnnotatedString { checklistItemLine(item, checkedColor) },
                 style = style,
@@ -300,9 +344,9 @@ fun ChecklistItemsPreview(
                 icon = if (isLastLine) trailingIcon else null
             )
         }
-        if (finalRemaining > 0) {
+        if (footer != null) {
             TrailingIconText(
-                text = AnnotatedString(stringResource(R.string.checklist_items_more, finalRemaining)),
+                text = AnnotatedString(footer),
                 style = style,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 maxLines = 1,

@@ -709,6 +709,8 @@
     <string name="note_card_show_timestamp_description">Zeigt den Zeitstempel der letzten Bearbeitung auf Notizkarten an.</string>
     <string name="note_card_show_icon_toggle">Notiz-Icon anzeigen</string>
     <string name="note_card_show_icon_description">Zeigt das Typ-Icon und das Pin-Badge auf Notizkarten an.</string>
+    <string name="note_card_hide_checked_toggle">Erledigte in Vorschauen ausblenden</string>
+    <string name="note_card_hide_checked_description">Checklisten-Vorschauen auf Notizkarten und Widgets zeigen nur offene Einträge und wie viele erledigt sind.</string>
     <!-- 🆕 Bild-Attachments: Kompressionsmodus -->
     <string name="settings_image_compression_title">Bildkompression</string>
     <string name="settings_image_compression_info">Gilt beim Einfügen eines neuen Bilds in eine Notiz. Bereits eingefügte Bilder werden nicht neu verarbeitet.</string>

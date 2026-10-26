@@ -49,6 +49,8 @@ import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
+import dev.dettmer.simplenotes.ui.main.components.checklistPreviewFooter
+import dev.dettmer.simplenotes.ui.main.components.hideCheckedForPreview
 import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 import dev.dettmer.simplenotes.utils.Logger
 
@@ -161,7 +163,8 @@ fun NoteWidgetContent(
     showOptions: Boolean,
     bgOpacity: Float,
     fontSizeScale: Float = 1.0f,
-    glanceId: GlanceId
+    glanceId: GlanceId,
+    hideChecked: Boolean = false // Issue #118, nur die kompakte Ansicht
 ) {
     val size = LocalSize.current
     val context = LocalContext.current
@@ -280,7 +283,8 @@ fun NoteWidgetContent(
                                 maxItems = 2,
                                 isLocked = isLocked,
                                 glanceId = glanceId,
-                                fontSizeScale = fontSizeScale
+                                fontSizeScale = fontSizeScale,
+                                hideChecked = hideChecked
                             )
                         }
                     }
@@ -324,7 +328,8 @@ fun NoteWidgetContent(
                                 maxItems = 3,
                                 isLocked = isLocked,
                                 glanceId = glanceId,
-                                fontSizeScale = fontSizeScale
+                                fontSizeScale = fontSizeScale,
+                                hideChecked = hideChecked
                             )
                         }
                     }
@@ -465,10 +470,19 @@ private fun OptionsBar(isLocked: Boolean, noteId: String, glanceId: GlanceId) {
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
-private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, glanceId: GlanceId, fontSizeScale: Float = 1.0f) {
+private fun ChecklistCompactView(
+    note: Note,
+    maxItems: Int,
+    isLocked: Boolean,
+    glanceId: GlanceId,
+    fontSizeScale: Float = 1.0f,
+    hideChecked: Boolean = false
+) {
+    val context = LocalContext.current
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
-    val items = note.checklistItems?.let { rawItems ->
-        sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
+    // Issue #118: bei aktivem Schalter nur offene Einträge (dann gibt es auch keinen Separator)
+    val (items, hiddenChecked) = note.checklistItems?.let { rawItems ->
+        hideCheckedForPreview(sortChecklistItemsForPreview(rawItems, note.checklistSortOption), hideChecked)
     } ?: return
 
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
@@ -559,9 +573,16 @@ private fun ChecklistCompactView(note: Note, maxItems: Int, isLocked: Boolean, g
             }
         }
 
-        if (remainingCount > 0) {
+        // Tap auf die Fußzeile öffnet wie die übrige Fläche den Editor, dort lässt sich zurücksetzen
+        val footer = when {
+            hiddenChecked > 0 -> checklistPreviewFooter(context.resources, remainingCount, hiddenChecked)
+            remainingCount > 0 ->
+                "${context.getString(R.string.checklist_items_more, remainingCount)} · ✔ $checkedCount/${items.size}"
+            else -> null
+        }
+        if (footer != null) {
             Text(
-                text = "+$remainingCount more · ✔ $checkedCount/${items.size}",
+                text = footer,
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
                     fontSize = (12 * fontSizeScale).sp
@@ -595,7 +616,8 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
 
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
     val uncheckedCount = items.count { !it.isChecked }
-    val checkedCount = items.count { it.isChecked }
+    // Separator-Label zählt alle erledigten, auch die hinter dem Zeilenbudget abgeschnittenen
+    val checkedCount = note.checklistItems.orEmpty().count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
     } catch (e: IllegalArgumentException) {
@@ -609,7 +631,7 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
             sortOption == ChecklistSortOption.UNCHECKED_FIRST
         ) &&
         uncheckedCount > 0 &&
-        checkedCount > 0
+        items.any { it.isChecked }
 
     // 🆕 v1.8.1: Berechne die Gesamtanzahl der Elemente inklusive Separator
     val totalItems = items.size + if (showSeparator) 1 else 0

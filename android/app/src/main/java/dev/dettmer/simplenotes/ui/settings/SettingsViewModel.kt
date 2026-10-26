@@ -504,6 +504,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val showNoteTypeIcon: StateFlow<Boolean> = _showNoteTypeIcon.asStateFlow()
 
+    private val _hideCheckedInPreview = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, Constants.DEFAULT_HIDE_CHECKED_IN_PREVIEW)
+    )
+    val hideCheckedInPreview: StateFlow<Boolean> = _hideCheckedInPreview.asStateFlow()
+
     // 🆕 (#126-Nachgang): Wortzähler im Editor — immer, nur im Lesemodus, oder aus
     private val _wordCounterVisibility = MutableStateFlow(
         prefs.getString(Constants.KEY_WORD_COUNTER_VISIBILITY, Constants.DEFAULT_WORD_COUNTER_VISIBILITY)
@@ -750,6 +755,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // ComposeMainActivity) — ohne diesen Call bliebe das Notes-List-Widget bis zum
         // nächsten Sync/App-Besuch beim alten Icon-Zustand.
         viewModelScope.launch { WidgetUpdateHelper.refreshAllNotesListWidgets(getApplication()) }
+    }
+
+    /** 🆕 Issue #118: erledigte Einträge in den Vorschauen ausblenden (Karten, beide Widget-Typen). */
+    fun setHideCheckedInPreview(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, enabled) }
+        _hideCheckedInPreview.value = enabled
+        viewModelScope.launch { WidgetUpdateHelper.refreshAllWidgets(getApplication()) }
     }
 
     /** 🆕 Bild-Attachments: Kompressionsmodus für künftig eingefügte Bilder. */
