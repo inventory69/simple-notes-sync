@@ -1022,4 +1022,18 @@
     <string name="editor_checklist_read_mode_description">Sjekklister åpnes i lesemodus. Trykk hvor som helst på et element for å sjekke det, bruk blyantikonet for å redigere.</string>
     <string name="editor_toggle_read_mode">Skru lesemodus av/på</string>
     <string name="test_connection_e2ee_blocked">✅ Tjener kan nås, men /%1$s/ ble kryptert på en annen enhet. Synk er pauset.</string>
+    <string name="sync_error_ssl_untrusted">Sertifikat ikke stolt på. Test tilkoblingen i tjenerinnstillingene for å stole på det.</string>
+    <string name="sync_error_ssl_hostname">Sertifikatet stemmer ikke overens med tjenernavnet. Sjekk tjeneradressen eller sertifikatet på tjeneren.</string>
+    <string name="sync_error_ssl_expired">Tjenersertifikatet har gått ut eller er ikke ennå gyldig. Sjekk dato på tjener og denne enheten.</string>
+    <string name="server_status_certificate">❌ Sertifikat ikke stolt på</string>
+    <string name="cert_dialog_title">Stol på dette sertifikatet?</string>
+    <string name="cert_dialog_message">Tjeneren bruker et sertifikat som denne enheten ikke stoler på, f.eks. hvis det er selvsignert. Stol på det kun hvis fingeravtrykket stemmer overens med det på tjeneren din.</string>
+    <string name="cert_dialog_changed">Sertifikatet har blitt endret siden du stolte på det. Ikke fortsett hvis du ikke har erstattet det på tjeneren.</string>
+    <string name="cert_dialog_issuer">Utstedt av</string>
+    <string name="cert_dialog_valid">Gyldig</string>
+    <string name="cert_dialog_valid_range">%1$s til %2$s</string>
+    <string name="cert_dialog_fingerprint">SHA-256-fingeravtrykk</string>
+    <string name="cert_dialog_trust">Stol på</string>
+    <string name="notification_sync_warning_certificate_message">Tjenersertifikat ikke stolt på</string>
+    <string name="notification_sync_warning_certificate_detail">Ingenting har blitt synket på %d timer fordi tjenersertifikatet ikke er stolt på, f.eks. etter en fornyelse. Test tilkoblingen i tjenerinnstillingene.</string>
 </resources>
