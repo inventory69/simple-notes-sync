@@ -8,6 +8,8 @@ import com.google.gson.JsonParser
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import dev.dettmer.simplenotes.models.Folder
+import dev.dettmer.simplenotes.sync.PendingServerDeletions
+import dev.dettmer.simplenotes.sync.SyncUrlBuilder
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import java.io.File
@@ -198,12 +200,35 @@ class FolderStore(private val context: Context) {
 
     /** Ordner, deren Server-Eintrag beim nächsten folders.json-Sync tombstoned werden soll
      *  („Vom Server entfernen" beim nachträglichen Ausschließen). Selbst-löschend nach Erfolg. */
-    fun getServerRemovalQueue(): Set<String> =
-        prefs.getStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, emptySet()) ?: emptySet()
+    // 🔧 v2.22.0: die Queue ist an ihr Sync-Ziel (Notes-URL) gebunden, sonst landete der Tombstone
+    // nach einem Server-/Ordnerwechsel im folders.json des neuen Ziels. Fremde Queues bleiben
+    // unsichtbar, bis ihr Ziel wieder aktiv ist; ein set() der Aufrufer ersetzt sie.
+    // ponytail: ein Ziel je Queue, kein Verfall; pro-Eintrag-Ziel wie bei PendingDeletion erst,
+    // wenn jemand Queues für zwei Ziele parallel braucht.
+    fun getServerRemovalQueue(): Set<String> {
+        val names = prefs.getStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, emptySet()) ?: emptySet()
+        if (names.isEmpty()) return emptySet()
+        val current = currentSyncTarget()
+        if (!prefs.contains(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET)) {
+            // Altdaten ohne Ziel: als aktuelles Ziel festschreiben (Verhalten vor v2.22.0)
+            if (current != null) prefs.edit { putString(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET, current) }
+            return names
+        }
+        return if (prefs.getString(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET, null) == current) names else emptySet()
+    }
 
     fun setServerRemovalQueue(names: Set<String>) {
-        prefs.edit { putStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, names.toSet()) }
+        val target = currentSyncTarget()
+        prefs.edit {
+            putStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, names.toSet())
+            if (target != null) putString(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET, target)
+            else remove(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET)
+        }
     }
+
+    /** Notes-URL des aktiven Ziels, wie in [PendingServerDeletions]. `null` = kein Server. */
+    private fun currentSyncTarget(): String? =
+        SyncUrlBuilder(prefs).let { u -> u.getServerUrl()?.let(u::getNotesUrl) }
 
     /** Re-Include nach local-only: updatedAt-Bump, damit der lokale aktive Eintrag einen evtl.
      *  Server-Tombstone (aus „Vom Server entfernen") beim LWW-Merge schlägt. Setzt dirty-Flag. */
@@ -254,6 +279,7 @@ class FolderStore(private val context: Context) {
         prefs.edit {
             remove(KEY_LOCAL_ONLY_FOLDERS)
             remove(KEY_LOCAL_ONLY_SERVER_REMOVAL)
+            remove(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET)
         }
     }
 
@@ -312,5 +338,6 @@ class FolderStore(private val context: Context) {
         const val FILE_NAME = "folders.json"
         private const val KEY_LOCAL_ONLY_FOLDERS = "local_only_folders"
         private const val KEY_LOCAL_ONLY_SERVER_REMOVAL = "local_only_folders_server_removal"
+        private const val KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET = "local_only_folders_server_removal_target"
     }
 }
