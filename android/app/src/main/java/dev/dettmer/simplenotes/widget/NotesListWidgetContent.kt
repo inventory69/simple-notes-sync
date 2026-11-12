@@ -46,6 +46,8 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.ComposeNoteEditorActivity
 import dev.dettmer.simplenotes.ui.main.ComposeMainActivity
+import dev.dettmer.simplenotes.ui.main.components.checklistPreviewFooter
+import dev.dettmer.simplenotes.ui.main.components.hideCheckedForPreview
 import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 
@@ -94,6 +96,7 @@ fun NotesListWidgetContent(
     hidePreview: Boolean = false,
     fontSizeScale: Float = 1.0f,
     showTypeIcon: Boolean = true,
+    hideChecked: Boolean = false, // Issue #118
     /**
      * Zeilenbudget für die ganze Liste, Ordner **und** Notizen zusammen (Issue #154). Eine Zeile
      * kostet rund 9 KB in der RemoteViews-Transaktion; wie viele davon hineinpassen, entscheidet
@@ -154,7 +157,8 @@ fun NotesListWidgetContent(
                             bgOpacity = cardBgOpacity,
                             fontSizeScale = fontSizeScale,
                             hidePreview = hidePreview,
-                            showTypeIcon = showTypeIcon
+                            showTypeIcon = showTypeIcon,
+                            hideChecked = hideChecked
                         )
                     }
 
@@ -179,7 +183,8 @@ fun NotesListWidgetContent(
                             bgOpacity = cardBgOpacity,
                             fontSizeScale = fontSizeScale,
                             hidePreview = hidePreview,
-                            showTypeIcon = showTypeIcon
+                            showTypeIcon = showTypeIcon,
+                            hideChecked = hideChecked
                         )
                     }
 
@@ -227,7 +232,8 @@ private fun NoteCard(
     bgOpacity: Float,
     fontSizeScale: Float = 1.0f,
     hidePreview: Boolean = false,
-    showTypeIcon: Boolean = true
+    showTypeIcon: Boolean = true,
+    hideChecked: Boolean = false
 ) {
     val context = LocalContext.current
     val slot = NoteColorPalette.fromHex(note.color)
@@ -260,9 +266,9 @@ private fun NoteCard(
                 )
         ) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(10.dp)) {
-                NoteCardTitle(note, fontSizeScale, hidePreview, showTypeIcon)
+                NoteCardTitle(note, fontSizeScale, hidePreview, showTypeIcon, hideChecked)
                 if (!hidePreview) {
-                    NoteCardBody(note = note, fontSizeScale = fontSizeScale)
+                    NoteCardBody(note = note, fontSizeScale = fontSizeScale, hideChecked = hideChecked)
                 }
             }
         }
@@ -347,7 +353,8 @@ private fun NoteCardTitle(
     note: Note,
     fontSizeScale: Float = 1.0f,
     hidePreview: Boolean = false,
-    showTypeIcon: Boolean = true
+    showTypeIcon: Boolean = true,
+    hideChecked: Boolean = false
 ) {
     val context = LocalContext.current
     val hasTitle = note.title.isNotBlank()
@@ -411,7 +418,8 @@ private fun NoteCardTitle(
                 note = note,
                 fontSizeScale = fontSizeScale,
                 maxLines = 1,
-                modifier = GlanceModifier.defaultWeight()
+                modifier = GlanceModifier.defaultWeight(),
+                hideChecked = hideChecked
             )
         }
         showTypeIcon -> NoteTypeIcon(note.noteType)
@@ -423,7 +431,8 @@ private fun NoteCardBody(
     note: Note,
     fontSizeScale: Float = 1.0f,
     maxLines: Int = NOTE_CARD_BODY_MAX_LINES,
-    modifier: GlanceModifier = GlanceModifier.fillMaxWidth()
+    modifier: GlanceModifier = GlanceModifier.fillMaxWidth(),
+    hideChecked: Boolean = false
 ) {
     when (note.noteType) {
         NoteType.TEXT -> {
@@ -438,7 +447,7 @@ private fun NoteCardBody(
                 )
             }
         }
-        NoteType.CHECKLIST -> ChecklistCardPreview(note, fontSizeScale, maxLines, modifier)
+        NoteType.CHECKLIST -> ChecklistCardPreview(note, fontSizeScale, maxLines, modifier, hideChecked)
     }
 }
 
@@ -447,13 +456,23 @@ private fun ChecklistCardPreview(
     note: Note,
     fontSizeScale: Float = 1.0f,
     maxItems: Int = NOTE_CARD_BODY_MAX_LINES,
-    modifier: GlanceModifier = GlanceModifier.fillMaxWidth()
+    modifier: GlanceModifier = GlanceModifier.fillMaxWidth(),
+    hideChecked: Boolean = false
 ) {
-    val sorted = sortChecklistItemsForPreview(note.checklistItems.orEmpty(), note.checklistSortOption)
+    val context = LocalContext.current
+    // Issue #118: bei aktivem Schalter nur offene Einträge, die erledigten als „+N erledigt“
+    val (sorted, hiddenChecked) = hideCheckedForPreview(
+        sortChecklistItemsForPreview(note.checklistItems.orEmpty(), note.checklistSortOption),
+        hideChecked
+    )
     val visibleItems = sorted.take(maxItems)
-    // ponytail: bei „Nur Titel" (maxItems == 1) auch das "+N more" weglassen — sonst wäre die
-    // Karte doch wieder zweizeilig
-    val remaining = if (maxItems > 1) (sorted.size - visibleItems.size).coerceAtLeast(0) else 0
+    // ponytail: bei „Nur Titel" (maxItems == 1) auch die Fußzeile weglassen — sonst wäre die
+    // Karte doch wieder zweizeilig. Ausnahme: alles erledigt, dann ist die Fußzeile die einzige Zeile.
+    val footer = if (maxItems > 1 || visibleItems.isEmpty()) {
+        checklistPreviewFooter(context.resources, sorted.size - visibleItems.size, hiddenChecked)
+    } else {
+        null
+    }
 
     Column(modifier = modifier) {
         visibleItems.forEach { item ->
@@ -469,9 +488,9 @@ private fun ChecklistCardPreview(
                 maxLines = 1
             )
         }
-        if (remaining > 0) {
+        if (footer != null) {
             Text(
-                text = "+$remaining more",
+                text = footer,
                 style = TextStyle(
                     color = GlanceTheme.colors.outline,
                     fontSize = (12 * fontSizeScale).sp

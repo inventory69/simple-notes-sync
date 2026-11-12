@@ -8,6 +8,7 @@ import dev.dettmer.simplenotes.sync.webdav.WebDavClient
 import dev.dettmer.simplenotes.sync.webdav.WebDavException
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import java.io.File
 import java.nio.file.Files
@@ -49,8 +50,10 @@ class FolderSyncManagerTest {
         }
         val prefs = mockk<SharedPreferences>(relaxed = true) {
             every { edit() } returns editor
+            every { contains(any()) } answers { firstArg<String>() in prefsBacking }
             every { getString(any(), any()) } answers { prefsBacking[firstArg()] as? String ?: secondArg() }
             every { getBoolean(any(), any()) } answers { prefsBacking[firstArg()] as? Boolean ?: secondArg() }
+            every { contains(any()) } answers { firstArg<String>() in prefsBacking }
             // Rückgabe muss mutable sein — mockks secondArg() castet sonst EmptySet auf MutableSet.
             @Suppress("UNCHECKED_CAST")
             every { getStringSet(any(), any()) } answers {
@@ -312,5 +315,61 @@ class FolderSyncManagerTest {
 
         verify(exactly = 1) { webdav.put(any(), any<ByteArray>(), any()) }
         assertNull(cachedEtag())
+    }
+
+    // ── Removal-Queue an das Sync-Ziel gebunden (v2.22.0) ────────────────────
+
+    @Test fun `removal queue waits while another sync target is active`() = runTest {
+        val serverUrl = dev.dettmer.simplenotes.utils.Constants.KEY_SERVER_URL
+        prefsBacking[serverUrl] = "https://a.example/"
+        folderStore.replaceMeta(listOf(FolderMeta("X", updatedAt = 100L)))
+        folderStore.setServerRemovalQueue(setOf("X"))
+
+        // Ziel B: kein Tombstone, Queue bleibt erhalten
+        prefsBacking[serverUrl] = "https://b.example/"
+        val bodiesB = mutableListOf<ByteArray>()
+        val webdavB = webDavWith("""[{"name":"X","updatedAt":100}]""")
+        every { webdavB.put(any(), capture(bodiesB), any()) } returns null
+        manager.sync(webdavB, "https://b.example/")
+        assertTrue(folderStore.getServerRemovalQueue().isEmpty())
+        assertFalse(bodiesB.any { String(it).contains("\"deleted\":true") })
+
+        // zurück auf A: Tombstone geht raus, Queue leer
+        prefsBacking[serverUrl] = "https://a.example/"
+        assertEquals(setOf("X"), folderStore.getServerRemovalQueue())
+        val bodiesA = mutableListOf<ByteArray>()
+        val webdavA = webDavWith("""[{"name":"X","updatedAt":100}]""")
+        every { webdavA.put(any(), capture(bodiesA), any()) } returns null
+        manager.sync(webdavA, "https://a.example/")
+        assertTrue(bodiesA.any { String(it).contains("\"deleted\":true") })
+        assertTrue(folderStore.getServerRemovalQueue().isEmpty())
+    }
+
+    // ── Removal-Queue an das Sync-Ziel gebunden (v2.22.0) ───────────────────
+
+    private fun syncAndCapturePut(): String? {
+        val body = slot<ByteArray>()
+        val webdav = mockk<WebDavClient>()
+        every { webdav.get(any<String>()) } answers { """[{"name":"A","updatedAt":100}]""".byteInputStream() }
+        every { webdav.put(any(), capture(body), any()) } returns null
+        kotlinx.coroutines.runBlocking { manager.sync(webdav, "https://server/") }
+        return if (body.isCaptured) String(body.captured) else null
+    }
+
+    @Test fun `removal queue only reaches the target it was queued for`() {
+        val serverUrl = dev.dettmer.simplenotes.utils.Constants.KEY_SERVER_URL
+        kotlinx.coroutines.runBlocking { folderStore.replaceMeta(listOf(FolderMeta("A", updatedAt = 100L))) }
+        prefsBacking[serverUrl] = "https://a.example/"
+        folderStore.setServerRemovalQueue(setOf("A"))
+
+        // Ziel B: kein Tombstone, Queue wartet
+        prefsBacking[serverUrl] = "https://b.example/"
+        assertFalse(syncAndCapturePut()?.contains("\"deleted\":true") ?: false)
+        prefsBacking[serverUrl] = "https://a.example/"
+        assertEquals(setOf("A"), folderStore.getServerRemovalQueue())
+
+        // zurück auf A: Tombstone geht raus, Queue leer
+        assertTrue(syncAndCapturePut()!!.contains("\"deleted\":true"))
+        assertTrue(folderStore.getServerRemovalQueue().isEmpty())
     }
 }

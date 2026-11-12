@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,6 +80,7 @@ fun NoteCard(
     previewLength: NotePreviewLength = NotePreviewLength.STANDARD,
     showTimestamp: Boolean = true,
     showTypeIcon: Boolean = true,
+    hideCheckedInPreview: Boolean = false, // 🆕 Issue #118
     showFolderLabel: Boolean = false, // 🆕 v2.16.0 (#141): nur während der ordnerübergreifenden Suche
     onClick: () -> Unit,
     onLongClick: () -> Unit
@@ -171,7 +173,8 @@ fun NoteCard(
                             note = note,
                             maxLines = previewLength.listLines,
                             itemMaxLines = previewLength.itemMaxLines,
-                            showSyncIcon = showCornerSyncIcon
+                            showSyncIcon = showCornerSyncIcon,
+                            hideChecked = hideCheckedInPreview
                         )
                     }
                 } else {
@@ -180,7 +183,8 @@ fun NoteCard(
                         isPinned = note.isPinned == true,
                         maxLines = previewLength.listLines,
                         showTypeIcon = showTypeIcon,
-                        showSyncIcon = showCornerSyncIcon
+                        showSyncIcon = showCornerSyncIcon,
+                        hideChecked = hideCheckedInPreview
                     )
                 }
 
@@ -372,6 +376,7 @@ private fun NoteCardPreviewContent(
     maxLines: Int,
     itemMaxLines: Int,
     showSyncIcon: Boolean,
+    hideChecked: Boolean,
     modifier: Modifier = Modifier
 ) {
     val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {
@@ -396,6 +401,7 @@ private fun NoteCardPreviewContent(
             maxItems = maxLines,
             style = MaterialTheme.typography.bodyMedium,
             itemMaxLines = itemMaxLines,
+            hideChecked = hideChecked,
             modifier = modifier,
             trailingIcon = cornerSyncIcon,
             trailingIconSize = CORNER_SYNC_ICON_SIZE
@@ -410,14 +416,15 @@ private fun NoteCardPreviewContent(
  * bleibt (subSequence bewahrt Spans, ein reiner String-Split würde sie verlieren).
  */
 @Composable
-private fun notePreviewFullText(note: Note): AnnotatedString {
+private fun notePreviewFullText(note: Note, hideChecked: Boolean): AnnotatedString {
     return if (note.noteType == NoteType.TEXT) {
         noteCardMarkdownPreview(note.content)
     } else {
         val items = note.checklistItems.orEmpty()
         val checkedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = CHECKED_ITEM_ALPHA)
-        remember(items, note.checklistSortOption, checkedColor) {
-            generateChecklistPreview(items, note.checklistSortOption, checkedColor)
+        val res = LocalResources.current
+        remember(items, note.checklistSortOption, checkedColor, hideChecked, res) {
+            generateChecklistPreview(items, note.checklistSortOption, checkedColor, hideChecked, res)
         }
     }
 }
@@ -443,9 +450,10 @@ private fun NoteCardIconLeadingPreview(
     isPinned: Boolean,
     maxLines: Int,
     showTypeIcon: Boolean,
-    showSyncIcon: Boolean
+    showSyncIcon: Boolean,
+    hideChecked: Boolean
 ) {
-    val (firstLine, remainingLines) = notePreviewFullText(note).splitFirstLine()
+    val (firstLine, remainingLines) = notePreviewFullText(note, hideChecked).splitFirstLine()
     // ponytail: maxLines <= 1 = TITLE_ONLY (bzw. kein Platz mehr) — nur die Titel-Slot-Zeile bleibt
     val hasRemainingLines = remainingLines.isNotBlank() && maxLines > 1
     val cornerSyncIcon: (@Composable () -> Unit)? = if (showSyncIcon) {

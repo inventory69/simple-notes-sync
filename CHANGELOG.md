@@ -8,6 +8,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.0] - 2026-11-13
+
+### ✨ New Features
+
+**Hide Completed Checklist Items in Previews** ([547114f](https://github.com/inventory69/simple-notes-sync/commit/547114f))
+- New display setting "Hide completed items in previews", off by default
+- When on, note cards in list and grid view, the list widget and the compact note widget show only open items, followed by a "+N completed" line. This works with every checklist sort order
+- The full note widget still shows all items
+- Thanks to [@lincomax](https://github.com/lincomax) for the request! ([#118](https://github.com/inventory69/simple-notes-sync/issues/118))
+
+### 🐛 Bug Fixes
+
+**Sync With Servers That Send Unusual Folder Listings** ([6348645](https://github.com/inventory69/simple-notes-sync/commit/6348645))
+- Some WebDAV servers repeat an attribute in their folder listings. The app rejected the whole listing, so a fresh install could not download any notes. These listings are now read normally
+- Thanks to [@glock24](https://github.com/glock24) for the report! ([#175](https://github.com/inventory69/simple-notes-sync/issues/175))
+
+**Widgets Stay in Step After Checking an Item** ([c47e6a0](https://github.com/inventory69/simple-notes-sync/commit/c47e6a0))
+- Checking an item in a note widget now also updates the list widget and other widgets showing the same note
+- Notes in local-only folders are no longer marked as waiting for upload when an item is checked in a widget
+
+**Widget Updates No Longer Freeze the App** ([e71747e](https://github.com/inventory69/simple-notes-sync/commit/e71747e))
+- Widgets are now refreshed in the background, so the app stays responsive while they update
+
+**Offline Deletions Reach the Right Sync Folder** ([2db5784](https://github.com/inventory69/simple-notes-sync/commit/2db5784), [6f0f0e1](https://github.com/inventory69/simple-notes-sync/commit/6f0f0e1))
+- A note deleted while the server was unreachable is now removed from the sync folder it was deleted in, even after switching to another server or sync folder in between
+- The same applies to folders excluded from sync with "Remove from server": a folder with the same name in another sync folder stays untouched
+
+**Clearer Wording in the Certificate Dialog** ([a20e404](https://github.com/inventory69/simple-notes-sync/commit/a20e404))
+- The trust dialog now says "certificate fingerprint", so it cannot be mistaken for the fingerprint unlock
+
+### 🌍 Translations
+
+- **Chinese (Simplified)** (99%): [@heretic43](https://github.com/heretic43)
+- **Norwegian Bokmål** (99%): [@xdpirate](https://github.com/xdpirate)
+- **Russian** (99%): PONYATIN
+- **Persian** started at 5% thanks to Mohammad Lotfi. It joins the app at 40%
+
+---
+
 ## [2.21.0] - 2026-10-25
 
 ### ✨ New Features

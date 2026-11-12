@@ -715,6 +715,8 @@
     <string name="note_card_show_timestamp_description">Show the last-edited timestamp on note cards.</string>
     <string name="note_card_show_icon_toggle">Show note icon</string>
     <string name="note_card_show_icon_description">Show the type icon and pin badge on note cards.</string>
+    <string name="note_card_hide_checked_toggle">Hide completed items in previews</string>
+    <string name="note_card_hide_checked_description">Checklist previews on note cards and widgets show only open items and how many are completed.</string>
     <!-- 🆕 Bild-Attachments: Image compression mode -->
     <string name="settings_image_compression_title">Image compression</string>
     <string name="settings_image_compression_info">Applies when you insert a new image into a note. Already-inserted images are not reprocessed.</string>
@@ -861,12 +863,12 @@
     <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
     <string name="test_connection_e2ee_blocked">✅ Server reachable, but /%1$s/ was encrypted on another device. Sync is paused.</string>
     <string name="cert_dialog_title">Trust this certificate?</string>
-    <string name="cert_dialog_message">The server uses a certificate this device does not trust, for example a self-signed one. Only trust it if the fingerprint matches the one on your server.</string>
+    <string name="cert_dialog_message">The server uses a certificate this device does not trust, for example a self-signed one. Only trust it if the certificate fingerprint matches the one on your server.</string>
     <string name="cert_dialog_changed">The certificate has changed since you last trusted it. If you did not replace it on the server, do not continue.</string>
     <string name="cert_dialog_issuer">Issued by</string>
     <string name="cert_dialog_valid">Valid</string>
     <string name="cert_dialog_valid_range">%1$s to %2$s</string>
-    <string name="cert_dialog_fingerprint">SHA-256 fingerprint</string>
+    <string name="cert_dialog_fingerprint">Certificate fingerprint (SHA-256)</string>
     <string name="cert_dialog_trust">Trust</string>
     <string name="toast_connection_success">✅ Connection successful!</string>
     <string name="toast_connection_failed">❌ %s</string>

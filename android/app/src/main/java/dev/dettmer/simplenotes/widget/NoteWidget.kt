@@ -11,6 +11,7 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.ui.main.components.isHideCheckedInPreview
 
 /**
  * 🆕 v1.8.0: Homescreen Widget für Notizen und Checklisten
@@ -54,6 +55,9 @@ class NoteWidget : GlanceAppWidget() {
             val showOptions = prefs[NoteWidgetState.KEY_SHOW_OPTIONS] ?: false
             val bgOpacity = prefs[NoteWidgetState.KEY_BACKGROUND_OPACITY] ?: 1.0f
             val fontSizeScale = prefs[NoteWidgetState.KEY_FONT_SIZE_SCALE] ?: 1.0f
+            // Issue #118: globale Einstellung hier oben lesen, verschachtelte Composables
+            // werden bei gleicher Notiz übersprungen und sähen einen Wechsel nie
+            val hideChecked = context.isHideCheckedInPreview()
 
             // Load note synchronously inside provideContent so it re-reads on every
             // widget update (state change). provideContent runs on a Glance SessionWorker
@@ -69,7 +73,8 @@ class NoteWidget : GlanceAppWidget() {
                         showOptions = showOptions,
                         bgOpacity = bgOpacity,
                         fontSizeScale = fontSizeScale,
-                        glanceId = id
+                        glanceId = id,
+                        hideChecked = hideChecked
                     )
                 }
             }

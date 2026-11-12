@@ -288,4 +288,47 @@ class PropfindParserTest {
             parse("""<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"/>""").isEmpty()
         )
     }
+
+    // Issue #175: "At line 1, column 1146: duplicate attribute", einzeilige Antwort
+    @Test fun `duplicate attributes do not break the listing`() {
+        val entry = """<d:response><d:href>/dav/notes/n.json</d:href><d:propstat><d:prop>""" +
+            """<d:getetag xmlns:x1="urn:a" xmlns:x1="urn:a">"e1"</d:getetag>""" +
+            """<d:resourcetype x="1" x="2"/></d:prop>""" +
+            """<d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>"""
+        val xml = """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:d="DAV:">""" +
+            entry.repeat(10) + "</d:multistatus>"
+
+        val resources = PropfindParser.parse(xml.byteInputStream())
+
+        assertEquals(10, resources.size)
+        assertEquals("\"e1\"", resources[0].etag)
+        assertFalse(resources[0].isDirectory)
+    }
+
+    @Test fun `comments, cdata, pi and quoted gt survive attribute stripping`() {
+        val resources = parse(
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <!-- <d:response a="1" a="2"> -->
+            <D:multistatus xmlns:D="DAV:">
+              <D:response title="a > b / c">
+                <D:href><![CDATA[/dav/a&b.json]]></D:href>
+                <?vendor x="y"?>
+                <D:propstat>
+                  <D:prop>
+                    <D:resourcetype><D:collection xmlns:D="DAV:" /></D:resourcetype>
+                    <D:getcontentlength>7</D:getcontentlength>
+                  </D:prop>
+                  <D:status>HTTP/1.1 200 OK</D:status>
+                </D:propstat>
+              </D:response>
+            </D:multistatus>
+            """
+        )
+
+        assertEquals(1, resources.size)
+        assertEquals("/dav/a&b.json", resources[0].path)
+        assertTrue(resources[0].isDirectory)
+        assertEquals(7L, resources[0].contentLength)
+    }
 }

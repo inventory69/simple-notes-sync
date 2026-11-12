@@ -19,8 +19,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 69  // 🆕 v2.21.0 - trust self-signed certificates, content edit time, real checkboxes
-        versionName = "2.21.0"  // 🆕 v2.21.0 - trust self-signed certificates, content edit time, real checkboxes
+        versionCode = 70  // 🆕 v2.22.0 - hide completed checklist items in previews, sync and widget fixes
+        versionName = "2.22.0"  // 🆕 v2.22.0 - hide completed checklist items in previews, sync and widget fixes
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

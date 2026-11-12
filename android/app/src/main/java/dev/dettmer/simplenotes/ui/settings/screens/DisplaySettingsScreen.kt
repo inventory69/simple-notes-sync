@@ -199,6 +199,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
     val notePreviewLength by viewModel.notePreviewLength.collectAsState()
     val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
     val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
+    val hideCheckedInPreview by viewModel.hideCheckedInPreview.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.settings_section_note_list)) {
         SettingsSectionHeader(text = stringResource(R.string.display_mode_title))
@@ -259,6 +260,14 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
             checked = showNoteTypeIcon,
             onCheckedChange = { viewModel.setShowNoteTypeIcon(it) },
             icon = Icons.AutoMirrored.Filled.Notes
+        )
+
+        SettingsSwitch(
+            title = stringResource(R.string.note_card_hide_checked_toggle),
+            subtitle = stringResource(R.string.note_card_hide_checked_description),
+            checked = hideCheckedInPreview,
+            onCheckedChange = { viewModel.setHideCheckedInPreview(it) },
+            icon = Icons.Default.Checklist
         )
     }
 }

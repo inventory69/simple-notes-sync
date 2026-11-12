@@ -17,6 +17,7 @@ import dev.dettmer.simplenotes.models.SortDirection
 import dev.dettmer.simplenotes.models.SortOption
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.ui.main.components.isHideCheckedInPreview
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_APPLY_OPACITY_TO_CARDS
 import dev.dettmer.simplenotes.widget.NotesListWidgetState.KEY_BACKGROUND_OPACITY
@@ -82,6 +83,8 @@ class NotesListWidget : GlanceAppWidget() {
             val showTypeIcon = context
                 .getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
                 .getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
+            // Issue #118: aus demselben Grund hier oben gelesen
+            val hideChecked = context.isHideCheckedInPreview()
 
             val sourceNotes = if (selectedFolder != null) {
                 allNotes.filter { it.folderName == selectedFolder }
@@ -106,6 +109,7 @@ class NotesListWidget : GlanceAppWidget() {
                     hidePreview = hidePreview,
                     fontSizeScale = fontSizeScale,
                     showTypeIcon = showTypeIcon,
+                    hideChecked = hideChecked,
                     maxRows = maxRows
                 )
             }

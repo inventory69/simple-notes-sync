@@ -1,0 +1,10 @@
+🫥 v2.22.0 - Hide what's done
+
+• New: hide completed checklist items in note cards and widgets
+• Fix: sync with servers that send unusual folder listings
+• Fix: checking an item in a widget updates all widgets
+• Fix: widget updates no longer freeze the app
+• Fix: offline deletions reach the right place after changing the sync folder
+• Updated translations: Chinese, Norwegian, Russian
+
+Thanks to @lincomax, @glock24, @heretic43, @xdpirate and PONYATIN!

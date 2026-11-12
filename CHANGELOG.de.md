@@ -8,6 +8,46 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.22.0] - 2026-11-13
+
+### ✨ Neue Funktionen
+
+**Erledigte Checklistenpunkte in Vorschauen ausblenden** ([547114f](https://github.com/inventory69/simple-notes-sync/commit/547114f))
+- Neue Anzeige-Einstellung „Erledigte in Vorschauen ausblenden“, standardmäßig aus
+- Ist sie an, zeigen Notizkarten in Listen- und Rasteransicht, das Listen-Widget und das kompakte Notiz-Widget nur offene Punkte, gefolgt von einer Zeile „+N erledigt“. Das gilt für jede Sortierung der Checkliste
+- Das volle Notiz-Widget zeigt weiterhin alle Punkte
+- Danke an [@lincomax](https://github.com/lincomax) für den Wunsch! ([#118](https://github.com/inventory69/simple-notes-sync/issues/118))
+
+### 🐛 Bug-Fixes
+
+**Sync mit Servern, die ungewöhnliche Ordnerlisten senden** ([6348645](https://github.com/inventory69/simple-notes-sync/commit/6348645))
+- Manche WebDAV-Server wiederholen in ihren Ordnerlisten ein Attribut. Die App hat dann die ganze Liste verworfen, eine frische Installation konnte keine Notizen herunterladen. Solche Listen werden jetzt normal gelesen
+- Danke an [@glock24](https://github.com/glock24) für die Meldung! ([#175](https://github.com/inventory69/simple-notes-sync/issues/175))
+
+**Widgets bleiben nach dem Abhaken auf Stand** ([c47e6a0](https://github.com/inventory69/simple-notes-sync/commit/c47e6a0))
+- Abhaken in einem Notiz-Widget aktualisiert jetzt auch das Listen-Widget und weitere Widgets mit derselben Notiz
+- Notizen in lokalen Ordnern werden beim Abhaken im Widget nicht mehr als „wartet auf Upload“ markiert
+
+**Widget-Updates lassen die App nicht mehr hängen** ([e71747e](https://github.com/inventory69/simple-notes-sync/commit/e71747e))
+- Widgets werden jetzt im Hintergrund aktualisiert, die App bleibt dabei bedienbar
+
+**Offline Gelöschtes landet im richtigen Sync-Ordner** ([2db5784](https://github.com/inventory69/simple-notes-sync/commit/2db5784), [6f0f0e1](https://github.com/inventory69/simple-notes-sync/commit/6f0f0e1))
+- Eine Notiz, die ohne Serververbindung gelöscht wurde, wird jetzt im Sync-Ordner entfernt, in dem sie gelöscht wurde, auch wenn zwischendurch auf einen anderen Server oder Sync-Ordner gewechselt wurde
+- Das gilt auch für Ordner, die mit „Vom Server entfernen“ vom Sync ausgeschlossen wurden: ein gleichnamiger Ordner in einem anderen Sync-Ordner bleibt unberührt
+
+**Klarere Worte im Zertifikatsdialog** ([a20e404](https://github.com/inventory69/simple-notes-sync/commit/a20e404))
+- Der Dialog spricht jetzt vom „Fingerabdruck des Zertifikats“ und ist so nicht mit der Fingerabdruck-Entsperrung zu verwechseln
+- Tippfehler „Rükgängig“ im Editor behoben
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (99%): [@heretic43](https://github.com/heretic43)
+- **Norwegisch Bokmål** (99%): [@xdpirate](https://github.com/xdpirate)
+- **Russisch** (99%): PONYATIN
+- **Persisch** ist dank Mohammad Lotfi mit 5% gestartet. Ab 40% kommt es in die App
+
+---
+
 ## [2.21.0] - 2026-10-25
 
 ### ✨ Neue Funktionen

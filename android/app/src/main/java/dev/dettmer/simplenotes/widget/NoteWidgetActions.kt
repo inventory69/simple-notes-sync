@@ -8,7 +8,9 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.utils.Logger
 
 /**
@@ -28,8 +30,8 @@ object NoteWidgetActionKeys {
  * Top-Level-Klasse (statt nested) für Class.forName()-Kompatibilität.
  *
  * - Toggelt isChecked im JSON-File
- * - Setzt SyncStatus auf PENDING
- * - Aktualisiert Widget sofort
+ * - Setzt SyncStatus auf PENDING (bzw. LOCAL_ONLY in Nur-lokal-Ordnern)
+ * - Aktualisiert alle Widgets sofort (auch Listen-Widgets und weitere Widgets derselben Notiz)
  */
 class ToggleChecklistItemAction : ActionCallback {
     companion object {
@@ -74,22 +76,23 @@ class ToggleChecklistItemAction : ActionCallback {
         // v2.3.0 (FIX-004): Delegate to ChecklistSorter for all sort options
         val sortedItems = ChecklistSorter.sort(updatedItems, sortOption)
 
+        val syncStatus = if (FolderStore(context).isLocalOnly(note.folderName)) {
+            SyncStatus.LOCAL_ONLY
+        } else {
+            SyncStatus.PENDING
+        }
         val updatedNote = note.copy(
             checklistItems = sortedItems,
             updatedAt = System.currentTimeMillis(),
-            syncStatus = SyncStatus.PENDING
+            syncStatus = syncStatus
         ).withContentTouched(note)
 
         storage.saveNote(updatedNote)
         Logger.d(TAG, "Toggled + auto-sorted checklist item '$itemId' in widget")
 
-        // 🐛 FIX: Glance-State ändern um Re-Render zu erzwingen
-        updateAppWidgetState(context, glanceId) { prefs ->
-            prefs[NoteWidgetState.KEY_LAST_UPDATED] = System.currentTimeMillis()
-        }
-
-        // Widget aktualisieren — Glance erkennt jetzt den State-Change
-        NoteWidget().update(context, glanceId)
+        SyncScheduler(context).triggerOnSaveSync(reason = "widgetToggle")
+        // Bumpt KEY_LAST_UPDATED aller Widgets, sonst rendern Listen-Widgets den alten Stand
+        WidgetUpdateHelper.refreshAllWidgets(context)
     }
 }
 

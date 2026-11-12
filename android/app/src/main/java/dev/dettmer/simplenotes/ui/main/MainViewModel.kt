@@ -222,12 +222,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val showNoteTypeIcon: StateFlow<Boolean> = _showNoteTypeIcon.asStateFlow()
 
+    private val _hideCheckedInPreview = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, Constants.DEFAULT_HIDE_CHECKED_IN_PREVIEW)
+    )
+    val hideCheckedInPreview: StateFlow<Boolean> = _hideCheckedInPreview.asStateFlow()
+
     /** Refresh note card display toggles from SharedPreferences. Called when returning from Settings screen. */
     fun refreshNoteCardDisplaySettings() {
         _showNoteTimestamp.value =
             prefs.getBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, Constants.DEFAULT_SHOW_NOTE_TIMESTAMP)
         _showNoteTypeIcon.value =
             prefs.getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
+        _hideCheckedInPreview.value =
+            prefs.getBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, Constants.DEFAULT_HIDE_CHECKED_IN_PREVIEW)
     }
 
     // ═══════════════════════════════════════════════════════════════════════
