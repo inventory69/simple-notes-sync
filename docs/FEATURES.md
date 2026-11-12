@@ -1,6 +1,6 @@
 # Features
 
-Everything Simple Notes Sync does, as of v2.21.0. What changed in which version is in the [changelog](../CHANGELOG.md).
+Everything Simple Notes Sync does, as of v2.22.0. What changed in which version is in the [changelog](../CHANGELOG.md).
 
 ## Writing
 
@@ -33,7 +33,7 @@ Everything Simple Notes Sync does, as of v2.21.0. What changed in which version 
 - Filter by text notes or checklists, and search across all folders.
 - Archive notes you want out of the way without deleting them.
 - Trash. Deleted notes stay there for 30 days by default (configurable from immediately up to 90 days) and can be restored. Every delete has an undo snackbar.
-- List or grid. The grid has 1 to 5 columns, and the preview length goes from title only to extra long. Timestamps and the note icon can be hidden.
+- List or grid. The grid has 1 to 5 columns, and the preview length goes from title only to extra long. Timestamps and the note icon can be hidden. Checklist previews in cards and widgets can hide completed items.
 - Light, dark and AMOLED mode, seven color schemes including Dynamic Color on Android 12 and newer, and five text sizes.
 - A custom app title, an in-app changelog and a "What's new" sheet after updates.
 

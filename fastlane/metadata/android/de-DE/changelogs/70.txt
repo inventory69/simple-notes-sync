@@ -1,0 +1,10 @@
+🫥 v2.22.0 - Erledigtes ausblenden
+
+• Neu: erledigte Checklistenpunkte in Notizkarten und Widgets ausblenden
+• Fix: Sync mit Servern, die ungewöhnliche Ordnerlisten senden
+• Fix: Abhaken im Widget aktualisiert alle Widgets
+• Fix: Widget-Updates lassen die App nicht mehr hängen
+• Fix: offline Gelöschtes landet nach einem Wechsel des Sync-Ordners am richtigen Ort
+• Übersetzungsupdate: Chinesisch, Norwegisch, Russisch
+
+Danke an @lincomax, @glock24, @heretic43, @xdpirate und PONYATIN!
