@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_sync">همگام سازی</string>
+    <string name="action_settings">تنظیمات</string>
+    <string name="folder_exclude_remove_from_server">حذف از سرور</string>
+    <string name="theme_color_purple">بنفش</string>
+    <string name="cd_note_color_swatch">رنگ یادداشت: %s</string>
+    <string name="sync_error_http">خطای HTTP: %d</string>
+    <string name="calendar_experiment_preview_title">عنوان</string>
+    <string name="trash_retention_duration_title">حذف یادداشت‌ها بعد از</string>
+    <string name="sync_deletion_check_skipped">بررسی حذف نادیده گرفته شد (فهرست سرور ناقص است)</string>
+    <string name="folder_move_to_root">ریشه (بدون پوشه)</string>
+    <string name="trash_delete_forever_cd">حذف یادداشت به طور دائمی</string>
+    <string name="settings_trash_subtitle">بازگردانی یادداشت‌ها یا حذف دائمی آن‌ها</string>
+    <string name="notes_list_widget_untitled">بدون عنوان</string>
+    <string name="activity_log_share_cd">اشتراک‌گذاری لاگ</string>
+    <string name="keep_import_config_title">وارد کردن از Google Keep</string>
+    <string name="activity_op_edit">ویرایش شده</string>
+    <string name="debug_export_logs">ایجاد خروجی و اشتراک‌گذاری لاگ‌ها</string>
+    <string name="editor_new_note_focus_content_description">در یادداشت‌های جدید، تمرکز بر کادر محتواست، نه عنوان. در چک‌لیست‌ها، تمرکز بر اولین آیتم است.</string>
+    <plurals name="snackbar_folders_deleted">
+        <item quantity="one">%1$d پوشه حذف شد</item>
+        <item quantity="other">%1$d پوشه حذف شد</item>
+    </plurals>
+    <string name="keep_import_large_zip_button_continue">ادامه</string>
+    <string name="toast_folder_migrated">🔄 پوشه تغییر کرد. %1$d یادداشت در همگام‌سازی بعدی به پوشه جدید بارگذاری خواهند شد.</string>
+    <string name="keep_import_section_description">خروجی Google Takeout خود را به عنوان یادداشت‌های simple-notes-sync وارد کنید.</string>
+    <string name="activity_log_title">لاگ فعالیت</string>
+    <string name="trash_delete_forever_title">به طور دائم حذف شود؟</string>
+    <string name="editor_toggle_preview">تغییر وضعیت پیش‌نمایش مارک‌داون</string>
+    <string name="notes_list_widget_preview_content_3">ایده‌های ویژگی‌های جدید برای اسپرینت بعدی</string>
+    <string name="widget_config_title">یک یادداشت انتخاب کنید</string>
+    <string name="app_lock_toggle_subtitle">قفل برنامه را با اثر انگشت، چهره یا پین دستگاه باز کنید</string>
+    <string name="note_card_show_icon_toggle">نمایش آیکون یادداشت</string>
+    <string name="filter_all">همه</string>
+    <string name="share_pdf_error">نمی‌توان PDF ساخت</string>
+    <string name="sync_e2ee_blocked_short">همگام‌سازی متوقف شد: این پوشه در دستگاه دیگری رمزگذاری شده بود</string>
+    <string name="sync_folder_name_hint">نام پوشه روی سرور WebDAV (پیش‌فرض: notes). این مورد بر پوشه Markdown نیز تأثیر می‌گذارد (برای مثال: notes به notes-md تبدیل می‌شود). تنها در صورتی این تنظیم را تغییر دهید که از کاری که انجام می‌دهید کاملاً آگاه هستید.</string>
+    <string name="activity_op_trash">به سطل آشغال منتقل شد</string>
+    <string name="server_change_dialog_title">سرویس‌دهنده تغییر داده شود؟</string>
+    <string name="language_english">انگلیسی</string>
+    <plurals name="checked_items_count">
+        <item quantity="one">%d تکمیل شد</item>
+        <item quantity="other">%d تکمیل شد</item>
+    </plurals>
+    <string name="app_name">Simple Notes</string>
+    <string name="main_title">Simple Notes</string>
+    <string name="action_close_selection">بستن انتخاب</string>
+    <string name="action_select_all">انتخاب همه</string>
+    <string name="action_delete_selected">حذف موارد انتخاب‌شده</string>
+    <string name="action_toggle_pin">تغییر وضعیت سنجاق‌شده</string>
+    <string name="selection_count">%d انتخاب شده</string>
+    <string name="section_pinned">سنجاق‌شده</string>
+    <string name="section_notes">یادداشت‌ها</string>
+    <string name="action_collapse_section">جمع کردن %1$s</string>
+    <string name="action_expand_section">باز کردن %1$s</string>
+    <string name="action_move_section_up">حرکت به بالا</string>
+    <string name="action_move_section_down">حرکت به پایین</string>
+</resources>
