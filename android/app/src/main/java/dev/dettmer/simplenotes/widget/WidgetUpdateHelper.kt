@@ -5,6 +5,8 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import dev.dettmer.simplenotes.utils.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 🔧 v2.3.0: Shared utility to refresh all active NoteWidget instances.
@@ -15,13 +17,14 @@ import dev.dettmer.simplenotes.utils.Logger
 object WidgetUpdateHelper {
     private const val TAG = "WidgetUpdateHelper"
 
-    suspend fun refreshAllNoteWidgets(context: Context) {
+    // ANR-Bericht (versionCode 69): Aufrufer starten auf dem Main-Thread
+    suspend fun refreshAllNoteWidgets(context: Context) = withContext(Dispatchers.IO) {
         try {
             val manager = GlanceAppWidgetManager(context)
             val ids = manager.getGlanceIds(NoteWidget::class.java)
             if (ids.isEmpty()) {
                 Logger.d(TAG, "No note widgets active — skipping refresh")
-                return
+                return@withContext
             }
             Logger.d(TAG, "Refreshing ${ids.size} note widget(s)")
             ids.forEach { id ->
@@ -41,13 +44,14 @@ object WidgetUpdateHelper {
         }
     }
 
-    suspend fun refreshAllNotesListWidgets(context: Context) {
+    // ANR-Bericht (versionCode 69): Aufrufer starten auf dem Main-Thread
+    suspend fun refreshAllNotesListWidgets(context: Context) = withContext(Dispatchers.IO) {
         try {
             val manager = GlanceAppWidgetManager(context)
             val ids = manager.getGlanceIds(NotesListWidget::class.java)
             if (ids.isEmpty()) {
                 Logger.d(TAG, "No notes-list widgets active — skipping refresh")
-                return
+                return@withContext
             }
             Logger.d(TAG, "Refreshing ${ids.size} notes-list widget(s)")
             ids.forEach { id ->
