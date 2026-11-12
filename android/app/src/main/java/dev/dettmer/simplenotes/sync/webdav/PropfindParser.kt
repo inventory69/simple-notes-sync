@@ -47,8 +47,105 @@ object PropfindParser {
         }.newSAXParser().xmlReader
         reader.contentHandler = handler
         reader.entityResolver = EntityResolver { _, _ -> InputSource(java.io.StringReader("")) }
-        reader.parse(InputSource(input))
+        reader.parse(InputSource(AttributeStrippingStream(input)))
         return handler.resources
+    }
+}
+
+private const val LT = '<'.code
+private const val GT = '>'.code
+private const val SLASH = '/'.code
+private const val QUESTION = '?'.code
+private const val EXCLAMATION = '!'.code
+private const val DASH = '-'.code
+private const val BRACKET_OPEN = '['.code
+private const val BRACKET_CLOSE = ']'.code
+private const val QUOT = '"'.code
+private const val APOS = '\''.code
+private const val SPACE = ' '.code
+private const val DROP = -1
+
+/**
+ * 🆕 Issue #175: Reicht die Antwort ohne Attribute an den Parser weiter. Manche Server schicken
+ * Start-Tags mit doppeltem Attribut, daran bricht jeder konforme Parser mit "duplicate attribute"
+ * ab und mit ihm das ganze Listing. [MultistatusHandler] liest keine Attribute (nicht
+ * namespace-aware, nur Local-Names), es fehlt also nichts. Kommentare, CDATA, PIs (samt
+ * XML-Deklaration mit `encoding`) und End-Tags laufen unverändert durch.
+ *
+ * ponytail: arbeitet auf Bytes, Markup ist ASCII, das trägt UTF-8 und Latin-1. Eine UTF-16-Antwort
+ * würde zerlegt; schickt ein Server je eine, am BOM erkennen und ungefiltert durchreichen.
+ */
+private class AttributeStrippingStream(private val source: InputStream) : InputStream() {
+    private enum class State { TEXT, TAG_OPEN, NAME, ATTRS, END_TAG, BANG, COMMENT, CDATA, DECL, PI }
+
+    private var state = State.TEXT
+    private var quote = 0
+    private var selfClosing = false
+    private var pending = DROP
+    private var prev1 = 0
+    private var prev2 = 0
+
+    override fun read(): Int {
+        if (pending != DROP) return pending.also { pending = DROP }
+        while (true) {
+            val b = source.read()
+            if (b < 0) return -1
+            val out = step(b)
+            prev2 = prev1
+            prev1 = b
+            if (out != DROP) return out
+        }
+    }
+
+    /** Auszugebendes Byte oder [DROP]. */
+    private fun step(b: Int): Int = when (state) {
+        State.TEXT -> b.also { if (it == LT) state = State.TAG_OPEN }
+        State.TAG_OPEN -> b.also { state = afterLt(it) }
+        State.NAME -> name(b)
+        State.ATTRS -> attrs(b)
+        State.BANG -> b.also { state = afterBang(it) }
+        State.END_TAG, State.DECL -> b.also { if (it == GT) state = State.TEXT }
+        State.PI -> b.also { if (it == GT && prev1 == QUESTION) state = State.TEXT }
+        State.COMMENT -> b.also { if (it == GT && prev1 == DASH && prev2 == DASH) state = State.TEXT }
+        State.CDATA -> b.also { if (it == GT && prev1 == BRACKET_CLOSE && prev2 == BRACKET_CLOSE) state = State.TEXT }
+    }
+
+    private fun afterLt(b: Int) = when (b) {
+        SLASH -> State.END_TAG
+        QUESTION -> State.PI
+        EXCLAMATION -> State.BANG
+        else -> State.NAME
+    }
+
+    private fun afterBang(b: Int) = when (b) {
+        DASH -> State.COMMENT
+        BRACKET_OPEN -> State.CDATA
+        else -> State.DECL
+    }
+
+    private fun name(b: Int): Int {
+        if (b == GT) state = State.TEXT
+        if (b != SLASH && b > SPACE) return b
+        state = State.ATTRS
+        selfClosing = b == SLASH
+        quote = 0
+        return DROP
+    }
+
+    private fun attrs(b: Int): Int {
+        when {
+            quote != 0 -> if (b == quote) quote = 0
+            b == QUOT || b == APOS -> quote = b
+            b == SLASH -> selfClosing = true
+            b == GT -> {
+                state = State.TEXT
+                if (!selfClosing) return GT
+                pending = GT
+                return SLASH
+            }
+            b > SPACE -> selfClosing = false
+        }
+        return DROP
     }
 }
 
