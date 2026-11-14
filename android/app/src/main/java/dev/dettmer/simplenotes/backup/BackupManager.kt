@@ -15,6 +15,7 @@ import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.storage.FolderMeta
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
@@ -397,6 +398,7 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             // v1.9.0: Optionally restore all app settings if present
             if (restoreServerSettings && backupData.appSettings != null) {
                 val s = backupData.appSettings
+                val targetBefore = syncTarget()
                 prefs.edit {
                     // Server connection
                     s.serverUrl?.let { putString(Constants.KEY_SERVER_URL, it) }
@@ -444,6 +446,13 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
                     s.gridManualColumns?.let { putInt(Constants.KEY_GRID_MANUAL_COLUMNS, it) }
                 }
                 Logger.d(TAG, "✅ App settings restored from backup")
+                // Anderes Ziel als bisher: ETags, Hashes, Sync-Zeit und Löschtracker gehören zum alten. Stehen
+                // gelassen übersprang der Upload Notizen per Hash, Löschungen des alten Ziels liefen gegen das
+                // neue, und ohne ETags hielt die alte Sync-Zeit Server-Fassungen für längst bekannt.
+                if (syncTarget() != targetBefore) {
+                    WebDavSyncService.clearServerCaches(prefs, storage)
+                    Logger.d(TAG, "🧹 Sync target changed by restore, server caches cleared")
+                }
             }
 
             // 4. Auto-Backup erstellen (Sicherheitsnetz)
@@ -484,6 +493,13 @@ class BackupManager(private val context: Context, private val ioDispatcher: Coro
             )
         }
     }
+
+    /** Server, Ordner und Benutzer: dieselbe Abgrenzung wie die Dir-Flags in ConnectionManager. */
+    private fun syncTarget(): String = listOf(
+        prefs.getString(Constants.KEY_SERVER_URL, "").orEmpty(),
+        prefs.getString(Constants.KEY_SYNC_FOLDER_NAME, Constants.DEFAULT_SYNC_FOLDER_NAME).orEmpty(),
+        CredentialStore.getUsername(context).orEmpty()
+    ).joinToString("|")
 
     /**
      * 🔐 v1.7.0: Check if backup file is encrypted
