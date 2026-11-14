@@ -465,6 +465,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val defaultStartInPreviewMode: StateFlow<Boolean> = _defaultStartInPreviewMode.asStateFlow()
 
+    // UI-Beta: neues Design (Editor und Übersicht)
+    private val _newDesign = MutableStateFlow(ThemePreferences.isNewDesign(prefs))
+    val newDesign: StateFlow<Boolean> = _newDesign.asStateFlow()
+
     // 🆕 Issue #156: Checklisten im Lesemodus öffnen
     private val _checklistStartInReadMode = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_CHECKLIST_START_IN_READ_MODE, Constants.DEFAULT_CHECKLIST_START_IN_READ_MODE)
@@ -690,6 +694,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setDefaultStartInPreviewMode(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_DEFAULT_START_IN_PREVIEW_MODE, enabled) }
         _defaultStartInPreviewMode.value = enabled
+    }
+
+    /** UI-Beta: neues Design an/aus. Die übrigen Activities folgen über den Prefs-Listener im Theme. */
+    fun setNewDesign(enabled: Boolean) {
+        ThemePreferences.setNewDesign(prefs, enabled)
+        _newDesign.value = enabled
     }
 
     /** 🆕 Issue #156: Bestehende Checklisten im Lesemodus öffnen. */

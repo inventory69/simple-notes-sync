@@ -1,6 +1,8 @@
 package dev.dettmer.simplenotes.ui.theme
 
 import android.app.Activity
+import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.view.View
@@ -8,19 +10,28 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import dev.dettmer.simplenotes.security.AppLock
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.ExternalUriHandler
 
 /**
@@ -43,8 +54,7 @@ import dev.dettmer.simplenotes.utils.ExternalUriHandler
  * - ComposeNoteEditorActivity (Note editor)
  * - NoteWidgetConfigActivity (Widget configuration)
  */
-private fun scaleTypography(multiplier: Float): Typography {
-    val base = Typography()
+private fun scaleTypography(multiplier: Float, base: Typography = Typography()): Typography {
     return Typography(
         displayLarge = base.displayLarge.copy(fontSize = base.displayLarge.fontSize * multiplier),
         displayMedium = base.displayMedium.copy(fontSize = base.displayMedium.fontSize * multiplier),
@@ -64,6 +74,55 @@ private fun scaleTypography(multiplier: Float): Typography {
     )
 }
 
+/**
+ * UI-Beta (F2): engere Laufweite kleiner Texte, kräftigere Titel. Roboto bleibt; nur Gewicht und
+ * Laufweite ändern sich, die Größen bleiben die von Material 3 (und skalieren wie bisher).
+ */
+private fun newDesignTypography(): Typography {
+    val base = Typography()
+    return base.copy(
+        headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Medium),
+        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Medium),
+        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Medium),
+        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Medium),
+        bodyLarge = base.bodyLarge.copy(letterSpacing = 0.3.sp),
+        bodyMedium = base.bodyMedium.copy(letterSpacing = 0.15.sp),
+        bodySmall = base.bodySmall.copy(letterSpacing = 0.2.sp),
+        labelMedium = base.labelMedium.copy(letterSpacing = 0.3.sp),
+        labelSmall = base.labelSmall.copy(letterSpacing = 0.3.sp)
+    )
+}
+
+/**
+ * UI-Beta (F1): drei benannte Rundungsstufen statt einzelner Werte im Code.
+ * small = Chip/Feld, medium = Karte, extraLarge = Dialog/Sheet. Die übrigen Stufen
+ * werden mitgezogen, damit Material-Komponenten mit Default-Shape stimmig bleiben.
+ */
+private val NewDesignShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp)
+)
+
+/** Liest den Beta-Schalter und folgt Änderungen live (Einstellungen laufen in einer anderen Activity). */
+@Composable
+private fun rememberNewDesign(): Boolean {
+    val context = LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE) }
+    var enabled by remember { mutableStateOf(ThemePreferences.isNewDesign(prefs)) }
+    DisposableEffect(prefs) {
+        // Starke Referenz nötig: SharedPreferences hält Listener nur schwach.
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == Constants.KEY_NEW_DESIGN) enabled = ThemePreferences.isNewDesign(p)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    return enabled
+}
+
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod")
 @Composable
@@ -74,8 +133,10 @@ fun SimpleNotesTheme(
     content: @Composable () -> Unit
 ) {
     val fontMultiplier = fontSizeScale.multiplier
-    val typography = remember(fontSizeScale) {
-        if (fontMultiplier == null) Typography() else scaleTypography(fontMultiplier)
+    val newDesign = rememberNewDesign()
+    val typography = remember(fontSizeScale, newDesign) {
+        val base = if (newDesign) newDesignTypography() else Typography()
+        if (fontMultiplier == null) base else scaleTypography(fontMultiplier, base)
     }
     val isDark = when (themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -138,6 +199,7 @@ fun SimpleNotesTheme(
 
     CompositionLocalProvider(
         LocalFontSizeMultiplier provides (fontMultiplier ?: 1.0f),
+        LocalNewDesign provides newDesign,
         LocalUriHandler provides uriHandler
     ) {
         Crossfade(
@@ -161,6 +223,7 @@ fun SimpleNotesTheme(
             MaterialTheme(
                 colorScheme = colorScheme,
                 typography = typography,
+                shapes = if (newDesign) NewDesignShapes else Shapes(),
                 content = content
             )
         }

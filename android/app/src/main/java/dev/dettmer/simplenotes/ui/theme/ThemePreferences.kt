@@ -4,7 +4,9 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.edit
+import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 
 /**
@@ -22,6 +24,9 @@ enum class FontSizeScale(val displayNameResId: Int, val multiplier: Float?) {
 
 /** Provides the effective font size multiplier (1.0f when SYSTEM is selected). */
 val LocalFontSizeMultiplier = staticCompositionLocalOf { 1.0f }
+
+/** UI-Beta: true = neues Design (Editor als Blatt, neue Übersicht). Gesetzt von [SimpleNotesTheme]. */
+val LocalNewDesign = staticCompositionLocalOf { false }
 
 /**
  * ThemeMode — controls dark/light behaviour of the app.
@@ -115,6 +120,14 @@ object ThemePreferences {
 
     fun setFontSizeScale(prefs: SharedPreferences, scale: FontSizeScale) {
         prefs.edit { putString(KEY_FONT_SIZE_SCALE, scale.name) }
+    }
+
+    /** UI-Beta: neues Design. Ab Werk an in Debug- und Beta-Builds, aus im stabilen Release. */
+    fun isNewDesign(prefs: SharedPreferences): Boolean =
+        prefs.getBoolean(Constants.KEY_NEW_DESIGN, BuildConfig.BETA_BUILD || BuildConfig.DEBUG)
+
+    fun setNewDesign(prefs: SharedPreferences, enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_NEW_DESIGN, enabled) }
     }
 
     fun getNotePreviewLength(prefs: SharedPreferences): NotePreviewLength {

@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Save
@@ -131,8 +132,18 @@ private fun AppearanceSection(viewModel: SettingsViewModel) {
     val colorTheme by viewModel.colorTheme.collectAsState()
     val fontSizeScale by viewModel.fontSizeScale.collectAsState()
     val customAppTitle by viewModel.customAppTitle.collectAsState()
+    val newDesign by viewModel.newDesign.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.theme_mode_title)) {
+        // UI-Beta: Schalter bleibt nur bis zur Entscheidung, danach entfällt er wieder.
+        SettingsSwitch(
+            title = stringResource(R.string.settings_new_design_toggle),
+            subtitle = stringResource(R.string.settings_new_design_description),
+            checked = newDesign,
+            onCheckedChange = { viewModel.setNewDesign(it) },
+            icon = Icons.Default.AutoAwesome
+        )
+
         SettingsSectionHeader(text = stringResource(R.string.theme_mode_subsection))
 
         ThemeModeSelector(
