@@ -475,6 +475,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val formattingBarEnabled: StateFlow<Boolean> = _formattingBarEnabled.asStateFlow()
 
+    // UI-Beta: leeres Titelfeld im Editor
+    private val _titleFieldEnabled = MutableStateFlow(
+        prefs.getBoolean(Constants.KEY_TITLE_FIELD, Constants.DEFAULT_TITLE_FIELD)
+    )
+    val titleFieldEnabled: StateFlow<Boolean> = _titleFieldEnabled.asStateFlow()
+
     // 🆕 Issue #156: Checklisten im Lesemodus öffnen
     private val _checklistStartInReadMode = MutableStateFlow(
         prefs.getBoolean(Constants.KEY_CHECKLIST_START_IN_READ_MODE, Constants.DEFAULT_CHECKLIST_START_IN_READ_MODE)
@@ -712,6 +718,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setFormattingBarEnabled(enabled: Boolean) {
         prefs.edit { putBoolean(Constants.KEY_FORMATTING_BAR, enabled) }
         _formattingBarEnabled.value = enabled
+    }
+
+    /** UI-Beta: leeres Titelfeld ein-/ausblenden. NoteEditorViewModel liest den Wert beim Öffnen. */
+    fun setTitleFieldEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(Constants.KEY_TITLE_FIELD, enabled) }
+        _titleFieldEnabled.value = enabled
     }
 
     /** 🆕 Issue #156: Bestehende Checklisten im Lesemodus öffnen. */

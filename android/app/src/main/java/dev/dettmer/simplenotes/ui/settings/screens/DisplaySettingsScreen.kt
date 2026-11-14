@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.TextFormat
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.GridView
@@ -286,6 +287,21 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
     }
 }
 
+/** UI-Beta: nur das neue Blatt kann ohne Titelfeld, im alten Design bleibt der Schalter verborgen. */
+@Composable
+private fun TitleFieldSwitch(viewModel: SettingsViewModel) {
+    val newDesign by viewModel.newDesign.collectAsState()
+    val titleFieldEnabled by viewModel.titleFieldEnabled.collectAsState()
+    if (!newDesign) return
+    SettingsSwitch(
+        title = stringResource(R.string.editor_title_field_toggle),
+        subtitle = stringResource(R.string.editor_title_field_description),
+        checked = titleFieldEnabled,
+        onCheckedChange = { viewModel.setTitleFieldEnabled(it) },
+        icon = Icons.Default.Title
+    )
+}
+
 /** Karte 3: Editor-Verhalten + Standard-Notizfarbe. */
 @Composable
 private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String?, onDefaultColorClick: () -> Unit) {
@@ -324,6 +340,8 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             onCheckedChange = { viewModel.setFormattingBarEnabled(it) },
             icon = Icons.Default.TextFormat
         )
+
+        TitleFieldSwitch(viewModel)
 
         // 🆕 Issue #156
         SettingsSwitch(

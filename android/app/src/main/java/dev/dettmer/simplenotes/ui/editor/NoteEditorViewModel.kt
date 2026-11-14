@@ -104,7 +104,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 .getString(Constants.KEY_WORD_COUNTER_VISIBILITY, Constants.DEFAULT_WORD_COUNTER_VISIBILITY)
                 .toEnumOrDefault(WordCounterVisibility.valueOf(Constants.DEFAULT_WORD_COUNTER_VISIBILITY)),
             // #131 (E11)
-            formattingBarEnabled = prefs.getBoolean(Constants.KEY_FORMATTING_BAR, Constants.DEFAULT_FORMATTING_BAR)
+            formattingBarEnabled = prefs.getBoolean(Constants.KEY_FORMATTING_BAR, Constants.DEFAULT_FORMATTING_BAR),
+            titleFieldEnabled = prefs.getBoolean(Constants.KEY_TITLE_FIELD, Constants.DEFAULT_TITLE_FIELD)
         )
     )
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
@@ -1789,6 +1790,7 @@ data class NoteEditorUiState(
     // 🆕 (#126-Nachgang): aus / immer / nur im Lesemodus
     val wordCounterVisibility: WordCounterVisibility = WordCounterVisibility.ALWAYS,
     val formattingBarEnabled: Boolean = true, // #131 (E11)
+    val titleFieldEnabled: Boolean = true, // UI-Beta: leeres Titelfeld anzeigen
     val isArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
     // 🆕 v2.16.0: Notiz steht auf CONFLICT — der Editor zeigt darüber das Auflösungs-Banner.
     val hasConflict: Boolean = false,

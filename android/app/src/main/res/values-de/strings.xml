@@ -695,6 +695,9 @@
     <string name="settings_new_design_description">Neuen Editor und neue Notizliste ausprobieren. Ausschalten führt zurück zum bisherigen Design.</string>
     <string name="editor_formatting_bar_toggle">Formatierleiste</string>
     <string name="editor_formatting_bar_description">Markdown-Knöpfe beim Schreiben einer Textnotiz anzeigen.</string>
+    <string name="editor_title_field_toggle">Titelfeld</string>
+    <string name="editor_title_field_description">Leeren Titel über neuen und unbenannten Notizen anzeigen. Notizen mit Titel zeigen ihn immer.</string>
+    <string name="editor_add_title">Titel hinzufügen</string>
     <string name="editor_meta_edited">Bearbeitet %1$s</string>
     <string name="editor_checklist_meta">%1$d offen · %2$d erledigt</string>
     <string name="editor_saved">Gespeichert</string>

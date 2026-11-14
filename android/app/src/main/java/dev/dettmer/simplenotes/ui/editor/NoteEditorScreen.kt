@@ -65,6 +65,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
@@ -645,6 +646,14 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     LaunchedEffect(isImeVisible) {
         if (!isImeVisible) barTitleEditing = false
     }
+    // UI-Beta: ein leerer Titel steht nur mit Schalter „Titelfeld“ da, in beiden Modi gleich, sonst
+    // springt der Text beim Wechsel. „Titel hinzufügen“ im Menü blendet ihn einmalig ein, danach hält
+    // ihn der Fokus bzw. der Text.
+    var focusTitleOnShow by remember { mutableStateOf(false) }
+    val showSheetTitle = uiState.title.isNotEmpty() ||
+        isTitleFocused ||
+        focusTitleOnShow ||
+        uiState.titleFieldEnabled
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
@@ -698,7 +707,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     LaunchedEffect(uiState.isNewNote) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
-            uiState.isNewNote && !uiState.newNoteFocusContent -> {
+            uiState.isNewNote && !uiState.newNoteFocusContent && (!newDesign || uiState.titleFieldEnabled) -> {
                 // New note (default): focus title
                 titleFocusRequester.requestFocus()
                 keyboardController?.show()
@@ -812,6 +821,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     ) {
                         EditorBarTitle(
                             title = uiState.title,
+                            showTitle = uiState.title.isNotEmpty() || uiState.titleFieldEnabled,
                             editing = barTitleEditing,
                             onTitleChange = { viewModel.updateTitle(it) },
                             onStartEditing = { barTitleEditing = true },
@@ -992,6 +1002,22 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                         imagePickerLauncher.launch(
                                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                         )
+                                    }
+                                )
+                            }
+                            if (newDesign && !showSheetTitle) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.editor_add_title)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Filled.Title,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        focusTitleOnShow = true
                                     }
                                 )
                             }
@@ -1235,15 +1261,29 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         exit = shrinkVertically() + fadeOut()
                     ) {
                         Column {
-                            SheetTitleField(
-                                title = uiState.title,
-                                onTitleChange = { viewModel.updateTitle(it) },
-                                keyboardActions = titleKeyboardActions,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(titleFocusRequester)
-                                    .onFocusChanged { isTitleFocused = it.isFocused }
-                            )
+                            AnimatedVisibility(
+                                visible = showSheetTitle,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
+                                SheetTitleField(
+                                    title = uiState.title,
+                                    onTitleChange = { viewModel.updateTitle(it) },
+                                    keyboardActions = titleKeyboardActions,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(titleFocusRequester)
+                                        .onFocusChanged { isTitleFocused = it.isFocused }
+                                )
+                                // Erst jetzt hängt der FocusRequester am Feld.
+                                LaunchedEffect(focusTitleOnShow) {
+                                    if (focusTitleOnShow) {
+                                        titleFocusRequester.requestFocus()
+                                        keyboardController?.show()
+                                        focusTitleOnShow = false
+                                    }
+                                }
+                            }
                             // E4 / C3: Änderungsdatum und Wortzahl bzw. offen/erledigt statt Pille.
                             NoteMetaLine(
                                 editedAt = lastEditedAt,

@@ -90,12 +90,13 @@ fun SheetTitleField(
 }
 
 /**
- * E9 (#131): Titel in der Leiste, solange die Tastatur offen ist. Zeigt Titel und [meta] (Wortzahl);
+ * E9 (#131): Titel in der Leiste, solange die Tastatur offen ist. Zeigt Titel (nur mit [showTitle]) und [meta] (Wortzahl);
  * Tippen auf den Titel macht die Leiste zum Titelfeld, Weiter springt zurück in den Text ([onEditingDone] mit true).
  */
 @Composable
 fun EditorBarTitle(
     title: String,
+    showTitle: Boolean,
     editing: Boolean,
     onTitleChange: (String) -> Unit,
     onStartEditing: () -> Unit,
@@ -122,18 +123,21 @@ fun EditorBarTitle(
                 }
         )
     } else {
-        Column(modifier = Modifier.clickable(onClick = onStartEditing)) {
-            Text(
-                text = title.ifEmpty { stringResource(R.string.title) },
-                style = MaterialTheme.typography.titleMedium,
-                color = if (title.isEmpty()) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+        // Schalter „Titelfeld“ aus und kein Titel: nur die Wortzahl, nichts zum Antippen.
+        Column(modifier = if (showTitle) Modifier.clickable(onClick = onStartEditing) else Modifier) {
+            if (showTitle) {
+                Text(
+                    text = title.ifEmpty { stringResource(R.string.title) },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (title.isEmpty()) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             meta()
         }
     }

@@ -156,6 +156,10 @@ object Constants {
     const val KEY_FORMATTING_BAR = "editor_formatting_bar"
     const val DEFAULT_FORMATTING_BAR = true
 
+    // UI-Beta: leeres Titelfeld im Editor anzeigen (aus = nur Notizen mit Titel zeigen eins)
+    const val KEY_TITLE_FIELD = "editor_title_field"
+    const val DEFAULT_TITLE_FIELD = true
+
     // 🆕 Issue #156: Checklisten im Lesemodus öffnen (Antippen der Zeile hakt ab)
     const val KEY_CHECKLIST_START_IN_READ_MODE = "checklist_start_in_read_mode"
     const val DEFAULT_CHECKLIST_START_IN_READ_MODE = false
