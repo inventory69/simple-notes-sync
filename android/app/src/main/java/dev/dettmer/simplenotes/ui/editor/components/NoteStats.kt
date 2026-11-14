@@ -18,6 +18,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.toReadableTime
+import kotlinx.coroutines.delay
 
 /**
  * 🆕 v2.16.0 (Issue #126): Zählt die Wörter eines Textes.
@@ -168,6 +172,9 @@ private fun statsLabel(mode: NoteStatsMode, text: String, words: Int): String = 
     NoteStatsMode.HIDDEN -> stringResource(R.string.note_stats_show)
 }
 
+/** Takt der relativen Zeit in [NoteMetaLine], wie TIMESTAMP_UPDATE_INTERVAL_MS der Übersicht. */
+private const val META_TICK_MS = 30_000L
+
 /**
  * UI-Beta (E4/C3/E9): ruhige Zeile unter dem Titel statt schwebender Pille, z. B.
  * „Edited 2 days ago · 58 words“. Tippen schaltet wie die Pille Wörter → Zeichen → aus.
@@ -194,8 +201,16 @@ fun NoteMetaLine(
         !showStats || mode == NoteStatsMode.HIDDEN -> null
         else -> statsLabel(mode, text, words)
     }
-    val edited = editedAt
-        ?.let { stringResource(R.string.editor_meta_edited, it.toReadableTime(context).lowercaseStart()) }
+    // Takt wie timestampTicker der Übersicht: „gerade eben“ bliebe sonst stehen, solange niemand tippt.
+    val tick by produceState(0) {
+        while (true) {
+            delay(META_TICK_MS)
+            value++
+        }
+    }
+    val edited = editedAt?.let {
+        key(tick) { stringResource(R.string.editor_meta_edited, it.toReadableTime(context).lowercaseStart()) }
+    }
     val line = listOfNotNull(edited, stats).joinToString(" · ")
         .ifEmpty { if (showStats) stringResource(R.string.note_stats_show) else "" }
     if (line.isEmpty()) return

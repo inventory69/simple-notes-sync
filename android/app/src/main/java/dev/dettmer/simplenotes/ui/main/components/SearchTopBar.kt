@@ -39,7 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,7 +87,11 @@ fun SearchTopBar(
     val density = LocalDensity.current
     val imeVisible by remember { derivedStateOf { imeInsets.getBottom(density) > 0 } }
     val searching = focused && imeVisible
-    LaunchedEffect(searching) { onSearchingChange(searching) }
+    // Verschwindet die Leiste mitten in der Suche (Auswahlmodus), muss die Übersicht trotzdem zurück auf voll.
+    DisposableEffect(searching) {
+        onSearchingChange(searching)
+        onDispose { if (searching) onSearchingChange(false) }
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -144,11 +148,12 @@ private fun SearchField(
         modifier = modifier
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // Suchen zuerst: im Ordner beendet der Pfeil erst die Suche, erst danach führt er aus dem Ordner.
             when {
-                onBack != null -> IconButton(onClick = onBack) {
+                searching -> IconButton(onClick = { focusManager.clearFocus() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
-                searching -> IconButton(onClick = { focusManager.clearFocus() }) {
+                onBack != null -> IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
                 else -> Icon(

@@ -314,9 +314,11 @@ private fun Actions(
     val export = summary.exportProblems
     // BLOCKED: „Erneut versuchen" prüft den Marker neu, die Sperre zählt als ungesyncte Änderung.
     val canRetry = summary.lastError != null || export != null || summary.state == SyncStatusSummary.State.BLOCKED
-    if (!canRetry && summary.lastError == null) return
+    // UI-Beta: die Wolke ersetzt den Sync-Knopf der Leiste, das Sheet bietet den Sync deshalb immer an.
+    val offerSync = canRetry || LocalNewDesign.current
+    if (!offerSync) return
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)) {
-        if (canRetry) RetryButton(isSyncing, onRetry)
+        RetryButton(isSyncing, if (canRetry) R.string.sync_status_retry else R.string.sync_now, onRetry)
         if (summary.lastError != null) {
             ActionButton(Icons.Outlined.Settings, stringResource(R.string.server_settings_title)) {
                 onOpenSettings(SettingsRoute.Server.route)
@@ -412,7 +414,7 @@ private fun NoteLinkRow(note: NoteRef, onOpenNote: (String) -> Unit) {
 }
 
 @Composable
-private fun RetryButton(isSyncing: Boolean, onRetry: () -> Unit) {
+private fun RetryButton(isSyncing: Boolean, labelRes: Int, onRetry: () -> Unit) {
     FilledTonalButton(onClick = onRetry, enabled = !isSyncing, modifier = Modifier.fillMaxWidth()) {
         if (isSyncing) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -420,7 +422,7 @@ private fun RetryButton(isSyncing: Boolean, onRetry: () -> Unit) {
             Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
         }
         Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
-        Text(stringResource(if (isSyncing) R.string.sync_status_syncing else R.string.sync_status_retry))
+        Text(stringResource(if (isSyncing) R.string.sync_status_syncing else labelRes))
     }
 }
 

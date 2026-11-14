@@ -41,6 +41,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -125,11 +126,14 @@ fun MarkdownPreview(
     // wirkungslos. Die Preview galt der Editor-Column dann als ungewichtet, bekam die volle
     // Resthöhe und drückte alles unter sich (die Wort-/Zeichenzahl) aus dem Bild — aber nur, wenn
     // der Text lang genug zum Scrollen war.
+    // Aktuelles Lambda lesen statt danach zu schlüsseln: ein neues Lambda je Recomposition startete den
+    // Detektor neu und verwarf einen gerade laufenden Tipp.
+    val currentOnTextTap by rememberUpdatedState(onTextTap)
     val tapModifier = if (onTextTap != null) {
-        Modifier.pointerInput(onTextTap) {
+        Modifier.pointerInput(Unit) {
             // x ohne den Spaltenrand: das Feld im Bearbeiten-Modus misst ab Textanfang (sonst ein Zeichen daneben).
             detectTapGestures { pos ->
-                onTextTap(TapAnchor(pos.x - Dimensions.SpacingSmall.toPx(), pos.y, scrollState.value + pos.y))
+                currentOnTextTap?.invoke(TapAnchor(pos.x - Dimensions.SpacingSmall.toPx(), pos.y, scrollState.value + pos.y))
             }
         }
     } else {

@@ -45,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.ImageCompressionMode
@@ -582,12 +584,15 @@ private fun FontSizeSelector(currentScale: FontSizeScale, onScaleSelected: (Font
         if (multiplier == null) {
             SegmentLabel(stringResource(scale.displayNameResId))
         } else {
+            val name = stringResource(scale.displayNameResId)
             Text(
                 text = "Aa",
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontSize = MaterialTheme.typography.labelLarge.fontSize * multiplier
                 ),
-                maxLines = 1
+                maxLines = 1,
+                // TalkBack liest sonst fünfmal „Aa“.
+                modifier = Modifier.semantics { contentDescription = name }
             )
         }
     }
