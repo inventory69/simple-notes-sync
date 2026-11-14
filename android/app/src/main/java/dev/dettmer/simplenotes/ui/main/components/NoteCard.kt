@@ -516,6 +516,7 @@ private fun NoteCardIconLeadingPreview(
             icon = if (hasRemainingLines) null else cornerSyncIcon,
             modifier = Modifier.weight(1f)
         )
+        NewDesignPinMark(isPinned = isPinned)
     }
 
     if (hasRemainingLines) {
