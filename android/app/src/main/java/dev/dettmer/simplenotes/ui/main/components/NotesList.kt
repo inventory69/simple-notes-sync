@@ -36,6 +36,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 
 /**
@@ -103,6 +104,7 @@ fun NotesList(
         return visibleHeaderOrder.getOrNull(idx + delta)
     }
 
+    val newDesign = LocalNewDesign.current
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
@@ -211,7 +213,9 @@ fun NotesList(
                                 showTypeIcon = showTypeIcon,
                                 hideCheckedInPreview = hideCheckedInPreview,
                                 showFolderLabel = showFolderLabels,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .then(if (newDesign) Modifier.animateItem() else Modifier) // UI-Beta, wie im Raster
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
                                 onClick = { if (isSelectionMode) onNoteSelectionToggle(note) else onNoteClick(note) },
                                 onLongClick = { onNoteLongPress(note) }
                             )
@@ -249,12 +253,17 @@ internal fun SectionHeaderText(
             .fillMaxWidth()
             .padding(top = Dimensions.SpacingSmall, bottom = Dimensions.SpacingXSmall)
     ) {
+        // UI-Beta (U3): Überschrift links statt mittig, Einklapp-Pfeil bleibt rechts in derselben Zeile.
+        val newDesign = LocalNewDesign.current
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium,
+            style = if (newDesign) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.align(Alignment.Center).fillMaxWidth()
+            textAlign = if (newDesign) TextAlign.Start else TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(start = if (newDesign) Dimensions.SpacingSmall else 0.dp)
         )
         Box(modifier = Modifier.align(Alignment.CenterEnd)) {
             Box(

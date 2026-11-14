@@ -7,6 +7,7 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -72,6 +73,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -100,9 +102,12 @@ import dev.dettmer.simplenotes.ui.main.components.NoteTypeFAB
 import dev.dettmer.simplenotes.ui.main.components.NotesList
 import dev.dettmer.simplenotes.ui.main.components.NotesStaggeredGrid
 import dev.dettmer.simplenotes.ui.main.components.RenameFolderDialog
+import dev.dettmer.simplenotes.ui.main.components.SearchTopBar
 import dev.dettmer.simplenotes.ui.main.components.SortDialog
+import dev.dettmer.simplenotes.ui.main.components.SyncCloudButton
 import dev.dettmer.simplenotes.ui.main.components.SyncProgressBanner
 import dev.dettmer.simplenotes.ui.main.components.SyncStatusDialog
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.ActivityLog
 import kotlinx.coroutines.launch
@@ -124,6 +129,9 @@ private const val GRID_TOP_SETTLE_INTERVAL_MS = 30L
 /** 🆕 v2.7.0 (Folders): Dauer/Versatz der Ordner-Navigations-Animation (analog shared_axis_x, 200 ms). */
 private const val FOLDER_ANIM_DURATION_MS = 200
 private const val FOLDER_SLIDE_FRACTION = 0.3f
+
+// UI-Beta: Deckkraft der Übersicht, solange das Suchfeld aktiv und noch leer ist
+private const val SEARCH_DIM_ALPHA = 0.45f
 
 /** 🆕 v2.7.0 (Folders): Responsive Selection-TopBar — Icon-Breite & reservierte Breite (Nav + Titel). */
 private const val SELECTION_ICON_WIDTH_DP = 48
@@ -179,6 +187,7 @@ fun MainScreen(
 
     val isServerConfigured by viewModel.isServerConfigured.collectAsState()
     val syncStatusSummary by viewModel.syncStatusSummary.collectAsState() // 🆕 v2.19.0
+    val newDesign = LocalNewDesign.current // UI-Beta: Übersicht (U1-U7)
     val showSyncStatus by viewModel.showSyncStatus.collectAsState() // 🆕 v2.19.0
 
     // 🎨 v1.7.0: Display mode (list or grid)
@@ -220,6 +229,12 @@ fun MainScreen(
     val noteFilter by viewModel.noteFilter.collectAsState()
     // 🆕 v1.9.0 (F10): Search query state
     val searchQuery by viewModel.searchQuery.collectAsState()
+    // UI-Beta: Tippen ins Suchfeld lässt die Übersicht zurücktreten, bis der erste Buchstabe filtert.
+    var searchFieldActive by remember { mutableStateOf(false) }
+    val paneAlpha by animateFloatAsState(
+        targetValue = if (newDesign && searchFieldActive && searchQuery.isEmpty()) SEARCH_DIM_ALPHA else 1f,
+        label = "searchDim"
+    )
     // 🆕 v2.16.0 (#141): Suche läuft → ordnerübergreifende, flache Trefferliste (siehe NotesPane)
     val searchActive by viewModel.searchActive.collectAsState()
     // 🆕 v2.5.0: Farbfilter-State
@@ -319,7 +334,28 @@ fun MainScreen(
                     enter = slideInVertically() + fadeIn(),
                     exit = slideOutVertically() + fadeOut()
                 ) {
-                    if (currentFolder != null) {
+                    if (newDesign) {
+                        // UI-Beta (U5/U6): Suchfeld oben, App-Titel bzw. Ordnername als Ruhetext.
+                        SearchTopBar(
+                            placeholder = currentFolder ?: customAppTitle.ifBlank { stringResource(R.string.main_title) },
+                            searchQuery = searchQuery,
+                            onSearchQueryChanged = { viewModel.setSearchQuery(it) },
+                            showFilterRow = showFilterRow,
+                            onFilterToggle = { showFilterRow = !showFilterRow },
+                            onBack = if (currentFolder != null) ({ viewModel.goToRoot() }) else null,
+                            onSettingsClick = { onOpenSettings(null) },
+                            onSearchingChange = { searchFieldActive = it },
+                            syncAction = {
+                                SyncCloudButton(
+                                    state = syncStatusSummary.state,
+                                    // Auch der stille Sync beim Öffnen: der Ring zeigt, dass gerade abgeglichen wird.
+                                    isSyncing = isSyncing || syncState == SyncStateManager.SyncState.SYNCING_SILENT,
+                                    badgeCount = syncStatusSummary.badgeCount,
+                                    onClick = if (isSyncAvailable) ({ viewModel.openSyncStatus() }) else null
+                                )
+                            }
+                        )
+                    } else if (currentFolder != null) {
                         FolderTopBar(
                             folderName = currentFolder!!,
                             onBack = { viewModel.goToRoot() },
@@ -398,7 +434,8 @@ fun MainScreen(
                                 searchQuery = searchQuery,
                                 onSearchQueryChanged = { viewModel.setSearchQuery(it) },
                                 onSortClick = { showSortDialog = true },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                showSearchField = !newDesign
                             )
                         }
 
@@ -437,7 +474,9 @@ fun MainScreen(
                             targetState = currentFolder,
                             transitionSpec = { folderNavTransition(forward = targetState != null) },
                             label = "folderNav",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .graphicsLayer { alpha = paneAlpha }
                         ) { folderKey ->
                             NotesPane(
                                 folderKey = folderKey,

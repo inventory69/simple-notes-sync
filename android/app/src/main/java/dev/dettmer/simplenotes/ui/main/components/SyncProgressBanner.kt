@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -36,12 +37,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.sync.SyncPhase
 import dev.dettmer.simplenotes.sync.SyncProgress
+import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
+
+/** UI-Beta: Rundung der Banner-Pille, gleich der des 48-dp-Suchfelds. */
+private val PILL_RADIUS = 24.dp
 
 /**
  * 🆕 v1.8.0: Einziges Sync-Banner für den gesamten Sync-Lebenszyklus
@@ -64,23 +71,12 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
     var lastVisibleContentColor by remember { mutableStateOf(Color.Unspecified) }
     var lastVisibleProgress by remember { mutableStateOf(progress) }
 
+    val newDesign = LocalNewDesign.current
     if (progress.isVisible) {
         lastVisibleProgress = progress
-        val isError = progress.phase == SyncPhase.ERROR
-        val isInfo = progress.phase == SyncPhase.INFO
-        val isWarning = progress.phase == SyncPhase.WARNING
-        lastVisibleBackgroundColor = when {
-            isError -> MaterialTheme.colorScheme.errorContainer
-            isWarning -> MaterialTheme.colorScheme.tertiaryContainer
-            isInfo -> MaterialTheme.colorScheme.secondaryContainer
-            else -> MaterialTheme.colorScheme.primaryContainer
-        }
-        lastVisibleContentColor = when {
-            isError -> MaterialTheme.colorScheme.onErrorContainer
-            isWarning -> MaterialTheme.colorScheme.onTertiaryContainer
-            isInfo -> MaterialTheme.colorScheme.onSecondaryContainer
-            else -> MaterialTheme.colorScheme.onPrimaryContainer
-        }
+        val (background, content) = bannerColors(progress.phase, newDesign)
+        lastVisibleBackgroundColor = background
+        lastVisibleContentColor = content
     }
 
     AnimatedVisibility(
@@ -96,9 +92,23 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
         ),
         modifier = modifier
     ) {
+        // UI-Beta: Pille in Suchfeld-Optik (gleiche Fläche und Rundung, gleicher Rand) statt Band über die volle Breite.
         Surface(
             color = lastVisibleBackgroundColor,
-            modifier = Modifier.fillMaxWidth()
+            shape = if (newDesign) RoundedCornerShape(PILL_RADIUS) else RectangleShape,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (newDesign) {
+                        Modifier.padding(
+                            start = Dimensions.SpacingLarge,
+                            end = Dimensions.SpacingLarge,
+                            bottom = Dimensions.SpacingSmall
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             // 🆕 v1.10.0: AnimatedContent crossfadet Inhalte beim Phasenwechsel, damit
             // kurze Phasen (z.B. IMPORTING_MARKDOWN) leserlich übergeblendet werden
@@ -111,7 +121,7 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
                 contentKey = { it.phase },
                 label = "bannerContent"
             ) { p ->
-                BannerContent(p = p, contentColor = lastVisibleContentColor)
+                BannerContent(p = p, contentColor = lastVisibleContentColor, compact = newDesign)
             }
         }
     }
@@ -120,7 +130,7 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
-private fun BannerContent(p: SyncProgress, contentColor: Color) {
+private fun BannerContent(p: SyncProgress, contentColor: Color, compact: Boolean) {
     val pIsError = p.phase == SyncPhase.ERROR
     val pIsCompleted = p.phase == SyncPhase.COMPLETED
     val pIsInfo = p.phase == SyncPhase.INFO
@@ -130,7 +140,7 @@ private fun BannerContent(p: SyncProgress, contentColor: Color) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = if (compact) 20.dp else 16.dp, vertical = 10.dp)
     ) {
         // Zeile 1: Icon + Phase/Message + Counter
         Row(
@@ -163,6 +173,8 @@ private fun BannerContent(p: SyncProgress, contentColor: Color) {
                     modifier = Modifier.size(18.dp),
                     tint = contentColor
                 )
+                // UI-Beta: kein eigener Kreisel, der Ring um die Wolke zeigt schon, dass es läuft.
+                compact -> Unit
                 else -> CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
@@ -196,7 +208,24 @@ private fun BannerContent(p: SyncProgress, contentColor: Color) {
         // Zeile 2: Progress Bar (alle aktiven Phasen mit bekanntem Total)
         // 🆕 v1.10.0-P2: DOWNLOADING and IMPORTING_MARKDOWN now also supply total
         val isProgressPhase = p.isActiveSync
-        if (!pIsResult && p.total > 0 && p.current > 0 && isProgressPhase) {
+        if (compact && !pIsResult) {
+            // UI-Beta: Fortschritt als dünne Linie in der Pille, ohne Zahlen unbestimmt.
+            Spacer(modifier = Modifier.height(6.dp))
+            if (p.total > 0 && p.current > 0) {
+                LinearProgressIndicator(
+                    progress = { p.progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = contentColor,
+                    trackColor = contentColor.copy(alpha = 0.2f)
+                )
+            } else {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = contentColor,
+                    trackColor = contentColor.copy(alpha = 0.2f)
+                )
+            }
+        } else if (!pIsResult && p.total > 0 && p.current > 0 && isProgressPhase) {
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { p.progress },
@@ -209,7 +238,7 @@ private fun BannerContent(p: SyncProgress, contentColor: Color) {
         }
 
         // Zeile 3: Aktueller Notiz-Titel (optional, nur bei aktivem Sync)
-        if (!pIsResult && !p.currentFileName.isNullOrBlank()) {
+        if (!compact && !pIsResult && !p.currentFileName.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = p.currentFileName,
@@ -238,5 +267,28 @@ private fun phaseToString(phase: SyncPhase): String {
         SyncPhase.COMPLETED, SyncPhase.WARNING -> stringResource(R.string.sync_phase_completed)
         SyncPhase.ERROR -> stringResource(R.string.sync_phase_error)
         SyncPhase.INFO -> "" // 🆕 v1.8.1 (IMPL_12): INFO nutzt immer resultMessage
+    }
+}
+
+/**
+ * Hintergrund- und Inhaltsfarbe je Phase. UI-Beta (U7): neutrale Pille wie das Suchfeld, nur die Schrift
+ * trägt die Farbe (Fehler, Warnung, Erfolg). Der laufende Sync zeigt sich zusätzlich als Ring um die Wolke oben.
+ */
+@Composable
+private fun bannerColors(phase: SyncPhase, newDesign: Boolean): Pair<Color, Color> {
+    val c = MaterialTheme.colorScheme
+    if (newDesign) {
+        return c.surfaceContainerHigh to when (phase) {
+            SyncPhase.ERROR -> c.error
+            SyncPhase.WARNING -> c.tertiary
+            SyncPhase.COMPLETED -> c.primary
+            else -> c.onSurfaceVariant
+        }
+    }
+    return when (phase) {
+        SyncPhase.ERROR -> c.errorContainer to c.onErrorContainer
+        SyncPhase.WARNING -> c.tertiaryContainer to c.onTertiaryContainer
+        SyncPhase.INFO -> c.secondaryContainer to c.onSecondaryContainer
+        else -> c.primaryContainer to c.onPrimaryContainer
     }
 }
