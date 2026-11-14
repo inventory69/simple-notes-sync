@@ -5,7 +5,10 @@ import android.content.ClipData
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.CalendarContract
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -91,6 +94,9 @@ class ComposeNoteEditorActivity : FragmentActivity() {
         private const val KEY_SHARE_TYPE_CHOSEN = "share_type_chosen" // 🆕 v2.2.0
         private const val KEY_PICK_TARGET_NOTE = "pick_target_note" // 🆕 v2.6.0
 
+        // Länger wartet der erste Frame nicht auf die Notiz (normal: wenige ms aus dem Cache)
+        private const val FIRST_DRAW_TIMEOUT_MS = 500L
+
         // 🆕 v1.10.0-P2: Result codes for deletion forwarding to MainViewModel
         const val RESULT_NOTE_DELETED = 10
         const val RESULT_EXTRA_NOTE_ID = "result_note_id"
@@ -173,18 +179,18 @@ class ComposeNoteEditorActivity : FragmentActivity() {
         // Recents secure-placeholder color isn't clobbered by edge-to-edge's own colors.
         AppLock.applySecureFlag(this)
 
-        // v2.0.0: Register both OPEN and CLOSE transitions for consistent
-        // Shared Axis X animation on all back paths (arrow button + swipe gesture).
+        // v2.0.0: Register both OPEN and CLOSE transitions for consistent animation on all back paths
+        // (arrow button + swipe gesture). Editor öffnet nach vorn (Zoom), die Übersicht darunter steht still.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_OPEN,
-                R.anim.shared_axis_x_enter,
-                R.anim.shared_axis_x_exit
+                R.anim.editor_open_enter,
+                R.anim.hold
             )
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_CLOSE,
-                R.anim.shared_axis_x_pop_enter,
-                R.anim.shared_axis_x_pop_exit
+                R.anim.hold,
+                R.anim.editor_close_exit
             )
         }
 
@@ -258,6 +264,10 @@ class ComposeNoteEditorActivity : FragmentActivity() {
                 } // AppLockGate
             }
         }
+
+        // Erstes Bild erst mit geladener Notiz, sonst blendet der Öffnen-Übergang ein leeres Fenster ein
+        // (im dunklen Design wie eine Schwarzblende). Share-Intents nicht: dort darf das ViewModel noch nicht entstehen.
+        if (!isShareIntent && intent.hasExtra(EXTRA_NOTE_ID)) postponeFirstDrawUntilLoaded()
 
         // Event Collection nur starten wenn kein Share-Dialog angezeigt wird
         if (!isShareIntent) {
@@ -343,14 +353,29 @@ class ComposeNoteEditorActivity : FragmentActivity() {
         }
     }
 
+    /** Hält das Zeichnen an, bis die Notiz geladen ist, höchstens [FIRST_DRAW_TIMEOUT_MS] (wie der Splash-Screen). */
+    private fun postponeFirstDrawUntilLoaded() {
+        val content = findViewById<View>(android.R.id.content)
+        val deadline = SystemClock.uptimeMillis() + FIRST_DRAW_TIMEOUT_MS
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    val ready = !viewModel.uiState.value.isLoading || SystemClock.uptimeMillis() > deadline
+                    if (ready) content.viewTreeObserver.removeOnPreDrawListener(this)
+                    return ready
+                }
+            }
+        )
+    }
+
     private fun finishWithTransition() {
         finish()
         // API < 34: overrideActivityTransition not available, use deprecated API
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             @Suppress("DEPRECATION")
             overridePendingTransition(
-                R.anim.shared_axis_x_pop_enter,
-                R.anim.shared_axis_x_pop_exit
+                R.anim.hold,
+                R.anim.editor_close_exit
             )
         }
     }
@@ -361,8 +386,8 @@ class ComposeNoteEditorActivity : FragmentActivity() {
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            R.anim.shared_axis_x_pop_enter,
-            R.anim.shared_axis_x_pop_exit
+            R.anim.hold,
+            R.anim.editor_close_exit
         )
         startActivity(intent, options.toBundle())
         finish()

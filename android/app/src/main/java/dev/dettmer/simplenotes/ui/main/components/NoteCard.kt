@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
@@ -49,7 +50,9 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.noteCardMarkdownPreview
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
+import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
@@ -93,11 +96,15 @@ fun NoteCard(
 
     // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row — das Sync-Icon rutscht stattdessen
     // inline ans Ende des Vorschautexts (siehe NoteCardPreviewContent/-IconLeadingPreview).
-    val showCornerSyncIcon = !showTimestamp && showSyncStatus
+    val syncIconVisible = cardSyncIconVisible(showSyncStatus, note.syncStatus)
+    val showCornerSyncIcon = !showTimestamp && syncIconVisible
 
     // v2.5.0: Resolve note colour, fall back to theme default
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val noteContainerColor = NoteColorPalette.resolveContainer(note.color, isDark)
+    val newDesign = LocalNewDesign.current
+    val leadingTypeIcon = showTypeIcon && !newDesign
+    val noteContainerColor = NoteColorPalette
+        .resolveCardContainer(note.color, isDark, MaterialTheme.colorScheme.surfaceContainerHigh, newDesign) // U1
         .takeOrElse { MaterialTheme.colorScheme.surfaceContainerHigh }
 
     Card(
@@ -146,7 +153,8 @@ fun NoteCard(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (showTypeIcon) {
+                        // UI-Beta (U2): kein Typ-Kreis vor dem Titel, der Pin sitzt rechts oben.
+                        if (leadingTypeIcon) {
                             NoteCardTypeIcon(note = note, isPinned = note.isPinned == true)
                             Spacer(modifier = Modifier.width(12.dp))
                         }
@@ -158,6 +166,7 @@ fun NoteCard(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
+                        NewDesignPinMark(isPinned = note.isPinned == true)
                         // 🆕 Discussion #110: ohne Vorschauzeilen hat das Sync-Icon keinen Text
                         // mehr zum Anhängen — es rückt neben den Titel statt zu verschwinden.
                         if (showCornerSyncIcon && previewLength.listLines == 0) {
@@ -182,7 +191,7 @@ fun NoteCard(
                         note = note,
                         isPinned = note.isPinned == true,
                         maxLines = previewLength.listLines,
-                        showTypeIcon = showTypeIcon,
+                        showTypeIcon = leadingTypeIcon,
                         showSyncIcon = showCornerSyncIcon,
                         hideChecked = hideCheckedInPreview
                     )
@@ -192,7 +201,8 @@ fun NoteCard(
                     note = note,
                     folderLabel = folderLabel,
                     showTimestamp = showTimestamp,
-                    showSyncStatus = showSyncStatus
+                    showSyncStatus = syncIconVisible,
+                    showTypeIcon = showTypeIcon // Entscheidung 7: im neuen Design Typ klein in der Fußzeile
                 )
             }
 
@@ -253,7 +263,8 @@ private fun NoteCardMeta(
     note: Note,
     folderLabel: String?,
     showTimestamp: Boolean,
-    showSyncStatus: Boolean
+    showSyncStatus: Boolean,
+    showTypeIcon: Boolean = false
 ) {
     val context = LocalContext.current
 
@@ -266,24 +277,49 @@ private fun NoteCardMeta(
 
     // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row komplett — das Sync-Icon hängt
     // stattdessen inline am Ende der letzten Vorschauzeile (siehe NoteCardPreviewContent).
-    if (showTimestamp) {
+    // Neues Design: das Typ-Symbol steht in der Fußzeile, die es dafür auch ohne Zeitstempel gibt.
+    val footerTypeIcon = showTypeIcon && LocalNewDesign.current
+    if (showTimestamp || footerTypeIcon) {
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = note.editedAt.toReadableTime(context),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.weight(1f)
-            )
+            if (footerTypeIcon) {
+                NoteTypeMark(note.noteType, tint = MaterialTheme.colorScheme.outline, size = 14.dp)
+            }
+            if (showTimestamp) {
+                Text(
+                    text = note.editedAt.toReadableTime(context),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.weight(1f)
+                )
 
-            if (showSyncStatus) {
-                NoteCardSyncIcon(note = note, modifier = Modifier.size(16.dp))
+                if (showSyncStatus) {
+                    NoteCardSyncIcon(note = note, modifier = Modifier.size(16.dp))
+                }
             }
         }
     }
+}
+
+/** UI-Beta: die Wolke oben meldet den Gesamtstand, auf der Karte steht nur noch, was abweicht. */
+@Composable
+internal fun cardSyncIconVisible(showSyncStatus: Boolean, status: SyncStatus): Boolean =
+    showSyncStatus && !(LocalNewDesign.current && status == SyncStatus.SYNCED)
+
+/** Entscheidung 7: „Show note icon“ zeigt im neuen Design den Typ klein in der Fußzeile (Liste und Raster). */
+@Composable
+internal fun NoteTypeMark(type: NoteType, tint: Color, size: Dp) {
+    Icon(
+        imageVector = if (type == NoteType.TEXT) Icons.Outlined.Description else Icons.AutoMirrored.Outlined.List,
+        contentDescription = null,
+        tint = tint,
+        modifier = Modifier
+            .padding(end = 4.dp)
+            .size(size)
+    )
 }
 
 /**
@@ -480,6 +516,7 @@ private fun NoteCardIconLeadingPreview(
             icon = if (hasRemainingLines) null else cornerSyncIcon,
             modifier = Modifier.weight(1f)
         )
+        NewDesignPinMark(isPinned = isPinned)
     }
 
     if (hasRemainingLines) {
@@ -493,4 +530,18 @@ private fun NoteCardIconLeadingPreview(
             icon = cornerSyncIcon
         )
     }
+}
+
+/** UI-Beta (U2): Pin rechts oben neben dem Titel statt neben dem Typ-Kreis. */
+@Composable
+internal fun NewDesignPinMark(isPinned: Boolean) {
+    if (!isPinned || !LocalNewDesign.current) return
+    Icon(
+        imageVector = Icons.Filled.PushPin,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .padding(start = 4.dp)
+            .size(14.dp)
+    )
 }

@@ -149,6 +149,17 @@ object Constants {
     const val KEY_DEFAULT_START_IN_PREVIEW_MODE = "default_start_in_preview_mode"
     const val DEFAULT_START_IN_PREVIEW_MODE = true
 
+    // UI-Beta (#131): neues Design für Editor und Übersicht, Default in Debug/Beta an (siehe ThemePreferences)
+    const val KEY_NEW_DESIGN = "new_design_beta"
+
+    // #131 (E11): Formatierleiste im Text-Editor ein-/ausblenden
+    const val KEY_FORMATTING_BAR = "editor_formatting_bar"
+    const val DEFAULT_FORMATTING_BAR = true
+
+    // UI-Beta: leeres Titelfeld im Editor anzeigen (aus = nur Notizen mit Titel zeigen eins)
+    const val KEY_TITLE_FIELD = "editor_title_field"
+    const val DEFAULT_TITLE_FIELD = true
+
     // 🆕 Issue #156: Checklisten im Lesemodus öffnen (Antippen der Zeile hakt ab)
     const val KEY_CHECKLIST_START_IN_READ_MODE = "checklist_start_in_read_mode"
     const val DEFAULT_CHECKLIST_START_IN_READ_MODE = false

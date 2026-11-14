@@ -119,6 +119,12 @@ internal class FakeWebDav : Dispatcher() {
         files[path] = Entry(body.toByteArray(), nextEtag(), System.currentTimeMillis())
     }
 
+    /** Server neu aufgesetzt: alles weg bis auf die Wurzel, ohne Request. */
+    @Synchronized fun wipe() {
+        files.clear()
+        dirs.retainAll(setOf("/"))
+    }
+
     /** Erzwingt für [path] diese Antwort, egal welche Methode. */
     @Synchronized fun respond(path: String, code: Int, body: String = "") {
         forced[path] = code to body

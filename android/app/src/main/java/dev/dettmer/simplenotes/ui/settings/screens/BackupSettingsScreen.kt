@@ -15,6 +15,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -211,6 +214,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
                 SettingsButton(
                     text = stringResource(R.string.backup_create),
+                    icon = Icons.Outlined.Save,
                     onClick = {
                         val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
                             .format(Date())
@@ -228,6 +232,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
                 SettingsOutlinedButton(
                     text = stringResource(R.string.backup_restore_file),
+                    icon = Icons.Outlined.FolderOpen,
                     onClick = {
                         // Nicht jeder Provider meldet für .json "application/json" (Downloads,
                         // Cloud-Provider, manche Dateimanager liefern octet-stream oder text/plain)
@@ -246,6 +251,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 // 🌟 v1.6.0: Disabled when offline mode active
                 SettingsOutlinedButton(
                     text = stringResource(R.string.backup_restore_server),
+                    icon = Icons.Outlined.CloudDownload,
                     onClick = {
                         restoreSource = RestoreSource.Server
                         showRestoreDialog = true

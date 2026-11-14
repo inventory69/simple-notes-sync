@@ -22,6 +22,15 @@ fun buildSyncResultBanner(context: Context, result: SyncResult): String? {
                 )
             )
         }
+        if (result.uploadFailedCount > 0) {
+            add(
+                context.resources.getQuantityString(
+                    R.plurals.sync_upload_failed_count,
+                    result.uploadFailedCount,
+                    result.uploadFailedCount
+                )
+            )
+        }
         if (result.syncedCount > 0) {
             // 🆕 v2.19.0: Plural ohne ✅ — das Banner hat sein eigenes Icon, und „1 notes" ist falsch.
             add(context.resources.getQuantityString(R.plurals.sync_notes_synced_count, result.syncedCount, result.syncedCount))

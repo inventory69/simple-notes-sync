@@ -83,7 +83,8 @@ fun FilterChipRow(
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     onSortClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showSearchField: Boolean = true // UI-Beta (U5): Suche steht dann dauerhaft oben, Chips allein
 ) {
     val focusManager = LocalFocusManager.current
     var showColorDropdown by remember { mutableStateOf(false) }
@@ -207,111 +208,149 @@ fun FilterChipRow(
                     isDark = isDark
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Suchfeld + „Mehr"-Chip — 🔧 v2.11.0 (Archive): Suchfeld teilt sich die Zeile mit dem Overflow-Menü
-        val interactionSource = remember { MutableInteractionSource() }
-        val isFocused = interactionSource.collectIsFocusedAsState().value
-        val chipShape = MaterialTheme.shapes.small
-        val borderColor =
-            if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BasicTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChanged,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.labelLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                interactionSource = interactionSource,
-                decorationBox = { innerTextField ->
-                    Surface(
-                        shape = chipShape,
-                        border = BorderStroke(width = 1.dp, color = borderColor),
-                        color = Color.Transparent
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Box(modifier = Modifier.weight(1f)) {
-                                if (searchQuery.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.search_notes_placeholder),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                innerTextField()
-                            }
-                            if (searchQuery.isNotEmpty()) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Close,
-                                    contentDescription = stringResource(R.string.search_clear),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier
-                                        .size(18.dp)
-                                        .clickable { onSearchQueryChanged("") }
-                                )
-                            }
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(36.dp)
-            )
-
-            // 🆕 v2.11.0 (Archive): „Mehr"-Chip — Overflow-Menü für Archiv-Toggle + Papierkorb
-            Box {
-                FilterChip(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(36.dp),
-                    selected = archiveActive,
-                    onClick = {
+            if (!showSearchField) {
+                MoreChip(
+                    archiveActive = archiveActive,
+                    expanded = showMoreMenu,
+                    onOpen = {
                         focusManager.clearFocus()
                         showMoreMenu = true
                     },
-                    label = {
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = stringResource(R.string.cd_more_options),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                )
-                MoreOptionsDropdown(
-                    expanded = showMoreMenu,
                     onDismiss = { showMoreMenu = false },
+                    onArchiveToggle = onArchiveToggle,
+                    modifier = Modifier.weight(1f),
+                    chipModifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        if (showSearchField) {
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Suchfeld + „Mehr"-Chip — 🔧 v2.11.0 (Archive): Suchfeld teilt sich die Zeile mit dem Overflow-Menü
+            val interactionSource = remember { MutableInteractionSource() }
+            val isFocused = interactionSource.collectIsFocusedAsState().value
+            val chipShape = MaterialTheme.shapes.small
+            val borderColor =
+                if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChanged,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.labelLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    interactionSource = interactionSource,
+                    decorationBox = { innerTextField ->
+                        Surface(
+                            shape = chipShape,
+                            border = BorderStroke(width = 1.dp, color = borderColor),
+                            color = Color.Transparent
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Search,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Box(modifier = Modifier.weight(1f)) {
+                                    if (searchQuery.isEmpty()) {
+                                        Text(
+                                            text = stringResource(R.string.search_notes_placeholder),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                                if (searchQuery.isNotEmpty()) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Close,
+                                        contentDescription = stringResource(R.string.search_clear),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .clickable { onSearchQueryChanged("") }
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                )
+
+                // 🆕 v2.11.0 (Archive): „Mehr"-Chip — Overflow-Menü für Archiv-Toggle + Papierkorb
+                MoreChip(
                     archiveActive = archiveActive,
-                    onArchiveToggle = {
-                        showMoreMenu = false
-                        onArchiveToggle()
-                    }
+                    expanded = showMoreMenu,
+                    onOpen = {
+                        focusManager.clearFocus()
+                        showMoreMenu = true
+                    },
+                    onDismiss = { showMoreMenu = false },
+                    onArchiveToggle = onArchiveToggle,
+                    chipModifier = Modifier
+                        .width(40.dp)
+                        .height(36.dp)
                 )
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
+    }
+}
+
+/** „Mehr"-Chip mit Archiv-Menü; im neuen Design in der Chip-Zeile, sonst neben dem Suchfeld. */
+@Composable
+private fun MoreChip(
+    archiveActive: Boolean,
+    expanded: Boolean,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+    onArchiveToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    chipModifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        FilterChip(
+            modifier = chipModifier,
+            selected = archiveActive,
+            onClick = onOpen,
+            label = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.cd_more_options),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        )
+        MoreOptionsDropdown(
+            expanded = expanded,
+            onDismiss = onDismiss,
+            archiveActive = archiveActive,
+            onArchiveToggle = {
+                onDismiss()
+                onArchiveToggle()
+            }
+        )
     }
 }
 

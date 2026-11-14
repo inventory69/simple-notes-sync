@@ -117,8 +117,12 @@
     <string name="sync_moved_to_trash_count">%d in den Papierkorb verschoben</string>
     <!-- v2.16.0: Konflikte fehlten im Sync-Abschluss-Banner komplett -->
     <plurals name="sync_conflict_count">
-        <item quantity="one">⚠️ %1$d Konflikt wartet auf deine Entscheidung</item>
-        <item quantity="other">⚠️ %1$d Konflikte warten auf deine Entscheidung</item>
+        <item quantity="one">%1$d Konflikt wartet auf deine Entscheidung</item>
+        <item quantity="other">%1$d Konflikte warten auf deine Entscheidung</item>
+    </plurals>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="one">%1$d Notiz nicht hochgeladen</item>
+        <item quantity="other">%1$d Notizen nicht hochgeladen</item>
     </plurals>
     <!-- 🆕 v2.19.0: Export-Probleme (die Notizen selbst sind synchron) -->
     <plurals name="sync_markdown_failed_count">
@@ -149,7 +153,7 @@
     <string name="sync_phase_downloading">Herunterladen…</string>
     <string name="sync_phase_deleting">Vom Server löschen…</string>
     <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
-    <string name="sync_quota_warning">⚠️ Sync wurde durch Androids Energieverwaltung verzögert. Öffne die App regelmäßig oder deaktiviere die Akku-Optimierung für zuverlässigen Hintergrund-Sync.</string>
+    <string name="sync_quota_warning">Sync wurde durch Androids Energieverwaltung verzögert. Öffne die App regelmäßig oder deaktiviere die Akku-Optimierung für zuverlässigen Hintergrund-Sync.</string>
     <string name="sync_phase_importing_markdown">Markdown importieren…</string>
     <string name="sync_phase_completed">Sync abgeschlossen</string>
     <string name="sync_phase_error">Sync fehlgeschlagen</string>
@@ -200,7 +204,7 @@
     <string name="snackbar_server_error">Server-Fehler: %s</string>
     <string name="snackbar_server_unreachable">Keine Verbindung zum Server</string>
     <string name="snackbar_connection_timeout">Der Server hat zu lange nicht geantwortet</string>
-    <string name="snackbar_nothing_to_sync">ℹ️ Nichts zu syncen</string>
+    <string name="snackbar_nothing_to_sync">Nichts zu syncen</string>
     <!-- ============================= -->
     <!-- TRASH (v2.9.0)                -->
     <!-- ============================= -->
@@ -372,13 +376,13 @@
     <string name="settings_group_info">Info</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_server">Server-Einstellungen</string>
-    <string name="settings_server_status_reachable">✅ Erreichbar</string>
-    <string name="settings_server_status_unreachable">❌ Nicht erreichbar</string>
-    <string name="settings_server_status_checking">🔍 Prüfe…</string>
-    <string name="settings_server_status_offline_mode">📴 Offline-Modus</string>
-    <string name="settings_server_status_not_configured">📴 Nicht konfiguriert</string>
+    <string name="settings_server_status_reachable">Erreichbar</string>
+    <string name="settings_server_status_unreachable">Nicht erreichbar</string>
+    <string name="settings_server_status_checking">Prüfe…</string>
+    <string name="settings_server_status_offline_mode">Offline-Modus</string>
+    <string name="settings_server_status_not_configured">Nicht konfiguriert</string>
     <string name="settings_sync">Sync &amp; Benachrichtigungen</string>
-    <string name="settings_sync_offline_mode">📴 Offline-Modus</string>
+    <string name="settings_sync_offline_mode">Offline-Modus</string>
     <string name="settings_sync_manual_only">Nur manueller Sync</string>
     <string name="settings_sync_triggers_active">%d Trigger aktiv</string>
     <string name="settings_sync_notifications_enabled">Benachrichtigungen aktiv</string>
@@ -421,8 +425,8 @@
     <!-- ============================= -->
     <string name="server_settings_title">Server-Einstellungen</string>
     <string name="server_connection_type">Verbindungstyp</string>
-    <string name="server_connection_http">🏠 Intern (HTTP)</string>
-    <string name="server_connection_https">🌐 Extern (HTTPS)</string>
+    <string name="server_connection_http">Intern (HTTP)</string>
+    <string name="server_connection_https">Extern (HTTPS)</string>
     <string name="server_connection_http_hint">HTTP nur für lokale Netzwerke (z.B. 192.168.x.x, 10.x.x.x)</string>
     <string name="server_connection_https_hint">HTTPS für sichere Verbindungen über das Internet</string>
     <string name="server_address">Server-Adresse</string>
@@ -453,14 +457,14 @@
     <string name="server_password_show">Anzeigen</string>
     <string name="server_password_hide">Verstecken</string>
     <string name="server_status_label">Server-Status:</string>
-    <string name="server_status_reachable">✅ Erreichbar</string>
-    <string name="server_status_unreachable">❌ Nicht erreichbar</string>
-    <string name="server_status_certificate">❌ Zertifikat nicht vertrauenswürdig</string>
-    <string name="server_status_checking">🔍 Prüfe…</string>
-    <string name="server_status_offline_mode">📴 Offline-Modus aktiv</string>
-    <string name="server_status_not_configured">📴 Nicht konfiguriert</string>
-    <string name="server_status_unknown">❓ Unbekannt</string>
-    <string name="server_offline_mode_title">📴 Offline-Modus</string>
+    <string name="server_status_reachable">Erreichbar</string>
+    <string name="server_status_unreachable">Nicht erreichbar</string>
+    <string name="server_status_certificate">Zertifikat nicht vertrauenswürdig</string>
+    <string name="server_status_checking">Prüfe…</string>
+    <string name="server_status_offline_mode">Offline-Modus aktiv</string>
+    <string name="server_status_not_configured">Nicht konfiguriert</string>
+    <string name="server_status_unknown">Unbekannt</string>
+    <string name="server_offline_mode_title">Offline-Modus</string>
     <string name="server_offline_mode_subtitle">Alle Netzwerkfunktionen deaktivieren</string>
     <string name="test_connection">Verbindung testen</string>
     <string name="sync_now">Jetzt synchronisieren</string>
@@ -468,9 +472,9 @@
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
     <string name="sync_settings_title">Sync &amp; Benachrichtigungen</string>
-    <string name="sync_interval_15min_title">⚡ Alle 15 Minuten</string>
-    <string name="sync_interval_30min_title">✓ Alle 30 Minuten (Empfohlen)</string>
-    <string name="sync_interval_60min_title">🔋 Alle 60 Minuten</string>
+    <string name="sync_interval_15min_title">Alle 15 Minuten</string>
+    <string name="sync_interval_30min_title">Alle 30 Minuten (Empfohlen)</string>
+    <string name="sync_interval_60min_title">Alle 60 Minuten</string>
     <!-- Legacy -->
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
@@ -488,7 +492,7 @@
     <string name="notifications_permission_settings_title">Benachrichtigungen blockiert</string>
     <string name="notifications_permission_settings_message">Die Benachrichtigungsberechtigung wurde dauerhaft abgelehnt. Um Benachrichtigungen zu aktivieren, erlaube sie bitte in den App-Einstellungen.</string>
     <string name="notifications_permission_open_settings">Einstellungen öffnen</string>
-    <string name="sync_wifi_only_hint">💡 Der WiFi-Connect Trigger ist davon nicht betroffen – er synchronisiert immer wenn WiFi verbunden wird.</string>
+    <string name="sync_wifi_only_hint">Der WiFi-Connect Trigger ist davon nicht betroffen, er synchronisiert immer wenn WiFi verbunden wird.</string>
     <string name="sync_wifi_only_error">Sync funktioniert nur wenn WLAN verbunden ist</string>
     <string name="sync_trigger_on_save_title">Nach dem Speichern</string>
     <string name="sync_trigger_on_save_subtitle">Sync sofort nach jeder Änderung</string>
@@ -512,24 +516,24 @@
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
-    <string name="markdown_export_complete">✅ Export abgeschlossen</string>
+    <string name="markdown_export_complete">Export abgeschlossen</string>
     <string name="markdown_export_progress">Exportiere %1$d/%2$d Notizen…</string>
     <string name="markdown_checking_server">Verbindung wird geprüft…</string>
-    <string name="markdown_info">📝 Exportiert Notizen zusätzlich als .md-Dateien. Mounte WebDAV als Netzlaufwerk, um sie mit deinem bevorzugten Markdown-Editor zu bearbeiten. JSON-Sync bleibt das primäre Format.</string>
+    <string name="markdown_info">Exportiert Notizen zusätzlich als .md-Dateien. Mounte WebDAV als Netzlaufwerk, um sie mit deinem bevorzugten Markdown-Editor zu bearbeiten. JSON-Sync bleibt das primäre Format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Synchronisiert Notizen automatisch als .md-Dateien (Upload + Download bei jedem Sync)</string>
     <string name="markdown_manual_sync_info">Manueller Sync exportiert alle Notizen als .md-Dateien und importiert .md-Dateien vom Server. Nützlich für einmalige Synchronisation.</string>
-    <string name="markdown_manual_sync_button">📝 Manueller Markdown-Sync</string>
+    <string name="markdown_manual_sync_button">Manueller Markdown-Sync</string>
     <string name="markdown_folder_label">MD-Ordner (WebDAV-Netzlaufwerk)</string>
     <string name="markdown_folder_copy_cd">Pfad kopieren</string>
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
     <string name="backup_settings_title">Backup &amp; Wiederherstellung</string>
-    <string name="backup_auto_info">📦 Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
+    <string name="backup_auto_info">Bei jeder Wiederherstellung wird automatisch ein Sicherheits-Backup erstellt.</string>
     <string name="backup_local_section">Lokales Backup</string>
-    <string name="backup_create">💾 Backup erstellen</string>
-    <string name="backup_restore_file">📂 Aus Datei wiederherstellen</string>
+    <string name="backup_create">Backup erstellen</string>
+    <string name="backup_restore_file">Aus Datei wiederherstellen</string>
     <!-- 🔐 v1.7.0: Verschlüsselung -->
     <string name="backup_encryption_title">Backup verschlüsseln</string>
     <string name="backup_encryption_subtitle">Schütze deine Backup-Datei mit Passwort</string>
@@ -544,21 +548,21 @@
     <string name="backup_encryption_password_hint">Passwort eingeben (min. 8 Zeichen)</string>
     <string name="backup_encryption_confirm">Passwort bestätigen</string>
     <string name="backup_encryption_confirm_hint">Passwort erneut eingeben</string>
-    <string name="backup_decryption_required">🔒 Verschlüsseltes Backup</string>
+    <string name="backup_decryption_required">Verschlüsseltes Backup</string>
     <string name="backup_server_section">Server-Backup</string>
-    <string name="backup_restore_server">☁️ Vom Server wiederherstellen</string>
-    <string name="backup_restore_dialog_title">⚠️ Backup wiederherstellen?</string>
+    <string name="backup_restore_server">Vom Server wiederherstellen</string>
+    <string name="backup_restore_dialog_title">Backup wiederherstellen?</string>
     <string name="backup_restore_source">Quelle: %s</string>
     <string name="backup_restore_source_file">Lokale Datei</string>
     <string name="backup_restore_source_server">WebDAV Server</string>
     <string name="backup_restore_mode_label">Wiederherstellungs-Modus:</string>
-    <string name="backup_mode_merge_title">⚪ Zusammenführen (Standard)</string>
+    <string name="backup_mode_merge_title">Zusammenführen (Standard)</string>
     <string name="backup_mode_merge_subtitle">Neue hinzufügen, Bestehende behalten</string>
-    <string name="backup_mode_replace_title">⚪ Ersetzen</string>
+    <string name="backup_mode_replace_title">Ersetzen</string>
     <string name="backup_mode_replace_subtitle">Alle löschen &amp; Backup importieren</string>
-    <string name="backup_mode_overwrite_title">⚪ Duplikate überschreiben</string>
+    <string name="backup_mode_overwrite_title">Duplikate überschreiben</string>
     <string name="backup_mode_overwrite_subtitle">Backup gewinnt bei Konflikten</string>
-    <string name="backup_restore_info">ℹ️ Ein Sicherheits-Backup wird vor dem Wiederherstellen automatisch erstellt.</string>
+    <string name="backup_restore_info">Ein Sicherheits-Backup wird vor dem Wiederherstellen automatisch erstellt.</string>
     <string name="backup_restore_button">Wiederherstellen</string>
     <!-- Legacy -->
     <!-- ============================= -->
@@ -571,16 +575,16 @@
     <!-- 🆕 v2.2.0: Persistentes Sync-Debug-Log -->
     <string name="debug_sync_debug_logging_title">Persistentes Sync-Debug-Log</string>
     <string name="debug_sync_debug_logging_subtitle">Speichert Sync-Trigger und Ergebnisse zur Fehleranalyse im Hintergrund-Sync.</string>
-    <string name="debug_privacy_info">🔒 Datenschutz: Logs werden lokal auf deinem Gerät gespeichert. Die App lädt sie nirgendwohin hoch; Teilen oder Senden läuft immer über eine App, die du selbst auswählst. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren. Beim Export werden Serveradresse, Benutzername, Notiztitel und Ordnernamen durch Platzhalter ersetzt. Sehr kurze Namen (unter drei Zeichen) und Notiz-IDs bleiben stehen — sieh die Datei vor dem Senden durch.</string>
+    <string name="debug_privacy_info">Datenschutz: Logs werden lokal auf deinem Gerät gespeichert. Die App lädt sie nirgendwohin hoch; Teilen oder Senden läuft immer über eine App, die du selbst auswählst. Die Logs enthalten Sync-Aktivitäten zur Fehlerdiagnose. Du kannst sie jederzeit löschen oder exportieren. Beim Export werden Serveradresse, Benutzername, Notiztitel und Ordnernamen durch Platzhalter ersetzt. Sehr kurze Namen (unter drei Zeichen) und Notiz-IDs bleiben stehen, sieh die Datei vor dem Senden durch.</string>
     <string name="debug_send_to_developer">Log an Entwickler senden</string>
     <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: Sync-Log</string>
     <string name="debug_logs_mail_body">Gerät: %1$s\nAndroid: %2$s (API %3$d)\n\nWas ist passiert (optional):\n</string>
     <string name="debug_send_no_mail_app">Keine E-Mail-App gefunden. Nutze stattdessen \"Logs exportieren\".</string>
     <string name="debug_log_actions_section">Log-Aktionen</string>
-    <string name="debug_export_logs">📤 Logs exportieren &amp; teilen</string>
+    <string name="debug_export_logs">Logs exportieren &amp; teilen</string>
     <string name="debug_logs_subject">SimpleNotes Sync Logs</string>
     <string name="debug_logs_share_via">Logs teilen via…</string>
-    <string name="debug_delete_logs">🗑️ Logs löschen</string>
+    <string name="debug_delete_logs">Logs löschen</string>
     <string name="debug_delete_logs_title">Logs löschen?</string>
     <string name="debug_delete_logs_message">Alle gespeicherten Sync-Logs werden unwiderruflich gelöscht.</string>
     <string name="debug_after_export_title">Datei-Logging deaktivieren?</string>
@@ -626,7 +630,7 @@
     <string name="calendar_experiment_hint">Deine Auswahl wird gespeichert und sofort für den Kalender-Export verwendet.</string>
     <!-- 🔧 v1.10.1: Easter-Egg Entwickleroptionen -->
     <string name="developer_options_countdown">Noch %d Taps bis zu den Entwickleroptionen</string>
-    <string name="developer_options_unlocked">🔧 Entwickleroptionen freigeschaltet</string>
+    <string name="developer_options_unlocked">Entwickleroptionen freigeschaltet</string>
     <string name="developer_options_already_unlocked">Entwickleroptionen sind bereits freigeschaltet</string>
     <!-- Legacy -->
     <!-- ============================= -->
@@ -646,7 +650,7 @@
     <string name="language_turkish">Türkisch</string>
     <string name="language_ukrainian">Ukrainisch</string>
     <string name="language_chinese_simplified">Chinesisch (vereinfacht)</string>
-    <string name="language_info">ℹ️ Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
+    <string name="language_info">Wähle deine bevorzugte Sprache. Die Ansicht wird kurz aktualisiert, um die Änderung anzuwenden.</string>
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -686,6 +690,17 @@
     <string name="autosave_info">Wenn aktiviert, wird deine Notiz während des Tippens und beim Zurücknavigieren automatisch gespeichert. Ein Sync wird nur beim manuellen Speichern ausgelöst.</string>
     <string name="editor_default_preview_mode_toggle">In Vorschau öffnen</string>
     <string name="editor_default_preview_mode_description">Textnotizen öffnen standardmäßig in der Leseansicht. Deaktivieren, um im Bearbeitungsmodus zu starten.</string>
+    <!-- UI beta (#131) -->
+    <string name="settings_new_design_toggle">Neues Design (Beta)</string>
+    <string name="settings_new_design_description">Neuen Editor und neue Notizliste ausprobieren. Ausschalten führt zurück zum bisherigen Design.</string>
+    <string name="editor_formatting_bar_toggle">Formatierleiste</string>
+    <string name="editor_formatting_bar_description">Markdown-Knöpfe beim Schreiben einer Textnotiz anzeigen.</string>
+    <string name="editor_title_field_toggle">Titelfeld</string>
+    <string name="editor_title_field_description">Leeren Titel über neuen und unbenannten Notizen anzeigen. Notizen mit Titel zeigen ihn immer.</string>
+    <string name="editor_add_title">Titel hinzufügen</string>
+    <string name="editor_meta_edited">Bearbeitet %1$s</string>
+    <string name="editor_checklist_meta">%1$d offen · %2$d erledigt</string>
+    <string name="editor_saved">Gespeichert</string>
     <!-- 🆕 Issue #156: Checklist read mode -->
     <string name="editor_checklist_read_mode_toggle">Checklisten in der Leseansicht öffnen</string>
     <string name="editor_checklist_read_mode_description">Checklisten öffnen schreibgeschützt. Ein Tipp irgendwo auf einen Eintrag hakt ihn ab, zum Bearbeiten das Stift-Symbol nutzen.</string>
@@ -744,7 +759,7 @@
     <string name="font_size_normal">Normal</string>
     <string name="font_size_large">Groß</string>
     <string name="font_size_xlarge">Sehr groß</string>
-    <string name="autosave_indicator">✓ Gespeichert</string>
+    <string name="autosave_indicator">Gespeichert</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Rückgängig</string>
     <string name="editor_redo">Wiederherstellen</string>
@@ -812,7 +827,7 @@
     <string name="about_app_name">Simple Notes Sync</string>
     <string name="about_version">Version %1$s (%2$d)</string>
     <string name="about_build_info">Build: %1$s · %2$s</string>
-    <string name="about_beta_notice">🧪 Beta-Build. Diagnose-Logging ist an, damit du einem Bericht einen Sync-Log beilegen kannst — Einstellungen → Debug &amp; Diagnose zum Exportieren oder Abschalten. Beim Export werden Serveradresse, Benutzername und Notiztitel ersetzt.</string>
+    <string name="about_beta_notice">Beta-Build. Diagnose-Logging ist an, damit du einem Bericht einen Sync-Log beilegen kannst. Einstellungen → Debug &amp; Diagnose zum Exportieren oder Abschalten. Beim Export werden Serveradresse, Benutzername und Notiztitel ersetzt.</string>
     <string name="about_links_section">Links</string>
     <string name="about_app_section">App</string>
     <string name="about_github_title">GitHub Repository</string>
@@ -845,16 +860,16 @@
     <string name="backup_progress_failed">Backup fehlgeschlagen</string>
     <string name="restore_progress_failed">Wiederherstellung fehlgeschlagen</string>
     <string name="restore_server_progress_failed">Download fehlgeschlagen</string>
-    <string name="about_privacy_title">🔒 Datenschutz</string>
+    <string name="about_privacy_title">Datenschutz</string>
     <string name="about_privacy_text">Diese App sammelt keine Daten. Alle Notizen werden nur lokal auf deinem Gerät und auf deinem eigenen WebDAV-Server gespeichert. Keine Telemetrie, keine Werbung.</string>
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
     <!-- Issue #21: Verbindungstest-Info mit Sync-Ordner-Status -->
-    <string name="test_connection_success_with_notes">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ wird automatisch erstellt).</string>
-    <string name="test_connection_success_md_exists">✅ Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ existiert bereits und wird verwendet).</string>
-    <string name="test_connection_success_first_sync">✅ Server erreichbar. Ordner /%1$s/ und /%1$s-md/ werden beim ersten Sync erstellt.</string>
-    <string name="test_connection_e2ee_blocked">✅ Server erreichbar, aber /%1$s/ wurde auf einem anderen Gerät verschlüsselt. Der Sync ist pausiert.</string>
+    <string name="test_connection_success_with_notes">Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ wird automatisch erstellt).</string>
+    <string name="test_connection_success_md_exists">Server erreichbar. Ordner /%1$s/ gefunden (/%1$s-md/ existiert bereits und wird verwendet).</string>
+    <string name="test_connection_success_first_sync">Server erreichbar. Ordner /%1$s/ und /%1$s-md/ werden beim ersten Sync erstellt.</string>
+    <string name="test_connection_e2ee_blocked">Server erreichbar, aber /%1$s/ wurde auf einem anderen Gerät verschlüsselt. Der Sync ist pausiert.</string>
     <string name="cert_dialog_title">Diesem Zertifikat vertrauen?</string>
     <string name="cert_dialog_message">Der Server nutzt ein Zertifikat, dem dieses Gerät nicht vertraut, zum Beispiel ein selbstsigniertes. Nur vertrauen, wenn der Fingerabdruck des Zertifikats mit dem auf deinem Server übereinstimmt.</string>
     <string name="cert_dialog_changed">Das ist nicht mehr das Zertifikat, dem du zuletzt vertraut hast. Wenn du es auf dem Server nicht ausgetauscht hast, nicht fortfahren.</string>
@@ -863,39 +878,39 @@
     <string name="cert_dialog_valid_range">%1$s bis %2$s</string>
     <string name="cert_dialog_fingerprint">Zertifikat-Fingerabdruck (SHA-256)</string>
     <string name="cert_dialog_trust">Vertrauen</string>
-    <string name="toast_connection_success">✅ Verbindung erfolgreich!</string>
-    <string name="toast_connection_failed">❌ %s</string>
-    <string name="toast_error">❌ Fehler: %s</string>
-    <string name="toast_syncing">🔄 Synchronisiere…</string>
-    <string name="toast_already_synced">✅ Bereits synchronisiert</string>
-    <string name="toast_sync_success">✅ %d Notizen synchronisiert</string>
-    <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_sync_interval">⏱️ Sync-Intervall: %s</string>
+    <string name="toast_connection_success">Verbindung erfolgreich!</string>
+    <string name="toast_connection_failed">%s</string>
+    <string name="toast_error">Fehler: %s</string>
+    <string name="toast_syncing">Synchronisiere…</string>
+    <string name="toast_already_synced">Bereits synchronisiert</string>
+    <string name="toast_sync_success">%d Notizen synchronisiert</string>
+    <string name="toast_sync_failed">%s</string>
+    <string name="toast_sync_interval">Sync-Intervall: %s</string>
     <string name="toast_sync_interval_15min">15 Minuten</string>
     <string name="toast_sync_interval_30min">30 Minuten</string>
     <string name="toast_sync_interval_60min">60 Minuten</string>
-    <string name="toast_configure_server_first">⚠️ Bitte zuerst WebDAV-Server konfigurieren</string>
-    <string name="toast_markdown_exported">✅ %d Notizen nach Markdown exportiert</string>
-    <string name="toast_markdown_enabled">📝 Markdown Auto-Sync aktiviert</string>
-    <string name="toast_markdown_disabled">📝 Markdown Auto-Sync deaktiviert</string>
-    <string name="toast_markdown_syncing">📝 Markdown-Sync läuft…</string>
-    <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
-    <string name="toast_export_failed">❌ Export fehlgeschlagen: %s</string>
+    <string name="toast_configure_server_first">Bitte zuerst WebDAV-Server konfigurieren</string>
+    <string name="toast_markdown_exported">%d Notizen nach Markdown exportiert</string>
+    <string name="toast_markdown_enabled">Markdown Auto-Sync aktiviert</string>
+    <string name="toast_markdown_disabled">Markdown Auto-Sync deaktiviert</string>
+    <string name="toast_markdown_syncing">Markdown-Sync läuft…</string>
+    <string name="toast_markdown_result">Export: %1$d • Import: %2$d</string>
+    <string name="toast_export_failed">Export fehlgeschlagen: %s</string>
     <!-- v1.10.0: Markdown Export Timeout -->
-    <string name="toast_export_timeout">⏱️ Export-Zeitüberschreitung – Server zu langsam oder nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.</string>
+    <string name="toast_export_timeout">Export-Zeitüberschreitung, Server zu langsam oder nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.</string>
     <string name="toast_notifications_enabled">Benachrichtigungen aktiviert</string>
     <string name="toast_notifications_disabled">Benachrichtigungen deaktiviert. Du kannst sie in den Einstellungen aktivieren.</string>
-    <string name="toast_logs_deleted">🗑️ Logs gelöscht</string>
+    <string name="toast_logs_deleted">Logs gelöscht</string>
     <!-- 🔄 v1.7.0: Server change notification -->
-    <string name="toast_server_changed_sync_reset">🔄 Server geändert. %d Notizen werden beim nächsten Sync hochgeladen.</string>
+    <string name="toast_server_changed_sync_reset">Server geändert. %d Notizen werden beim nächsten Sync hochgeladen.</string>
     <!-- 🆕 v2.11.0: Bestätigungsdialog beim Ordnerwechsel -->
-    <string name="toast_folder_migrated">🔄 Ordner geändert. %1$d Notizen werden beim nächsten Sync in den neuen Ordner hochgeladen.</string>
-    <string name="toast_folder_switched">📂 Ordner gewechselt. %1$d Notizen aus dem neuen Ordner geladen.</string>
+    <string name="toast_folder_migrated">Ordner geändert. %1$d Notizen werden beim nächsten Sync in den neuen Ordner hochgeladen.</string>
+    <string name="toast_folder_switched">Ordner gewechselt. %1$d Notizen aus dem neuen Ordner geladen.</string>
     <string name="toast_folder_switch_offline">Ordnerwechsel im Offline-Modus nicht möglich — deine Notizen wurden behalten.</string>
     <!-- 🆕 v2.12.0: Bestätigungsdialog beim Server-Wechsel, Nicht-mitnehmen-Aktion -->
-    <string name="toast_server_switched">🌐 Server gewechselt. %1$d Notizen vom neuen Server geladen.</string>
-    <string name="toast_file_logging_enabled">📝 Datei-Logging aktiviert</string>
-    <string name="toast_file_logging_disabled">📝 Datei-Logging deaktiviert</string>
+    <string name="toast_server_switched">Server gewechselt. %1$d Notizen vom neuen Server geladen.</string>
+    <string name="toast_file_logging_enabled">Datei-Logging aktiviert</string>
+    <string name="toast_file_logging_disabled">Datei-Logging deaktiviert</string>
     <string name="battery_optimization_dialog_title">Hintergrund-Synchronisation</string>
     <string name="battery_optimization_dialog_full_message">Damit die App im Hintergrund zuverlässig synchronisieren kann, muss die Akku-Optimierung deaktiviert werden.\n\nBitte wähle \'Nicht optimieren\' für Simple Notes.</string>
     <string name="battery_optimization_open_settings">Einstellungen öffnen</string>
@@ -993,19 +1008,19 @@
     <string name="keep_import_config_conflict_always_create">Immer neu erstellen (empfohlen, sicherste Option)</string>
     <string name="keep_import_config_conflict_skip">Überspringen</string>
     <string name="keep_import_config_conflict_replace">Ersetzen</string>
-    <string name="keep_import_config_info_labels">ℹ️ Etiketten aus Keep werden gespeichert. Sie werden in einer zukünftigen Version als Tags sichtbar.</string>
-    <string name="keep_import_config_info_attachments">🖼️ Bilder/Anhänge werden in dieser Version nicht importiert. Wenn die App später Bildunterstützung erhält, kannst du den Import erneut durchführen, um die Bilder nachzuladen.</string>
-    <string name="keep_import_config_info_color_pin">🎨 Notizfarben werden direkt mitimportiert und angezeigt. Angeheftete Notizen erscheinen im Bereich „Angeheftet" oben in der Notizliste.</string>
+    <string name="keep_import_config_info_labels">Etiketten aus Keep werden gespeichert. Sie werden in einer zukünftigen Version als Tags sichtbar.</string>
+    <string name="keep_import_config_info_attachments">Bilder/Anhänge werden in dieser Version nicht importiert. Wenn die App später Bildunterstützung erhält, kannst du den Import erneut durchführen, um die Bilder nachzuladen.</string>
+    <string name="keep_import_config_info_color_pin">Notizfarben werden direkt mitimportiert und angezeigt. Angeheftete Notizen erscheinen im Bereich „Angeheftet" oben in der Notizliste.</string>
     <string name="keep_import_config_button_start">Import starten</string>
     <string name="keep_import_config_button_cancel">Abbrechen</string>
-    <string name="keep_import_prescan_header">📦 Archiv enthält:</string>
+    <string name="keep_import_prescan_header">Archiv enthält:</string>
     <string name="keep_import_prescan_active">• %1$d aktive Notizen</string>
     <string name="keep_import_prescan_archived">• %1$d archivierte Notizen</string>
     <string name="keep_import_prescan_trashed">• %1$d Notizen im Papierkorb</string>
     <string name="keep_import_prescan_labels">• %1$d verschiedene Etiketten</string>
     <string name="keep_import_prescan_shared">• %1$d Notizen aus geteilten Listen (sharees)</string>
     <string name="keep_import_prescan_attachments">• %1$d Notizen mit Anhängen (werden nicht importiert)</string>
-    <string name="keep_import_prescan_large_warning">⚠️ Großes Archiv (%1$d MB), Analyse kann eine Minute dauern.</string>
+    <string name="keep_import_prescan_large_warning">Großes Archiv (%1$d MB), Analyse kann eine Minute dauern.</string>
     <string name="keep_import_large_zip_title">Großes Archiv</string>
     <string name="keep_import_large_zip_body">Dieses Archiv ist %1$d MB groß. Der Import kann mehrere Minuten dauern und viel Akku verbrauchen. Trotzdem starten?</string>
     <string name="keep_import_large_zip_button_continue">Fortfahren</string>
@@ -1014,15 +1029,15 @@
     <string name="keep_import_progress_status">Verarbeite %1$d von %2$d: %3$s</string>
     <string name="keep_import_progress_button_cancel">Abbrechen</string>
     <string name="keep_import_result_title">Import abgeschlossen</string>
-    <string name="keep_import_result_imported">✓ %1$d Notizen importiert</string>
-    <string name="keep_import_result_replaced">↻ %1$d ersetzt</string>
+    <string name="keep_import_result_imported">%1$d Notizen importiert</string>
+    <string name="keep_import_result_replaced">%1$d ersetzt</string>
     <string name="keep_import_result_skipped">⊘ %1$d übersprungen</string>
-    <string name="keep_import_result_failed">✗ %1$d Fehler</string>
-    <string name="keep_import_result_attachments_dropped">🖼️ %1$d Notizen hatten Anhänge — nicht importiert (du kannst den Import wiederholen, sobald Bildunterstützung verfügbar ist).</string>
-    <string name="keep_import_result_labels">🏷️ %1$d Etiketten gespeichert</string>
-    <string name="keep_import_result_shared">👥 %1$d davon aus geteilten Listen (Kollaborationen)</string>
-    <string name="keep_import_result_color">🎨 %1$d mit Farbe importiert</string>
-    <string name="keep_import_result_pinned">📌 %1$d angeheftete Notizen erscheinen im Bereich „Angeheftet"</string>
+    <string name="keep_import_result_failed">%1$d Fehler</string>
+    <string name="keep_import_result_attachments_dropped">%1$d Notizen hatten Anhänge, die nicht importiert wurden (du kannst den Import wiederholen, sobald Bildunterstützung verfügbar ist).</string>
+    <string name="keep_import_result_labels">%1$d Etiketten gespeichert</string>
+    <string name="keep_import_result_shared">%1$d davon aus geteilten Listen (Kollaborationen)</string>
+    <string name="keep_import_result_color">%1$d mit Farbe importiert</string>
+    <string name="keep_import_result_pinned">%1$d angeheftete Notizen erscheinen im Bereich „Angeheftet"</string>
     <string name="keep_import_result_show_errors">Details anzeigen</string>
     <string name="keep_import_result_hide_errors">Details ausblenden</string>
     <string name="keep_import_result_button_close">Schließen</string>

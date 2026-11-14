@@ -53,6 +53,7 @@ import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteSize
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.getSize
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import dev.dettmer.simplenotes.utils.toReadableTime
@@ -83,6 +84,7 @@ private val CORNER_SYNC_ICON_SIZE = 14.dp
 fun NoteCardGrid(
     note: Note,
     showSyncStatus: Boolean,
+    modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     timestampTicker: Long = 0L,
@@ -109,16 +111,21 @@ fun NoteCardGrid(
 
     // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row — das Sync-Icon rutscht stattdessen
     // inline ans Ende des Vorschautexts (siehe NoteCardGridPreviewContent/-IconLeadingPreview).
-    val showCornerSyncIcon = !showTimestamp && showSyncStatus
+    val syncIconVisible = cardSyncIconVisible(showSyncStatus, note.syncStatus)
+    val showCornerSyncIcon = !showTimestamp && syncIconVisible
 
     // v2.5.0: Resolve note colour, fall back to theme default
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val noteContainerColor = NoteColorPalette.resolveContainer(note.color, isDark)
+    val newDesign = LocalNewDesign.current
+    val noteContainerColor = NoteColorPalette
+        .resolveCardContainer(note.color, isDark, MaterialTheme.colorScheme.surfaceContainerHigh, newDesign) // U1
         .takeOrElse { MaterialTheme.colorScheme.surfaceContainerHigh }
+    // F1: im neuen Design die Kartenstufe aus dem Theme statt fester 12 dp.
+    val cardShape = if (newDesign) MaterialTheme.shapes.medium else RoundedCornerShape(12.dp)
     val hasNoteColor = !note.color.isNullOrBlank()
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             // Kein externes Padding - Grid steuert alles
             .then(
@@ -126,7 +133,7 @@ fun NoteCardGrid(
                     Modifier.border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = cardShape
                     )
                 } else {
                     Modifier
@@ -138,7 +145,7 @@ fun NoteCardGrid(
                     onLongPress = { onLongClick() }
                 )
             },
-        shape = RoundedCornerShape(12.dp),
+        shape = cardShape,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected && !hasNoteColor) {
@@ -163,7 +170,8 @@ fun NoteCardGrid(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (showTypeIcon) {
+                        // UI-Beta (U2): kein Typ-Kreis vor dem Titel, der Pin sitzt rechts oben.
+                        if (showTypeIcon && !newDesign) {
                             NoteCardGridTypeIcon(note = note, isPinned = note.isPinned == true)
                             Spacer(modifier = Modifier.width(8.dp))
                         }
@@ -186,6 +194,7 @@ fun NoteCardGrid(
                             autoSize = titleAutoSize,
                             modifier = Modifier.weight(1f)
                         )
+                        NewDesignPinMark(isPinned = note.isPinned == true)
                         // 🆕 Discussion #110: ohne Vorschauzeilen hat das Sync-Icon keinen Text
                         // mehr zum Anhängen — es rückt neben den Titel statt zu verschwinden.
                         if (showCornerSyncIcon && previewMaxLines == 0) {
@@ -210,7 +219,7 @@ fun NoteCardGrid(
                         note = note,
                         isPinned = note.isPinned == true,
                         maxLines = previewMaxLines,
-                        showTypeIcon = showTypeIcon,
+                        showTypeIcon = showTypeIcon && !newDesign,
                         showSyncIcon = showCornerSyncIcon,
                         hideChecked = hideCheckedInPreview
                     )
@@ -225,7 +234,9 @@ fun NoteCardGrid(
 
                 // 🆕 Issue #100: Ohne Zeitstempel entfällt die Footer-Row komplett — das Sync-Icon
                 // hängt stattdessen inline am Ende der letzten Vorschauzeile (siehe oben).
-                if (showTimestamp) {
+                // Neues Design: Typ-Symbol in der Fußzeile, die es dafür auch ohne Zeitstempel gibt.
+                val footerTypeIcon = newDesign && showTypeIcon
+                if (showTimestamp || footerTypeIcon) {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     // Footer
@@ -233,16 +244,20 @@ fun NoteCardGrid(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = note.editedAt.toReadableTime(context),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.weight(1f)
-                        )
+                        val footerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        if (footerTypeIcon) NoteTypeMark(note.noteType, tint = footerColor, size = 12.dp)
+                        if (showTimestamp) {
+                            Text(
+                                text = note.editedAt.toReadableTime(context),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = footerColor,
+                                modifier = Modifier.weight(1f)
+                            )
 
-                        if (showSyncStatus) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            NoteCardGridSyncIcon(note = note, modifier = Modifier.size(14.dp))
+                            if (syncIconVisible) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                NoteCardGridSyncIcon(note = note, modifier = Modifier.size(14.dp))
+                            }
                         }
                     }
                 }
@@ -461,6 +476,7 @@ private fun NoteCardGridIconLeadingPreview(
             icon = if (hasRemainingLines) null else cornerSyncIcon,
             modifier = Modifier.weight(1f)
         )
+        NewDesignPinMark(isPinned = isPinned)
     }
 
     if (hasRemainingLines) {

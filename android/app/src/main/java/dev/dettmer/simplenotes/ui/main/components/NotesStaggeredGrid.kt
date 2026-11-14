@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
 import kotlin.math.max
 
@@ -94,6 +95,7 @@ fun NotesStaggeredGrid(
         return visibleHeaderOrder.getOrNull(idx + delta)
     }
 
+    val newDesign = LocalNewDesign.current
     LazyVerticalStaggeredGrid(
         columns = if (adaptiveScaling) {
             StaggeredGridCells.Adaptive(150.dp) // v2.0.0: 150dp keeps 2-col on large font scaling (was 180dp)
@@ -232,6 +234,8 @@ fun NotesStaggeredGrid(
                                 showTypeIcon = showTypeIcon,
                                 hideCheckedInPreview = hideCheckedInPreview,
                                 showFolderLabel = showFolderLabels,
+                                // UI-Beta: Karten gleiten beim Filtern, Suchen und Umsortieren an ihren neuen Platz.
+                                modifier = if (newDesign) Modifier.animateItem() else Modifier,
                                 onClick = { onNoteClick(note) },
                                 onLongClick = { onNoteLongClick(note) }
                             )

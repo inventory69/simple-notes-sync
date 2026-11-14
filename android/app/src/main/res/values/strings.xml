@@ -118,8 +118,12 @@
     <string name="sync_moved_to_trash_count">%d moved to trash</string>
     <!-- v2.16.0: conflicts were missing from the sync result banner entirely -->
     <plurals name="sync_conflict_count">
-        <item quantity="one">⚠️ %1$d conflict needs your decision</item>
-        <item quantity="other">⚠️ %1$d conflicts need your decision</item>
+        <item quantity="one">%1$d conflict needs your decision</item>
+        <item quantity="other">%1$d conflicts need your decision</item>
+    </plurals>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="one">%1$d note not uploaded</item>
+        <item quantity="other">%1$d notes not uploaded</item>
     </plurals>
     <!-- 🆕 v2.19.0: export problems (notes themselves are in sync) -->
     <plurals name="sync_markdown_failed_count">
@@ -150,7 +154,7 @@
     <string name="sync_phase_downloading">Downloading…</string>
     <string name="sync_phase_deleting">Deleting from server…</string>
     <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
-    <string name="sync_quota_warning">⚠️ Sync was delayed by Android power management. Open the app regularly or disable battery optimization for reliable background sync.</string>
+    <string name="sync_quota_warning">Sync was delayed by Android power management. Open the app regularly or disable battery optimization for reliable background sync.</string>
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
     <string name="sort_notes">Sort notes</string>
     <string name="sort_ascending">Ascending</string>
@@ -202,7 +206,7 @@
     <string name="snackbar_server_error">Server error: %s</string>
     <string name="snackbar_server_unreachable">Couldn\'t connect to the server</string>
     <string name="snackbar_connection_timeout">The server took too long to respond</string>
-    <string name="snackbar_nothing_to_sync">ℹ️ Nothing to sync</string>
+    <string name="snackbar_nothing_to_sync">Nothing to sync</string>
     <!-- ============================= -->
     <!-- TRASH (v2.9.0)                -->
     <!-- ============================= -->
@@ -374,13 +378,13 @@
     <string name="settings_group_info">Info</string>
     <string name="settings_language">Language</string>
     <string name="settings_server">Server Settings</string>
-    <string name="settings_server_status_reachable">✅ Reachable</string>
-    <string name="settings_server_status_unreachable">❌ Not reachable</string>
-    <string name="settings_server_status_checking">🔍 Checking…</string>
-    <string name="settings_server_status_offline_mode">📴 Offline Mode</string>
-    <string name="settings_server_status_not_configured">📴 Not configured</string>
+    <string name="settings_server_status_reachable">Reachable</string>
+    <string name="settings_server_status_unreachable">Not reachable</string>
+    <string name="settings_server_status_checking">Checking…</string>
+    <string name="settings_server_status_offline_mode">Offline Mode</string>
+    <string name="settings_server_status_not_configured">Not configured</string>
     <string name="settings_sync">Sync &amp; Notifications</string>
-    <string name="settings_sync_offline_mode">📴 Offline Mode</string>
+    <string name="settings_sync_offline_mode">Offline Mode</string>
     <string name="settings_sync_manual_only">Manual sync only</string>
     <string name="settings_sync_triggers_active">%d triggers active</string>
     <string name="settings_sync_notifications_enabled">Notifications enabled</string>
@@ -423,8 +427,8 @@
     <!-- ============================= -->
     <string name="server_settings_title">Server Settings</string>
     <string name="server_connection_type">Connection Type</string>
-    <string name="server_connection_http">🏠 Internal (HTTP)</string>
-    <string name="server_connection_https">🌐 External (HTTPS)</string>
+    <string name="server_connection_http">Internal (HTTP)</string>
+    <string name="server_connection_https">External (HTTPS)</string>
     <string name="server_connection_http_hint">HTTP only for local networks (e.g. 192.168.x.x, 10.x.x.x)</string>
     <string name="server_connection_https_hint">HTTPS for secure connections over the internet</string>
     <string name="server_address">Server Address</string>
@@ -455,14 +459,14 @@
     <string name="server_password_show">Show</string>
     <string name="server_password_hide">Hide</string>
     <string name="server_status_label">Server Status:</string>
-    <string name="server_status_reachable">✅ Reachable</string>
-    <string name="server_status_unreachable">❌ Not reachable</string>
-    <string name="server_status_certificate">❌ Certificate not trusted</string>
-    <string name="server_status_checking">🔍 Checking…</string>
-    <string name="server_status_offline_mode">📴 Offline mode active</string>
-    <string name="server_status_not_configured">📴 Not configured</string>
-    <string name="server_status_unknown">❓ Unknown</string>
-    <string name="server_offline_mode_title">📴 Offline Mode</string>
+    <string name="server_status_reachable">Reachable</string>
+    <string name="server_status_unreachable">Not reachable</string>
+    <string name="server_status_certificate">Certificate not trusted</string>
+    <string name="server_status_checking">Checking…</string>
+    <string name="server_status_offline_mode">Offline mode active</string>
+    <string name="server_status_not_configured">Not configured</string>
+    <string name="server_status_unknown">Unknown</string>
+    <string name="server_offline_mode_title">Offline Mode</string>
     <string name="server_offline_mode_subtitle">Disable all network features</string>
     <string name="test_connection">Test Connection</string>
     <string name="sync_now">Sync now</string>
@@ -470,9 +474,9 @@
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
     <string name="sync_settings_title">Sync &amp; Notifications</string>
-    <string name="sync_interval_15min_title">⚡ Every 15 minutes</string>
-    <string name="sync_interval_30min_title">✓ Every 30 minutes (Recommended)</string>
-    <string name="sync_interval_60min_title">🔋 Every 60 minutes</string>
+    <string name="sync_interval_15min_title">Every 15 minutes</string>
+    <string name="sync_interval_30min_title">Every 30 minutes (Recommended)</string>
+    <string name="sync_interval_60min_title">Every 60 minutes</string>
     <!-- Legacy -->
 
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
@@ -492,7 +496,7 @@
     <string name="notifications_permission_settings_title">Notifications blocked</string>
     <string name="notifications_permission_settings_message">Notification permission was permanently denied. To enable notifications, please allow them in the app settings.</string>
     <string name="notifications_permission_open_settings">Open Settings</string>
-    <string name="sync_wifi_only_hint">💡 WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
+    <string name="sync_wifi_only_hint">WiFi-Connect Trigger is not affected by this setting \u2013 it always syncs when WiFi is connected.</string>
     <string name="sync_wifi_only_error">Sync only works when WiFi is connected</string>
     <string name="sync_trigger_on_save_title">After Saving</string>
     <string name="sync_trigger_on_save_subtitle">Sync immediately after each change</string>
@@ -516,24 +520,24 @@
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
     <string name="markdown_dialog_title">Markdown Auto-Sync</string>
-    <string name="markdown_export_complete">✅ Export complete</string>
+    <string name="markdown_export_complete">Export complete</string>
     <string name="markdown_export_progress">Exporting %1$d/%2$d notes…</string>
     <string name="markdown_checking_server">Checking server connection…</string>
-    <string name="markdown_info">📝 Exports notes additionally as .md files. Mount WebDAV as a network drive to edit them with your favorite Markdown editor. JSON sync remains the primary format.</string>
+    <string name="markdown_info">Exports notes additionally as .md files. Mount WebDAV as a network drive to edit them with your favorite Markdown editor. JSON sync remains the primary format.</string>
     <string name="markdown_auto_sync_title">Markdown Auto-Sync</string>
     <string name="markdown_auto_sync_subtitle">Automatically syncs notes as .md files (upload + download on each sync)</string>
     <string name="markdown_manual_sync_info">Manual sync exports all notes as .md files and imports .md files from the server. Useful for one-time sync.</string>
-    <string name="markdown_manual_sync_button">📝 Manual Markdown Sync</string>
+    <string name="markdown_manual_sync_button">Manual Markdown Sync</string>
     <string name="markdown_folder_label">MD folder (WebDAV network drive)</string>
     <string name="markdown_folder_copy_cd">Copy path</string>
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
     <string name="backup_settings_title">Backup &amp; Restore</string>
-    <string name="backup_auto_info">📦 A safety backup is automatically created before each restore.</string>
+    <string name="backup_auto_info">A safety backup is automatically created before each restore.</string>
     <string name="backup_local_section">Local Backup</string>
-    <string name="backup_create">💾 Create Backup</string>
-    <string name="backup_restore_file">📂 Restore from File</string>
+    <string name="backup_create">Create Backup</string>
+    <string name="backup_restore_file">Restore from File</string>
     <!-- 🔐 v1.7.0: Encryption -->
     <string name="backup_encryption_title">Encrypt Backup</string>
     <string name="backup_encryption_subtitle">Password-protect your backup file</string>
@@ -548,21 +552,21 @@
     <string name="backup_encryption_password_hint">Enter password (min. 8 characters)</string>
     <string name="backup_encryption_confirm">Confirm Password</string>
     <string name="backup_encryption_confirm_hint">Re-enter password</string>
-    <string name="backup_decryption_required">🔒 Encrypted Backup</string>
+    <string name="backup_decryption_required">Encrypted Backup</string>
     <string name="backup_server_section">Server Backup</string>
-    <string name="backup_restore_server">☁️ Restore from Server</string>
-    <string name="backup_restore_dialog_title">⚠️ Restore Backup?</string>
+    <string name="backup_restore_server">Restore from Server</string>
+    <string name="backup_restore_dialog_title">Restore Backup?</string>
     <string name="backup_restore_source">Source: %s</string>
     <string name="backup_restore_source_file">Local File</string>
     <string name="backup_restore_source_server">WebDAV Server</string>
     <string name="backup_restore_mode_label">Restore Mode:</string>
-    <string name="backup_mode_merge_title">⚪ Merge (Default)</string>
+    <string name="backup_mode_merge_title">Merge (Default)</string>
     <string name="backup_mode_merge_subtitle">Add new, keep existing</string>
-    <string name="backup_mode_replace_title">⚪ Replace</string>
+    <string name="backup_mode_replace_title">Replace</string>
     <string name="backup_mode_replace_subtitle">Delete all &amp; import backup</string>
-    <string name="backup_mode_overwrite_title">⚪ Overwrite duplicates</string>
+    <string name="backup_mode_overwrite_title">Overwrite duplicates</string>
     <string name="backup_mode_overwrite_subtitle">Backup wins on conflicts</string>
-    <string name="backup_restore_info">ℹ️ A safety backup will be automatically created before restoring.</string>
+    <string name="backup_restore_info">A safety backup will be automatically created before restoring.</string>
     <string name="backup_restore_button">Restore</string>
     <!-- Legacy -->
 
@@ -576,16 +580,16 @@
     <!-- 🆕 v2.2.0: Persistent sync debug log -->
     <string name="debug_sync_debug_logging_title">Persistent sync debug log</string>
     <string name="debug_sync_debug_logging_subtitle">Records sync triggers and outcomes for diagnosing background sync issues.</string>
-    <string name="debug_privacy_info">🔒 Privacy: Logs are stored locally on your device. The app never uploads them anywhere; sharing or sending one always goes through an app you pick. Logs contain sync activities for troubleshooting. You can delete or export them at any time. Exporting replaces your server address, user name, note titles and folder names with placeholders. Very short names (under three characters) and note IDs remain — check the file before you send it.</string>
+    <string name="debug_privacy_info">Privacy: Logs are stored locally on your device. The app never uploads them anywhere; sharing or sending one always goes through an app you pick. Logs contain sync activities for troubleshooting. You can delete or export them at any time. Exporting replaces your server address, user name, note titles and folder names with placeholders. Very short names (under three characters) and note IDs remain, check the file before you send it.</string>
     <string name="debug_send_to_developer">Send log to developer</string>
     <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: sync log</string>
     <string name="debug_logs_mail_body">Device: %1$s\nAndroid: %2$s (API %3$d)\n\nWhat went wrong (optional):\n</string>
     <string name="debug_send_no_mail_app">No email app found. Use "Export logs" instead.</string>
     <string name="debug_log_actions_section">Log Actions</string>
-    <string name="debug_export_logs">📤 Export &amp; Share Logs</string>
+    <string name="debug_export_logs">Export &amp; Share Logs</string>
     <string name="debug_logs_subject">SimpleNotes Sync Logs</string>
     <string name="debug_logs_share_via">Share logs via…</string>
-    <string name="debug_delete_logs">🗑️ Delete Logs</string>
+    <string name="debug_delete_logs">Delete Logs</string>
     <string name="debug_delete_logs_title">Delete logs?</string>
     <string name="debug_delete_logs_message">All saved sync logs will be permanently deleted.</string>
     <string name="debug_after_export_title">Disable File Logging?</string>
@@ -631,7 +635,7 @@
     <string name="calendar_experiment_hint">Your choice is saved and used for calendar export right away.</string>
     <!-- 🔧 v1.10.1: Easter-Egg Developer Options -->
     <string name="developer_options_countdown">%d taps to unlock developer options</string>
-    <string name="developer_options_unlocked">🔧 Developer options unlocked</string>
+    <string name="developer_options_unlocked">Developer options unlocked</string>
     <string name="developer_options_already_unlocked">Developer options are already unlocked</string>
     <!-- Legacy -->
 
@@ -652,7 +656,7 @@
     <string name="language_turkish">Türkçe</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_chinese_simplified">Chinese (Simplified)</string>
-    <string name="language_info">ℹ️ Choose your preferred language. The view will briefly refresh to apply the change.</string>
+    <string name="language_info">Choose your preferred language. The view will briefly refresh to apply the change.</string>
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -692,6 +696,17 @@
     <string name="autosave_info">When enabled, your note is saved automatically while you type and when you navigate back. Sync only runs on manual save.</string>
     <string name="editor_default_preview_mode_toggle">Open in preview mode</string>
     <string name="editor_default_preview_mode_description">Text notes open in read mode by default. Disable to start in edit mode.</string>
+    <!-- UI beta (#131) -->
+    <string name="settings_new_design_toggle">New design (beta)</string>
+    <string name="settings_new_design_description">Try the new editor and note list. Turn off to go back to the current design.</string>
+    <string name="editor_formatting_bar_toggle">Formatting bar</string>
+    <string name="editor_formatting_bar_description">Show the Markdown buttons while writing a text note.</string>
+    <string name="editor_title_field_toggle">Title field</string>
+    <string name="editor_title_field_description">Show an empty title above new and untitled notes. Notes with a title always show it.</string>
+    <string name="editor_add_title">Add title</string>
+    <string name="editor_meta_edited">Edited %1$s</string>
+    <string name="editor_checklist_meta">%1$d open · %2$d completed</string>
+    <string name="editor_saved">Saved</string>
     <!-- 🆕 Issue #156: Checklist read mode -->
     <string name="editor_checklist_read_mode_toggle">Open checklists in read mode</string>
     <string name="editor_checklist_read_mode_description">Checklists open read-only. Tap anywhere on an item to check it off, use the pencil icon to edit.</string>
@@ -750,7 +765,7 @@
     <string name="font_size_normal">Normal</string>
     <string name="font_size_large">Large</string>
     <string name="font_size_xlarge">Extra large</string>
-    <string name="autosave_indicator">✓ Saved</string>
+    <string name="autosave_indicator">Saved</string>
     <!-- 🆕 v1.10.0: Undo/Redo -->
     <string name="editor_undo">Undo</string>
     <string name="editor_redo">Redo</string>
@@ -819,7 +834,7 @@
     <string name="about_app_name">Simple Notes Sync</string>
     <string name="about_version">Version %1$s (%2$d)</string>
     <string name="about_build_info">Build: %1$s · %2$s</string>
-    <string name="about_beta_notice">🧪 Beta build. Diagnostic logging is on so you can send a sync log with a report — Settings → Debug &amp; Diagnostics to export or switch it off. Exported logs have your server address, user name and note titles replaced.</string>
+    <string name="about_beta_notice">Beta build. Diagnostic logging is on so you can send a sync log with a report. Settings → Debug &amp; Diagnostics to export or switch it off. Exported logs have your server address, user name and note titles replaced.</string>
     <string name="about_links_section">Links</string>
     <string name="about_app_section">App</string>
     <string name="about_github_title">GitHub Repository</string>
@@ -852,16 +867,16 @@
     <string name="backup_progress_failed">Backup failed</string>
     <string name="restore_progress_failed">Restore failed</string>
     <string name="restore_server_progress_failed">Download failed</string>
-    <string name="about_privacy_title">🔒 Privacy</string>
+    <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy_text">This app collects no data. All notes are stored only locally on your device and on your own WebDAV server. No telemetry, no ads.</string>
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
     <!-- Issue #21: Connection test info with sync folder status -->
-    <string name="test_connection_success_with_notes">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
-    <string name="test_connection_success_md_exists">✅ Server reachable. Folder /%1$s/ found (/%1$s-md/ already exists and will be used).</string>
-    <string name="test_connection_success_first_sync">✅ Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
-    <string name="test_connection_e2ee_blocked">✅ Server reachable, but /%1$s/ was encrypted on another device. Sync is paused.</string>
+    <string name="test_connection_success_with_notes">Server reachable. Folder /%1$s/ found (/%1$s-md/ will be created automatically).</string>
+    <string name="test_connection_success_md_exists">Server reachable. Folder /%1$s/ found (/%1$s-md/ already exists and will be used).</string>
+    <string name="test_connection_success_first_sync">Server reachable. Folders /%1$s/ and /%1$s-md/ will be created on first sync.</string>
+    <string name="test_connection_e2ee_blocked">Server reachable, but /%1$s/ was encrypted on another device. Sync is paused.</string>
     <string name="cert_dialog_title">Trust this certificate?</string>
     <string name="cert_dialog_message">The server uses a certificate this device does not trust, for example a self-signed one. Only trust it if the certificate fingerprint matches the one on your server.</string>
     <string name="cert_dialog_changed">The certificate has changed since you last trusted it. If you did not replace it on the server, do not continue.</string>
@@ -870,39 +885,39 @@
     <string name="cert_dialog_valid_range">%1$s to %2$s</string>
     <string name="cert_dialog_fingerprint">Certificate fingerprint (SHA-256)</string>
     <string name="cert_dialog_trust">Trust</string>
-    <string name="toast_connection_success">✅ Connection successful!</string>
-    <string name="toast_connection_failed">❌ %s</string>
-    <string name="toast_error">❌ Error: %s</string>
-    <string name="toast_syncing">🔄 Syncing…</string>
-    <string name="toast_already_synced">✅ Already synced</string>
-    <string name="toast_sync_success">✅ %d notes synced</string>
-    <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_sync_interval">⏱️ Sync interval: %s</string>
+    <string name="toast_connection_success">Connection successful!</string>
+    <string name="toast_connection_failed">%s</string>
+    <string name="toast_error">Error: %s</string>
+    <string name="toast_syncing">Syncing…</string>
+    <string name="toast_already_synced">Already synced</string>
+    <string name="toast_sync_success">%d notes synced</string>
+    <string name="toast_sync_failed">%s</string>
+    <string name="toast_sync_interval">Sync interval: %s</string>
     <string name="toast_sync_interval_15min">15 minutes</string>
     <string name="toast_sync_interval_30min">30 minutes</string>
     <string name="toast_sync_interval_60min">60 minutes</string>
-    <string name="toast_configure_server_first">⚠️ Please configure WebDAV server first</string>
-    <string name="toast_markdown_exported">✅ %d notes exported to Markdown</string>
-    <string name="toast_markdown_enabled">📝 Markdown Auto-Sync enabled</string>
-    <string name="toast_markdown_disabled">📝 Markdown Auto-Sync disabled</string>
-    <string name="toast_markdown_syncing">📝 Markdown sync running…</string>
-    <string name="toast_markdown_result">✅ Export: %1$d • Import: %2$d</string>
-    <string name="toast_export_failed">❌ Export failed: %s</string>
+    <string name="toast_configure_server_first">Please configure WebDAV server first</string>
+    <string name="toast_markdown_exported">%d notes exported to Markdown</string>
+    <string name="toast_markdown_enabled">Markdown Auto-Sync enabled</string>
+    <string name="toast_markdown_disabled">Markdown Auto-Sync disabled</string>
+    <string name="toast_markdown_syncing">Markdown sync running…</string>
+    <string name="toast_markdown_result">Export: %1$d • Import: %2$d</string>
+    <string name="toast_export_failed">Export failed: %s</string>
     <!-- v1.10.0: Markdown Export Timeout -->
-    <string name="toast_export_timeout">⏱️ Export timed out – server too slow or unreachable. Please check your connection and try again.</string>
+    <string name="toast_export_timeout">Export timed out, server too slow or unreachable. Please check your connection and try again.</string>
     <string name="toast_notifications_enabled">Notifications enabled</string>
     <string name="toast_notifications_disabled">Notifications disabled. You can enable them in settings.</string>
-    <string name="toast_logs_deleted">🗑️ Logs deleted</string>
+    <string name="toast_logs_deleted">Logs deleted</string>
     <!-- 🔄 v1.7.0: Server change notification -->
-    <string name="toast_server_changed_sync_reset">🔄 Server changed. %d notes will be uploaded on next sync.</string>
+    <string name="toast_server_changed_sync_reset">Server changed. %d notes will be uploaded on next sync.</string>
     <!-- 🆕 v2.11.0: Folder change confirmation dialog -->
-    <string name="toast_folder_migrated">🔄 Folder changed. %1$d notes will be uploaded to the new folder on next sync.</string>
-    <string name="toast_folder_switched">📂 Switched folder. %1$d notes loaded from the new folder.</string>
+    <string name="toast_folder_migrated">Folder changed. %1$d notes will be uploaded to the new folder on next sync.</string>
+    <string name="toast_folder_switched">Switched folder. %1$d notes loaded from the new folder.</string>
     <string name="toast_folder_switch_offline">Can\'t switch folders in offline mode — your notes were kept.</string>
     <!-- 🆕 v2.12.0: Server change confirmation dialog, switch action -->
-    <string name="toast_server_switched">🌐 Switched server. %1$d notes loaded from the new server.</string>
-    <string name="toast_file_logging_enabled">📝 File logging enabled</string>
-    <string name="toast_file_logging_disabled">📝 File logging disabled</string>
+    <string name="toast_server_switched">Switched server. %1$d notes loaded from the new server.</string>
+    <string name="toast_file_logging_enabled">File logging enabled</string>
+    <string name="toast_file_logging_disabled">File logging disabled</string>
     <string name="battery_optimization_dialog_title">Background Synchronization</string>
     <string name="battery_optimization_dialog_full_message">For the app to sync reliably in the background, battery optimization must be disabled.\n\nPlease select \'Not optimized\' for Simple Notes.</string>
     <string name="battery_optimization_open_settings">Open Settings</string>
@@ -1000,19 +1015,19 @@
     <string name="keep_import_config_conflict_always_create">Always create new (recommended, safest)</string>
     <string name="keep_import_config_conflict_skip">Skip duplicates</string>
     <string name="keep_import_config_conflict_replace">Replace existing</string>
-    <string name="keep_import_config_info_labels">ℹ️ Keep labels are stored. They will appear as tags in a future version.</string>
-    <string name="keep_import_config_info_attachments">🖼️ Images/attachments are not imported in this version. When the app gains image support later, you can re-run the import to load them.</string>
-    <string name="keep_import_config_info_color_pin">🎨 Note colours are imported and shown right away. Pinned notes will appear in a separate Pinned section at the top of your notes list.</string>
+    <string name="keep_import_config_info_labels">Keep labels are stored. They will appear as tags in a future version.</string>
+    <string name="keep_import_config_info_attachments">Images/attachments are not imported in this version. When the app gains image support later, you can re-run the import to load them.</string>
+    <string name="keep_import_config_info_color_pin">Note colours are imported and shown right away. Pinned notes will appear in a separate Pinned section at the top of your notes list.</string>
     <string name="keep_import_config_button_start">Start import</string>
     <string name="keep_import_config_button_cancel">Cancel</string>
-    <string name="keep_import_prescan_header">📦 Archive contains:</string>
+    <string name="keep_import_prescan_header">Archive contains:</string>
     <string name="keep_import_prescan_active">• %1$d active notes</string>
     <string name="keep_import_prescan_archived">• %1$d archived notes</string>
     <string name="keep_import_prescan_trashed">• %1$d notes in the trash</string>
     <string name="keep_import_prescan_labels">• %1$d different labels</string>
     <string name="keep_import_prescan_shared">• %1$d notes from shared lists</string>
     <string name="keep_import_prescan_attachments">• %1$d notes with attachments (will not be imported)</string>
-    <string name="keep_import_prescan_large_warning">⚠️ Large archive (%1$d MB), analysis may take a minute.</string>
+    <string name="keep_import_prescan_large_warning">Large archive (%1$d MB), analysis may take a minute.</string>
     <string name="keep_import_large_zip_title">Large archive</string>
     <string name="keep_import_large_zip_body">This archive is %1$d MB. The import may take several minutes and consume significant battery. Continue anyway?</string>
     <string name="keep_import_large_zip_button_continue">Continue</string>
@@ -1021,15 +1036,15 @@
     <string name="keep_import_progress_status">Processing %1$d of %2$d: %3$s</string>
     <string name="keep_import_progress_button_cancel">Cancel</string>
     <string name="keep_import_result_title">Import complete</string>
-    <string name="keep_import_result_imported">✓ %1$d notes imported</string>
-    <string name="keep_import_result_replaced">↻ %1$d replaced</string>
+    <string name="keep_import_result_imported">%1$d notes imported</string>
+    <string name="keep_import_result_replaced">%1$d replaced</string>
     <string name="keep_import_result_skipped">⊘ %1$d skipped</string>
-    <string name="keep_import_result_failed">✗ %1$d errors</string>
-    <string name="keep_import_result_attachments_dropped">🖼️ %1$d notes had attachments — not imported (you can re-run the import once image support is added).</string>
-    <string name="keep_import_result_labels">🏷️ %1$d labels stored</string>
-    <string name="keep_import_result_shared">👥 %1$d of those from shared lists (collaborations)</string>
-    <string name="keep_import_result_color">🎨 %1$d with colour imported</string>
-    <string name="keep_import_result_pinned">📌 %1$d pinned notes appear in the Pinned section</string>
+    <string name="keep_import_result_failed">%1$d errors</string>
+    <string name="keep_import_result_attachments_dropped">%1$d notes had attachments that were not imported (you can re-run the import once image support is added).</string>
+    <string name="keep_import_result_labels">%1$d labels stored</string>
+    <string name="keep_import_result_shared">%1$d of those from shared lists (collaborations)</string>
+    <string name="keep_import_result_color">%1$d with colour imported</string>
+    <string name="keep_import_result_pinned">%1$d pinned notes appear in the Pinned section</string>
     <string name="keep_import_result_show_errors">Show details</string>
     <string name="keep_import_result_hide_errors">Hide details</string>
     <string name="keep_import_result_button_close">Close</string>

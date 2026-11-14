@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,14 +18,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.utils.toReadableTime
+import kotlinx.coroutines.delay
 
 /**
  * 🆕 v2.16.0 (Issue #126): Zählt die Wörter eines Textes.
@@ -162,3 +171,60 @@ private fun statsLabel(mode: NoteStatsMode, text: String, words: Int): String = 
         pluralStringResource(R.plurals.note_stats_characters, text.length, text.length)
     NoteStatsMode.HIDDEN -> stringResource(R.string.note_stats_show)
 }
+
+/** Takt der relativen Zeit in [NoteMetaLine], wie TIMESTAMP_UPDATE_INTERVAL_MS der Übersicht. */
+private const val META_TICK_MS = 30_000L
+
+/**
+ * UI-Beta (E4/C3/E9): ruhige Zeile unter dem Titel statt schwebender Pille, z. B.
+ * „Edited 2 days ago · 58 words“. Tippen schaltet wie die Pille Wörter → Zeichen → aus.
+ * [checklistCounts] (offen, erledigt) ersetzt bei Checklisten die Wortzahl; das Datum bleibt.
+ */
+@Composable
+fun NoteMetaLine(
+    editedAt: Long?,
+    text: String,
+    mode: NoteStatsMode,
+    showStats: Boolean,
+    onCycle: () -> Unit,
+    modifier: Modifier = Modifier,
+    checklistCounts: Pair<Int, Int>? = null,
+    style: TextStyle = MaterialTheme.typography.bodyMedium,
+    // In der Leiste (E9) aus: die vergrößerte Tippfläche der kleinen Zeile schluckte sonst den Tipp auf den Titel.
+    cycleOnTap: Boolean = true
+) {
+    val context = LocalContext.current
+    val words = remember(text) { countWords(text) }
+    val stats = when {
+        checklistCounts != null ->
+            stringResource(R.string.editor_checklist_meta, checklistCounts.first, checklistCounts.second)
+        !showStats || mode == NoteStatsMode.HIDDEN -> null
+        else -> statsLabel(mode, text, words)
+    }
+    // Takt wie timestampTicker der Übersicht: „gerade eben“ bliebe sonst stehen, solange niemand tippt.
+    val tick by produceState(0) {
+        while (true) {
+            delay(META_TICK_MS)
+            value++
+        }
+    }
+    val edited = editedAt?.let {
+        key(tick) { stringResource(R.string.editor_meta_edited, it.toReadableTime(context).lowercaseStart()) }
+    }
+    val line = listOfNotNull(edited, stats).joinToString(" · ")
+        .ifEmpty { if (showStats) stringResource(R.string.note_stats_show) else "" }
+    if (line.isEmpty()) return
+    val tappable = cycleOnTap && showStats && checklistCounts == null
+    Text(
+        text = line,
+        style = style,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier.then(if (tappable) Modifier.clickable(onClick = onCycle) else Modifier)
+    )
+}
+
+/** „Edited Just now“ → „Edited just now“, „Bearbeitet Gestern“ → „Bearbeitet gestern“; Daten bleiben unverändert. */
+private fun String.lowercaseStart(): String =
+    if (length > 1 && this[0].isUpperCase() && this[1].isLowerCase()) replaceFirstChar { it.lowercase() } else this

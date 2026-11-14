@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsInputAntenna
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -654,6 +655,7 @@ private fun MarkdownSection(viewModel: SettingsViewModel, isServerConfigured: Bo
 
             SettingsButton(
                 text = stringResource(R.string.markdown_manual_sync_button),
+                icon = Icons.Outlined.Sync,
                 onClick = { viewModel.performManualMarkdownSync() },
                 enabled = isServerConfigured,
                 modifier = Modifier.padding(horizontal = 16.dp)

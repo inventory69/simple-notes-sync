@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -34,15 +35,40 @@ import androidx.compose.ui.unit.dp
  * v1.8.0: Button keeps text during loading, just becomes disabled
  */
 @Composable
-fun SettingsButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, isLoading: Boolean = false) {
+fun SettingsButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    icon: ImageVector? = null // S4: Symbol statt Emoji im Text
+) {
     Button(
         onClick = onClick,
         enabled = enabled && !isLoading,
         modifier = modifier.fillMaxWidth()
     ) {
-        Text(text)
+        ButtonContent(text, icon)
     }
 }
+
+/**
+ * S4: Symbol vor dem Text. Übersetzungen, die Weblate noch nicht nachgezogen hat, tragen das alte
+ * Emoji vorn; es wird hier abgeschnitten, damit nicht Symbol und Emoji doppelt erscheinen.
+ */
+@Composable
+private fun ButtonContent(text: String, icon: ImageVector?) {
+    if (icon != null) {
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+    }
+    Text(if (icon != null) text.withoutLeadingEmoji() else text)
+}
+
+private val LEADING_EMOJI = Regex("^(?:[\\x{1F000}-\\x{1FFFF}\\u2600-\\u27BF\\u2B00-\\u2BFF]\\uFE0F?\\s*)+")
+
+/** S4: entfernt Emoji am Textanfang (Übergang, bis alle Übersetzungen ohne Emoji sind). */
+fun String.withoutLeadingEmoji(): String = replace(LEADING_EMOJI, "")
 
 /**
  * Outlined secondary button for settings actions
@@ -54,14 +80,15 @@ fun SettingsOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    icon: ImageVector? = null // S4
 ) {
     OutlinedButton(
         onClick = onClick,
         enabled = enabled && !isLoading,
         modifier = modifier.fillMaxWidth()
     ) {
-        Text(text)
+        ButtonContent(text, icon)
     }
 }
 
@@ -168,7 +195,8 @@ fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier, enabled: 
         } else {
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         },
-        textAlign = TextAlign.Center,
+        // S3: links wie die Kartentitel statt mittig
+        textAlign = TextAlign.Start,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -269,3 +297,6 @@ fun BackupResultCard(isSuccess: Boolean, title: String, detail: String?, modifie
         }
     }
 }
+
+/** S1: Lage einer [SettingsCard] in ihrer Gruppe. Die Gruppe wirkt als eine Karte mit Trennlinien. */
+enum class GroupPosition { SINGLE, FIRST, MIDDLE, LAST }

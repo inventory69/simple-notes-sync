@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Gegenstück zu shared_axis_x_enter: die obere Seite geht nach rechts, die darunter steht still. -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"
     android:shareInterpolator="false">
     <translate
         android:fromXDelta="0"
-        android:toXDelta="30%p"
+        android:toXDelta="12%p"
         android:duration="200"
-        android:interpolator="@android:interpolator/fast_out_slow_in" />
+        android:interpolator="@android:interpolator/fast_out_linear_in" />
     <alpha
         android:fromAlpha="1.0"
         android:toAlpha="0.0"
         android:duration="200"
-        android:interpolator="@android:interpolator/fast_out_slow_in" />
+        android:interpolator="@android:interpolator/fast_out_linear_in" />
 </set>

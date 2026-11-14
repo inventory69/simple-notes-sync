@@ -37,9 +37,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -99,7 +102,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
             // 🆕 (#126-Nachgang): Wortzähler-Sichtbarkeit aus den Einstellungen
             wordCounterVisibility = prefs
                 .getString(Constants.KEY_WORD_COUNTER_VISIBILITY, Constants.DEFAULT_WORD_COUNTER_VISIBILITY)
-                .toEnumOrDefault(WordCounterVisibility.valueOf(Constants.DEFAULT_WORD_COUNTER_VISIBILITY))
+                .toEnumOrDefault(WordCounterVisibility.valueOf(Constants.DEFAULT_WORD_COUNTER_VISIBILITY)),
+            // #131 (E11)
+            formattingBarEnabled = prefs.getBoolean(Constants.KEY_FORMATTING_BAR, Constants.DEFAULT_FORMATTING_BAR),
+            titleFieldEnabled = prefs.getBoolean(Constants.KEY_TITLE_FIELD, Constants.DEFAULT_TITLE_FIELD)
         )
     )
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
@@ -255,6 +261,14 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         set(value) {
             _isDirty.value = value
         } // 🆕 v1.9.0: only autosave when content has actually changed
+
+    // UI-Beta (E5): Speichern-Knopf zeigt Haken (gespeichert) oder Diskette (offene Änderungen).
+    val hasUnsavedChanges: StateFlow<Boolean> = _isDirty.asStateFlow()
+
+    // UI-Beta (E4): „Edited …“ unter dem Titel; Zeitpunkt der zuletzt gespeicherten Fassung.
+    val lastEditedAt: StateFlow<Long?> = _existingNote
+        .map { it?.editedAt }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     // 🆕 v1.9.0: Autosave indicator — briefly visible after a successful autosave
     private val _autosaveIndicatorVisible = MutableStateFlow(false)
@@ -1775,6 +1789,8 @@ data class NoteEditorUiState(
     val newNoteFocusContent: Boolean = false, // 🆕 v2.11.0
     // 🆕 (#126-Nachgang): aus / immer / nur im Lesemodus
     val wordCounterVisibility: WordCounterVisibility = WordCounterVisibility.ALWAYS,
+    val formattingBarEnabled: Boolean = true, // #131 (E11)
+    val titleFieldEnabled: Boolean = true, // UI-Beta: leeres Titelfeld anzeigen
     val isArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
     // 🆕 v2.16.0: Notiz steht auf CONFLICT — der Editor zeigt darüber das Auflösungs-Banner.
     val hasConflict: Boolean = false,

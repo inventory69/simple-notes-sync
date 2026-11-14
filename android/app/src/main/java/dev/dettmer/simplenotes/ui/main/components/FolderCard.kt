@@ -40,6 +40,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
+import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 
 /** 🆕 v2.7.0 (Folders): Ordnerkarte in voller Breite (List-Ansicht). */
@@ -57,7 +59,9 @@ internal fun FolderCardList(
     onLongClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val container = NoteColorPalette.resolveContainer(color, isDark)
+    val newDesign = LocalNewDesign.current
+    val container = NoteColorPalette
+        .resolveCardContainer(color, isDark, MaterialTheme.colorScheme.surfaceContainerHigh, newDesign) // U1
         .takeOrElse { MaterialTheme.colorScheme.surfaceContainerHigh }
     val hasColor = !color.isNullOrBlank()
     val selectionBorder = if (isSelected) {
@@ -125,7 +129,9 @@ internal fun FolderCardGrid(
     onLongClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val container = NoteColorPalette.resolveContainer(color, isDark)
+    val newDesign = LocalNewDesign.current
+    val container = NoteColorPalette
+        .resolveCardContainer(color, isDark, MaterialTheme.colorScheme.surfaceContainerHigh, newDesign) // U1
         .takeOrElse { MaterialTheme.colorScheme.surfaceContainerHigh }
     val hasColor = !color.isNullOrBlank()
     val selectionBorder = if (isSelected) {
@@ -147,6 +153,17 @@ internal fun FolderCardGrid(
         )
     ) {
         Box {
+            if (newDesign) {
+                // Im Auswahlmodus steht das Kästchen mittig rechts an der Stelle der Zahl.
+                CompactFolderRow(name = name, count = count, isLocalOnly = isLocalOnly, showCount = !isSelectionMode)
+                FolderSelectionOverlay(
+                    isSelected = isSelected,
+                    hasColor = hasColor,
+                    isSelectionMode = isSelectionMode,
+                    compact = true
+                )
+                return@Box
+            }
             Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Icon(
@@ -194,7 +211,12 @@ internal fun FolderCardGrid(
  * sichtbar, Checkbox oben rechts zeigt den Auswahlzustand im Selection-Mode.
  */
 @Composable
-private fun BoxScope.FolderSelectionOverlay(isSelected: Boolean, hasColor: Boolean, isSelectionMode: Boolean) {
+private fun BoxScope.FolderSelectionOverlay(
+    isSelected: Boolean,
+    hasColor: Boolean,
+    isSelectionMode: Boolean,
+    compact: Boolean = false // UI-Beta (U4): Kästchen mittig rechts statt oben rechts
+) {
     if (isSelected && hasColor) {
         Box(
             modifier = Modifier
@@ -206,9 +228,15 @@ private fun BoxScope.FolderSelectionOverlay(isSelected: Boolean, hasColor: Boole
         visible = isSelectionMode,
         enter = fadeIn() + scaleIn(),
         exit = fadeOut() + scaleOut(),
-        modifier = Modifier
-            .align(Alignment.TopEnd)
-            .padding(6.dp)
+        modifier = if (compact) {
+            Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = Dimensions.SpacingMediumLarge)
+        } else {
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(6.dp)
+        }
     ) {
         Box(
             modifier = Modifier
@@ -237,5 +265,50 @@ private fun BoxScope.FolderSelectionOverlay(isSelected: Boolean, hasColor: Boole
                 )
             }
         }
+    }
+}
+
+/** UI-Beta (U4): Höhe der Ordnerkachel im Raster. */
+private val FOLDER_TILE_HEIGHT = 46.dp
+
+/** UI-Beta (U4): 46 dp statt 68 dp, Zähler in derselben Zeile. */
+@Composable
+private fun CompactFolderRow(name: String, count: Int, isLocalOnly: Boolean, showCount: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(FOLDER_TILE_HEIGHT)
+            .padding(start = Dimensions.SpacingMediumLarge, end = Dimensions.SpacingLarge)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Folder,
+            contentDescription = stringResource(R.string.cd_folder_card, name),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(Dimensions.IconSizeMedium)
+        )
+        Spacer(modifier = Modifier.width(Dimensions.SpacingMediumLarge))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (!showCount) return@Row
+        if (isLocalOnly) {
+            Icon(
+                imageVector = Icons.Outlined.SyncDisabled,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+        }
+        Text(
+            text = "$count",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

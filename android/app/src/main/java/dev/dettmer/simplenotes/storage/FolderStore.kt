@@ -221,8 +221,11 @@ class FolderStore(private val context: Context) {
         val target = currentSyncTarget()
         prefs.edit {
             putStringSet(KEY_LOCAL_ONLY_SERVER_REMOVAL, names.toSet())
-            if (target != null) putString(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET, target)
-            else remove(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET)
+            if (target != null) {
+                putString(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET, target)
+            } else {
+                remove(KEY_LOCAL_ONLY_SERVER_REMOVAL_TARGET)
+            }
         }
     }
 

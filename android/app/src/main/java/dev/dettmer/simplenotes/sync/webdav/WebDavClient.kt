@@ -219,15 +219,18 @@ class WebDavClient(private val okHttpClient: OkHttpClient) : Closeable {
 
     /**
      * MKCOL. 405 wird toleriert — der Ordner existiert dann bereits.
+     *
+     * @return true nur, wenn der Ordner mit diesem Aufruf entstanden ist (2xx), false wenn er schon da war.
      */
-    fun createDirectory(url: String) {
+    fun createDirectory(url: String): Boolean {
         val request = Request.Builder().url(url).method("MKCOL", null).build()
 
         okHttpClient.newCall(request).execute().use { response ->
+            Logger.d(TAG, "createDirectory($url) → ${response.code}")
             if (!response.isSuccessful && response.code != HTTP_METHOD_NOT_ALLOWED) {
                 handleMkcolFailure(url, response.code, response.message)
             }
-            Logger.d(TAG, "createDirectory($url) → ${response.code}")
+            return response.isSuccessful
         }
     }
 

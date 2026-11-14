@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -192,6 +193,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
 
                 SettingsButton(
                     text = stringResource(R.string.debug_export_logs),
+                    icon = Icons.Outlined.Share,
                     onClick = {
                         // 🆕 v2.14.0: Geteilt werden anonymisierte Kopien, nie die Originale —
                         // das Lesen/Schreiben läuft im ViewModel auf Dispatchers.IO.

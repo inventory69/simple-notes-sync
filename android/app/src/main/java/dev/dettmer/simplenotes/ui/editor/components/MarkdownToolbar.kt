@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.delete
@@ -33,15 +34,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
+import dev.dettmer.simplenotes.ui.theme.Dimensions
 
 private const val TOOLBAR_ICON_SIZE = 22
 private const val LINK_URL_PLACEHOLDER = "url"
+private const val FLOATING_ELEVATION = 6
 
 /**
  * 🆕 v1.9.0 (F07): Markdown formatting toolbar for TEXT notes.
@@ -56,15 +60,19 @@ fun MarkdownToolbar(
     textFieldState: TextFieldState,
     modifier: Modifier = Modifier,
     onImageClick: () -> Unit = {},
-    isAttachingImage: Boolean = false
+    isAttachingImage: Boolean = false,
+    floating: Boolean = false // UI-Beta (E6): abgerundeter Balken mit Schatten statt Leiste
 ) {
     // Platzhalter landen im Notiztext, gehören also in die Sprache des Nutzers.
     val tableHeader = stringResource(R.string.md_table_header_placeholder)
     val tableCell = stringResource(R.string.md_table_cell_placeholder)
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp,
-        modifier = modifier.fillMaxWidth()
+        color = if (floating) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface,
+        shadowElevation = if (floating) FLOATING_ELEVATION.dp else 0.dp,
+        shape = if (floating) CircleShape else RectangleShape,
+        modifier = modifier
+            .then(if (floating) Modifier.padding(vertical = Dimensions.SpacingMedium) else Modifier)
+            .fillMaxWidth()
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -72,7 +80,7 @@ fun MarkdownToolbar(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp, horizontal = if (floating) Dimensions.SpacingMedium else 0.dp)
         ) {
             ToolbarButton(
                 icon = Icons.Filled.FormatBold,

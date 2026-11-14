@@ -1,6 +1,7 @@
 package dev.dettmer.simplenotes.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 
 /**
  * Canonical note-colour palette derived from the 11 Google Keep colour slots.
@@ -60,5 +61,19 @@ object NoteColorPalette {
     fun resolveContainer(hex: String?, isDark: Boolean): Color {
         val slot = fromHex(hex) ?: return Color.Unspecified
         return if (isDark) slot.containerColorDark else slot.containerColor
+    }
+
+    /** UI-Beta (U1): Anteil der Notizfarbe, wenn sie mit der neutralen Kartenfarbe gemischt wird. */
+    private const val CARD_TINT_FRACTION = 0.5f
+
+    /**
+     * UI-Beta (U1): Kartenfarbe im neuen Design. Die Notizfarbe wird zur Hälfte mit der neutralen
+     * Kartenfarbe [neutral] gemischt: dunkel bleibt Grün grün, drückt aber nicht mehr gegen die
+     * neutralen Karten daneben; hell ergibt sich ein hellerer Ton. Ohne Farbe → [Color.Unspecified].
+     */
+    fun resolveCardContainer(hex: String?, isDark: Boolean, neutral: Color, newDesign: Boolean): Color {
+        val full = resolveContainer(hex, isDark)
+        if (!newDesign || full == Color.Unspecified) return full
+        return lerp(neutral, full, CARD_TINT_FRACTION)
     }
 }

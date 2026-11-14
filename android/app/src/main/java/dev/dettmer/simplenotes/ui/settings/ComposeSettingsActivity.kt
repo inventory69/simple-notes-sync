@@ -63,11 +63,11 @@ class ComposeSettingsActivity : AppCompatActivity() {
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_OPEN,
                 R.anim.shared_axis_x_enter,
-                R.anim.shared_axis_x_exit
+                R.anim.hold
             )
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_CLOSE,
-                R.anim.shared_axis_x_pop_enter,
+                R.anim.hold,
                 R.anim.shared_axis_x_pop_exit
             )
         }
@@ -162,7 +162,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             @Suppress("DEPRECATION")
             overridePendingTransition(
-                R.anim.shared_axis_x_pop_enter,
+                R.anim.hold,
                 R.anim.shared_axis_x_pop_exit
             )
         }

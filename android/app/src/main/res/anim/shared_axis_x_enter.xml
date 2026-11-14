@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Neue Seite kommt von rechts über die stehende alte. Nur die obere Seite bewegt sich und blendet:
+     zwei halb durchsichtige Fenster zeigten den schwarzen Hintergrund des Systems (grauer Schleier im hellen Design). -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"
     android:shareInterpolator="false">
     <translate
-        android:fromXDelta="30%p"
+        android:fromXDelta="12%p"
         android:toXDelta="0"
-        android:duration="200"
+        android:duration="300"
         android:interpolator="@android:interpolator/fast_out_slow_in" />
     <alpha
         android:fromAlpha="0.0"
         android:toAlpha="1.0"
-        android:duration="200"
-        android:interpolator="@android:interpolator/fast_out_slow_in" />
+        android:duration="150"
+        android:interpolator="@android:interpolator/linear_out_slow_in" />
 </set>

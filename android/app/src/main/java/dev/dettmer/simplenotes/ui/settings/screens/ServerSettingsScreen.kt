@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,6 +62,7 @@ import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.CertificateTrustDialog
 import dev.dettmer.simplenotes.ui.settings.components.RemoteChangeDialog
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
+import dev.dettmer.simplenotes.ui.settings.components.withoutLeadingEmoji
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.CredentialStore
@@ -217,14 +220,16 @@ fun ServerSettingsScreen(
                     FilterChip(
                         selected = !isHttps,
                         onClick = { viewModel.updateProtocol(false) },
-                        label = { Text(stringResource(R.string.server_connection_http)) },
+                        label = { Text(stringResource(R.string.server_connection_http).withoutLeadingEmoji()) },
+                        leadingIcon = { Icon(Icons.Outlined.Home, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         enabled = fieldsEnabled,
                         modifier = Modifier.weight(1f)
                     )
                     FilterChip(
                         selected = isHttps,
                         onClick = { viewModel.updateProtocol(true) },
-                        label = { Text(stringResource(R.string.server_connection_https)) },
+                        label = { Text(stringResource(R.string.server_connection_https).withoutLeadingEmoji()) },
+                        leadingIcon = { Icon(Icons.Outlined.Public, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         enabled = fieldsEnabled,
                         modifier = Modifier.weight(1f)
                     )

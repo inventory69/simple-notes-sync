@@ -8,6 +8,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.23.0] - 2026-11-14
+
+### ✨ New Features
+
+**New Design (Beta)** ([aa2cc31](https://github.com/inventory69/simple-notes-sync/commit/aa2cc31))
+- A new design for the editor and the note list, off by default. Turn it on under **Settings → Display → New design (beta)**, the same switch goes back to the current design
+- Feedback is welcome in discussion [#131](https://github.com/inventory69/simple-notes-sync/discussions/131)
+
+**Editor as a Plain Sheet (Beta)** ([2297211](https://github.com/inventory69/simple-notes-sync/commit/2297211), [e4c44c8](https://github.com/inventory69/simple-notes-sync/commit/e4c44c8), [4ae9739](https://github.com/inventory69/simple-notes-sync/commit/4ae9739))
+- Title and text sit on a plain sheet without outlined fields or labels, and stay in place when switching between reading and editing
+- A single tap on the text starts editing near the tapped line. Links, images and checkboxes keep their own taps
+- While the keyboard is open, the title moves into the toolbar, so small screens show much more of the note
+- The formatting bar floats above the keyboard and can be turned off in the editor settings. Inserting an image then moves to the menu
+- The empty title field can be hidden with the **Title field** setting. **Add title** in the menu brings it back for a single note
+- Word count, edit time and checklist progress share one line below the title
+- Thanks to [@Fs00](https://github.com/Fs00), [@funnyspiders](https://github.com/funnyspiders), [@Adnan4744](https://github.com/Adnan4744) and [@siddhnarhari](https://github.com/siddhnarhari) for the ideas! ([#131](https://github.com/inventory69/simple-notes-sync/discussions/131))
+
+**Note List With Search Field and Sync Button (Beta)** ([0e23ec6](https://github.com/inventory69/simple-notes-sync/commit/0e23ec6), [b8095a2](https://github.com/inventory69/simple-notes-sync/commit/b8095a2), [7cefecf](https://github.com/inventory69/simple-notes-sync/commit/7cefecf))
+- A search field stays at the top and shows the app or folder title while empty. The filter icon in it opens the filter chips
+- Colored cards are softer, a pin in the corner marks pinned notes, and cards only show a sync symbol when a note is not synced
+- Sync status and manual sync are one cloud button with a ring while syncing. Tapping it opens the sync status with **Sync now**
+- The sync progress banner is a slim pill with a progress line
+
+**Calmer Settings** ([b26d182](https://github.com/inventory69/simple-notes-sync/commit/b26d182), [9b8e091](https://github.com/inventory69/simple-notes-sync/commit/9b8e091))
+- Each settings group is one card with dividers, choice chips become segmented buttons, and the color scheme picker shows color dots with names
+- English and German setting names no longer start with an emoji
+- TalkBack reads the text size options by name
+
+**Calmer Screen Transitions** ([1a7d2e4](https://github.com/inventory69/simple-notes-sync/commit/1a7d2e4))
+- Only the screen on top moves, the one below stays still. The editor zooms in slightly when opening, settings slide in from the right
+- Opening a note in a dark theme no longer flashes black
+
+### 🐛 Bug Fixes
+
+**Sort by Color Follows the Palette** ([aeb4ccc](https://github.com/inventory69/simple-notes-sync/commit/aeb4ccc))
+- Sorting by color uses the palette order with uncolored notes last, for notes and folders. The direction toggle is greyed out while sorting by color
+- Thanks to [@funnyspiders](https://github.com/funnyspiders) for the report! ([#131](https://github.com/inventory69/simple-notes-sync/discussions/131))
+
+**Sync Restores a Missing Sync Folder** ([e53bd15](https://github.com/inventory69/simple-notes-sync/commit/e53bd15))
+- If the sync folder is gone on the server, for example after setting the server up again under the same address, the sync creates it and uploads all notes and images again in the same run
+- Uploads that still fail show up as a warning, such as "3 notes not uploaded"
+
+**Restoring Settings for Another Server** ([f600f36](https://github.com/inventory69/simple-notes-sync/commit/f600f36))
+- When a backup restore switches to another server, folder or user, the sync starts fresh there. Restoring the settings of the current server keeps the sync state
+
+**Editor** ([2297211](https://github.com/inventory69/simple-notes-sync/commit/2297211))
+- The editor keeps its mode when the screen rotates
+- No more gap below the formatting bar
+
+### 🌍 Translations
+
+- **Chinese (Simplified)**: hamburger2048 updated the certificate dialog
+- New and changed texts are in English and German for now and follow in the other languages with the next update
+
+---
+
 ## [2.22.0] - 2026-11-13
 
 ### ✨ New Features

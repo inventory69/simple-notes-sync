@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,12 +31,12 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.security.AppLock
 import dev.dettmer.simplenotes.security.showAppLockPrompt
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
-import dev.dettmer.simplenotes.ui.settings.components.SettingsChip
-import dev.dettmer.simplenotes.ui.settings.components.SettingsChipRow
+import dev.dettmer.simplenotes.ui.settings.components.SegmentLabel
 import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSegmentedRow
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
 
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
@@ -142,14 +141,7 @@ private fun GraceTimeSelector(currentMs: Long, onSelected: (Long) -> Unit) {
         60_000L to R.string.app_lock_timeout_1min,
         300_000L to R.string.app_lock_timeout_5min
     )
-    SettingsChipRow {
-        options.forEach { (ms, labelRes) ->
-            SettingsChip(
-                label = stringResource(labelRes),
-                selected = currentMs == ms,
-                onClick = { onSelected(ms) },
-                modifier = Modifier.widthIn(min = 72.dp)
-            )
-        }
+    SettingsSegmentedRow(options = options.map { it.first }, selected = currentMs, onSelect = onSelected) { ms ->
+        SegmentLabel(stringResource(options.first { it.first == ms }.second))
     }
 }

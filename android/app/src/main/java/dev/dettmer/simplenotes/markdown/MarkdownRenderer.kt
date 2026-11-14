@@ -4,8 +4,10 @@ import android.content.ClipData
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,15 +35,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
@@ -96,7 +101,12 @@ fun MarkdownPreview(
     compactHeaders: Boolean = false,
     onImageTokensChange: ((image: MarkdownBlock.Image, sizePercent: Int, align: ImageAlign, altText: String) -> Unit)? = null,
     // Nur für die Snackbar-Bestätigung nach „Bild kopieren" — der Host kennt den SnackbarHostState.
-    onImageCopied: (() -> Unit)? = null
+    onImageCopied: (() -> Unit)? = null,
+    scrollState: ScrollState = rememberScrollState(),
+    // UI-Beta (E10): einfacher Tipp auf Text. Links, Bilder und Kästchen verbrauchen ihren Tipp
+    // selbst (Main-Pass, Kind zuerst; das Kästchen per eigenem detectTapGestures), langes Drücken
+    // bleibt bei der Textauswahl.
+    onTextTap: ((TapAnchor) -> Unit)? = null
 ) {
     val bodyStyle = if (compactHeaders) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
     // 🆕 v2.16.0 (Issue #140): Höhe einer Leerzeile in dp — bevorzugt die Zeilenhöhe des
@@ -116,8 +126,21 @@ fun MarkdownPreview(
     // wirkungslos. Die Preview galt der Editor-Column dann als ungewichtet, bekam die volle
     // Resthöhe und drückte alles unter sich (die Wort-/Zeichenzahl) aus dem Bild — aber nur, wenn
     // der Text lang genug zum Scrollen war.
-    SelectionContainer(modifier = modifier) {
-        val scrollModifier = if (scrollEnabled) Modifier.verticalScroll(rememberScrollState()) else Modifier
+    // Aktuelles Lambda lesen statt danach zu schlüsseln: ein neues Lambda je Recomposition startete den
+    // Detektor neu und verwarf einen gerade laufenden Tipp.
+    val currentOnTextTap by rememberUpdatedState(onTextTap)
+    val tapModifier = if (onTextTap != null) {
+        Modifier.pointerInput(Unit) {
+            // x ohne den Spaltenrand: das Feld im Bearbeiten-Modus misst ab Textanfang (sonst ein Zeichen daneben).
+            detectTapGestures { pos ->
+                currentOnTextTap?.invoke(TapAnchor(pos.x - Dimensions.SpacingSmall.toPx(), pos.y, scrollState.value + pos.y))
+            }
+        }
+    } else {
+        Modifier
+    }
+    SelectionContainer(modifier = modifier.then(tapModifier)) {
+        val scrollModifier = if (scrollEnabled) Modifier.verticalScroll(scrollState) else Modifier
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -298,7 +321,10 @@ private fun TaskListBlock(taskList: MarkdownBlock.TaskList, bodyStyle: TextStyle
                 Checkbox(
                     checked = item.isChecked,
                     onCheckedChange = null, // Read-only in preview
-                    modifier = Modifier.size(Dimensions.IconSizeMedium)
+                    // Schluckt den Tipp, damit er nicht als Tipp auf Text ins Bearbeiten wechselt (E10).
+                    modifier = Modifier
+                        .size(Dimensions.IconSizeMedium)
+                        .pointerInput(Unit) { detectTapGestures { } }
                 )
                 Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
                 Text(
@@ -994,3 +1020,11 @@ internal fun markdownInlineToHtml(text: String): String = buildString {
     }
     if (pos < text.length) append(text.substring(pos).escapeHtml())
 }
+
+/**
+ * UI-Beta (E10): Tippstelle im Lesemodus. [x]/[viewportY] im sichtbaren Bereich, [contentY] ab Textanfang.
+ * Weil Lesen und Bearbeiten an derselben Stelle beginnen (E2), trifft dieselbe Höhe im Quelltext ungefähr
+ * dieselbe Zeile; Tabellen und Bilder sind gerendert höher als ihre Quelle, darunter driftet es.
+ */
+@Immutable
+data class TapAnchor(val x: Float, val viewportY: Float, val contentY: Float)

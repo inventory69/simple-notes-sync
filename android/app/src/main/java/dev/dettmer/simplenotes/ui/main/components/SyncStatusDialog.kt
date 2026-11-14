@@ -1,7 +1,9 @@
 package dev.dettmer.simplenotes.ui.main.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,14 +34,17 @@ import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +52,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +67,7 @@ import dev.dettmer.simplenotes.sync.NoteRef
 import dev.dettmer.simplenotes.sync.SyncStatusSummary
 import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.toReadableTime
 
@@ -83,6 +91,25 @@ fun SyncStatusDialog(
     } else {
         stringResource(R.string.sync_status_never)
     }
+    val lastSyncLine = stringResource(R.string.sync_status_last_sync, lastSync)
+    val body: @Composable ColumnScope.() -> Unit = {
+        if (summary.state == SyncStatusSummary.State.BLOCKED) BlockedCard()
+        summary.lastError?.let { ErrorCard(it, stale = summary.state == SyncStatusSummary.State.STALE) }
+        if (summary.conflicts.isNotEmpty()) ConflictCard(summary.conflicts, onOpenNote)
+        summary.exportProblems?.let { ExportCard(it, summary.markdownNotes, onOpenNote) }
+        Actions(summary, isSyncing, onRetry, onOpenSettings)
+        // 🆕 v2.20.0: Gesperrt erklären die Notiz-Symbole nichts, die Karte sagt alles.
+        if (summary.state != SyncStatusSummary.State.BLOCKED) {
+            LegendSection(
+                initiallyExpanded = summary.state == SyncStatusSummary.State.OK ||
+                    summary.state == SyncStatusSummary.State.PENDING
+            )
+        }
+    }
+    if (LocalNewDesign.current) {
+        SyncStatusSheet(summary.state, isSyncing, title, lastSyncLine, onDismiss, body)
+        return
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(imageVector = icon, contentDescription = null, tint = tint) },
@@ -90,7 +117,7 @@ fun SyncStatusDialog(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = title, textAlign = TextAlign.Center)
                 Text(
-                    text = stringResource(R.string.sync_status_last_sync, lastSync),
+                    text = lastSyncLine,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -101,21 +128,9 @@ fun SyncStatusDialog(
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMediumLarge)
-            ) {
-                if (summary.state == SyncStatusSummary.State.BLOCKED) BlockedCard()
-                summary.lastError?.let { ErrorCard(it, stale = summary.state == SyncStatusSummary.State.STALE) }
-                if (summary.conflicts.isNotEmpty()) ConflictCard(summary.conflicts, onOpenNote)
-                summary.exportProblems?.let { ExportCard(it, summary.markdownNotes, onOpenNote) }
-                Actions(summary, isSyncing, onRetry, onOpenSettings)
-                // 🆕 v2.20.0: Gesperrt erklären die Notiz-Symbole nichts, die Karte sagt alles.
-                if (summary.state != SyncStatusSummary.State.BLOCKED) {
-                    LegendSection(
-                        initiallyExpanded = summary.state == SyncStatusSummary.State.OK ||
-                            summary.state == SyncStatusSummary.State.PENDING
-                    )
-                }
-            }
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMediumLarge),
+                content = body
+            )
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
@@ -125,7 +140,65 @@ fun SyncStatusDialog(
     )
 }
 
+/** Durchmesser des getönten Kreises hinter dem Status-Symbol im Sheet-Kopf. */
+private val SHEET_STATUS_CIRCLE = 48.dp
+private const val SHEET_STATUS_TINT_ALPHA = 0.14f
+
+/**
+ * UI-Beta: der Status als Bottom Sheet statt Dialog. Kopf links mit demselben Symbol wie die Wolke in der
+ * Leiste (getönter Kreis, Ring während des Syncs), darunter dieselben Karten, Knöpfe und die Legende.
+ * Schließen per Wischen oder Tipp daneben, deshalb ohne „OK“.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SyncStatusSheet(
+    state: SyncStatusSummary.State,
+    isSyncing: Boolean,
+    title: String,
+    lastSyncLine: String,
+    onDismiss: () -> Unit,
+    body: @Composable ColumnScope.() -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(start = Dimensions.SpacingXLarge, end = Dimensions.SpacingXLarge, bottom = Dimensions.SpacingXLarge),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMediumLarge)
+        ) {
+            val (icon, tint) = syncStateVisual(state, MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(SHEET_STATUS_CIRCLE)
+                        .clip(CircleShape)
+                        .background(tint.copy(alpha = SHEET_STATUS_TINT_ALPHA))
+                ) {
+                    Icon(imageVector = icon, contentDescription = null, tint = tint)
+                    if (isSyncing) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.matchParentSize())
+                }
+                Spacer(modifier = Modifier.width(Dimensions.SpacingLarge))
+                Column {
+                    Text(text = title, style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        text = lastSyncLine,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            body()
+        }
+    }
+}
+
 /** Icon, Farbe und Titel des Dialogkopfs. Der Zustand selbst ist die Überschrift. */
+// ponytail: zweite Symboltabelle neben syncStateVisual (SearchTopBar), Icon und Farbe nutzt nur das alte
+// Design. Fällt der Beta-Schalter, schrumpft das hier auf den Titel und das Sheet bleibt die einzige Quelle.
 @Composable
 private fun statusVisuals(summary: SyncStatusSummary): Triple<ImageVector, Color, String> = when (summary.state) {
     SyncStatusSummary.State.BLOCKED -> Triple(
@@ -243,9 +316,11 @@ private fun Actions(
     val export = summary.exportProblems
     // BLOCKED: „Erneut versuchen" prüft den Marker neu, die Sperre zählt als ungesyncte Änderung.
     val canRetry = summary.lastError != null || export != null || summary.state == SyncStatusSummary.State.BLOCKED
-    if (!canRetry && summary.lastError == null) return
+    // UI-Beta: die Wolke ersetzt den Sync-Knopf der Leiste, das Sheet bietet den Sync deshalb immer an.
+    val offerSync = canRetry || LocalNewDesign.current
+    if (!offerSync) return
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)) {
-        if (canRetry) RetryButton(isSyncing, onRetry)
+        RetryButton(isSyncing, if (canRetry) R.string.sync_status_retry else R.string.sync_now, onRetry)
         if (summary.lastError != null) {
             ActionButton(Icons.Outlined.Settings, stringResource(R.string.server_settings_title)) {
                 onOpenSettings(SettingsRoute.Server.route)
@@ -341,7 +416,7 @@ private fun NoteLinkRow(note: NoteRef, onOpenNote: (String) -> Unit) {
 }
 
 @Composable
-private fun RetryButton(isSyncing: Boolean, onRetry: () -> Unit) {
+private fun RetryButton(isSyncing: Boolean, labelRes: Int, onRetry: () -> Unit) {
     FilledTonalButton(onClick = onRetry, enabled = !isSyncing, modifier = Modifier.fillMaxWidth()) {
         if (isSyncing) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -349,7 +424,7 @@ private fun RetryButton(isSyncing: Boolean, onRetry: () -> Unit) {
             Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
         }
         Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
-        Text(stringResource(if (isSyncing) R.string.sync_status_syncing else R.string.sync_status_retry))
+        Text(stringResource(if (isSyncing) R.string.sync_status_syncing else labelRes))
     }
 }
 

@@ -2,18 +2,24 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ClipData
 import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.content.TransferableContent
@@ -24,6 +30,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,9 +63,10 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
@@ -73,6 +81,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -97,6 +106,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -115,6 +125,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -134,6 +145,7 @@ import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
+import dev.dettmer.simplenotes.markdown.TapAnchor
 import dev.dettmer.simplenotes.markdown.buildImageAlt
 import dev.dettmer.simplenotes.markdown.computeImageRewrite
 import dev.dettmer.simplenotes.models.ChecklistSortOption
@@ -142,11 +154,21 @@ import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
+import dev.dettmer.simplenotes.ui.editor.components.EditorBarTitle
+import dev.dettmer.simplenotes.ui.editor.components.FramelessContentField
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
+import dev.dettmer.simplenotes.ui.editor.components.NoteMetaLine
 import dev.dettmer.simplenotes.ui.editor.components.NoteStatsPill
+import dev.dettmer.simplenotes.ui.editor.components.SaveStateButton
+import dev.dettmer.simplenotes.ui.editor.components.SheetTitleField
+import dev.dettmer.simplenotes.ui.editor.components.applyTapAnchor
+import dev.dettmer.simplenotes.ui.editor.components.collapseUp
+import dev.dettmer.simplenotes.ui.editor.components.noteColorGradient
+import dev.dettmer.simplenotes.ui.editor.components.rememberImeOpenFraction
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.AssetReferences
 import dev.dettmer.simplenotes.utils.Constants
@@ -158,6 +180,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -167,6 +190,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 private const val MAX_PICKER_IMAGES = 10
 
 private const val LAYOUT_DELAY_MS = 100L
+
+// UI-Beta: Überblenden zwischen Lesen und Bearbeiten
+private const val MODE_CROSSFADE_MS = 180
 private const val IME_HIDE_TIMEOUT_MS = 600L
 private const val AUTO_SCROLL_DELAY_MS = 50L
 private const val ITEM_CORNER_RADIUS_DP = 8
@@ -536,15 +562,16 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // v2.8.0: savedPreviewMode persists across TEXT↔CHECKLIST type changes so Undo
     // can restore the exact mode the user was in before the conversion — not just the
     // global default. Initialized from the user preference so first open is correct.
-    var savedPreviewMode by remember { mutableStateOf(uiState.defaultStartInPreviewMode) }
+    var savedPreviewMode by rememberSaveable { mutableStateOf(uiState.defaultStartInPreviewMode) }
     // 🆕 Issue #156: Gegenstück für Checklisten. Nur eine als Checkliste geöffnete Notiz startet
     // im Lesemodus; nach TEXT→CHECKLIST-Konvertierung bleibt es beim Bearbeiten.
-    var savedChecklistReadMode by remember {
+    var savedChecklistReadMode by rememberSaveable {
         mutableStateOf(uiState.noteType == NoteType.CHECKLIST && uiState.checklistStartInReadMode)
     }
     // Both isNewNote and noteType are keys so the value is recomputed synchronously
     // (in the same frame) whenever the type changes — avoids a one-frame flash.
-    var isPreviewMode by remember(uiState.isNewNote, uiState.noteType) {
+    // rememberSaveable: Modus überlebt Drehen/Größenwechsel (Activity hat kein configChanges).
+    var isPreviewMode by rememberSaveable(uiState.isNewNote, uiState.noteType) {
         mutableStateOf(
             when {
                 uiState.isNewNote -> false
@@ -583,6 +610,16 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         .resolveContainer(uiState.color, isDark)
         .takeIf { it != Color.Unspecified }
 
+    // UI-Beta: Editor als Blatt (E1-E11). Alter Pfad bleibt unverändert, bis die Beta entschieden ist.
+    val newDesign = LocalNewDesign.current
+    val hasUnsavedChanges by viewModel.hasUnsavedChanges.collectAsState()
+    val lastEditedAt by viewModel.lastEditedAt.collectAsState()
+    // E5: Haken nur, wenn es eine gespeicherte Fassung gibt (neue, nie gespeicherte Notiz → Diskette).
+    val showSaved = newDesign && !hasUnsavedChanges && lastEditedAt != null
+    // E10: Tipp auf den Text im Lesemodus öffnet das Bearbeiten an derselben Stelle.
+    val previewScrollState = rememberScrollState()
+    var tapAnchor by remember { mutableStateOf<TapAnchor?>(null) }
+
     // Strings for toast messages (avoid LocalContextGetResourceValueCall lint)
     val msgNoteIsEmpty = stringResource(R.string.note_is_empty)
     val msgNoteSaved = stringResource(R.string.note_saved)
@@ -602,6 +639,31 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     val contentFocusRequester = remember { FocusRequester() }
     var isTitleFocused by remember { mutableStateOf(false) }
     var isContentFocused by remember { mutableStateOf(false) }
+    // E9 (#131): bei offener Tastatur rückt der Titel in die Leiste; Tippen darauf macht sie zum Titelfeld.
+    var barTitleEditing by remember { mutableStateOf(false) }
+    val barTitleFocusRequester = remember { FocusRequester() }
+    val headerToBar = newDesign &&
+        uiState.noteType == NoteType.TEXT &&
+        !isPreviewMode &&
+        (isContentFocused || barTitleEditing)
+    val titleInBar = headerToBar && isImeVisible
+    // E9: Kopf im Blatt und Titel in der Leiste folgen Bild für Bild der Tastatur statt eigener Animation, so
+    // bewegen sich Text und Tastatur als eine Bewegung. Der Faktor fängt Wechsel bei offener Tastatur ab (Auge-Knopf).
+    val headerToBarFactor = animateFloatAsState(if (headerToBar) 1f else 0f, label = "headerToBar")
+    val imeOpen = rememberImeOpenFraction()
+    val barProgress = remember { derivedStateOf { imeOpen.value * headerToBarFactor.value } }
+    val barTitleShown by remember { derivedStateOf { barProgress.value > 0f } }
+    LaunchedEffect(isImeVisible) {
+        if (!isImeVisible) barTitleEditing = false
+    }
+    // UI-Beta: ein leerer Titel steht nur mit Schalter „Titelfeld“ da, in beiden Modi gleich, sonst
+    // springt der Text beim Wechsel. „Titel hinzufügen“ im Menü blendet ihn einmalig ein, danach hält
+    // ihn der Fokus bzw. der Text.
+    var focusTitleOnShow by remember { mutableStateOf(false) }
+    val showSheetTitle = uiState.title.isNotEmpty() ||
+        isTitleFocused ||
+        focusTitleOnShow ||
+        uiState.titleFieldEnabled
 
     // 🆕 v1.9.0 (F07): Lifted TextFieldState for toolbar access
     val textFieldState = rememberTextFieldState(initialText = uiState.content)
@@ -655,7 +717,7 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     LaunchedEffect(uiState.isNewNote) {
         delay(LAYOUT_DELAY_MS) // Wait for layout
         when {
-            uiState.isNewNote && !uiState.newNoteFocusContent -> {
+            uiState.isNewNote && !uiState.newNoteFocusContent && (!newDesign || uiState.titleFieldEnabled) -> {
                 // New note (default): focus title
                 titleFocusRequester.requestFocus()
                 keyboardController?.show()
@@ -745,16 +807,56 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
         }
     }
 
+    val noteStatsVisible = uiState.wordCounterVisibility.visibleIn(isPreviewMode)
+    val surfaceColor = MaterialTheme.colorScheme.surface
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = if (newDesign) Color.Transparent else surfaceColor,
         topBar = {
             TopAppBar(
                 title = {
-                    NoteEditorToolbarTitle(
-                        toolbarTitle = uiState.toolbarTitle,
-                        autosaveIndicatorVisible = autosaveIndicatorVisible,
-                        compact = isCompactToolbar
-                    )
+                    if (!newDesign) {
+                        NoteEditorToolbarTitle(
+                            toolbarTitle = uiState.toolbarTitle,
+                            autosaveIndicatorVisible = autosaveIndicatorVisible,
+                            compact = isCompactToolbar
+                        )
+                    }
+                    // E3: ohne Tastatur bleibt die Leiste leer, der Titel steht groß im Blatt.
+                    // E9: mit Tastatur gleitet er in die Leiste, im Gleichlauf mit dem Blatt-Titel unten.
+                    if (newDesign && barTitleShown) {
+                        Box(
+                            modifier = Modifier.graphicsLayer {
+                                val p = barProgress.value
+                                alpha = p
+                                translationY = (1f - p) * size.height / 2
+                            }
+                        ) {
+                            EditorBarTitle(
+                                title = uiState.title,
+                                showTitle = uiState.title.isNotEmpty() || uiState.titleFieldEnabled,
+                                editing = barTitleEditing,
+                                onTitleChange = { viewModel.updateTitle(it) },
+                                onStartEditing = { barTitleEditing = true },
+                                onEditingDone = { backToText ->
+                                    barTitleEditing = false
+                                    if (backToText) contentFocusRequester.requestFocus()
+                                },
+                                focusRequester = barTitleFocusRequester,
+                                meta = {
+                                    NoteMetaLine(
+                                        editedAt = null,
+                                        text = uiState.content,
+                                        mode = noteStatsMode,
+                                        showStats = noteStatsVisible,
+                                        onCycle = { viewModel.cycleNoteStatsMode() },
+                                        style = MaterialTheme.typography.labelMedium,
+                                        cycleOnTap = false
+                                    )
+                                }
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -765,9 +867,20 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     }
                 },
                 actions = {
+                    // E9: Leiste als Titelfeld zeigt nur Zurück und Speichern.
+                    if (barTitleEditing && titleInBar) {
+                        SaveStateButton(saved = showSaved) { viewModel.saveNote() }
+                        return@TopAppBar
+                    }
                     // 🆕 v1.9.0 (F07): Markdown Preview Toggle
                     // 🆕 Issue #156: auch für Checklisten (Lesemodus)
-                    IconButton(onClick = { isPreviewMode = !isPreviewMode }) {
+                    IconButton(
+                        onClick = {
+                            // Crossfade hält das Feld kurz weiter; die Tastatur soll trotzdem sofort gehen.
+                            if (newDesign && !isPreviewMode) keyboardController?.hide()
+                            isPreviewMode = !isPreviewMode
+                        }
+                    ) {
                         Icon(
                             imageVector = if (isPreviewMode) {
                                 Icons.Outlined.Edit
@@ -806,13 +919,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
                     }
 
-                    // Save button
-                    IconButton(onClick = { viewModel.saveNote() }) {
-                        Icon(
-                            imageVector = Icons.Default.Save,
-                            contentDescription = stringResource(R.string.save)
-                        )
-                    }
+                    // Save button (E5: im neuen Design mit Zustand)
+                    SaveStateButton(saved = showSaved) { viewModel.saveNote() }
 
                     // 🆕 v1.10.0-Papa: Overflow menu (Calendar, Share, PDF, Delete)
                     // 🆕 v1.10.0-P2: Box ensures menu anchors to the ⋮ button,
@@ -888,6 +996,43 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 4.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                            // Formatierleiste aus (E11): Bild einfügen bleibt hier erreichbar, nur beim Bearbeiten,
+                            // weil die Brücke Feld → ViewModel im Lesemodus nicht läuft.
+                            if (uiState.noteType == NoteType.TEXT && !isPreviewMode && !uiState.formattingBarEnabled) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.md_toolbar_image)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Filled.AddPhotoAlternate,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    enabled = !isAttachingImage,
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        imagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    }
+                                )
+                            }
+                            if (newDesign && !showSheetTitle) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.editor_add_title)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Filled.Title,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        focusTitleOnShow = true
+                                    }
                                 )
                             }
                             DropdownMenuItem(
@@ -1041,31 +1186,52 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     } // Box
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface // 🆕 v2.5.0: neutral bar; accent shown as stripe below
+                    // 🆕 v2.5.0: neutral bar; accent shown as stripe below. E7: im neuen Design durchsichtig
+                    // über dem Farbverlauf.
+                    containerColor = if (newDesign) Color.Transparent else MaterialTheme.colorScheme.surface
                 )
             )
         },
-        modifier = Modifier.imePadding()
+        modifier = Modifier
+            .imePadding()
+            .then(if (newDesign) Modifier.noteColorGradient(noteAccentColor, surfaceColor, isDark) else Modifier)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // 🆕 v2.5.0: 3 dp accent stripe — full width, outside content padding
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(noteAccentColor ?: Color.Transparent)
-            )
+            // 🆕 v2.5.0: 3 dp accent stripe, full width, outside content padding (E7: im neuen Design Verlauf)
+            if (!newDesign) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(noteAccentColor ?: Color.Transparent)
+                )
+            }
+            // Formatierleiste sichtbar? Dann kein Abstand darunter, sonst bleiben ~20 dp bis zur Tastatur leer (#131).
+            // E6: im neuen Design erst mit der Tastatur, sonst steht die Leiste kurz allein am unteren Rand.
+            // Mit Hardware-Tastatur kommt keine Bildschirmtastatur, dann sofort.
+            val hasHardwareKeyboard =
+                LocalConfiguration.current.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO
+            val showFormattingBar = uiState.noteType == NoteType.TEXT &&
+                !isPreviewMode &&
+                isContentFocused &&
+                uiState.formattingBarEnabled &&
+                (!newDesign || isImeVisible || hasHardwareKeyboard)
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .wrapContentWidth(align = Alignment.CenterHorizontally) // 🆕 v1.10.0-P2: Center on tablets
                     .widthIn(max = 720.dp) // 🆕 v1.10.0-P2: Constrain width for readability
                     .fillMaxWidth() // 🆕 v1.10.0-P2: Fill up to constrained width
-                    .padding(16.dp)
+                    .padding(
+                        start = Dimensions.SpacingLarge,
+                        end = Dimensions.SpacingLarge,
+                        top = if (newDesign) Dimensions.SpacingSmall else Dimensions.SpacingLarge,
+                        bottom = if (showFormattingBar) 0.dp else Dimensions.SpacingLarge
+                    )
             ) {
                 // 🆕 v2.16.0: Konflikt-Banner über allem anderen — die Entscheidung kommt vor
                 // dem Weiterschreiben, sonst läuft der nächste Upload wieder in dasselbe 412.
@@ -1087,43 +1253,92 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     )
                 }
 
-                // Title Input (for both types)
-                OutlinedTextField(
-                    value = uiState.title,
-                    onValueChange = { viewModel.updateTitle(it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(titleFocusRequester)
-                        .onFocusChanged { isTitleFocused = it.isFocused },
-                    label = { Text(stringResource(R.string.title)) },
-                    singleLine = true, // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
-                    // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Next // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
-                    ),
-                    // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
-                    keyboardActions = KeyboardActions(
-                        onNext = {
-                            when (uiState.noteType) {
-                                NoteType.TEXT -> {
-                                    // Text-Notiz: Fokus direkt ins Content-Feld
-                                    contentFocusRequester.requestFocus()
-                                }
-                                NoteType.CHECKLIST -> {
-                                    // Checkliste: Fokus auf erstes Item
-                                    val firstItemId = checklistItems.firstOrNull()?.id
-                                    if (firstItemId != null) {
-                                        focusNewItemId = firstItemId
-                                    }
+                // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
+                val titleKeyboardActions = KeyboardActions(
+                    onNext = {
+                        when (uiState.noteType) {
+                            NoteType.TEXT -> {
+                                // Text-Notiz: Fokus direkt ins Content-Feld
+                                contentFocusRequester.requestFocus()
+                            }
+                            NoteType.CHECKLIST -> {
+                                // Checkliste: Fokus auf erstes Item
+                                val firstItemId = checklistItems.firstOrNull()?.id
+                                if (firstItemId != null) {
+                                    focusNewItemId = firstItemId
                                 }
                             }
                         }
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                    }
                 )
+                // Title Input (for both types)
+                if (newDesign) {
+                    // E1: Titel ohne Rahmen als Überschrift des Blatts. E9: bei offener Tastatur in der Leiste.
+                    Column(modifier = Modifier.collapseUp { barProgress.value }) {
+                        AnimatedVisibility(
+                            visible = showSheetTitle,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            SheetTitleField(
+                                title = uiState.title,
+                                onTitleChange = { viewModel.updateTitle(it) },
+                                keyboardActions = titleKeyboardActions,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(titleFocusRequester)
+                                    .onFocusChanged { isTitleFocused = it.isFocused }
+                            )
+                            // Erst jetzt hängt der FocusRequester am Feld.
+                            LaunchedEffect(focusTitleOnShow) {
+                                if (focusTitleOnShow) {
+                                    titleFocusRequester.requestFocus()
+                                    keyboardController?.show()
+                                    focusTitleOnShow = false
+                                }
+                            }
+                        }
+                        // E4 / C3: Änderungsdatum und Wortzahl bzw. offen/erledigt statt Pille.
+                        NoteMetaLine(
+                            editedAt = lastEditedAt,
+                            text = uiState.content,
+                            mode = noteStatsMode,
+                            showStats = noteStatsVisible,
+                            onCycle = { viewModel.cycleNoteStatsMode() },
+                            checklistCounts = if (uiState.noteType == NoteType.CHECKLIST) {
+                                checklistItems.count { !it.isChecked } to checklistItems.count { it.isChecked }
+                            } else {
+                                null
+                            },
+                            modifier = Modifier.padding(
+                                horizontal = Dimensions.SpacingSmall,
+                                vertical = Dimensions.SpacingXSmall
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = uiState.title,
+                        onValueChange = { viewModel.updateTitle(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(titleFocusRequester)
+                            .onFocusChanged { isTitleFocused = it.isFocused },
+                        label = { Text(stringResource(R.string.title)) },
+                        singleLine = true, // 🆕 v1.8.2 (IMPL_09): Enter navigiert statt Newline
+                        // 🆕 v1.8.2: Auto-Großschreibung für Wortanfänge im Titel
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Next // 🆕 v1.8.2 (IMPL_09): Weiter-Taste
+                        ),
+                        // 🆕 v1.8.2 (IMPL_09): Nach Enter/Next → ins passende Feld springen
+                        keyboardActions = titleKeyboardActions,
+                        shape = RoundedCornerShape(16.dp)
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 when (uiState.noteType) {
                     NoteType.TEXT -> {
@@ -1142,46 +1357,67 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 .fillMaxWidth()
                                 .weight(1f)
                         ) {
-                            if (isPreviewMode) {
-                                // 🆕 v1.9.0 (F07): Markdown rendered preview
-                                val blocks = remember(uiState.content) {
-                                    MarkdownEngine.parse(uiState.content)
-                                }
-                                MarkdownPreview(
-                                    blocks = blocks,
-                                    modifier = Modifier.fillMaxSize(),
-                                    // 🆕 Bild-Attachments v2: Long-Press-Menü schreibt Größe/Ausrichtung
-                                    // zurück in die Markdown-Source. Explizites updateContent ist
-                                    // zwingend: die snapshotFlow-Bridge lebt in TextNoteContent (im
-                                    // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
-                                    onImageTokensChange = { image, size, align, altText ->
-                                        applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
-                                    },
-                                    // Ab Android 13 zeigt das System selbst eine Kopier-Bestätigung.
-                                    onImageCopied = {
-                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                            scope.launch { snackbarHostState.showSnackbar(msgImageCopied) }
-                                        }
+                            // UI-Beta: Lesen und Bearbeiten stehen an derselben Stelle (E2), der Wechsel blendet über.
+                            // Altes Design: snap() = sofortiger Wechsel wie bisher.
+                            Crossfade(
+                                targetState = isPreviewMode,
+                                animationSpec = if (newDesign) tween(MODE_CROSSFADE_MS) else snap(),
+                                label = "previewMode"
+                            ) { preview ->
+                                if (preview) {
+                                    // 🆕 v1.9.0 (F07): Markdown rendered preview
+                                    val blocks = remember(uiState.content) {
+                                        MarkdownEngine.parse(uiState.content)
                                     }
-                                )
-                            } else {
-                                // Content Input for TEXT notes
-                                TextNoteContent(
-                                    textFieldState = textFieldState,
-                                    onContentChange = { viewModel.updateContent(it) },
-                                    focusRequester = contentFocusRequester,
-                                    outputTransformation = markdownTransformation,
-                                    // 🆕 v2.12.0: Bilder aus der Zwischenablage
-                                    onPasteImages = { uris ->
-                                        scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
-                                    },
-                                    onFocusChanged = { isContentFocused = it },
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                                    MarkdownPreview(
+                                        blocks = blocks,
+                                        modifier = Modifier.fillMaxSize(),
+                                        scrollState = previewScrollState,
+                                        // E10 (#131), Stufe 1: Tipp auf den Text öffnet das Bearbeiten an derselben Stelle.
+                                        onTextTap = if (newDesign) {
+                                            { anchor ->
+                                                tapAnchor = anchor
+                                                isPreviewMode = false
+                                            }
+                                        } else {
+                                            null
+                                        },
+                                        // 🆕 Bild-Attachments v2: Long-Press-Menü schreibt Größe/Ausrichtung
+                                        // zurück in die Markdown-Source. Explizites updateContent ist
+                                        // zwingend: die snapshotFlow-Bridge lebt in TextNoteContent (im
+                                        // Preview-Mode nicht komponiert), die Preview rendert aus uiState.content.
+                                        onImageTokensChange = { image, size, align, altText ->
+                                            applyImageTokenRewrite(textFieldState, viewModel, image, size, align, altText)
+                                        },
+                                        // Ab Android 13 zeigt das System selbst eine Kopier-Bestätigung.
+                                        onImageCopied = {
+                                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                                scope.launch { snackbarHostState.showSnackbar(msgImageCopied) }
+                                            }
+                                        }
+                                    )
+                                } else {
+                                    // Content Input for TEXT notes
+                                    TextNoteContent(
+                                        textFieldState = textFieldState,
+                                        onContentChange = { viewModel.updateContent(it) },
+                                        focusRequester = contentFocusRequester,
+                                        outputTransformation = markdownTransformation,
+                                        // 🆕 v2.12.0: Bilder aus der Zwischenablage
+                                        onPasteImages = { uris ->
+                                            scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
+                                        },
+                                        onFocusChanged = { isContentFocused = it },
+                                        modifier = Modifier.fillMaxSize(),
+                                        tapAnchor = tapAnchor,
+                                        onTapAnchorApplied = { tapAnchor = null }
+                                    )
+                                }
                             }
 
                             // 🆕 v2.16.0 (Issue #126): Wort-/Zeichenzahl, Tippen wechselt.
-                            if (uiState.wordCounterVisibility.visibleIn(isPreviewMode)) {
+                            // E4: im neuen Design steht die Zahl in der Zeile unter dem Titel.
+                            if (!newDesign && noteStatsVisible) {
                                 NoteStatsPill(
                                     text = uiState.content,
                                     mode = noteStatsMode,
@@ -1194,8 +1430,9 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
 
                         // Bleibt außerhalb der Box: sonst schwebte die Pille über den Formatier-Icons.
-                        if (!isPreviewMode && isContentFocused) {
+                        if (showFormattingBar) {
                             MarkdownToolbar(
+                                floating = newDesign, // E6: abgerundeter, schwebender Balken
                                 textFieldState = textFieldState,
                                 onImageClick = {
                                     imagePickerLauncher.launch(
@@ -1432,10 +1669,14 @@ private fun TextNoteContent(
     outputTransformation: MarkdownOutputTransformation,
     onPasteImages: (List<Uri>) -> Unit, // 🆕 v2.12.0
     modifier: Modifier = Modifier,
-    onFocusChanged: (Boolean) -> Unit = {}
+    onFocusChanged: (Boolean) -> Unit = {},
+    tapAnchor: TapAnchor? = null, // UI-Beta (E10): Tippstelle aus dem Lesemodus
+    onTapAnchorApplied: () -> Unit = {}
 ) {
     // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
     // v1.9.0 (F07): TextFieldState now provided from parent for toolbar access
+    // UI-Beta (E2): im neuen Design ohne Rahmen, Text an derselben Stelle wie im Lesemodus
+    val frameless = LocalNewDesign.current
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope() // 🆕 v2.12.0: async HTML-Konvertierung
 
@@ -1444,28 +1685,6 @@ private fun TextNoteContent(
 
     // Layout-Result für Tap-to-Toggle (Task-Checkboxes)
     val textLayoutRef = remember { mutableStateOf<TextLayoutResult?>(null) }
-
-    fun handleCheckboxTap(event: PointerEvent) {
-        if (event.type != PointerEventType.Press) return
-        val tapPos = event.changes.firstOrNull()?.position ?: return
-        val layout = textLayoutRef.value ?: return
-        val charOff = layout.getOffsetForPosition(tapPos)
-        val rawText = textFieldState.text.toString()
-        val lineStartOff = rawText.lastIndexOf('\n', (charOff - 1).coerceAtLeast(0))
-            .let { if (it < 0) 0 else it + 1 }
-        if (charOff - lineStartOff > CHECKBOX_TAP_PREFIX_COLS) return
-        val lineEndOff = rawText.indexOf('\n', lineStartOff).let { if (it < 0) rawText.length else it }
-        val rawLine = rawText.substring(lineStartOff, lineEndOff)
-        val taskMatch = MarkdownEngine.TASK_LIST_REGEX.matchEntire(rawLine) ?: return
-        val isChecked = taskMatch.groupValues[1].equals("x", ignoreCase = true)
-        // Aus dem Match statt fixem Offset: der Marker darf eingerückt sein, "*"/"+" heißen,
-        // und "- []" hat gar kein Zeichen zwischen den Klammern (replace über Länge 0 = Insert).
-        val open = lineStartOff + rawLine.indexOf('[')
-        val close = lineStartOff + rawLine.indexOf(']')
-        textFieldState.edit {
-            replace(open + 1, close, if (isChecked) " " else "x")
-        }
-    }
 
     // Text-Änderungen an ViewModel propagieren
     LaunchedEffect(textFieldState) {
@@ -1477,10 +1696,19 @@ private fun TextNoteContent(
             }
     }
 
+    // E10: Cursor und Scroll an die Stelle, die im Lesemodus angetippt wurde.
+    var anchored by remember { mutableStateOf(false) }
+    LaunchedEffect(tapAnchor) {
+        val anchor = tapAnchor ?: return@LaunchedEffect
+        applyTapAnchor(anchor, textFieldState, scrollState) { snapshotFlow { textLayoutRef.value }.filterNotNull().first() }
+        anchored = true
+        onTapAnchorApplied()
+    }
+
     // 🆕 v1.8.2 (IMPL_07): Auto-Scroll zum Ende wenn Fokus erhalten (Tastatur öffnet sich)
     // Delay gibt dem Layout Zeit, sich nach imePadding-Resize zu stabilisieren
     LaunchedEffect(isFocused) {
-        if (isFocused) {
+        if (isFocused && !anchored && tapAnchor == null) {
             delay(LAYOUT_DELAY_MS)
             scrollState.animateScrollTo(scrollState.maxValue)
         }
@@ -1488,29 +1716,49 @@ private fun TextNoteContent(
 
     val context = LocalContext.current
 
+    val fieldModifier = modifier
+        .focusRequester(focusRequester)
+        .onFocusChanged { focusState ->
+            isFocused = focusState.isFocused
+            onFocusChanged(focusState.isFocused)
+        }
+        .contentReceiver { transferable ->
+            handlePastedContent(transferable, context, textFieldState, scope, onPasteImages)
+        }
+    val checkboxTapModifier = Modifier.pointerInput(textFieldState) {
+        awaitPointerEventScope {
+            while (true) {
+                toggleTaskCheckbox(
+                    awaitPointerEvent(PointerEventPass.Initial),
+                    textLayoutRef.value,
+                    textFieldState,
+                    scrollOffsetY = if (frameless) scrollState.value else 0
+                )
+            }
+        }
+    }
+    // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
+    val keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+
+    if (frameless) {
+        FramelessContentField(
+            textFieldState = textFieldState,
+            modifier = fieldModifier
+                .padding(horizontal = Dimensions.SpacingSmall)
+                .then(checkboxTapModifier),
+            keyboardOptions = keyboardOptions,
+            scrollState = scrollState,
+            outputTransformation = outputTransformation,
+            onTextLayout = { textLayoutRef.value = it }
+        )
+        return
+    }
+
     OutlinedTextField(
         state = textFieldState,
-        modifier = modifier
-            .focusRequester(focusRequester)
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-                onFocusChanged(focusState.isFocused)
-            }
-            .contentReceiver { transferable ->
-                handlePastedContent(transferable, context, textFieldState, scope, onPasteImages)
-            }
-            .pointerInput(textFieldState) {
-                awaitPointerEventScope {
-                    while (true) {
-                        handleCheckboxTap(awaitPointerEvent(PointerEventPass.Initial))
-                    }
-                }
-            },
+        modifier = fieldModifier.then(checkboxTapModifier),
         label = { Text(stringResource(R.string.content)) },
-        // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Sentences
-        ),
+        keyboardOptions = keyboardOptions,
         shape = RoundedCornerShape(16.dp),
         // 🆕 v1.8.2 (IMPL_07): Externer ScrollState für programmatisches Auto-Scroll
         scrollState = scrollState,
@@ -1769,7 +2017,14 @@ private fun LazyItemScope.DraggableChecklistItem(
                 clip = isDragging || elevation > 0.dp
             }
             .background(
-                color = MaterialTheme.colorScheme.surface,
+                // UI-Beta (E7): in Ruhe durchsichtig, damit der Farbverlauf durchscheint. Nur Farbe, Modifier
+                // und Reihenfolge bleiben (Regel aus dnd-protection/checklist-animations). Beim Ziehen und
+                // Abhaken deckend, sonst schöbe sich eine Zeile durchsichtig über die andere.
+                color = if (LocalNewDesign.current && !isDragging && !isCheckAnimating && elevation == 0.dp) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
                 shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
             )
     )
@@ -2130,13 +2385,20 @@ internal fun ChecklistEditor(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                TextButton(onClick = onAddItemAtEnd) {
+                // UI-Beta (C2): getönter Knopf. Liegt außerhalb der LazyColumn, berührt das Ziehen nicht;
+                // FilledTonalButton und TextButton haben dieselbe Mindesthöhe (40 dp).
+                val addItemContent: @Composable RowScope.() -> Unit = {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(stringResource(R.string.add_item))
+                }
+                if (LocalNewDesign.current) {
+                    FilledTonalButton(onClick = onAddItemAtEnd, content = addItemContent)
+                } else {
+                    TextButton(onClick = onAddItemAtEnd, content = addItemContent)
                 }
 
                 IconButton(onClick = onSortClick) {
@@ -2265,4 +2527,31 @@ private fun ClipEntry.firstHtmlText(): String? {
         if (!html.isNullOrBlank()) return html
     }
     return null
+}
+
+/**
+ * Tipp auf `[ ]`/`[x]` am Zeilenanfang schaltet die Aufgabe um. [scrollOffsetY]: ohne Rahmen (UI-Beta)
+ * liegt der Tipp im Koordinatenraum des Textes, nur der Scroll fehlt; mit Rahmen 0 wie bisher.
+ */
+private fun toggleTaskCheckbox(event: PointerEvent, layout: TextLayoutResult?, textFieldState: TextFieldState, scrollOffsetY: Int) {
+    if (event.type != PointerEventType.Press) return
+    val rawPos = event.changes.firstOrNull()?.position ?: return
+    val tapPos = rawPos.copy(y = rawPos.y + scrollOffsetY)
+    if (layout == null) return
+    val charOff = layout.getOffsetForPosition(tapPos)
+    val rawText = textFieldState.text.toString()
+    val lineStartOff = rawText.lastIndexOf('\n', (charOff - 1).coerceAtLeast(0))
+        .let { if (it < 0) 0 else it + 1 }
+    if (charOff - lineStartOff > CHECKBOX_TAP_PREFIX_COLS) return
+    val lineEndOff = rawText.indexOf('\n', lineStartOff).let { if (it < 0) rawText.length else it }
+    val rawLine = rawText.substring(lineStartOff, lineEndOff)
+    val taskMatch = MarkdownEngine.TASK_LIST_REGEX.matchEntire(rawLine) ?: return
+    val isChecked = taskMatch.groupValues[1].equals("x", ignoreCase = true)
+    // Aus dem Match statt fixem Offset: der Marker darf eingerückt sein, "*"/"+" heißen,
+    // und "- []" hat gar kein Zeichen zwischen den Klammern (replace über Länge 0 = Insert).
+    val open = lineStartOff + rawLine.indexOf('[')
+    val close = lineStartOff + rawLine.indexOf(']')
+    textFieldState.edit {
+        replace(open + 1, close, if (isChecked) " " else "x")
+    }
 }

@@ -36,6 +36,7 @@ import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.settings.SettingsRoute
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
+import dev.dettmer.simplenotes.ui.settings.components.GroupPosition
 import dev.dettmer.simplenotes.ui.settings.components.SettingsCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
@@ -100,7 +101,7 @@ fun SettingsMainScreen(
                 .padding(paddingValues),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_app)) }
+            item { GroupHeader(stringResource(R.string.settings_group_app)) }
 
             // Language Settings
             item {
@@ -108,6 +109,7 @@ fun SettingsMainScreen(
                     icon = Icons.Default.Language,
                     title = stringResource(R.string.settings_language),
                     subtitle = languageSubtitle,
+                    groupPosition = GroupPosition.FIRST,
                     onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             try {
@@ -145,6 +147,7 @@ fun SettingsMainScreen(
                     icon = Icons.Default.GridView,
                     title = stringResource(R.string.display_settings_title),
                     subtitle = displaySubtitle,
+                    groupPosition = GroupPosition.MIDDLE,
                     onClick = { onNavigate(SettingsRoute.Display) }
                 )
             }
@@ -161,11 +164,12 @@ fun SettingsMainScreen(
                             R.string.settings_security_subtitle_off
                         }
                     ),
+                    groupPosition = GroupPosition.LAST,
                     onClick = { onNavigate(SettingsRoute.Security) }
                 )
             }
 
-            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_sync)) }
+            item { GroupHeader(stringResource(R.string.settings_group_sync)) }
 
             // Server-Einstellungen
             item {
@@ -207,6 +211,7 @@ fun SettingsMainScreen(
                             MaterialTheme.colorScheme.tertiary
                         else -> Color.Gray
                     },
+                    groupPosition = GroupPosition.FIRST,
                     onClick = { onNavigate(SettingsRoute.Server) }
                 )
             }
@@ -255,11 +260,12 @@ fun SettingsMainScreen(
                         null
                     },
                     statusColor = if (!isServerConfigured) MaterialTheme.colorScheme.tertiary else Color.Gray,
+                    groupPosition = GroupPosition.LAST,
                     onClick = { onNavigate(SettingsRoute.Sync) }
                 )
             }
 
-            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_data)) }
+            item { GroupHeader(stringResource(R.string.settings_group_data)) }
 
             // Backup & Wiederherstellung
             item {
@@ -267,6 +273,7 @@ fun SettingsMainScreen(
                     icon = Icons.Default.Backup,
                     title = stringResource(R.string.settings_backup),
                     subtitle = stringResource(R.string.settings_backup_subtitle),
+                    groupPosition = GroupPosition.FIRST,
                     onClick = { onNavigate(SettingsRoute.Backup) }
                 )
             }
@@ -277,6 +284,7 @@ fun SettingsMainScreen(
                     icon = Icons.Default.FileOpen,
                     title = stringResource(R.string.settings_import_title),
                     subtitle = stringResource(R.string.settings_import_subtitle),
+                    groupPosition = GroupPosition.MIDDLE,
                     onClick = { onNavigate(SettingsRoute.Import) }
                 )
             }
@@ -287,6 +295,7 @@ fun SettingsMainScreen(
                     icon = Icons.Default.DeleteOutline,
                     title = stringResource(R.string.trash_title),
                     subtitle = stringResource(R.string.settings_trash_subtitle),
+                    groupPosition = GroupPosition.MIDDLE,
                     onClick = { onNavigate(SettingsRoute.Trash) }
                 )
             }
@@ -297,11 +306,12 @@ fun SettingsMainScreen(
                     icon = Icons.Default.History,
                     title = stringResource(R.string.activity_log_title),
                     subtitle = stringResource(R.string.settings_activity_log_subtitle),
+                    groupPosition = GroupPosition.LAST,
                     onClick = { onNavigate(SettingsRoute.ActivityLog) }
                 )
             }
 
-            item { SettingsSectionHeader(text = stringResource(R.string.settings_group_info)) }
+            item { GroupHeader(stringResource(R.string.settings_group_info)) }
 
             // Über diese App
             item {
@@ -313,6 +323,7 @@ fun SettingsMainScreen(
                         BuildConfig.VERSION_NAME,
                         BuildConfig.VERSION_CODE
                     ),
+                    groupPosition = if (developerOptionsUnlocked) GroupPosition.FIRST else GroupPosition.SINGLE,
                     onClick = { onNavigate(SettingsRoute.About) }
                 )
             }
@@ -328,10 +339,17 @@ fun SettingsMainScreen(
                         } else {
                             stringResource(R.string.settings_debug_logging_off)
                         },
+                        groupPosition = GroupPosition.LAST,
                         onClick = { onNavigate(SettingsRoute.Debug) }
                     )
                 }
             }
         }
     }
+}
+
+/** S1/S3: Gruppenname links über der Gruppen-Karte, auf Höhe der Symbole. */
+@Composable
+private fun GroupHeader(text: String) {
+    SettingsSectionHeader(modifier = Modifier.padding(start = 18.dp, top = 8.dp), text = text)
 }

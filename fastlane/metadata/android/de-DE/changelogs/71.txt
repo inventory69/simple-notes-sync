@@ -1,0 +1,12 @@
+📃 v2.23.0 - Neues Design (Beta)
+
+• Beta: neues Design unter Einstellungen → Anzeige
+• Editor ohne Kästen, Tipp auf den Text zum Bearbeiten
+• Titel wandert beim Tippen in die Leiste
+• Notizliste mit Suchfeld und Sync-Knopf
+• Ruhigere Einstellungen und Übergänge
+• Fix: Farbsortierung folgt der Palette, ohne Farbe zuletzt
+• Fix: Sync lädt Notizen neu hoch, wenn der Server-Ordner fehlt
+• Übersetzungsupdate: Chinesisch
+
+Danke an @Fs00, @funnyspiders, @Adnan4744, @siddhnarhari und hamburger2048!

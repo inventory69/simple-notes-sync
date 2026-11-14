@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,18 +14,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.TextFormat
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.GridView
@@ -43,8 +44,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.ImageCompressionMode
@@ -52,14 +58,16 @@ import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel
 import dev.dettmer.simplenotes.ui.settings.components.RadioOption
-import dev.dettmer.simplenotes.ui.settings.components.SettingsChip
-import dev.dettmer.simplenotes.ui.settings.components.SettingsChipRow
+import dev.dettmer.simplenotes.ui.settings.components.SegmentLabel
+import dev.dettmer.simplenotes.ui.settings.components.SettingsColorDots
 import dev.dettmer.simplenotes.ui.settings.components.SettingsHint
 import dev.dettmer.simplenotes.ui.settings.components.SettingsRadioGroup
 import dev.dettmer.simplenotes.ui.settings.components.SettingsScaffold
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionHeader
+import dev.dettmer.simplenotes.ui.settings.components.SettingsSegmentedRow
 import dev.dettmer.simplenotes.ui.settings.components.SettingsSwitch
+import dev.dettmer.simplenotes.ui.settings.components.splitParenthetical
 import dev.dettmer.simplenotes.ui.theme.ColorTheme
 import dev.dettmer.simplenotes.ui.theme.FontSizeScale
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
@@ -131,8 +139,18 @@ private fun AppearanceSection(viewModel: SettingsViewModel) {
     val colorTheme by viewModel.colorTheme.collectAsState()
     val fontSizeScale by viewModel.fontSizeScale.collectAsState()
     val customAppTitle by viewModel.customAppTitle.collectAsState()
+    val newDesign by viewModel.newDesign.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.theme_mode_title)) {
+        // UI-Beta: Schalter bleibt nur bis zur Entscheidung, danach entfällt er wieder.
+        SettingsSwitch(
+            title = stringResource(R.string.settings_new_design_toggle),
+            subtitle = stringResource(R.string.settings_new_design_description),
+            checked = newDesign,
+            onCheckedChange = { viewModel.setNewDesign(it) },
+            icon = Icons.Default.AutoAwesome
+        )
+
         SettingsSectionHeader(text = stringResource(R.string.theme_mode_subsection))
 
         ThemeModeSelector(
@@ -272,6 +290,21 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
     }
 }
 
+/** UI-Beta: nur das neue Blatt kann ohne Titelfeld, im alten Design bleibt der Schalter verborgen. */
+@Composable
+private fun TitleFieldSwitch(viewModel: SettingsViewModel) {
+    val newDesign by viewModel.newDesign.collectAsState()
+    val titleFieldEnabled by viewModel.titleFieldEnabled.collectAsState()
+    if (!newDesign) return
+    SettingsSwitch(
+        title = stringResource(R.string.editor_title_field_toggle),
+        subtitle = stringResource(R.string.editor_title_field_description),
+        checked = titleFieldEnabled,
+        onCheckedChange = { viewModel.setTitleFieldEnabled(it) },
+        icon = Icons.Default.Title
+    )
+}
+
 /** Karte 3: Editor-Verhalten + Standard-Notizfarbe. */
 @Composable
 private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String?, onDefaultColorClick: () -> Unit) {
@@ -281,6 +314,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
     val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
     val wordCounterVisibility by viewModel.wordCounterVisibility.collectAsState()
+    val formattingBarEnabled by viewModel.formattingBarEnabled.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.autosave_section)) {
         SettingsSwitch(
@@ -300,6 +334,17 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) },
             icon = Icons.Default.Visibility
         )
+
+        // #131 (E11)
+        SettingsSwitch(
+            title = stringResource(R.string.editor_formatting_bar_toggle),
+            subtitle = stringResource(R.string.editor_formatting_bar_description),
+            checked = formattingBarEnabled,
+            onCheckedChange = { viewModel.setFormattingBarEnabled(it) },
+            icon = Icons.Default.TextFormat
+        )
+
+        TitleFieldSwitch(viewModel)
 
         // 🆕 Issue #156
         SettingsSwitch(
@@ -403,15 +448,12 @@ private val DEFAULT_IMAGE_SIZE_PRESETS = listOf(
 
 @Composable
 private fun DefaultImageSizeSelector(currentPercent: Int, onPercentSelected: (Int) -> Unit) {
-    SettingsChipRow {
-        for ((labelRes, percent) in DEFAULT_IMAGE_SIZE_PRESETS) {
-            SettingsChip(
-                label = stringResource(labelRes),
-                selected = currentPercent == percent,
-                onClick = { onPercentSelected(percent) },
-                modifier = Modifier.widthIn(min = 56.dp)
-            )
-        }
+    SettingsSegmentedRow(
+        options = DEFAULT_IMAGE_SIZE_PRESETS.map { it.second },
+        selected = currentPercent,
+        onSelect = onPercentSelected
+    ) { percent ->
+        SegmentLabel(stringResource(DEFAULT_IMAGE_SIZE_PRESETS.first { it.second == percent }.first))
     }
 }
 
@@ -465,30 +507,15 @@ private fun DefaultNoteColorRow(currentColor: String?, onClick: () -> Unit) {
 
 @Composable
 private fun DisplayModeSelector(currentMode: String, onModeSelected: (String) -> Unit) {
-    SettingsChipRow {
-        SettingsChip(
-            label = stringResource(R.string.display_mode_list),
-            selected = currentMode == "list",
-            onClick = { onModeSelected("list") }
-        ) { contentColor ->
+    SettingsSegmentedRow(options = listOf("list", "grid"), selected = currentMode, onSelect = onModeSelected) { mode ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.List,
+                imageVector = if (mode == "list") Icons.AutoMirrored.Outlined.List else Icons.Outlined.GridView,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = contentColor
+                modifier = Modifier.size(18.dp)
             )
-        }
-        SettingsChip(
-            label = stringResource(R.string.display_mode_grid),
-            selected = currentMode == "grid",
-            onClick = { onModeSelected("grid") }
-        ) { contentColor ->
-            Icon(
-                imageVector = Icons.Outlined.GridView,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = contentColor
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+            SegmentLabel(stringResource(if (mode == "list") R.string.display_mode_list else R.string.display_mode_grid))
         }
     }
 }
@@ -501,27 +528,11 @@ private fun DisplayModeSelector(currentMode: String, onModeSelected: (String) ->
 
 @Composable
 private fun GridColumnSelector(currentColumns: Int, onColumnsSelected: (Int) -> Unit) {
-    SettingsChipRow {
-        for (count in Constants.GRID_MIN_COLUMNS..Constants.GRID_MAX_COLUMNS) {
-            SettingsChip(
-                label = "$count",
-                selected = currentColumns == count,
-                onClick = { onColumnsSelected(count) },
-                modifier = Modifier.widthIn(min = 56.dp)
-            ) { contentColor ->
-                // Mini-grid preview: N small squares side by side
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    repeat(count) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(color = contentColor, shape = RoundedCornerShape(2.dp))
-                        )
-                    }
-                }
-            }
-        }
-    }
+    SettingsSegmentedRow(
+        options = (Constants.GRID_MIN_COLUMNS..Constants.GRID_MAX_COLUMNS).toList(),
+        selected = currentColumns,
+        onSelect = onColumnsSelected
+    ) { count -> SegmentLabel("$count") }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -531,27 +542,12 @@ private fun GridColumnSelector(currentColumns: Int, onColumnsSelected: (Int) -> 
 
 @Composable
 private fun ThemeModeSelector(currentMode: ThemeMode, onModeSelected: (ThemeMode) -> Unit) {
-    SettingsChipRow {
-        ThemeMode.entries.forEach { mode ->
-            SettingsChip(
-                label = stringResource(mode.displayNameResId),
-                selected = currentMode == mode,
-                onClick = { onModeSelected(mode) }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(mode.previewColor)
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            shape = CircleShape
-                        )
-                )
-            }
-        }
+    // S2: Zusatz in Klammern („System (follow device)“) wandert unter die Zeile, das Segment trägt nur den Namen.
+    SettingsSegmentedRow(options = ThemeMode.entries, selected = currentMode, onSelect = onModeSelected) { mode ->
+        SegmentLabel(splitParenthetical(stringResource(mode.displayNameResId)).first)
     }
+    splitParenthetical(stringResource(currentMode.displayNameResId)).second
+        ?.let { SettingsHint(text = it.replaceFirstChar { c -> c.uppercase() }, modifier = Modifier.padding(top = 0.dp)) }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -560,28 +556,32 @@ private fun ThemeModeSelector(currentMode: ThemeMode, onModeSelected: (ThemeMode
 // all chips visible at once without horizontal scrolling.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Regenbogen-Sweep wie im UI-Artifact: die Farben kommen erst vom Hintergrundbild.
+private val DynamicSwatch = Brush.sweepGradient(
+    listOf(
+        ColorTheme.DEFAULT.previewColor,
+        Color(0xFF1565C0),
+        Color(0xFF2E7D32),
+        Color(0xFFB45309),
+        Color(0xFFC62828),
+        ColorTheme.DEFAULT.previewColor
+    )
+)
+
 @Composable
 private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (ColorTheme) -> Unit) {
     val dynamicUnavailable = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
 
-    SettingsChipRow {
-        ColorTheme.entries.forEach { theme ->
-            val isDisabled = theme == ColorTheme.DYNAMIC && dynamicUnavailable
-            SettingsChip(
-                label = stringResource(theme.displayNameResId),
-                selected = currentTheme == theme,
-                enabled = !isDisabled,
-                onClick = { onThemeSelected(theme) }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(theme.previewColor)
-                )
-            }
-        }
-    }
+    // S2: sieben Farbpunkte mit Namen statt Kacheln
+    SettingsColorDots(
+        options = ColorTheme.entries,
+        selected = currentTheme,
+        onSelect = onThemeSelected,
+        color = { it.previewColor },
+        name = { stringResource(it.displayNameResId) },
+        enabled = { !(it == ColorTheme.DYNAMIC && dynamicUnavailable) },
+        brush = { if (it == ColorTheme.DYNAMIC) DynamicSwatch else SolidColor(it.previewColor) }
+    )
 
     if (dynamicUnavailable) {
         Text(
@@ -600,14 +600,8 @@ private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (Color
 
 @Composable
 private fun NotePreviewLengthSelector(currentLength: NotePreviewLength, onLengthSelected: (NotePreviewLength) -> Unit) {
-    SettingsChipRow {
-        NotePreviewLength.entries.forEach { length ->
-            SettingsChip(
-                label = stringResource(length.displayNameResId),
-                selected = currentLength == length,
-                onClick = { onLengthSelected(length) }
-            )
-        }
+    SettingsSegmentedRow(options = NotePreviewLength.entries, selected = currentLength, onSelect = onLengthSelected) {
+        SegmentLabel(stringResource(it.displayNameResId))
     }
 }
 
@@ -618,21 +612,24 @@ private fun NotePreviewLengthSelector(currentLength: NotePreviewLength, onLength
 
 @Composable
 private fun FontSizeSelector(currentScale: FontSizeScale, onScaleSelected: (FontSizeScale) -> Unit) {
-    SettingsChipRow {
-        FontSizeScale.entries.forEach { scale ->
-            SettingsChip(
-                label = stringResource(scale.displayNameResId),
-                selected = currentScale == scale,
-                onClick = { onScaleSelected(scale) }
-            ) { contentColor ->
-                Text(
-                    text = "Aa",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize * (scale.multiplier ?: 1.0f)
-                    ),
-                    color = contentColor
-                )
-            }
+    // S2: „System“ als Wort, die festen Stufen als „Aa“ in ihrer Größe; der Name der Wahl steht darunter.
+    SettingsSegmentedRow(options = FontSizeScale.entries, selected = currentScale, onSelect = onScaleSelected) { scale ->
+        val multiplier = scale.multiplier
+        if (multiplier == null) {
+            SegmentLabel(stringResource(scale.displayNameResId))
+        } else {
+            val name = stringResource(scale.displayNameResId)
+            Text(
+                text = "Aa",
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = MaterialTheme.typography.labelLarge.fontSize * multiplier
+                ),
+                maxLines = 1,
+                // TalkBack liest sonst fünfmal „Aa“.
+                modifier = Modifier.semantics { contentDescription = name }
+            )
         }
     }
+    // „System“ steht schon im Segment; die festen Stufen zeigen nur „Aa“, ihr Name steht darunter.
+    if (currentScale.multiplier != null) SettingsHint(text = stringResource(currentScale.displayNameResId))
 }
