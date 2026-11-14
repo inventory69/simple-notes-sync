@@ -344,7 +344,7 @@
     <string name="backup_decryption_required">🔒 Sauvegarde chiffrée</string>
     <string name="backup_server_section">Sauvegarde sur le serveur</string>
     <string name="backup_restore_server">☁️ Restaurer depuis le serveur</string>
-    <string name="backup_restore_dialog_title">⚠️ Restaurer la sauvegarde ?</string>
+    <string name="backup_restore_dialog_title">⚠️ Restaurer la sauvegarde ?</string>
     <string name="backup_restore_source">Source : %s</string>
     <string name="backup_restore_source_file">Fichier local</string>
     <string name="backup_restore_source_server">Serveur WebDAV</string>
@@ -510,14 +510,14 @@
     <string name="test_connection_success_with_notes">✅ Serveur accessible. Dossier /%1$s/ trouvé (/%1$s-md/ sera créé automatiquement).</string>
     <string name="test_connection_success_md_exists">✅ Serveur accessible. Dossier /%1$s/ trouvé (/%1$s-md/ existe déjà et sera utilisé).</string>
     <string name="test_connection_success_first_sync">✅ Serveur accessible. Les dossiers /%1$s/ et /%1$s-md/ seront créés lors de la première synchronisation.</string>
-    <string name="toast_connection_success">✅ Connexion réussie !</string>
+    <string name="toast_connection_success">✅ Connexion réussie !</string>
     <string name="toast_connection_failed">❌ %s</string>
-    <string name="toast_error">❌ Erreur : %s</string>
+    <string name="toast_error">❌ Erreur : %s</string>
     <string name="toast_syncing">🔄 Synchronisation…</string>
     <string name="toast_already_synced">✅ Déjà synchronisé</string>
     <string name="toast_sync_success">✅ %d notes synchronisées</string>
     <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_sync_interval">⏱️ Intervalle de synchro : %s</string>
+    <string name="toast_sync_interval">⏱️ Intervalle de synchro : %s</string>
     <string name="toast_sync_interval_15min">15 minutes</string>
     <string name="toast_sync_interval_30min">30 minutes</string>
     <string name="toast_sync_interval_60min">60 minutes</string>
@@ -526,8 +526,8 @@
     <string name="toast_markdown_enabled">📝 Synchronisation automatique Markdown activée</string>
     <string name="toast_markdown_disabled">📝 Synchronisation automatique Markdown désactivée</string>
     <string name="toast_markdown_syncing">📝 Synchronisation Markdown en cours…</string>
-    <string name="toast_markdown_result">✅ Export : %1$d • Import : %2$d</string>
-    <string name="toast_export_failed">❌ Échec de l\'exportation : %s</string>
+    <string name="toast_markdown_result">✅ Export : %1$d • Import : %2$d</string>
+    <string name="toast_export_failed">❌ Échec de l\'exportation : %s</string>
     <string name="toast_export_timeout">⏱️ Délai d\'exportation dépassé – serveur trop lent ou inaccessible. Veuillez vérifier votre connexion et réessayer.</string>
     <string name="toast_notifications_enabled">Notifications activées</string>
     <string name="toast_notifications_disabled">Notifications désactivées. Vous pouvez les activer dans les paramètres.</string>
@@ -614,7 +614,7 @@
     <string name="keep_import_config_info_color_pin">🎨 Les couleurs des notes sont importées et affichées immédiatement. Les notes épinglées apparaîtront dans une section \"Épinglées\" distincte en haut de votre liste.</string>
     <string name="keep_import_config_button_start">Démarrer l\'importation</string>
     <string name="keep_import_config_button_cancel">Annuler</string>
-    <string name="keep_import_prescan_header">📦 L\'archive contient :</string>
+    <string name="keep_import_prescan_header">📦 L\'archive contient :</string>
     <string name="keep_import_prescan_active">• %1$d notes actives</string>
     <string name="keep_import_prescan_archived">• %1$d notes archivées</string>
     <string name="keep_import_prescan_trashed">• %1$d notes dans la corbeille</string>
