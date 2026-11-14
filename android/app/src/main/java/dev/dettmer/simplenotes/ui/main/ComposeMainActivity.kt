@@ -420,8 +420,8 @@ class ComposeMainActivity : FragmentActivity() {
         }
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
+            dev.dettmer.simplenotes.R.anim.editor_open_enter,
+            dev.dettmer.simplenotes.R.anim.hold
         )
         editorLauncher.launch(intent, options)
     }
@@ -433,8 +433,8 @@ class ComposeMainActivity : FragmentActivity() {
         folderName?.let { intent.putExtra(ComposeNoteEditorActivity.EXTRA_FOLDER, it) } // 🆕 v2.7.0 (Folders)
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
+            dev.dettmer.simplenotes.R.anim.editor_open_enter,
+            dev.dettmer.simplenotes.R.anim.hold
         )
         editorLauncher.launch(intent, options)
     }
@@ -447,7 +447,7 @@ class ComposeMainActivity : FragmentActivity() {
         val options = ActivityOptionsCompat.makeCustomAnimation(
             this,
             dev.dettmer.simplenotes.R.anim.shared_axis_x_enter,
-            dev.dettmer.simplenotes.R.anim.shared_axis_x_exit
+            dev.dettmer.simplenotes.R.anim.hold
         )
         settingsLauncher.launch(intent, options)
     }
