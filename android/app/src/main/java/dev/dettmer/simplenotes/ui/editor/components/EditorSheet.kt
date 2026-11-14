@@ -4,7 +4,12 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imeAnimationSource
+import androidx.compose.foundation.layout.imeAnimationTarget
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -19,11 +24,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -32,6 +40,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
@@ -44,6 +54,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.TapAnchor
 import dev.dettmer.simplenotes.ui.theme.Dimensions
+import kotlin.math.roundToInt
 
 // UI-Beta: Bausteine für den Editor als Blatt (E1, E5, E7, E9). Der alte Editor nutzt sie nicht.
 
@@ -68,6 +79,35 @@ fun Modifier.noteColorGradient(accent: Color?, surface: Color, isDark: Boolean):
                 endY = GRADIENT_HEIGHT.toPx()
             )
         )
+    }
+}
+
+/**
+ * E9: wie weit die Tastatur offen ist (0 bis 1), in jedem Bild aus den Insets. Nur in Layout oder Zeichnen
+ * lesen, dann folgt der Kopf der Tastatur, ohne dass der Bildschirm pro Bild neu komponiert.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun rememberImeOpenFraction(): State<Float> {
+    val ime = WindowInsets.ime
+    val source = WindowInsets.imeAnimationSource
+    val target = WindowInsets.imeAnimationTarget
+    val density = LocalDensity.current
+    return remember(ime, source, target, density) {
+        derivedStateOf {
+            val full = maxOf(source.getBottom(density), target.getBottom(density))
+            if (full == 0) 0f else (ime.getBottom(density).toFloat() / full).coerceIn(0f, 1f)
+        }
+    }
+}
+
+/** E9: schiebt den Inhalt um [fraction] nach oben aus dem Bild (0 = ganz da, 1 = weg) und blendet ihn dabei aus. */
+internal fun Modifier.collapseUp(fraction: () -> Float): Modifier = clipToBounds().layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val f = fraction()
+    val height = (placeable.height * (1f - f)).roundToInt()
+    layout(placeable.width, height) {
+        placeable.placeWithLayer(0, height - placeable.height) { alpha = 1f - f }
     }
 }
 

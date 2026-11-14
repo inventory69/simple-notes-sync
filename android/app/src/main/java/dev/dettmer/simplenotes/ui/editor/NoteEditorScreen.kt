@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ClipData
 import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -12,13 +13,13 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.content.TransferableContent
@@ -124,6 +125,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -160,7 +162,9 @@ import dev.dettmer.simplenotes.ui.editor.components.NoteStatsPill
 import dev.dettmer.simplenotes.ui.editor.components.SaveStateButton
 import dev.dettmer.simplenotes.ui.editor.components.SheetTitleField
 import dev.dettmer.simplenotes.ui.editor.components.applyTapAnchor
+import dev.dettmer.simplenotes.ui.editor.components.collapseUp
 import dev.dettmer.simplenotes.ui.editor.components.noteColorGradient
+import dev.dettmer.simplenotes.ui.editor.components.rememberImeOpenFraction
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
@@ -638,11 +642,17 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     // E9 (#131): bei offener Tastatur rückt der Titel in die Leiste; Tippen darauf macht sie zum Titelfeld.
     var barTitleEditing by remember { mutableStateOf(false) }
     val barTitleFocusRequester = remember { FocusRequester() }
-    val titleInBar = newDesign &&
+    val headerToBar = newDesign &&
         uiState.noteType == NoteType.TEXT &&
         !isPreviewMode &&
-        isImeVisible &&
         (isContentFocused || barTitleEditing)
+    val titleInBar = headerToBar && isImeVisible
+    // E9: Kopf im Blatt und Titel in der Leiste folgen Bild für Bild der Tastatur statt eigener Animation, so
+    // bewegen sich Text und Tastatur als eine Bewegung. Der Faktor fängt Wechsel bei offener Tastatur ab (Auge-Knopf).
+    val headerToBarFactor = animateFloatAsState(if (headerToBar) 1f else 0f, label = "headerToBar")
+    val imeOpen = rememberImeOpenFraction()
+    val barProgress = remember { derivedStateOf { imeOpen.value * headerToBarFactor.value } }
+    val barTitleShown by remember { derivedStateOf { barProgress.value > 0f } }
     LaunchedEffect(isImeVisible) {
         if (!isImeVisible) barTitleEditing = false
     }
@@ -814,34 +824,38 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                     }
                     // E3: ohne Tastatur bleibt die Leiste leer, der Titel steht groß im Blatt.
                     // E9: mit Tastatur gleitet er in die Leiste, im Gleichlauf mit dem Blatt-Titel unten.
-                    AnimatedVisibility(
-                        visible = newDesign && titleInBar,
-                        enter = fadeIn() + slideInVertically { it / 2 },
-                        exit = fadeOut()
-                    ) {
-                        EditorBarTitle(
-                            title = uiState.title,
-                            showTitle = uiState.title.isNotEmpty() || uiState.titleFieldEnabled,
-                            editing = barTitleEditing,
-                            onTitleChange = { viewModel.updateTitle(it) },
-                            onStartEditing = { barTitleEditing = true },
-                            onEditingDone = { backToText ->
-                                barTitleEditing = false
-                                if (backToText) contentFocusRequester.requestFocus()
-                            },
-                            focusRequester = barTitleFocusRequester,
-                            meta = {
-                                NoteMetaLine(
-                                    editedAt = null,
-                                    text = uiState.content,
-                                    mode = noteStatsMode,
-                                    showStats = noteStatsVisible,
-                                    onCycle = { viewModel.cycleNoteStatsMode() },
-                                    style = MaterialTheme.typography.labelMedium,
-                                    cycleOnTap = false
-                                )
+                    if (newDesign && barTitleShown) {
+                        Box(
+                            modifier = Modifier.graphicsLayer {
+                                val p = barProgress.value
+                                alpha = p
+                                translationY = (1f - p) * size.height / 2
                             }
-                        )
+                        ) {
+                            EditorBarTitle(
+                                title = uiState.title,
+                                showTitle = uiState.title.isNotEmpty() || uiState.titleFieldEnabled,
+                                editing = barTitleEditing,
+                                onTitleChange = { viewModel.updateTitle(it) },
+                                onStartEditing = { barTitleEditing = true },
+                                onEditingDone = { backToText ->
+                                    barTitleEditing = false
+                                    if (backToText) contentFocusRequester.requestFocus()
+                                },
+                                focusRequester = barTitleFocusRequester,
+                                meta = {
+                                    NoteMetaLine(
+                                        editedAt = null,
+                                        text = uiState.content,
+                                        mode = noteStatsMode,
+                                        showStats = noteStatsVisible,
+                                        onCycle = { viewModel.cycleNoteStatsMode() },
+                                        style = MaterialTheme.typography.labelMedium,
+                                        cycleOnTap = false
+                                    )
+                                }
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -1197,10 +1211,15 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 )
             }
             // Formatierleiste sichtbar? Dann kein Abstand darunter, sonst bleiben ~20 dp bis zur Tastatur leer (#131).
+            // E6: im neuen Design erst mit der Tastatur, sonst steht die Leiste kurz allein am unteren Rand.
+            // Mit Hardware-Tastatur kommt keine Bildschirmtastatur, dann sofort.
+            val hasHardwareKeyboard =
+                LocalConfiguration.current.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO
             val showFormattingBar = uiState.noteType == NoteType.TEXT &&
                 !isPreviewMode &&
                 isContentFocused &&
-                uiState.formattingBarEnabled
+                uiState.formattingBarEnabled &&
+                (!newDesign || isImeVisible || hasHardwareKeyboard)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -1255,54 +1274,48 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 // Title Input (for both types)
                 if (newDesign) {
                     // E1: Titel ohne Rahmen als Überschrift des Blatts. E9: bei offener Tastatur in der Leiste.
-                    AnimatedVisibility(
-                        visible = !titleInBar,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Column {
-                            AnimatedVisibility(
-                                visible = showSheetTitle,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut()
-                            ) {
-                                SheetTitleField(
-                                    title = uiState.title,
-                                    onTitleChange = { viewModel.updateTitle(it) },
-                                    keyboardActions = titleKeyboardActions,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .focusRequester(titleFocusRequester)
-                                        .onFocusChanged { isTitleFocused = it.isFocused }
-                                )
-                                // Erst jetzt hängt der FocusRequester am Feld.
-                                LaunchedEffect(focusTitleOnShow) {
-                                    if (focusTitleOnShow) {
-                                        titleFocusRequester.requestFocus()
-                                        keyboardController?.show()
-                                        focusTitleOnShow = false
-                                    }
+                    Column(modifier = Modifier.collapseUp { barProgress.value }) {
+                        AnimatedVisibility(
+                            visible = showSheetTitle,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            SheetTitleField(
+                                title = uiState.title,
+                                onTitleChange = { viewModel.updateTitle(it) },
+                                keyboardActions = titleKeyboardActions,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(titleFocusRequester)
+                                    .onFocusChanged { isTitleFocused = it.isFocused }
+                            )
+                            // Erst jetzt hängt der FocusRequester am Feld.
+                            LaunchedEffect(focusTitleOnShow) {
+                                if (focusTitleOnShow) {
+                                    titleFocusRequester.requestFocus()
+                                    keyboardController?.show()
+                                    focusTitleOnShow = false
                                 }
                             }
-                            // E4 / C3: Änderungsdatum und Wortzahl bzw. offen/erledigt statt Pille.
-                            NoteMetaLine(
-                                editedAt = lastEditedAt,
-                                text = uiState.content,
-                                mode = noteStatsMode,
-                                showStats = noteStatsVisible,
-                                onCycle = { viewModel.cycleNoteStatsMode() },
-                                checklistCounts = if (uiState.noteType == NoteType.CHECKLIST) {
-                                    checklistItems.count { !it.isChecked } to checklistItems.count { it.isChecked }
-                                } else {
-                                    null
-                                },
-                                modifier = Modifier.padding(
-                                    horizontal = Dimensions.SpacingSmall,
-                                    vertical = Dimensions.SpacingXSmall
-                                )
-                            )
-                            Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                         }
+                        // E4 / C3: Änderungsdatum und Wortzahl bzw. offen/erledigt statt Pille.
+                        NoteMetaLine(
+                            editedAt = lastEditedAt,
+                            text = uiState.content,
+                            mode = noteStatsMode,
+                            showStats = noteStatsVisible,
+                            onCycle = { viewModel.cycleNoteStatsMode() },
+                            checklistCounts = if (uiState.noteType == NoteType.CHECKLIST) {
+                                checklistItems.count { !it.isChecked } to checklistItems.count { it.isChecked }
+                            } else {
+                                null
+                            },
+                            modifier = Modifier.padding(
+                                horizontal = Dimensions.SpacingSmall,
+                                vertical = Dimensions.SpacingXSmall
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(Dimensions.SpacingMediumLarge))
                     }
                 } else {
                     OutlinedTextField(
