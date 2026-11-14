@@ -44,6 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -553,6 +556,18 @@ private fun ThemeModeSelector(currentMode: ThemeMode, onModeSelected: (ThemeMode
 // all chips visible at once without horizontal scrolling.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Regenbogen-Sweep wie im UI-Artifact: die Farben kommen erst vom Hintergrundbild.
+private val DynamicSwatch = Brush.sweepGradient(
+    listOf(
+        ColorTheme.DEFAULT.previewColor,
+        Color(0xFF1565C0),
+        Color(0xFF2E7D32),
+        Color(0xFFB45309),
+        Color(0xFFC62828),
+        ColorTheme.DEFAULT.previewColor
+    )
+)
+
 @Composable
 private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (ColorTheme) -> Unit) {
     val dynamicUnavailable = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
@@ -564,7 +579,8 @@ private fun ColorThemeSelector(currentTheme: ColorTheme, onThemeSelected: (Color
         onSelect = onThemeSelected,
         color = { it.previewColor },
         name = { stringResource(it.displayNameResId) },
-        enabled = { !(it == ColorTheme.DYNAMIC && dynamicUnavailable) }
+        enabled = { !(it == ColorTheme.DYNAMIC && dynamicUnavailable) },
+        brush = { if (it == ColorTheme.DYNAMIC) DynamicSwatch else SolidColor(it.previewColor) }
     )
 
     if (dynamicUnavailable) {

@@ -27,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -107,7 +109,9 @@ fun <T> SettingsColorDots(
     color: (T) -> Color,
     name: @Composable (T) -> String,
     modifier: Modifier = Modifier,
-    enabled: (T) -> Boolean = { true }
+    enabled: (T) -> Boolean = { true },
+    // Füllung des Punkts (z. B. Verlauf für „Dynamisch“); [color] bleibt für die Hakenfarbe maßgeblich.
+    brush: (T) -> Brush = { SolidColor(color(it)) }
 ) {
     Row(
         modifier = modifier
@@ -139,7 +143,7 @@ fun <T> SettingsColorDots(
                             }
                         )
                         .clip(CircleShape)
-                        .background(color(option))
+                        .background(brush(option))
                 ) {
                     if (isSelected) {
                         val swatch = color(option)
