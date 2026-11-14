@@ -37,4 +37,10 @@ class FolderSorterTest {
         val result = sortFolders(folders, SortOption.COLOR, SortDirection.ASCENDING)
         assertEquals(listOf("cherry", "banana", "Apple"), result.map { it.name })
     }
+
+    @Test
+    fun `color ignores the direction, colorless stay last (#131)`() {
+        val result = sortFolders(folders, SortOption.COLOR, SortDirection.DESCENDING)
+        assertEquals(listOf("cherry", "banana", "Apple"), result.map { it.name })
+    }
 }

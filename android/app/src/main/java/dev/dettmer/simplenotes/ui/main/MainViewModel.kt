@@ -1485,9 +1485,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        return when (direction) {
-            SortDirection.ASCENDING -> notes.sortedWith(comparator)
-            SortDirection.DESCENDING -> notes.sortedWith(comparator.reversed())
+        // Farbe hat keine Richtung: immer Palettenfolge (Rot … Grau), Notizen ohne Farbe am Ende (#131).
+        return when {
+            option == SortOption.COLOR || direction == SortDirection.ASCENDING -> notes.sortedWith(comparator)
+            else -> notes.sortedWith(comparator.reversed())
         }
     }
 

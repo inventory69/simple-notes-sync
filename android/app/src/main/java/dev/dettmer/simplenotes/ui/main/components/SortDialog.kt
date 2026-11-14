@@ -26,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
@@ -79,35 +80,23 @@ fun SortDialog(
                     style = MaterialTheme.typography.headlineSmall
                 )
 
-                // Direction Toggle Button
+                // Direction Toggle Button: bei Farbe ohne Wirkung (feste Palettenfolge), daher ausgegraut
+                val directionEnabled = currentOption != SortOption.COLOR
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.alpha(if (directionEnabled) 1f else DISABLED_ALPHA)
                 ) {
-                    IconButton(onClick = onDirectionToggled) {
+                    val descending = currentDirection == SortDirection.DESCENDING
+                    val directionLabel = stringResource(if (descending) R.string.sort_descending else R.string.sort_ascending)
+                    IconButton(onClick = onDirectionToggled, enabled = directionEnabled) {
                         Icon(
-                            imageVector = if (currentDirection == SortDirection.DESCENDING) {
-                                Icons.Default.ArrowDownward
-                            } else {
-                                Icons.Default.ArrowUpward
-                            },
-                            contentDescription = stringResource(
-                                if (currentDirection == SortDirection.DESCENDING) {
-                                    R.string.sort_descending
-                                } else {
-                                    R.string.sort_ascending
-                                }
-                            ),
+                            imageVector = if (descending) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                            contentDescription = directionLabel,
                             modifier = Modifier.size(24.dp)
                         )
                     }
                     Text(
-                        text = stringResource(
-                            if (currentDirection == SortDirection.DESCENDING) {
-                                R.string.sort_descending
-                            } else {
-                                R.string.sort_ascending
-                            }
-                        ),
+                        text = directionLabel,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -176,3 +165,5 @@ fun SortOption.toStringRes(): Int = when (this) {
     SortOption.NOTE_TYPE -> R.string.sort_by_type
     SortOption.COLOR -> R.string.sort_by_color
 }
+
+private const val DISABLED_ALPHA = 0.38f
