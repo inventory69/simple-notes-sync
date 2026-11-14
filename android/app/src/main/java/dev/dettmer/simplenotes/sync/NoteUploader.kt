@@ -282,7 +282,8 @@ internal class NoteUploader(
             uploadedCount = successCount,
             markdownExportedNoteIds = mdExportedIds,
             conflictCount = conflictCount, // 🆕 v2.16.0
-            markdownFailed = mdFailed.toMap()
+            markdownFailed = mdFailed.toMap(),
+            failedCount = failureCount
         )
     }
 

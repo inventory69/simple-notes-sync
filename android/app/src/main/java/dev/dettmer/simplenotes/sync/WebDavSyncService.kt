@@ -46,7 +46,9 @@ data class UploadBatchResult(
     // 🆕 v2.16.0: Uploads, die der Server per If-Match abgelehnt hat (412) — fremde Änderung.
     val conflictCount: Int = 0,
     // 🆕 v2.19.0: MD-Spiegel, deren Export/Löschung scheiterte (id → Fehler) — die JSON ist trotzdem oben.
-    val markdownFailed: Map<String, Exception> = emptyMap()
+    val markdownFailed: Map<String, Exception> = emptyMap(),
+    // Notizen, deren PUT nach allen Versuchen scheiterte. Sie bleiben PENDING.
+    val failedCount: Int = 0
 )
 
 /**
@@ -314,12 +316,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
      *
      * Spart ~500ms pro Sync durch Caching
      * 🔧 v2.0.0 (Issue #44): Fallback auf list() wenn exists() fehlschlägt
+     *
+     * @return true, wenn der Ordner eben erst angelegt wurde (MKCOL 2xx), siehe [resetAfterFolderRecreated].
      */
     @Suppress("ThrowsCount") // Auth re-throws in exists/list fallback + outer re-throw
-    private fun ensureNotesDirectoryExists(webdav: WebDavClient, notesUrl: String) {
+    private fun ensureNotesDirectoryExists(webdav: WebDavClient, notesUrl: String): Boolean {
         if (connectionManager.notesDirEnsured) {
             Logger.d(TAG, "⚡ $activeSyncFolderName/ directory already verified (cached)")
-            return
+            return false
         }
 
         try {
@@ -340,16 +344,32 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     false
                 }
             }
+            var created = false
             if (!dirExists) {
                 Logger.d(TAG, "📁 Creating $activeSyncFolderName/ directory...")
-                webdav.createDirectory(notesUrl)
+                created = webdav.createDirectory(notesUrl)
             }
             Logger.d(TAG, "    ✅ $activeSyncFolderName/ directory ready")
             connectionManager.notesDirEnsured = true
+            return created
         } catch (e: Exception) {
             Logger.e(TAG, "💥 CRASH checking/creating $activeSyncFolderName/ directory!", e)
             throw e
         }
+    }
+
+    /**
+     * Der Sync-Ordner fehlte auf dem Server (gelöscht, Server neu aufgesetzt): was dort lag, ist weg.
+     * Wie bei einem Serverwechsel alles wieder hochladen. Sonst hielte detectDeletions die bisher
+     * synchronisierten Notizen für serverseitig gelöscht und legte sie in den Papierkorb. Die Flags
+     * der Nachbarordner sind dann genauso veraltet.
+     */
+    private suspend fun resetAfterFolderRecreated() {
+        clearServerCaches(prefs, storage)
+        connectionManager.markdownDirEnsured = false
+        connectionManager.assetsDirEnsured = false
+        val count = storage.resetAllSyncStatusToPending()
+        Logger.w(TAG, "🔄 $activeSyncFolderName/ was missing on the server, $count notes queued for upload again")
     }
 
     /**
@@ -747,11 +767,12 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 var markdownImportFailed = false
                 var assetFailedCount = 0
                 var assetLastError: Exception? = null
+                var uploadFailedCount = 0
 
                 Logger.d(TAG, "📍 Step 3: Checking server directory")
                 // ⚡ v1.3.1: Verwende gecachte Directory-Checks
                 val notesUrl = urlBuilder.getNotesUrl(serverUrl)
-                ensureNotesDirectoryExists(webdav, notesUrl)
+                if (ensureNotesDirectoryExists(webdav, notesUrl)) resetAfterFolderRecreated()
 
                 // Ensure notes-md/ directory exists (for Markdown export).
                 // 🆕 v2.14.0: nur wenn ein MD-Feature aktiv ist — alle nachgelagerten MD-Pfade
@@ -763,7 +784,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
 
                 // 🆕 Bild-Attachments: -assets/ sicherstellen + einziges PROPFIND für alle drei Diffs
                 val referencedAssets = AssetReferences.extractAllReferenced(storage.loadAllNotes())
-                val serverAssets =
+                var serverAssets =
                     assetSyncManager.listServerAssetsIfNeeded(webdav, serverUrl, referencedAssets)
 
                 uploadReferencedAssets(webdav, serverUrl, referencedAssets, serverAssets).let {
@@ -781,18 +802,38 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                 val mdExport = prefs.getBoolean(Constants.KEY_MARKDOWN_EXPORT, false)
                 try {
                     Logger.d(TAG, "⬆️ Uploading local notes...")
-                    val uploadResult = uploadLocalNotes(
-                        webdav,
-                        serverUrl,
-                        onProgress = { current, total, noteTitle ->
-                            SyncStateManager.updateProgress(
-                                phase = if (mdExport) SyncPhase.UPLOADING_EXPORTING_MARKDOWN else SyncPhase.UPLOADING,
-                                current = current,
-                                total = total,
-                                currentFileName = noteTitle
-                            )
+                    val onUploadProgress = { current: Int, total: Int, noteTitle: String ->
+                        SyncStateManager.updateProgress(
+                            phase = if (mdExport) SyncPhase.UPLOADING_EXPORTING_MARKDOWN else SyncPhase.UPLOADING,
+                            current = current,
+                            total = total,
+                            currentFileName = noteTitle
+                        )
+                    }
+                    var uploadResult = uploadLocalNotes(webdav, serverUrl, onUploadProgress)
+                    // Ordner fehlt auf dem Server, obwohl das Flag ihn als vorhanden führte: der PUT hat mit
+                    // 404/409 das Flag gelöscht. Im selben Lauf anlegen und alles einmal nachschieben, sonst
+                    // meldete dieser Sync Erfolg und erst der nächste lud hoch. Fehlte nur ein Unterordner,
+                    // legt ensure nichts an und es bleibt bei einem Versuch.
+                    if (uploadResult.failedCount > 0 &&
+                        !connectionManager.notesDirEnsured &&
+                        ensureNotesDirectoryExists(webdav, notesUrl)
+                    ) {
+                        resetAfterFolderRecreated()
+                        serverAssets = assetSyncManager.listServerAssetsIfNeeded(webdav, serverUrl, referencedAssets)
+                        uploadReferencedAssets(webdav, serverUrl, referencedAssets, serverAssets).let {
+                            assetFailedCount = it.failed
+                            assetLastError = it.lastError
                         }
-                    )
+                        val retry = uploadLocalNotes(webdav, serverUrl, onUploadProgress)
+                        uploadResult = retry.copy(
+                            uploadedCount = uploadResult.uploadedCount + retry.uploadedCount,
+                            markdownExportedNoteIds = uploadResult.markdownExportedNoteIds + retry.markdownExportedNoteIds,
+                            conflictCount = uploadResult.conflictCount + retry.conflictCount,
+                            markdownFailed = uploadResult.markdownFailed + retry.markdownFailed
+                        )
+                    }
+                    uploadFailedCount = uploadResult.failedCount
                     syncedCount += uploadResult.uploadedCount
                     conflictCount += uploadResult.conflictCount // 🆕 v2.16.0 (If-Match → 412)
                     mdFailedIds += uploadResult.markdownFailed.keys
@@ -1034,6 +1075,7 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
                     markdownFailedCount = mdFailedIds.size,
                     markdownImportFailed = markdownImportFailed,
                     assetFailedCount = assetFailedCount,
+                    uploadFailedCount = uploadFailedCount,
                     // Sonst meldete ein Retry, der nur Kopien nachholt, „Nichts zu synchronisieren".
                     exportProblemsResolved = storedExportProblems != null && exportProblems.isEmpty
                 )

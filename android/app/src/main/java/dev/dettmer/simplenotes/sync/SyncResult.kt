@@ -23,6 +23,8 @@ data class SyncResult(
     val markdownImportFailed: Boolean = false, // 🆕 v2.19.0: MD-Auto-Import abgebrochen
     val assetFailedCount: Int = 0, // 🆕 v2.19.0: Bilder nicht übertragen
     val exportProblemsResolved: Boolean = false, // 🆕 v2.19.0: offene Export-Probleme sind mit diesem Lauf behoben
+    // Notizen nicht hochgeladen (bleiben PENDING). Vorher endete so ein Lauf trotzdem als Erfolg.
+    val uploadFailedCount: Int = 0,
     // 🆕 v2.20.0 (E2EE-Slice 1): Ordner verschlüsselt, kein Server-Zugriff. isSuccess = false, aber
     // kein Fehler: Aufrufer schließen mit Warnung ab, nicht mit markError/Fehler-Benachrichtigung.
     val e2eeBlocked: Boolean = false,
@@ -37,5 +39,5 @@ data class SyncResult(
     val hasExportProblems: Boolean get() = markdownFailedCount + assetFailedCount > 0 || markdownImportFailed
 
     /** 🆕 v2.19.0: Warn-Banner statt Erfolgs-Stil — Notizen synchron, aber etwas braucht Aufmerksamkeit. */
-    val isWarning: Boolean get() = hasConflicts || hasExportProblems
+    val isWarning: Boolean get() = hasConflicts || hasExportProblems || uploadFailedCount > 0
 }

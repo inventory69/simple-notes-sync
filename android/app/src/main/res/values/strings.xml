@@ -121,6 +121,10 @@
         <item quantity="one">%1$d conflict needs your decision</item>
         <item quantity="other">%1$d conflicts need your decision</item>
     </plurals>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="one">%1$d note not uploaded</item>
+        <item quantity="other">%1$d notes not uploaded</item>
+    </plurals>
     <!-- 🆕 v2.19.0: export problems (notes themselves are in sync) -->
     <plurals name="sync_markdown_failed_count">
         <item quantity="one">%1$d Markdown file not exported</item>

@@ -120,6 +120,10 @@
         <item quantity="one">%1$d Konflikt wartet auf deine Entscheidung</item>
         <item quantity="other">%1$d Konflikte warten auf deine Entscheidung</item>
     </plurals>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="one">%1$d Notiz nicht hochgeladen</item>
+        <item quantity="other">%1$d Notizen nicht hochgeladen</item>
+    </plurals>
     <!-- 🆕 v2.19.0: Export-Probleme (die Notizen selbst sind synchron) -->
     <plurals name="sync_markdown_failed_count">
         <item quantity="one">%1$d Markdown-Datei nicht exportiert</item>

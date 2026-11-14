@@ -237,14 +237,14 @@ class WebDavClientTest {
 
     @Test fun `createDirectory sends MKCOL`() {
         server.enqueue(MockResponse().setResponseCode(201))
-        client.createDirectory(url())
+        assertTrue(client.createDirectory(url())) // angelegt
         assertEquals("MKCOL", server.takeRequest().method)
     }
 
     /** 405 = Collection existiert bereits — kein Fehler. */
     @Test fun `createDirectory tolerates 405`() {
         server.enqueue(MockResponse().setResponseCode(405))
-        client.createDirectory(url())
+        assertFalse(client.createDirectory(url())) // war schon da
     }
 
     /** Issue #55 — Server lehnt MKCOL mit 404 ab, der Ordner existiert aber. */
