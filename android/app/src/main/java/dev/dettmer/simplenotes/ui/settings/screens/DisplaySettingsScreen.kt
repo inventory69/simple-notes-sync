@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.GridView
@@ -292,6 +293,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
     val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
     val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
     val wordCounterVisibility by viewModel.wordCounterVisibility.collectAsState()
+    val formattingBarEnabled by viewModel.formattingBarEnabled.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.autosave_section)) {
         SettingsSwitch(
@@ -310,6 +312,15 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             checked = defaultStartInPreviewMode,
             onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) },
             icon = Icons.Default.Visibility
+        )
+
+        // #131 (E11)
+        SettingsSwitch(
+            title = stringResource(R.string.editor_formatting_bar_toggle),
+            subtitle = stringResource(R.string.editor_formatting_bar_description),
+            checked = formattingBarEnabled,
+            onCheckedChange = { viewModel.setFormattingBarEnabled(it) },
+            icon = Icons.Default.TextFormat
         )
 
         // 🆕 Issue #156

@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
+import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.utils.Logger
 import kotlinx.coroutines.delay
 
@@ -631,13 +632,22 @@ fun ChecklistItemRow(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(R.string.delete_item),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // UI-Beta (C1): so zurückhaltend wie der Griff (60 %). Nur die Tint-Farbe ändert sich,
+                    // kein Modifier, keine Größe, keine Eingabefläche (Regel aus dnd-protection).
+                    tint = if (LocalNewDesign.current) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DELETE_ICON_ALPHA_NEW_DESIGN)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     modifier = Modifier.size(20.dp)
                 )
             }
         }
     }
 }
+
+// UI-Beta (C1): Deckkraft des Löschen-Kreuzes, gleich der des Griffs
+private const val DELETE_ICON_ALPHA_NEW_DESIGN = 0.6f
 
 // 🆕 v1.8.0: Maximum lines when collapsed (not focused)
 private const val COLLAPSED_MAX_LINES = 5

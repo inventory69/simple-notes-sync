@@ -152,6 +152,10 @@ object Constants {
     // UI-Beta (#131): neues Design für Editor und Übersicht, Default in Debug/Beta an (siehe ThemePreferences)
     const val KEY_NEW_DESIGN = "new_design_beta"
 
+    // #131 (E11): Formatierleiste im Text-Editor ein-/ausblenden
+    const val KEY_FORMATTING_BAR = "editor_formatting_bar"
+    const val DEFAULT_FORMATTING_BAR = true
+
     // 🆕 Issue #156: Checklisten im Lesemodus öffnen (Antippen der Zeile hakt ab)
     const val KEY_CHECKLIST_START_IN_READ_MODE = "checklist_start_in_read_mode"
     const val DEFAULT_CHECKLIST_START_IN_READ_MODE = false
