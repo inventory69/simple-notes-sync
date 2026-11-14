@@ -197,6 +197,8 @@ private fun SyncStatusSheet(
 }
 
 /** Icon, Farbe und Titel des Dialogkopfs. Der Zustand selbst ist die Überschrift. */
+// ponytail: zweite Symboltabelle neben syncStateVisual (SearchTopBar), Icon und Farbe nutzt nur das alte
+// Design. Fällt der Beta-Schalter, schrumpft das hier auf den Titel und das Sheet bleibt die einzige Quelle.
 @Composable
 private fun statusVisuals(summary: SyncStatusSummary): Triple<ImageVector, Color, String> = when (summary.state) {
     SyncStatusSummary.State.BLOCKED -> Triple(
