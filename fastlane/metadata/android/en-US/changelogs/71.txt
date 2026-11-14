@@ -1,0 +1,12 @@
+📃 v2.23.0 - New design (beta)
+
+• Beta: try the new design under Settings → Display
+• Editor without boxes, tap the text to edit
+• The title moves into the toolbar while typing
+• Note list with search field and one sync button
+• Calmer settings and screen transitions
+• Fix: sort by color follows the palette, uncolored last
+• Fix: sync re-uploads notes if the server folder is gone
+• Updated translations: Chinese
+
+Thanks to @Fs00, @funnyspiders, @Adnan4744, @siddhnarhari and hamburger2048!

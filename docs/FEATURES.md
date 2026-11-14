@@ -1,6 +1,6 @@
 # Features
 
-Everything Simple Notes Sync does, as of v2.22.0. What changed in which version is in the [changelog](../CHANGELOG.md).
+Everything Simple Notes Sync does, as of v2.23.0. What changed in which version is in the [changelog](../CHANGELOG.md).
 
 ## Writing
 
@@ -36,6 +36,7 @@ Everything Simple Notes Sync does, as of v2.22.0. What changed in which version 
 - List or grid. The grid has 1 to 5 columns, and the preview length goes from title only to extra long. Timestamps and the note icon can be hidden. Checklist previews in cards and widgets can hide completed items.
 - Light, dark and AMOLED mode, seven color schemes including Dynamic Color on Android 12 and newer, and five text sizes.
 - A custom app title, an in-app changelog and a "What's new" sheet after updates.
+- A new design as a beta, off by default (Settings, Display). The editor becomes a plain sheet: one tap on the text starts editing and the title moves into the toolbar while you type. The empty title field and the formatting bar can be hidden. The note list gets a search field and one sync button that opens the sync status.
 
 ## Widgets
 

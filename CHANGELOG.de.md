@@ -8,6 +8,62 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.23.0] - 2026-11-14
+
+### ✨ Neue Funktionen
+
+**Neues Design (Beta)** ([aa2cc31](https://github.com/inventory69/simple-notes-sync/commit/aa2cc31))
+- Ein neues Design für Editor und Notizliste, standardmäßig aus. Einschalten unter **Einstellungen → Anzeige → Neues Design (Beta)**, derselbe Schalter führt zurück zum bisherigen Design
+- Rückmeldungen gern in Diskussion [#131](https://github.com/inventory69/simple-notes-sync/discussions/131)
+
+**Editor als schlichtes Blatt (Beta)** ([2297211](https://github.com/inventory69/simple-notes-sync/commit/2297211), [e4c44c8](https://github.com/inventory69/simple-notes-sync/commit/e4c44c8), [4ae9739](https://github.com/inventory69/simple-notes-sync/commit/4ae9739))
+- Titel und Text stehen ohne umrandete Felder und Beschriftungen auf einem Blatt und bleiben beim Wechsel zwischen Lesen und Bearbeiten an ihrem Platz
+- Ein Tipp auf den Text startet das Bearbeiten an der angetippten Zeile. Links, Bilder und Checkboxen behalten ihre eigene Funktion
+- Bei offener Tastatur wandert der Titel in die Leiste, so zeigen auch kleine Bildschirme deutlich mehr von der Notiz
+- Die Formatierungsleiste schwebt über der Tastatur und lässt sich in den Editor-Einstellungen ausschalten. Bild einfügen liegt dann im Menü
+- Das leere Titelfeld lässt sich mit der Einstellung **Titelfeld** ausblenden. **Titel hinzufügen** im Menü holt es für eine einzelne Notiz zurück
+- Wortzahl, Bearbeitungszeit und Checklisten-Fortschritt teilen sich eine Zeile unter dem Titel
+- Danke an [@Fs00](https://github.com/Fs00), [@funnyspiders](https://github.com/funnyspiders), [@Adnan4744](https://github.com/Adnan4744) und [@siddhnarhari](https://github.com/siddhnarhari) für die Ideen! ([#131](https://github.com/inventory69/simple-notes-sync/discussions/131))
+
+**Notizliste mit Suchfeld und Sync-Knopf (Beta)** ([0e23ec6](https://github.com/inventory69/simple-notes-sync/commit/0e23ec6), [b8095a2](https://github.com/inventory69/simple-notes-sync/commit/b8095a2), [7cefecf](https://github.com/inventory69/simple-notes-sync/commit/7cefecf))
+- Oben steht dauerhaft ein Suchfeld, das leer den App- oder Ordnertitel zeigt. Das Filtersymbol darin öffnet die Filter-Chips
+- Farbige Karten sind dezenter, ein Pin in der Ecke markiert angepinnte Notizen, und Karten zeigen ein Sync-Symbol nur, wenn eine Notiz nicht synchronisiert ist
+- Sync-Status und manueller Sync sind ein Wolken-Knopf mit einem Ring während des Syncs. Ein Tipp öffnet den Sync-Status mit **Jetzt synchronisieren**
+- Das Sync-Fortschrittsbanner ist eine schmale Pille mit einer Fortschrittslinie
+
+**Ruhigere Einstellungen** ([b26d182](https://github.com/inventory69/simple-notes-sync/commit/b26d182), [9b8e091](https://github.com/inventory69/simple-notes-sync/commit/9b8e091))
+- Jede Einstellungsgruppe ist eine Karte mit Trennlinien, Auswahl-Chips werden zu Segment-Schaltern, und die Farbschema-Auswahl zeigt Farbpunkte mit Namen
+- Englische und deutsche Einstellungsnamen beginnen nicht mehr mit einem Emoji
+- TalkBack liest die Optionen der Schriftgröße mit Namen vor
+
+**Ruhigere Übergänge** ([1a7d2e4](https://github.com/inventory69/simple-notes-sync/commit/1a7d2e4))
+- Nur der obere Bildschirm bewegt sich, der darunter bleibt stehen. Der Editor zoomt beim Öffnen leicht herein, Einstellungen gleiten von rechts herein
+- Beim Öffnen einer Notiz im dunklen Theme blitzt es nicht mehr schwarz auf
+
+### 🐛 Bug-Fixes
+
+**Farbsortierung folgt der Palette** ([aeb4ccc](https://github.com/inventory69/simple-notes-sync/commit/aeb4ccc))
+- Die Sortierung nach Farbe folgt der Reihenfolge der Palette, Notizen ohne Farbe kommen zuletzt, für Notizen und Ordner. Der Richtungsschalter ist dabei ausgegraut
+- Danke an [@funnyspiders](https://github.com/funnyspiders) für die Meldung! ([#131](https://github.com/inventory69/simple-notes-sync/discussions/131))
+
+**Sync stellt einen fehlenden Sync-Ordner wieder her** ([e53bd15](https://github.com/inventory69/simple-notes-sync/commit/e53bd15))
+- Fehlt der Sync-Ordner auf dem Server, etwa nachdem der Server unter derselben Adresse neu aufgesetzt wurde, legt der Sync ihn an und lädt alle Notizen und Bilder im selben Lauf neu hoch
+- Uploads, die trotzdem scheitern, erscheinen als Warnung, etwa „3 Notizen nicht hochgeladen"
+
+**Wiederherstellen mit Einstellungen für einen anderen Server** ([f600f36](https://github.com/inventory69/simple-notes-sync/commit/f600f36))
+- Wechselt eine Backup-Wiederherstellung auf einen anderen Server, Ordner oder Nutzer, startet der Sync dort frisch. Werden die Einstellungen des aktuellen Servers wiederhergestellt, bleibt der Sync-Stand erhalten
+
+**Editor** ([2297211](https://github.com/inventory69/simple-notes-sync/commit/2297211))
+- Der Editor behält seinen Modus beim Drehen des Bildschirms
+- Keine Lücke mehr unter der Formatierungsleiste
+
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)**: hamburger2048 hat den Zertifikatsdialog aktualisiert
+- Neue und geänderte Texte gibt es vorerst auf Englisch und Deutsch, die anderen Sprachen folgen mit dem nächsten Update
+
+---
+
 ## [2.22.0] - 2026-11-13
 
 ### ✨ Neue Funktionen
