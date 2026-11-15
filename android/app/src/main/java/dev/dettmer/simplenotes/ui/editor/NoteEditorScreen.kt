@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -81,7 +80,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -812,6 +811,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = if (newDesign) Color.Transparent else surfaceColor,
+        // contentColorFor(Transparent) fällt auf Schwarz zurück; Icons ohne tint wären im dunklen Theme unsichtbar.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = {
@@ -1016,6 +1017,23 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                         imagePickerLauncher.launch(
                                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                         )
+                                    }
+                                )
+                            }
+                            // UI-Beta: Sortieren wandert aus der Zeile unter der Liste hierher.
+                            if (newDesign && uiState.noteType == NoteType.CHECKLIST && !isPreviewMode) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.sort_checklist)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.AutoMirrored.Outlined.Sort,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        showChecklistSortDialog = true
                                     }
                                 )
                             }
@@ -2136,7 +2154,8 @@ internal fun ChecklistEditor(
             // Wait one frame for the new item to be laid out
             delay(Constants.CHECKLIST_SCROLL_LAYOUT_DELAY_MS)
             val layoutInfo = listState.layoutInfo
-            val viewportEnd = layoutInfo.viewportEndOffset
+            // Unteres contentPadding liegt unter dem FAB (neues Design): nur bis darüber gilt als sichtbar
+            val viewportEnd = layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding
             val viewportStart = layoutInfo.viewportStartOffset
             val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
             if (itemInfo != null) {
@@ -2252,7 +2271,8 @@ internal fun ChecklistEditor(
                 val visibleItems = listState.layoutInfo.visibleItemsInfo
                 val itemInfo = visibleItems.find { it.index == index }
                 if (itemInfo != null) {
-                    val viewportEnd = listState.layoutInfo.viewportEndOffset
+                    // Unteres contentPadding liegt unter dem FAB (neues Design)
+                    val viewportEnd = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.afterContentPadding
                     val itemBottom = itemInfo.offset + itemInfo.size
                     if (itemBottom > viewportEnd) {
                         // Item ragt unter den sichtbaren Bereich — genau um die Differenz scrollen
@@ -2263,121 +2283,137 @@ internal fun ChecklistEditor(
             }
         }
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            // IMPL_29f F2: Während Drag: User-Scroll deaktivieren.
-            // Verhindert Gesture-Konkurrenz zwischen LazyColumn-Scroll und Drag-Gesture (RC-2).
-            // Scrollen erfolgt ausschließlich über programmatisches Auto-Scroll.
-            userScrollEnabled = !dragDropState.isAnyItemDragging
-        ) {
-            // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
-            // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
-            // Composition zerstört wenn ein Item den Separator überschreitet (anderer
-            // Content-Provider) → PointerInput wird destroyed → Drag abgebrochen.
-            // Ein einziger items-Block bewahrt die Composition bei Key-Erhalt → Drag bleibt aktiv.
-            val visualItemCount = if (showSeparator) items.size + 1 else items.size
+        // UI-Beta: Hinzufügen als FAB über der Liste statt eigener Zeile darunter.
+        val addFab = LocalNewDesign.current && !readOnly
+        Box(modifier = Modifier.weight(1f)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                // Unten Platz für den FAB (56 dp + 16 dp Rand + Luft), damit die letzte Zeile samt ✕ frei liegt.
+                contentPadding = PaddingValues(top = 8.dp, bottom = if (addFab) 88.dp else 8.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                // IMPL_29f F2: Während Drag: User-Scroll deaktivieren.
+                // Verhindert Gesture-Konkurrenz zwischen LazyColumn-Scroll und Drag-Gesture (RC-2).
+                // Scrollen erfolgt ausschließlich über programmatisches Auto-Scroll.
+                userScrollEnabled = !dragDropState.isAnyItemDragging
+            ) {
+                // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
+                // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
+                // Composition zerstört wenn ein Item den Separator überschreitet (anderer
+                // Content-Provider) → PointerInput wird destroyed → Drag abgebrochen.
+                // Ein einziger items-Block bewahrt die Composition bei Key-Erhalt → Drag bleibt aktiv.
+                val visualItemCount = if (showSeparator) items.size + 1 else items.size
 
-            // Lokale Konvertierung mit aktuellem separatorVisualIndex (nicht vom dragDropState,
-            // der hat ggf. noch den alten Wert bis SideEffect läuft)
-            val localVisualToDataIndex = { visualIndex: Int ->
-                if (!showSeparator || separatorVisualIndex < 0) {
-                    visualIndex
-                } else if (visualIndex > separatorVisualIndex) {
-                    visualIndex - 1
-                } else {
-                    visualIndex
+                // Lokale Konvertierung mit aktuellem separatorVisualIndex (nicht vom dragDropState,
+                // der hat ggf. noch den alten Wert bis SideEffect läuft)
+                val localVisualToDataIndex = { visualIndex: Int ->
+                    if (!showSeparator || separatorVisualIndex < 0) {
+                        visualIndex
+                    } else if (visualIndex > separatorVisualIndex) {
+                        visualIndex - 1
+                    } else {
+                        visualIndex
+                    }
+                }
+
+                items(
+                    count = visualItemCount,
+                    key = { visualIndex ->
+                        if (showSeparator && visualIndex == separatorVisualIndex) {
+                            "separator"
+                        } else {
+                            items[localVisualToDataIndex(visualIndex)].id
+                        }
+                    },
+                    contentType = { visualIndex ->
+                        if (showSeparator && visualIndex == separatorVisualIndex) {
+                            "separator"
+                        } else {
+                            "checklist_item"
+                        }
+                    }
+                ) { visualIndex ->
+                    if (showSeparator && visualIndex == separatorVisualIndex) {
+                        CheckedItemsSeparator(
+                            checkedCount = checkedCount,
+                            isDragActive = dragDropState.isAnyItemDragging,
+                            modifier = if (placementAnimationsEnabled) Modifier.animateItem() else Modifier
+                        )
+                    } else {
+                        val dataIndex = localVisualToDataIndex(visualIndex)
+                        val item = items[dataIndex]
+                        DraggableChecklistItem(
+                            item = item,
+                            dragDropState = dragDropState,
+                            focusNewItemId = focusNewItemId,
+                            onTextChange = onTextChange,
+                            onCheckedChange = { id, checked ->
+                                if (BuildConfig.DEBUG) {
+                                    checkTrace = CheckTrace(System.nanoTime(), id, checked)
+                                }
+                                onChecklistCheckedChange(
+                                    listState = listState,
+                                    itemId = id,
+                                    checked = checked,
+                                    separatorVisualIndex = separatorVisualIndex,
+                                    pendingUncheckId = pendingUncheckId,
+                                    setPendingUncheckId = { pendingUncheckId = it },
+                                    commitChecked = onCheckedChange
+                                )
+                            },
+                            onDelete = onDelete,
+                            onAddNewItemAfter = onAddNewItemAfter,
+                            onCopyText = onCopyText, // 🆕 v2.2.0
+                            onDuplicate = onDuplicate, // 🆕 v2.2.0
+                            onCopyToChecklist = onCopyToChecklist, // 🆕 v2.2.0
+                            onAddToCalendar = onAddToCalendar,
+                            onFocusHandled = onFocusHandled,
+                            onHeightChanged = { scrollToItemIndex = visualIndex },
+                            placementAnimationsEnabled = placementAnimationsEnabled,
+                            isPendingUncheck = item.id == pendingUncheckId,
+                            scrollsAfterUncheck = { id ->
+                                // Ziel oberhalb des Viewports (oder an der ersten sichtbaren Zeile: ein
+                                // Einfügen vor dem ersten sichtbaren Key landet oberhalb) → Scroll.
+                                // Sonst wächst die Row am Ziel auf wie ohne Scroll-to-Top.
+                                scrollTopOnUncheck &&
+                                    sortChecklistStates(
+                                        items.map { if (it.id == id) it.copy(isChecked = false) else it },
+                                        currentSortOption
+                                    ).indexOfFirst { it.id == id } <= listState.firstVisibleItemIndex
+                            },
+                            onUncheckCommit = { id, scroll ->
+                                if (scroll) scrollTopUncheckId = id
+                                commitDeferredUncheck(
+                                    listState = listState,
+                                    toggledId = id,
+                                    commitChecked = onCheckedChange,
+                                    reanchor = !scroll
+                                )
+                                pendingUncheckId = null
+                            },
+                            topHighlightId = topHighlightId,
+                            onTopHighlightShown = { topHighlightId = null },
+                            readOnly = readOnly
+                        )
+                    }
                 }
             }
-
-            items(
-                count = visualItemCount,
-                key = { visualIndex ->
-                    if (showSeparator && visualIndex == separatorVisualIndex) {
-                        "separator"
-                    } else {
-                        items[localVisualToDataIndex(visualIndex)].id
-                    }
-                },
-                contentType = { visualIndex ->
-                    if (showSeparator && visualIndex == separatorVisualIndex) {
-                        "separator"
-                    } else {
-                        "checklist_item"
-                    }
-                }
-            ) { visualIndex ->
-                if (showSeparator && visualIndex == separatorVisualIndex) {
-                    CheckedItemsSeparator(
-                        checkedCount = checkedCount,
-                        isDragActive = dragDropState.isAnyItemDragging,
-                        modifier = if (placementAnimationsEnabled) Modifier.animateItem() else Modifier
-                    )
-                } else {
-                    val dataIndex = localVisualToDataIndex(visualIndex)
-                    val item = items[dataIndex]
-                    DraggableChecklistItem(
-                        item = item,
-                        dragDropState = dragDropState,
-                        focusNewItemId = focusNewItemId,
-                        onTextChange = onTextChange,
-                        onCheckedChange = { id, checked ->
-                            if (BuildConfig.DEBUG) {
-                                checkTrace = CheckTrace(System.nanoTime(), id, checked)
-                            }
-                            onChecklistCheckedChange(
-                                listState = listState,
-                                itemId = id,
-                                checked = checked,
-                                separatorVisualIndex = separatorVisualIndex,
-                                pendingUncheckId = pendingUncheckId,
-                                setPendingUncheckId = { pendingUncheckId = it },
-                                commitChecked = onCheckedChange
-                            )
-                        },
-                        onDelete = onDelete,
-                        onAddNewItemAfter = onAddNewItemAfter,
-                        onCopyText = onCopyText, // 🆕 v2.2.0
-                        onDuplicate = onDuplicate, // 🆕 v2.2.0
-                        onCopyToChecklist = onCopyToChecklist, // 🆕 v2.2.0
-                        onAddToCalendar = onAddToCalendar,
-                        onFocusHandled = onFocusHandled,
-                        onHeightChanged = { scrollToItemIndex = visualIndex },
-                        placementAnimationsEnabled = placementAnimationsEnabled,
-                        isPendingUncheck = item.id == pendingUncheckId,
-                        scrollsAfterUncheck = { id ->
-                            // Ziel oberhalb des Viewports (oder an der ersten sichtbaren Zeile: ein
-                            // Einfügen vor dem ersten sichtbaren Key landet oberhalb) → Scroll.
-                            // Sonst wächst die Row am Ziel auf wie ohne Scroll-to-Top.
-                            scrollTopOnUncheck &&
-                                sortChecklistStates(
-                                    items.map { if (it.id == id) it.copy(isChecked = false) else it },
-                                    currentSortOption
-                                ).indexOfFirst { it.id == id } <= listState.firstVisibleItemIndex
-                        },
-                        onUncheckCommit = { id, scroll ->
-                            if (scroll) scrollTopUncheckId = id
-                            commitDeferredUncheck(
-                                listState = listState,
-                                toggledId = id,
-                                commitChecked = onCheckedChange,
-                                reanchor = !scroll
-                            )
-                            pendingUncheckId = null
-                        },
-                        topHighlightId = topHighlightId,
-                        onTopHighlightShown = { topHighlightId = null },
-                        readOnly = readOnly
-                    )
+            if (addFab) {
+                FloatingActionButton(
+                    onClick = onAddItemAtEnd,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_item))
                 }
             }
         }
 
         // 🔀 v1.8.0: Add Item Button + Sort Button
         // 🆕 Issue #156: im Lesemodus ausgeblendet, die Liste nutzt die volle Höhe
-        if (!readOnly) {
+        // UI-Beta: FAB und ⋮-Menü ersetzen die Zeile, sie bleibt nur im alten Design.
+        if (!readOnly && !LocalNewDesign.current) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2385,20 +2421,13 @@ internal fun ChecklistEditor(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                // UI-Beta (C2): getönter Knopf. Liegt außerhalb der LazyColumn, berührt das Ziehen nicht;
-                // FilledTonalButton und TextButton haben dieselbe Mindesthöhe (40 dp).
-                val addItemContent: @Composable RowScope.() -> Unit = {
+                TextButton(onClick = onAddItemAtEnd) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(stringResource(R.string.add_item))
-                }
-                if (LocalNewDesign.current) {
-                    FilledTonalButton(onClick = onAddItemAtEnd, content = addItemContent)
-                } else {
-                    TextButton(onClick = onAddItemAtEnd, content = addItemContent)
                 }
 
                 IconButton(onClick = onSortClick) {

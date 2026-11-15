@@ -94,6 +94,7 @@ internal fun FolderCardList(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(Dimensions.SpacingMedium)) // Titel stößt sonst an die Zahl
                 if (isLocalOnly) {
                     Icon(
                         imageVector = Icons.Outlined.SyncDisabled,
@@ -295,7 +296,13 @@ private fun CompactFolderRow(name: String, count: Int, isLocalOnly: Boolean, sho
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        if (!showCount) return@Row
+        if (!showCount) {
+            // Auswahlmodus: Platz für das Kästchen (FolderSelectionOverlay, 20 dp mittig rechts), sonst lief der Titel darunter
+            Spacer(modifier = Modifier.width(Dimensions.IconSizeMedium))
+            return@Row
+        }
+        // Abstand zur Zahl: ein Titel, der gerade so passt, stieß sonst direkt an sie („Next prompts6“)
+        Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
         if (isLocalOnly) {
             Icon(
                 imageVector = Icons.Outlined.SyncDisabled,
