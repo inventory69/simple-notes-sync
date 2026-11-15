@@ -13,6 +13,8 @@ import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.images.ImageProcessor
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.models.ChecklistItem
+import dev.dettmer.simplenotes.models.ChecklistNesting
+import dev.dettmer.simplenotes.models.ChecklistRow
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.Note
@@ -424,7 +426,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                 isChecked = raw.isChecked,
                 order = raw.order,
                 originalOrder = if (isPreF04Note) raw.order else raw.originalOrder,
-                createdAt = if (isPreCreatedAtNote) index.toLong() else raw.createdAt
+                createdAt = if (isPreCreatedAtNote) index.toLong() else raw.createdAt,
+                indentationLevel = raw.indentationLevel
             )
         }
         // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
@@ -585,11 +588,14 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     }
                     NoteType.CHECKLIST -> {
                         // Preserve GFM checkbox syntax so round-trip TEXT→CHECKLIST restores states
+                        // Unterpunkte: leere Oberpunkte geben ihre Unterpunkte frei statt sie der Gruppe davor zu vererben
                         val text = _checklistItems.value
-                            .filter { it.text.isNotBlank() }
+                            .nested { ChecklistNesting.withoutBlank(it) }
                             .sortedBy { it.order }
                             .joinToString("\n") { item ->
-                                if (item.isChecked) "- [x] ${item.text}" else "- [ ] ${item.text}"
+                                // Unterpunkte: zwei Leerzeichen Einzug je Ebene, normalizeLineToChecklistItem liest sie zurück
+                                val box = if (item.isChecked) "- [x]" else "- [ ]"
+                                "${ChecklistNesting.TEXT_INDENT.repeat(item.indentationLevel)}$box ${item.text}"
                             }
                         _checklistItems.value = emptyList()
                         currentNoteType = NoteType.TEXT
@@ -669,16 +675,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         // Placement-Spring via LazyColumn.animateItem in NoteEditorScreen) läuft parallel
         // und überlebt die Reorder, weil der Item-Key (item.id) stabil bleibt.
         _checklistItems.update { items ->
-            val updatedItems = items.map { item ->
-                if (item.id == itemId) item.copy(isChecked = isChecked) else item
-            }
+            // Unterpunkte: Gruppenregeln (Oberpunkt abhaken hakt Unterpunkte mit ab usw.)
+            val updatedItems = items.nested { ChecklistNesting.toggle(it, itemId, isChecked) }
             // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Auto-Sort nur bei MANUAL und UNCHECKED_FIRST
-            val currentSort = _lastChecklistSortOption.value
-            if (currentSort == ChecklistSortOption.MANUAL ||
-                currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
-                currentSort == ChecklistSortOption.CREATION_DATE ||
-                currentSort == ChecklistSortOption.CREATION_DATE_DESC
-            ) {
+            if (separatorShown()) {
                 sortChecklistItems(updatedItems)
             } else {
                 // Bei anderen Sortierungen (alphabetisch, checked first) nicht auto-sortieren
@@ -687,8 +687,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
         // 🆕 v1.9.0 (F14): Emit scroll action — outside update{} to ensure state is committed first
         if (!isChecked && scrollTopOnUncheck) {
-            val index = _checklistItems.value.indexOfFirst { it.id == itemId }
-            _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToItem(index))
+            // Unterpunkte: Ziel ist der Oberpunkt der wandernden Gruppe, sonst stünde er knapp über dem Bild
+            val items = _checklistItems.value
+            val index = items.indexOfFirst { it.id == itemId }
+            val target = if (index >= 0) ChecklistNesting.groupStart(items, index) else index
+            _checklistScrollAction.tryEmit(ChecklistScrollAction.ScrollToItem(target))
         } else {
             _checklistScrollAction.tryEmit(ChecklistScrollAction.NoScroll)
         }
@@ -709,24 +712,15 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         _checklistItems.update { items ->
             val index = items.indexOfFirst { it.id == afterItemId }
             if (index >= 0) {
-                val currentSort = _lastChecklistSortOption.value
-                val hasSeparator = currentSort == ChecklistSortOption.MANUAL ||
-                    currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
-                    currentSort == ChecklistSortOption.CREATION_DATE ||
-                    currentSort == ChecklistSortOption.CREATION_DATE_DESC
-
-                // 🆕 v1.8.1 (IMPL_15): Wenn das Trigger-Item checked ist und ein Separator
-                // existiert, darf das neue unchecked Item nicht in die checked-Sektion.
-                // → Stattdessen vor dem ersten checked Item einfügen.
-                val effectiveIndex = if (hasSeparator && items[index].isChecked) {
-                    val firstCheckedIndex = items.indexOfFirst { it.isChecked }
-                    if (firstCheckedIndex >= 0) firstCheckedIndex else index + 1
-                } else {
-                    index + 1
-                }
+                // 🆕 v1.8.1 (IMPL_15): Wenn das Trigger-Item im erledigten Abschnitt steht und ein
+                // Separator existiert, darf das neue unchecked Item nicht in die checked-Sektion.
+                // → Stattdessen vor der ersten abgehakten Gruppe einfügen.
+                // Unterpunkte: die neue Zeile erbt die Ebene (Enter auf einem Oberpunkt mit
+                // Unterpunkten erzeugt einen ersten Unterpunkt).
+                val (effectiveIndex, level) = placeNewOpenRow(items, index, ChecklistNesting.levelForNewRowAfter(items, index))
 
                 val newList = items.toMutableList()
-                newList.add(effectiveIndex, newItem)
+                newList.add(effectiveIndex, newItem.copy(indentationLevel = level))
                 // 🐛 v1.9.0 (F12): Set originalOrder = index for ALL items after insert.
                 // Prevents newly added items from jumping to position 0 after save/reopen.
                 newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
@@ -777,18 +771,87 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      *
      * Falls keine checked Items existieren, wird am Ende eingefügt.
      */
-    private fun calculateInsertIndexForNewItem(items: List<ChecklistItemState>): Int {
-        val currentSort = _lastChecklistSortOption.value
-        return when (currentSort) {
-            ChecklistSortOption.MANUAL,
-            ChecklistSortOption.UNCHECKED_FIRST,
-            ChecklistSortOption.CREATION_DATE,
-            ChecklistSortOption.CREATION_DATE_DESC -> {
-                val firstCheckedIndex = items.indexOfFirst { it.isChecked }
-                if (firstCheckedIndex >= 0) firstCheckedIndex else items.size
-            }
-            else -> items.size
+    private fun calculateInsertIndexForNewItem(items: List<ChecklistItemState>): Int =
+        if (separatorShown()) ChecklistNesting.openRowCount(items) else items.size
+
+    /** Sortierungen mit Trenner zwischen offenen und erledigten Einträgen (Auto-Sort beim Abhaken). */
+    private fun separatorShown(): Boolean = when (_lastChecklistSortOption.value) {
+        ChecklistSortOption.MANUAL,
+        ChecklistSortOption.UNCHECKED_FIRST,
+        ChecklistSortOption.CREATION_DATE,
+        ChecklistSortOption.CREATION_DATE_DESC -> true
+        else -> false
+    }
+
+    /**
+     * Position und Ebene einer neuen offenen Zeile hinter [index]. Steht [index] im erledigten
+     * Abschnitt, darf die Zeile nicht hinein: mit Trenner vor die erste abgehakte Gruppe, ohne
+     * Trenner hinter die Gruppe (ein offener Unterpunkt unter abgehaktem Oberpunkt bräche die Invariante).
+     */
+    private fun placeNewOpenRow(items: List<ChecklistItemState>, index: Int, level: Int): Pair<Int, Int> = when {
+        !ChecklistNesting.inCheckedSection(items, index) -> index + 1 to level
+        separatorShown() -> ChecklistNesting.openRowCount(items) to 0
+        else -> ChecklistNesting.groupRange(items, index).last + 1 to 0
+    }
+
+    /** Unterpunkte: Zeile einrücken (wird Unterpunkt der Gruppe darüber). */
+    fun indentChecklistItem(itemId: String) = changeNesting { ChecklistNesting.indent(it, itemId) }
+
+    /** Unterpunkte: Zeile ausrücken (wird Oberpunkt hinter ihrer bisherigen Gruppe). */
+    fun outdentChecklistItem(itemId: String) = changeNesting { ChecklistNesting.outdent(it, itemId) }
+
+    private fun changeNesting(op: (List<ChecklistItem>) -> List<ChecklistItem>) {
+        val before = _checklistItems.value
+        val changed = before.nested(op).mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
+        if (changed == before) return
+        pushUndoSnapshot()
+        isDirty = true
+        hasUnsavedChecklistEdits = true
+        // Ein ausgerückter abgehakter Unterpunkt ist jetzt ein abgehakter Oberpunkt → unter den Trenner
+        _checklistItems.value = if (separatorShown()) sortChecklistItems(changed) else changed
+        scheduleAutosave()
+    }
+
+    // Unterpunkte: laufendes Ziehen (gezogene Zeile + ihre Unterpunkte beim Start), sonst null.
+    private var dragDraggedId: String? = null
+    private var dragFormerChildIds: List<String> = emptyList()
+
+    /**
+     * Unterpunkte: Drag-Start, gerufen vor dem ersten Tausch. Merkt sich die Unterpunkte eines gezogenen
+     * Oberpunkts, solange die Liste noch unverändert ist, und legt genau einen Undo-Schritt an: Die
+     * Zwischenstände eines Ziehens (Unterpunkte an fremdem Oberpunkt) sind kein Ergebnis zum Zurückholen.
+     */
+    fun startChecklistDrag(draggedId: String) {
+        val items = _checklistItems.value
+        val index = items.indexOfFirst { it.id == draggedId }
+        if (index < 0) return
+        pushUndoSnapshot()
+        dragDraggedId = draggedId
+        dragFormerChildIds = if (items[index].indentationLevel == 0) {
+            ChecklistNesting.groupRange(items, index).drop(1).map { items[it].id }
+        } else {
+            emptyList()
         }
+    }
+
+    /**
+     * Unterpunkte: Drag-Ende. Die Unterpunkte eines gezogenen Oberpunkts bleiben beim Ziehen stehen
+     * (die DnD-Logik tauscht genau eine Zeile) und rücken jetzt hinter ihn, siehe [ChecklistNesting.finishDrag].
+     */
+    fun onChecklistDragFinished() {
+        val draggedId = dragDraggedId ?: return
+        val formerChildIds = dragFormerChildIds
+        dragDraggedId = null
+        dragFormerChildIds = emptyList()
+        val before = _checklistItems.value
+        val after = before.nested { ChecklistNesting.finishDrag(it, draggedId, formerChildIds) }
+            .mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
+        if (after != before) {
+            isDirty = true
+            hasUnsavedChecklistEdits = true
+            _checklistItems.value = after
+        }
+        scheduleAutosave()
     }
 
     fun deleteChecklistItem(itemId: String) {
@@ -799,13 +862,16 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         isDirty = true // 🆕 v1.10.0-P2: Deletion is an edit
         hasUnsavedChecklistEdits = true // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
-            val filtered = items.filter { it.id != itemId }
+            // Unterpunkte eines gelöschten Oberpunkts werden Oberpunkte
+            val filtered = items.nested { ChecklistNesting.delete(it, itemId) }
             // Ensure at least one item exists
             if (filtered.isEmpty()) {
                 listOf(ChecklistItemState.createEmpty(0))
             } else {
                 // 🐛 v1.9.0 (F12): Cement originalOrder after deletion to keep baseline consistent
-                filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
+                val renumbered = filtered.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
+                // Ein abgehakter Unterpunkt, der so zum Oberpunkt wurde, gehört unter den Trenner
+                if (separatorShown()) sortChecklistItems(renumbered) else renumbered
             }
         }
         // 🔧 v1.11.0: Autosave nur wenn gelöschtes Item Text hatte (= auf Disk existierte)
@@ -842,22 +908,18 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         _checklistItems.update { currentItems ->
             val index = currentItems.indexOfFirst { it.id == itemId }
             if (index >= 0) {
-                val currentSort = _lastChecklistSortOption.value
-                val hasSeparator = currentSort == ChecklistSortOption.MANUAL ||
-                    currentSort == ChecklistSortOption.UNCHECKED_FIRST ||
-                    currentSort == ChecklistSortOption.CREATION_DATE ||
-                    currentSort == ChecklistSortOption.CREATION_DATE_DESC
-
-                // Wenn Source checked → neues unchecked Item VOR checked-Sektion
-                val effectiveIndex = if (hasSeparator && sourceItem.isChecked) {
-                    val firstCheckedIndex = currentItems.indexOfFirst { it.isChecked }
-                    if (firstCheckedIndex >= 0) firstCheckedIndex else index + 1
+                // Wenn Source im erledigten Abschnitt → neues unchecked Item VOR die checked-Sektion.
+                // Unterpunkte: ein Oberpunkt wird hinter seiner Gruppe dupliziert (sonst nähme das
+                // Duplikat ihm die Unterpunkte weg), ein Unterpunkt direkt darunter.
+                val afterIndex = if (sourceItem.indentationLevel == 0) {
+                    ChecklistNesting.groupRange(currentItems, index).last
                 } else {
-                    index + 1
+                    index
                 }
+                val (effectiveIndex, level) = placeNewOpenRow(currentItems, afterIndex, sourceItem.indentationLevel)
 
                 val newList = currentItems.toMutableList()
-                newList.add(effectiveIndex, newItem)
+                newList.add(effectiveIndex, newItem.copy(indentationLevel = level))
                 newList.mapIndexed { i, item -> item.copy(order = i, originalOrder = i) }
             } else {
                 currentItems
@@ -951,29 +1013,20 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
     }
 
     fun moveChecklistItem(fromIndex: Int, toIndex: Int) {
-        pushUndoSnapshotDebounced() // IMPL_29: debounce per gesture (was: per-swap snapshot)
+        // Während eines Ziehens hat startChecklistDrag den Undo-Schritt schon angelegt
+        if (dragDraggedId == null) pushUndoSnapshotDebounced() // IMPL_29: debounce per gesture (was: per-swap snapshot)
         isDirty = true // 🆕 v1.10.0-P2: Moving an item is an edit
         hasUnsavedChecklistEdits = true // 🛡️ v1.8.2 (IMPL_17)
         _checklistItems.update { items ->
-            val fromItem = items.getOrNull(fromIndex) ?: return@update items
-            val toItem = items.getOrNull(toIndex) ?: return@update items
-
-            val mutableList = items.toMutableList()
-            val item = mutableList.removeAt(fromIndex)
-
-            // 🆕 v1.8.1 IMPL_14: Cross-Boundary Move mit Auto-Toggle
-            // Wenn ein Item die Grenze überschreitet, wird es automatisch checked/unchecked.
-            val movedItem = if (fromItem.isChecked != toItem.isChecked) {
-                item.copy(isChecked = toItem.isChecked)
-            } else {
-                item
-            }
-
-            mutableList.add(toIndex, movedItem)
-            // 🆕 v1.9.0 (F04): Update originalOrder on manual reorder to cement new position
-            mutableList.mapIndexed { index, i -> i.copy(order = index, originalOrder = index) }
+            if (fromIndex !in items.indices || toIndex !in items.indices) return@update items
+            // 🆕 v1.8.1 IMPL_14: Cross-Boundary Move mit Auto-Toggle. Unterpunkte: maßgeblich ist der
+            // Abschnitt (Zustand des Oberpunkts), nicht isChecked der beiden Zeilen.
+            items.nested { ChecklistNesting.move(it, fromIndex, toIndex) }
+                // 🆕 v1.9.0 (F04): Update originalOrder on manual reorder to cement new position
+                .mapIndexed { index, i -> i.copy(order = index, originalOrder = index) }
         }
-        scheduleAutosave() // 🆕 v1.10.0-P2: Trigger autosave on item move
+        // Unterpunkte: Zwischenstände eines Ziehens nicht speichern, onChecklistDragFinished speichert das Ergebnis
+        if (dragDraggedId == null) scheduleAutosave() // 🆕 v1.10.0-P2: Trigger autosave on item move
     }
 
     /**
@@ -988,36 +1041,10 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         _lastChecklistSortOption.value = option
 
         _checklistItems.update { items ->
-            val sorted = when (option) {
-                // Bei MANUAL: Sortiere nach checked/unchecked, damit Separator korrekt platziert wird
-                ChecklistSortOption.MANUAL -> items.sortedBy { it.isChecked }
-
-                ChecklistSortOption.ALPHABETICAL_ASC ->
-                    items.sortedBy { it.text.lowercase() }
-
-                ChecklistSortOption.ALPHABETICAL_DESC ->
-                    items.sortedByDescending { it.text.lowercase() }
-
-                ChecklistSortOption.UNCHECKED_FIRST ->
-                    items.sortedBy { it.isChecked }
-
-                ChecklistSortOption.CHECKED_FIRST ->
-                    items.sortedByDescending { it.isChecked }
-
-                ChecklistSortOption.CREATION_DATE -> {
-                    // 🆕 v1.11.0: Unchecked-Items nach Erstellungszeit sortiert (aufsteigend), dann Checked
-                    val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
-                    val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
-                    unchecked + checked
-                }
-
-                ChecklistSortOption.CREATION_DATE_DESC -> {
-                    // 🆕 v1.11.0: Neueste zuerst (absteigend), dann Checked
-                    val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
-                    val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
-                    unchecked + checked
-                }
-            }
+            // Bei MANUAL: nur nach Abschnitt trennen (stabil), damit der Separator korrekt platziert wird.
+            // Sortiert werden Gruppen nach ihrem Oberpunkt, Unterpunkte bleiben in ihrer Gruppe.
+            val effective = if (option == ChecklistSortOption.MANUAL) ChecklistSortOption.UNCHECKED_FIRST else option
+            val sorted = sortChecklistStates(items, effective)
 
             // 🆕 v1.9.0 (F04): Explicit sort resets originalOrder baseline to new positions
             sorted.mapIndexed { index, item -> item.copy(order = index, originalOrder = index) }
@@ -1217,17 +1244,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     existingNote = note
                 }
                 NoteType.CHECKLIST -> {
+                    // Unterpunkte: leere Oberpunkte geben ihre Unterpunkte frei (ChecklistNesting.withoutBlank)
                     val validItems = _checklistItems.value
-                        .filter { it.text.isNotBlank() }
+                        .nested { ChecklistNesting.withoutBlank(it) }
                         .mapIndexed { index, item ->
-                            ChecklistItem(
-                                id = item.id,
-                                text = item.text,
-                                isChecked = item.isChecked,
-                                order = index,
-                                originalOrder = item.originalOrder,
-                                createdAt = item.createdAt // 🆕 v1.11.0
-                            )
+                            item.toItem(order = index)
                         }
                     if (title.isEmpty() && validItems.isEmpty()) return true
 
@@ -1243,7 +1264,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                                 old.id == new.id &&
                                     old.text == new.text &&
                                     old.isChecked == new.isChecked &&
-                                    old.order == new.order
+                                    old.order == new.order &&
+                                    old.indentationLevel == new.indentationLevel
                             }
                         if (noContentChange) {
                             Logger.d(TAG, "⏭️ saveOnBack: no effective change after filtering empty items — skipping")
@@ -1345,17 +1367,11 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
             NoteType.CHECKLIST -> {
                 // 🆕 v1.9.0 (F04): Preserve originalOrder for position restore
+                // Unterpunkte: leere Oberpunkte geben ihre Unterpunkte frei (ChecklistNesting.withoutBlank)
                 val validItems = _checklistItems.value
-                    .filter { it.text.isNotBlank() }
+                    .nested { ChecklistNesting.withoutBlank(it) }
                     .mapIndexed { index, item ->
-                        ChecklistItem(
-                            id = item.id,
-                            text = item.text,
-                            isChecked = item.isChecked,
-                            order = index,
-                            originalOrder = item.originalOrder,
-                            createdAt = item.createdAt // 🆕 v1.11.0
-                        )
+                        item.toItem(order = index)
                     }
 
                 if (title.isEmpty() && validItems.isEmpty()) {
@@ -1377,7 +1393,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                             old.id == new.id &&
                                 old.text == new.text &&
                                 old.isChecked == new.isChecked &&
-                                old.order == new.order
+                                old.order == new.order &&
+                                old.indentationLevel == new.indentationLevel
                         }
                     if (noContentChange) {
                         Logger.d(TAG, "⏭️ Autosave: no effective change after filtering empty items — skipping")
@@ -1740,7 +1757,8 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                         isChecked = raw.isChecked,
                         order = raw.order,
                         originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
-                        createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt
+                        createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt,
+                        indentationLevel = raw.indentationLevel
                     )
                 }
                 if (freshItems.isEmpty()) return@launch
@@ -1806,11 +1824,22 @@ data class ConflictVersions(val local: Note, val server: Note)
 data class ChecklistItemState(
     val id: String = UUID.randomUUID().toString(),
     val text: String = "",
-    val isChecked: Boolean = false,
+    override val isChecked: Boolean = false,
     val order: Int = 0,
     val originalOrder: Int = order, // 🆕 v1.9.0 (F04): Position restore on un-check
-    val createdAt: Long = System.currentTimeMillis() // 🆕 v1.11.0: Timestamp for sort-by-creation-date
-) {
+    val createdAt: Long = System.currentTimeMillis(), // 🆕 v1.11.0: Timestamp for sort-by-creation-date
+    override val indentationLevel: Int = 0 // Unterpunkte: 0 oder 1, siehe ChecklistNesting
+) : ChecklistRow {
+    fun toItem(order: Int = this.order) = ChecklistItem(
+        id = id,
+        text = text,
+        isChecked = isChecked,
+        order = order,
+        originalOrder = originalOrder,
+        createdAt = createdAt,
+        indentationLevel = indentationLevel
+    )
+
     companion object {
         // 🆕 v1.11.0: Monoton steigender Timestamp — verhindert gleiche createdAt-Werte
         // wenn mehrere Items in derselben Millisekunde erstellt werden (z.B. schnelles Enter-Drücken).
@@ -1842,6 +1871,11 @@ data class ChecklistItemState(
  * ist `== "x"` und nicht `!= " "`, sonst würde `- []` (leere Klammern) als abgehakt gelten.
  */
 internal fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
+    // Unterpunkte: ab zwei Leerzeichen (oder einem Tab) Einzug wird die Zeile Unterpunkt
+    return parseChecklistLine(line, index).copy(indentationLevel = ChecklistNesting.levelOfLine(line))
+}
+
+private fun parseChecklistLine(line: String, index: Int): ChecklistItemState {
     val markerRegex = Regex("""^[-*•]\s+(.*)$""")
     val cbRegex = Regex("""^\[([ xX]?)\]\s*(.*)$""") // group 1 = mark, group 2 = text
     val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
@@ -1928,25 +1962,18 @@ sealed interface NoteEditorEvent {
 internal fun sortChecklistStates(
     items: List<ChecklistItemState>,
     option: ChecklistSortOption
-): List<ChecklistItemState> {
-    val asChecklistItems = items.map { s ->
-        ChecklistItem(
-            id = s.id,
-            text = s.text,
-            isChecked = s.isChecked,
-            order = s.order,
-            originalOrder = s.originalOrder,
-            createdAt = s.createdAt
-        )
-    }
-    return ChecklistSorter.sort(asChecklistItems, option).map { item ->
-        ChecklistItemState(
-            id = item.id,
-            text = item.text,
-            isChecked = item.isChecked,
-            order = item.order,
-            originalOrder = item.originalOrder,
-            createdAt = item.createdAt
-        )
-    }
-}
+): List<ChecklistItemState> = ChecklistSorter.sort(items.map { it.toItem() }, option).map { it.toState() }
+
+internal fun ChecklistItem.toState() = ChecklistItemState(
+    id = id,
+    text = text,
+    isChecked = isChecked,
+    order = order,
+    originalOrder = originalOrder,
+    createdAt = createdAt,
+    indentationLevel = indentationLevel
+)
+
+/** Wendet eine [dev.dettmer.simplenotes.models.ChecklistNesting]-Operation auf Editor-States an. */
+internal inline fun List<ChecklistItemState>.nested(op: (List<ChecklistItem>) -> List<ChecklistItem>) =
+    op(map { it.toItem() }).map { it.toState() }

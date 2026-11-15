@@ -328,7 +328,7 @@ object PdfExporter {
                 is MarkdownBlock.Paragraph -> renderParagraph(renderer, context, block.text)
 
                 is MarkdownBlock.TaskList -> {
-                    renderChecklistItems(renderer, block.items.map { it.text to it.isChecked })
+                    renderChecklistItems(renderer, block.items.map { Triple(it.text, it.isChecked, it.level) })
                 }
 
                 is MarkdownBlock.UnorderedList -> renderBulletList(renderer, block.items)
@@ -483,8 +483,10 @@ object PdfExporter {
         else -> heading3Paint
     }
 
-    private fun renderChecklistItems(renderer: PageRenderer, items: List<Pair<String, Boolean>>) {
-        for ((text, isChecked) in items) {
+    private fun renderChecklistItems(renderer: PageRenderer, items: List<Triple<String, Boolean, Int>>) {
+        for ((text, isChecked, level) in items) {
+            // Unterpunkte: die ganze Zeile samt Kästchen rückt um eine Kästchenbreite je Ebene ein
+            val shift = CHECKLIST_INDENT * level
             val symbol = if (isChecked) "☑ " else "☐ "
             val textPaint = if (isChecked) checkedItemPaint else uncheckedItemPaint
 
@@ -492,14 +494,14 @@ object PdfExporter {
             renderer.ensureSpace(CHECKLIST_FONT_SIZE * LINE_HEIGHT_MULTIPLIER)
 
             // Draw checkbox symbol at left margin
-            renderer.drawTextDirect(symbol, MARGIN_HORIZONTAL, checkboxPaint)
+            renderer.drawTextDirect(symbol, MARGIN_HORIZONTAL + shift, checkboxPaint)
 
             // Draw item text with wrapping and inline formatting (indented past checkbox)
-            val textWidth = TEXT_WIDTH - CHECKLIST_INDENT
+            val textWidth = TEXT_WIDTH - CHECKLIST_INDENT - shift
             renderer.drawWrappedTextIndented(
                 toSpanned(text, strikethrough = isChecked),
                 textPaint,
-                CHECKLIST_INDENT,
+                CHECKLIST_INDENT + shift,
                 textWidth
             )
         }

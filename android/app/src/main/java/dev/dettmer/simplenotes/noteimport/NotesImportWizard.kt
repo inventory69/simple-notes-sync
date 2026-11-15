@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -396,9 +397,10 @@ class NotesImportWizard(private val storage: NotesStorage, private val context: 
                     id = UUID.randomUUID().toString(),
                     text = m.groupValues[2].trim(),
                     isChecked = m.groupValues[1].lowercase() != " ",
-                    order = index
+                    order = index,
+                    indentationLevel = ChecklistNesting.levelOfLine(line) // Unterpunkte
                 )
-            }
+            }.let { ChecklistNesting.normalize(it) }
             Logger.d(TAG, "   ✅ ${candidate.name}: Heuristic detection — imported as checklist (${items.size} items)")
             return Note(
                 id = UUID.randomUUID().toString(),

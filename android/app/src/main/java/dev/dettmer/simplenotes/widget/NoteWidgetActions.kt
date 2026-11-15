@@ -5,6 +5,7 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -45,13 +46,10 @@ class ToggleChecklistItemAction : ActionCallback {
         val storage = NotesStorage(context)
         val note = storage.loadNote(noteId) ?: return
 
-        val updatedItems = note.checklistItems?.map { item ->
-            if (item.id == itemId) {
-                item.copy(isChecked = !item.isChecked)
-            } else {
-                item
-            }
-        }?.run {
+        val items = note.checklistItems ?: return
+        val toggled = items.find { it.id == itemId } ?: return
+        // Unterpunkte: dieselben Gruppenregeln wie im Editor (Oberpunkt abhaken hakt Unterpunkte mit ab)
+        val updatedItems = ChecklistNesting.toggle(items.sortedBy { it.order }, itemId, !toggled.isChecked).run {
             // 🆕 v1.9.0 (F04): Backward compat — old notes (pre-F04) have all originalOrder == 0
             // (Gson default). Only patch if ALL items are 0, meaning F04 was never active for this note.
             // If at least one item has originalOrder != 0, the note was saved with F04 → don't touch.
@@ -61,7 +59,7 @@ class ToggleChecklistItemAction : ActionCallback {
             } else {
                 this
             }
-        } ?: return
+        }
 
         // 🆕 v1.8.1 (IMPL_04): Auto-Sort nach Toggle
         // Konsistent mit NoteEditorViewModel.updateChecklistItemChecked

@@ -77,6 +77,7 @@ import dev.dettmer.simplenotes.images.orientationSwapsAxes
 import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
 import dev.dettmer.simplenotes.storage.AssetStore
+import dev.dettmer.simplenotes.ui.main.components.PREVIEW_INDENT
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.truncate
 import java.io.File
@@ -316,7 +317,10 @@ private fun TaskListBlock(taskList: MarkdownBlock.TaskList, bodyStyle: TextStyle
         taskList.items.forEach { item ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = Dimensions.SpacingSmall)
+                // Unterpunkt: Kästchen steht unter dem Text des Oberpunkts
+                modifier = Modifier.padding(
+                    start = Dimensions.SpacingSmall + (Dimensions.IconSizeMedium + Dimensions.SpacingMedium) * item.level
+                )
             ) {
                 Checkbox(
                     checked = item.isChecked,
@@ -825,6 +829,7 @@ internal fun buildMarkdownCardPreview(
             is MarkdownBlock.TaskList -> {
                 block.items.forEachIndexed { j, item ->
                     if (j > 0) append("\n")
+                    append(PREVIEW_INDENT.repeat(item.level))
                     append(if (item.isChecked) "☑ " else "☐ ")
                     val itemText = parseInlineFormattingWithColors(item.text, linkColor, codeBackground, codeColor)
                     if (item.isChecked) {

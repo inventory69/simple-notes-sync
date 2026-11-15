@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.em
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistSortOption
+import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
@@ -82,6 +83,7 @@ private fun checkboxIcon(icon: ImageVector, alpha: Float) = InlineTextContent(
 
 /** Eine Vorschauzeile: Checkbox-Icon + Text, erledigt gedimmt und durchgestrichen wie im Editor. */
 private fun AnnotatedString.Builder.checklistItemLine(item: ChecklistItem, checkedColor: Color) {
+    append(PREVIEW_INDENT.repeat(item.indentationLevel)) // Unterpunkte
     if (item.isChecked) appendInlineContent(CHECKBOX_CHECKED_ID, "☑") else appendInlineContent(CHECKBOX_UNCHECKED_ID, "☐")
     append(" ")
     if (item.isChecked) {
@@ -92,6 +94,9 @@ private fun AnnotatedString.Builder.checklistItemLine(item: ChecklistItem, check
         append(item.text)
     }
 }
+
+/** Unterpunkte: Einzug je Ebene in der Kartenvorschau (Geviert-Leerzeichen, etwa eine Checkbox-Breite). */
+internal const val PREVIEW_INDENT = "\u2003"
 
 /** Icon für den Sync-Status einer Notiz — gemeinsam genutzt von allen Card-Varianten. */
 @Composable
@@ -211,34 +216,12 @@ fun TrailingIconText(
 fun sortChecklistItemsForPreview(items: List<ChecklistItem>, sortOptionName: String?): List<ChecklistItem> {
     val sortOption = sortOptionName.toEnumOrDefault(ChecklistSortOption.MANUAL)
 
-    return when (sortOption) {
-        ChecklistSortOption.MANUAL,
-        ChecklistSortOption.UNCHECKED_FIRST ->
-            items.sortedBy { it.isChecked }
-
-        ChecklistSortOption.CHECKED_FIRST ->
-            items.sortedByDescending { it.isChecked }
-
-        ChecklistSortOption.ALPHABETICAL_ASC ->
-            items.sortedBy { it.text.lowercase() }
-
-        ChecklistSortOption.ALPHABETICAL_DESC ->
-            items.sortedByDescending { it.text.lowercase() }
-
-        ChecklistSortOption.CREATION_DATE -> {
-            // 🆕 v1.11.0: Unchecked first, then checked — both sorted by creation timestamp (ascending)
-            val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
-            val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
-            unchecked + checked
-        }
-
-        ChecklistSortOption.CREATION_DATE_DESC -> {
-            // 🆕 v1.11.0: Unchecked first, then checked — both sorted by creation timestamp (descending)
-            val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
-            val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
-            unchecked + checked
-        }
-    }
+    // Unterpunkte: gruppenweise über ChecklistSorter (eine Quelle für Editor, Widget und Vorschau).
+    // MANUAL trennt in der Vorschau nur nach Abschnitt (stabil), ohne originalOrder.
+    val effective = if (sortOption == ChecklistSortOption.MANUAL) ChecklistSortOption.UNCHECKED_FIRST else sortOption
+    // Nur Anzeige: die gespeicherte order bleibt unangetastet
+    val orderById = items.associate { it.id to it.order }
+    return ChecklistSorter.sort(items, effective).map { it.copy(order = orderById[it.id] ?: it.order) }
 }
 
 /**

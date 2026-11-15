@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.parseImageAlt
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.storage.AssetStore
 import dev.dettmer.simplenotes.ui.editor.ChecklistItemState
@@ -38,7 +39,9 @@ object NoteShareHelper {
                     .filter { it.text.isNotBlank() }
                     .sortedBy { it.order }
                     .joinToString("\n") { item ->
-                        if (item.isChecked) "✓ ${item.text}" else "• ${item.text}"
+                        // Unterpunkte: zwei Leerzeichen Einzug je Ebene
+                        ChecklistNesting.TEXT_INDENT.repeat(item.indentationLevel) +
+                            if (item.isChecked) "✓ ${item.text}" else "• ${item.text}"
                     }
             }
         }
@@ -47,17 +50,17 @@ object NoteShareHelper {
     /**
      * Formats checklist items for PDF rendering with structured data.
      *
-     * Returns a list of pairs: (text, isChecked) — filtered and sorted.
+     * Returns a list of triples: (text, isChecked, indentationLevel) — filtered and sorted.
      * Used by PdfExporter for rendering individual lines with checkbox symbols.
      *
      * @param checklistItems The raw checklist items from the editor
-     * @return List of (text, isChecked) pairs, sorted by order
+     * @return List of (text, isChecked, indentationLevel), sorted by order
      */
-    fun formatChecklistForPdf(checklistItems: List<ChecklistItemState>): List<Pair<String, Boolean>> {
+    fun formatChecklistForPdf(checklistItems: List<ChecklistItemState>): List<Triple<String, Boolean, Int>> {
         return checklistItems
             .filter { it.text.isNotBlank() }
             .sortedBy { it.order }
-            .map { it.text to it.isChecked }
+            .map { Triple(it.text, it.isChecked, it.indentationLevel) }
     }
 
     /**

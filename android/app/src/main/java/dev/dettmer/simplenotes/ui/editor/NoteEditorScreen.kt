@@ -101,6 +101,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -147,6 +148,7 @@ import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import dev.dettmer.simplenotes.markdown.TapAnchor
 import dev.dettmer.simplenotes.markdown.buildImageAlt
 import dev.dettmer.simplenotes.markdown.computeImageRewrite
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
@@ -300,7 +302,9 @@ private data class CheckTrace(val tapNanos: Long, val itemId: String, val checke
 private fun preAnchorForToggle(
     listState: LazyListState,
     itemKey: String,
-    checked: Boolean
+    checked: Boolean,
+    // Unterpunkte: alle Zeilen, die mitwandern (Oberpunkt samt Gruppe). Keine davon taugt als Anker.
+    movingIds: Set<String> = setOf(itemKey)
 ) {
     if (listState.firstVisibleItemIndex == 0) {
         val preservedOffset = listState.firstVisibleItemScrollOffset
@@ -309,11 +313,11 @@ private fun preAnchorForToggle(
         return
     }
     val visible = listState.layoutInfo.visibleItemsInfo
-    if (visible.firstOrNull()?.key != itemKey) {
+    if (visible.firstOrNull()?.key !in movingIds) {
         if (BuildConfig.DEBUG) logCheckTap(listState, itemKey, checked, "B2(kein Pre-Anchor)")
         return
     }
-    val anchor = visible.firstOrNull { info -> info.key != itemKey }
+    val anchor = visible.firstOrNull { info -> info.key !in movingIds }
     if (BuildConfig.DEBUG) {
         logCheckTap(listState, itemKey, checked, "B1(${anchor?.index},${anchor?.offset})")
     }
@@ -349,11 +353,18 @@ private fun commitDeferredUncheck(
     listState: LazyListState,
     toggledId: String,
     commitChecked: (String, Boolean) -> Unit,
-    reanchor: Boolean = true
+    reanchor: Boolean = true,
+    // Unterpunkte: die ganze wandernde Gruppe. Ist eine ihrer Zeilen der Anker der Liste, ankert die erste Zeile außerhalb.
+    movingIds: Set<String> = setOf(toggledId),
+    // Key am visuellen Index (Trenner eingerechnet). Der Anker der Liste ist firstVisibleItemIndex; eine auf
+    // 0 px kollabierte Zeile bleibt das, fehlt aber in visibleItemsInfo (gemessen: first=29@0, Oberpunkt kollabiert).
+    keyAt: (Int) -> Any? = { index -> listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }?.key }
 ) {
     val visible = listState.layoutInfo.visibleItemsInfo
-    val anchor = if (reanchor && visible.firstOrNull()?.key == toggledId) {
-        visible.firstOrNull { it.key != toggledId && it.key != SEPARATOR_ITEM_KEY }
+    val first = listState.firstVisibleItemIndex
+    val anchor = if (reanchor && keyAt(first) in movingIds) {
+        // Ab dem Anker suchen: visibleItemsInfo führt auch eine Zeile, die direkt über dem Bild endet
+        visible.firstOrNull { it.index >= first && it.key !in movingIds && it.key != SEPARATOR_ITEM_KEY }
     } else {
         null
     }
@@ -365,7 +376,15 @@ private fun commitDeferredUncheck(
         )
     }
     if (anchor != null) {
-        listState.requestScrollToItem(anchor.index, -anchor.offset)
+        // Der Anker rückt an die Stelle der wandernden Zeile(n): deren Oberkante liegt bei
+        // -firstVisibleItemScrollOffset. Seine eigene Lage zählte die Zeilenabstände der kollabierten
+        // Zeilen mit (gemessen: 15 px bei einer Gruppe aus drei Zeilen).
+        listState.requestScrollToItem(anchor.index, listState.firstVisibleItemScrollOffset)
+    } else if (reanchor && first == 0 && listState.firstVisibleItemScrollOffset == 0) {
+        // Ganz oben (wie Fall A in preAnchorForToggle): Index 0 festhalten. Landet das Ziel an Index 0,
+        // steht es so oben im Bild und wächst dort auf. Ohne Anker folgte LazyList dem Key der bisher
+        // ersten Zeile, und die Zeile oder Gruppe läge unsichtbar über dem Bild.
+        listState.requestScrollToItem(0, 0)
     }
     commitChecked(toggledId, false)
 }
@@ -421,7 +440,8 @@ private suspend fun cutAndGlideTo(
  *
  * 1. **Re-Tap auf das gerade kollabierende Item** → Abbruch. Das Model wurde nie geändert,
  *    es genügt, den Pending-Slot zu leeren; die Row klappt wieder auf.
- * 2. **Uncheck mit Separator-Reorder** (`separatorVisualIndex >= 0`) → **immer** aufschieben:
+ * 2. **Uncheck mit Separator-Reorder** (`uncheckReorders`: Trenner sichtbar und Zeile im erledigten
+ *    Abschnitt; ein abgehakter Unterpunkt unter offenem Oberpunkt bewegt sich nicht) → **immer** aufschieben:
  *    die Row besitzt die Exit-Animation selbst (Collapse an Ort und Stelle), Commit erst
  *    danach. Ein Aufwärts-Placement durch LazyLayoutItemAnimator findet nie statt — der ist
  *    für diese Richtung nachweislich nicht robust: Ziel off-screen parkt einen „Geist" am
@@ -435,14 +455,26 @@ private suspend fun cutAndGlideTo(
  *
  * Der Pending-Slot hält genau ein Item. Ein zweiter Uncheck während eines laufenden Collapse
  * committet den ersten sofort — kein Tap darf verloren gehen.
+ *
+ * Unterpunkte: Ein Tap auf einen Mitläufer der kollabierenden Gruppe ([pendingGroupIds]) committet die
+ * Gruppe und danach ihn direkt. Nach dem Gruppen-Commit steht er im offenen Abschnitt und bewegt sich
+ * nicht mehr; als neuer Pending-Slot würde er nie committen (sein Collapse läuft schon als Mitläufer).
  */
+/** Unterpunkte: läuft gerade ein Ziehen mit mindestens einem Tausch (siehe ChecklistEditor). */
+private class DragTracker {
+    var active = false
+}
+
 @Suppress("LongParameterList") // Compose-State + Callbacks; ein Wrapper-Objekt brächte nichts
 private fun onChecklistCheckedChange(
     listState: LazyListState,
     itemId: String,
     checked: Boolean,
-    separatorVisualIndex: Int,
+    uncheckReorders: Boolean,
     pendingUncheckId: String?,
+    pendingGroupIds: Set<String>,
+    movingIds: Set<String>,
+    keyAt: (Int) -> Any?,
     setPendingUncheckId: (String?) -> Unit,
     commitChecked: (String, Boolean) -> Unit
 ) {
@@ -450,15 +482,17 @@ private fun onChecklistCheckedChange(
         setPendingUncheckId(null)
         return
     }
+    val inPendingGroup = itemId in pendingGroupIds
     if (pendingUncheckId != null && pendingUncheckId != itemId) {
-        commitDeferredUncheck(listState, pendingUncheckId, commitChecked)
+        commitDeferredUncheck(listState, pendingUncheckId, commitChecked, movingIds = pendingGroupIds, keyAt = keyAt)
     }
-    if (!checked && separatorVisualIndex >= 0) {
+    if (!checked && uncheckReorders && !inPendingGroup) {
         setPendingUncheckId(itemId)
         return
     }
     setPendingUncheckId(null)
-    preAnchorForToggle(listState, itemId, checked)
+    // Der Gruppen-Commit hat gerade selbst verankert; der Mitläufer bewegt sich danach nicht mehr.
+    if (!inPendingGroup) preAnchorForToggle(listState, itemId, checked, movingIds)
     commitChecked(itemId, checked)
 }
 
@@ -1507,6 +1541,10 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 focusNewItemId = newId
                             },
                             onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
+                            onIndent = { id -> viewModel.indentChecklistItem(id) },
+                            onOutdent = { id -> viewModel.outdentChecklistItem(id) },
+                            onDragStarted = { id -> viewModel.startChecklistDrag(id) },
+                            onDragFinished = { viewModel.onChecklistDragFinished() },
                             onFocusHandled = { focusNewItemId = null },
                             onSortClick = { showChecklistSortDialog = true }, // 🔀 v1.8.0
                             readOnly = isPreviewMode, // 🆕 Issue #156
@@ -1808,6 +1846,14 @@ private fun LazyItemScope.DraggableChecklistItem(
     onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
     placementAnimationsEnabled: Boolean, // 🔧 v2.5.x: Gate gegen Open-Burst
     isPendingUncheck: Boolean, // 🔧 v2.13.0: Uncheck aufgeschoben — Collapse statt Reorder-Animation
+    followsPendingUncheck: Boolean, // Unterpunkte: gehört zur Gruppe des aufgeschobenen Uncheck, kollabiert mit
+    liftedWithGroup: Boolean, // Unterpunkte: wandert beim Abhaken mit dem Oberpunkt, wird wie er über die Nachbarn gezeichnet
+    groupExpanding: Boolean, // Unterpunkte: eine Gruppe wächst gerade am Ziel auf → Nachbarn ohne Placement-Feder
+    onFollowerExpanding: (Int) -> Unit, // Unterpunkte: +1 / -1 um das Aufwachsen eines Mitläufers
+    groupCommitScrolled: () -> Boolean, // Unterpunkte: hat der Gruppen-Commit gescrollt? Dann kein Aufwachsen am Ziel
+    canIndent: Boolean,
+    onIndent: (String) -> Unit,
+    onOutdent: (String) -> Unit,
     scrollsAfterUncheck: (String) -> Boolean, // 🆕 Issue #112: true → Commit ohne Settle + ohne Expand (Scroll übernimmt)
     onUncheckCommit: (id: String, scroll: Boolean) -> Unit, // 🔧 v2.13.0: Commit nach abgeschlossenem Collapse
     topHighlightId: String?, // 🔧 Issue #112: Highlight-Pop nach Scroll-Ankunft
@@ -1893,8 +1939,18 @@ private fun LazyItemScope.DraggableChecklistItem(
     var scrollAfterCommit by remember(item.id) { mutableStateOf(false) }
     val currentScrollsAfterUncheck by rememberUpdatedState(scrollsAfterUncheck)
 
-    LaunchedEffect(isPendingUncheck) {
-        if (isPendingUncheck) {
+    // Unterpunkte: Mitläufer einer wandernden Gruppe kollabieren mit, committen aber nicht (das tut der
+    // getippte Eintrag für die ganze Gruppe). Danach folgen sie seinem Weg: am Ziel synchron mit ihm
+    // aufwachsen, beim Commit mit Scroll still auf volle Höhe. Sprängen sie ohne Scroll sofort auf volle
+    // Höhe, ragte der noch wachsende Eintrag über ihnen für einige Frames in sie hinein (gemessen im
+    // ChecklistUncheckAnimationInstrumentedTest).
+    var collapsedAsFollower by remember(item.id) { mutableStateOf(false) }
+    val currentGroupCommitScrolled by rememberUpdatedState(groupCommitScrolled)
+    val collapsing = isPendingUncheck || followsPendingUncheck
+
+    LaunchedEffect(collapsing) {
+        if (collapsing) {
+            collapsedAsFollower = !isPendingUncheck
             // Glow/Scale-Pop sofort beenden: auf einer kollabierenden Row wirkt das Highlight
             // falsch — und es klebte sonst nach dem Scroll sichtbar am wieder
             // auftauchenden Item (die 500-ms-Animation lief den Scroll schlicht ab).
@@ -1903,6 +1959,7 @@ private fun LazyItemScope.DraggableChecklistItem(
             collapseOwnsPlacement = true
             scrollAfterCommit = false
             collapse.animateTo(0f, tween(UNCHECK_COLLAPSE_MS))
+            if (collapsedAsFollower) return@LaunchedEffect
             scrollAfterCommit = currentScrollsAfterUncheck(item.id)
             if (!scrollAfterCommit) {
                 // Die Nachbarn folgen der schrumpfenden Row über ihre animateItem-Spring und
@@ -1919,7 +1976,8 @@ private fun LazyItemScope.DraggableChecklistItem(
             return@LaunchedEffect
         }
         if (!collapseOwnsPlacement) return@LaunchedEffect
-        if (scrollAfterCommit && !item.isChecked) {
+        val commitScrolled = if (collapsedAsFollower) currentGroupCommitScrolled() else scrollAfterCommit && !item.isChecked
+        if (commitScrolled) {
             // Commit mit folgendem Scroll: NICHT am Ziel aufwachsen. Ein Expand während
             // des Scrolls drückt die Nachbarn mitten in der Bewegung auseinander
             // (sichtbares „Einschieben"). Höhe still zurücksetzen; das Item ist beim Commit
@@ -1935,7 +1993,15 @@ private fun LazyItemScope.DraggableChecklistItem(
             //   Collapse auf; off-screen läuft die Animation unsichtbar und kostet nichts.
             // Solange sie läuft, bleibt animateItem über collapseOwnsPlacement aus — danach
             // startet der Modifier ohne Baseline, also ohne nachgeholte Placement-Animation.
-            collapse.animateTo(1f, tween(UNCHECK_COLLAPSE_MS))
+            // Unterpunkte: Wächst eine ganze Gruppe, schieben mehrere Zeilen zugleich die Nachbarn weg;
+            // deren Feder käme nicht hinterher (gemessen: Überlappung bei drei Zeilen). Die Mitläufer
+            // melden ihr Aufwachsen, solange schalten alle Zeilen die Placement-Animation ab.
+            if (collapsedAsFollower) onFollowerExpanding(1)
+            try {
+                collapse.animateTo(1f, tween(UNCHECK_COLLAPSE_MS))
+            } finally {
+                if (collapsedAsFollower) onFollowerExpanding(-1)
+            }
         }
         collapseOwnsPlacement = false
     }
@@ -1949,6 +2015,9 @@ private fun LazyItemScope.DraggableChecklistItem(
         }
     }
 
+    // Über den Nachbarn gezeichnet und deckend: getippte Zeile (Abhak-Animation) und ihre mitwandernde Gruppe
+    val raised = isCheckAnimating || liftedWithGroup
+
     ChecklistItemRow(
         item = item,
         onTextChange = { onTextChange(item.id, it) },
@@ -1959,6 +2028,9 @@ private fun LazyItemScope.DraggableChecklistItem(
         onDuplicate = { onDuplicate(item.id) }, // 🆕 v2.2.0
         onCopyToChecklist = { onCopyToChecklist(item.id) }, // 🆕 v2.2.0
         onAddToCalendar = { onAddToCalendar(item.id) },
+        canIndent = canIndent,
+        onIndent = { onIndent(item.id) },
+        onOutdent = { onOutdent(item.id) },
         isCheckAnimating = isCheckAnimating, // 🆕 v2.5.0
         onCheckboxTap = { isCheckAnimating = true }, // 🆕 v2.5.0
         // 🔧 v2.13.0: Solange der Uncheck aufgeschoben ist, zeigt die Checkbox optimistisch
@@ -2011,7 +2083,7 @@ private fun LazyItemScope.DraggableChecklistItem(
             // initiale Layout stabil ist, ist das Gate offen — alle Check/Uncheck-Reorder-
             // Animationen aus Commit 7156c12 spielen unverändert.
             .then(
-                if (!isDragging && placementAnimationsEnabled && !collapseOwnsPlacement) {
+                if (!isDragging && placementAnimationsEnabled && !collapseOwnsPlacement && !groupExpanding) {
                     Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
                 } else {
                     Modifier
@@ -2020,11 +2092,12 @@ private fun LazyItemScope.DraggableChecklistItem(
             // 🆕 v2.5.0: zIndex-Tabelle:
             //   isDragging              → DRAGGING_ITEM_Z_INDEX (10f)  – Drag wins
             //   isCheckAnimating        → CHECKING_ITEM_Z_INDEX  (5f)  – Glow/Move on top
+            //   liftedWithGroup         → CHECKING_ITEM_Z_INDEX  (5f)  – Unterpunkte wandern mit, ohne Glow
             //   sonst                   → 0f
             .zIndex(
                 when {
                     isDragging -> DRAGGING_ITEM_Z_INDEX
-                    isCheckAnimating -> CHECKING_ITEM_Z_INDEX
+                    raised -> CHECKING_ITEM_Z_INDEX
                     else -> 0f
                 }
             )
@@ -2037,8 +2110,9 @@ private fun LazyItemScope.DraggableChecklistItem(
             .background(
                 // UI-Beta (E7): in Ruhe durchsichtig, damit der Farbverlauf durchscheint. Nur Farbe, Modifier
                 // und Reihenfolge bleiben (Regel aus dnd-protection/checklist-animations). Beim Ziehen und
-                // Abhaken deckend, sonst schöbe sich eine Zeile durchsichtig über die andere.
-                color = if (LocalNewDesign.current && !isDragging && !isCheckAnimating && elevation == 0.dp) {
+                // Abhaken deckend, sonst schöbe sich eine Zeile durchsichtig über die andere. Unterpunkte, die
+                // mit ihrem Oberpunkt wandern (liftedWithGroup), ebenso.
+                color = if (LocalNewDesign.current && !isDragging && !raised && elevation == 0.dp) {
                     Color.Transparent
                 } else {
                     MaterialTheme.colorScheme.surface
@@ -2074,16 +2148,34 @@ internal fun ChecklistEditor(
     onFocusHandled: () -> Unit,
     onSortClick: () -> Unit, // 🔀 v1.8.0
     modifier: Modifier = Modifier,
-    readOnly: Boolean = false // 🆕 Issue #156: Lesemodus, nur Abhaken
+    readOnly: Boolean = false, // 🆕 Issue #156: Lesemodus, nur Abhaken
+    onIndent: (String) -> Unit = {}, // Unterpunkte
+    onOutdent: (String) -> Unit = {},
+    onDragStarted: (draggedId: String) -> Unit = {},
+    onDragFinished: () -> Unit = {}
 ) {
     // IMPL_29q Q1: LazyLayoutCacheWindow ersetzt beyondBoundsItemCount (entfernt in Compose 1.10+).
     // Hält 0.55 × Viewport auf jeder Seite composiert → 865px Buffer (3 große Items à 271px).
     // Verhindert Composable-Recycling beim Auto-Scroll+Swap → kein toter Pointer-Scope.
     val listState = rememberLazyListState(LazyLayoutCacheWindow(0.55f, 0.55f))
+    // Unterpunkte: der erste Tausch eines Ziehens ist der Drag-Start; der gezogene Eintrag steht dabei
+    // an `from`, die Liste ist noch unverändert. So kennt das ViewModel die Unterpunkte, bevor ein
+    // Tausch sie verschiebt, und legt genau einen Undo-Schritt pro Ziehen an. Das Lambda wird von
+    // rememberDragDropListState einmalig übernommen, deshalb nur über die aktuellen States lesen.
+    val dragTracker = remember { DragTracker() }
+    val currentItemsForDrag by rememberUpdatedState(items)
+    val currentOnMove by rememberUpdatedState(onMove)
+    val currentOnDragStarted by rememberUpdatedState(onDragStarted)
     val dragDropState = rememberDragDropListState(
         lazyListState = listState,
         scope = scope,
-        onMove = onMove
+        onMove = { from, to ->
+            if (!dragTracker.active) {
+                dragTracker.active = true
+                currentItemsForDrag.getOrNull(from)?.let { currentOnDragStarted(it.id) }
+            }
+            currentOnMove(from, to)
+        }
     )
 
     // 🔧 v2.5.x: Gate für LazyColumn-Placement-Animationen (Modifier.animateItem).
@@ -2123,6 +2215,50 @@ internal fun ChecklistEditor(
     // Genau ein Slot — ein zweiter Uncheck committet den ersten sofort
     // (siehe [onChecklistCheckedChange]).
     var pendingUncheckId by remember { mutableStateOf<String?>(null) }
+
+    // Unterpunkte: Weg des letzten Gruppen-Commits, die Mitläufer folgen ihm (siehe DraggableChecklistItem).
+    var groupCommitScrolled by remember { mutableStateOf(false) }
+
+    // Unterpunkte: Beim Abhaken eines Oberpunkts wandert die ganze Gruppe nach unten. Nur der getippte
+    // Eintrag bekommt über isCheckAnimating den erhöhten zIndex; ohne ihn kreuzten seine Unterpunkte die
+    // nach oben rückenden Nachbarn sichtbar (Text über Text). Für die Dauer der Animation angehoben.
+    var liftedGroupIds by remember { mutableStateOf(emptySet<String>()) }
+
+    // Unterpunkte: Zahl der Mitläufer, die gerade am Ziel aufwachsen (siehe DraggableChecklistItem).
+    var expandingFollowers by remember { mutableIntStateOf(0) }
+    LaunchedEffect(liftedGroupIds) {
+        if (liftedGroupIds.isNotEmpty()) {
+            delay(CHECK_ANIMATION_TOTAL_MS)
+            liftedGroupIds = emptySet()
+        }
+    }
+
+    // Unterpunkte: beim Aufhaken im erledigten Abschnitt wandert die ganze Gruppe nach oben. Die
+    // übrigen Zeilen der Gruppe kollabieren mit, committen aber nicht selbst (siehe DraggableChecklistItem).
+    val pendingGroupIds = remember(items, pendingUncheckId) {
+        val index = items.indexOfFirst { it.id == pendingUncheckId }
+        if (index < 0) emptySet() else ChecklistNesting.groupRange(items, index).map { items[it].id }.toSet()
+    }
+
+    // Unterpunkte: Drag-Ende erkennen (draggingItemKey nur lesen, DragDropListState bleibt unberührt).
+    // Die Unterpunkte eines gezogenen Oberpunkts bleiben während des Ziehens stehen und rücken beim
+    // Loslassen nach. Endet die Composition mitten im Ziehen (Drehen, Zurück), wird trotzdem abgeschlossen.
+    val currentOnDragFinished by rememberUpdatedState(onDragFinished)
+    LaunchedEffect(dragDropState) {
+        try {
+            snapshotFlow { dragDropState.draggingItemKey }.collect { key ->
+                if (key == null && dragTracker.active) {
+                    dragTracker.active = false
+                    currentOnDragFinished()
+                }
+            }
+        } finally {
+            if (dragTracker.active) {
+                dragTracker.active = false
+                currentOnDragFinished()
+            }
+        }
+    }
 
     // 🔧 Issue #112: Handoff Commit → Scroll-Handler. Die Tap-Animation des Items stirbt
     // auf diesem Pfad doppelt: erst bewusst beim Collapse-Start, dann endgültig, weil das Item
@@ -2221,7 +2357,7 @@ internal fun ChecklistEditor(
                     currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
                     currentSortOption == ChecklistSortOption.CREATION_DATE ||
                     currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
-                val unchecked = items.count { !it.isChecked }
+                val unchecked = ChecklistNesting.openRowCount(items)
                 val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
                     dataIndex + 1 // +1 für Separator
                 } else {
@@ -2233,8 +2369,9 @@ internal fun ChecklistEditor(
     }
 
     // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL, UNCHECKED_FIRST und CREATION_DATE anzeigen
-    val uncheckedCount = items.count { !it.isChecked }
-    val checkedCount = items.count { it.isChecked }
+    // Unterpunkte: Trenner nach den offenen Gruppen; abgehakte Unterpunkte offener Oberpunkte stehen darüber
+    val uncheckedCount = ChecklistNesting.openRowCount(items)
+    val checkedCount = items.size - uncheckedCount
     val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
         currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
         currentSortOption == ChecklistSortOption.CREATION_DATE ||
@@ -2315,6 +2452,14 @@ internal fun ChecklistEditor(
                         visualIndex
                     }
                 }
+                // Unterpunkte: Key am visuellen Index wie im items-Block (für den Anker beim Uncheck-Commit)
+                val keyAtVisual = { visualIndex: Int ->
+                    if (showSeparator && visualIndex == separatorVisualIndex) {
+                        SEPARATOR_ITEM_KEY
+                    } else {
+                        items.getOrNull(localVisualToDataIndex(visualIndex))?.id
+                    }
+                }
 
                 items(
                     count = visualItemCount,
@@ -2337,7 +2482,8 @@ internal fun ChecklistEditor(
                         CheckedItemsSeparator(
                             checkedCount = checkedCount,
                             isDragActive = dragDropState.isAnyItemDragging,
-                            modifier = if (placementAnimationsEnabled) Modifier.animateItem() else Modifier
+                            // Unterpunkte: beim Aufwachsen einer Gruppe direkt dem Layout folgen (siehe DraggableChecklistItem)
+                            modifier = if (placementAnimationsEnabled && expandingFollowers == 0) Modifier.animateItem() else Modifier
                         )
                     } else {
                         val dataIndex = localVisualToDataIndex(visualIndex)
@@ -2351,13 +2497,28 @@ internal fun ChecklistEditor(
                                 if (BuildConfig.DEBUG) {
                                     checkTrace = CheckTrace(System.nanoTime(), id, checked)
                                 }
+                                val index = items.indexOfFirst { it.id == id }
+                                // Ein Oberpunkt nimmt beim Abhaken seine Gruppe mit, ein Unterpunkt bewegt nur sich
+                                val movingIds = if (index >= 0 && items[index].indentationLevel == 0) {
+                                    ChecklistNesting.groupRange(items, index).map { items[it].id }.toSet()
+                                } else {
+                                    setOf(id)
+                                }
+                                if (checked && movingIds.size > 1) liftedGroupIds = movingIds
                                 onChecklistCheckedChange(
                                     listState = listState,
                                     itemId = id,
                                     checked = checked,
-                                    separatorVisualIndex = separatorVisualIndex,
+                                    // Unterpunkte: nur Zeilen im erledigten Abschnitt wandern beim Aufhaken
+                                    uncheckReorders = separatorVisualIndex >= 0 && ChecklistNesting.inCheckedSection(items, index),
                                     pendingUncheckId = pendingUncheckId,
-                                    setPendingUncheckId = { pendingUncheckId = it },
+                                    pendingGroupIds = pendingGroupIds,
+                                    keyAt = keyAtVisual,
+                                    movingIds = movingIds,
+                                    setPendingUncheckId = {
+                                        pendingUncheckId = it
+                                        if (it != null) groupCommitScrolled = false
+                                    },
                                     commitChecked = onCheckedChange
                                 )
                             },
@@ -2371,23 +2532,41 @@ internal fun ChecklistEditor(
                             onHeightChanged = { scrollToItemIndex = visualIndex },
                             placementAnimationsEnabled = placementAnimationsEnabled,
                             isPendingUncheck = item.id == pendingUncheckId,
+                            followsPendingUncheck = item.id != pendingUncheckId && item.id in pendingGroupIds,
+                            liftedWithGroup = item.id in liftedGroupIds,
+                            groupExpanding = expandingFollowers > 0,
+                            onFollowerExpanding = { expandingFollowers += it },
+                            groupCommitScrolled = { groupCommitScrolled },
+                            canIndent = ChecklistNesting.canIndent(items, dataIndex),
+                            onIndent = onIndent,
+                            onOutdent = onOutdent,
                             scrollsAfterUncheck = { id ->
                                 // Ziel oberhalb des Viewports (oder an der ersten sichtbaren Zeile: ein
                                 // Einfügen vor dem ersten sichtbaren Key landet oberhalb) → Scroll.
                                 // Sonst wächst die Row am Ziel auf wie ohne Scroll-to-Top.
-                                scrollTopOnUncheck &&
+                                // Unterpunkte: Ziel ist der Oberpunkt der wandernden Gruppe.
+                                // Steht die Liste ganz oben, landet ein Einfügen an Index 0 sichtbar oben
+                                // (gemessen: first=0@0, glide=0): dann wie ohne Scroll am Ziel aufwachsen,
+                                // sonst stünde die Zeile sofort in voller Höhe und die Nachbarn federten nach.
+                                val atTop = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+                                scrollTopOnUncheck && !atTop &&
                                     sortChecklistStates(
-                                        items.map { if (it.id == id) it.copy(isChecked = false) else it },
+                                        items.nested { ChecklistNesting.toggle(it, id, false) },
                                         currentSortOption
-                                    ).indexOfFirst { it.id == id } <= listState.firstVisibleItemIndex
+                                    ).let { sorted ->
+                                        ChecklistNesting.groupStart(sorted, sorted.indexOfFirst { it.id == id }.coerceAtLeast(0))
+                                    } <= listState.firstVisibleItemIndex
                             },
                             onUncheckCommit = { id, scroll ->
+                                groupCommitScrolled = scroll
                                 if (scroll) scrollTopUncheckId = id
                                 commitDeferredUncheck(
                                     listState = listState,
                                     toggledId = id,
                                     commitChecked = onCheckedChange,
-                                    reanchor = !scroll
+                                    reanchor = !scroll,
+                                    movingIds = pendingGroupIds,
+                                    keyAt = keyAtVisual
                                 )
                                 pendingUncheckId = null
                             },

@@ -20,9 +20,11 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -105,7 +107,11 @@ class ChecklistUncheckAnimationInstrumentedTest {
      * [NoteEditorViewModel.updateChecklistItemChecked] für MANUAL nach: Flip **und** Sort im
      * selben State-Snapshot (die v2.5.0-Invariante).
      */
-    private fun setContent(scrollTopOnUncheck: Boolean = false, extraChecked: Set<Int> = emptySet()) {
+    private fun setContent(
+        scrollTopOnUncheck: Boolean = false,
+        extraChecked: Set<Int> = emptySet(),
+        children: Set<Int> = emptySet() // Unterpunkte: diese Indizes bekommen Ebene 1
+    ) {
         // Sortiert wie das ViewModel beim Laden: extraChecked landen unter dem Separator.
         itemsState.value = (0 until ITEM_COUNT).map { i ->
             ChecklistItemState(
@@ -118,7 +124,8 @@ class ChecklistUncheckAnimationInstrumentedTest {
                 },
                 isChecked = i >= UNCHECKED_COUNT || i in extraChecked,
                 order = i,
-                originalOrder = i
+                originalOrder = i,
+                indentationLevel = if (i in children) 1 else 0
             )
         }.let { sortChecklistStates(it, ChecklistSortOption.MANUAL) }
         rule.setContent {
@@ -139,9 +146,8 @@ class ChecklistUncheckAnimationInstrumentedTest {
                             checklistScrollAction = scrollActions,
                             onTextChange = { _, _ -> },
                             onCheckedChange = { id, checked ->
-                                val flipped = items.map {
-                                    if (it.id == id) it.copy(isChecked = checked) else it
-                                }
+                                // Gruppenregeln wie NoteEditorViewModel (flache Listen: nur das Item)
+                                val flipped = items.nested { ChecklistNesting.toggle(it, id, checked) }
                                 items = sortChecklistStates(flipped, ChecklistSortOption.MANUAL)
                                 // Wie NoteEditorViewModel.updateChecklistItemChecked: ScrollToItem
                                 // feuert beim Commit — beim aufgeschobenen Uncheck also erst
@@ -347,6 +353,123 @@ class ChecklistUncheckAnimationInstrumentedTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // 3b. Unterpunkte: die ganze Gruppe wandert
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Unterpunkt unter abgehaktem Oberpunkt aufhaken: Oberpunkt wird mit aufgehakt, die ganze
+     * Gruppe wandert nach oben. Die Mitläufer kollabieren mit dem getippten Eintrag an Ort und
+     * Stelle; keiner darf als Geist am oberen Rand parken (Aufwärts-Placement ist nicht robust).
+     * Danach: Reihenfolge korrekt, abgehakter Geschwister-Unterpunkt bleibt abgehakt, Viewport stabil.
+     */
+    @Test
+    fun unterpunktAufhakenNimmtDieGanzeGruppeMitOhneGeist() {
+        // Item 28 = Oberpunkt, 29 und 30 seine Unterpunkte, alle abgehakt
+        setContent(children = setOf(29, 30))
+        scrollToIndex(SCROLL_DEST_OFFSCREEN)
+        rule.mainClock.autoAdvance = false
+
+        val group = listOf("Item 28", "Item 29", "Item 30")
+        val listTop = listBounds().top
+        val parentSlotTop = requireNotNull(boundsOf("Item 28")).top
+        tapCheckbox("Item 29")
+
+        repeat(COLLAPSE_FRAMES) {
+            rule.mainClock.advanceTimeBy(SAMPLE_STEP_MS)
+            group.forEach { text ->
+                val bounds = boundsOf(text) ?: return@forEach
+                assertTrue(
+                    "Geist: $text klebt am oberen Viewport-Rand (top=${bounds.top}, Listenanfang=$listTop)",
+                    bounds.top > listTop + ROW_PITCH_PX
+                )
+            }
+        }
+        rule.mainClock.advanceTimeBy(UNCHECK_COLLAPSE_TOTAL_MS + COMMIT_SETTLE_MS)
+
+        assertEquals(
+            "Gruppe muss geschlossen ans Ende der offenen Sektion",
+            (0 until UNCHECKED_COUNT).map { "id-$it" } + listOf("id-28", "id-29", "id-30") +
+                (UNCHECKED_COUNT until ITEM_COUNT).filter { it !in 28..30 }.map { "id-$it" },
+            itemsState.value.map { it.id }
+        )
+        val byId = itemsState.value.associateBy { it.id }
+        assertFalse("Oberpunkt muss mit aufgehakt sein", byId.getValue("id-28").isChecked)
+        assertFalse(byId.getValue("id-29").isChecked)
+        assertTrue("Geschwister-Unterpunkt bleibt abgehakt", byId.getValue("id-30").isChecked)
+        group.forEach { assertTrue("$it darf nach dem Commit nicht mehr sichtbar sein", boundsOf(it) == null) }
+        assertEquals(
+            "Viewport verschoben — Item 31 muss exakt den Platz des Oberpunkts einnehmen",
+            parentSlotTop,
+            requireNotNull(boundsOf("Item 31")).top,
+            ANCHOR_TOLERANCE_PX
+        )
+    }
+
+    /**
+     * Review-Fund: zweiter Unterpunkt derselben Gruppe, angetippt während die Gruppe noch kollabiert.
+     * Vorher wurde er neuer Pending-Slot, committete aber nie (sein Collapse lief schon als Mitläufer).
+     */
+    @Test
+    fun zweiterUnterpunktWaehrendDesCollapseGehtNichtVerloren() {
+        // Item 31 = Oberpunkt, 32 und 33 seine Unterpunkte (einzeilig, Item 30 wäre ein langer Eintrag)
+        setContent(children = setOf(32, 33))
+        scrollToIndex(SCROLL_DEST_OFFSCREEN)
+        rule.mainClock.autoAdvance = false
+
+        tapCheckbox("Item 32")
+        rule.mainClock.advanceTimeBy(SECOND_TAP_DELAY_MS)
+        tapCheckbox("Item 33")
+        rule.mainClock.advanceTimeBy(UNCHECK_COLLAPSE_TOTAL_MS + COMMIT_SETTLE_MS)
+
+        val byId = itemsState.value.associateBy { it.id }
+        listOf("id-31", "id-32", "id-33").forEach {
+            assertFalse("$it muss offen sein, kein Tap darf verloren gehen", byId.getValue(it).isChecked)
+        }
+    }
+
+    /**
+     * Review-Fund: Steht der abgehakte Oberpunkt oben im Bild und wird ein Unterpunkt aufgehakt, wandert die
+     * ganze Gruppe. Der Viewport darf ihr nicht folgen: die erste Zeile nach der Gruppe nimmt den Platz ein.
+     */
+    @Test
+    fun gruppeAmOberenRandVerankertAufDerZeileDanach() {
+        // Item 31 = Oberpunkt ganz oben, 32 und 33 seine Unterpunkte
+        setContent(children = setOf(32, 33))
+        scrollToIndex(GROUP_PARENT_VISUAL_INDEX)
+        rule.mainClock.autoAdvance = false
+
+        val parentTop = requireNotNull(boundsOf("Item 31")) { "Testaufbau: Item 31 muss oben stehen" }.top
+        tapCheckbox("Item 32")
+        rule.mainClock.advanceTimeBy(UNCHECK_COLLAPSE_TOTAL_MS + COMMIT_SETTLE_MS)
+
+        assertEquals(
+            "Viewport ist der wandernden Gruppe gefolgt",
+            parentTop,
+            requireNotNull(boundsOf("Item 34")) { "Item 34 muss an der Oberkante stehen" }.top,
+            ANCHOR_TOLERANCE_PX
+        )
+    }
+
+    /** Flache Liste, aufgehakter Eintrag ganz oben im Bild: der Nachbar nimmt seinen Platz ein, kein Sprung. */
+    @Test
+    fun eintragAmOberenRandVerankertAufDemNachbarn() {
+        setContent()
+        scrollToIndex(GROUP_PARENT_VISUAL_INDEX) // Item 31 oben
+        rule.mainClock.autoAdvance = false
+
+        val top = requireNotNull(boundsOf("Item 31")) { "Testaufbau: Item 31 muss oben stehen" }.top
+        tapCheckbox("Item 31")
+        rule.mainClock.advanceTimeBy(UNCHECK_COLLAPSE_TOTAL_MS + COMMIT_SETTLE_MS)
+
+        assertEquals(
+            "Viewport ist dem aufgehakten Eintrag gefolgt",
+            top,
+            requireNotNull(boundsOf("Item 32")) { "Item 32 muss an der Oberkante stehen" }.top,
+            ANCHOR_TOLERANCE_PX
+        )
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // 4. Sichtbares Ziel — Collapse an Ort und Stelle + Aufwachsen am Ziel
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -392,6 +515,44 @@ class ChecklistUncheckAnimationInstrumentedTest {
             end.top < start.top - 1f
         )
         assertEquals("$target muss am Ziel wieder volle Höhe haben", start.height, end.height, 2f)
+    }
+
+    /**
+     * Gruppe mit sichtbarem Ziel: Oberpunkt und Unterpunkte kollabieren gemeinsam und wachsen am
+     * Ziel gemeinsam wieder auf. In keinem Frame darf eine Zeile in ihren Nachbarn ragen (vorher
+     * stand der Mitläufer nach dem Commit sofort in voller Höhe da, während der Oberpunkt noch wuchs).
+     */
+    @Test
+    fun gruppeMitSichtbaremZielUeberlapptInKeinemFrame() {
+        // Item 21 = Oberpunkt, 22 und 23 seine Unterpunkte, alle abgehakt
+        setContent(children = setOf(22, 23))
+        scrollToIndex(SCROLL_DEST_VISIBLE)
+        rule.mainClock.autoAdvance = false
+
+        val watched = (SCROLL_DEST_VISIBLE..SCROLL_DEST_VISIBLE + 12).map { "Item $it" }
+        tapCheckbox("Item 22")
+
+        repeat(OVERLAP_FRAMES) { frame ->
+            rule.mainClock.advanceTimeBy(FRAME_MS)
+            val rows = watched.mapNotNull { name -> boundsOf(name)?.let { name to it } }.sortedBy { it.second.top }
+            rows.zipWithNext().forEach { (upper, lower) ->
+                assertTrue(
+                    "Frame $frame: ${upper.first} (bottom=${upper.second.bottom}) ragt in ${lower.first} (top=${lower.second.top})",
+                    lower.second.top >= upper.second.bottom - OVERLAP_TOLERANCE_PX
+                )
+            }
+        }
+
+        val ids = itemsState.value.map { it.id }
+        assertEquals(
+            "Gruppe muss geschlossen ans Ende der offenen Sektion",
+            listOf("id-21", "id-22", "id-23"),
+            ids.subList(UNCHECKED_COUNT, UNCHECKED_COUNT + 3)
+        )
+        val heights = listOf("Item 21", "Item 22", "Item 23").map {
+            requireNotNull(boundsOf(it)) { "$it muss am sichtbaren Ziel stehen" }.height
+        }
+        assertTrue("Gruppe muss am Ziel wieder volle Höhe haben: $heights", heights.all { it > ROW_PITCH_PX / 4 })
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -496,6 +657,34 @@ class ChecklistUncheckAnimationInstrumentedTest {
         requireNotNull(boundsOf("Item 1")) { "Nach dem Scroll muss der Listenanfang sichtbar sein" }
         requireNotNull(boundsOf("Item 2")) { "Item 2 muss nach dem Scroll sichtbar sein" }
     }
+
+    /**
+     * Scroll-to-Top an, Liste steht schon ganz oben, Ziel ist Index 0: kein Scroll-Pfad. Vorher stand die
+     * Gruppe nach dem Commit sofort in voller Höhe oben und die Nachbarn federten hinterher (Text über Text).
+     */
+    @Test
+    fun scrollTopOnUndListeObenGruppeWaechstAmZielOhneUeberlappung() {
+        // Item 0 = Oberpunkt (lang), 1 und 2 seine Unterpunkte; offen bleiben nur die kurzen 16..19, damit der
+        // direkte Nachbar unter der Gruppe messbar ist. Die Gruppe steht im Bild.
+        setContent(scrollTopOnUncheck = true, extraChecked = (0..15).toSet(), children = setOf(1, 2))
+        rule.mainClock.autoAdvance = false
+
+        // Nur Zeilen, die im Bild stehen können: weiter unten liegende hält das Cache-Fenster composiert, ein
+        // kurz abgelöster Knoten meldet dann Bounds am Listenanfang (siehe boundsOf)
+        val watched = (1..4).map { "Item $it" } + (16..19).map { "Item $it" }
+        tapCheckbox("Item 1")
+        repeat(OVERLAP_FRAMES) { frame ->
+            rule.mainClock.advanceTimeBy(FRAME_MS)
+            val rows = watched.mapNotNull { name -> boundsOf(name)?.let { name to it } }.sortedBy { it.second.top }
+            rows.zipWithNext().forEach { (upper, lower) ->
+                assertTrue(
+                    "Frame $frame: ${upper.first} (bottom=${upper.second.bottom}) ragt in ${lower.first} (top=${lower.second.top})",
+                    lower.second.top >= upper.second.bottom - OVERLAP_TOLERANCE_PX
+                )
+            }
+        }
+        assertEquals(listOf("id-0", "id-1", "id-2"), itemsState.value.take(3).map { it.id })
+    }
 }
 
 /** Wartezeit, bis das Placement-Animations-Gate in ChecklistEditor offen ist. */
@@ -534,6 +723,21 @@ private const val EARLY_COMMIT_MS = 350L
 
 /** Reicht für Cut + Glide (350 ms) samt Commit-Pass, mit reichlich Puffer. */
 private const val SCROLL_TO_TOP_SETTLE_MS = 2_000L
+
+/** Zweiter Tap mitten im Collapse (250 ms): die Zeile ist noch sichtbar und antippbar. */
+private const val SECOND_TAP_DELAY_MS = 96L
+
+/** Visueller Index von „Item 31" (Datenindex 31 + Separator): Oberpunkt der Testgruppe ganz oben. */
+private const val GROUP_PARENT_VISUAL_INDEX = 32
+
+/** Einzelframe @ 60 Hz für die Überlappungsmessung. */
+private const val FRAME_MS = 16L
+
+/** Collapse, Commit und Aufwachsen (≈ 700 ms) plus Puffer, frameweise. */
+private const val OVERLAP_FRAMES = 60
+
+/** Textknoten sitzen in ihrer Row mit Innenabstand; erst darüber hinaus ist es echte Überlappung. */
+private const val OVERLAP_TOLERANCE_PX = 2f
 
 /** Collapse (250 ms) + Spring-Nachlauf (200 ms) — danach committet die Row. */
 private const val UNCHECK_COLLAPSE_TOTAL_MS = 450L

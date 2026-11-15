@@ -1,5 +1,7 @@
 package dev.dettmer.simplenotes.markdown
 
+import dev.dettmer.simplenotes.models.ChecklistNesting
+
 /**
  * 🆕 v1.9.0 (F07): Lightweight Markdown parser — no external dependencies.
  *
@@ -77,8 +79,8 @@ object MarkdownEngine {
         ) : MarkdownBlock()
     }
 
-    /** Einzelnes Task-List-Item mit Checked-Status und Text. */
-    data class TaskItem(val text: String, val isChecked: Boolean)
+    /** Einzelnes Task-List-Item mit Checked-Status und Text. [level] 1 = eingerückter Unterpunkt (wie in Checklisten). */
+    data class TaskItem(val text: String, val isChecked: Boolean, val level: Int = 0)
 
     /** Spalten-Ausrichtung einer [MarkdownBlock.Table] aus `:---` / `---:` / `:---:`. */
     enum class ColumnAlign { LEFT, CENTER, RIGHT }
@@ -214,7 +216,8 @@ object MarkdownEngine {
                         taskItems.add(
                             TaskItem(
                                 text = m.groupValues[2].trim(),
-                                isChecked = m.groupValues[1].lowercase() == "x"
+                                isChecked = m.groupValues[1].lowercase() == "x",
+                                level = ChecklistNesting.levelOfLine(lines[i])
                             )
                         )
                         nextOrdinal += IMAGE_REGEX.findAll(lines[i]).count()

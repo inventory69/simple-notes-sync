@@ -480,6 +480,14 @@ private fun ChecklistCardPreview(
             val prefix = if (item.isChecked) "☑" else "☐"
             Text(
                 text = "$prefix ${stripInlineFormatting(item.text)}",
+                // Unterpunkte: Einzug als Padding (etwa eine Glyphbreite), nicht als Leerzeichen, sonst
+                // liefe die Durchstreichung erledigter Unterpunkte über den Einzug. Nur eingerückte Zeilen
+                // bekommen das Modifier-Glied (Binder-Budget).
+                modifier = if (item.indentationLevel > 0) {
+                    GlanceModifier.padding(start = (LIST_PREVIEW_INDENT_SP * fontSizeScale * item.indentationLevel).dp)
+                } else {
+                    GlanceModifier
+                },
                 style = TextStyle(
                     color = if (item.isChecked) GlanceTheme.colors.outline else GlanceTheme.colors.onSurface,
                     fontSize = (12 * fontSizeScale).sp,
@@ -616,3 +624,6 @@ private fun EmptyNotesState(modifier: GlanceModifier = GlanceModifier, fontSizeS
         )
     }
 }
+
+/** Einzug je Ebene in der Checklisten-Vorschau, gleich der Schriftgröße (eine Geviertbreite). */
+private const val LIST_PREVIEW_INDENT_SP = 12
