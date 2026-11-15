@@ -63,7 +63,7 @@
     <string name="sync_phase_downloading">正在下载……</string>
     <string name="sync_phase_deleting">正在从服务器删除……</string>
     <!-- 🆕 v1.10.0-P2: WorkManager quota/standby warning -->
-    <string name="sync_quota_warning">⚠️ 同步已被安卓电力管理延期。定期打开本应用或者禁用电池优化以获得可靠的后台同步。</string>
+    <string name="sync_quota_warning">同步已被安卓电源管理延期。定期打开本应用或者禁用电池优化以获得可靠的后台同步。</string>
     <!-- 🔀 v1.8.0 (IMPL_020): Sort: Note List -->
     <string name="sort_notes">排序笔记</string>
     <string name="sort_ascending">升序</string>
@@ -100,7 +100,7 @@
     <string name="snackbar_server_error">服务器错误：%s</string>
     <string name="snackbar_server_unreachable">不能连接到服务器</string>
     <string name="snackbar_connection_timeout">服务器花了太长时间来响应</string>
-    <string name="snackbar_nothing_to_sync">ℹ️ 没有东西要同步</string>
+    <string name="snackbar_nothing_to_sync">没有东西要同步</string>
     <!-- ============================= -->
     <!-- SYNC ERROR MESSAGES           -->
     <!-- ============================= -->
@@ -146,12 +146,12 @@
     <string name="settings_title">设置</string>
     <string name="settings_language">语言</string>
     <string name="settings_server">服务器设置</string>
-    <string name="settings_server_status_reachable">✅ 可连上</string>
-    <string name="settings_server_status_unreachable">❌ 连不上</string>
-    <string name="settings_server_status_checking">🔍 正在检查……</string>
-    <string name="settings_server_status_offline_mode">📴 离线模式</string>
+    <string name="settings_server_status_reachable">可连上</string>
+    <string name="settings_server_status_unreachable">连不上</string>
+    <string name="settings_server_status_checking">正在检查……</string>
+    <string name="settings_server_status_offline_mode">离线模式</string>
     <string name="settings_sync">同步和通知</string>
-    <string name="settings_sync_offline_mode">📴 离线模式</string>
+    <string name="settings_sync_offline_mode">离线模式</string>
     <string name="settings_sync_manual_only">仅手动同步</string>
     <string name="settings_sync_triggers_active">%d 触发器已激活</string>
     <string name="settings_markdown">Markdown 桌面集成</string>
@@ -183,8 +183,8 @@
     <!-- ============================= -->
     <string name="server_settings_title">服务器设置</string>
     <string name="server_connection_type">连接类型</string>
-    <string name="server_connection_http">🏠 内网 (HTTP)</string>
-    <string name="server_connection_https">🌐 外网 (HTTPS)</string>
+    <string name="server_connection_http">内网 (HTTP)</string>
+    <string name="server_connection_https">外网 (HTTPS)</string>
     <string name="server_connection_http_hint">HTTP 仅用于本地网络（例如 192.168.x.x，10.x.x.x）</string>
     <string name="server_connection_https_hint">HTTPS 用于通过互联网进行安全连接</string>
     <string name="server_address">服务器地址</string>
@@ -199,12 +199,12 @@
     <string name="server_password_show">显示</string>
     <string name="server_password_hide">隐藏</string>
     <string name="server_status_label">服务器状态：</string>
-    <string name="server_status_reachable">✅ 可连上</string>
-    <string name="server_status_unreachable">❌ 连不上</string>
-    <string name="server_status_checking">🔍 正在检查……</string>
-    <string name="server_status_offline_mode">📴 离线模式已激活</string>
-    <string name="server_status_unknown">❓ 未知</string>
-    <string name="server_offline_mode_title">📴 离线模式</string>
+    <string name="server_status_reachable">可连上</string>
+    <string name="server_status_unreachable">连不上</string>
+    <string name="server_status_checking">正在检查……</string>
+    <string name="server_status_offline_mode">离线模式已激活</string>
+    <string name="server_status_unknown">未知</string>
+    <string name="server_offline_mode_title">离线模式</string>
     <string name="server_offline_mode_subtitle">禁用所有网络功能</string>
     <string name="test_connection">测试连接</string>
     <string name="sync_now">现在同步</string>
@@ -212,15 +212,15 @@
     <!-- SETTINGS - SYNC               -->
     <!-- ============================= -->
     <string name="sync_settings_title">同步和通知</string>
-    <string name="sync_interval_15min_title">⚡ 每 15 分钟</string>
-    <string name="sync_interval_30min_title">✓ 每 30 分钟（推荐）</string>
-    <string name="sync_interval_60min_title">🔋 每 60 分钟</string>
+    <string name="sync_interval_15min_title">每 15 分钟</string>
+    <string name="sync_interval_30min_title">每 30 分钟（推荐）</string>
+    <string name="sync_interval_60min_title">每 60 分钟</string>
     <!-- Legacy -->
     <!-- 🌟 v1.6.0: Configurable Sync Triggers -->
     <!-- 🆕 v1.8.0: Sync Settings Restructure -->
     <string name="sync_section_triggers">同步触发器</string>
     <string name="sync_section_network_performance">网络</string>
-    <string name="sync_wifi_only_hint">💡 WiFi 连接触发器不受这个设置影响，当 WiFi 已连接时它总是同步。</string>
+    <string name="sync_wifi_only_hint">WiFi 连接触发器不受这个设置影响，当 WiFi 已连接时它总是同步。</string>
     <string name="sync_wifi_only_error">同步仅在已连接 WiFi 时工作</string>
     <string name="sync_trigger_on_save_title">保存之后</string>
     <string name="sync_trigger_on_save_subtitle">每一次更改之后立刻同步</string>
@@ -243,22 +243,22 @@
     <!-- SETTINGS - MARKDOWN           -->
     <!-- ============================= -->
     <string name="markdown_dialog_title">Markdown 自动同步</string>
-    <string name="markdown_export_complete">✅ 导出完成</string>
+    <string name="markdown_export_complete">导出完成</string>
     <string name="markdown_export_progress">正在导出 %1$d/%2$d 个笔记……</string>
     <string name="markdown_checking_server">正在检查服务器连接……</string>
-    <string name="markdown_info">📝 额外地导出笔记为 .md 文件。挂载 WebDAV 为网盘以便使用你喜爱的编辑器编辑它们。JSON 同步仍然是主要格式。</string>
+    <string name="markdown_info">额外地导出笔记为 .md 文件。挂载 WebDAV 为网盘以便使用你喜爱的编辑器编辑它们。JSON 同步仍然是主要格式。</string>
     <string name="markdown_auto_sync_title">Markdown 自动同步</string>
     <string name="markdown_auto_sync_subtitle">自动同步笔记作为 .md 文件（每次同步时上传加下载）</string>
     <string name="markdown_manual_sync_info">手动同步导出所有笔记为 .md 文件，并且从服务器导入 .md 文件。对一次性同步很有用。</string>
-    <string name="markdown_manual_sync_button">📝 手动 Markdown 同步</string>
+    <string name="markdown_manual_sync_button">手动 Markdown 同步</string>
     <!-- ============================= -->
     <!-- SETTINGS - BACKUP             -->
     <!-- ============================= -->
     <string name="backup_settings_title">备份和恢复</string>
-    <string name="backup_auto_info">📦 每一次恢复前自动创建一个安全备份。</string>
+    <string name="backup_auto_info">每一次恢复前自动创建一个安全备份。</string>
     <string name="backup_local_section">本地备份</string>
-    <string name="backup_create">💾 创建备份</string>
-    <string name="backup_restore_file">📂 从文件恢复</string>
+    <string name="backup_create">创建备份</string>
+    <string name="backup_restore_file">从文件恢复</string>
     <!-- 🔐 v1.7.0: Encryption -->
     <string name="backup_encryption_title">加密备份</string>
     <string name="backup_encryption_subtitle">密码保护你的备份文件</string>
@@ -266,21 +266,21 @@
     <string name="backup_encryption_password_hint">输入密码（最少八个字符）</string>
     <string name="backup_encryption_confirm">确认密码</string>
     <string name="backup_encryption_confirm_hint">重新输入密码</string>
-    <string name="backup_decryption_required">🔒 已加密的备份</string>
+    <string name="backup_decryption_required">已加密的备份</string>
     <string name="backup_server_section">服务器备份</string>
-    <string name="backup_restore_server">☁️ 从服务器恢复</string>
-    <string name="backup_restore_dialog_title">⚠️ 恢复备份？</string>
+    <string name="backup_restore_server">从服务器恢复</string>
+    <string name="backup_restore_dialog_title">恢复备份？</string>
     <string name="backup_restore_source">源：%s</string>
     <string name="backup_restore_source_file">本地文件</string>
     <string name="backup_restore_source_server">WebDAV 服务器</string>
     <string name="backup_restore_mode_label">恢复模式：</string>
-    <string name="backup_mode_merge_title">⚪ 合并（默认）</string>
+    <string name="backup_mode_merge_title">合并（默认）</string>
     <string name="backup_mode_merge_subtitle">添加新的，保持已存在的</string>
-    <string name="backup_mode_replace_title">⚪ 替换</string>
+    <string name="backup_mode_replace_title">替换</string>
     <string name="backup_mode_replace_subtitle">删除所有并导入备份</string>
-    <string name="backup_mode_overwrite_title">⚪ 覆盖重复</string>
+    <string name="backup_mode_overwrite_title">覆盖重复</string>
     <string name="backup_mode_overwrite_subtitle">冲突时备份获胜</string>
-    <string name="backup_restore_info">ℹ️ 恢复前自动创建一个安全备份。</string>
+    <string name="backup_restore_info">恢复前自动创建一个安全备份。</string>
     <string name="backup_restore_button">恢复</string>
     <!-- ============================= -->
     <!-- SETTINGS - DEBUG              -->
@@ -288,12 +288,12 @@
     <string name="debug_settings_title">调试和诊断</string>
     <string name="debug_file_logging_title">日志文件</string>
     <string name="debug_file_logging_subtitle">保存同步日志到文件</string>
-    <string name="debug_privacy_info">🔒 隐私：日志存储在你的设备。本应用从不上传它们到任何地方；分享或发送一个日志总是通过你挑选的一个应用。日志包含同步活动用于故障排除。你可以随时删除或导出它们。导出时用占位符替换服务器地址、用户名、笔记标题、文件夹名字；保留很短的名字（三个字符之下）和笔记 ID — 发送它之前检查文件。</string>
+    <string name="debug_privacy_info">隐私：日志存储在你的设备。本应用从不上传它们到任何地方；分享或发送一个日志总是通过你挑选的一个应用。日志包含同步活动用于故障排除。你可以随时删除或导出它们。导出时用占位符替换服务器地址、用户名、笔记标题、文件夹名字；保留很短的名字（三个字符之下）和笔记 ID，发送它之前检查文件。</string>
     <string name="debug_log_actions_section">日志操作</string>
-    <string name="debug_export_logs">📤 导出和分享日志</string>
+    <string name="debug_export_logs">导出和分享日志</string>
     <string name="debug_logs_subject">简单笔记同步日志</string>
     <string name="debug_logs_share_via">分享日志通过……</string>
-    <string name="debug_delete_logs">🗑️ 删除日志</string>
+    <string name="debug_delete_logs">删除日志</string>
     <string name="debug_delete_logs_title">删除日志？</string>
     <string name="debug_delete_logs_message">所有已保存的同步日志会被永远删除。</string>
     <string name="debug_test_section">测试模式</string>
@@ -301,7 +301,7 @@
     <string name="debug_reset_changelog_desc">在下一次打开应用时显示更新日志</string>
     <string name="debug_changelog_reset">在下一次打开时会显示更新日志</string>
     <string name="developer_options_countdown">%d 点击以解锁开发者选项</string>
-    <string name="developer_options_unlocked">🔧 解锁了开发者选项</string>
+    <string name="developer_options_unlocked">解锁了开发者选项</string>
     <string name="developer_options_already_unlocked">已经解锁了开发者选项</string>
     <!-- Legacy -->
     <!-- ============================= -->
@@ -314,7 +314,7 @@
     <string name="language_turkish">土耳其语</string>
     <string name="language_ukrainian">乌克兰语</string>
     <string name="language_chinese_simplified">中文 (简体)</string>
-    <string name="language_info">ℹ️ 选择你偏好的语言。视图会短暂刷新以应用更改。</string>
+    <string name="language_info">选择你偏好的语言。视图会短暂刷新以应用更改。</string>
     <!-- ============================= -->
     <!-- SETTINGS - DISPLAY            -->
     <!-- ============================= -->
@@ -333,7 +333,7 @@
     <string name="autosave_toggle">自动保存</string>
     <string name="autosave_description">不活动三秒后和离开编辑器时保存</string>
     <string name="autosave_info">启用时，在输入和离开时自动保存笔记。仅在手动保存时进行同步。</string>
-    <string name="autosave_indicator">✓ 已保存</string>
+    <string name="autosave_indicator">已保存</string>
     <string name="editor_undo">撤销</string>
     <string name="editor_redo">重做</string>
     <string name="filter_all">所有</string>
@@ -386,38 +386,38 @@
     <string name="backup_progress_failed">备份失败</string>
     <string name="restore_progress_failed">恢复失败</string>
     <string name="restore_server_progress_failed">下载失败</string>
-    <string name="about_privacy_title">🔒 隐私</string>
+    <string name="about_privacy_title">隐私</string>
     <string name="about_privacy_text">这个应用不收集数据。所有笔记仅存储在你的设备和你自己的 WebDAV 服务器。无遥测，无广告。</string>
     <!-- ============================= -->
     <!-- TOAST MESSAGES                -->
     <!-- ============================= -->
-    <string name="test_connection_success_with_notes">✅ 服务器可连上。找到文件夹 /%1$s/（会自动创建 /%1$s-md/ ）。</string>
-    <string name="test_connection_success_first_sync">✅ 服务器可连上。在第一次同步时会创建 /%1$s/ 和 /%1$s-md/ 文件夹。</string>
-    <string name="toast_connection_success">✅ 连接成功！</string>
-    <string name="toast_connection_failed">❌ %s</string>
-    <string name="toast_error">❌ 错误：%s</string>
-    <string name="toast_syncing">🔄 正在同步……</string>
-    <string name="toast_already_synced">✅ 已经同步了</string>
-    <string name="toast_sync_success">✅ 已同步 %d 个笔记</string>
-    <string name="toast_sync_failed">❌ %s</string>
-    <string name="toast_sync_interval">⏱️ 同步间隔：%s</string>
+    <string name="test_connection_success_with_notes">服务器可连上。找到文件夹 /%1$s/（会自动创建 /%1$s-md/ ）。</string>
+    <string name="test_connection_success_first_sync">服务器可连上。在第一次同步时会创建 /%1$s/ 和 /%1$s-md/ 文件夹。</string>
+    <string name="toast_connection_success">连接成功！</string>
+    <string name="toast_connection_failed">%s</string>
+    <string name="toast_error">错误：%s</string>
+    <string name="toast_syncing">正在同步……</string>
+    <string name="toast_already_synced">已经同步了</string>
+    <string name="toast_sync_success">已同步 %d 则笔记</string>
+    <string name="toast_sync_failed">%s</string>
+    <string name="toast_sync_interval">同步间隔：%s</string>
     <string name="toast_sync_interval_15min">15 分钟</string>
     <string name="toast_sync_interval_30min">30 分钟</string>
     <string name="toast_sync_interval_60min">60 分钟</string>
-    <string name="toast_configure_server_first">⚠️ 请先配置 WebDAV 服务器</string>
-    <string name="toast_markdown_exported">✅ %d 个笔记导出到 Markdown</string>
-    <string name="toast_markdown_enabled">📝 Markdown 已启用自动同步</string>
-    <string name="toast_markdown_disabled">📝 Markdown 已禁用自动同步</string>
-    <string name="toast_markdown_syncing">📝 Markdown 正在进行同步……</string>
-    <string name="toast_markdown_result">✅ 导出：%1$d • 导入：%2$d</string>
-    <string name="toast_export_failed">❌ 导出失败：%s</string>
-    <string name="toast_export_timeout">⏱️ 导出超时 - 服务器太慢或连不上。请检查连接再试一次。</string>
+    <string name="toast_configure_server_first">请先配置 WebDAV 服务器</string>
+    <string name="toast_markdown_exported">导出了 %d 则笔记到 Markdown</string>
+    <string name="toast_markdown_enabled">Markdown 自动同步已启用</string>
+    <string name="toast_markdown_disabled">Markdown 自动同步已禁用</string>
+    <string name="toast_markdown_syncing">Markdown 同步进行中……</string>
+    <string name="toast_markdown_result">导出：%1$d • 导入：%2$d</string>
+    <string name="toast_export_failed">导出失败：%s</string>
+    <string name="toast_export_timeout">导出超时 - 服务器太慢或连不上。请检查连接再试一次。</string>
     <string name="toast_notifications_enabled">已启用通知</string>
     <string name="toast_notifications_disabled">已禁用通知。你可以在设置中启用它们。</string>
-    <string name="toast_logs_deleted">🗑️ 已删除日志</string>
-    <string name="toast_server_changed_sync_reset">🔄 已更改服务器。下一次同步会上传 %d 个笔记。</string>
-    <string name="toast_file_logging_enabled">📝 已启用日志文件</string>
-    <string name="toast_file_logging_disabled">📝 已禁用日志文件</string>
+    <string name="toast_logs_deleted">已删除日志</string>
+    <string name="toast_server_changed_sync_reset">已更改服务器。下一次同步会上传 %d 则笔记。</string>
+    <string name="toast_file_logging_enabled">已启用文件记录</string>
+    <string name="toast_file_logging_disabled">已禁用文件记录</string>
     <string name="battery_optimization_dialog_title">后台同步</string>
     <string name="battery_optimization_dialog_full_message">为使应用可靠地在后台同步，必须禁用电池优化。\n\n请为简单笔记选择“不优化”。</string>
     <string name="battery_optimization_open_settings">打开设置</string>
@@ -613,19 +613,19 @@
     <string name="keep_import_config_conflict_always_create">总是创建新的（推荐，最安全）</string>
     <string name="keep_import_config_conflict_skip">跳过重复</string>
     <string name="keep_import_config_conflict_replace">替换已存在</string>
-    <string name="keep_import_config_info_labels">ℹ️ Keep 标签已存储，它们会在未来版本作为标签出现。</string>
-    <string name="keep_import_config_info_attachments">🖼️ 图像/附件在这个版本中未导入。当本应用获得图像支持之后，你可以重新运行导入来载入它们。</string>
-    <string name="keep_import_config_info_color_pin">🎨 笔记颜色已导入并正确显示。已置顶的笔记会出现在笔记列表的顶部一个单独部分。</string>
+    <string name="keep_import_config_info_labels">Keep 标签已存储，它们会在未来版本作为标签出现。</string>
+    <string name="keep_import_config_info_attachments">图像/附件在这个版本中未导入。当本应用之后获得图像支持时，你可以重新运行导入来载入它们。</string>
+    <string name="keep_import_config_info_color_pin">笔记颜色被导入并立即显示。已置顶的笔记会出现在笔记列表顶部一个单独的 Pinned 部分。</string>
     <string name="keep_import_config_button_start">开始导入</string>
     <string name="keep_import_config_button_cancel">取消</string>
-    <string name="keep_import_prescan_header">📦 档案包含：</string>
+    <string name="keep_import_prescan_header">压缩包包含：</string>
     <string name="keep_import_prescan_active">• %1$d 个存档笔记</string>
     <string name="keep_import_prescan_archived">• %1$d 个已归档笔记</string>
     <string name="keep_import_prescan_trashed">• %1$d 个笔记在回收站</string>
     <string name="keep_import_prescan_labels">• %1$d 个不同的标签</string>
     <string name="keep_import_prescan_shared">• %1$d 个协作笔记</string>
     <string name="keep_import_prescan_attachments">• %1$d 个有着附件的笔记（不会被导入）</string>
-    <string name="keep_import_prescan_large_warning">⚠️ 大档案（%1$d MB），分析可能要一分钟。</string>
+    <string name="keep_import_prescan_large_warning">大压缩包（%1$d MB），分析可能要一分钟。</string>
     <string name="keep_import_large_zip_title">大档案</string>
     <string name="keep_import_large_zip_body">这个档案是 %1$d MB。导入可能要几分钟并且显著消耗电量。继续吗？</string>
     <string name="keep_import_large_zip_button_continue">继续</string>
@@ -634,15 +634,15 @@
     <string name="keep_import_progress_status">正在处理 %1$d of %2$d: %3$s</string>
     <string name="keep_import_progress_button_cancel">取消</string>
     <string name="keep_import_result_title">导入完成</string>
-    <string name="keep_import_result_imported">✓ %1$d 个笔记已导入</string>
-    <string name="keep_import_result_replaced">↻ %1$d 已替换</string>
+    <string name="keep_import_result_imported">%1$d 则笔记已导入</string>
+    <string name="keep_import_result_replaced">%1$d 已替换</string>
     <string name="keep_import_result_skipped">⊘ %1$d 已跳过</string>
-    <string name="keep_import_result_failed">✗ %1$d 错误</string>
-    <string name="keep_import_result_attachments_dropped">🖼️ %1$d 个笔记有附件 — 未导入（添加图像支持后你可以重新运行导入）。</string>
-    <string name="keep_import_result_labels">🏷️ %1$d 个标签已存储</string>
-    <string name="keep_import_result_shared">👥 %1$d 个协作笔记</string>
-    <string name="keep_import_result_color">🎨 %1$d 个颜色已导入</string>
-    <string name="keep_import_result_pinned">📌 %1$d 已置顶的笔记出现在置顶部分</string>
+    <string name="keep_import_result_failed">%1$d 个错误</string>
+    <string name="keep_import_result_attachments_dropped">%1$d 则笔记有未导入的附件（添加图像支持后你可以重新运行导入）。</string>
+    <string name="keep_import_result_labels">%1$d 个标签已存储</string>
+    <string name="keep_import_result_shared">这些项目中的 %1$d 个来自共享列表（协作）</string>
+    <string name="keep_import_result_color">导入了 %1$d 则含颜色的笔记</string>
+    <string name="keep_import_result_pinned">%1$d 则已置顶的笔记出现在 Pinned 部分</string>
     <string name="keep_import_result_show_errors">显示细节</string>
     <string name="keep_import_result_hide_errors">隐藏细节</string>
     <string name="keep_import_result_button_close">关闭</string>
@@ -663,8 +663,8 @@
     <string name="action_toggle_pin">切换置顶</string>
     <string name="section_pinned">已置顶</string>
     <string name="section_notes">笔记</string>
-    <string name="settings_server_status_not_configured">📴 未配置</string>
-    <string name="server_status_not_configured">📴 未配置</string>
+    <string name="settings_server_status_not_configured">未配置</string>
+    <string name="server_status_not_configured">未配置</string>
     <string name="sync_no_server_message">未配置服务器。设置一个服务器来同步笔记。</string>
     <string name="action_copy_note_text">复制文本</string>
     <string name="toast_note_copied">文本已复制到剪贴板</string>
@@ -827,11 +827,11 @@
     <string name="app_lock_no_biometric_message">在你的设备设置里设置一个指纹、脸或锁屏来使用应用锁。</string>
     <string name="app_lock_open_settings">打开设置</string>
     <string name="folder_change_dialog_message">你正在切换同步文件夹从 \"%1$s\" 到 \"%2$s\"。要对你当前的笔记进行什么？</string>
-    <string name="toast_server_switched">🌐 已切换服务器。已从新服务器载入 %1$d 个笔记。</string>
+    <string name="toast_server_switched">已切换服务器。已从新服务器载入 %1$d 则笔记。</string>
     <string name="toast_folder_switch_offline">不能在离线模式中切换文件夹 — 你的笔记已保存。</string>
-    <string name="toast_folder_switched">📂 已切换文件夹。已从新文件夹载入 %1$d 个笔记。</string>
-    <string name="toast_folder_migrated">🔄 文件夹已更改。%1$d 个笔记会在下一次同步时上传到新文件夹。</string>
-    <string name="test_connection_success_md_exists">✅ 服务器可连上。找到了文件夹 /%1$s/（/%1$s-md/ 已存在并且会被使用）。</string>
+    <string name="toast_folder_switched">已切换文件夹。已从新文件夹载入 %1$d 则笔记。</string>
+    <string name="toast_folder_migrated">文件夹已更改。%1$d 则笔记会在下一次同步时上传到新文件夹。</string>
+    <string name="test_connection_success_md_exists">服务器可连上。找到了文件夹 /%1$s/（/%1$s-md/ 已存在并且会被使用）。</string>
     <string name="editor_new_note_focus_content_description">新笔记聚焦内容区域而不是标题。清单聚焦第一个项目。</string>
     <string name="editor_new_note_focus_content_toggle">内容中的开始光标</string>
     <string name="settings_default_note_color_subtitle">已应用到新笔记</string>
@@ -950,7 +950,7 @@
     <string name="debug_logs_mail_subject">Simple Notes Sync %1$s (%2$d) %3$s: sync log</string>
     <string name="debug_logs_mail_body">Device: %1$s\nAndroid: %2$s (API %3$d)\n\n什么出错（可选）：\n</string>
     <string name="debug_send_no_mail_app">未找到邮箱应用。使用导出日志作为代替。</string>
-    <string name="about_beta_notice">🧪 测试版构建。诊断日志是开启的，这样你可以用一个报告发送同步日志 — 设置 → 调试和诊断来导出或关闭它。导出的日志会替换掉你的服务器地址、用户名和笔记标题。</string>
+    <string name="about_beta_notice">测试版构建。诊断日志开启以便你可以在发送报告时附上同步日志。设置 → 调试和诊断来导出或关闭它。导出的日志会替换掉你的服务器地址、用户名和笔记标题。</string>
     <string name="sync_restored_count">已恢复 %1$d</string>
     <string name="sync_deletion_check_skipped">已跳过删除检查（未完成服务器列出文件）</string>
     <string name="activity_log_title">活动日志</string>
@@ -1013,7 +1013,7 @@
     <string name="conflict_resolved_use_server">服务器版本已载入。</string>
     <string name="conflict_resolve_failed">不能解决冲突。检查服务器连接。</string>
     <plurals name="sync_conflict_count">
-        <item quantity="other">⚠️ %1$d 个冲突需要你的决定</item>
+        <item quantity="other">%1$d 个冲突需要你的决定</item>
     </plurals>
     <string name="search_empty_state_title">未找到笔记</string>
     <string name="search_empty_state_message">没有东西匹配你的搜索 — 在这个文件夹或任何其他。</string>
@@ -1100,11 +1100,11 @@
     <string name="editor_checklist_read_mode_toggle">在阅读模式中打开清单</string>
     <string name="editor_checklist_read_mode_description">以只读打开清单。在一个项目上点击任意地方来勾选它，使用铅笔图标来编辑。</string>
     <string name="editor_toggle_read_mode">切换阅读模式</string>
-    <string name="test_connection_e2ee_blocked">✅ 可连上服务器，但 /%1$s/ 在另一个设备上是加密的。同步已暂停。</string>
+    <string name="test_connection_e2ee_blocked">可连上服务器，但 /%1$s/ 在另一个设备上是加密的。同步已暂停。</string>
     <string name="sync_error_ssl_untrusted">证书未信任。在服务器设置中测试连接来信任它。</string>
     <string name="sync_error_ssl_hostname">证书不匹配主机名。检查服务器地址或服务器上的证书。</string>
     <string name="sync_error_ssl_expired">服务器证书已过期或未有效。检查服务器和这个设备的日期。</string>
-    <string name="server_status_certificate">❌ 证书未信任</string>
+    <string name="server_status_certificate">证书未信任</string>
     <string name="cert_dialog_title">信任这个证书？</string>
     <string name="cert_dialog_message">服务器使用一个此设备不信任的证书，例如一个自签名证书。如果证书指纹匹配服务器上的指纹，你可以信任它。</string>
     <string name="cert_dialog_changed">你上次信任这个证书后，它已经更改。如果你没有在服务器上替换它，不要继续。</string>
@@ -1115,4 +1115,19 @@
     <string name="cert_dialog_trust">信任</string>
     <string name="notification_sync_warning_certificate_message">服务器证书未信任</string>
     <string name="notification_sync_warning_certificate_detail">因为服务器证书是未信任的，已经 %d 个小时未同步，例如在证书更新后。在服务器设置中测试连接。</string>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="other">%1$d 则笔记未上传</item>
+    </plurals>
+    <string name="settings_new_design_toggle">新设计（测试版）</string>
+    <string name="settings_new_design_description">尝试新的鄂编辑器和笔记列表。关闭返回当前设计。</string>
+    <string name="editor_formatting_bar_toggle">格式条</string>
+    <string name="editor_formatting_bar_description">撰写文本笔记时显示 Markdown 按钮。</string>
+    <string name="editor_title_field_toggle">标题字段</string>
+    <string name="editor_title_field_description">在新建的和无标题的笔记上方显示空的标题。有标题的笔记始终显示它。</string>
+    <string name="editor_add_title">添加标题</string>
+    <string name="editor_meta_edited">编辑了 %1$s</string>
+    <string name="editor_checklist_meta">%1$d 未完成 · %2$d 未完成</string>
+    <string name="editor_saved">已保存</string>
+    <string name="note_card_hide_checked_toggle">在预览中隐藏已完成项目</string>
+    <string name="note_card_hide_checked_description">笔记卡片和小组件上的清单预览仅显示未完成项目以及已完成几项。</string>
 </resources>
