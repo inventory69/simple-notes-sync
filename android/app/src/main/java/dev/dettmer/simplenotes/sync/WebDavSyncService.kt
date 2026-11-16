@@ -1146,7 +1146,14 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             // (Ordner-Rename / Notiz verschieben) räumen nur den alten Pfad auf und sind keine
             // benutzer­sichtbare Löschung — sonst irreführende Sync-Meldung.
             val purgedIds = mutableListOf<String>()
+            val localNotes = storage.loadAllNotes().associateBy { it.id }
             pendingIds.forEach { pd ->
+                val local = localNotes[pd.id]
+                if (pd.isMove && local != null) {
+                    // Neuer Pfad noch nicht oben (Fehler, Konflikt): alte Kopie behalten, sonst
+                    // liegt die Notiz nirgends mehr auf dem Server.
+                    if (local.syncStatus != SyncStatus.SYNCED) return@forEach
+                }
                 try {
                     val deleted = noteDownloader.deleteFromServer(pd.id, pd.folderName, pd.isMove)
                     if (!deleted) return@forEach

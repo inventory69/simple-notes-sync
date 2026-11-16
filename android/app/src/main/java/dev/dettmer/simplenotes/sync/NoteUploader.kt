@@ -368,8 +368,11 @@ internal class NoteUploader(
                 // 🆕 v2.16.0: Mit dem gecachten ETag als If-Match. Ohne die Precondition gewinnt,
                 // wer als Zweiter synct — der blinde PUT überschreibt die fremde Fassung, bevor
                 // der Download sie überhaupt zu sehen bekommt.
+                // Datei fehlt am Zielpfad (verschoben, Ordner umbenannt): den alten ETag als
+                // If-Match lehnen Apache und sabre/dav (Nextcloud) mit 412 ab.
+                val ifMatchETag = cachedETag.takeUnless { serverSnapshot.lacks(note) }
                 val putEtag = try {
-                    putWithPrecondition(webdav, noteUrl, jsonBytes, cachedETag)
+                    putWithPrecondition(webdav, noteUrl, jsonBytes, ifMatchETag)
                 } catch (e: WebDavException) {
                     // 412 heißt: auf dem Server steht eine Fassung, die diese Änderung nicht kennt.
                     // Kein Retry — der nächste Versuch bekäme dieselbe Antwort.
@@ -462,7 +465,10 @@ internal class NoteUploader(
     private data class ServerSnapshot(
         val etags: Map<String, String?> = emptyMap(),
         val listedFolders: Set<String?> = emptySet()
-    )
+    ) {
+        /** Sicher bekannt, dass die Datei der Notiz auf dem Server fehlt. */
+        fun lacks(note: Note) = note.folderName in listedFolders && note.id !in etags
+    }
 
     /**
      * 🆕 v2.16.0: Holt die aktuellen Server-ETags der Ordner, in denen etwas hochzuladen ist.
@@ -492,7 +498,8 @@ internal class NoteUploader(
         val listed = mutableSetOf<String?>()
         for (folder in foldersToCheck) {
             val resources = try {
-                webdav.listOrNull(urlBuilder.getNotesFolderUrl(serverUrl, folder))
+                // null = 404: Ordner fehlt (z. B. neu benannt), damit auch jede Datei darin.
+                webdav.listOrNull(urlBuilder.getNotesFolderUrl(serverUrl, folder)).orEmpty()
             } catch (e: Exception) {
                 Logger.w(TAG, "⚠️ Pre-upload listing failed for folder=$folder: ${e.message}")
                 null
