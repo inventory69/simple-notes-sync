@@ -3,7 +3,6 @@ package dev.dettmer.simplenotes.ui.editor
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import androidx.compose.runtime.Immutable
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -11,12 +10,9 @@ import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.images.ImageCompressionMode
 import dev.dettmer.simplenotes.images.ImageProcessor
-import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.ChecklistNesting
-import dev.dettmer.simplenotes.models.ChecklistRow
 import dev.dettmer.simplenotes.models.ChecklistSortOption
-import dev.dettmer.simplenotes.models.ChecklistSorter
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -322,30 +318,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     private suspend fun loadExistingNote(noteId: String) {
         existingNote = withContext(Dispatchers.IO) { storage.loadNote(noteId) }
-        existingNote?.let { note ->
-            currentNoteType = note.noteType
-            _uiState.update { state ->
-                state.copy(
-                    title = note.title,
-                    content = note.content,
-                    noteType = note.noteType,
-                    isNewNote = false,
-                    isLoading = false,
-                    color = note.color, // 🆕 v2.5.0
-                    isArchived = note.isArchived, // 🆕 v2.11.0 (Archive)
-                    hasConflict = note.syncStatus == SyncStatus.CONFLICT, // 🆕 v2.16.0
-                    toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
-                        ToolbarTitle.EDIT_CHECKLIST
-                    } else {
-                        ToolbarTitle.EDIT_NOTE
-                    }
-                )
-            }
-
-            if (note.noteType == NoteType.CHECKLIST) {
-                loadChecklistData(note)
-            }
-        } ?: run {
+        existingNote?.let { showLoadedNote(it) } ?: run {
             // Note not found — clear loading state
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -361,26 +334,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         }
 
         existingNote = note
-        currentNoteType = note.noteType
-        _uiState.update { state ->
-            state.copy(
-                title = note.title,
-                content = note.content,
-                noteType = note.noteType,
-                isNewNote = false,
-                isLoading = false,
-                color = note.color,
-                isArchived = note.isArchived, // 🆕 v2.11.0 (Archive)
-                toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
-                    ToolbarTitle.EDIT_CHECKLIST
-                } else {
-                    ToolbarTitle.EDIT_NOTE
-                }
-            )
-        }
-        if (note.noteType == NoteType.CHECKLIST) {
-            loadChecklistData(note)
-        }
+        showLoadedNote(note)
 
         val sharedText = savedStateHandle.get<String>(ARG_SHARED_TEXT).orEmpty().trim()
         val sharedSubject = savedStateHandle.get<String>(ARG_SHARED_SUBJECT).orEmpty().trim()
@@ -409,30 +363,39 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         savedSnapshot = currentSnapshot()
     }
 
+    /** Zeigt eine gespeicherte Notiz im Editor: Kopfzustand, bei Checklisten auch die Einträge. */
+    private fun showLoadedNote(note: Note) {
+        currentNoteType = note.noteType
+        _uiState.update { state ->
+            state.copy(
+                title = note.title,
+                content = note.content,
+                noteType = note.noteType,
+                isNewNote = false,
+                isLoading = false,
+                color = note.color, // 🆕 v2.5.0
+                isArchived = note.isArchived, // 🆕 v2.11.0 (Archive)
+                hasConflict = note.syncStatus == SyncStatus.CONFLICT, // 🆕 v2.16.0
+                toolbarTitle = if (note.noteType == NoteType.CHECKLIST) {
+                    ToolbarTitle.EDIT_CHECKLIST
+                } else {
+                    ToolbarTitle.EDIT_NOTE
+                }
+            )
+        }
+        if (note.noteType == NoteType.CHECKLIST) {
+            loadChecklistData(note)
+        }
+    }
+
     private fun loadChecklistData(note: Note) {
         // 🆕 v1.8.1 (IMPL_03): Gespeicherte Sortierung laden
         note.checklistSortOption?.let { sortName ->
             _lastChecklistSortOption.value = parseSortOption(sortName)
         }
 
-        val rawItems = note.checklistItems?.sortedBy { it.order }.orEmpty()
-        // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0 (Gson default)
-        val isPreF04Note = rawItems.all { it.originalOrder == 0 }
-        // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
-        val isPreCreatedAtNote = rawItems.all { it.createdAt == 0L }
-        val items = rawItems.mapIndexed { index, raw ->
-            ChecklistItemState(
-                id = raw.id,
-                text = raw.text,
-                isChecked = raw.isChecked,
-                order = raw.order,
-                originalOrder = if (isPreF04Note) raw.order else raw.originalOrder,
-                createdAt = if (isPreCreatedAtNote) index.toLong() else raw.createdAt,
-                indentationLevel = raw.indentationLevel
-            )
-        }
         // 🆕 v1.8.0 (IMPL_017): Sortierung sicherstellen (falls alte Daten unsortiert sind)
-        _checklistItems.value = sortChecklistItems(items)
+        _checklistItems.value = sortChecklistItems(note.checklistItems.orEmpty().toEditorStates())
     }
 
     private fun initNewNote(noteTypeString: String) {
@@ -1605,17 +1568,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun openInCalendar() {
         viewModelScope.launch {
-            val state = _uiState.value
-            val content = NoteShareHelper.formatAsPlainText(
-                noteType = state.noteType,
-                textContent = state.content,
-                checklistItems = _checklistItems.value
-            )
-            val title = state.title.trim()
-            if (title.isBlank() && content.isBlank()) {
-                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
-                return@launch
-            }
+            val (title, content) = exportableText() ?: return@launch
             val strategy = prefs.calendarParsingStrategy()
             val preview = computePreview(content, strategy)
             val calTitle = title.ifBlank { preview.title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) } }
@@ -1660,17 +1613,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun shareAsText() {
         viewModelScope.launch {
-            val state = _uiState.value
-            val content = NoteShareHelper.formatAsPlainText(
-                noteType = state.noteType,
-                textContent = state.content,
-                checklistItems = _checklistItems.value
-            )
-            val title = state.title.trim()
-            if (title.isBlank() && content.isBlank()) {
-                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
-                return@launch
-            }
+            val (title, content) = exportableText() ?: return@launch
             val shareTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
             _events.emit(NoteEditorEvent.ShareAsText(title = shareTitle, text = content))
         }
@@ -1682,17 +1625,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      */
     fun shareAsPdf() {
         viewModelScope.launch {
-            val state = _uiState.value
-            val content = NoteShareHelper.formatAsPlainText(
-                noteType = state.noteType,
-                textContent = state.content,
-                checklistItems = _checklistItems.value
-            )
-            val title = state.title.trim()
-            if (title.isBlank() && content.isBlank()) {
-                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
-                return@launch
-            }
+            val (title, content) = exportableText() ?: return@launch
             val pdfTitle = title.ifBlank { content.take(CALENDAR_TITLE_FALLBACK_MAX_LENGTH) }
             _events.emit(NoteEditorEvent.ShareAsPdf(title = pdfTitle))
         }
@@ -1700,20 +1633,26 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
     fun copyNoteText() {
         viewModelScope.launch {
-            val state = _uiState.value
-            val content = NoteShareHelper.formatAsPlainText(
-                noteType = state.noteType,
-                textContent = state.content,
-                checklistItems = _checklistItems.value
-            )
-            val title = state.title.trim()
-            if (title.isBlank() && content.isBlank()) {
-                _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
-                return@launch
-            }
+            val (title, content) = exportableText() ?: return@launch
             val fullText = if (title.isNotBlank()) "$title\n\n$content" else content
             _events.emit(NoteEditorEvent.CopyToClipboard(fullText.trim()))
         }
+    }
+
+    /** Titel (getrimmt) und Klartext für Kalender, Teilen und Kopieren; `null` mit Toast, wenn beides leer ist. */
+    private suspend fun exportableText(): Pair<String, String>? {
+        val state = _uiState.value
+        val content = NoteShareHelper.formatAsPlainText(
+            noteType = state.noteType,
+            textContent = state.content,
+            checklistItems = _checklistItems.value
+        )
+        val title = state.title.trim()
+        if (title.isBlank() && content.isBlank()) {
+            _events.emit(NoteEditorEvent.ShowToast(ToastMessage.NOTE_IS_EMPTY))
+            return null
+        }
+        return title to content
     }
 
     /**
@@ -1775,22 +1714,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
             // Nur Checklist-Items aktualisieren
             if (freshNote.noteType == NoteType.CHECKLIST) {
-                val rawFreshItems = freshNote.checklistItems?.sortedBy { it.order }.orEmpty()
-                // 🆕 v1.9.0 (F04): Backward compat — old notes have all originalOrder == 0
-                val isPreF04Fresh = rawFreshItems.all { it.originalOrder == 0 }
-                // 🆕 v1.11.0: Backward compat — old notes have no createdAt (Gson default = 0)
-                val isPreCreatedAtFresh = rawFreshItems.all { it.createdAt == 0L }
-                val freshItems = rawFreshItems.mapIndexed { index, raw ->
-                    ChecklistItemState(
-                        id = raw.id,
-                        text = raw.text,
-                        isChecked = raw.isChecked,
-                        order = raw.order,
-                        originalOrder = if (isPreF04Fresh) raw.order else raw.originalOrder,
-                        createdAt = if (isPreCreatedAtFresh) index.toLong() else raw.createdAt,
-                        indentationLevel = raw.indentationLevel
-                    )
-                }
+                val freshItems = freshNote.checklistItems.orEmpty().toEditorStates()
                 if (freshItems.isEmpty()) return@launch
 
                 _checklistItems.value = sortChecklistItems(freshItems)
@@ -1819,191 +1743,3 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
         syncScheduler.triggerOnSaveSync(reason = "onSave")
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// State Classes
-// ═══════════════════════════════════════════════════════════════════════════
-
-data class NoteEditorUiState(
-    val title: String = "",
-    val content: String = "",
-    val noteType: NoteType = NoteType.TEXT,
-    val isNewNote: Boolean = true,
-    val isLoading: Boolean = false,
-    val toolbarTitle: ToolbarTitle = ToolbarTitle.NEW_NOTE,
-    val color: String? = null, // 🆕 v2.5.0 (Issue #65): note background colour
-    val defaultStartInPreviewMode: Boolean = false,
-    val checklistStartInReadMode: Boolean = false, // 🆕 Issue #156
-    val newNoteFocusContent: Boolean = false, // 🆕 v2.11.0
-    // 🆕 (#126-Nachgang): aus / immer / nur im Lesemodus
-    val wordCounterVisibility: WordCounterVisibility = WordCounterVisibility.ALWAYS,
-    val formattingBarEnabled: Boolean = true, // #131 (E11)
-    val titleFieldEnabled: Boolean = true, // UI-Beta: leeres Titelfeld anzeigen
-    val isArchived: Boolean = false, // 🆕 v2.11.0 (Archive)
-    // 🆕 v2.16.0: Notiz steht auf CONFLICT — der Editor zeigt darüber das Auflösungs-Banner.
-    val hasConflict: Boolean = false,
-    // 🆕 v2.16.0: Beide Fassungen für den Vergleichsdialog. null = Dialog zu.
-    val conflictVersions: ConflictVersions? = null,
-    val conflictCompareLoading: Boolean = false
-)
-
-/** 🆕 v2.16.0: Die zwei Fassungen, die der Vergleichsdialog gegenüberstellt. */
-@Immutable
-data class ConflictVersions(val local: Note, val server: Note)
-
-data class ChecklistItemState(
-    val id: String = UUID.randomUUID().toString(),
-    val text: String = "",
-    override val isChecked: Boolean = false,
-    val order: Int = 0,
-    val originalOrder: Int = order, // 🆕 v1.9.0 (F04): Position restore on un-check
-    val createdAt: Long = System.currentTimeMillis(), // 🆕 v1.11.0: Timestamp for sort-by-creation-date
-    override val indentationLevel: Int = 0 // Unterpunkte: 0 oder 1, siehe ChecklistNesting
-) : ChecklistRow {
-    fun toItem(order: Int = this.order) = ChecklistItem(
-        id = id,
-        text = text,
-        isChecked = isChecked,
-        order = order,
-        originalOrder = originalOrder,
-        createdAt = createdAt,
-        indentationLevel = indentationLevel
-    )
-
-    companion object {
-        // 🆕 v1.11.0: Monoton steigender Timestamp — verhindert gleiche createdAt-Werte
-        // wenn mehrere Items in derselben Millisekunde erstellt werden (z.B. schnelles Enter-Drücken).
-        // maxOf(now, last+1) garantiert: jedes neue Item hat einen strikt größeren Wert als das vorige.
-        private var lastCreatedAt = 0L
-
-        fun createEmpty(order: Int): ChecklistItemState {
-            val now = System.currentTimeMillis()
-            lastCreatedAt = maxOf(now, lastCreatedAt + 1)
-            return ChecklistItemState(
-                id = UUID.randomUUID().toString(),
-                text = "",
-                isChecked = false,
-                order = order,
-                originalOrder = order,
-                createdAt = lastCreatedAt
-            )
-        }
-    }
-}
-
-/**
- * Normalisiert eine Textzeile zu einem Checklist-Item (TEXT → CHECKLIST).
- *
- * Top-Level, weil zustandslos — so direkt testbar ohne ViewModel-Instanz.
- *
- * Für GFM-Zeilen gilt bewusst dieselbe [MarkdownEngine.TASK_LIST_REGEX] wie in der Preview:
- * was als Checkbox gerendert wird, wird auch als Checklist-Item konvertiert. Der Checked-Test
- * ist `== "x"` und nicht `!= " "`, sonst würde `- []` (leere Klammern) als abgehakt gelten.
- */
-internal fun normalizeLineToChecklistItem(line: String, index: Int): ChecklistItemState {
-    // Unterpunkte: ab zwei Leerzeichen (oder einem Tab) Einzug wird die Zeile Unterpunkt
-    return parseChecklistLine(line, index).copy(indentationLevel = ChecklistNesting.levelOfLine(line))
-}
-
-private fun parseChecklistLine(line: String, index: Int): ChecklistItemState {
-    val markerRegex = Regex("""^[-*•]\s+(.*)$""")
-    val cbRegex = Regex("""^\[([ xX]?)\]\s*(.*)$""") // group 1 = mark, group 2 = text
-    val checkmarkRegex = Regex("""^[✓☑✔]\s+(.*)$""")
-    val t = line.trim()
-    val gfm = MarkdownEngine.TASK_LIST_REGEX.matchEntire(t)
-    return if (gfm != null) {
-        ChecklistItemState.createEmpty(index).copy(
-            text = gfm.groupValues[2].trim(),
-            isChecked = gfm.groupValues[1].equals("x", ignoreCase = true)
-        )
-    } else {
-        val checkmark = checkmarkRegex.find(t)
-        if (checkmark != null) {
-            ChecklistItemState.createEmpty(index).copy(
-                text = checkmark.groupValues[1].trim(),
-                isChecked = true
-            )
-        } else {
-            val afterMarker = markerRegex.find(t)?.groupValues?.get(1) ?: t
-            val cbMatch = cbRegex.find(afterMarker.trim())
-            if (cbMatch != null) {
-                ChecklistItemState.createEmpty(index).copy(
-                    text = cbMatch.groupValues[2].trim(),
-                    isChecked = cbMatch.groupValues[1].equals("x", ignoreCase = true)
-                )
-            } else {
-                ChecklistItemState.createEmpty(index).copy(text = afterMarker.trim())
-            }
-        }
-    }
-}
-
-enum class ToolbarTitle {
-    NEW_NOTE,
-    EDIT_NOTE,
-    NEW_CHECKLIST,
-    EDIT_CHECKLIST
-}
-
-enum class ToastMessage {
-    NOTE_IS_EMPTY,
-    NOTE_SAVED,
-    NOTE_DELETED,
-    ITEM_COPIED_TO_CHECKLIST // 🆕 v2.2.0: Aktion 3 Bestätigung
-}
-
-sealed interface NoteEditorEvent {
-    data class ShowToast(val message: ToastMessage) : NoteEditorEvent
-
-    data object NavigateBack : NoteEditorEvent
-
-    data class RestoreContent(val content: String) : NoteEditorEvent // 🆕 v1.10.0: Undo/Redo
-
-    /** 🆕 v1.10.0-P2: Signals Activity to set result and finish so MainViewModel shows undo snackbar. */
-    data class NoteDeleteRequested(val noteId: String) : NoteEditorEvent
-
-    /** 🆕 v2.11.0 (Archive): Activity setzt Result und schließt; MainViewModel toggelt archivedAt. */
-    data class NoteArchiveToggleRequested(val noteId: String) : NoteEditorEvent
-
-    // 🆕 v1.10.0-Papa: Calendar & Share events
-    // 🆕 v2.12.0: location/attendees populated by the persisted calendar-parsing strategy.
-    data class OpenCalendar(
-        val title: String,
-        val description: String,
-        val location: String = "",
-        val attendees: String = ""
-    ) : NoteEditorEvent
-
-    data class ShareAsText(val title: String, val text: String) : NoteEditorEvent
-
-    data class ShareAsPdf(val title: String) : NoteEditorEvent
-
-    data class CopyToClipboard(val text: String) : NoteEditorEvent
-
-    data object ActivatePreviewMode : NoteEditorEvent
-
-    data object RequestContentFocus : NoteEditorEvent
-}
-
-/**
- * Sortiert Editor-States über [ChecklistSorter]. Top-level, weil der Editor dieselbe Sortierung
- * braucht, um vorherzusagen, wo ein aufgehakter Eintrag landet (Scroll oder Aufwachsen am Ort).
- */
-internal fun sortChecklistStates(
-    items: List<ChecklistItemState>,
-    option: ChecklistSortOption
-): List<ChecklistItemState> = ChecklistSorter.sort(items.map { it.toItem() }, option).map { it.toState() }
-
-internal fun ChecklistItem.toState() = ChecklistItemState(
-    id = id,
-    text = text,
-    isChecked = isChecked,
-    order = order,
-    originalOrder = originalOrder,
-    createdAt = createdAt,
-    indentationLevel = indentationLevel
-)
-
-/** Wendet eine [dev.dettmer.simplenotes.models.ChecklistNesting]-Operation auf Editor-States an. */
-internal inline fun List<ChecklistItemState>.nested(op: (List<ChecklistItem>) -> List<ChecklistItem>) =
-    op(map { it.toItem() }).map { it.toState() }
