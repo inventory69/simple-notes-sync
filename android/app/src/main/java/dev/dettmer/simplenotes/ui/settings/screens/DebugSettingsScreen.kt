@@ -129,8 +129,8 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
-    val syncDebugLoggingEnabled by viewModel.syncDebugLoggingEnabled.collectAsState()
+    val fileLoggingEnabled by viewModel.debug.fileLoggingEnabled.collectAsState()
+    val syncDebugLoggingEnabled by viewModel.debug.syncDebugLoggingEnabled.collectAsState()
 
     var showClearLogsDialog by remember { mutableStateOf(false) }
     var showDisableAfterExportDialog by remember { mutableStateOf(false) }
@@ -167,7 +167,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                     title = stringResource(R.string.debug_file_logging_title),
                     subtitle = stringResource(R.string.debug_file_logging_subtitle),
                     checked = fileLoggingEnabled,
-                    onCheckedChange = { viewModel.setFileLogging(it) },
+                    onCheckedChange = { viewModel.debug.setFileLogging(it) },
                     icon = Icons.AutoMirrored.Filled.Notes
                 )
 
@@ -176,7 +176,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                     title = stringResource(R.string.debug_sync_debug_logging_title),
                     subtitle = stringResource(R.string.debug_sync_debug_logging_subtitle),
                     checked = syncDebugLoggingEnabled,
-                    onCheckedChange = { viewModel.setSyncDebugLogging(it) },
+                    onCheckedChange = { viewModel.debug.setSyncDebugLogging(it) },
                     icon = Icons.Filled.BugReport
                 )
 
@@ -199,7 +199,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                         // das Lesen/Schreiben läuft im ViewModel auf Dispatchers.IO.
                         scope.launch {
                             viewModel.showSnackbar(exportPreparingMsg)
-                            val logFiles = viewModel.prepareLogsForSharing()
+                            val logFiles = viewModel.debug.prepareLogsForSharing()
                             if (logFiles.isEmpty()) {
                                 viewModel.showSnackbar(exportEmptyMsg)
                                 return@launch
@@ -247,7 +247,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                         onClick = {
                             scope.launch {
                                 viewModel.showSnackbar(exportPreparingMsg)
-                                val logFiles = viewModel.prepareLogsForSharing()
+                                val logFiles = viewModel.debug.prepareLogsForSharing()
                                 if (logFiles.isEmpty()) {
                                     viewModel.showSnackbar(exportEmptyMsg)
                                     return@launch
@@ -308,7 +308,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                 SettingsButton(
                     text = stringResource(R.string.debug_reset_changelog),
                     onClick = {
-                        viewModel.resetChangelogVersion()
+                        viewModel.debug.resetChangelogVersion()
                         viewModel.showSnackbar(changelogResetToast)
                     },
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -349,7 +349,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                 TextButton(
                     onClick = {
                         showClearLogsDialog = false
-                        viewModel.clearLogs()
+                        viewModel.debug.clearLogs()
                     }
                 ) {
                     Text(stringResource(R.string.delete))
@@ -373,7 +373,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                 TextButton(
                     onClick = {
                         showDisableAfterExportDialog = false
-                        viewModel.setFileLogging(false)
+                        viewModel.debug.setFileLogging(false)
                     }
                 ) {
                     Text(stringResource(R.string.debug_after_export_disable))
@@ -396,7 +396,7 @@ fun DebugSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavi
                 TextButton(
                     onClick = {
                         showClearETagCacheDialog = false
-                        viewModel.clearETagCache()
+                        viewModel.debug.clearETagCache()
                     }
                 ) {
                     Text(stringResource(R.string.debug_clear_etag_cache_confirm))

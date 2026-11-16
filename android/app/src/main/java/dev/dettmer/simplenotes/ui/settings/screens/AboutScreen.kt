@@ -60,7 +60,7 @@ import dev.dettmer.simplenotes.ui.settings.components.SettingsSectionCard
 fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState()
+    val developerOptionsUnlocked by viewModel.debug.developerOptionsUnlocked.collectAsState()
 
     // 🔧 v1.11.0: Easter-Egg-Tap-Counter für Entwickleroptionen
     var tapCount by remember { mutableIntStateOf(0) }
@@ -100,7 +100,7 @@ fun AboutScreen(viewModel: SettingsViewModel, onNavigate: (SettingsRoute) -> Uni
                         val remaining = requiredTaps - tapCount
                         when {
                             remaining == 0 -> {
-                                viewModel.unlockDeveloperOptions()
+                                viewModel.debug.unlockDeveloperOptions()
                                 viewModel.showSnackbar(msgUnlocked)
                             }
                             remaining in 1..2 -> {

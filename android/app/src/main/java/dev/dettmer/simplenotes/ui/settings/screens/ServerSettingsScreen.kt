@@ -81,22 +81,22 @@ fun ServerSettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit
 ) {
-    val offlineMode by viewModel.offlineMode.collectAsState()
-    val serverHost by viewModel.serverHost.collectAsState() // 🌟 v1.6.0: Only host part
-    val serverUrl by viewModel.serverUrl.collectAsState() // Full URL for display
-    val username by viewModel.username.collectAsState()
-    val password by viewModel.password.collectAsState()
-    val isHttps by viewModel.isHttps.collectAsState()
-    val serverStatus by viewModel.serverStatus.collectAsState()
-    val isSyncing by viewModel.isSyncing.collectAsState()
-    val syncFolderName by viewModel.syncFolderName.collectAsState() // 🆕 v1.9.0
-    val connectionTimeoutSeconds by viewModel.connectionTimeoutSeconds.collectAsState() // 🆕 v1.10.0
-    val remoteTargetChangePending by viewModel.remoteTargetChangePending.collectAsState() // 🆕 v2.12.0
-    val folderChangePrompt by viewModel.folderChangePrompt.collectAsState() // 🆕 v2.11.0
-    val folderChangeInProgress by viewModel.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
-    val credentialsUnencrypted by viewModel.credentialsUnencrypted.collectAsState() // 🆕 v2.17.0
-    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
-    val certificatePrompt by viewModel.certificatePrompt.collectAsState() // 🆕 v2.21.0
+    val offlineMode by viewModel.server.offlineMode.collectAsState()
+    val serverHost by viewModel.server.serverHost.collectAsState() // 🌟 v1.6.0: Only host part
+    val serverUrl by viewModel.server.serverUrl.collectAsState() // Full URL for display
+    val username by viewModel.server.username.collectAsState()
+    val password by viewModel.server.password.collectAsState()
+    val isHttps by viewModel.server.isHttps.collectAsState()
+    val serverStatus by viewModel.connection.serverStatus.collectAsState()
+    val isSyncing by viewModel.connection.isSyncing.collectAsState()
+    val syncFolderName by viewModel.server.syncFolderName.collectAsState() // 🆕 v1.9.0
+    val connectionTimeoutSeconds by viewModel.connection.connectionTimeoutSeconds.collectAsState() // 🆕 v1.10.0
+    val remoteTargetChangePending by viewModel.server.remoteTargetChangePending.collectAsState() // 🆕 v2.12.0
+    val folderChangePrompt by viewModel.server.folderChangePrompt.collectAsState() // 🆕 v2.11.0
+    val folderChangeInProgress by viewModel.server.folderChangeInProgress.collectAsState() // 🆕 v2.11.0
+    val credentialsUnencrypted by viewModel.server.credentialsUnencrypted.collectAsState() // 🆕 v2.17.0
+    val isServerConfigured by viewModel.server.isServerConfigured.collectAsState()
+    val certificatePrompt by viewModel.connection.certificatePrompt.collectAsState() // 🆕 v2.21.0
 
     var passwordVisible by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) } // 🆕 v1.9.0
@@ -110,43 +110,43 @@ fun ServerSettingsScreen(
     // Check server status on load (only if not in offline mode)
     LaunchedEffect(offlineMode) {
         if (!offlineMode) {
-            viewModel.checkServerStatus()
+            viewModel.connection.checkServerStatus()
         }
     }
 
     // 🆕 v2.12.0: System-/Predictive-Back abfangen solange Ordner- oder Server-Wechsel unbestätigt ist
     BackHandler(enabled = remoteTargetChangePending) {
-        viewModel.requestRemoteChangeDecision()
+        viewModel.server.requestRemoteChangeDecision()
     }
 
     // 🔧 v2.11.0: onBack() feuert erst über dieses Completion-Signal aus dem ViewModel —
     // nie mehr synchron direkt nach dem Button-Klick (Race Condition: Restore lief noch,
     // Notizenliste beim Zurücknavigieren leer).
     LaunchedEffect(Unit) {
-        viewModel.folderChangeCompleted.collect { onBack() }
+        viewModel.server.folderChangeCompleted.collect { onBack() }
     }
 
     folderChangePrompt?.let { prompt ->
         RemoteChangeDialog(
             prompt = prompt,
             inProgress = folderChangeInProgress,
-            onMigrate = { viewModel.onFolderChangeConfirmedMigrate() },
-            onSwitch = { viewModel.onFolderChangeConfirmedSwitch() },
-            onCancel = { viewModel.onFolderChangeCancelled() }
+            onMigrate = { viewModel.server.onFolderChangeConfirmedMigrate() },
+            onSwitch = { viewModel.server.onFolderChangeConfirmedSwitch() },
+            onCancel = { viewModel.server.onFolderChangeCancelled() }
         )
     }
 
     certificatePrompt?.let { prompt ->
         CertificateTrustDialog(
             prompt = prompt,
-            onTrust = { viewModel.trustCertificate() },
-            onCancel = { viewModel.dismissCertificatePrompt() }
+            onTrust = { viewModel.connection.trustCertificate() },
+            onCancel = { viewModel.connection.dismissCertificatePrompt() }
         )
     }
 
     SettingsScaffold(
         title = stringResource(R.string.server_settings_title),
-        onBack = { if (remoteTargetChangePending) viewModel.requestRemoteChangeDecision() else onBack() }
+        onBack = { if (remoteTargetChangePending) viewModel.server.requestRemoteChangeDecision() else onBack() }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -162,7 +162,7 @@ fun ServerSettingsScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { viewModel.setOfflineMode(!offlineMode) },
+                    .clickable { viewModel.server.setOfflineMode(!offlineMode) },
                 colors = CardDefaults.cardColors(
                     containerColor = if (offlineMode) {
                         MaterialTheme.colorScheme.tertiaryContainer
@@ -191,7 +191,7 @@ fun ServerSettingsScreen(
                     }
                     Switch(
                         checked = offlineMode,
-                        onCheckedChange = { viewModel.setOfflineMode(it) }
+                        onCheckedChange = { viewModel.server.setOfflineMode(it) }
                     )
                 }
             }
@@ -219,7 +219,7 @@ fun ServerSettingsScreen(
                 ) {
                     FilterChip(
                         selected = !isHttps,
-                        onClick = { viewModel.updateProtocol(false) },
+                        onClick = { viewModel.server.updateProtocol(false) },
                         label = { Text(stringResource(R.string.server_connection_http).withoutLeadingEmoji()) },
                         leadingIcon = { Icon(Icons.Outlined.Home, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         enabled = fieldsEnabled,
@@ -227,7 +227,7 @@ fun ServerSettingsScreen(
                     )
                     FilterChip(
                         selected = isHttps,
-                        onClick = { viewModel.updateProtocol(true) },
+                        onClick = { viewModel.server.updateProtocol(true) },
                         label = { Text(stringResource(R.string.server_connection_https).withoutLeadingEmoji()) },
                         leadingIcon = { Icon(Icons.Outlined.Public, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         enabled = fieldsEnabled,
@@ -249,7 +249,7 @@ fun ServerSettingsScreen(
                 // 🌟 v1.6.0: Server-Adresse with non-editable prefix
                 OutlinedTextField(
                     value = serverHost, // Only host part is editable
-                    onValueChange = { viewModel.updateServerHost(it) },
+                    onValueChange = { viewModel.server.updateServerHost(it) },
                     label = { Text(stringResource(R.string.server_address)) },
                     supportingText = { Text(stringResource(R.string.server_address_hint)) },
                     prefix = {
@@ -276,7 +276,7 @@ fun ServerSettingsScreen(
                 // Benutzername
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { viewModel.updateUsername(it) },
+                    onValueChange = { viewModel.server.updateUsername(it) },
                     label = { Text(stringResource(R.string.username)) },
                     leadingIcon = { Icon(Icons.Default.Person, null) },
                     modifier = Modifier.fillMaxWidth(),
@@ -290,7 +290,7 @@ fun ServerSettingsScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
-                        viewModel.updatePassword(it)
+                        viewModel.server.updatePassword(it)
                         if (it.isEmpty()) passwordFullyCleared = true
                     },
                     label = { Text(stringResource(R.string.password)) },
@@ -385,7 +385,7 @@ fun ServerSettingsScreen(
                     Column {
                         OutlinedTextField(
                             value = syncFolderName,
-                            onValueChange = { viewModel.updateSyncFolderName(it) },
+                            onValueChange = { viewModel.server.updateSyncFolderName(it) },
                             label = { Text(stringResource(R.string.sync_folder_name)) },
                             supportingText = { Text(stringResource(R.string.sync_folder_name_hint)) },
                             prefix = {
@@ -425,7 +425,7 @@ fun ServerSettingsScreen(
                         )
                         Slider(
                             value = connectionTimeoutSeconds.toFloat(),
-                            onValueChange = { viewModel.setConnectionTimeoutSeconds(it.toInt()) },
+                            onValueChange = { viewModel.connection.setConnectionTimeoutSeconds(it.toInt()) },
                             valueRange =
                             Constants.MIN_CONNECTION_TIMEOUT_SECONDS.toFloat()..Constants.MAX_CONNECTION_TIMEOUT_SECONDS.toFloat(),
                             steps = Constants.MAX_CONNECTION_TIMEOUT_SECONDS -
@@ -513,7 +513,7 @@ fun ServerSettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
-                    onClick = { viewModel.testConnection() },
+                    onClick = { viewModel.connection.testConnection() },
                     enabled = fieldsEnabled,
                     modifier = Modifier.weight(1f)
                 ) {
@@ -522,7 +522,7 @@ fun ServerSettingsScreen(
 
                 Button(
                     onClick = {
-                        if (remoteTargetChangePending) viewModel.requestRemoteChangeDecision() else viewModel.syncNow()
+                        if (remoteTargetChangePending) viewModel.server.requestRemoteChangeDecision() else viewModel.connection.syncNow()
                     },
                     enabled = fieldsEnabled && !isSyncing,
                     modifier = Modifier.weight(1f)
