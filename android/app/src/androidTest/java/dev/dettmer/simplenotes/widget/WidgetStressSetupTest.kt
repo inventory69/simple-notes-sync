@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.models.ChecklistItem
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.storage.NotesStorage
+import java.util.UUID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume.assumeTrue
@@ -154,7 +155,7 @@ class WidgetStressSetupTest {
         repeat(LIST_NOTES) { i ->
             storage.saveNote(
                 Note(
-                    id = "stress-list-$i",
+                    id = stressId("list-$i"),
                     title = "Listennotiz $i",
                     content = "Zeile eins\nZeile zwei\nZeile drei\nZeile vier",
                     deviceId = "stress"
@@ -170,10 +171,18 @@ class WidgetStressSetupTest {
         /** Ueber `-e pinProvider <FQCN>` von aussen gesetzt; Default ist das Notiz-Widget. */
         val PIN_PROVIDER: String = InstrumentationRegistry.getArguments()
             .getString("pinProvider", "dev.dettmer.simplenotes.widget.NoteWidgetReceiver")
-        const val STRESS_CHECKLIST_ID = "stress-checklist"
-        const val STRESS_MARKDOWN_ID = "stress-markdown"
+        val STRESS_CHECKLIST_ID = stressId("checklist")
+        val STRESS_MARKDOWN_ID = stressId("markdown")
         const val CHECKLIST_ITEMS = 150
         const val MARKDOWN_PARAGRAPHS = 120
         const val LIST_NOTES = 100
+
+        /**
+         * Notiz-IDs im UUID-Format wie bei echten Notizen: Der Sync zaehlt nur solche Dateinamen als
+         * Server-Notizen (`NoteDownloader.UUID_REGEX`), eine "stress-list-1" laege nach dem naechsten
+         * Sync als DELETED_ON_SERVER im Papierkorb. Aus dem Namen abgeleitet, damit ein zweiter Lauf
+         * dieselben Dateien ueberschreibt statt neue anzulegen.
+         */
+        fun stressId(name: String): String = UUID.nameUUIDFromBytes("stress-$name".toByteArray()).toString()
     }
 }
