@@ -13,7 +13,6 @@ import org.junit.Test
  * Die Kennung ist zugleich Text, originalOrder ist die Position in der Kurzschreibweise.
  */
 class ChecklistNestingTest {
-
     private fun list(spec: String): List<ChecklistItem> = spec.split(" ").mapIndexed { i, token ->
         val name = token.removePrefix("-").removeSuffix("*")
         ChecklistItem(

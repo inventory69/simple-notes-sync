@@ -520,7 +520,9 @@ internal class MarkdownSyncManager(
                         mdItems.size != localItems.size -> false
                         mdItems.isEmpty() && localItems.isEmpty() -> true
                         else -> mdItems.zip(localItems).all { (md, local) ->
-                            md.text == local.text && md.isChecked == local.isChecked && md.order == local.order &&
+                            md.text == local.text &&
+                                md.isChecked == local.isChecked &&
+                                md.order == local.order &&
                                 md.indentationLevel == local.indentationLevel
                         }
                     }

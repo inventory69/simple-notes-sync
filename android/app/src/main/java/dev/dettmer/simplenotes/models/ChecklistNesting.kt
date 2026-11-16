@@ -155,7 +155,8 @@ object ChecklistNesting {
 
     /** Einrücken: nur wenn darüber eine Zeile desselben Abschnitts steht (nicht die erste Zeile einer Sektion). */
     fun canIndent(items: List<ChecklistRow>, index: Int): Boolean =
-        index > 0 && items[index].indentationLevel < MAX_LEVEL &&
+        index > 0 &&
+            items[index].indentationLevel < MAX_LEVEL &&
             inCheckedSection(items, index - 1) == items[index].isChecked
 
     /** Einrücken: die Zeile wird Unterpunkt der Gruppe darüber, eigene Unterpunkte gehen mit (eine Ebene). */

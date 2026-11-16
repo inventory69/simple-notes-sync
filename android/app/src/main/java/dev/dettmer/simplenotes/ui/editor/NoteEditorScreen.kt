@@ -460,6 +460,7 @@ private suspend fun cutAndGlideTo(
  * Gruppe und danach ihn direkt. Nach dem Gruppen-Commit steht er im offenen Abschnitt und bewegt sich
  * nicht mehr; als neuer Pending-Slot würde er nie committen (sein Collapse läuft schon als Mitläufer).
  */
+
 /** Unterpunkte: läuft gerade ein Ziehen mit mindestens einem Tausch (siehe ChecklistEditor). */
 private class DragTracker {
     var active = false
@@ -2549,7 +2550,8 @@ internal fun ChecklistEditor(
                                 // (gemessen: first=0@0, glide=0): dann wie ohne Scroll am Ziel aufwachsen,
                                 // sonst stünde die Zeile sofort in voller Höhe und die Nachbarn federten nach.
                                 val atTop = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
-                                scrollTopOnUncheck && !atTop &&
+                                scrollTopOnUncheck &&
+                                    !atTop &&
                                     sortChecklistStates(
                                         items.nested { ChecklistNesting.toggle(it, id, false) },
                                         currentSortOption
