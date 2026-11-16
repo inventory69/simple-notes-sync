@@ -71,7 +71,8 @@ fun MarkdownToolbar(
         shadowElevation = if (floating) FLOATING_ELEVATION.dp else 0.dp,
         shape = if (floating) CircleShape else RectangleShape,
         modifier = modifier
-            .then(if (floating) Modifier.padding(vertical = Dimensions.SpacingMedium) else Modifier)
+            // #131: außen statt innen, die schwebende Leiste wird so flacher (56 statt 72 dp).
+            .padding(vertical = Dimensions.SpacingSmall)
             .fillMaxWidth()
     ) {
         Row(
@@ -80,7 +81,7 @@ fun MarkdownToolbar(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(vertical = 4.dp, horizontal = if (floating) Dimensions.SpacingMedium else 0.dp)
+                .padding(horizontal = if (floating) Dimensions.SpacingMedium else 0.dp)
         ) {
             ToolbarButton(
                 icon = Icons.Filled.FormatBold,

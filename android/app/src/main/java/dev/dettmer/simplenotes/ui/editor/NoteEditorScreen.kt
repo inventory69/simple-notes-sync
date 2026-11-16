@@ -166,6 +166,7 @@ import dev.dettmer.simplenotes.ui.editor.components.applyTapAnchor
 import dev.dettmer.simplenotes.ui.editor.components.collapseUp
 import dev.dettmer.simplenotes.ui.editor.components.noteColorGradient
 import dev.dettmer.simplenotes.ui.editor.components.rememberImeOpenFraction
+import dev.dettmer.simplenotes.ui.editor.components.shrinkWithKeyboard
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
@@ -1486,6 +1487,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         if (showFormattingBar) {
                             MarkdownToolbar(
                                 floating = newDesign, // E6: abgerundeter, schwebender Balken
+                                // #180: geht mit der Tastatur; verschwände sie erst am Ende, spränge der Text.
+                                modifier = if (newDesign && !hasHardwareKeyboard) {
+                                    Modifier.shrinkWithKeyboard(Dimensions.SpacingLarge) { imeOpen.value }
+                                } else {
+                                    Modifier
+                                },
                                 textFieldState = textFieldState,
                                 onImageClick = {
                                     imagePickerLauncher.launch(
