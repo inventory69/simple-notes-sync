@@ -34,6 +34,7 @@ import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
 import dev.dettmer.simplenotes.utils.toEnumOrDefault
 import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
+import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -1235,13 +1236,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
                     // und MUSS synchron abschließen bevor die Activity zerstört wird.
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    runBlocking {
-                        withContext(Dispatchers.IO) {
-                            storage.saveNote(note)
-                            logCreateIfNew(note)
-                        }
-                    }
-                    existingNote = note
+                    runBlocking { persist(note) }
                 }
                 NoteType.CHECKLIST -> {
                     // Unterpunkte: leere Oberpunkte geben ihre Unterpunkte frei (ChecklistNesting.withoutBlank)
@@ -1296,15 +1291,9 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     )
                     // runBlocking ist hier akzeptabel: saveOnBack() wird aus onPause() aufgerufen
                     // und MUSS synchron abschließen bevor die Activity zerstört wird.
-                    hasUnsavedChecklistEdits = false
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    runBlocking {
-                        withContext(Dispatchers.IO) {
-                            storage.saveNote(note)
-                            logCreateIfNew(note)
-                        }
-                    }
-                    existingNote = note
+                    runBlocking { persist(note) }
+                    hasUnsavedChecklistEdits = false
                 }
             }
             isDirty = false
@@ -1326,9 +1315,19 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
      * @param silent When true (autosave), empty-note check silently returns false without Toast.
      * Returns true if the note was saved, false if it was empty (nothing to save).
      */
+    private suspend fun performSave(silent: Boolean = false): Boolean = try {
+        writeCurrentNote(silent)
+    } catch (e: IOException) {
+        // Voller Speicher o. ä.: melden statt abstürzen. isDirty bleibt gesetzt, der nächste
+        // Autosave oder das Verlassen versucht es erneut, die bisherige Datei ist unversehrt.
+        Logger.e(TAG, "Saving the note failed", e)
+        emitSnackbar(getApplication<Application>().getString(R.string.note_save_failed))
+        false
+    }
+
     // Abbau: TECH_DEBT_ROADMAP.md Slice 3
     @Suppress("CyclomaticComplexMethod", "LongMethod")
-    private suspend fun performSave(silent: Boolean = false): Boolean {
+    private suspend fun writeCurrentNote(silent: Boolean): Boolean {
         val state = _uiState.value
         val title = state.title.trim()
 
@@ -1360,9 +1359,7 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
 
-                storage.saveNote(note)
-                withContext(Dispatchers.IO) { logCreateIfNew(note) }
-                existingNote = note // 🆕 v1.9.0: keep reference current so next save is an update
+                persist(note)
             }
 
             NoteType.CHECKLIST -> {
@@ -1423,15 +1420,51 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
                     syncStatus = SyncStatus.LOCAL_ONLY
                 )
 
+                persist(note)
                 hasUnsavedChecklistEdits = false // 🛡️ v1.8.2 (IMPL_17): Flag zurücksetzen — gespeicherter Stand ist jetzt aktuell
-                storage.saveNote(note)
-                withContext(Dispatchers.IO) { logCreateIfNew(note) }
-                existingNote = note // 🆕 v1.9.0: keep reference current so next save is an update
             }
         }
         isDirty = false // 🆕 v1.9.0: note is clean after any successful save
         savedSnapshot = currentSnapshot() // 🔧 v1.10.0: Update Referenz-Snapshot nach Save
         return true
+    }
+
+    /**
+     * Schreibt [note] und merkt sie als Basis für das nächste Speichern ([existingNote]).
+     *
+     * Bei einer bestehenden Notiz wird gegen den Stand der Platte geprüft: Hat der Sync inzwischen
+     * eine neuere Fassung heruntergeladen (SYNCED, anderer Inhalt als die Basis des Editors), wird
+     * die Notiz CONFLICT statt PENDING. Der Download hat den E-Tag schon aufgefrischt, der Upload
+     * überschriebe die Server-Fassung sonst ohne Rückfrage. Ein bestehender Konflikt bleibt stehen,
+     * bis er im Banner aufgelöst wird, sonst machte ihn der nächste Autosave wieder zu PENDING.
+     * Fehlt die Datei inzwischen, wird sie neu geschrieben, damit der Text nicht verloren geht.
+     */
+    private suspend fun persist(note: Note) = withContext(Dispatchers.IO) {
+        val base = existingNote
+        if (base == null) {
+            storage.saveNote(note)
+            logCreateIfNew(note)
+            existingNote = note
+            return@withContext
+        }
+        var outdated = false
+        val written = storage.updateNote(note.id) { onDisk ->
+            outdated = onDisk.syncStatus == SyncStatus.SYNCED && onDisk.contentDiffers(base)
+            if (outdated || onDisk.syncStatus == SyncStatus.CONFLICT) note.copy(syncStatus = SyncStatus.CONFLICT) else note
+        } ?: note.also { storage.saveNote(it) }
+        existingNote = written
+        if (written.syncStatus == SyncStatus.CONFLICT) _uiState.update { it.copy(hasConflict = true) }
+        if (outdated) {
+            Logger.w(TAG, "⚠️ ${note.id} changed on the server while open in the editor, marked CONFLICT")
+            ActivityLog.log(
+                ActivityLog.Op.CONFLICT,
+                ActivityLog.Src.LOCAL,
+                id = note.id,
+                title = note.title,
+                folder = note.folderName,
+                why = "editor_outdated_base"
+            )
+        }
     }
 
     private fun pendingOrLocalOnly(folderName: String?): SyncStatus =

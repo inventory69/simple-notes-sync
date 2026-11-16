@@ -365,6 +365,7 @@
     <string name="delete_item">Element löschen</string>
     <string name="note_is_empty">Notiz ist leer</string>
     <string name="note_saved">Notiz gespeichert</string>
+    <string name="note_save_failed">Notiz konnte nicht gespeichert werden. Ist der Speicher voll?</string>
     <string name="note_deleted">Notiz gelöscht</string>
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->

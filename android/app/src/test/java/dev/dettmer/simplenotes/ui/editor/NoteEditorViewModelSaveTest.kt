@@ -128,4 +128,36 @@ class NoteEditorViewModelSaveTest {
         }
         assert(afterSecondSave.contains("Inhalt, geändert"))
     }
+
+    @Test
+    fun `gescheitertes Speichern meldet sich statt abzustuerzen und verliert nichts`() = runTest {
+        val vm = viewModel()
+        vm.updateTitle("Titel")
+        vm.updateContent("Inhalt")
+        vm.events.test {
+            vm.saveNote()
+            assertEquals(NoteEditorEvent.NavigateBack, awaitItem())
+        }
+        val saved = savedNoteFile().readText()
+
+        vm.updateContent("Inhalt, geändert")
+        val notesDir = File(tmpDir, "notes")
+        notesDir.setWritable(false) // wie ein voller Speicher: die neue Fassung lässt sich nicht anlegen
+        try {
+            vm.showSnackbar.test {
+                vm.saveNote()
+                awaitItem()
+            }
+        } finally {
+            notesDir.setWritable(true)
+        }
+        assertEquals("die bisherige Fassung muss unversehrt bleiben", saved, savedNoteFile().readText())
+
+        // Die Änderung gilt weiter als offen: der nächste Versuch schreibt sie.
+        vm.events.test {
+            vm.saveNote()
+            assertEquals(NoteEditorEvent.NavigateBack, awaitItem())
+        }
+        assert(savedNoteFile().readText().contains("Inhalt, geändert"))
+    }
 }

@@ -367,6 +367,7 @@
     <string name="delete_item">Delete item</string>
     <string name="note_is_empty">Note is empty</string>
     <string name="note_saved">Note saved</string>
+    <string name="note_save_failed">Could not save the note. Is the storage full?</string>
     <string name="note_deleted">Note deleted</string>
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->
