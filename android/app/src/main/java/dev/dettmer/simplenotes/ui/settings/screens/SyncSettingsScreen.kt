@@ -587,15 +587,13 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
 @Composable
 private fun MarkdownSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
     val markdownAutoSync by viewModel.markdown.markdownAutoSync.collectAsState()
-    val serverUrl by viewModel.server.serverUrl.collectAsState()
-    val syncFolderName by viewModel.server.syncFolderName.collectAsState()
+    val folderPath by viewModel.server.markdownFolderUrl.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.settings_markdown)) {
         SettingsHint(text = stringResource(R.string.markdown_info))
 
         // Used MD folder (only meaningful once a server is connected)
         if (isServerConfigured) {
-            val folderPath = "$serverUrl/$syncFolderName-md"
             val clipboard = LocalClipboard.current
             val scope = rememberCoroutineScope()
 

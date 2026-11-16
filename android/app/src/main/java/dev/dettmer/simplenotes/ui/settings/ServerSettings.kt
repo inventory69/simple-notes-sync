@@ -7,6 +7,7 @@ import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.backup.RestoreMode
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.NotesStorage
+import dev.dettmer.simplenotes.sync.SyncUrlBuilder
 import dev.dettmer.simplenotes.sync.WebDavSyncService
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel.FolderChangePrompt
 import dev.dettmer.simplenotes.ui.settings.SettingsViewModel.RemoteChangeKind
@@ -90,6 +91,15 @@ class ServerSettings(
     // 🆕 v1.9.0: Configurable WebDAV Sync Folder
     private val _syncFolderName = MutableStateFlow(readSyncFolderName())
     val syncFolderName: StateFlow<String> = _syncFolderName.asStateFlow()
+
+    /**
+     * Markdown-Ordner für die Anzeige, mit derselben Logik wie der Sync. Vorher selbst
+     * zusammengesetzt: `dav//notes-md` bei Slash am Ende, `notes/notes-md` bei URL auf den Ordner.
+     * Der Ordnername kommt aus den Prefs, `_syncFolderName` löst nur die Neuberechnung aus.
+     */
+    val markdownFolderUrl: StateFlow<String> = combine(serverUrl, _syncFolderName) { url, _ ->
+        SyncUrlBuilder(prefs).getMarkdownUrl(url)
+    }.stateIn(ctx.scope, SharingStarted.Eagerly, SyncUrlBuilder(prefs).getMarkdownUrl(storedUrl))
 
     private val _showBatteryOptimizationDialog = MutableStateFlow(false)
     val showBatteryOptimizationDialog: StateFlow<Boolean> = _showBatteryOptimizationDialog.asStateFlow()
