@@ -35,10 +35,14 @@ class MarkdownOutputTransformation(
     override fun TextFieldBuffer.transformOutput() {
         val text = toString()
         val len = text.length
+        // Lange Wörter (LayoutBreaks.kt): Marken zuerst, von hinten; die Stile danach an die
+        // verschobenen Stellen. Ein Stil, der an einer Marke beginnt, beginnt hinter ihr.
+        val cuts = layoutBreakPositions(text)
+        for (cut in cuts.asReversed()) replace(cut, cut, LAYOUT_BREAK.toString())
         for (s in computeMarkdownSpans(text)) {
             val start = s.start.coerceIn(0, len)
             val end = s.end.coerceIn(start, len)
-            if (end > start) addStyle(s.style, start, end)
+            if (end > start) addStyle(s.style, start + cuts.count { it <= start }, end + cuts.count { it < end })
         }
     }
 

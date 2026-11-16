@@ -12,6 +12,7 @@ import android.os.Build
 import android.text.Html
 import android.text.Layout
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -24,9 +25,11 @@ import androidx.core.graphics.withTranslation
 import dev.dettmer.simplenotes.images.applyExifOrientation
 import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.ImageAlign
+import dev.dettmer.simplenotes.markdown.LAYOUT_BREAK
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.ColumnAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
+import dev.dettmer.simplenotes.markdown.layoutBreakPositions
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
 import dev.dettmer.simplenotes.markdown.parseImageAlt
 import dev.dettmer.simplenotes.markdown.stripInlineFormatting
@@ -835,12 +838,19 @@ object PdfExporter {
             val x = MARGIN_HORIZONTAL + indent
             val width = maxWidth.toInt().coerceAtLeast(1)
             val lineHeight = paint.textSize * LINE_HEIGHT_MULTIPLIER
-            val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width).build()
+            // Lange Wörter: siehe LayoutBreaks.kt
+            val cuts = layoutBreakPositions(text)
+            val shown = if (cuts.isEmpty()) {
+                text
+            } else {
+                SpannableStringBuilder(text).apply { cuts.asReversed().forEach { insert(it, LAYOUT_BREAK.toString()) } }
+            }
+            val layout = StaticLayout.Builder.obtain(shown, 0, shown.length, paint, width).build()
 
             for (i in 0 until layout.lineCount) {
                 val lineStart = layout.getLineStart(i)
                 val lineEnd = layout.getLineEnd(i)
-                val lineText = text.subSequence(lineStart, lineEnd)
+                val lineText = shown.subSequence(lineStart, lineEnd)
 
                 ensureSpace(lineHeight)
 

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.TapAnchor
+import dev.dettmer.simplenotes.markdown.toSourceOffset
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import kotlin.math.roundToInt
 
@@ -256,7 +257,7 @@ internal suspend fun applyTapAnchor(
 ) {
     val layout = awaitLayout()
     val contentY = anchor.contentY.coerceAtMost(layout.size.height.toFloat())
-    val offset = layout.getOffsetForPosition(Offset(anchor.x, contentY))
+    val offset = toSourceOffset(textFieldState.text, layout.getOffsetForPosition(Offset(anchor.x, contentY)))
     textFieldState.edit { selection = TextRange(offset) }
     scrollState.scrollTo((contentY - anchor.viewportY).toInt().coerceIn(0, scrollState.maxValue))
 }

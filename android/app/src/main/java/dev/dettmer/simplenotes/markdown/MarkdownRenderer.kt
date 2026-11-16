@@ -27,7 +27,6 @@ import androidx.compose.foundation.text.contextmenu.data.TextContextMenuKeys
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
 import androidx.compose.foundation.text.contextmenu.modifier.filterTextContextMenuComponents
 import androidx.compose.foundation.text.selection.DisableSelection
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BrokenImage
@@ -156,7 +155,7 @@ fun MarkdownPreview(
     } else {
         Modifier
     }
-    SelectionContainer(modifier = modifier.then(tapModifier)) {
+    SelectionContainerWithoutLayoutBreaks(modifier = modifier.then(tapModifier)) {
         val scrollModifier = if (scrollEnabled) Modifier.verticalScroll(scrollState) else Modifier
         Column(
             modifier = Modifier
@@ -392,7 +391,7 @@ private fun CodeBlockSurface(codeBlock: MarkdownBlock.CodeBlock) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = codeBlock.code,
+            text = AnnotatedString(codeBlock.code).withLayoutBreaks(),
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontFamily = FontFamily.Monospace
             ),
@@ -555,7 +554,7 @@ internal fun parseInlineFormattingWithColors(
         pos = match.range.last + 1
     }
     if (pos < text.length) append(text.substring(pos))
-}
+}.withLayoutBreaks()
 
 /**
  * Wendet die Formatierung eines einzelnen [INLINE_COMBINED_REGEX]-Matches auf den Builder an.

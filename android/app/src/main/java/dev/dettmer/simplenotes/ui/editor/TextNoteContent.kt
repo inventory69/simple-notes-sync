@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
+import dev.dettmer.simplenotes.markdown.toSourceOffset
 import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
@@ -340,8 +341,8 @@ private fun toggleTaskCheckbox(event: PointerEvent, layout: TextLayoutResult?, t
     val rawPos = event.changes.firstOrNull()?.position ?: return
     val tapPos = rawPos.copy(y = rawPos.y + scrollOffsetY)
     if (layout == null) return
-    val charOff = layout.getOffsetForPosition(tapPos)
     val rawText = textFieldState.text.toString()
+    val charOff = toSourceOffset(rawText, layout.getOffsetForPosition(tapPos))
     val lineStartOff = rawText.lastIndexOf('\n', (charOff - 1).coerceAtLeast(0))
         .let { if (it < 0) 0 else it + 1 }
     if (charOff - lineStartOff > CHECKBOX_TAP_PREFIX_COLS) return
