@@ -8,6 +8,7 @@ import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.writeTextAtomic
 import java.io.File
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -128,7 +129,7 @@ class PendingServerDeletions(
 
     private fun saveInternal(deletions: List<PendingDeletion>) {
         try {
-            file.writeText(gson.toJson(deletions))
+            file.writeTextAtomic(gson.toJson(deletions))
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to save pending deletions: ${e.message}")
         }

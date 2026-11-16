@@ -12,6 +12,7 @@ import dev.dettmer.simplenotes.sync.PendingServerDeletions
 import dev.dettmer.simplenotes.sync.SyncUrlBuilder
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.writeTextAtomic
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -324,13 +325,7 @@ class FolderStore(private val context: Context) {
 
     private suspend fun writeMetaUnsafe(list: List<FolderMeta>) = withContext(Dispatchers.IO) {
         try {
-            val tmp = File(file.parentFile, "$FILE_NAME.tmp")
-            tmp.writeText(gson.toJson(list))
-            if (file.exists()) file.delete()
-            if (!tmp.renameTo(file)) {
-                file.writeText(gson.toJson(list))
-                tmp.delete()
-            }
+            file.writeTextAtomic(gson.toJson(list))
         } catch (e: Exception) {
             Logger.w(TAG, "write failed: ${e.message}")
         }

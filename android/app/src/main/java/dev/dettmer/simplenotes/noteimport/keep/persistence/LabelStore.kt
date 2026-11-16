@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.noteimport.keep.persistence
 
 import android.content.Context
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.writeTextAtomic
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -78,16 +79,7 @@ class LabelStore(private val context: Context) {
 
     private suspend fun writeUnsafe(index: LabelIndex) = withContext(Dispatchers.IO) {
         try {
-            // Atomares Schreiben über tmp-Rename (vermeidet halb-geschriebene JSONs
-            // bei Crash/Power-Loss).
-            val tmp = File(file.parentFile, "$FILE_NAME.tmp")
-            tmp.writeText(index.toJson(), Charsets.UTF_8)
-            if (file.exists()) file.delete()
-            if (!tmp.renameTo(file)) {
-                Logger.w(TAG, "rename tmp -> $FILE_NAME failed; falling back to direct write")
-                file.writeText(index.toJson(), Charsets.UTF_8)
-                tmp.delete()
-            }
+            file.writeTextAtomic(index.toJson())
         } catch (e: IOException) {
             Logger.w(TAG, "Failed writing $FILE_NAME: ${e.message}")
         }

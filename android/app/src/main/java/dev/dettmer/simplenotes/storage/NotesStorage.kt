@@ -5,6 +5,7 @@ import dev.dettmer.simplenotes.models.DeletionTracker
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.utils.DeviceIdGenerator
 import dev.dettmer.simplenotes.utils.Logger
+import dev.dettmer.simplenotes.utils.writeTextAtomic
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
@@ -28,6 +29,10 @@ class NotesStorage(private val context: Context) {
         // 🔒 v1.7.2 (IMPL_001): Mutex für thread-sichere Deletion Tracker Operationen
         private val deletionTrackerMutex = Mutex()
 
+        // Ein Schreiber zur Zeit, prozessweit: NotesStorage wird an vielen Stellen neu angelegt,
+        // eine Sperre je Instanz hielte Editor, Widget und Sync nicht auseinander.
+        private val writeMutex = Mutex()
+
         // 🔧 Perf: begrenzte Parallelität beim Einlesen vieler Notiz-Dateien
         // (verhindert tausende gleichzeitig offene File-Handles bei sehr vielen Notizen)
         private const val PARALLEL_READ_LIMIT = 64
@@ -37,8 +42,10 @@ class NotesStorage(private val context: Context) {
 
     // ─── In-memory cache for loadAllNotes (REF-023) ───────────────────────
     private val cacheMutex = Mutex()
-    private var cachedNotes: List<Note>? = null
-    private var cacheTimestamp: Long = 0L
+
+    @Volatile private var cachedNotes: List<Note>? = null
+
+    @Volatile private var cacheTimestamp: Long = 0L
     private val cacheTtlMs = 2000L
     private val cacheVersion = AtomicLong(0L)
 
@@ -54,8 +61,25 @@ class NotesStorage(private val context: Context) {
     }
 
     suspend fun saveNote(note: Note) = withContext(Dispatchers.IO) {
-        val file = File(notesDir, "${note.id}.json")
-        file.writeText(note.toJson())
+        writeMutex.withLock { writeNote(note) }
+    }
+
+    /**
+     * Ändert eine Notiz auf Basis ihres Stands auf der Platte. [transform] bekommt die frisch
+     * gelesene Fassung und liefert die neue, oder null für "nichts schreiben". Lesen und Schreiben
+     * laufen unter derselben Sperre wie [saveNote], ein paralleles Speichern (Editor, Widget, Sync)
+     * gerät also nicht dazwischen. Für jeden Aufrufer, der sonst eine früher geladene Kopie
+     * zurückschriebe und damit eine inzwischen gespeicherte Fassung überschriebe.
+     *
+     * @return die geschriebene Notiz, oder null wenn sie fehlt oder [transform] null lieferte.
+     */
+    suspend fun updateNote(id: String, transform: (Note) -> Note?): Note? = withContext(Dispatchers.IO) {
+        writeMutex.withLock { loadNoteSync(id)?.let(transform)?.also { writeNote(it) } }
+    }
+
+    /** Nur unter [writeMutex] aufrufen. */
+    private fun writeNote(note: Note) {
+        File(notesDir, "${note.id}.json").writeTextAtomic(note.toJson())
         invalidateCache()
     }
 
@@ -74,16 +98,18 @@ class NotesStorage(private val context: Context) {
         noteId: String,
         targetFolder: String?,
         newStatus: dev.dettmer.simplenotes.models.SyncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING
-    ) = withContext(Dispatchers.IO) {
-        val note = loadNoteSync(noteId) ?: return@withContext
-        if (note.folderName == targetFolder) return@withContext
-        saveNote(
-            note.copy(
-                folderName = targetFolder,
-                updatedAt = System.currentTimeMillis(),
-                syncStatus = newStatus
-            )
-        )
+    ) {
+        updateNote(noteId) { note ->
+            if (note.folderName == targetFolder) {
+                null
+            } else {
+                note.copy(
+                    folderName = targetFolder,
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = newStatus
+                )
+            }
+        }
     }
 
     /**
@@ -248,8 +274,7 @@ class NotesStorage(private val context: Context) {
 
     fun saveDeletionTracker(tracker: DeletionTracker) {
         try {
-            val file = getDeletionTrackerFile()
-            file.writeText(tracker.toJson())
+            getDeletionTrackerFile().writeTextAtomic(tracker.toJson())
 
             if (tracker.deletedNotes.size > 1000) {
                 Logger.w(TAG, "⚠️ Deletion tracker large: ${tracker.deletedNotes.size} entries")
@@ -308,27 +333,25 @@ class NotesStorage(private val context: Context) {
      * This ensures notes are uploaded to the new server on next sync
      */
     suspend fun resetAllSyncStatusToPending(): Int = withContext(Dispatchers.IO) {
-        val notes = notesDir.listFiles()
+        val ids = notesDir.listFiles()
             ?.filter { it.extension == "json" }
-            ?.mapNotNull { Note.fromJson(it.readText()) }
+            ?.map { it.nameWithoutExtension }
             .orEmpty()
-        var updatedCount = 0
-
-        notes.forEach { note ->
-            // 🔧 v1.9.0: Auch DELETED_ON_SERVER → PENDING zurücksetzen
-            // Notizen die auf dem alten Server gelöscht wurden, müssen auf den neuen Server
-            // hochgeladen werden — der neue Server hat keine Kenntnis der alten Löschung.
-            if (note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.SYNCED ||
-                note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.DELETED_ON_SERVER
-            ) {
-                val updatedNote = note.copy(syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING)
-                val file = File(notesDir, "${updatedNote.id}.json")
-                file.writeText(updatedNote.toJson())
-                updatedCount++
-            }
+        // 🔧 v1.9.0: Auch DELETED_ON_SERVER → PENDING zurücksetzen
+        // Notizen die auf dem alten Server gelöscht wurden, müssen auf den neuen Server
+        // hochgeladen werden — der neue Server hat keine Kenntnis der alten Löschung.
+        val updatedCount = ids.count { id ->
+            updateNote(id) { note ->
+                if (note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.SYNCED ||
+                    note.syncStatus == dev.dettmer.simplenotes.models.SyncStatus.DELETED_ON_SERVER
+                ) {
+                    note.copy(syncStatus = dev.dettmer.simplenotes.models.SyncStatus.PENDING)
+                } else {
+                    null
+                }
+            } != null
         }
 
-        invalidateCache()
         Logger.d(TAG, "🔄 Reset sync status for $updatedCount notes to PENDING")
         updatedCount
     }
