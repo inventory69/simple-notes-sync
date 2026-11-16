@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.foundation.text.contextmenu.data.TextContextMenuKeys
+import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
+import androidx.compose.foundation.text.contextmenu.modifier.filterTextContextMenuComponents
 import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -81,6 +84,7 @@ import dev.dettmer.simplenotes.ui.main.components.PREVIEW_INDENT
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.utils.truncate
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.launch
 
 private const val COMPACT_HEADING_LEVEL = 3
@@ -130,13 +134,25 @@ fun MarkdownPreview(
     // Aktuelles Lambda lesen statt danach zu schlüsseln: ein neues Lambda je Recomposition startete den
     // Detektor neu und verwarf einen gerade laufenden Tipp.
     val currentOnTextTap by rememberUpdatedState(onTextTap)
+    // #131: ein Tipp, der nur eine Auswahl aufhebt, öffnet nicht das Bearbeiten. Eine Auswahl ist nicht öffentlich
+    // abfragbar; das Kontextmenü baut seine Einträge aber bei jeder Änderung neu, und „Kopieren“ steht nur bei
+    // Auswahl darin. appendTextContextMenuComponents läuft vor den Filtern jedes Neuaufbaus.
+    val hasSelection = remember { AtomicBoolean(false) }
     val tapModifier = if (onTextTap != null) {
-        Modifier.pointerInput(Unit) {
-            // x ohne den Spaltenrand: das Feld im Bearbeiten-Modus misst ab Textanfang (sonst ein Zeichen daneben).
-            detectTapGestures { pos ->
-                currentOnTextTap?.invoke(TapAnchor(pos.x - Dimensions.SpacingSmall.toPx(), pos.y, scrollState.value + pos.y))
+        Modifier
+            .appendTextContextMenuComponents { hasSelection.set(false) }
+            .filterTextContextMenuComponents {
+                if (it.key == TextContextMenuKeys.CopyKey) hasSelection.set(true)
+                true
             }
-        }
+            .pointerInput(Unit) {
+                // x ohne den Spaltenrand: das Feld im Bearbeiten-Modus misst ab Textanfang (sonst ein Zeichen daneben).
+                detectTapGestures { pos ->
+                    if (!hasSelection.get()) {
+                        currentOnTextTap?.invoke(TapAnchor(pos.x - Dimensions.SpacingSmall.toPx(), pos.y, scrollState.value + pos.y))
+                    }
+                }
+            }
     } else {
         Modifier
     }
