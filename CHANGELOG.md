@@ -57,6 +57,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The Markdown section shows the folder path the sync actually uses
 - Long folder titles keep a gap to the note count and to the selection checkbox
 
+### 🌍 Translations
+
+- **Chinese (Simplified)** (99%): hamburger2048
+- **Russian** (99%): PONYATIN, [@disfated](https://github.com/disfated) / Yury Pavlovsky
+- The new texts of this release are in English and German for now and follow in the other languages with the next update
+
 ---
 
 ## [2.23.0] - 2026-11-14

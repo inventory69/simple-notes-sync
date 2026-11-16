@@ -1,13 +1,13 @@
 🪆 v2.24.0 - Unterpunkte in Checklisten
 
-• Checklisten bekommen eine Ebene Unterpunkte
+• Checklisten mit einer Ebene Unterpunkte
 • Editor: zweiter Tipp entfernt Fett, Kursiv usw.
-• Neues Design: Formatierleiste folgt der Tastatur
 • Fix: Notizen bleiben heil, wenn Speichern abbricht
-• Fix: Änderungen während eines Syncs bleiben erhalten
+• Fix: Änderungen beim Sync gehen nicht verloren
 • Fix: Verschieben auf Apache und Nextcloud
-• Fix: lange Notizen leeren keine Widgets mehr
-• Fix: sehr lange Wörter beenden die App nicht mehr
+• Fix: lange Notizen leeren keine Widgets
+• Fix: lange Wörter beenden die App nicht mehr
+• Übersetzungsupdate: Chinesisch, Russisch
 • Und mehr...
 
-Danke an @ASFHU, @hgwebs4 und @Fs00!
+Danke an @ASFHU, @hgwebs4, @Fs00, PONYATIN, disfated und hamburger2048!

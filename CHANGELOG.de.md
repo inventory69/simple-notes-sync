@@ -57,6 +57,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Der Markdown-Bereich zeigt den Ordnerpfad, den der Sync wirklich nutzt
 - Lange Ordnertitel halten Abstand zur Notizzahl und zum Auswahlkästchen
 
+### 🌍 Übersetzungen
+
+- **Chinesisch (vereinfacht)** (99%): hamburger2048
+- **Russisch** (99%): PONYATIN, [@disfated](https://github.com/disfated) / Yury Pavlovsky
+- Die neuen Texte dieses Releases gibt es vorerst auf Englisch und Deutsch, die anderen Sprachen folgen mit dem nächsten Update
+
 ---
 
 ## [2.23.0] - 2026-11-14
