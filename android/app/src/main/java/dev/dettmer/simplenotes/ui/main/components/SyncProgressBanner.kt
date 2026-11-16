@@ -100,9 +100,11 @@ fun SyncProgressBanner(progress: SyncProgress, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .then(
                     if (newDesign) {
+                        // top 8 + 4 (Bottom-Padding der Suchzeile) = 12 dp, gleicher Abstand wie im Notizraster.
                         Modifier.padding(
                             start = Dimensions.SpacingLarge,
                             end = Dimensions.SpacingLarge,
+                            top = Dimensions.SpacingMedium,
                             bottom = Dimensions.SpacingSmall
                         )
                     } else {
