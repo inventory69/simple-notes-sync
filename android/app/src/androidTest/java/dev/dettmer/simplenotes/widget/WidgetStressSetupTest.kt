@@ -123,6 +123,40 @@ class WidgetStressSetupTest {
         delay(COMPOSE_GRACE_MS)
     }
 
+    /**
+     * Wenige, aber riesige Texte: die Zeilenzahl bleibt klein, die Länge sprengte vor dem
+     * Kürzen ([clippedForWidget]) trotzdem das Budget. Ein Absatz ohne Leerzeile, wie er beim
+     * Einfügen von Text mit einfachen Zeilenumbrüchen entsteht.
+     */
+    @Test
+    fun seedHugeTexts() = runBlocking {
+        val storage = NotesStorage(context)
+        val line = "Lange Zeile ohne Leerzeile dazwischen, wie aus einem eingefuegten Text. "
+        storage.saveNote(
+            Note(
+                id = HUGE_TEXT_ID,
+                title = "Riesentext",
+                content = (1..HUGE_LINES).joinToString("\n") { "$it $line" },
+                deviceId = "stress"
+            )
+        )
+        storage.saveNote(
+            Note(
+                id = HUGE_CHECKLIST_ID,
+                title = "Riesencheckliste",
+                content = "",
+                deviceId = "stress",
+                noteType = NoteType.CHECKLIST,
+                checklistItems = List(HUGE_ITEMS) {
+                    ChecklistItem(id = "huge-c-$it", text = line.repeat(HUGE_ITEM_REPEAT), order = it)
+                }
+            )
+        )
+        pointNoteWidgetsAt(listOf(HUGE_TEXT_ID to false, HUGE_CHECKLIST_ID to false))
+        WidgetUpdateHelper.refreshAllWidgets(context)
+        delay(COMPOSE_GRACE_MS)
+    }
+
     private suspend fun seedNotes() {
         val storage = NotesStorage(context)
 
@@ -176,6 +210,11 @@ class WidgetStressSetupTest {
         const val CHECKLIST_ITEMS = 150
         const val MARKDOWN_PARAGRAPHS = 120
         const val LIST_NOTES = 100
+        val HUGE_TEXT_ID = stressId("huge-text")
+        val HUGE_CHECKLIST_ID = stressId("huge-checklist")
+        const val HUGE_LINES = 3_500 // ~250 000 Zeichen
+        const val HUGE_ITEMS = 10
+        const val HUGE_ITEM_REPEAT = 300 // ~22 000 Zeichen je Eintrag
 
         /**
          * Notiz-IDs im UUID-Format wie bei echten Notizen: Der Sync zaehlt nur solche Dateinamen als

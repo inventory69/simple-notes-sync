@@ -55,7 +55,13 @@ class NotesListWidget : GlanceAppWidget() {
             val (allNotes, folders, folderNoteCounts) = remember(lastUpdated) {
                 runBlocking {
                     // 🆕 v2.9.0 (Trash): getrashte Notizen nie im Widget anzeigen.
-                    val notes = NotesStorage(context).loadActiveNotes()
+                    // Text bis maxLines der Karte, Checklisten-Vorschau je eine Zeile
+                    val notes = NotesStorage(context).loadActiveNotes().map {
+                        it.clippedForWidget(
+                            contentChars = NOTE_CARD_BODY_MAX_LINES * WidgetPayloadBudget.PREVIEW_LINE_CHARS,
+                            itemChars = WidgetPayloadBudget.PREVIEW_LINE_CHARS
+                        )
+                    }
                     val loadedFolders = FolderStore(context).loadFolders()
                     Triple(
                         notes,

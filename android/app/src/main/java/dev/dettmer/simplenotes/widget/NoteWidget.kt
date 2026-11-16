@@ -64,6 +64,7 @@ class NoteWidget : GlanceAppWidget() {
             // thread, not the main thread, so synchronous file I/O is safe here.
             // 🆕 v2.9.0 (Trash): getrashte Notiz wie gelöscht behandeln → „nicht gefunden"-Fallback.
             val note = noteId?.let { storage.loadNoteSync(it) }?.takeIf { it.trashedAt == null }
+                ?.clippedForWidget(itemCaps.markdownChars, WidgetPayloadBudget.CHECKLIST_ITEM_CHARS)
 
             GlanceTheme {
                 CompositionLocalProvider(LocalWidgetItemCaps provides itemCaps) {

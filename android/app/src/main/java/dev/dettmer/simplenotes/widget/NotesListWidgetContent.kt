@@ -52,7 +52,7 @@ import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 
 /** Vorschauzeilen bzw. Checklisten-Einträge pro Karte — 1 bei aktivem „Nur Titel" (Discussion #110). */
-private const val NOTE_CARD_BODY_MAX_LINES = 4
+internal const val NOTE_CARD_BODY_MAX_LINES = 4
 
 private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL
