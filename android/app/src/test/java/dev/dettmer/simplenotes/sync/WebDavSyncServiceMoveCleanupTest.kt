@@ -33,6 +33,17 @@ class WebDavSyncServiceMoveCleanupTest {
 
     private suspend fun pending() = PendingServerDeletions(h.context).getAll().map { it.id }
 
+    // Ordner gelöscht ("Notizen behalten"), dann Undo: die Notiz liegt wieder in "work".
+    @Test fun `a note moved back keeps its file and drops the queued cleanup`() = runTest {
+        h.storage.saveNote(note.copy(folderName = "work", syncStatus = SyncStatus.PENDING))
+
+        assertTrue(service().syncNotes(trigger = null).isSuccess)
+
+        assertTrue(h.dav.exists(oldPath))
+        assertEquals(SyncStatus.SYNCED, h.storage.loadNote(note.id)!!.syncStatus)
+        assertEquals(emptyList<String>(), pending())
+    }
+
     // Upload an den neuen Platz gescheitert (412, Konflikt): die alte Kopie ist die einzige.
     @Test fun `the old copy stays while the moved note is not on the server`() = runTest {
         h.storage.saveNote(note.copy(folderName = null, syncStatus = SyncStatus.CONFLICT))

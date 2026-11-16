@@ -1150,6 +1150,11 @@ class WebDavSyncService(private val context: Context, private val ioDispatcher: 
             pendingIds.forEach { pd ->
                 val local = localNotes[pd.id]
                 if (pd.isMove && local != null) {
+                    // Wieder im alten Ordner (Undo, Zurückschieben): der alte Pfad ist der aktuelle.
+                    if (local.folderName == pd.folderName) {
+                        successIds.add(pd.id)
+                        return@forEach
+                    }
                     // Neuer Pfad noch nicht oben (Fehler, Konflikt): alte Kopie behalten, sonst
                     // liegt die Notiz nirgends mehr auf dem Server.
                     if (local.syncStatus != SyncStatus.SYNCED) return@forEach

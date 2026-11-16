@@ -107,8 +107,8 @@ class NoteMutations(
 
     /**
      * Undo für Notizen, die beim Löschen ihres Ordners nach Root gewandert sind: zurück an den
-     * alten Platz. Die vorgemerkte Server-Löschung des alten Pfads bleibt bewusst stehen (der
-     * nächste Upload legt die Datei dort neu an).
+     * alten Platz. Die vorgemerkte Server-Löschung des alten Pfads verwirft der Sync selbst,
+     * sobald die Notiz wieder dort liegt (WebDavSyncService.processPendingServerDeletions).
      */
     suspend fun moveBack(originals: List<Note>, localOnlyFolders: Set<String>) {
         originals.forEach { note ->
