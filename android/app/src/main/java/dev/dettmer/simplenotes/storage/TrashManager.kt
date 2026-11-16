@@ -88,6 +88,24 @@ class TrashManager(
     }
 
     /**
+     * Nach dem Löschen eines Ordners: Notizen daraus liegen jetzt auf Root im Papierkorb, ihre
+     * Server-Kopie am alten Pfad muss weg. Sonst taucht der gelöschte Ordner über die
+     * zurückgebliebene Datei beim nächsten Sync wieder auf. [originals] sind die Fassungen vor
+     * [moveToTrash]; LOCAL_ONLY und nur-lokale Ordner hatten nie eine Server-Kopie.
+     */
+    suspend fun queueOldPathDeletions(originals: List<Note>, deletedFolders: Set<String>) {
+        val deletions = originals
+            .filter {
+                it.folderName != null &&
+                    it.folderName in deletedFolders &&
+                    it.syncStatus != SyncStatus.LOCAL_ONLY &&
+                    !folderStore.isLocalOnly(it.folderName)
+            }
+            .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
+        if (deletions.isNotEmpty()) pendingServerDeletions.add(deletions)
+    }
+
+    /**
      * Stellt eine Notiz aus dem Papierkorb wieder her. `trashedAt = null`, `updatedAt` gebumpt,
      * Status PENDING (re-upload) bzw. LOCAL_ONLY für nur-lokale Ziele. Existiert der ursprüngliche
      * Ordner nicht mehr (Abgleich gegen [knownFolders], case-insensitive), landet die Notiz in Root.

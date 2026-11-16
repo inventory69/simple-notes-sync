@@ -135,6 +135,19 @@ class TrashManagerTest {
         assertEquals("changed meanwhile", restored.content)
     }
 
+    @Test fun `queueOldPathDeletions queues only server copies from the deleted folders`() = runBlocking {
+        storage.saveNote(note(id = "s", status = SyncStatus.SYNCED, folderName = "Work"))
+        storage.saveNote(note(id = "l", status = SyncStatus.LOCAL_ONLY, folderName = "Work"))
+        storage.saveNote(note(id = "o", status = SyncStatus.SYNCED, folderName = "Other"))
+        val originals = manager().moveToTrash(listOf(note(id = "s"), note(id = "l"), note(id = "o")), toRootFrom = setOf("Work"))
+
+        manager().queueOldPathDeletions(originals, deletedFolders = setOf("Work"))
+
+        val queued = pendingDeletions.getAll().single()
+        assertEquals("s", queued.id)
+        assertEquals("Work", queued.folderName)
+    }
+
     @Test fun `moveToTrash skips a note that no longer exists`() = runBlocking {
         assertTrue(manager().moveToTrash(listOf(note(id = "gone"))).isEmpty())
         assertNull(storage.loadNote("gone"))

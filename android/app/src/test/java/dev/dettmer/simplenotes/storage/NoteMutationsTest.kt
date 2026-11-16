@@ -116,4 +116,49 @@ class NoteMutationsTest {
         assertEquals(SyncStatus.SYNCED, storage.loadNote("y")!!.syncStatus)
         assertTrue(pendingDeletions.getAll().isEmpty())
     }
+
+    @Test fun `moveNotes queues the old server path as a relocation`() = runBlocking {
+        storage.saveNote(note("m", SyncStatus.SYNCED, "Work"))
+        storage.saveNote(note("n", SyncStatus.LOCAL_ONLY, "Work"))
+        storage.saveNote(note("same", SyncStatus.SYNCED, "Home"))
+
+        mutations.moveNotes(listOf("m", "n", "same"), target = "Home")
+
+        assertEquals("Home", storage.loadNote("m")!!.folderName)
+        assertEquals(SyncStatus.PENDING, storage.loadNote("m")!!.syncStatus)
+        assertEquals("never uploaded → nothing to remove", listOf("m"), pendingDeletions.getAll().map { it.id })
+        val queued = pendingDeletions.getAll().single()
+        assertEquals("Work", queued.folderName)
+        assertTrue(queued.isMove)
+        assertEquals("already there → untouched", SyncStatus.SYNCED, storage.loadNote("same")!!.syncStatus)
+    }
+
+    @Test fun `moving into a local-only folder queues a real deletion`() = runBlocking {
+        storage.saveNote(note("m", SyncStatus.SYNCED, "Work"))
+
+        mutations.moveNotes(listOf("m"), target = "Private", targetLocalOnly = true)
+
+        assertEquals(SyncStatus.LOCAL_ONLY, storage.loadNote("m")!!.syncStatus)
+        assertEquals(false, pendingDeletions.getAll().single().isMove)
+    }
+
+    @Test fun `renameFolder moves active notes and leaves trashed ones`() = runBlocking {
+        storage.saveNote(note("a", SyncStatus.SYNCED, "Old"))
+        storage.saveNote(note("t", SyncStatus.SYNCED, "Old").copy(trashedAt = 5L))
+
+        mutations.renameFolder("Old", "New", localOnly = false)
+
+        assertEquals("New", storage.loadNote("a")!!.folderName)
+        assertEquals("Old", storage.loadNote("t")!!.folderName)
+        assertEquals(listOf("a"), pendingDeletions.getAll().map { it.id })
+    }
+
+    @Test fun `renaming a local-only folder queues nothing`() = runBlocking {
+        storage.saveNote(note("a", SyncStatus.LOCAL_ONLY, "Old"))
+
+        mutations.renameFolder("Old", "New", localOnly = true)
+
+        assertEquals(SyncStatus.LOCAL_ONLY, storage.loadNote("a")!!.syncStatus)
+        assertTrue(pendingDeletions.getAll().isEmpty())
+    }
 }

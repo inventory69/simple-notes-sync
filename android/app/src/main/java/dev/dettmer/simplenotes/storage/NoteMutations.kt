@@ -82,6 +82,59 @@ class NoteMutations(
         if (ids.isNotEmpty()) pendingServerDeletions.remove(ids)
     }
 
+    /**
+     * Verschiebt Notizen nach [target] (null = Root). Ziel nur lokal → LOCAL_ONLY statt PENDING
+     * (PENDING käme dort nie hoch). Eine Server-Kopie am alten Pfad wird zum Löschen vorgemerkt:
+     * als Relocation, oder als echte Löschung, wenn die Notiz den Sync verlässt (wie Desktop).
+     */
+    suspend fun moveNotes(ids: Collection<String>, target: String?, targetLocalOnly: Boolean = false) {
+        val status = if (targetLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+        ids.forEach { relocate(it, target, status, isMove = !targetLocalOnly) }
+        if (target != null) folderStore.addFolder(target)
+    }
+
+    /**
+     * 🆕 v2.7.0: Benennt einen Ordner um und nimmt seine Notizen mit. Ein nur-lokaler Ordner
+     * behält Markierung und LOCAL_ONLY-Status, auf dem Server ist dann nichts umzuziehen.
+     */
+    suspend fun renameFolder(oldName: String, newName: String, localOnly: Boolean) {
+        val status = if (localOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+        // Wie die Liste: Notizen im Papierkorb behalten ihren alten Ordnernamen.
+        storage.loadNonTrashedNotes(forceReload = true).filter { it.folderName == oldName }
+            .forEach { relocate(it.id, newName, status, isMove = true, queueServerCopy = !localOnly) }
+        folderStore.rename(oldName, newName)
+    }
+
+    /**
+     * Undo für Notizen, die beim Löschen ihres Ordners nach Root gewandert sind: zurück an den
+     * alten Platz. Die vorgemerkte Server-Löschung des alten Pfads bleibt bewusst stehen (der
+     * nächste Upload legt die Datei dort neu an).
+     */
+    suspend fun moveBack(originals: List<Note>, localOnlyFolders: Set<String>) {
+        originals.forEach { note ->
+            val intoLocalOnly = note.folderName != null && note.folderName in localOnlyFolders
+            storage.moveNote(note.id, note.folderName, if (intoLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING)
+        }
+    }
+
+    private suspend fun relocate(
+        id: String,
+        target: String?,
+        status: SyncStatus,
+        isMove: Boolean,
+        queueServerCopy: Boolean = true
+    ) {
+        var before: Note? = null
+        storage.updateNote(id) { note ->
+            before = note
+            note.takeIf { it.folderName != target }?.copy(folderName = target, updatedAt = clock(), syncStatus = status)
+        }
+        val old = before ?: return
+        if (queueServerCopy && old.folderName != target && old.syncStatus != SyncStatus.LOCAL_ONLY) {
+            pendingServerDeletions.add(listOf(PendingServerDeletions.PendingDeletion(id, old.folderName, isMove = isMove)))
+        }
+    }
+
     private suspend fun idsIn(folderNames: Set<String>): List<String> =
         storage.loadAllNotes(forceReload = true).filter { it.folderName in folderNames }.map { it.id }
 
