@@ -222,7 +222,8 @@ class NoteUploaderPreconditionTest {
     @Test fun `a note missing at its path is uploaded without If-Match`() = runTest {
         givenPendingNote()
         val ifMatch = slot<String?>()
-        val webdav = webdav { // Ordner gelistet, Datei fehlt
+        val webdav = webdav {
+            // Ordner gelistet, Datei fehlt
             every { put(any(), any(), any(), captureNullable(ifMatch)) } returns "\"server-v1\""
         }
 

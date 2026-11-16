@@ -10,7 +10,6 @@ import org.junit.Test
 
 /** Ein Wort ohne Leerraum über ~100 000 Zeichen ließ Androids Textlayout auf über 2 GB wachsen. */
 class LayoutBreaksTest {
-
     @Test fun `normal text gets no marks`() {
         val prose = "Ein ganz normaler Satz. ".repeat(10_000)
         assertEquals(emptyList<Int>(), layoutBreakPositions(prose))

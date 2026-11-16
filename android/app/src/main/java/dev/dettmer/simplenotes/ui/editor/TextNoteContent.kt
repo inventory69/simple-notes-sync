@@ -42,13 +42,13 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
-import dev.dettmer.simplenotes.markdown.toSourceOffset
 import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.TapAnchor
 import dev.dettmer.simplenotes.markdown.buildImageAlt
 import dev.dettmer.simplenotes.markdown.computeImageRewrite
+import dev.dettmer.simplenotes.markdown.toSourceOffset
 import dev.dettmer.simplenotes.ui.editor.components.FramelessContentField
 import dev.dettmer.simplenotes.ui.editor.components.applyTapAnchor
 import dev.dettmer.simplenotes.ui.theme.Dimensions
