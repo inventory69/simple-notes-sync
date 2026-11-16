@@ -162,6 +162,7 @@ import dev.dettmer.simplenotes.ui.editor.components.NoteMetaLine
 import dev.dettmer.simplenotes.ui.editor.components.NoteStatsPill
 import dev.dettmer.simplenotes.ui.editor.components.SaveStateButton
 import dev.dettmer.simplenotes.ui.editor.components.SheetTitleField
+import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.editor.components.applyTapAnchor
 import dev.dettmer.simplenotes.ui.editor.components.collapseUp
 import dev.dettmer.simplenotes.ui.editor.components.noteColorGradient
@@ -1354,7 +1355,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
                         // E4 / C3: Änderungsdatum und Wortzahl bzw. offen/erledigt statt Pille.
                         NoteMetaLine(
-                            editedAt = lastEditedAt,
+                            // #180: Wortzähler „Aus“ nimmt die ganze Zeile weg, das Datum steht auch auf der Karte.
+                            editedAt = lastEditedAt.takeIf { uiState.wordCounterVisibility != WordCounterVisibility.OFF },
                             text = uiState.content,
                             mode = noteStatsMode,
                             showStats = noteStatsVisible,

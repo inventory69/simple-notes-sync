@@ -17,11 +17,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Instrumented tests for the Markdown toolbar's wrapSelection behaviour.
+ * Instrumented tests for the Markdown toolbar's toggleMarker behaviour through the UI.
  *
- * Covers the half of the bold+italic path that JVM tests cannot reach: `wrapSelection`
- * is private and only exercisable through the UI. The complementary half — turning
- * `***hello***` into spans — is asserted in MarkdownOutputTransformationTest.
+ * The logic itself is covered by ToggleMarkerTest; this checks the buttons are wired up.
+ * The complementary half — turning `***hello***` into spans — is asserted in
+ * MarkdownOutputTransformationTest.
  *
  * Run via adb:
  *   adb shell am instrument -w -r \
