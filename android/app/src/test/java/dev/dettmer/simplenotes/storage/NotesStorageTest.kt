@@ -123,6 +123,16 @@ class NotesStorageTest {
         assertEquals(2, second.size)
     }
 
+    @Test fun `a write through another instance invalidates this instance's cache`() = runBlocking {
+        val context = mockk<Context> { every { filesDir } returns tmpDir }
+        storage.saveNote(note("x"))
+        assertEquals(1, storage.loadAllNotes().size)
+
+        NotesStorage(context).saveNote(note("y"))
+
+        assertEquals(2, storage.loadAllNotes().size)
+    }
+
     // ─── delete ───────────────────────────────────────────────────────────────
 
     @Test fun `deleteNote removes note from storage`() = runBlocking {

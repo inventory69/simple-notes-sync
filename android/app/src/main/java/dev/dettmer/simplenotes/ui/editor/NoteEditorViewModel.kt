@@ -983,26 +983,23 @@ class NoteEditorViewModel(application: Application, private val savedStateHandle
 
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
-                val targetNote = storage.loadNote(targetNoteId) ?: return@withContext false
-                val existingItems = targetNote.checklistItems.orEmpty()
-                val maxOrder = existingItems.maxOfOrNull { it.order } ?: -1
-
-                val newItem = ChecklistItem(
-                    id = UUID.randomUUID().toString(),
-                    text = itemText,
-                    isChecked = false,
-                    order = maxOrder + 1,
-                    originalOrder = maxOrder + 1,
-                    createdAt = System.currentTimeMillis()
-                )
-
-                val updatedNote = targetNote.copy(
-                    checklistItems = existingItems + newItem,
-                    updatedAt = System.currentTimeMillis(),
-                    syncStatus = pendingOrLocalOnly(targetNote.folderName)
-                ).withContentTouched(targetNote)
-                storage.saveNote(updatedNote)
-                true
+                storage.updateNote(targetNoteId) { targetNote ->
+                    val existingItems = targetNote.checklistItems.orEmpty()
+                    val maxOrder = existingItems.maxOfOrNull { it.order } ?: -1
+                    val newItem = ChecklistItem(
+                        id = UUID.randomUUID().toString(),
+                        text = itemText,
+                        isChecked = false,
+                        order = maxOrder + 1,
+                        originalOrder = maxOrder + 1,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    targetNote.copy(
+                        checklistItems = existingItems + newItem,
+                        updatedAt = System.currentTimeMillis(),
+                        syncStatus = pendingOrLocalOnly(targetNote.folderName)
+                    ).withContentTouched(targetNote)
+                } != null
             }
 
             _otherChecklists.value = null // Dialog schließen

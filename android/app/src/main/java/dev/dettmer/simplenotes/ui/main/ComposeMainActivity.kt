@@ -490,10 +490,7 @@ class ComposeMainActivity : FragmentActivity() {
 
             withContext(Dispatchers.IO) {
                 for (note in checklistsToMigrate) {
-                    val updatedNote = note.copy(
-                        syncStatus = SyncStatus.PENDING
-                    )
-                    storage.saveNote(updatedNote)
+                    storage.updateNote(note.id) { it.copy(syncStatus = SyncStatus.PENDING) }
                     Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
                 }
             }
@@ -519,7 +516,7 @@ class ComposeMainActivity : FragmentActivity() {
             val toMigrate = storage.loadAllNotes(forceReload = true)
                 .filter { it.syncStatus == SyncStatus.DELETED_ON_SERVER && it.trashedAt == null }
             for (note in toMigrate) {
-                storage.saveNote(note.copy(trashedAt = now))
+                storage.updateNote(note.id) { it.copy(trashedAt = now) }
             }
             if (toMigrate.isNotEmpty()) {
                 Logger.d(TAG, "🗑️ v2.9.0 Trash migration: moved ${toMigrate.size} DELETED_ON_SERVER note(s) to trash")

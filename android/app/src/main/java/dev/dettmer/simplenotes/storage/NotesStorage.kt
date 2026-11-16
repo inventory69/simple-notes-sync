@@ -36,28 +36,36 @@ class NotesStorage(private val context: Context) {
         // 🔧 Perf: begrenzte Parallelität beim Einlesen vieler Notiz-Dateien
         // (verhindert tausende gleichzeitig offene File-Handles bei sehr vielen Notizen)
         private const val PARALLEL_READ_LIMIT = 64
+
+        private const val CACHE_TTL_MS = 2000L
+        private val caches = java.util.concurrent.ConcurrentHashMap<String, NotesCache>()
     }
 
     private val readSemaphore = Semaphore(PARALLEL_READ_LIMIT)
 
-    // ─── In-memory cache for loadAllNotes (REF-023) ───────────────────────
-    private val cacheMutex = Mutex()
-
-    @Volatile private var cachedNotes: List<Note>? = null
-
-    @Volatile private var cacheTimestamp: Long = 0L
-    private val cacheTtlMs = 2000L
-    private val cacheVersion = AtomicLong(0L)
-
-    private fun invalidateCache() {
-        cacheVersion.incrementAndGet()
-        cachedNotes = null
-        cacheTimestamp = 0L
-    }
-    // ─────────────────────────────────────────────────────────────────────
-
     private val notesDir: File = File(context.filesDir, "notes").apply {
         if (!exists()) mkdirs()
+    }
+
+    private val cache = caches.getOrPut(notesDir.absolutePath) { NotesCache() }
+
+    /**
+     * Cache für [loadAllNotes] (REF-023), einer je Notiz-Verzeichnis und prozessweit: verwirft ein
+     * Schreiber ihn, liest jede andere Instanz danach frisch von der Platte.
+     */
+    private class NotesCache {
+        val mutex = Mutex()
+
+        @Volatile var notes: List<Note>? = null
+
+        @Volatile var timestamp: Long = 0L
+        val version = AtomicLong(0L)
+
+        fun invalidate() {
+            version.incrementAndGet()
+            notes = null
+            timestamp = 0L
+        }
     }
 
     suspend fun saveNote(note: Note) = withContext(Dispatchers.IO) {
@@ -80,7 +88,7 @@ class NotesStorage(private val context: Context) {
     /** Nur unter [writeMutex] aufrufen. */
     private fun writeNote(note: Note) {
         File(notesDir, "${note.id}.json").writeTextAtomic(note.toJson())
-        invalidateCache()
+        cache.invalidate()
     }
 
     suspend fun loadNote(id: String): Note? = withContext(Dispatchers.IO) {
@@ -141,15 +149,15 @@ class NotesStorage(private val context: Context) {
      * @param forceReload Skip the cache and always read from disk (e.g. after sync).
      */
     suspend fun loadAllNotes(forceReload: Boolean = false): List<Note> = withContext(Dispatchers.IO) {
-        cacheMutex.withLock {
-            val cached = cachedNotes
+        cache.mutex.withLock {
+            val cached = cache.notes
             if (!forceReload &&
                 cached != null &&
-                System.currentTimeMillis() - cacheTimestamp < cacheTtlMs
+                System.currentTimeMillis() - cache.timestamp < CACHE_TTL_MS
             ) {
                 return@withLock cached
             }
-            val versionBefore = cacheVersion.get()
+            val versionBefore = cache.version.get()
             val files = notesDir.listFiles()?.filter { it.extension == "json" }.orEmpty()
             // 🔧 Perf: parallele Reads (statt sequenziell) — mit vielen tausend Notiz-Dateien
             // ist ein Read pro Datei nacheinander der dominante Cold-Start-Kostenfaktor.
@@ -168,9 +176,9 @@ class NotesStorage(private val context: Context) {
                 }.awaitAll().filterNotNull()
             }
             // Only populate cache if no invalidation happened during disk read
-            if (cacheVersion.get() == versionBefore) {
-                cachedNotes = notes
-                cacheTimestamp = System.currentTimeMillis()
+            if (cache.version.get() == versionBefore) {
+                cache.notes = notes
+                cache.timestamp = System.currentTimeMillis()
             }
             notes
         }
@@ -204,7 +212,7 @@ class NotesStorage(private val context: Context) {
 
         if (deleted) {
             Logger.d(TAG, "🗑️ Deleted note: $id")
-            invalidateCache()
+            cache.invalidate()
 
             // Track deletion to prevent zombie notes
             val deviceId = DeviceIdGenerator.getDeviceId(context)
@@ -229,7 +237,7 @@ class NotesStorage(private val context: Context) {
         if (ids.isEmpty()) return@withContext 0
         val deletedIds = ids.filter { File(notesDir, "$it.json").delete() }
         if (deletedIds.isNotEmpty()) {
-            invalidateCache()
+            cache.invalidate()
             trackDeletionsSafe(deletedIds, DeviceIdGenerator.getDeviceId(context))
         }
         Logger.d(TAG, "🗑️ Deleted ${deletedIds.size}/${ids.size} notes (batch)")

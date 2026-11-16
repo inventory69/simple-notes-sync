@@ -44,7 +44,6 @@ internal fun List<FolderMeta>.sanitized(): List<FolderMeta> = filter { !it.name.
 // Abbau: TECH_DEBT_ROADMAP.md §4 (Bestand, keinem Refactoring-Slice zugeordnet)
 @Suppress("TooManyFunctions")
 class FolderStore(private val context: Context) {
-    private val mutex = Mutex()
     private val gson = Gson()
     private val file: File get() = File(context.filesDir, FILE_NAME)
     private val prefs: SharedPreferences by lazy {
@@ -333,6 +332,10 @@ class FolderStore(private val context: Context) {
 
     companion object {
         private const val TAG = "FolderStore"
+
+        // Prozessweit wie in NotesStorage: FolderStore wird an vielen Stellen neu angelegt (Liste,
+        // Editor, Sync-Worker), eine Sperre je Instanz hielte deren Schreibzugriffe nicht auseinander.
+        private val mutex = Mutex()
         const val FILE_NAME = "folders.json"
         private const val KEY_LOCAL_ONLY_FOLDERS = "local_only_folders"
         private const val KEY_LOCAL_ONLY_SERVER_REMOVAL = "local_only_folders_server_removal"

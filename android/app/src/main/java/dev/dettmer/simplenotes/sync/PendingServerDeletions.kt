@@ -32,7 +32,6 @@ class PendingServerDeletions(
     private val nowMs: () -> Long = { System.currentTimeMillis() }
 ) {
     private val file = File(context.filesDir, FILENAME)
-    private val mutex = Mutex()
     private val gson = Gson()
 
     data class PendingDeletion(
@@ -137,6 +136,9 @@ class PendingServerDeletions(
 
     companion object {
         private const val TAG = "PendingServerDeletions"
+
+        // Prozessweit: Liste, Papierkorb und Sync-Worker legen je eine eigene Instanz an.
+        private val mutex = Mutex()
         const val FILENAME = "pending_server_deletions.json"
     }
 }

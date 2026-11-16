@@ -107,6 +107,39 @@ class TrashManagerTest {
         assertNull("payload must be pre-trash original", payload.first().trashedAt)
     }
 
+    @Test fun `moveToTrash with a stale copy keeps the newer content on disk`() = runBlocking {
+        val stale = note(id = "s", status = SyncStatus.SYNCED)
+        storage.saveNote(stale.copy(content = "edited", syncStatus = SyncStatus.PENDING))
+
+        val payload = manager().moveToTrash(listOf(stale))
+
+        val trashed = storage.loadNote("s")!!
+        assertEquals("edited", trashed.content)
+        assertEquals(fakeNow, trashed.trashedAt)
+        assertEquals("undo payload is the disk version", SyncStatus.PENDING, payload.single().syncStatus)
+    }
+
+    @Test fun `undoMoveToTrash restores trash fields and keeps the content`() = runBlocking {
+        storage.saveNote(note(id = "u", status = SyncStatus.PENDING, folderName = "Work").copy(updatedAt = 5L))
+        val payload = manager().moveToTrash(listOf(storage.loadNote("u")!!), toRootFrom = setOf("Work"))
+        assertNull(storage.loadNote("u")!!.folderName)
+        storage.updateNote("u") { it.copy(content = "changed meanwhile") }
+
+        manager().undoMoveToTrash(payload)
+
+        val restored = storage.loadNote("u")!!
+        assertNull(restored.trashedAt)
+        assertEquals("Work", restored.folderName)
+        assertEquals(5L, restored.updatedAt)
+        assertEquals(SyncStatus.PENDING, restored.syncStatus)
+        assertEquals("changed meanwhile", restored.content)
+    }
+
+    @Test fun `moveToTrash skips a note that no longer exists`() = runBlocking {
+        assertTrue(manager().moveToTrash(listOf(note(id = "gone"))).isEmpty())
+        assertNull(storage.loadNote("gone"))
+    }
+
     // ─── restore ────────────────────────────────────────────────────────────
 
     @Test fun `restore clears trashedAt and bumps to PENDING`() = runBlocking {

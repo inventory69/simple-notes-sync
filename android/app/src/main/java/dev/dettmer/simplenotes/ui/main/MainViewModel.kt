@@ -103,6 +103,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         folderStore = folderStore,
         retentionMs = { prefs.trashRetentionDays() * Constants.DAY_MS }
     )
+    private val noteMutations = dev.dettmer.simplenotes.storage.NoteMutations(storage, folderStore, pendingServerDeletions)
 
     // ═══════════════════════════════════════════════════════════════════════
     // Notes State
@@ -760,7 +761,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            withContext(ioDispatcher) {
+            val originals = withContext(ioDispatcher) {
                 trashManager.moveToTrash(selectedNotes)
             }
             clearSelection()
@@ -770,13 +771,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoTrash(selectedNotes) }
+                    onAction = { undoTrash(originals) }
                 )
             )
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
             kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            finalizeTrashOrPurge(selectedNotes)
+            finalizeTrashOrPurge(originals)
         }
     }
 
@@ -791,17 +792,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             withContext(ioDispatcher) {
-                _notes.value
-                    .filter { it.id in noteIds }
-                    .forEach { note ->
-                        storage.saveNote(
-                            note.copy(
-                                color = hex,
-                                updatedAt = System.currentTimeMillis(),
-                                syncStatus = SyncStatus.PENDING
-                            )
-                        )
-                    }
+                noteMutations.setColor(noteIds, hex)
                 // 🆕 v2.7.0 (Folders): Farbe auch auf selektierte Ordner anwenden
                 folderNames.forEach { name -> folderStore.setColor(name, hex) }
             }
@@ -819,17 +810,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val allPinned = _notes.value.filter { it.id in ids }.all { it.isPinned == true }
         val newPinned = if (allPinned) null else true
         viewModelScope.launch {
-            withContext(ioDispatcher) {
-                _notes.value.filter { it.id in ids }.forEach { note ->
-                    storage.saveNote(
-                        note.copy(
-                            isPinned = newPinned,
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    )
-                }
-            }
+            withContext(ioDispatcher) { noteMutations.setPinned(ids, newPinned) }
             clearSelection()
             loadNotes()
             _scrollToTop.value = true
@@ -849,19 +830,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val targets = _notes.value.filter { it.id in ids }
         if (targets.isEmpty()) return
         val allArchived = targets.all { it.isArchived }
-        val newValue: Long? = if (allArchived) null else System.currentTimeMillis()
         viewModelScope.launch {
-            withContext(ioDispatcher) {
-                targets.forEach { note ->
-                    storage.saveNote(
-                        note.copy(
-                            archivedAt = newValue,
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    )
-                }
-            }
+            val originals = withContext(ioDispatcher) { noteMutations.setArchived(ids, archived = !allArchived) }
             clearSelection()
             loadNotes()
             val count = targets.size
@@ -874,7 +844,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoArchiveToggle(targets) }
+                    onAction = { undoArchiveToggle(originals) }
                 )
             )
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
@@ -885,16 +855,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** 🆕 v2.11.0 (Archive): Undo — stellt den vorherigen archivedAt-Zustand mit frischem Timestamp wieder her. */
     private fun undoArchiveToggle(originals: List<Note>) {
         viewModelScope.launch {
-            withContext(ioDispatcher) {
-                originals.forEach { note ->
-                    storage.saveNote(
-                        note.copy(
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    )
-                }
-            }
+            withContext(ioDispatcher) { noteMutations.restoreArchived(originals) }
             loadNotes()
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
             triggerOnSaveSync()
@@ -908,18 +869,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleArchiveFromEditor(noteId: String) {
         viewModelScope.launch {
             val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
-            val newValue: Long? = if (note.isArchived) null else System.currentTimeMillis()
-            withContext(ioDispatcher) {
-                storage.saveNote(
-                    note.copy(
-                        archivedAt = newValue,
-                        updatedAt = System.currentTimeMillis(),
-                        syncStatus = SyncStatus.PENDING
-                    )
-                )
+            val originals = withContext(ioDispatcher) {
+                noteMutations.setArchived(listOf(noteId), archived = !note.isArchived)
             }
             loadNotes(forceReload = true)
-            val message = if (newValue == null) {
+            val message = if (note.isArchived) {
                 getString(R.string.snackbar_note_unarchived, note.title)
             } else {
                 getString(R.string.snackbar_note_archived, note.title)
@@ -928,7 +882,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoArchiveToggle(listOf(note)) }
+                    onAction = { undoArchiveToggle(originals) }
                 )
             )
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
@@ -945,9 +899,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _pendingDeletions.update { it - notes.map { note -> note.id }.toSet() }
 
         viewModelScope.launch {
-            withContext(ioDispatcher) {
-                notes.forEach { note -> storage.saveNote(note) }
-            }
+            withContext(ioDispatcher) { trashManager.undoMoveToTrash(notes) }
             loadNotes()
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
         }
@@ -962,7 +914,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _pendingDeletions.update { it + note.id }
 
         viewModelScope.launch {
-            withContext(ioDispatcher) {
+            val originals = withContext(ioDispatcher) {
                 trashManager.moveToTrash(listOf(note))
             }
             loadNotes()
@@ -976,13 +928,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoTrash(listOf(note)) }
+                    onAction = { undoTrash(originals) }
                 )
             )
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
 
             kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            finalizeTrashOrPurge(listOf(note))
+            finalizeTrashOrPurge(originals)
         }
     }
 
@@ -1610,19 +1562,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         clearSelection()
 
         viewModelScope.launch(ioDispatcher) {
-            // Status-Snapshot VOR der Konvertierung: nur Notizen mit (potenzieller) Server-Kopie
-            // landen in der Lösch-Queue. LOCAL_ONLY war nie auf dem Server, DELETED_ON_SERVER ist dort weg.
-            val serverResident = setOf(SyncStatus.SYNCED, SyncStatus.PENDING, SyncStatus.CONFLICT)
-            val deletions = mutableListOf<PendingServerDeletions.PendingDeletion>()
-            for (note in storage.loadAllNotes()) {
-                if (note.folderName !in folderNames) continue
-                if (removeFromServer && note.syncStatus in serverResident) {
-                    deletions.add(PendingServerDeletions.PendingDeletion(note.id, note.folderName))
-                }
-                if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
-                    storage.saveNote(note.copy(syncStatus = SyncStatus.LOCAL_ONLY))
-                }
-            }
+            val deletions = noteMutations.makeLocalOnly(folderNames).takeIf { removeFromServer }.orEmpty()
             loadNotesAsync(forceReload = true)
             if (removeFromServer) {
                 if (deletions.isNotEmpty()) {
@@ -1660,17 +1600,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch(ioDispatcher) {
             folderNames.forEach { folderStore.touch(it) }
-            val noteIds = mutableListOf<String>()
-            for (note in storage.loadAllNotes()) {
-                if (note.folderName !in folderNames) continue
-                noteIds.add(note.id)
-                if (note.syncStatus == SyncStatus.LOCAL_ONLY) {
-                    storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
-                }
-            }
-            // Safety: evtl. noch in der Queue stehende Löschungen für diese Notizen entfernen.
-            // Verhindert offline-Remove → Re-enable → Notiz wird beim nächsten Sync trotzdem gelöscht.
-            if (noteIds.isNotEmpty()) pendingServerDeletions.remove(noteIds)
+            noteMutations.includeInSync(folderNames)
             loadNotesAsync(forceReload = true)
             val webdavService = WebDavSyncService(getApplication())
             val isReachable = try {
@@ -1773,12 +1703,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
+            // Notizen → Papierkorb. Notizen aus gelöschten Ordnern landen auf Root (Ordner verschwindet).
+            val trashed = withContext(ioDispatcher) { trashManager.moveToTrash(notesToTrash, toRootFrom = folderNames) }
             withContext(ioDispatcher) {
-                // Notizen → Papierkorb. Notizen aus gelöschten Ordnern landen auf Root (Ordner verschwindet).
-                val processed = notesToTrash.map { note ->
-                    if (note.folderName != null && note.folderName in folderNames) note.copy(folderName = null) else note
-                }
-                trashManager.moveToTrash(processed)
                 // Notizen behalten → nach Root verschieben + alten Server-Pfad für Löschung eintragen.
                 notesToRoot.forEach { note ->
                     storage.moveNote(note.id, null)
@@ -1807,7 +1734,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 SnackbarData(
                     message = message,
                     actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoDeleteSelection(notesToTrash, folderNames, notesToRoot, localOnlyDeleted) }
+                    onAction = { undoDeleteSelection(trashed, folderNames, notesToRoot, localOnlyDeleted) }
                 )
             )
             WidgetUpdateHelper.refreshAllWidgets(getApplication())
@@ -1818,7 +1745,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             // Server-Kopien der nach Root verschobenen getrashten Notizen (alter Ordnerpfad) löschen,
             // damit der gelöschte Ordner nicht über eine zurückbleibende Datei wieder auftaucht.
-            val dels = notesToTrash
+            val dels = trashed
                 .filter {
                     it.id in stillPending &&
                         it.folderName != null &&
@@ -1857,7 +1784,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _pendingDeletions.update { it - deletedNotes.map { n -> n.id }.toSet() }
         viewModelScope.launch {
             withContext(ioDispatcher) {
-                deletedNotes.forEach { note -> storage.saveNote(note) }
+                trashManager.undoMoveToTrash(deletedNotes)
                 notesToRoot.forEach { note ->
                     val intoLocalOnly = note.folderName != null && note.folderName in localOnlyFolders
                     storage.moveNote(
